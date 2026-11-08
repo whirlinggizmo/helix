@@ -779,3 +779,15 @@ Why things are the way they are, numbered, in order.
     it there. Rejected: a separate sticks service read through calls of its own (the game's gamepad code would ignore it); and reporting
     the axes without the gamepad being available (raylib's usual `IsGamepadAvailable` guard would skip them). On-screen buttons come
     next, as the gamepad's buttons.
+58. **On-screen buttons are the virtual gamepad's buttons.** A `VirtualButton` is a circle read as one gamepad button. The buttons
+    capture a finger landing on one of them until it lifts: a button is down while a finger the buttons captured is within its circle. A
+    thumb slides from one button onto another. Fingers the buttons captured stay with the buttons, away from the sticks and the mouse. Buttons are drawn from the moment the virtual
+    gamepad is enabled, on a device with touch, as is a fixed stick at rest: each has a place, where a floating stick has none until a
+    finger lands. `Gamepads` reads every button's state each poll and treats a change since the last poll as a press or a release, which
+    the events have already made for a physical gamepad. One trial of the doc comments found no guess about the buttons. Rejected: the
+    virtual gamepad adding `GamepadButtonDown` and `GamepadButtonUp` to the events (the events are the adapters' record, and helix-raylib's
+    replay would count them twice); held until the finger lifts (a thumb couldn't slide between buttons); and rectangles (the sticks are
+    circles, and so are most games' touch buttons). A face button without a position takes its place in a diamond at the window's
+    bottom-right corner, in the service beside the sticks' default zones; helix-raylib labels the face buttons A, B, X and Y. Sticks and buttons take images and a label font, and a program draws its own
+    controls from `visible: false` and the sticks' read-backs (`GetVirtualStickBase`, `GetVirtualStickKnob`, `IsVirtualStickHeld`,
+    `IsVirtualGamepadVisible`). Three trials shaped these: the third had to blank four colors to hide a stick, which `visible` replaced.

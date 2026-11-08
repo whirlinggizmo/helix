@@ -3,20 +3,21 @@ package helix.services.input;
 import helix.math.Bounds2D;
 import helix.math.Vector2D;
 
-/** Represents one stick of a `VirtualGamepad`: its settings, and where a finger holds it.
+/** Represents one stick of a `VirtualGamepad`: its settings, and the finger it captured.
 
-	A finger landing in the stick's touch zone takes the stick, even from the finger holding it. A finger holding the other stick keeps
-	the other stick. Where the two zones overlap, a landing finger takes the free stick, or the left stick if both are free. When the
-	finger holding the stick lifts, a finger still down in the stick's zone takes the stick, without moving the knob.
+	A stick captures a finger landing in its touch zone, even while it has captured another, and releases the earlier finger. A finger the
+	other stick captured stays with the other stick. Where the two zones overlap, the stick that is not currently capturing a finger
+	captures the landing finger, or the left stick when both are free. When the finger a stick captured lifts, the stick captures a finger
+	still down in its zone, without moving the knob. Fingers the buttons (`VirtualButton`) captured stay with the buttons.
 
-	The stick lets go when the window changes size, when the stick is turned off, and when a physical gamepad replaces the virtual
-	gamepad. A finger landing takes the stick again. Positions and sizes are framebuffer pixels. */
+	The stick releases its finger when the window changes size, when the stick is disabled, and when a physical gamepad replaces the
+	virtual gamepad. The next finger landing in its zone is captured again. Positions and sizes are framebuffer pixels. */
 @:allow(helix.services.input.VirtualGamepad)
 class VirtualStick {
-	/** Gets or sets whether it's on the screen. Turned off, the stick lets go of its finger. */
+	/** Gets or sets whether it's enabled. Disabled, the stick reads 0, ignores fingers and releases the finger it captured. */
 	public var enabled(default, set):Bool = true;
 
-	/** Gets or sets where a finger can land to take it. The zone follows changes to these bounds' fields. Null for its default: the
+	/** Gets or sets where the stick captures a landing finger. The zone follows changes to these bounds' fields. Null for its default: the
 		window's left or right half with both sticks enabled, and the whole window with one, following the window's size. */
 	public var touchZone:Null<Bounds2D> = null;
 
@@ -34,7 +35,7 @@ class VirtualStick {
 		from 0. Clamped to that range. `Gamepads.deadZone` applies after it. */
 	public var deadZone(default, set):Float = .12;
 
-	/** Gets a value indicating whether a finger holds it. */
+	/** Gets a value indicating whether it has captured a finger. */
 	public var held(get, never):Bool;
 
 	/** Gets the id of the finger holding it, as `Touch` knows the finger. -1 while not held. */

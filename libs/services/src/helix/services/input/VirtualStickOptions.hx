@@ -6,10 +6,10 @@ import helix.math.Vector2D;
 /** Represents how one stick of a `VirtualGamepad` starts. A field left out takes the gamepad's options, or their default. */
 @:structInit
 class VirtualStickOptions {
-	/** Gets a value indicating whether the stick is on the screen. Defaults to true. */
+	/** Gets a value indicating whether the stick is enabled. Defaults to true. */
 	@:optional public final enabled:Null<Bool>;
 
-	/** Gets where a finger can land to take it. */
+	/** Gets where the stick captures a landing finger. */
 	@:optional public final touchZone:Null<Bounds2D>;
 
 	/** Gets where the base goes. */

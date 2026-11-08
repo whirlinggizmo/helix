@@ -6,8 +6,9 @@ import helix.services.input.VirtualGamepad;
 
 /** Checks VirtualGamepad over fake events, devices and window (800 by 600): unplugged with the hint until the first touch; a floating
 	stick on each half read through Gamepads; the dead zone; a finger landing on a held stick taking it over; a blocked bound; a lift
-	handing the stick to a finger still down; a fixed stick pushed from its base; a following base; a resize letting go; and a physical
-	gamepad replacing the virtual one until the next touch after it leaves. */
+	handing the stick to a finger still down; a fixed stick pushed from its base; a following base; a resize letting go; a physical
+	gamepad replacing the virtual one until the next touch after it leaves; and buttons: shown from the start, pressed by the first touch,
+	slid off and onto, a button turned off, kept from the sticks, and released by a physical gamepad. */
 class VirtualGamepadTests {
 	static var checks = 0;
 
@@ -118,6 +119,55 @@ class VirtualGamepadTests {
 		virtualGamepad.enabled = false;
 		frame();
 		check(!virtualGamepad.pluggedIn && !gamepads.isConnected(0) && !virtualGamepad.left.held, "disabled: unplugged");
+
+		// Buttons: A (South) at (700, 500), radius 40; B (West) at (600, 500), radius 30; X (North) off.
+		virtualGamepad.enabled = true;
+		frame([TouchUp(8, 200, 300)]);
+		virtualGamepad.configure({
+			buttons: [
+				{button: South, position: new Vector2D(700, 500)},
+				{button: West, position: new Vector2D(600, 500), radius: 30},
+				{button: North, position: new Vector2D(100, 100), enabled: false}
+			]
+		});
+		frame();
+		check(virtualGamepad.visible && !virtualGamepad.pluggedIn && !gamepads.isButtonDown(0, South), "buttons: shown before a touch, and up");
+		devices.touchAvailable = false;
+		check(!virtualGamepad.visible, "no touch: no buttons shown");
+		devices.touchAvailable = true;
+		frame([TouchDown(9, 705, 505)]);
+		check(virtualGamepad.pluggedIn && gamepads.isButtonPressed(0, South) && gamepads.isButtonDown(0, South) && !virtualGamepad.right.held
+			&& virtualGamepad.capturesFinger(9),
+			"the first touch on a button plugs the virtual gamepad in and presses the button, and the stick doesn't take the finger");
+		frame();
+		check(gamepads.isButtonDown(0, South) && !gamepads.isButtonPressed(0, South), "held: down, pressed once");
+		frame([TouchMove(9, 760, 505)]);
+		check(!gamepads.isButtonDown(0, South) && gamepads.isButtonReleased(0, South) && !virtualGamepad.right.held,
+			"sliding off releases the button, and the finger stays a button finger");
+		frame([TouchMove(9, 605, 505)]);
+		check(gamepads.isButtonPressed(0, West) && !gamepads.isButtonDown(0, South), "sliding onto another button presses it");
+		frame([TouchMove(9, 700, 500)]);
+		check(gamepads.isButtonReleased(0, West) && gamepads.isButtonPressed(0, South), "B slid onto A: B released, A pressed");
+		frame([TouchUp(9, 700, 500)]);
+		check(gamepads.isButtonReleased(0, South) && virtualGamepad.capturesFinger(9), "lifting lets go, and the finger is held this frame");
+		frame();
+		check(!virtualGamepad.capturesFinger(9), "the lifted finger is free the frame after");
+		frame([TouchDown(10, 100, 100)]);
+		check(virtualGamepad.left.held && !gamepads.isButtonDown(0, North), "a finger on a button turned off takes the stick");
+		frame([TouchUp(10, 100, 100)]);
+		frame([TouchDown(11, 650, 300), TouchDown(12, 700, 500)]);
+		frame([TouchUp(11, 650, 300)]);
+		check(!virtualGamepad.right.held && gamepads.isButtonDown(0, South), "a stick's finger lifting doesn't hand the stick to a button finger");
+		devices.gamepadConnected = true;
+		frame();
+		check(gamepads.isButtonReleased(0, South) && !virtualGamepad.visible, "a physical gamepad releases the virtual buttons and hides them");
+		devices.gamepadConnected = false;
+		frame([TouchUp(12, 700, 500)]);
+		virtualGamepad.configure({buttons: [{button: East}, {button: Start}]});
+		frame([TouchDown(13, 724, 460)]);
+		check(gamepads.isButtonDown(0, East) && !virtualGamepad.buttons[1].placed,
+			"East without a position, in the diamond 3.5 radii in from the corner; Start without one, unplaced");
+		frame([TouchUp(13, 724, 460)]);
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

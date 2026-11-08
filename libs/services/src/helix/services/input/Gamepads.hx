@@ -10,7 +10,8 @@ import helix.platform.GamepadButton;
 	is, past a dead zone.
 
 	The program constructs one over its `IEvents` and its `IGamepads`, and calls `poll` once a frame, as `Keyboard` is. A gamepad's axes are read once a poll, so
-	they hold still for the frame. A gamepad that disconnects lets go of its buttons.
+	they hold still for the frame. A button's state is read each poll too: a button a `VirtualGamepad` holds goes down and up as a
+	physical one does. A gamepad that disconnects lets go of its buttons.
 
 	```haxe
 	var gamepads = new Gamepads(events, gamepadsAdapter);
@@ -35,6 +36,9 @@ class Gamepads implements IPollable implements IActionDevice {
 	// Each slot's axes as this poll and the one before read them, slot * GamepadAxis.COUNT + axis.
 	var axes = [for (_ in 0...SLOTS * GamepadAxis.COUNT) 0.];
 	var lastAxes = [for (_ in 0...SLOTS * GamepadAxis.COUNT) 0.];
+	// Each slot's buttons as this poll and the one before read them, slot * GamepadButton.COUNT + button.
+	var buttons = [for (_ in 0...SLOTS * GamepadButton.COUNT) false];
+	var lastButtons = [for (_ in 0...SLOTS * GamepadButton.COUNT) false];
 
 	/** Creates the gamepads over the platform's events and gamepads, with nothing held.
 
@@ -45,7 +49,7 @@ class Gamepads implements IPollable implements IActionDevice {
 		this.gamepads = gamepads;
 	}
 
-	/** Reads the events the last `IEvents.poll` delivered, and every gamepad's axes. Call it once a frame. */
+	/** Reads the events the last `IEvents.poll` delivered, and every gamepad's axes and buttons. Call it once a frame. */
 	public function poll():Void {
 		pressed.clear();
 		released.clear();
@@ -74,6 +78,22 @@ class Gamepads implements IPollable implements IActionDevice {
 							released.set(id, true);
 						}
 				case _:
+			}
+		// A button whose state changed since the last poll goes down or up, once: the events have already moved a physical one.
+		var swapButtons = lastButtons;
+		lastButtons = buttons;
+		buttons = swapButtons;
+		for (slot in 0...SLOTS)
+			for (button in GamepadButton.all) {
+				var at = slot * GamepadButton.COUNT + button,
+					down = gamepads.isButtonDown(slot, button),
+					id = slot * 32 + button;
+				buttons[at] = down;
+				if (down && !lastButtons[at] && !held.exists(id)) {
+					held.set(id, true);
+					pressed.set(id, true);
+				} else if (!down && lastButtons[at] && held.remove(id))
+					released.set(id, true);
 			}
 	}
 

@@ -10,7 +10,9 @@ import helix.services.screen.Screen;
 
 /** Checks `extras.VirtualGamepad` over fakes (services' `FakeSystem`, `FakeWindow`, `FakeEvents` and `FakeDevices`): unplugged until the
 	first touch; then gamepad 0, virtual, its left stick read through `GetGamepadAxisMovement`; a finger holding a stick leaving the mouse
-	up, and a free finger tapping a blocked bound as a click there; a physical gamepad replacing it; and disabled, unplugged. */
+	up, and a free finger tapping a blocked bound as a click there; a physical gamepad replacing it; disabled, unplugged; and a button pressed and released through raylib's
+	gamepad functions, following its position, in a design's pixels too;
+	the default diamond; a button and a stick that aren't visible still reading; and the sticks' read-backs. */
 @:access(helix.raylib.internal.Runtime)
 class VirtualGamepadExtraTests {
 	static var checks = 0;
@@ -85,6 +87,57 @@ class VirtualGamepadExtraTests {
 		DisableVirtualGamepad(0);
 		frame([TouchUp(4, 200, 300)]);
 		check(!IsGamepadAvailable(0) && !IsGamepadVirtual(0), "disabled: unplugged");
+
+		// A button, read through raylib's gamepad functions, its position and radius in the screen's pixels.
+		var at = new Vector2(700, 400);
+		EnableVirtualGamepad(0, {buttons: [{button: GAMEPAD_BUTTON_RIGHT_FACE_DOWN, position: at, label: "A"}]});
+		frame([TouchDown(5, 730, 400)]);
+		check(IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)
+			&& IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)
+			&& !IsMouseButtonDown(MOUSE_BUTTON_LEFT),
+			"a button finger presses the button, and isn't the mouse");
+		frame([TouchUp(5, 730, 400)]);
+		check(IsGamepadButtonReleased(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN), "lifting releases the button");
+		at.x = 100;
+		frame([TouchDown(6, 100, 400)]);
+		check(IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN), "the button follows its position's fields");
+		frame([TouchUp(6, 100, 400)]);
+		Runtime.screen.setDesignSize(400, 300, Stretch);
+		at.x = 200;
+		at.y = 150;
+		frame([TouchDown(7, 470, 300)]);
+		check(IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN), "a design's pixels: the center and radius scaled to the framebuffer's");
+		frame([TouchUp(7, 470, 300)]);
+		Runtime.screen = new Screen(window, events);
+
+		// The default diamond, 3.5 radii in from the bottom-right corner, each face button 1.6 radii from its center; a button off the
+		// diamond without a position is up; a stick that isn't visible still reads; and the read-backs.
+		EnableVirtualGamepad(0, {
+			left: {visible: false},
+			right: {enabled: false},
+			buttons: [
+				{button: GAMEPAD_BUTTON_RIGHT_FACE_DOWN},
+				{button: GAMEPAD_BUTTON_RIGHT_FACE_UP, visible: false},
+				{button: GAMEPAD_BUTTON_MIDDLE_RIGHT}
+			]
+		});
+		frame([TouchDown(8, 660, 524)]);
+		check(IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN), "A at its place in the diamond");
+		frame([TouchUp(8, 660, 524)]);
+		frame([TouchDown(9, 660, 396)]);
+		check(IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_UP), "a button that isn't visible still reads");
+		frame([TouchUp(9, 660, 396)]);
+		frame([TouchDown(10, 400, 300)]);
+		check(!IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_RIGHT)
+			&& IsVirtualStickHeld(0, VIRTUAL_STICK_LEFT)
+			&& !IsVirtualStickHeld(0, VIRTUAL_STICK_RIGHT),
+			"Start without a position is up, and the finger takes the left stick");
+		frame([TouchMove(10, 430, 300)]);
+		var base = GetVirtualStickBase(0, VIRTUAL_STICK_LEFT),
+			knob = GetVirtualStickKnob(0, VIRTUAL_STICK_LEFT);
+		check(base.x == 400 && base.y == 300 && knob.x == 430 && knob.y == 300 && IsVirtualGamepadVisible(0),
+			'the base and knob read back in the screen\'s pixels: $base, $knob');
+		frame([TouchUp(10, 430, 300)]);
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

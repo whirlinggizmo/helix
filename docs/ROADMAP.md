@@ -163,8 +163,6 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
   and `Mouse`, as helix-legacy's `PointerGestures` and touch gesture had them.
-- **On-screen buttons on the virtual gamepad (DECISIONS 57):** a `VirtualButton` mapped to a gamepad button, so a game's pause or fire button
-  reads through `IsGamepadButtonPressed` and `Actions`. Every virtual gamepad trial built its buttons by hand.
 - **A tilt gamepad (DECISIONS 57's pattern):** `TiltGamepad` implements `IGamepads` in front of the platform's gamepads, as the virtual
   gamepad does, and reads `Tilt` as a stick, so a tilt-steered game's gamepad code reads it unchanged. helix-raylib enables it as it
   enables the virtual gamepad.

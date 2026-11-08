@@ -1775,7 +1775,7 @@ class Raylib {
 	public static inline function GetGamepadName(gamepad:Int):String
 		return RCore.GetGamepadName(gamepad);
 
-	/** Returns whether a gamepad's button went down this frame.
+	/** Returns whether a gamepad's button went down this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1783,7 +1783,7 @@ class Raylib {
 	public static inline function IsGamepadButtonPressed(gamepad:Int, button:Int):Bool
 		return RCore.IsGamepadButtonPressed(gamepad, button);
 
-	/** Returns whether a gamepad's button is held.
+	/** Returns whether a gamepad's button is held. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1791,7 +1791,7 @@ class Raylib {
 	public static inline function IsGamepadButtonDown(gamepad:Int, button:Int):Bool
 		return RCore.IsGamepadButtonDown(gamepad, button);
 
-	/** Returns whether a gamepad's button went up this frame.
+	/** Returns whether a gamepad's button went up this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).

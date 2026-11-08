@@ -894,7 +894,7 @@ class RCore {
 
 	// The fingers the mouse follows: every finger but those a virtual gamepad's sticks hold, and those that lifted from one this frame.
 	static function freeFingers(fingers:Array<Int>):Array<Int> {
-		var holds = Runtime.holdsFinger;
+		var holds = Runtime.capturesFinger;
 		return holds == null ? fingers : [for (id in fingers) if (!holds(id)) id];
 	}
 
@@ -1283,7 +1283,7 @@ class RCore {
 		return IsGamepadAvailable(gamepad) ? Runtime.gamepads().getName(gamepad) : "";
 	}
 
-	/** Returns whether a gamepad's button went down this frame.
+	/** Returns whether a gamepad's button went down this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1296,7 +1296,7 @@ class RCore {
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonPressed(gamepad, cast b);
 	}
 
-	/** Returns whether a gamepad's button is held.
+	/** Returns whether a gamepad's button is held. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1309,7 +1309,7 @@ class RCore {
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
 	}
 
-	/** Returns whether a gamepad's button went up this frame.
+	/** Returns whether a gamepad's button went up this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).

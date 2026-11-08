@@ -499,15 +499,15 @@ static function EndScissorMode():Void
 - `GetGamepadName`: Returns a gamepad's name.
   - `gamepad`: The gamepad, 0 to 3.
   - returns: Its name, or "" when none is connected.
-- `IsGamepadButtonPressed`: Returns whether a gamepad's button went down this frame.
+- `IsGamepadButtonPressed`: Returns whether a gamepad's button went down this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
   - `gamepad`: The gamepad, 0 to 3.
   - `button`: The button (`GAMEPAD_BUTTON_*`).
   - returns: True for that frame alone.
-- `IsGamepadButtonDown`: Returns whether a gamepad's button is held.
+- `IsGamepadButtonDown`: Returns whether a gamepad's button is held. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
   - `gamepad`: The gamepad, 0 to 3.
   - `button`: The button (`GAMEPAD_BUTTON_*`).
   - returns: True while it is down.
-- `IsGamepadButtonReleased`: Returns whether a gamepad's button went up this frame.
+- `IsGamepadButtonReleased`: Returns whether a gamepad's button went up this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
   - `gamepad`: The gamepad, 0 to 3.
   - `button`: The button (`GAMEPAD_BUTTON_*`).
   - returns: True for that frame alone.

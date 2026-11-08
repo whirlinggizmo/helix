@@ -11,15 +11,17 @@ import helix.platform.GamepadButton;
 
 	The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the
 	`IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read
-	through `Gamepads.getAxis` and `Actions`, as any gamepad's do.
+	through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both
+	through `Actions`, as any gamepad's do.
 
 	The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot
 	replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after
 	the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical
 	gamepads alone.
 
-	Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick included.
-	Drawing is the engine's, from each stick's `held`, base, knob and radius, and its hint while `hintVisible` is true.
+	Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick or a button
+	included. Drawing is the engine's: each button and each `Fixed` stick while `visible` is true, each other stick while `held`, and each
+	stick's hint while `hintVisible` is true.
 
 	```haxe
 	var virtualGamepad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
@@ -40,6 +42,9 @@ class VirtualGamepad implements IPollable implements IGamepads {
 	var touched = false;
 	var lastWidth = -1;
 	var lastHeight = -1;
+	// The fingers the buttons captured, and those that lifted this frame.
+	var buttonFingers:Array<Int> = [];
+	var liftedButtonFingers:Array<Int> = [];
 
 	/** Creates the virtual gamepad, enabled and not plugged in.
 
@@ -47,7 +52,8 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		@param window  The window, whose pixel ratio sets a stick's default radius.
 		@param gamepads  The gamepads it stands in front of. They stay the program's to dispose.
 		@param slot  The slot it's plugged into, 0 to 3.
-		@param options  Optional. Its sticks. Two floating sticks, on the window's left and right halves, when omitted. */
+		@param options  Optional. Its sticks and buttons. Two floating sticks, on the window's left and right halves, and no buttons, when
+			omitted. */
 	public function new(touch:Touch, window:IWindow, gamepads:IGamepads, slot:Int, ?options:VirtualGamepadOptions) {
 		this.touch = touch;
 		this.window = window;
@@ -58,14 +64,22 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		configure(options);
 	}
 
-	/** Applies options, as the constructor does. A held stick stays held.
+	/** Applies options, as the constructor does. Each stick and the buttons keep the fingers they captured.
 
-		@param options  Optional. Its sticks. Two floating sticks, on the window's left and right halves, when omitted. */
+		@param options  Optional. Its sticks and buttons. Two floating sticks, on the window's left and right halves, and no buttons, when
+			omitted. */
 	public function configure(?options:VirtualGamepadOptions):Void {
 		var all:VirtualGamepadOptions = options != null ? options : {};
 		blockedBounds = all.blockedBounds != null ? all.blockedBounds : [];
 		configureStick(left, all, all.left);
 		configureStick(right, all, all.right);
+		buttons = [
+			for (own in (all.buttons != null ? all.buttons : [])) {
+				var made = new VirtualButton(own.button, own.position, own.radius != null ? own.radius : 40 * window.pixelRatio);
+				made.enabled = own.enabled != false;
+				made;
+			}
+		];
 	}
 
 	// Sets a stick from its own options, then the gamepad's, then the defaults.
@@ -81,15 +95,18 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		stick.deadZone = dead != null ? dead : .12;
 	}
 
-	/** Returns whether a stick holds a finger, or held it until it lifted this frame. An engine that turns fingers into a mouse leaves
-		these out.
+	/** Returns whether a stick or the buttons captured a finger, including a finger that lifted this frame. An engine that turns fingers
+		into a mouse leaves these out.
 
 		@param id  The finger, as `Touch` knows it.
-		@return  True for a stick's finger. */
-	public function holdsFinger(id:Int):Bool
-		return id >= 0 && (left.finger == id || right.finger == id || left.lifted == id || right.lifted == id);
+		@return  True for a captured finger. */
+	public function capturesFinger(id:Int):Bool
+		return id >= 0
+			&& (left.finger == id || right.finger == id || left.lifted == id || right.lifted == id || buttonFingers.indexOf(id) >= 0
+				|| liftedButtonFingers.indexOf(id) >= 0);
 
-	/** Gets or sets whether it's enabled. Turned off, the virtual gamepad is unplugged and its sticks let go. Defaults to true. */
+	/** Gets or sets whether it's enabled. Turned off, the virtual gamepad is unplugged, its sticks let go and its buttons are up. Defaults to
+		true. */
 	public var enabled(default, set):Bool = true;
 
 	function set_enabled(value:Bool):Bool {
@@ -97,6 +114,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 			touched = false;
 			left.release();
 			right.release();
+			letGoOfButtons();
 		}
 		return enabled = value;
 	}
@@ -114,6 +132,13 @@ class VirtualGamepad implements IPollable implements IGamepads {
 	function get_physicalConnected():Bool
 		return gamepads.isConnected(slot);
 
+	/** Gets a value indicating whether an engine draws the buttons and the `Fixed` sticks: enabled, its slot free of physical gamepads,
+		and on a device with touch (`Touch.available`). */
+	public var visible(get, never):Bool;
+
+	function get_visible():Bool
+		return enabled && !gamepads.isConnected(slot) && touch.available;
+
 	/** Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, its slot free of physical
 		gamepads, and on a device with touch (`Touch.available`). The first touch ends every stick's hint. */
 	public var hintVisible(get, never):Bool;
@@ -127,11 +152,14 @@ class VirtualGamepad implements IPollable implements IGamepads {
 	/** Gets the right stick, read as `RightX` and `RightY`. */
 	public var right(default, null):VirtualStick;
 
-	/** Gets or sets bounds cut out of the sticks' touch zones, such as a pause button's. The blocked bounds follow changes to these
+	/** Gets the buttons, as the options gave them. */
+	public var buttons(default, null):Array<VirtualButton>;
+
+	/** Gets or sets bounds where a landing finger stays free, even within a stick's touch zone, such as a GUI button's bounds. The blocked bounds follow changes to these
 		bounds' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound. */
 	public var blockedBounds:Array<Bounds2D>;
 
-	/** Reads the fingers `Touch` read this frame, and moves each stick. Call it once a frame, after `Touch.poll`. */
+	/** Reads the fingers `Touch` read this frame, and moves each stick and button. Call it once a frame, after `Touch.poll`. */
 	public function poll():Void {
 		var width = window.framebufferWidth, height = window.framebufferHeight;
 		var resized = lastWidth >= 0 && (width != lastWidth || height != lastHeight);
@@ -141,6 +169,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		left.updateZone(width, height, alone);
 		right.updateZone(width, height, alone);
 		left.lifted = right.lifted = -1;
+		liftedButtonFingers.resize(0);
 		var idle = !enabled || gamepads.isConnected(slot);
 		// A physical gamepad in its slot: the next touch after it leaves plugs the virtual gamepad in again.
 		if (idle && enabled)
@@ -152,9 +181,35 @@ class VirtualGamepad implements IPollable implements IGamepads {
 				stick.release();
 			else
 				follow(stick);
-		if (!idle)
+		if (idle)
+			letGoOfButtons();
+		else {
+			for (id in buttonFingers.copy())
+				if (!touch.isFingerDown(id) || touch.isFingerReleased(id)) {
+					buttonFingers.remove(id);
+					liftedButtonFingers.push(id);
+				}
+			for (button in buttons)
+				button.place(width, height);
 			for (id in touch.pressed)
 				land(id, touch.getX(id), touch.getY(id));
+			for (button in buttons) {
+				button.down = false;
+				if (button.active())
+					for (id in buttonFingers)
+						if (button.contains(touch.getX(id), touch.getY(id)))
+							button.down = true;
+			}
+		}
+	}
+
+	// Releases every finger the buttons captured, and every button is up.
+	function letGoOfButtons():Void {
+		for (id in buttonFingers)
+			liftedButtonFingers.push(id);
+		buttonFingers.resize(0);
+		for (button in buttons)
+			button.down = false;
 	}
 
 	// Moves a held stick with its finger, or hands it to a finger still down in its zone when its own lifts.
@@ -166,7 +221,10 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		}
 		var other = stick == left ? right : left;
 		for (id in touch.fingers)
-			if (id != other.finger && !touch.isFingerPressed(id) && stick.zone.contains(touch.getX(id), touch.getY(id))) {
+			if (id != other.finger
+				&& !touch.isFingerPressed(id)
+				&& buttonFingers.indexOf(id) < 0
+				&& stick.zone.contains(touch.getX(id), touch.getY(id))) {
 				stick.lifted = own;
 				stick.take(id, touch.getX(id), touch.getY(id), true);
 				return;
@@ -174,8 +232,14 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		stick.release();
 	}
 
-	// A finger landing: within a blocked bound it stays free; else it takes the stick whose zone it's in, the free one where both are.
+	// A finger landing: on a button the buttons capture it; within a blocked bound it stays free; else the stick whose zone it's in captures it,
+	// the free one where both are.
 	function land(id:Int, atX:Float, atY:Float):Void {
+		for (button in buttons)
+			if (button.active() && button.contains(atX, atY)) {
+				buttonFingers.push(id);
+				return;
+			}
 		for (bounds in blockedBounds)
 			if (bounds.contains(atX, atY))
 				return;
@@ -202,13 +266,19 @@ class VirtualGamepad implements IPollable implements IGamepads {
 	public function getName(slot:Int):String
 		return slot == this.slot && pluggedIn ? "Virtual gamepad" : gamepads.getName(slot);
 
-	/** Returns whether a gamepad's button is down. The virtual gamepad's buttons are always up.
+	/** Returns whether a gamepad's button is down. While the virtual gamepad is plugged in, its slot's buttons are the virtual buttons.
 
 		@param slot  The slot, 0 to 3.
 		@param button  The button.
 		@return  True while it's down. */
-	public function isButtonDown(slot:Int, button:GamepadButton):Bool
-		return slot == this.slot && pluggedIn ? false : gamepads.isButtonDown(slot, button);
+	public function isButtonDown(slot:Int, button:GamepadButton):Bool {
+		if (slot != this.slot || !pluggedIn)
+			return gamepads.isButtonDown(slot, button);
+		for (made in buttons)
+			if (made.down && made.button == button)
+				return true;
+		return false;
+	}
 
 	/** Returns a gamepad's axis. While the virtual gamepad is plugged in, its slot's sticks are the virtual sticks, and its triggers
 		are 0.
@@ -245,9 +315,10 @@ class VirtualGamepad implements IPollable implements IGamepads {
 	public function addMappings(mappings:String):Int
 		return gamepads.addMappings(mappings);
 
-	/** Lets go of its sticks. The gamepads it stands in front of stay the program's. */
+	/** Lets go of its sticks and buttons. The gamepads it stands in front of stay the program's. */
 	public function dispose():Void {
 		left.release();
 		right.release();
+		letGoOfButtons();
 	}
 }

@@ -116,7 +116,7 @@ Specifies what an action is bound to (`Actions.bind`).
 
 Provides the gamepads as state, in slots 0 to 3: which buttons are held or went down or up this frame, and where each stick and trigger is, past a dead zone.
 
-The program constructs one over its `IEvents` and its `IGamepads`, and calls `poll` once a frame, as `Keyboard` is. A gamepad's axes are read once a poll, so they hold still for the frame. A gamepad that disconnects lets go of its buttons.
+The program constructs one over its `IEvents` and its `IGamepads`, and calls `poll` once a frame, as `Keyboard` is. A gamepad's axes are read once a poll, so they hold still for the frame. A button's state is read each poll too: a button a `VirtualGamepad` holds goes down and up as a physical one does. A gamepad that disconnects lets go of its buttons.
 
 ```haxe
 var gamepads = new Gamepads(events, gamepadsAdapter);
@@ -141,7 +141,7 @@ var deadZone(default, set):Float
 - `new`: Creates the gamepads over the platform's events and gamepads, with nothing held.
   - `events`: The platform's events, whose last `poll` this one reads.
   - `gamepads`: The platform's gamepads, whose buttons those events carry and whose sticks and triggers are read.
-- `poll`: Reads the events the last `IEvents.poll` delivered, and every gamepad's axes. Call it once a frame.
+- `poll`: Reads the events the last `IEvents.poll` delivered, and every gamepad's axes and buttons. Call it once a frame.
 - `isConnected`: Returns whether a gamepad is in a slot.
   - `slot`: The slot, 0 to 3.
   - returns: True when one is connected there.
@@ -446,17 +446,69 @@ function getY(id:Int):Float
   - `id`: The finger.
   - returns: Where it is in framebuffer pixels, or where it lifted this frame; 0 for one that isn't down or lifting.
 
+## VirtualButton
+
+*class* in [`libs/services/src/helix/services/input/VirtualButton.hx`](../src/helix/services/input/VirtualButton.hx), `import helix.services.input.VirtualButton;`
+
+Represents one on-screen button of a `VirtualGamepad`, read as a gamepad button.
+
+The buttons capture a finger landing on one of them, even within a stick's touch zone, until the finger lifts. A button is down while a finger the buttons captured is within its circle, including a finger that slid there from another button. Positions and sizes are framebuffer pixels.
+
+```haxe
+var enabled:Bool
+var button:GamepadButton
+var position:Null<Vector2D>
+var radius:Float
+var down(default, null):Bool
+var centerX(default, null):Float
+var centerY(default, null):Float
+var placed(default, null):Bool
+```
+
+- `enabled`: Gets or sets whether it's enabled. Disabled, the button is up and ignores fingers.
+- `button`: Gets or sets the gamepad button it's read as.
+- `position`: Gets or sets its center. The center follows changes to this vector's fields. Null for its place in a diamond of the four face buttons (`South`, `East`, `West` and `North`) at the window's bottom-right corner, following the window's size: the diamond's center three and a half radii in from the corner, each face button 1.6 radii from that center. Another button without a position is up and ignores fingers.
+- `radius`: Gets or sets its radius, the reach of a finger landing on it, in framebuffer pixels.
+- `down`: Gets a value indicating whether a finger the buttons captured is within its circle.
+- `centerX`: Gets its center's distance from the window's left edge, this frame: its position, or its place in the diamond.
+- `centerY`: Gets its center's distance from the window's top edge, this frame.
+- `placed`: Gets a value indicating whether it has a center this frame: a position, or a place in the diamond.
+
+## VirtualButtonOptions
+
+*class* in [`libs/services/src/helix/services/input/VirtualButtonOptions.hx`](../src/helix/services/input/VirtualButtonOptions.hx), `import helix.services.input.VirtualButtonOptions;`
+
+Represents how one button of a `VirtualGamepad` starts. Positions and sizes are framebuffer pixels.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{button:GamepadButton, ?position:Vector2D, ?enabled:Bool, ?radius:Float}
+```
+
+```haxe
+final button:GamepadButton
+final position:Null<Vector2D>
+final enabled:Null<Bool>
+final radius:Null<Float>
+```
+
+- `button`: Gets the gamepad button it's read as.
+- `position`: Gets its center. Defaults to its place in the diamond of the face buttons (`VirtualButton.position`).
+- `enabled`: Gets a value indicating whether it's enabled. Defaults to true.
+- `radius`: Gets its radius. Defaults to 40 times the window's pixel ratio.
+
 ## VirtualGamepad
 
 *class* in [`libs/services/src/helix/services/input/VirtualGamepad.hx`](../src/helix/services/input/VirtualGamepad.hx), `import helix.services.input.VirtualGamepad;`, implements `IGamepads`, `IPollable`
 
 Provides an on-screen gamepad worked by the fingers, read as a gamepad in a slot.
 
-The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and `Actions`, as any gamepad's do.
+The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both through `Actions`, as any gamepad's do.
 
 The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical gamepads alone.
 
-Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick included. Drawing is the engine's, from each stick's `held`, base, knob and radius, and its hint while `hintVisible` is true.
+Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick or a button included. Drawing is the engine's: each button and each `Fixed` stick while `visible` is true, each other stick while `held`, and each stick's hint while `hintVisible` is true.
 
 ```haxe
 var virtualGamepad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
@@ -472,13 +524,15 @@ var moveX = gamepads.getAxis(0, LeftX);
 ```haxe
 function new(touch:Touch, window:IWindow, gamepads:IGamepads, slot:Int, ?options:VirtualGamepadOptions)
 function configure(?options:VirtualGamepadOptions):Void
-function holdsFinger(id:Int):Bool
+function capturesFinger(id:Int):Bool
 var enabled(default, set):Bool
 var pluggedIn(get, never):Bool
 var physicalConnected(get, never):Bool
+var visible(get, never):Bool
 var hintVisible(get, never):Bool
 var left(default, null):VirtualStick
 var right(default, null):VirtualStick
+var buttons(default, null):Array<VirtualButton>
 var blockedBounds:Array<Bounds2D>
 function poll():Void
 function isConnected(slot:Int):Bool
@@ -495,27 +549,29 @@ function dispose():Void
   - `window`: The window, whose pixel ratio sets a stick's default radius.
   - `gamepads`: The gamepads it stands in front of. They stay the program's to dispose.
   - `slot`: The slot it's plugged into, 0 to 3.
-  - `options`: Optional. Its sticks. Two floating sticks, on the window's left and right halves, when omitted.
-- `configure`: Applies options, as the constructor does. A held stick stays held.
-  - `options`: Optional. Its sticks. Two floating sticks, on the window's left and right halves, when omitted.
-- `holdsFinger`: Returns whether a stick holds a finger, or held it until it lifted this frame. An engine that turns fingers into a mouse leaves these out.
+  - `options`: Optional. Its sticks and buttons. Two floating sticks, on the window's left and right halves, and no buttons, when omitted.
+- `configure`: Applies options, as the constructor does. Each stick and the buttons keep the fingers they captured.
+  - `options`: Optional. Its sticks and buttons. Two floating sticks, on the window's left and right halves, and no buttons, when omitted.
+- `capturesFinger`: Returns whether a stick or the buttons captured a finger, including a finger that lifted this frame. An engine that turns fingers into a mouse leaves these out.
   - `id`: The finger, as `Touch` knows it.
-  - returns: True for a stick's finger.
-- `enabled`: Gets or sets whether it's enabled. Turned off, the virtual gamepad is unplugged and its sticks let go. Defaults to true.
+  - returns: True for a captured finger.
+- `enabled`: Gets or sets whether it's enabled. Turned off, the virtual gamepad is unplugged, its sticks let go and its buttons are up. Defaults to true.
 - `pluggedIn`: Gets a value indicating whether it's plugged in: enabled, touched, and its slot free of physical gamepads. While a physical gamepad is in its slot, the virtual gamepad's sticks ignore touches.
 - `physicalConnected`: Gets a value indicating whether a physical gamepad is in the virtual gamepad's slot.
+- `visible`: Gets a value indicating whether an engine draws the buttons and the `Fixed` sticks: enabled, its slot free of physical gamepads, and on a device with touch (`Touch.available`).
 - `hintVisible`: Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, its slot free of physical gamepads, and on a device with touch (`Touch.available`). The first touch ends every stick's hint.
 - `left`: Gets the left stick, read as `LeftX` and `LeftY`.
 - `right`: Gets the right stick, read as `RightX` and `RightY`.
-- `blockedBounds`: Gets or sets bounds cut out of the sticks' touch zones, such as a pause button's. The blocked bounds follow changes to these bounds' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound.
-- `poll`: Reads the fingers `Touch` read this frame, and moves each stick. Call it once a frame, after `Touch.poll`.
+- `buttons`: Gets the buttons, as the options gave them.
+- `blockedBounds`: Gets or sets bounds where a landing finger stays free, even within a stick's touch zone, such as a GUI button's bounds. The blocked bounds follow changes to these bounds' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound.
+- `poll`: Reads the fingers `Touch` read this frame, and moves each stick and button. Call it once a frame, after `Touch.poll`.
 - `isConnected`: Returns whether a gamepad is in a slot. The virtual gamepad's slot is true while the virtual gamepad is plugged in or a physical gamepad is there. See `physicalConnected` for telling them apart.
   - `slot`: The slot, 0 to 3.
   - returns: True when one is there.
 - `getName`: Returns the name of the gamepad in a slot. The virtual gamepad's name is "Virtual gamepad".
   - `slot`: The slot, 0 to 3.
   - returns: The name, or "" for an empty slot.
-- `isButtonDown`: Returns whether a gamepad's button is down. The virtual gamepad's buttons are always up.
+- `isButtonDown`: Returns whether a gamepad's button is down. While the virtual gamepad is plugged in, its slot's buttons are the virtual buttons.
   - `slot`: The slot, 0 to 3.
   - `button`: The button.
   - returns: True while it's down.
@@ -532,18 +588,18 @@ function dispose():Void
 - `addMappings`: Adds mappings for the physical gamepads, in SDL's controller database format.
   - `mappings`: The mappings.
   - returns: How many were added.
-- `dispose`: Lets go of its sticks. The gamepads it stands in front of stay the program's.
+- `dispose`: Lets go of its sticks and buttons. The gamepads it stands in front of stay the program's.
 
 ## VirtualGamepadOptions
 
 *class* in [`libs/services/src/helix/services/input/VirtualGamepadOptions.hx`](../src/helix/services/input/VirtualGamepadOptions.hx), `import helix.services.input.VirtualGamepadOptions;`
 
-Represents how a `VirtualGamepad` starts. Every field has a default, so options set only what they change. Each field here is both sticks' default. A field set in a stick's own options replaces it for that stick. Positions and sizes are framebuffer pixels.
+Represents how a `VirtualGamepad` starts. Every field has a default, so options set only what they change. Its placement and dead zone are both sticks' defaults. A field set in a stick's own options replaces it for that stick. Positions and sizes are framebuffer pixels.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{?basePlacement:VirtualStickBase, ?deadZone:Float, ?blockedBounds:Array<Bounds2D>, ?left:VirtualStickOptions, ?right:VirtualStickOptions}
+{?basePlacement:VirtualStickBase, ?deadZone:Float, ?blockedBounds:Array<Bounds2D>, ?left:VirtualStickOptions, ?right:VirtualStickOptions, ?buttons:Array<VirtualButtonOptions>}
 ```
 
 ```haxe
@@ -552,23 +608,25 @@ final deadZone:Null<Float>
 final blockedBounds:Null<Array<Bounds2D>>
 final left:Null<VirtualStickOptions>
 final right:Null<VirtualStickOptions>
+final buttons:Null<Array<VirtualButtonOptions>>
 ```
 
 - `basePlacement`: Gets where each stick's base goes. Defaults to `Floating`.
 - `deadZone`: Gets how far each stick's knob moves before the stick reads, as a share of the radius. Defaults to 0.12.
-- `blockedBounds`: Gets the bounds cut out of the sticks' touch zones.
+- `blockedBounds`: Gets bounds where a landing finger stays free, even within a stick's touch zone.
 - `left`: Gets the left stick.
 - `right`: Gets the right stick.
+- `buttons`: Gets the buttons. Defaults to no buttons.
 
 ## VirtualStick
 
 *class* in [`libs/services/src/helix/services/input/VirtualStick.hx`](../src/helix/services/input/VirtualStick.hx), `import helix.services.input.VirtualStick;`
 
-Represents one stick of a `VirtualGamepad`: its settings, and where a finger holds it.
+Represents one stick of a `VirtualGamepad`: its settings, and the finger it captured.
 
-A finger landing in the stick's touch zone takes the stick, even from the finger holding it. A finger holding the other stick keeps the other stick. Where the two zones overlap, a landing finger takes the free stick, or the left stick if both are free. When the finger holding the stick lifts, a finger still down in the stick's zone takes the stick, without moving the knob.
+A stick captures a finger landing in its touch zone, even while it has captured another, and releases the earlier finger. A finger the other stick captured stays with the other stick. Where the two zones overlap, the stick that is not currently capturing a finger captures the landing finger, or the left stick when both are free. When the finger a stick captured lifts, the stick captures a finger still down in its zone, without moving the knob. Fingers the buttons (`VirtualButton`) captured stay with the buttons.
 
-The stick lets go when the window changes size, when the stick is turned off, and when a physical gamepad replaces the virtual gamepad. A finger landing takes the stick again. Positions and sizes are framebuffer pixels.
+The stick releases its finger when the window changes size, when the stick is disabled, and when a physical gamepad replaces the virtual gamepad. The next finger landing in its zone is captured again. Positions and sizes are framebuffer pixels.
 
 ```haxe
 var enabled(default, set):Bool
@@ -587,13 +645,13 @@ var knobX(default, null):Float
 var knobY(default, null):Float
 ```
 
-- `enabled`: Gets or sets whether it's on the screen. Turned off, the stick lets go of its finger.
-- `touchZone`: Gets or sets where a finger can land to take it. The zone follows changes to these bounds' fields. Null for its default: the window's left or right half with both sticks enabled, and the whole window with one, following the window's size.
+- `enabled`: Gets or sets whether it's enabled. Disabled, the stick reads 0, ignores fingers and releases the finger it captured.
+- `touchZone`: Gets or sets where the stick captures a landing finger. The zone follows changes to these bounds' fields. Null for its default: the window's left or right half with both sticks enabled, and the whole window with one, following the window's size.
 - `basePlacement`: Gets or sets where the base goes.
 - `fixedBasePosition`: Gets or sets where the base stays with `Fixed` placement. The base follows changes to this vector's fields. Null for the touch zone's center.
 - `radius`: Gets or sets how far the knob travels for a full push, in framebuffer pixels.
 - `deadZone`: Gets or sets how far the knob moves before the stick reads, as a share of the radius, 0 to 1. A push past the dead zone reads from 0. Clamped to that range. `Gamepads.deadZone` applies after it.
-- `held`: Gets a value indicating whether a finger holds it.
+- `held`: Gets a value indicating whether it has captured a finger.
 - `finger`: Gets the id of the finger holding it, as `Touch` knows the finger. -1 while not held.
 - `x`: Gets where it's pushed across, -1 (left) to 1 (right), within a circle of radius 1. 0 while not held.
 - `y`: Gets where it's pushed up and down, -1 (up) to 1 (down), within a circle of radius 1. 0 while not held.
@@ -610,7 +668,7 @@ Specifies where a virtual stick's base goes.
 
 - `VirtualStickBase.Floating`: Where the finger lands. It stays there while held.
 - `VirtualStickBase.Following`: Where the finger lands. It's pulled along when the finger moves past the radius.
-- `VirtualStickBase.Fixed`: At the stick's fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the finger.
+- `VirtualStickBase.Fixed`: At the stick's fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the finger. While no finger holds the stick, an engine draws the stick at the base, the knob at rest (`VirtualGamepad.visible`).
 
 ## VirtualStickOptions
 
@@ -633,8 +691,8 @@ final radius:Null<Float>
 final deadZone:Null<Float>
 ```
 
-- `enabled`: Gets a value indicating whether the stick is on the screen. Defaults to true.
-- `touchZone`: Gets where a finger can land to take it.
+- `enabled`: Gets a value indicating whether the stick is enabled. Defaults to true.
+- `touchZone`: Gets where the stick captures a landing finger.
 - `basePlacement`: Gets where the base goes.
 - `fixedBasePosition`: Gets where the base stays with `Fixed` placement.
 - `radius`: Gets how far the knob travels for a full push. Defaults to 60 times the window's pixel ratio.

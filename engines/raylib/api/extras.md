@@ -1008,15 +1008,15 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
 *class* in [`engines/raylib/src/helix/raylib/extras/VirtualGamepad.hx`](../src/helix/raylib/extras/VirtualGamepad.hx), `import helix.raylib.extras.VirtualGamepad;`
 
-Provides on-screen gamepads for phones: sticks a finger works, read through raylib's gamepad functions. Imported apart, with its constants: `import helix.raylib.extras.VirtualGamepad.*;`.
+Provides on-screen gamepads for phones: sticks and buttons a finger works, read through raylib's gamepad functions. Imported apart, with its constants: `import helix.raylib.extras.VirtualGamepad.*;`.
 
-The first touch anywhere on the screen plugs an enabled virtual gamepad in. A mouse click leaves the virtual gamepad unplugged. Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
+The first touch anywhere on the screen plugs an enabled virtual gamepad in. A mouse click leaves the virtual gamepad unplugged. Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
 
 A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
-Every finger is a free finger until a stick takes it. A free finger counts as the mouse, as every finger does without a virtual gamepad. The touch functions list every finger.
+A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a finger landing on one of them. A free finger counts as the mouse, as every finger does without a virtual gamepad. The touch functions list every finger.
 
-The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. The virtual gamepad is hidden while a physical gamepad is in its slot.
+The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch, its buttons and fixed sticks are drawn from the moment it's enabled, and every other stick while it has captured a finger. A program drawing its own controls sets their `visible` to false and draws from `IsVirtualGamepadVisible`, `IsVirtualStickHeld`, `GetVirtualStickBase` and `GetVirtualStickKnob`. The virtual gamepad is hidden while a physical gamepad is in its slot.
 
 ```haxe
 InitWindow(800, 450, "twin stick");
@@ -1032,11 +1032,15 @@ var aimX = GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
 static inline var VIRTUAL_STICK_BASE_FLOATING:Int
 static inline var VIRTUAL_STICK_BASE_FOLLOWING:Int
 static inline var VIRTUAL_STICK_BASE_FIXED:Int
+static inline var VIRTUAL_STICK_LEFT:Int
+static inline var VIRTUAL_STICK_RIGHT:Int
 ```
 
 - `VIRTUAL_STICK_BASE_FLOATING`: A stick whose base is where the finger lands. The base stays there while the stick is held.
 - `VIRTUAL_STICK_BASE_FOLLOWING`: A stick whose base is where the finger lands. The base is pulled along when the finger moves past the radius.
-- `VIRTUAL_STICK_BASE_FIXED`: A stick whose base stays at the fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the finger.
+- `VIRTUAL_STICK_BASE_FIXED`: A stick whose base stays at the fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the finger. While no finger holds the stick, the stick is drawn at the base, the knob at rest.
+- `VIRTUAL_STICK_LEFT`: The left stick, read as `GAMEPAD_AXIS_LEFT_X` and `GAMEPAD_AXIS_LEFT_Y`.
+- `VIRTUAL_STICK_RIGHT`: The right stick, read as `GAMEPAD_AXIS_RIGHT_X` and `GAMEPAD_AXIS_RIGHT_Y`.
 
 ### virtual gamepad: on-screen sticks read as a gamepad's
 
@@ -1044,21 +1048,42 @@ static inline var VIRTUAL_STICK_BASE_FIXED:Int
 static function EnableVirtualGamepad(gamepad:Int, ?options:VirtualGamepadOptions):Void
 static function DisableVirtualGamepad(gamepad:Int):Void
 static function IsGamepadVirtual(gamepad:Int):Bool
+static function IsVirtualGamepadVisible(gamepad:Int):Bool
+static function IsVirtualStickHeld(gamepad:Int, stick:Int):Bool
+static function GetVirtualStickBase(gamepad:Int, stick:Int):Vector2
+static function GetVirtualStickKnob(gamepad:Int, stick:Int):Vector2
 ```
 
-- `EnableVirtualGamepad`: Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in. Enabling it again applies the new options. Its held sticks, and whether it's plugged in, stay as they were.
+- `EnableVirtualGamepad`: Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in. Enabling it again applies the new options. Its held sticks and buttons, and whether it's plugged in, stay as they were.
   - `gamepad`: The slot, 0 to 3.
-  - `options`: Optional. Its sticks and their look. Two floating sticks, on the screen's left and right halves, when omitted.
+  - `options`: Optional. Its sticks, its buttons and their look. Two floating sticks, on the screen's left and right halves, when omitted.
 
   ```haxe
-  var pause = new Rectangle(GetScreenWidth() - 64, 0, 64, 64);
-  EnableVirtualGamepad(0, {blockedBounds: [pause], right: {enabled: false}});
+  EnableVirtualGamepad(0, {
+  right: {enabled: false},
+  buttons: [{button: GAMEPAD_BUTTON_RIGHT_FACE_DOWN}, {button: GAMEPAD_BUTTON_RIGHT_FACE_RIGHT}]
+  });
   ```
 - `DisableVirtualGamepad`: Disables the virtual gamepad in a slot, unplugging it. A physical gamepad in that slot is unaffected.
   - `gamepad`: The slot, 0 to 3.
 - `IsGamepadVirtual`: Returns whether the gamepad in a slot is a virtual one (`EnableVirtualGamepad`).
   - `gamepad`: The slot, 0 to 3.
   - returns: True while a virtual gamepad is plugged in there. False for a physical one or an empty slot.
+- `IsVirtualGamepadVisible`: Returns whether the virtual gamepad in a slot is drawn: enabled, on a device with touch, with no physical gamepad in its slot. A program drawing its own sticks (`visible: false`) draws them while this is true.
+  - `gamepad`: The slot, 0 to 3.
+  - returns: True while drawn.
+- `IsVirtualStickHeld`: Returns whether a finger holds a stick of the virtual gamepad in a slot.
+  - `gamepad`: The slot, 0 to 3.
+  - `stick`: `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
+  - returns: True while held.
+- `GetVirtualStickBase`: Returns where a stick's base is, in the screen's pixels. While the stick isn't held, the base is at the stick's home: the fixed base position, or one and a half radii in from the touch zone's bottom outer corner.
+  - `gamepad`: The slot, 0 to 3.
+  - `stick`: `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
+  - returns: The base's center. (0, 0) without a virtual gamepad in the slot.
+- `GetVirtualStickKnob`: Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. While the stick isn't held, the knob is at the base.
+  - `gamepad`: The slot, 0 to 3.
+  - `stick`: `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
+  - returns: The knob's center. (0, 0) without a virtual gamepad in the slot.
 
 ## Window
 
