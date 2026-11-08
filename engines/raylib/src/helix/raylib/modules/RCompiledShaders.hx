@@ -17,7 +17,8 @@ class RCompiledShaders {
 	/** Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See
 		`LoadCompiledShaderFromData` for making one from compiled data in memory.
 
-		Compile each shader with a line in the build's hxml:
+		Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
+		`<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
 
 		```hxml
 		--macro helix.raylib.extras.Shaders.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")

@@ -447,9 +447,41 @@ def markdown(xml,native=frozenset()):
             out[package_file(package)]='\n'.join([f'# {package}','','[Back to the library](README.md)','']+files[package]).rstrip('\n')+'\n'
         lines=[f'# {library}','','Generated from the doc comments by `tools/gen_apidoc.py`.','']
         if others:lines+=['## Packages','']+[f'- [`{p}`]({Path(package_file(p)).name}): '+', '.join(short(t) for t,_ in index[p]) for p in others]+['']
+        if library=='helix.raylib':lines+=['## Shader includes','','[shaders.md](shaders.md): '+', '.join(f'`<helix/raylib/shaders/{n}>`' for n in INCLUDES),'']
         out[package_file(library)]='\n'.join(lines+files.get(library,[])).rstrip('\n')+'\n'
     out.update(PAGES)
+    out['engines/raylib/api/shaders.md']=includes_page()
     return out
+
+# helix-raylib's GLSL includes a program's own shader may use, each documented by the comment that opens it.
+INCLUDES=['skinning.glsl','lights.glsl','pbr.glsl']
+
+def includes_page():
+    """helix-raylib's shader includes, as their opening comments describe them: the prose as paragraphs, an indented example as GLSL,
+    and the first paragraph without the include's own name before its colon."""
+    lines=['# helix-raylib\'s shader includes','','[Back to the library](README.md)','',
+           'A shader of the program\'s own is raylib\'s GLSL (`#version 330`, or `100` for the web), compiled ahead of time by '
+           '`CompileShaderFile`. It may include these.','']
+    for name in INCLUDES:
+        text=(ROOT/'engines/raylib/src/helix/raylib/shaders'/name).read_text(encoding='utf-8')
+        comment=[]
+        for line in text.splitlines():
+            if not line.startswith('//'):break
+            comment.append(line[2:])
+        blocks=[]  # (kind, lines): 'p' a paragraph, 'code' an example
+        for line in comment:
+            kind='code' if line.startswith('    ') else None if line.strip()=='' else 'p'
+            if kind is None:
+                blocks.append(None);continue
+            text_=line[5:] if kind=='code' else line.strip()
+            if blocks and blocks[-1] is not None and blocks[-1][0]==kind:blocks[-1][1].append(text_)
+            else:blocks.append((kind,[text_]))
+        blocks=[b for b in blocks if b is not None]
+        first=' '.join(blocks[0][1]).split(':',1)[1].strip()
+        lines+=[f'## `<helix/raylib/shaders/{name}>`','',first[:1].upper()+first[1:] if not first.startswith('raylib') else first,'']
+        for kind,body in blocks[1:]:
+            lines+=(['```glsl']+body+['```',''] if kind=='code' else [' '.join(body),''])
+    return '\n'.join(lines).rstrip('\n')+'\n'
 
 def main():
     import cli

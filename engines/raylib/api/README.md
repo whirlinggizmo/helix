@@ -6,6 +6,10 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 - [`helix.raylib.extras`](extras.md): Audio, Debug, Device, Files, Gui, GuiSkins, Lights, Models, Shaders, Sprites, Text, Textures, Window
 
+## Shader includes
+
+[shaders.md](shaders.md): `<helix/raylib/shaders/skinning.glsl>`, `<helix/raylib/shaders/lights.glsl>`, `<helix/raylib/shaders/pbr.glsl>`
+
 ## AudioStream
 
 *class* in [`engines/raylib/src/helix/raylib/AudioStream.hx`](../src/helix/raylib/AudioStream.hx), `import helix.raylib.AudioStream;`
