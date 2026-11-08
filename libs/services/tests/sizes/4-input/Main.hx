@@ -34,7 +34,7 @@ class Main {
 		keyboard = new Keyboard(events, new DomKeyboardAdapter({events: events}));
 		pads = new Gamepads(events, new DomGamepadsAdapter({events: events}));
 		actions = new Actions([keyboard, pads]);
-		actions.bind("jump", Keyboard(Space), Pad(0, South));
+		actions.bind("jump", Keyboard(Space), Gamepad(0, South));
 		var frame:Float->Void = null;
 		frame = _ -> {
 			events.poll();

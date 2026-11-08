@@ -71,9 +71,9 @@ class InputTests {
 		check(!keyboard.isKeyDown(W) && keyboard.isKeyReleased(W) && !mouse.isButtonDown(Left) && mouse.isButtonReleased(Left),
 			"focus lost lets go of what's held");
 
-		frame([PadButtonDown(0, South)]);
+		frame([GamepadButtonDown(0, South)]);
 		check(pads.isButtonDown(0, South) && pads.isButtonPressed(0, South) && !pads.isButtonDown(1, South), "a pad's button");
-		frame([PadDisconnected(0)]);
+		frame([GamepadDisconnected(0)]);
 		check(!pads.isButtonDown(0, South) && pads.isButtonReleased(0, South), "a pad gone lets go of its buttons");
 
 		devices.axes[0] = .1;
@@ -103,16 +103,16 @@ class InputTests {
 		check(pads.getAxis(9, LeftX) == 0, "a slot past 3 reads 0");
 
 		var actions = new Actions([keyboard, mouse, pads, tilt]);
-		check(actions.bind("jump", Keyboard(Space), Pad(0, South)), "bind: some new");
+		check(actions.bind("jump", Keyboard(Space), Gamepad(0, South)), "bind: some new");
 		check(!actions.bind("jump", Keyboard(Space)), "bind: none new");
 		check(actions.getBindings("jump").length == 2 && actions.getBindings("none").length == 0, "the bindings, a copy");
 		frame([KeyDown(Space, false)]);
 		check(actions.isDown("jump") && actions.isPressed("jump"), "an action pressed");
-		frame([PadButtonDown(0, South)]);
+		frame([GamepadButtonDown(0, South)]);
 		check(actions.isDown("jump") && !actions.isPressed("jump"), "a second binding while one is held isn't another press");
 		frame([KeyUp(Space)]);
 		check(actions.isDown("jump") && !actions.isReleased("jump"), "one let go while another holds: not released");
-		frame([PadButtonUp(0, South)]);
+		frame([GamepadButtonUp(0, South)]);
 		check(!actions.isDown("jump") && actions.isReleased("jump"), "the last let go: released");
 		check(!actions.isDown("none") && actions.getValue("none") == 0, "a name with nothing bound");
 
@@ -145,9 +145,9 @@ class InputTests {
 			Keyboard(Right),
 			Mouse(Left),
 			Mouse(Right),
-			Pad(0, South),
-			Pad(1, South),
-			Pad(0, East),
+			Gamepad(0, South),
+			Gamepad(1, South),
+			Gamepad(0, East),
 			Axis(0, LeftX, Positive),
 			Axis(0, LeftX, Negative),
 			Axis(0, LeftY, Positive),
@@ -159,7 +159,7 @@ class InputTests {
 		actions.bind("each", ...each);
 		actions.bind("each", ...each);
 		check(actions.getBindings("each").length == each.length, "a binding bound again is held once; each differing in a part is apart");
-		check(actions.unbind("each", Axis(0, LeftX, Negative), Pad(1, South), Tilt(Y, Positive))
+		check(actions.unbind("each", Axis(0, LeftX, Negative), Gamepad(1, South), Tilt(Y, Positive))
 			&& actions.getBindings("each").length == each.length - 3
 			&& actions.getBindings("each").indexOf(each[7]) >= 0,
 			"unbind removes only the bindings equal to those given");
@@ -199,8 +199,8 @@ class InputTests {
 		frame([FocusLost]);
 		check(touch.fingers.length == 0 && touch.isFingerReleased(7), "focus lost lifts every finger");
 		var keysOnly = new Actions([keyboard]);
-		keysOnly.bind("jump", Pad(0, South));
-		frame([PadButtonDown(0, South)]);
+		keysOnly.bind("jump", Gamepad(0, South));
+		frame([GamepadButtonDown(0, South)]);
 		check(pads.isButtonDown(0, South) && !keysOnly.isDown("jump") && keysOnly.getValue("jump") == 0,
 			"a binding to a device Actions wasn't given reads as not held");
 		var report = haxe.Json.stringify({passed: true, checks: checks});

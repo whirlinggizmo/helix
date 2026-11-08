@@ -296,10 +296,10 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `TiltState(status:TiltStatus)`: The tilt's status changed.
 - `Unlocked`: The player's first press: a key or a mouse button pressed, or a finger lifted, for the first time.
   In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It arrives once, before that press's own event, on every target, so a game's "press any key" start flows the same everywhere (`IEvents.unlocked`). A finger counts as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't take one as the player's.
-- `PadConnected(slot:Int)`: A gamepad was connected in a slot, 0 to 3.
-- `PadDisconnected(slot:Int)`: The gamepad in a slot was disconnected. Its buttons count as up.
-- `PadButtonDown(slot:Int, button:PadButton)`: A gamepad's button went down. A trigger is also a button, down when pulled past half way.
-- `PadButtonUp(slot:Int, button:PadButton)`: A gamepad's button went up. Natively, the Guide button's release arrives no sooner than a quarter second after its press.
+- `GamepadConnected(slot:Int)`: A gamepad was connected in a slot, 0 to 3.
+- `GamepadDisconnected(slot:Int)`: The gamepad in a slot was disconnected. Its buttons count as up.
+- `GamepadButtonDown(slot:Int, button:GamepadButton)`: A gamepad's button went down. A trigger is also a button, down when pulled past half way.
+- `GamepadButtonUp(slot:Int, button:GamepadButton)`: A gamepad's button went up. Natively, the Guide button's release arrives no sooner than a quarter second after its press.
 - `Resized(width:Int, height:Int)`: The drawable area changed size, in framebuffer pixels.
 - `FocusGained`: The window got the keyboard.
 - `FocusLost`: The window lost the keyboard. Just before it, each key still down arrives as a `KeyUp`.
@@ -346,6 +346,46 @@ function toString():String
 ```
 
 - `toString`: Returns the value's name as written (Nearest, Linear): what Std.string, interpolation and trace show.
+
+## GamepadAxis
+
+*abstract* in [`libs/platform/src/helix/platform/GamepadAxis.hx`](../src/helix/platform/GamepadAxis.hx), `import helix.platform.GamepadAxis;`
+
+Specifies a gamepad's axis.
+
+Sticks run from -1 to 1, down and right positive; triggers from 0 to 1.
+
+Values: `LeftX`, `LeftY`, `RightX`, `RightY`, `LeftTrigger`, `RightTrigger`.
+
+```haxe
+static inline var COUNT:Int
+static final all(default, null):Array<GamepadAxis>
+function toString():String
+```
+
+- `COUNT`: One past the largest value, for arrays indexed by axis.
+- `all`: Every axis.
+- `toString`: Returns the value's name as written (LeftX, LeftY): what Std.string, interpolation and trace show.
+
+## GamepadButton
+
+*abstract* in [`libs/platform/src/helix/platform/GamepadButton.hx`](../src/helix/platform/GamepadButton.hx), `import helix.platform.GamepadButton;`
+
+Specifies a gamepad's button by its place on an Xbox-style gamepad, numbered as the W3C standard gamepad numbers them.
+
+The triggers are both buttons and axes. As buttons, they are pressed when pulled past half way, or by a digital trigger.
+
+Values: `South`, `East`, `West`, `North`, `LeftBumper`, `RightBumper`, `LeftTrigger`, `RightTrigger`, `Back`, `Start`, `LeftStick`, `RightStick`, `Up`, `Down`, `Left`, `Right`, `Guide`.
+
+```haxe
+static inline var COUNT:Int
+static final all(default, null):Array<GamepadButton>
+function toString():String
+```
+
+- `COUNT`: One past the largest value, for arrays indexed by button.
+- `all`: Every button.
+- `toString`: Returns the value's name as written (South, East): what Std.string, interpolation and trace show.
 
 ## GraphicsDevice
 
@@ -753,7 +793,7 @@ function dispose():Void
 
 Defines the events, polled once a frame: what happens to the window, the player's first press, and what the devices built over it add.
 
-Each `poll` delivers what happened as `Event` records, in the order the OS reported them. Without a device, that is the window being resized, focused, shown, hidden or closed, its graphics lost, and `Unlocked`. A device's adapter, constructed over the events adapter, adds its own events to the same records: `IKeyboard` keys and text, `IMouse` the mouse, `ITouch` fingers, `IGamepads` pads and `ITilt` the tilt. A device that isn't constructed isn't listened to. Nothing is delivered between polls, and nothing calls the program. The program walks `events` itself.
+Each `poll` delivers what happened as `Event` records, in the order the OS reported them. Without a device, that is the window being resized, focused, shown, hidden or closed, its graphics lost, and `Unlocked`. A device's adapter, constructed over the events adapter, adds its own events to the same records: `IKeyboard` keys and text, `IMouse` the mouse, `ITouch` fingers, `IGamepads` gamepads and `ITilt` the tilt. A device that isn't constructed isn't listened to. Nothing is delivered between polls, and nothing calls the program. The program walks `events` itself.
 
 ```haxe
 events.poll();
@@ -925,9 +965,9 @@ function dispose():Void
 
 *interface* in [`libs/platform/src/helix/platform/IGamepads.hx`](../src/helix/platform/IGamepads.hx), `import helix.platform.IGamepads;`
 
-Defines the gamepads, in slots 0 to 3: `PadConnected`, `PadDisconnected`, `PadButtonDown` and `PadButtonUp` in `IEvents.events` while it exists, and each pad's state as of the last `IEvents.poll`.
+Defines the gamepads, in slots 0 to 3: `GamepadConnected`, `GamepadDisconnected`, `GamepadButtonDown` and `GamepadButtonUp` in `IEvents.events` while it exists, and each gamepad's state as of the last `IEvents.poll`.
 
-Its adapter is constructed over the events adapter, whose `poll` delivers its events and reads the pads. Natively, a button pressed and released between two polls arrives as both events. A page reads its pads only at each poll, so it sees a press only if the button is down then.
+Its adapter is constructed over the events adapter, whose `poll` delivers its events and reads the gamepads. Natively, a button pressed and released between two polls arrives as both events. A page reads its gamepads only at each poll, so it sees a press only if the button is down then.
 
 ```haxe
 var stick = gamepads.getAxis(0, LeftX);
@@ -936,8 +976,8 @@ var stick = gamepads.getAxis(0, LeftX);
 ```haxe
 function isConnected(slot:Int):Bool
 function getName(slot:Int):String
-function isButtonDown(slot:Int, button:PadButton):Bool
-function getAxis(slot:Int, axis:PadAxis):Float
+function isButtonDown(slot:Int, button:GamepadButton):Bool
+function getAxis(slot:Int, axis:GamepadAxis):Float
 function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
 function addMappings(mappings:String):Int
 function dispose():Void
@@ -962,10 +1002,10 @@ function dispose():Void
   - `low`: The heavy motor's strength, 0 to 1.
   - `high`: The light motor's strength, 0 to 1.
   - `seconds`: How long; 0 stops it.
-  - returns: Whether the pad shakes: false for an empty slot or a pad without motors, and in a browser without vibration (Firefox).
-- `addMappings`: Adds mappings that say how pads the system doesn't know lay out their buttons and axes, in SDL's controller database format (one per line, as `gamecontrollerdb.txt` has them).
+  - returns: Whether the gamepad shakes: false for an empty slot or a gamepad without motors, and in a browser without vibration (Firefox).
+- `addMappings`: Adds mappings that say how gamepads the system doesn't know lay out their buttons and axes, in SDL's controller database format (one per line, as `gamecontrollerdb.txt` has them).
   - `mappings`: The mappings.
-  - returns: How many were added or updated; 0 in a page, whose browser maps pads itself.
+  - returns: How many were added or updated; 0 in a page, whose browser maps gamepads itself.
 - `dispose`: Stops reading the gamepads and lets them go.
 
 ## IGraphics
@@ -1740,46 +1780,6 @@ function toString():String
 ```
 
 - `toString`: Returns the value's name as written (Any, Landscape): what Std.string, interpolation and trace show.
-
-## PadAxis
-
-*abstract* in [`libs/platform/src/helix/platform/PadAxis.hx`](../src/helix/platform/PadAxis.hx), `import helix.platform.PadAxis;`
-
-Specifies a gamepad's axis.
-
-Sticks run from -1 to 1, down and right positive; triggers from 0 to 1.
-
-Values: `LeftX`, `LeftY`, `RightX`, `RightY`, `LeftTrigger`, `RightTrigger`.
-
-```haxe
-static inline var COUNT:Int
-static final all(default, null):Array<PadAxis>
-function toString():String
-```
-
-- `COUNT`: One past the largest value, for arrays indexed by axis.
-- `all`: Every axis.
-- `toString`: Returns the value's name as written (LeftX, LeftY): what Std.string, interpolation and trace show.
-
-## PadButton
-
-*abstract* in [`libs/platform/src/helix/platform/PadButton.hx`](../src/helix/platform/PadButton.hx), `import helix.platform.PadButton;`
-
-Specifies a gamepad's button by its place on an Xbox-style pad, numbered as the W3C standard gamepad numbers them.
-
-The triggers are both buttons and axes. As buttons, they are pressed when pulled past half way, or by a digital trigger.
-
-Values: `South`, `East`, `West`, `North`, `LeftBumper`, `RightBumper`, `LeftTrigger`, `RightTrigger`, `Back`, `Start`, `LeftStick`, `RightStick`, `Up`, `Down`, `Left`, `Right`, `Guide`.
-
-```haxe
-static inline var COUNT:Int
-static final all(default, null):Array<PadButton>
-function toString():String
-```
-
-- `COUNT`: One past the largest value, for arrays indexed by button.
-- `all`: Every button.
-- `toString`: Returns the value's name as written (South, East): what Std.string, interpolation and trace show.
 
 ## PipelineDesc
 

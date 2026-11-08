@@ -11,9 +11,9 @@ Provides actions, which are names the game reads, such as "jump" or "left", each
 Any of an action's bindings works it. Actions reads the devices it was created over, so it is current once they are polled. It has no `poll` of its own. A binding to a device it wasn't given, or a name with no bindings, reads as not held, with a value of 0.
 
 ```haxe
-var keyboard = new Keyboard(events, keyboardAdapter), pads = new Gamepads(events, gamepadsAdapter);
-var actions = new Actions([keyboard, pads]);
-actions.bind("jump", Keyboard(Space), Pad(0, South));
+var keyboard = new Keyboard(events, keyboardAdapter), gamepads = new Gamepads(events, gamepadsAdapter);
+var actions = new Actions([keyboard, gamepads]);
+actions.bind("jump", Keyboard(Space), Gamepad(0, South));
 actions.bind("left", Keyboard(Left), Keyboard(A), Axis(0, LeftX, Negative));
 actions.bind("right", Keyboard(Right), Keyboard(D), Axis(0, LeftX, Positive));
 actions.bind("up", Keyboard(Up), Keyboard(W), Axis(0, LeftY, Negative));
@@ -105,8 +105,8 @@ Specifies what an action is bound to (`Actions.bind`).
 
 - `Keyboard(key:Key)`: A key.
 - `Mouse(button:MouseButton)`: A mouse button.
-- `Pad(slot:Int, button:PadButton)`: A gamepad's button, by the gamepad's slot, 0 to 3.
-- `Axis(slot:Int, axis:PadAxis, direction:AxisDirection)`: One side of a gamepad's stick axis or trigger, by the gamepad's slot, 0 to 3.
+- `Gamepad(slot:Int, button:GamepadButton)`: A gamepad's button, by the gamepad's slot, 0 to 3.
+- `Axis(slot:Int, axis:GamepadAxis, direction:AxisDirection)`: One side of a gamepad's stick axis or trigger, by the gamepad's slot, 0 to 3.
   The binding is down while the axis is past the dead zone on that side, and its value is how far past.
 - `Tilt(axis:TiltAxis, direction:AxisDirection)`: One side of the device's tilt (`Tilt.getAxis`): down while it's tilted that way, its value how far.
 
@@ -116,14 +116,14 @@ Specifies what an action is bound to (`Actions.bind`).
 
 Provides the gamepads as state, in slots 0 to 3: which buttons are held or went down or up this frame, and where each stick and trigger is, past a dead zone.
 
-The program constructs one over its `IEvents` and its `IGamepads`, and calls `poll` once a frame, as `Keyboard` is. A pad's axes are read once a poll, so they hold still for the frame. A pad that disconnects lets go of its buttons.
+The program constructs one over its `IEvents` and its `IGamepads`, and calls `poll` once a frame, as `Keyboard` is. A gamepad's axes are read once a poll, so they hold still for the frame. A gamepad that disconnects lets go of its buttons.
 
 ```haxe
-var pads = new Gamepads(events, gamepadsAdapter);
+var gamepads = new Gamepads(events, gamepadsAdapter);
 // each frame:
-pads.poll();
-if (pads.isButtonPressed(0, South)) jump();
-var x = pads.getAxis(0, LeftX);
+gamepads.poll();
+if (gamepads.isButtonPressed(0, South)) jump();
+var x = gamepads.getAxis(0, LeftX);
 ```
 
 ```haxe
@@ -131,17 +131,17 @@ function new(events:IEvents, gamepads:IGamepads)
 function poll():Void
 function isConnected(slot:Int):Bool
 function getName(slot:Int):String
-function isButtonDown(slot:Int, button:PadButton):Bool
-function isButtonPressed(slot:Int, button:PadButton):Bool
-function isButtonReleased(slot:Int, button:PadButton):Bool
-function getAxis(slot:Int, axis:PadAxis):Float
+function isButtonDown(slot:Int, button:GamepadButton):Bool
+function isButtonPressed(slot:Int, button:GamepadButton):Bool
+function isButtonReleased(slot:Int, button:GamepadButton):Bool
+function getAxis(slot:Int, axis:GamepadAxis):Float
 var deadZone(default, set):Float
 ```
 
 - `new`: Creates the gamepads over the platform's events and gamepads, with nothing held.
   - `events`: The platform's events, whose last `poll` this one reads.
   - `gamepads`: The platform's gamepads, whose buttons those events carry and whose sticks and triggers are read.
-- `poll`: Reads the events the last `IEvents.poll` delivered, and every pad's axes. Call it once a frame.
+- `poll`: Reads the events the last `IEvents.poll` delivered, and every gamepad's axes. Call it once a frame.
 - `isConnected`: Returns whether a gamepad is in a slot.
   - `slot`: The slot, 0 to 3.
   - returns: True when one is connected there.
@@ -452,7 +452,7 @@ Provides an on-screen gamepad worked by the fingers, read as a gamepad in a slot
 
 The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and `Actions`, as any gamepad's do.
 
-The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `PadConnected` and `PadDisconnected` come from physical gamepads alone.
+The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical gamepads alone.
 
 Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick included. Drawing is the engine's, from each stick's `held`, base, knob and radius. An engine draws the hints while `hintVisible` is true and the device has a touch screen.
 
@@ -479,8 +479,8 @@ var blockedBounds:Array<Bounds2D>
 function poll():Void
 function isConnected(slot:Int):Bool
 function getName(slot:Int):String
-function isButtonDown(slot:Int, button:PadButton):Bool
-function getAxis(slot:Int, axis:PadAxis):Float
+function isButtonDown(slot:Int, button:GamepadButton):Bool
+function getAxis(slot:Int, axis:GamepadAxis):Float
 function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
 function addMappings(mappings:String):Int
 function dispose():Void

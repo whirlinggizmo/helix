@@ -389,14 +389,14 @@ function dispose():Void
 
 Provides `IGamepads` in a browser page, read at each `IEvents.poll` in the W3C standard layout.
 
-A page sees a pad only after a button press on it. The Gamepad API has no button events, so a change between two polls is one.
+A page sees a gamepad only after a button press on it. The Gamepad API has no button events, so a change between two polls is one.
 
 ```haxe
 function new(options:DomGamepadsAdapterOptions)
 function isConnected(slot:Int):Bool
 function getName(slot:Int):String
-function isButtonDown(slot:Int, button:PadButton):Bool
-function getAxis(slot:Int, axis:PadAxis):Float
+function isButtonDown(slot:Int, button:GamepadButton):Bool
+function getAxis(slot:Int, axis:GamepadAxis):Float
 function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
 function addMappings(mappings:String):Int
 function dispose():Void
@@ -429,14 +429,14 @@ final events:DomEventsAdapter
 
 Provides `IGamepads` on SDL3, natively, through SDL's controller database, in the W3C standard layout.
 
-SDL's gamepad subsystem starts with it and stops at `dispose`. Pads are read whether the window has the keyboard or not.
+SDL's gamepad subsystem starts with it and stops at `dispose`. Gamepads are read whether the window has the keyboard or not.
 
 ```haxe
 function new(options:Sdl3GamepadsAdapterOptions)
 function isConnected(slot:Int):Bool
 function getName(slot:Int):String
-function isButtonDown(slot:Int, button:PadButton):Bool
-function getAxis(slot:Int, axis:PadAxis):Float
+function isButtonDown(slot:Int, button:GamepadButton):Bool
+function getAxis(slot:Int, axis:GamepadAxis):Float
 function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
 function addMappings(mappings:String):Int
 function dispose():Void

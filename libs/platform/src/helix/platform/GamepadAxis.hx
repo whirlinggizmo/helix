@@ -4,7 +4,7 @@ package helix.platform;
 
 	Sticks run from -1 to 1, down and right positive; triggers from 0 to 1. */
 @:build(helix.platform.macros.EnumNames.build())
-enum abstract PadAxis(Int) to Int {
+enum abstract GamepadAxis(Int) to Int {
 	var LeftX = 0;
 	var LeftY = 1;
 	var RightX = 2;
@@ -16,5 +16,5 @@ enum abstract PadAxis(Int) to Int {
 	public static inline var COUNT = 6;
 
 	/** Every axis. */
-	public static final all:Array<PadAxis> = [LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger];
+	public static final all:Array<GamepadAxis> = [LeftX, LeftY, RightX, RightY, LeftTrigger, RightTrigger];
 }

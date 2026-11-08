@@ -1,13 +1,13 @@
 package helix.platform.adapters.gamepads.sdl3;
 
 import helix.platform.IGamepads;
-import helix.platform.PadAxis;
-import helix.platform.PadButton;
+import helix.platform.GamepadAxis;
+import helix.platform.GamepadButton;
 import helix.platform.adapters.shared.sdl3.Sdl3EventsBridge;
 
 /** Provides `IGamepads` on SDL3, natively, through SDL's controller database, in the W3C standard layout.
 
-	SDL's gamepad subsystem starts with it and stops at `dispose`. Pads are read whether the window has the keyboard or not. */
+	SDL's gamepad subsystem starts with it and stops at `dispose`. Gamepads are read whether the window has the keyboard or not. */
 class Sdl3GamepadsAdapter implements IGamepads {
 	/** Starts SDL's gamepads.
 
@@ -22,10 +22,10 @@ class Sdl3GamepadsAdapter implements IGamepads {
 	public function getName(slot:Int):String
 		return (Sdl3EventsBridge.padName(slot) : String);
 
-	public function isButtonDown(slot:Int, button:PadButton):Bool
+	public function isButtonDown(slot:Int, button:GamepadButton):Bool
 		return Sdl3EventsBridge.padButton(slot, button) != 0;
 
-	public function getAxis(slot:Int, axis:PadAxis):Float
+	public function getAxis(slot:Int, axis:GamepadAxis):Float
 		return Sdl3EventsBridge.padAxis(slot, axis);
 
 	public function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool

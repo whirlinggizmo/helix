@@ -1,10 +1,10 @@
 package helix.platform;
 
-/** Defines the gamepads, in slots 0 to 3: `PadConnected`, `PadDisconnected`, `PadButtonDown` and `PadButtonUp` in `IEvents.events`
-	while it exists, and each pad's state as of the last `IEvents.poll`.
+/** Defines the gamepads, in slots 0 to 3: `GamepadConnected`, `GamepadDisconnected`, `GamepadButtonDown` and `GamepadButtonUp` in `IEvents.events`
+	while it exists, and each gamepad's state as of the last `IEvents.poll`.
 
-	Its adapter is constructed over the events adapter, whose `poll` delivers its events and reads the pads. Natively, a button pressed and
-	released between two polls arrives as both events. A page reads its pads only at each poll, so it sees a press only if the button is
+	Its adapter is constructed over the events adapter, whose `poll` delivers its events and reads the gamepads. Natively, a button pressed and
+	released between two polls arrives as both events. A page reads its gamepads only at each poll, so it sees a press only if the button is
 	down then.
 
 	```haxe
@@ -28,7 +28,7 @@ interface IGamepads {
 		@param slot  The slot, 0 to 3.
 		@param button  The button.
 		@return  True when it is down; false for an empty slot. */
-	function isButtonDown(slot:Int, button:PadButton):Bool;
+	function isButtonDown(slot:Int, button:GamepadButton):Bool;
 
 	/** Returns a gamepad's axis.
 
@@ -36,7 +36,7 @@ interface IGamepads {
 		@param axis  The axis.
 		@return  The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot gives
 			0. */
-	function getAxis(slot:Int, axis:PadAxis):Float;
+	function getAxis(slot:Int, axis:GamepadAxis):Float;
 
 	/** Shakes a gamepad: its low-frequency (heavy) and high-frequency (light) motors for a while, replacing any shaking it was doing.
 
@@ -44,14 +44,14 @@ interface IGamepads {
 		@param low  The heavy motor's strength, 0 to 1.
 		@param high  The light motor's strength, 0 to 1.
 		@param seconds  How long; 0 stops it.
-		@return  Whether the pad shakes: false for an empty slot or a pad without motors, and in a browser without vibration (Firefox). */
+		@return  Whether the gamepad shakes: false for an empty slot or a gamepad without motors, and in a browser without vibration (Firefox). */
 	function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool;
 
-	/** Adds mappings that say how pads the system doesn't know lay out their buttons and axes, in SDL's controller database format
+	/** Adds mappings that say how gamepads the system doesn't know lay out their buttons and axes, in SDL's controller database format
 		(one per line, as `gamecontrollerdb.txt` has them).
 
 		@param mappings  The mappings.
-		@return  How many were added or updated; 0 in a page, whose browser maps pads itself. */
+		@return  How many were added or updated; 0 in a page, whose browser maps gamepads itself. */
 	function addMappings(mappings:String):Int;
 
 	/** Stops reading the gamepads and lets them go. */

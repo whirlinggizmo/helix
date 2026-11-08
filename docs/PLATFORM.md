@@ -112,7 +112,7 @@ delivers, built above.
 Each device is an interface of its own, built over the events: `IKeyboard`, `IMouse`, `ITouch`, `IGamepads` and `ITilt`. Its adapter is
 constructed over the events adapter of its API (`new DomKeyboardAdapter({events: events})`) and adds its events to the same stream,
 delivered by the events' `poll`. A device that isn't constructed isn't listened to: a page installs none of its listeners and doesn't
-read its pads; natively SDL's events for it are turned off, and SDL's gamepads aren't started, so a program links and runs only the
+read its gamepads; natively SDL's events for it are turned off, and SDL's gamepads aren't started, so a program links and runs only the
 devices it makes. A device's interface may name the events' types and adapters, and nothing else of another interface's.
 
 ```haxe
@@ -143,10 +143,10 @@ interface ITouch { function dispose():Void; }    // a finger is never the mouse
 interface IGamepads {
 	function isConnected(slot:Int):Bool;          // slots 0..3
 	function getName(slot:Int):String;
-	function isButtonDown(slot:Int, button:PadButton):Bool;   // the W3C standard gamepad's buttons
-	function getAxis(slot:Int, axis:PadAxis):Float;           // sticks -1..1, down and right positive; triggers 0..1
+	function isButtonDown(slot:Int, button:GamepadButton):Bool;   // the W3C standard gamepad's buttons
+	function getAxis(slot:Int, axis:GamepadAxis):Float;           // sticks -1..1, down and right positive; triggers 0..1
 	function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool; // natively SDL's rumble; a page's vibrationActuator, none in Firefox
-	function addMappings(mappings:String):Int;    // SDL's controller database lines; 0 in a page, whose browser maps pads
+	function addMappings(mappings:String):Int;    // SDL's controller database lines; 0 in a page, whose browser maps gamepads
 	function dispose():Void;
 }
 
@@ -171,10 +171,10 @@ enum Event {
 	Tilt(beta:Float, gamma:Float, screenAngle:Float);   // ITilt
 	TiltState(status:TiltStatus);        // the tilt's status: Off, WaitingForTap, On, Refused, Unavailable, NeedsHttps
 	Unlocked;                            // the player's first press (a key or mouse press, or a finger lift), before that event, on every target
-	PadConnected(slot:Int);              // IGamepads
-	PadDisconnected(slot:Int);
-	PadButtonDown(slot:Int, button:PadButton);   // a trigger is a button too, down past half way
-	PadButtonUp(slot:Int, button:PadButton);
+	GamepadConnected(slot:Int);              // IGamepads
+	GamepadDisconnected(slot:Int);
+	GamepadButtonDown(slot:Int, button:GamepadButton);   // a trigger is a button too, down past half way
+	GamepadButtonUp(slot:Int, button:GamepadButton);
 	Resized(width:Int, height:Int);      // the framebuffer's
 	FocusGained;
 	FocusLost;                           // each key still down came up just before, a KeyUp each
@@ -187,17 +187,17 @@ enum Event {
 }
 ```
 
-- `poll` is the only pump for input and window state; `IWindow`'s getters and the pad reads answer as of it. `events` holds enum
+- `poll` is the only pump for input and window state; `IWindow`'s getters and the gamepad reads answer as of it. `events` holds enum
   records in the order the OS gave them, cleared and reused each poll; the owner walks it with a `switch`. In a page the DOM pushes
-  events into the adapters' listeners between frames, which only append to that buffer, and the poll then reads the pads; natively
+  events into the adapters' listeners between frames, which only append to that buffer, and the poll then reads the gamepads; natively
   `poll` drains `SDL_PollEvent` into it, and the device adapters only say which of SDL's events are wanted.
 - The first press is heard without a keyboard, mouse or touch adapter: in a page a listener on the window, ahead of the page's elements,
   until it comes; natively SDL's key, mouse button and finger-lift events stay on until it comes.
 - What the adapters number, they name: `Key` (physical keys), `MouseButton`, `CursorShape` (the system cursors of each kind),
-  `PadButton` (the W3C standard gamepad's buttons: the face buttons by position, the shoulders, the triggers as 6 and 7, back and start,
-  the stick clicks, the pad, guide), `PadAxis`.
-- Pad buttons: natively a button pressed and let go between two polls arrives as both events, in order, though its state reads up; a
-  page reads its pads only at each poll (the Gamepad API has no events), so it sees a press only if the button is down then. Natively
+  `GamepadButton` (the W3C standard gamepad's buttons: the face buttons by position, the shoulders, the triggers as 6 and 7, back and start,
+  the stick clicks, the d-pad, guide), `GamepadAxis`.
+- Gamepad buttons: natively a button pressed and let go between two polls arrives as both events, in order, though its state reads up; a
+  page reads its gamepads only at each poll (the Gamepad API has no events), so it sees a press only if the button is down then. Natively
   the Guide button's release arrives no sooner than a quarter second after its press: SDL holds it back that long. A trigger's analog
   value is `getAxis`; its button events come as it crosses half way.
 - Focus and visibility are tracked once, by the events adapter: in a page it alone installs the blur, focus and visibility listeners;
@@ -216,7 +216,7 @@ enum Event {
   using no CPU, and wakes for an event or at the timeout, so the owner can still pump what must not starve (a music stream, a
   download's completion) at an interval of its choosing: `if (hidden) events.wait(0.25); events.poll(); ...`. In a page the browser
   already withholds frames from a hidden tab.
-- No policy: which finger is "the pointer", whether a shortcut swallows text, a stick's dead zone, which pad is the player's are above.
+- No policy: which finger is "the pointer", whether a shortcut swallows text, a stick's dead zone, which gamepad is the player's are above.
   An adapter reports what the platform said and nothing else.
 
 ## Graphics

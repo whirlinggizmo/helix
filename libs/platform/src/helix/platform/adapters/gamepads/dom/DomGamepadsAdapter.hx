@@ -1,20 +1,20 @@
 package helix.platform.adapters.gamepads.dom;
 
 import helix.platform.IGamepads;
-import helix.platform.PadAxis;
-import helix.platform.PadButton;
+import helix.platform.GamepadAxis;
+import helix.platform.GamepadButton;
 import helix.platform.adapters.shared.EventStream;
 import js.Browser;
 
 /** Provides `IGamepads` in a browser page, read at each `IEvents.poll` in the W3C standard layout.
 
-	A page sees a pad only after a button press on it. The Gamepad API has no button events, so a change between two polls is one. */
+	A page sees a gamepad only after a button press on it. The Gamepad API has no button events, so a change between two polls is one. */
 class DomGamepadsAdapter implements IGamepads {
 	final stream:EventStream;
-	// The pads in slots 0 to 3 as of the last poll: the browser's gamepad, or null.
+	// The gamepads in slots 0 to 3 as of the last poll: the browser's gamepad, or null.
 	final pads:Array<Dynamic> = [null, null, null, null];
 	// Each slot's buttons as the last poll read them.
-	final held:Array<Array<Bool>> = [for (_ in 0...4) [for (_ in 0...PadButton.COUNT) false]];
+	final held:Array<Array<Bool>> = [for (_ in 0...4) [for (_ in 0...GamepadButton.COUNT) false]];
 	final reading:Void->Void;
 
 	/** Starts reading the gamepads at each poll.
@@ -33,15 +33,15 @@ class DomGamepadsAdapter implements IGamepads {
 			if (pad != null && !pad.connected)
 				pad = null;
 			if (pad != null && pads[slot] == null)
-				stream.deliver(PadConnected(slot));
+				stream.deliver(GamepadConnected(slot));
 			else if (pad == null && pads[slot] != null)
-				stream.deliver(PadDisconnected(slot));
+				stream.deliver(GamepadDisconnected(slot));
 			pads[slot] = pad;
 			var was = held[slot];
-			for (i in 0...PadButton.COUNT) {
+			for (i in 0...GamepadButton.COUNT) {
 				var down = pad != null && isButtonDown(slot, cast i);
 				if (down != was[i] && pad != null)
-					stream.deliver(down ? PadButtonDown(slot, cast i) : PadButtonUp(slot, cast i));
+					stream.deliver(down ? GamepadButtonDown(slot, cast i) : GamepadButtonUp(slot, cast i));
 				was[i] = down;
 			}
 		}
@@ -53,14 +53,14 @@ class DomGamepadsAdapter implements IGamepads {
 	public function getName(slot:Int):String
 		return isConnected(slot) ? pads[slot].id : "";
 
-	public function isButtonDown(slot:Int, button:PadButton):Bool {
+	public function isButtonDown(slot:Int, button:GamepadButton):Bool {
 		if (!isConnected(slot))
 			return false;
 		var buttons:Dynamic = pads[slot].buttons, i:Int = button;
 		return i < buttons.length && buttons[i].pressed;
 	}
 
-	public function getAxis(slot:Int, axis:PadAxis):Float {
+	public function getAxis(slot:Int, axis:GamepadAxis):Float {
 		if (!isConnected(slot))
 			return 0;
 		var pad:Dynamic = pads[slot], i:Int = axis;

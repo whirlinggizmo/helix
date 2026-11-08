@@ -1205,7 +1205,7 @@ class RCore {
 
 		An empty slot is passed over.
 
-		A pad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a
+		A gamepad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a
 		run.
 
 		@param gamepad  The gamepad, 0 to 3.
@@ -1224,10 +1224,10 @@ class RCore {
 		}
 	}
 
-	/** Adds mappings for pads the system doesn't know, in SDL's controller database format.
+	/** Adds mappings for gamepads the system doesn't know, in SDL's controller database format.
 
 		@param mappings  The mappings, one a line.
-		@return  How many were added or updated, or 0 in a page, whose browser maps pads itself. */
+		@return  How many were added or updated, or 0 in a page, whose browser maps gamepads itself. */
 	static function SetGamepadMappings(mappings:String):Int {
 		Runtime.gamepads();
 		return Runtime.gamepadsAdapter.addMappings(mappings);
@@ -2496,7 +2496,7 @@ class RCore {
 	static var mouseScaleX = 1.;
 	static var mouseScaleY = 1.;
 	static var cursorHidden = false;
-	// Whether a refusal has been warned of this run: the cursor not moving in a page, the system refusing to move it, a pad not shaking.
+	// Whether a refusal has been warned of this run: the cursor not moving in a page, the system refusing to move it, a gamepad not shaking.
 	static var warnedMousePage = false;
 	static var warnedMouseRefused = false;
 	static var warnedVibration = false;

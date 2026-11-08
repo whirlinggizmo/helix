@@ -4,8 +4,8 @@ import helix.math.Bounds2D;
 import helix.platform.IGamepads;
 import helix.platform.IPollable;
 import helix.platform.IWindow;
-import helix.platform.PadAxis;
-import helix.platform.PadButton;
+import helix.platform.GamepadAxis;
+import helix.platform.GamepadButton;
 
 /** Provides an on-screen gamepad worked by the fingers, read as a gamepad in a slot.
 
@@ -15,7 +15,7 @@ import helix.platform.PadButton;
 
 	The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot
 	replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after
-	the physical gamepad is unplugged plugs the virtual gamepad in again. `PadConnected` and `PadDisconnected` come from physical
+	the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical
 	gamepads alone.
 
 	Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick included.
@@ -205,7 +205,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		@param slot  The slot, 0 to 3.
 		@param button  The button.
 		@return  True while it's down. */
-	public function isButtonDown(slot:Int, button:PadButton):Bool
+	public function isButtonDown(slot:Int, button:GamepadButton):Bool
 		return slot == this.slot && pluggedIn ? false : gamepads.isButtonDown(slot, button);
 
 	/** Returns a gamepad's axis. While the virtual gamepad is plugged in, its slot's sticks are the virtual sticks, and its triggers
@@ -214,7 +214,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		@param slot  The slot, 0 to 3.
 		@param axis  The axis.
 		@return  -1 to 1 for a stick, right and down positive. 0 to 1 for a trigger. */
-	public function getAxis(slot:Int, axis:PadAxis):Float {
+	public function getAxis(slot:Int, axis:GamepadAxis):Float {
 		if (slot != this.slot || !pluggedIn)
 			return gamepads.getAxis(slot, axis);
 		return switch axis {

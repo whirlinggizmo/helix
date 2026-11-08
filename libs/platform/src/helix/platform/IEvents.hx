@@ -5,7 +5,7 @@ package helix.platform;
 
 	Each `poll` delivers what happened as `Event` records, in the order the OS reported them. Without a device, that is the window being
 	resized, focused, shown, hidden or closed, its graphics lost, and `Unlocked`. A device's adapter, constructed over the events adapter,
-	adds its own events to the same records: `IKeyboard` keys and text, `IMouse` the mouse, `ITouch` fingers, `IGamepads` pads and
+	adds its own events to the same records: `IKeyboard` keys and text, `IMouse` the mouse, `ITouch` fingers, `IGamepads` gamepads and
 	`ITilt` the tilt. A device that isn't constructed isn't listened to. Nothing is delivered between polls, and nothing calls the program.
 	The program walks `events` itself.
 

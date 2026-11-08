@@ -72,7 +72,7 @@ class Main {
 		polled.push(keyboard);
 		polled.push(pads);
 		actions = new Actions([keyboard, pads]);
-		actions.bind("jump", Keyboard(Space), Pad(0, South));
+		actions.bind("jump", Keyboard(Space), Gamepad(0, South));
 		trace("hold Space or the pad's bottom button");
 	}
 

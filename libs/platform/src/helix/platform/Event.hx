@@ -53,16 +53,16 @@ enum Event {
 	Unlocked;
 
 	/** A gamepad was connected in a slot, 0 to 3. */
-	PadConnected(slot:Int);
+	GamepadConnected(slot:Int);
 
 	/** The gamepad in a slot was disconnected. Its buttons count as up. */
-	PadDisconnected(slot:Int);
+	GamepadDisconnected(slot:Int);
 
 	/** A gamepad's button went down. A trigger is also a button, down when pulled past half way. */
-	PadButtonDown(slot:Int, button:PadButton);
+	GamepadButtonDown(slot:Int, button:GamepadButton);
 
 	/** A gamepad's button went up. Natively, the Guide button's release arrives no sooner than a quarter second after its press. */
-	PadButtonUp(slot:Int, button:PadButton);
+	GamepadButtonUp(slot:Int, button:GamepadButton);
 
 	/** The drawable area changed size, in framebuffer pixels. */
 	Resized(width:Int, height:Int);

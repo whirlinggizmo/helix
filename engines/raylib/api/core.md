@@ -487,10 +487,10 @@ static function EndScissorMode():Void
 
   An empty slot is passed over.
 
-  A pad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a run.
-- `SetGamepadMappings`: Adds mappings for pads the system doesn't know, in SDL's controller database format.
+  A gamepad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a run.
+- `SetGamepadMappings`: Adds mappings for gamepads the system doesn't know, in SDL's controller database format.
   - `mappings`: The mappings, one a line.
-  - returns: How many were added or updated, or 0 in a page, whose browser maps pads itself.
+  - returns: How many were added or updated, or 0 in a page, whose browser maps gamepads itself.
 - `IsGamepadAvailable`: Returns whether a gamepad is connected.
   - `gamepad`: The gamepad, 0 to 3.
   - returns: True while one is connected there.

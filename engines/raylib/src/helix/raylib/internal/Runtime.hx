@@ -640,11 +640,11 @@ class Runtime {
 		return gamepadsService;
 	}
 
-	/** Makes the gamepads read through a pad standing in front of the platform's, as a virtual gamepad does (`EnableVirtualGamepad`). The
+	/** Makes the gamepads read through a gamepad standing in front of the platform's, as a virtual gamepad does (`EnableVirtualGamepad`). The
 		gamepads are made again over it, and it's polled after the touch and before the gamepads.
 
-		@param pad  The pad the gamepads read.
-		@param poller  What brings the pad up to date each frame. */
+		@param gamepad  The gamepad the gamepads read.
+		@param poller  What brings the gamepad up to date each frame. */
 	public static function standInFront(pad:helix.platform.IGamepads, poller:IPollable):Void {
 		touch();
 		devices.remove(gamepads());

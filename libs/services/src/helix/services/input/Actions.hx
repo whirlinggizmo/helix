@@ -8,9 +8,9 @@ import helix.math.Vector2D;
 	`poll` of its own. A binding to a device it wasn't given, or a name with no bindings, reads as not held, with a value of 0.
 
 	```haxe
-	var keyboard = new Keyboard(events, keyboardAdapter), pads = new Gamepads(events, gamepadsAdapter);
-	var actions = new Actions([keyboard, pads]);
-	actions.bind("jump", Keyboard(Space), Pad(0, South));
+	var keyboard = new Keyboard(events, keyboardAdapter), gamepads = new Gamepads(events, gamepadsAdapter);
+	var actions = new Actions([keyboard, gamepads]);
+	actions.bind("jump", Keyboard(Space), Gamepad(0, South));
 	actions.bind("left", Keyboard(Left), Keyboard(A), Axis(0, LeftX, Negative));
 	actions.bind("right", Keyboard(Right), Keyboard(D), Axis(0, LeftX, Positive));
 	actions.bind("up", Keyboard(Up), Keyboard(W), Axis(0, LeftY, Negative));
@@ -232,7 +232,7 @@ class Actions {
 		return switch [a, b] {
 			case [Keyboard(key), Keyboard(other)]: key == other;
 			case [Mouse(button), Mouse(other)]: button == other;
-			case [Pad(slot, button), Pad(otherSlot, other)]: slot == otherSlot && button == other;
+			case [Gamepad(slot, button), Gamepad(otherSlot, other)]: slot == otherSlot && button == other;
 			case [Axis(slot, axis, direction), Axis(otherSlot, other, otherDirection)]: slot == otherSlot && axis == other && direction == otherDirection;
 			case [Tilt(axis, direction), Tilt(other, otherDirection)]: axis == other && direction == otherDirection;
 			case _: false;

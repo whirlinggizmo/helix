@@ -1742,7 +1742,7 @@ class Raylib {
 
 		An empty slot is passed over.
 
-		A pad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a
+		A gamepad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a
 		run.
 
 		@param gamepad  The gamepad, 0 to 3.
@@ -1752,10 +1752,10 @@ class Raylib {
 	public static inline function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void
 		RCore.SetGamepadVibration(gamepad, leftMotor, rightMotor, duration);
 
-	/** Adds mappings for pads the system doesn't know, in SDL's controller database format.
+	/** Adds mappings for gamepads the system doesn't know, in SDL's controller database format.
 
 		@param mappings  The mappings, one a line.
-		@return  How many were added or updated, or 0 in a page, whose browser maps pads itself. */
+		@return  How many were added or updated, or 0 in a page, whose browser maps gamepads itself. */
 	public static inline function SetGamepadMappings(mappings:String):Int
 		return RCore.SetGamepadMappings(mappings);
 
