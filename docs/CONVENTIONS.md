@@ -214,6 +214,13 @@ Code is written to be read, by people and agents, not packed.
       sentence, never the member. What a member reads from the program's data is listed, not described around.
     - What is true of the program's own files (an asset's bone names, where a model is authored) is the program's spec's, not the
       API's. A comment that needs a second screen is two members' or a README's.
+    - **Every thing is named.** In a sentence with two or more things, each is named, never "it": "A physical gamepad plugged into
+      the virtual gamepad's slot replaces the virtual gamepad." A part of the member is "the knob", not "its knob".
+    - **What happens, not what doesn't.** A sentence says what happens to what's there: "A touch within a blocked bound is
+      considered a mouse click", not "a finger there takes no stick". No "nothing" as a subject, and no sentence about a call that
+      changes nothing.
+    - **One word for one thing, the API's own.** `blockedBounds` is "the blocked bounds" throughout, never also a box, a rectangle
+      or an area. A side effect says what changes ("The zone follows changes to this rectangle's fields"), not a "so" clause.
 
     Sample, `LoadLightingShader`, where the summary names the member a reader may want instead, the first paragraph is the setup
     every caller does, and the example is the call's shape:
