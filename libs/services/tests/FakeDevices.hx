@@ -95,11 +95,14 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 	function set_textInput(on:Bool):Bool
 		return typing = on;
 
+	/** Gets or sets whether a pad is in slot 0. */
+	public var padConnected = true;
+
 	public function isConnected(slot:Int):Bool
-		return slot == 0;
+		return slot == 0 && padConnected;
 
 	public function getName(slot:Int):String
-		return slot == 0 ? "Fake" : "";
+		return slot == 0 && padConnected ? "Fake" : "";
 
 	public function isButtonDown(slot:Int, button:PadButton):Bool
 		return false;

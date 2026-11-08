@@ -9,7 +9,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 - [`helix.services.config`](config.md): Config
 - [`helix.services.fonts`](fonts.md): Font2D, FontKind, FontPacking, Fonts, FontsOptions, Glyph2D, Kerning2D
 - [`helix.services.images`](images.md): Image, ImageFilter, Images
-- [`helix.services.input`](input.md): Actions, AxisDirection, Binding, Gamepads, Gesture, Gestures, IActionDevice, Keyboard, Mouse, Tilt, TiltAxis, Touch
+- [`helix.services.input`](input.md): Actions, AxisDirection, Binding, Gamepads, Gesture, Gestures, IActionDevice, Keyboard, Mouse, Tilt, TiltAxis, Touch, VirtualGamepad, VirtualGamepadOptions, VirtualStick, VirtualStickBase, VirtualStickOptions
 - [`helix.services.models`](models.md): Model3D, ModelImage3D, Models
 - [`helix.services.saves`](saves.md): Saves
 - [`helix.services.screen`](screen.md): Screen, ScreenFit, ScreenOptions

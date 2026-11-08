@@ -163,13 +163,10 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
   and `Mouse`, as helix-legacy's `PointerGestures` and touch gesture had them.
-- **`TouchSticks`, after the jam's run 4:** floating touch sticks as a service in `helix.services.input`, beside `Gamepads`. A finger
-  landing in a stick's area centers it where it landed, and its drag is the push, clamped to a radius with a dead zone; another finger
-  takes it over, and lifting hands it to one still down. It reads `Touch` in window pixels and implements `IActionDevice`, so `Actions`
-  binds it as a pad's stick (`TouchStick(Anywhere, 80, X)`), and a function the program passes keeps it off its buttons. Drawing stays
-  the engine's: helix-raylib gains `DrawTouchStick`. This revises DECISIONS 13, which kept the sticks out of the services because of
-  their placing and drawing; their logic is the part every engine would otherwise write. Run 4's entrants build one by hand first,
-  which measures what the service saves. Touch regions (on-screen buttons) stay open.
+- **On-screen buttons on the virtual gamepad (DECISIONS 57):** a `VirtualButton` mapped to a pad button, so a game's pause or fire button
+  reads through `IsGamepadButtonPressed` and `Actions`. Every virtual gamepad trial built its buttons by hand.
+- **`IsTouchScreenAvailable` natively:** it's always false there, so a native phone draws no virtual gamepad hints. SDL lists touch
+  devices.
 - **From a jam game's friction log (F numbers), for the layers that own them:**
   - helix-scene: `find` by name and kind, `addChildAt`, `getChildIndex`, `removeChildAt`, `contains` (F1, F2, F4); text pivot or
     vertical align (F20); a sprite keeping its sheet and index across a reload (F56); a matrix transform, so skew (F57); a pointer

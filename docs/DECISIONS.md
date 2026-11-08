@@ -769,3 +769,13 @@ Why things are the way they are, numbered, in order.
     shaders. `LoadPbrShader` tone maps with Khronos PBR Neutral, always: colors in the usual range come out as authored, and brighter
     light rolls off toward white. Rejected: a falloff window alone (not physical, so a lit scene changes as the camera moves, and glTF's
     lights would need converting); and a switch for tone mapping, which a program's own fragment stage over `pbr.glsl` covers.
+57. **On-screen sticks are a virtual gamepad.** This revises 13. A virtual gamepad implements `IGamepads` and stands in front of the
+    platform's gamepads, in a slot. A game reads its sticks as it reads any pad's: `Gamepads.getAxis`, `Actions`, and in helix-raylib
+    `GetGamepadAxisMovement`. The first touch plugs it in. A physical gamepad in its slot replaces it, and the next touch after that pad
+    leaves plugs it in again. It has two sticks, left and right, each with a touch zone, a base placement (floating, following or
+    fixed), a radius and a dead zone of 0.12. Bounds cut out of the zones keep a game's buttons free. In helix-raylib,
+    `EnableVirtualGamepad` turns it on and the runtime draws it at `EndDrawing`. A finger holding a stick there is no longer the mouse,
+    so a tap elsewhere still reaches raygui. Seven trials of the doc comments shaped it. Once core.md pointed to it, every entrant found
+    it there. Rejected: a separate sticks service read through calls of its own (the game's pad code would ignore it); and reporting the
+    axes without the pad being available (raylib's usual `IsGamepadAvailable` guard would skip them). On-screen buttons come next, as
+    the pad's buttons.
