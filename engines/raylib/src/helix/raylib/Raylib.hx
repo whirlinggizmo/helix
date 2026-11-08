@@ -2152,7 +2152,7 @@ class Raylib {
 
 		The input stays until the devices change it or another event does.
 
-		A window event or an action is done. `WINDOW_CLOSE` makes `WindowShouldClose` true.
+		A window event or an action is done. raylib's `WINDOW_CLOSE` event makes `WindowShouldClose` true.
 
 		Plays nothing while recording.
 

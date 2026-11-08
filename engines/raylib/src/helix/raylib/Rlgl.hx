@@ -697,7 +697,7 @@ class Rlgl {
 
 	/** Applies a matrix before the current one.
 
-		@param matf  The matrix's 16 numbers, by columns, as raylib's `MatrixToFloat` gives them. */
+		@param matf  The matrix's 16 numbers, by columns, as `MatrixToFloatV` gives them. */
 	public static inline function rlMultMatrixf(matf:Array<Float>):Void
 		RRlgl.rlMultMatrixf(matf);
 

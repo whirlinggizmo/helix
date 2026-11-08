@@ -411,7 +411,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   A null filter keeps every file, and without `scanSubdirs` every subdirectory too.
 
-  At most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are more.
+  At most 8192 paths are listed (raylib's `MAX_FILEPATH_CAPACITY`), with a warning when there are more.
 - `ExportDataAsCodeAsync`: Asynchronously writes bytes as a C header, the text raylib's `ExportDataAsCode` writes. See `SaveFileDataAsync` for the bytes as they are.
   - `data`: The bytes.
   - `dataSize`: How many of them.
@@ -622,7 +622,11 @@ static function UpdateLightValues(shader:Shader, light:Light):Void
 
   A point light with a `range` dims with distance, and `intensity` makes any light brighter. Light brighter than white rolls off toward white instead of clipping, and colors in the usual range come out as authored.
 
-  What each draw reads from the material: its maps, bound at `locs[SHADER_LOC_MAP_ALBEDO]`, `METALNESS`, `ROUGHNESS`, `NORMAL`, `OCCLUSION` and `EMISSION` (the samplers `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and `emissiveMap`, each set to its map's unit), a missing map reading white and a missing normal map a flat normal; and its values, `maps[MATERIAL_MAP_ALBEDO].color` times the tint as `colDiffuse`, `maps[MATERIAL_MAP_METALNESS].value` as `metallicValue`, `maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as `emissiveColor`. Colors are taken as linear, as a glTF's factors are, and an image's texels decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set. A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`). A program's own shader draws the same way by including `<helix/raylib/shaders/pbr.glsl>`.
+  Each draw reads the material's maps `MATERIAL_MAP_ALBEDO`, `MATERIAL_MAP_METALNESS`, `MATERIAL_MAP_ROUGHNESS`, `MATERIAL_MAP_NORMAL`, `MATERIAL_MAP_OCCLUSION` and `MATERIAL_MAP_EMISSION`. Their samplers are `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and `emissiveMap`, found at `locs[SHADER_LOC_MAP_ALBEDO]` and the five after it. A missing map reads white, and a missing normal map reads a flat normal.
+
+  Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`. `maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`, and `maps[MATERIAL_MAP_EMISSION].color` is `emissiveColor`. Colors are taken as linear, as a glTF's factors are. An image's texels are decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
+
+  A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`). A program's own shader draws the same way by including `<helix/raylib/shaders/pbr.glsl>`.
 
   ```haxe
   var pbr = LoadPbrShader();
@@ -685,7 +689,7 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
 
   Each starts as raylib's default material, and reads these fields as raylib's `ProcessMaterialsOBJ` does:
 
-  - `map_Kd`, the diffuse texture, or with none `Kd`, the diffuse color (alpha 255). - `map_Ks` and `Ks`, the specular texture and color. - `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is `Ns`, the specular exponent. - `Ke`, the emission color. - `disp`, the height map's texture.
+  - `map_Kd`, the diffuse texture, or with none MTL's `Kd`, the diffuse color (alpha 255). - `map_Ks` and MTL's `Ks`, the specular texture and color. - `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is MTL's `Ns`, the specular exponent. - MTL's `Ke`, the emission color. - `disp`, the height map's texture.
 
   A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular exponent is 1.
 
@@ -758,6 +762,22 @@ static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Sha
 - `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for loading one from a file.
   - `compiledShaderData`: The compiled shader, as `CompileShaderFile` writes it.
   - returns: The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning.
+
+### Macros, run as the program builds
+
+```haxe
+static macro function CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String):Void
+```
+
+- `CompileShaderFile`: Compiles a shader's two stages, raylib's GLSL, into a file `LoadCompiledShaderAsync` loads on every target. Run as a `--macro` of the program's build, or of an hxml of its own, one line a shader:
+  - `vsFileName`: The vertex stage's file, or null for raylib's default.
+  - `fsFileName`: The fragment stage's file, or null for raylib's default.
+  - `compiledShaderFileName`: The file to write.
+
+  ```hxml
+  -lib helix-raylib
+  --macro helix.raylib.extras.Shaders.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
+  ```
 
 ## Sprites
 

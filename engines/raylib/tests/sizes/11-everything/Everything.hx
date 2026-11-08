@@ -9,7 +9,8 @@ import haxe.macro.Type;
 	goes to `Everything.result`, both of no type, so nothing a call is given or returns is known as the program builds and nothing is
 	folded away. The functions that refuse to compile (a section's `@:unsupported` or `@:unimplemented`) are left out; the macro functions
 	that choose a reader by a constant file name (DECISIONS 29) are called by hand in `Main`, once for each reader, and named in
-	`BY_HAND`, so a macro function added to helix-raylib and not called fails the build here. */
+	`BY_HAND`, so a macro function added to helix-raylib and not called fails the build here. A build step (`BUILD_STEPS`) is left out.
+	It runs as a `--macro`, not in a program. */
 class Everything {
 	/** What every generated call is given: unknown as the program builds. */
 	public static var value:Dynamic = null;
@@ -67,6 +68,9 @@ class Everything {
 	/** The section metadata that makes a function refuse to compile. */
 	static final REFUSALS = [":unsupported", ":unimplemented"];
 
+	/** The macro functions a build runs as a `--macro`, which a program doesn't call. */
+	static final BUILD_STEPS = ["CompileShaderFile"];
+
 	/** The macro functions Main calls by hand, with a constant name of each extension their readers are chosen by. */
 	static final BY_HAND = [
 		"LoadModelAsync",
@@ -107,7 +111,8 @@ class Everything {
 						switch f.kind {
 							case FMethod(MethMacro):
 								if (refused.exists(f.name)) refusedCount++; else if (BY_HAND.contains(f.name)) byHand++; else
-									Context.error('Everything: $facade.${f.name} is a macro function Main doesn\'t call by hand', Context.currentPos());
+									if (!BUILD_STEPS.contains(f.name))
+										Context.error('Everything: $facade.${f.name} is a macro function Main doesn\'t call by hand', Context.currentPos());
 							case FMethod(_):
 								calls.push(call(facade, f));
 								called++;

@@ -585,7 +585,7 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `y`: The y scale.
   - `z`: The z scale.
 - `rlMultMatrixf`: Applies a matrix before the current one.
-  - `matf`: The matrix's 16 numbers, by columns, as raylib's `MatrixToFloat` gives them.
+  - `matf`: The matrix's 16 numbers, by columns, as `MatrixToFloatV` gives them.
 - `rlOrtho`: Applies an orthographic projection before the current matrix.
   - `left`: The left plane.
   - `right`: The right plane.

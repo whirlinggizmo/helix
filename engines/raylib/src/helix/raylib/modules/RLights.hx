@@ -52,14 +52,18 @@ class RLights {
 		A point light with a `range` dims with distance, and `intensity` makes any light brighter. Light brighter than white rolls off
 		toward white instead of clipping, and colors in the usual range come out as authored.
 
-		What each draw reads from the material: its maps, bound at `locs[SHADER_LOC_MAP_ALBEDO]`, `METALNESS`, `ROUGHNESS`, `NORMAL`,
-		`OCCLUSION` and `EMISSION` (the samplers `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and
-		`emissiveMap`, each set to its map's unit), a missing map reading white and a missing normal map a flat normal; and its values,
-		`maps[MATERIAL_MAP_ALBEDO].color` times the tint as `colDiffuse`, `maps[MATERIAL_MAP_METALNESS].value` as `metallicValue`,
-		`maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as `emissiveColor`. Colors are
-		taken as linear, as a glTF's factors are, and an image's texels decoded from sRGB. A material from `LoadMaterialDefault` is a
-		smooth non-metal, both values 0, until set. A mesh without tangents under a normal map gets them with its first draw
-		(`GenMeshTangents`). A program's own shader draws the same way by including `<helix/raylib/shaders/pbr.glsl>`.
+		Each draw reads the material's maps `MATERIAL_MAP_ALBEDO`, `MATERIAL_MAP_METALNESS`, `MATERIAL_MAP_ROUGHNESS`,
+		`MATERIAL_MAP_NORMAL`, `MATERIAL_MAP_OCCLUSION` and `MATERIAL_MAP_EMISSION`. Their samplers are `albedoMap`, `metalnessMap`,
+		`roughnessMap`, `normalMap`, `occlusionMap` and `emissiveMap`, found at `locs[SHADER_LOC_MAP_ALBEDO]` and the five after it. A
+		missing map reads white, and a missing normal map reads a flat normal.
+
+		Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`.
+		`maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`, and
+		`maps[MATERIAL_MAP_EMISSION].color` is `emissiveColor`. Colors are taken as linear, as a glTF's factors are. An image's texels are
+		decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
+
+		A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`). A program's own shader draws the
+		same way by including `<helix/raylib/shaders/pbr.glsl>`.
 
 		```haxe
 		var pbr = LoadPbrShader();

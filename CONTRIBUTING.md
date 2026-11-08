@@ -46,6 +46,9 @@ Fast ones with each step, the full ones at a milestone:
   comments also runs `python3 tools/gen_apidoc.py` first, since the committed reference must match them.
 - A change touching helix-raylib's `Runtime`, `Frame` or what the native adapters are built over also gets one native parity suite,
   `python3 tools/raylib_parity.py shapes2d`. The unit suite and a page run open no native window, so a native-only fault passes them.
+- A change adding or moving a departure from raylib (a refusal, an extra, a build step) gets a trial before it's pushed. Sonnet
+  entrants build [the jam's game](docs/trials/jam-survivors/spec.md) from the reference alone, and each guess they make at the change
+  is answered in its doc.
 - At the end of a feature: the native builds, `tools/platform_checks.py`, `tools/services_checks.py`, `tools/render_checks.py` and
   `tools/raylib_parity.py`.
 

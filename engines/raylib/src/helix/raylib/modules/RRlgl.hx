@@ -104,7 +104,7 @@ class RRlgl {
 
 	/** Applies a matrix before the current one.
 
-		@param matf  The matrix's 16 numbers, by columns, as raylib's `MatrixToFloat` gives them. */
+		@param matf  The matrix's 16 numbers, by columns, as `MatrixToFloatV` gives them. */
 	static function rlMultMatrixf(matf:Array<Float>):Void {
 		var m = new Matrix3D();
 		for (i in 0...16)

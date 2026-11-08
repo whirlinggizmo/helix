@@ -253,6 +253,9 @@ Code is written to be read, by people and agents, not packed.
 - **Generated API documentation.** The doc comments are the API reference: dox (`dox` on lib.haxe.org) generates it from them, so what
   a developer or an agent reads is what the code says; each library's `api/` holds the same as Markdown, committed and
   checked by `gen_apidoc --check`, so it moves with the library.
+- **A departure from raylib is answered where it's met.** A refused call names its replacement. The replacement's doc shows how to
+  use it, build step included. An extra with no raylib counterpart is named in the doc of the raylib call it extends. Every name a
+  doc gives is in the reference, or follows its owner (raylib's `LoadOBJ`, MTL's `Kd`). `gen_apidoc` fails on one that isn't.
 - **Each library's reference is what its own users write against, and nothing else.** A developer or an agent given only the
   reference and a hello world should be able to build any program, and not be put off by machinery. Haxe has no internal, so what
   another package of a library must reach is public, and the library's own is marked:

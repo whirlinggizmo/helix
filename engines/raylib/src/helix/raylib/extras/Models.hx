@@ -48,10 +48,11 @@ class Models {
 
 		Each starts as raylib's default material, and reads these fields as raylib's `ProcessMaterialsOBJ` does:
 
-		- `map_Kd`, the diffuse texture, or with none `Kd`, the diffuse color (alpha 255).
-		- `map_Ks` and `Ks`, the specular texture and color.
-		- `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is `Ns`, the specular exponent.
-		- `Ke`, the emission color.
+		- `map_Kd`, the diffuse texture, or with none MTL's `Kd`, the diffuse color (alpha 255).
+		- `map_Ks` and MTL's `Ks`, the specular texture and color.
+		- `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is MTL's `Ns`, the specular
+		  exponent.
+		- MTL's `Ke`, the emission color.
 		- `disp`, the height map's texture.
 
 		A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular

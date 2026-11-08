@@ -221,7 +221,7 @@ def macro_signatures():
     for f in json.loads(fields.read_text(encoding='utf-8')):
         if not f['isMacro']:continue
         args=', '.join(('?' if a['optional'] and not a['value'] else '')+a['name']+':'+shown(a['type'])+(f' = {a["value"]}' if a['value'] else '') for a in f['args'])
-        result='Void' if f['result'] in ('Expr',None) else shown(f['result'])
+        result='Void' if f['result'] in ('Expr','haxe.macro.Expr',None) else shown(f['result'])
         out[(f['owner'],f['name'])]=f'{"static " if f["isStatic"] else ""}macro function {f["name"]}({args}):{result}'
     return out
 
@@ -483,6 +483,31 @@ def includes_page():
             lines+=(['```glsl']+body+['```',''] if kind=='code' else [' '.join(body),''])
     return '\n'.join(lines).rstrip('\n')+'\n'
 
+# Who a name belongs to when it isn't helix's: the doc writes it after its owner (raylib's `LoadOBJ`, MTL's `Kd`).
+OWNERS=r"(?:raylib(?: [\d.]+)?|rlgl|raygui|raymath|rlights|MTL|glTF)'s? $"
+
+def unknown_names(xml,pages):
+    """The names helix-raylib's pages give in backticks that no library's reference shows: (page, name) pairs. A name is one a program
+    would call or write, a type, function or constant, starting with a capital. One after its owner (OWNERS) is another's. One the shader
+    includes declare is in shaders.md."""
+    known=set()
+    for node in public_types(xml).values():
+        known.update((node.get('path'),node.get('path').split('.')[-1]))
+        known.update(c.tag for c in node.iter())
+    known.update(re.findall(r'\w+',pages['engines/raylib/api/shaders.md']))
+    unknown=[]
+    for name,text in sorted(pages.items()):
+        if not name.startswith('engines/raylib/api/') or name.endswith('/shaders.md'):continue
+        fenced=False
+        for line in text.splitlines():
+            if line.startswith('```'):fenced=not fenced
+            if fenced or line.startswith('```'):continue
+            for m in re.finditer(r'`([^`]+)`',line):
+                n=m.group(1)
+                if not re.fullmatch(r'[A-Z]\w*(\.\w+)*',n) or n.endswith('_') or re.search(OWNERS,line[:m.start()]):continue
+                if n not in known and n.split('.')[-1] not in known:unknown.append((name,n))
+    return sorted(set(unknown))
+
 def main():
     import cli
     p=cli.parser(__doc__);p.add_argument('--check',action='store_true',help="write nothing; fail when a library's api/ isn't what the sources give")
@@ -529,6 +554,10 @@ def generate(check=False):
     pages=markdown(OUT/'xml/api.xml',native)
     pages['libs/platform/api/README.md']=pages['libs/platform/api/README.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids')
     pages['engines/raylib/api/README.md']=pages['engines/raylib/api/README.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-native-root=../assets')
+    # A departure from raylib is answered where it's met: every name a doc or a refusal gives is one the program can look up.
+    unknown=unknown_names(OUT/'xml/api.xml',pages)
+    if unknown:sys.exit("gen_apidoc: helix-raylib's docs name what no reference shows; name what the program uses, or the name's owner "
+                        "(raylib's `LoadOBJ`):\n  "+'\n  '.join(f'{n} in {p}' for p,n in unknown))
     if check:
         stale=[name for name,text in pages.items() if not (ROOT/name).is_file() or (ROOT/name).read_text(encoding='utf-8')!=text]
         extra=[name for name in written() if name not in pages]

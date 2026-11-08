@@ -313,7 +313,7 @@ class RFilesAsync {
 
 		A null filter keeps every file, and without `scanSubdirs` every subdirectory too.
 
-		At most 8192 paths are listed (`MAX_FILEPATH_CAPACITY`), with a warning when there are more.
+		At most 8192 paths are listed (raylib's `MAX_FILEPATH_CAPACITY`), with a warning when there are more.
 
 		@param basePath  The directory.
 		@param filter  The extensions kept, such as ".png;.jpg;DIR", or null for every file.
