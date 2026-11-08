@@ -183,7 +183,7 @@
     }
    },
    "4-input": {
-    "adds": "an action bound to a key and a pad button, read each frame",
+    "adds": "an action bound to a key and a gamepad button, read each frame",
     "raw": 64005,
     "gzip": 13642,
     "brotli": 11938,

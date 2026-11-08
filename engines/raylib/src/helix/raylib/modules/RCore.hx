@@ -1213,7 +1213,7 @@ class RCore {
 		@param rightMotor  The light motor's strength, 0 to 1.
 		@param duration  How long, in seconds. */
 	static function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void {
-		if (!realPadReady(gamepad))
+		if (!realGamepadReady(gamepad))
 			return;
 		if (!Runtime.gamepadsAdapter.setVibration(gamepad, leftMotor, rightMotor, Math.min(duration, 2))) {
 			if (!warnedVibration)
@@ -1242,37 +1242,37 @@ class RCore {
 	static function IsGamepadAvailable(gamepad:Int):Bool {
 		var played = Runtime.played;
 		if (played != null)
-			return gamepad >= 0 && gamepad < 4 && played.pads[gamepad];
-		return realPadReady(gamepad);
+			return gamepad >= 0 && gamepad < 4 && played.gamepads[gamepad];
+		return realGamepadReady(gamepad);
 	}
 
 	// Whether a gamepad is connected, as the gamepads have it.
-	static function realPadReady(gamepad:Int):Bool {
+	static function realGamepadReady(gamepad:Int):Bool {
 		return gamepad >= 0 && gamepad < 4 && Runtime.gamepads().isConnected(gamepad);
 	}
 
 	// Whether a gamepad's button is held, as the gamepads have it.
-	static function realPadButtonDown(gamepad:Int, button:Int):Bool {
-		var b = toPadButton(button);
-		return b >= 0 && realPadReady(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
+	static function realGamepadButtonDown(gamepad:Int, button:Int):Bool {
+		var b = toGamepadButton(button);
+		return b >= 0 && realGamepadReady(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
 	}
 
 	// A gamepad's axis, as the gamepads have it.
-	static function realPadAxis(gamepad:Int, axis:Int):Float {
-		if (axis < 0 || axis > 5 || !realPadReady(gamepad))
+	static function realGamepadAxis(gamepad:Int, axis:Int):Float {
+		if (axis < 0 || axis > 5 || !realGamepadReady(gamepad))
 			return 0;
 		var value = Runtime.gamepads().getAxis(gamepad, cast axis);
 		return axis >= GAMEPAD_AXIS_LEFT_TRIGGER ? value * 2 - 1 : value;
 	}
 
 	// A played gamepad button's state, now or the last frame, or null while nothing is played.
-	static function playedPadButton(gamepad:Int, button:Int, previous:Bool):Null<Bool> {
+	static function playedGamepadButton(gamepad:Int, button:Int, previous:Bool):Null<Bool> {
 		var played = Runtime.played;
 		if (played == null)
 			return null;
-		if (gamepad < 0 || gamepad >= 4 || button < 0 || button >= 32 || !played.pads[gamepad])
+		if (gamepad < 0 || gamepad >= 4 || button < 0 || button >= 32 || !played.gamepads[gamepad])
 			return false;
-		return (previous ? played.previousPadButtons : played.padButtons)[gamepad * 32 + button];
+		return (previous ? played.previousGamepadButtons : played.gamepadButtons)[gamepad * 32 + button];
 	}
 
 	/** Returns a gamepad's name.
@@ -1289,10 +1289,10 @@ class RCore {
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsGamepadButtonPressed(gamepad:Int, button:Int):Bool {
-		var now = playedPadButton(gamepad, button, false);
+		var now = playedGamepadButton(gamepad, button, false);
 		if (now != null)
-			return now && !playedPadButton(gamepad, button, true);
-		var b = toPadButton(button);
+			return now && !playedGamepadButton(gamepad, button, true);
+		var b = toGamepadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonPressed(gamepad, cast b);
 	}
 
@@ -1302,10 +1302,10 @@ class RCore {
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True while it is down. */
 	static function IsGamepadButtonDown(gamepad:Int, button:Int):Bool {
-		var now = playedPadButton(gamepad, button, false);
+		var now = playedGamepadButton(gamepad, button, false);
 		if (now != null)
 			return now;
-		var b = toPadButton(button);
+		var b = toGamepadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
 	}
 
@@ -1315,10 +1315,10 @@ class RCore {
 		@param button  The button (`GAMEPAD_BUTTON_*`).
 		@return  True for that frame alone. */
 	static function IsGamepadButtonReleased(gamepad:Int, button:Int):Bool {
-		var now = playedPadButton(gamepad, button, false);
+		var now = playedGamepadButton(gamepad, button, false);
 		if (now != null)
-			return !now && playedPadButton(gamepad, button, true);
-		var b = toPadButton(button);
+			return !now && playedGamepadButton(gamepad, button, true);
+		var b = toGamepadButton(button);
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonReleased(gamepad, cast b);
 	}
 
@@ -1343,16 +1343,16 @@ class RCore {
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	static function GetGamepadButtonPressed():Int {
 		var last = GAMEPAD_BUTTON_UNKNOWN;
-		for (pad in 0...4)
-			if (IsGamepadAvailable(pad)) {
+		for (gamepad in 0...4)
+			if (IsGamepadAvailable(gamepad)) {
 				for (button in pollOrder)
-					if (IsGamepadButtonDown(pad, button))
+					if (IsGamepadButtonDown(gamepad, button))
 						last = button;
 				#if !js
 				// GLFW has the second triggers as axes alone; raylib 6.2 counts each as held past 0.1.
-				if (GetGamepadAxisMovement(pad, GAMEPAD_AXIS_LEFT_TRIGGER) > 0.1)
+				if (GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_LEFT_TRIGGER) > 0.1)
 					last = GAMEPAD_BUTTON_LEFT_TRIGGER_2;
-				if (GetGamepadAxisMovement(pad, GAMEPAD_AXIS_RIGHT_TRIGGER) > 0.1)
+				if (GetGamepadAxisMovement(gamepad, GAMEPAD_AXIS_RIGHT_TRIGGER) > 0.1)
 					last = GAMEPAD_BUTTON_RIGHT_TRIGGER_2;
 				#end
 			}
@@ -1384,8 +1384,12 @@ class RCore {
 	static function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float {
 		var played = Runtime.played;
 		if (played != null)
-			return gamepad >= 0 && gamepad < 4 && axis >= 0 && axis < 8 && played.pads[gamepad] ? played.padAxes[gamepad * 8 + axis] : 0;
-		return realPadAxis(gamepad, axis);
+			return gamepad >= 0
+				&& gamepad < 4
+				&& axis >= 0
+				&& axis < 8
+				&& played.gamepads[gamepad] ? played.gamepadAxes[gamepad * 8 + axis] : 0;
+		return realGamepadAxis(gamepad, axis);
 	}
 
 	// ---- Files ----
@@ -2543,7 +2547,7 @@ class RCore {
 
 	// raylib's GAMEPAD_BUTTON_* as the platform's buttons, by position.
 
-	static function toPadButton(button:Int):Int {
+	static function toGamepadButton(button:Int):Int {
 		return switch button {
 			case 1: 12;
 			case 2: 15;

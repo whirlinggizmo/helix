@@ -645,10 +645,10 @@ class Runtime {
 
 		@param gamepad  The gamepad the gamepads read.
 		@param poller  What brings the gamepad up to date each frame. */
-	public static function standInFront(pad:helix.platform.IGamepads, poller:IPollable):Void {
+	public static function standInFront(gamepad:helix.platform.IGamepads, poller:IPollable):Void {
 		touch();
 		devices.remove(gamepads());
-		gamepadsService = new Gamepads(events, pad);
+		gamepadsService = new Gamepads(events, gamepad);
 		gamepadsService.deadZone = 0;
 		devices.push(poller);
 		devices.push(gamepadsService);

@@ -1,4 +1,4 @@
-// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one an action bound to a key and a pad button, read each frame.
+// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one an action bound to a key and a gamepad button, read each frame.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
@@ -20,7 +20,7 @@ class Main {
 	static var system:DomSystemAdapter;
 	static var time:Time;
 	static var keyboard:Keyboard;
-	static var pads:Gamepads;
+	static var gamepads:Gamepads;
 	static var actions:Actions;
 
 	static function main():Void {
@@ -32,15 +32,15 @@ class Main {
 		time.every(1, () -> trace(time.elapsed));
 		time.scale = new Config(system).getFloat("speed", 1);
 		keyboard = new Keyboard(events, new DomKeyboardAdapter({events: events}));
-		pads = new Gamepads(events, new DomGamepadsAdapter({events: events}));
-		actions = new Actions([keyboard, pads]);
+		gamepads = new Gamepads(events, new DomGamepadsAdapter({events: events}));
+		actions = new Actions([keyboard, gamepads]);
 		actions.bind("jump", Keyboard(Space), Gamepad(0, South));
 		var frame:Float->Void = null;
 		frame = _ -> {
 			events.poll();
 			time.poll();
 			keyboard.poll();
-			pads.poll();
+			gamepads.poll();
 			if (actions.isPressed("jump"))
 				trace("jump");
 			graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);

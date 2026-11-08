@@ -17,22 +17,22 @@ class Sdl3GamepadsAdapter implements IGamepads {
 	}
 
 	public function isConnected(slot:Int):Bool
-		return Sdl3EventsBridge.padConnected(slot) != 0;
+		return Sdl3EventsBridge.gamepadConnected(slot) != 0;
 
 	public function getName(slot:Int):String
-		return (Sdl3EventsBridge.padName(slot) : String);
+		return (Sdl3EventsBridge.gamepadName(slot) : String);
 
 	public function isButtonDown(slot:Int, button:GamepadButton):Bool
-		return Sdl3EventsBridge.padButton(slot, button) != 0;
+		return Sdl3EventsBridge.gamepadButton(slot, button) != 0;
 
 	public function getAxis(slot:Int, axis:GamepadAxis):Float
-		return Sdl3EventsBridge.padAxis(slot, axis);
+		return Sdl3EventsBridge.gamepadAxis(slot, axis);
 
 	public function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
-		return Sdl3EventsBridge.padRumble(slot, low, high, Math.round(seconds * 1000)) != 0;
+		return Sdl3EventsBridge.gamepadRumble(slot, low, high, Math.round(seconds * 1000)) != 0;
 
 	public function addMappings(mappings:String):Int
-		return Sdl3EventsBridge.padAddMappings(mappings);
+		return Sdl3EventsBridge.gamepadAddMappings(mappings);
 
 	public function dispose():Void
 		Sdl3EventsBridge.want(Sdl3EventsBridge.GAMEPADS, 0);

@@ -26,7 +26,7 @@ class VirtualGamepadExtraTests {
 		var events = new FakeEvents(),
 			devices = new FakeDevices(),
 			window = new FakeWindow();
-		devices.padConnected = false;
+		devices.gamepadConnected = false;
 		Runtime.system = new FakeSystem();
 		Runtime.window = window;
 		Runtime.events = events;
@@ -74,10 +74,10 @@ class VirtualGamepadExtraTests {
 		check(GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X) < -.9, "a fixed right stick, its base at its zone's center, pushed left");
 		frame([TouchUp(3, 500, 300)]);
 
-		devices.padConnected = true;
+		devices.gamepadConnected = true;
 		frame();
 		check(IsGamepadAvailable(0) && !IsGamepadVirtual(0) && GetGamepadName(0) == "Fake", "a physical gamepad replaces it");
-		devices.padConnected = false;
+		devices.gamepadConnected = false;
 		frame();
 		check(!IsGamepadAvailable(0), "the physical gamepad gone: unplugged until a touch");
 

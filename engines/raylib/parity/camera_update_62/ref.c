@@ -4,14 +4,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include "raylib.h"
-static int keys[512], prevKeys[512], buttons[8], pad; static float mouseX, mouseY, prevX, prevY, wheel, axes[8];
+static int keys[512], prevKeys[512], buttons[8], gamepad; static float mouseX, mouseY, prevX, prevY, wheel, axes[8];
 Vector2 GetMouseDelta(void) { return (Vector2){ mouseX - prevX, mouseY - prevY }; }
 float GetMouseWheelMove(void) { return wheel; }
 bool IsKeyDown(int k) { return keys[k]; }
 bool IsKeyPressed(int k) { return keys[k] && !prevKeys[k]; }
 bool IsMouseButtonDown(int b) { return buttons[b]; }
-bool IsGamepadAvailable(int g) { return g == 0 && pad; }
-float GetGamepadAxisMovement(int g, int a) { return g == 0 && pad ? axes[a] : 0; }
+bool IsGamepadAvailable(int g) { return g == 0 && gamepad; }
+float GetGamepadAxisMovement(int g, int a) { return g == 0 && gamepad ? axes[a] : 0; }
 float GetFrameTime(void) { return 1.0f / 60; }
 #define RL_CULL_DISTANCE_NEAR 0.01
 #define RL_CULL_DISTANCE_FAR 1000.0
@@ -30,11 +30,11 @@ int main(void) {
         for (int round = 0; round < 2; round++) for (int i = 0; i < n; i++) {
             char line[128]; strcpy(line, lines[i]); char *t = strtok(line, " ");
             memcpy(prevKeys, keys, sizeof keys); memset(keys, 0, sizeof keys); memset(buttons, 0, sizeof buttons);
-            prevX = mouseX; prevY = mouseY; wheel = 0; pad = 0; memset(axes, 0, sizeof axes);
+            prevX = mouseX; prevY = mouseY; wheel = 0; gamepad = 0; memset(axes, 0, sizeof axes);
             if (!strcmp(t, "mouse") || !strcmp(t, "pan")) { int p = !strcmp(t, "pan"); mouseX += atof(strtok(0, " ")); mouseY += atof(strtok(0, " ")); if (p) buttons[MOUSE_BUTTON_MIDDLE] = 1; }
             else if (!strcmp(t, "keys") || !strcmp(t, "press")) { char *k; while ((k = strtok(0, " "))) keys[atoi(k)] = 1; }
             else if (!strcmp(t, "wheel")) wheel = atof(strtok(0, " "));
-            else if (!strcmp(t, "pad")) { pad = 1; axes[GAMEPAD_AXIS_RIGHT_X] = atof(strtok(0, " ")); axes[GAMEPAD_AXIS_RIGHT_Y] = atof(strtok(0, " "));
+            else if (!strcmp(t, "gamepad")) { gamepad = 1; axes[GAMEPAD_AXIS_RIGHT_X] = atof(strtok(0, " ")); axes[GAMEPAD_AXIS_RIGHT_Y] = atof(strtok(0, " "));
                 axes[GAMEPAD_AXIS_LEFT_Y] = atof(strtok(0, " ")); axes[GAMEPAD_AXIS_LEFT_X] = atof(strtok(0, " ")); }
             UpdateCamera(&c, modes[m]);
             printf("s%d.m%d.r%d.f%d %.9g %.9g %.9g %.9g %.9g %.9g %.9g %.9g %.9g\n", s, modes[m], round, i, c.position.x, c.position.y, c.position.z,

@@ -107,24 +107,24 @@ static int finger(SDL_FingerID id,int down){
 }
 
 /* Gamepads in four slots, each kept while connected; whether each one's triggers are down as buttons (past half way). */
-static SDL_Gamepad *pads[4];
+static SDL_Gamepad *gamepads[4];
 static int triggers[4][2];
 static int pad_button(SDL_GamepadButton button);
 /* The slot of the gamepad SDL knows by id, or -1. */
-static int pad_slot(SDL_JoystickID id){
- for(int i=0;i<4;i++)if(pads[i]&&SDL_GetGamepadID(pads[i])==id)return i;
+static int gamepad_slot(SDL_JoystickID id){
+ for(int i=0;i<4;i++)if(gamepads[i]&&SDL_GetGamepadID(gamepads[i])==id)return i;
  return -1;
 }
-static void pad_added(SDL_JoystickID id){
- for(int i=0;i<4;i++)if(pads[i]&&SDL_GetGamepadID(pads[i])==id)return;
- for(int i=0;i<4;i++)if(!pads[i]){if((pads[i]=SDL_OpenGamepad(id))){triggers[i][0]=triggers[i][1]=0;add(HELIX_EVENTS_PAD_CONNECTED,i,0,0,0);}return;}
+static void gamepad_added(SDL_JoystickID id){
+ for(int i=0;i<4;i++)if(gamepads[i]&&SDL_GetGamepadID(gamepads[i])==id)return;
+ for(int i=0;i<4;i++)if(!gamepads[i]){if((gamepads[i]=SDL_OpenGamepad(id))){triggers[i][0]=triggers[i][1]=0;add(HELIX_EVENTS_GAMEPAD_CONNECTED,i,0,0,0);}return;}
 }
-static void pad_removed(SDL_JoystickID id){
- for(int i=0;i<4;i++)if(pads[i]&&SDL_GetGamepadID(pads[i])==id){SDL_CloseGamepad(pads[i]);pads[i]=NULL;add(HELIX_EVENTS_PAD_DISCONNECTED,i,0,0,0);}
+static void gamepad_removed(SDL_JoystickID id){
+ for(int i=0;i<4;i++)if(gamepads[i]&&SDL_GetGamepadID(gamepads[i])==id){SDL_CloseGamepad(gamepads[i]);gamepads[i]=NULL;add(HELIX_EVENTS_GAMEPAD_DISCONNECTED,i,0,0,0);}
 }
 
 /* Typed text comes only while the window's text input is started (SDL3's design: on a phone that shows the keyboard, and Windows with a
-   pad plugged in pops its touch keyboard for a started one). */
+   gamepad plugged in pops its touch keyboard for a started one). */
 static void apply_text(void){
  SDL_Window *w=(SDL_Window*)helix_sdl3_window();
  if(!w||text_wanted==text_started)return;
@@ -211,18 +211,18 @@ static void translate(SDL_Event *e){
   /* A drop's files come one event each, then its end; a dropped directory comes as a path too, and isn't kept as a file. */
   case SDL_EVENT_DROP_FILE:if(e->drop.data&&!is_directory(e->drop.data))drop_file(e->drop.data);break;
   case SDL_EVENT_DROP_COMPLETE:drop_complete();break;
-  case SDL_EVENT_GAMEPAD_ADDED:pad_added(e->gdevice.which);break;
-  case SDL_EVENT_GAMEPAD_REMOVED:pad_removed(e->gdevice.which);break;
+  case SDL_EVENT_GAMEPAD_ADDED:gamepad_added(e->gdevice.which);break;
+  case SDL_EVENT_GAMEPAD_REMOVED:gamepad_removed(e->gdevice.which);break;
   case SDL_EVENT_GAMEPAD_BUTTON_DOWN:case SDL_EVENT_GAMEPAD_BUTTON_UP:{
-   int slot=pad_slot(e->gbutton.which),button=pad_button((SDL_GamepadButton)e->gbutton.button);
-   if(slot>=0&&button>=0)add(e->type==SDL_EVENT_GAMEPAD_BUTTON_DOWN?HELIX_EVENTS_PAD_BUTTON_DOWN:HELIX_EVENTS_PAD_BUTTON_UP,slot,button,0,0);
+   int slot=gamepad_slot(e->gbutton.which),button=pad_button((SDL_GamepadButton)e->gbutton.button);
+   if(slot>=0&&button>=0)add(e->type==SDL_EVENT_GAMEPAD_BUTTON_DOWN?HELIX_EVENTS_GAMEPAD_BUTTON_DOWN:HELIX_EVENTS_GAMEPAD_BUTTON_UP,slot,button,0,0);
    break;}
   /* A trigger is a button too (W3C's 6 and 7), down past half way. */
   case SDL_EVENT_GAMEPAD_AXIS_MOTION:{
-   int t=e->gaxis.axis==SDL_GAMEPAD_AXIS_LEFT_TRIGGER?0:e->gaxis.axis==SDL_GAMEPAD_AXIS_RIGHT_TRIGGER?1:-1,slot=pad_slot(e->gaxis.which);
+   int t=e->gaxis.axis==SDL_GAMEPAD_AXIS_LEFT_TRIGGER?0:e->gaxis.axis==SDL_GAMEPAD_AXIS_RIGHT_TRIGGER?1:-1,slot=gamepad_slot(e->gaxis.which);
    if(t<0||slot<0)break;
    int down=e->gaxis.value/32767.0f>0.5f;
-   if(down!=triggers[slot][t]){triggers[slot][t]=down;add(down?HELIX_EVENTS_PAD_BUTTON_DOWN:HELIX_EVENTS_PAD_BUTTON_UP,slot,6+t,0,0);}
+   if(down!=triggers[slot][t]){triggers[slot][t]=down;add(down?HELIX_EVENTS_GAMEPAD_BUTTON_DOWN:HELIX_EVENTS_GAMEPAD_BUTTON_UP,slot,6+t,0,0);}
    break;}
   default:break;
  }
@@ -242,7 +242,7 @@ void helix_events_want(int device,int on){
  wanted=on?wanted|device:wanted&~device;
  if((wanted&HELIX_EVENTS_GAMEPADS)&&!had)SDL_InitSubSystem(SDL_INIT_GAMEPAD);
  else if(!(wanted&HELIX_EVENTS_GAMEPADS)&&had){
-  for(int i=0;i<4;i++)if(pads[i]){SDL_CloseGamepad(pads[i]);pads[i]=NULL;}
+  for(int i=0;i<4;i++)if(gamepads[i]){SDL_CloseGamepad(gamepads[i]);gamepads[i]=NULL;}
   SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
  }
  if(!(wanted&HELIX_EVENTS_KEYBOARD))helix_events_set_text(0);
@@ -266,13 +266,13 @@ int helix_events_value(void){return current.value;}
 float helix_events_x(void){return current.x;}
 float helix_events_y(void){return current.y;}
 
-int helix_pad_rumble(int pad,float low,float high,int milliseconds){
- if(!helix_pad_connected(pad))return 0;
+int helix_gamepad_rumble(int gamepad,float low,float high,int milliseconds){
+ if(!helix_gamepad_connected(gamepad))return 0;
  float l=low<0?0:low>1?1:low,h=high<0?0:high>1?1:high;
- return SDL_RumbleGamepad(pads[pad],(Uint16)(l*65535),(Uint16)(h*65535),(Uint32)(milliseconds<0?0:milliseconds));
+ return SDL_RumbleGamepad(gamepads[gamepad],(Uint16)(l*65535),(Uint16)(h*65535),(Uint32)(milliseconds<0?0:milliseconds));
 }
 /* Each line SDL takes counts, whether it added a mapping or updated one. */
-int helix_pad_add_mappings(const char *mappings){
+int helix_gamepad_add_mappings(const char *mappings){
  if(!mappings)return 0;
  int added=0;const char *line=mappings;
  while(*line){
@@ -285,8 +285,8 @@ int helix_pad_add_mappings(const char *mappings){
  }
  return added;
 }
-int helix_pad_connected(int pad){return pad>=0&&pad<4&&pads[pad]!=NULL;}
-const char *helix_pad_name(int pad){const char *n=helix_pad_connected(pad)?SDL_GetGamepadName(pads[pad]):NULL;return n?n:"";}
+int helix_gamepad_connected(int gamepad){return gamepad>=0&&gamepad<4&&gamepads[gamepad]!=NULL;}
+const char *helix_gamepad_name(int gamepad){const char *n=helix_gamepad_connected(gamepad)?SDL_GetGamepadName(gamepads[gamepad]):NULL;return n?n:"";}
 
 /* The W3C standard layout's buttons, by index; 6 and 7, the triggers, are read from their axes. SDL's face buttons are by position, as
    W3C's are (south is 0 whatever its label). */
@@ -304,15 +304,15 @@ static int pad_button(SDL_GamepadButton button){
  return -1;
 }
 /* Sticks -1..1 with down and right positive (SDL's, and W3C's), triggers 0..1. */
-float helix_pad_axis(int pad,int axis){
+float helix_gamepad_axis(int gamepad,int axis){
  static const SDL_GamepadAxis axes[6]={SDL_GAMEPAD_AXIS_LEFTX,SDL_GAMEPAD_AXIS_LEFTY,SDL_GAMEPAD_AXIS_RIGHTX,SDL_GAMEPAD_AXIS_RIGHTY,
   SDL_GAMEPAD_AXIS_LEFT_TRIGGER,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER};
- if(!helix_pad_connected(pad)||axis<0||axis>5)return 0;
- float v=SDL_GetGamepadAxis(pads[pad],axes[axis])/32767.0f;
+ if(!helix_gamepad_connected(gamepad)||axis<0||axis>5)return 0;
+ float v=SDL_GetGamepadAxis(gamepads[gamepad],axes[axis])/32767.0f;
  return v<-1?-1:v>1?1:v;
 }
-int helix_pad_button(int pad,int button){
- if(!helix_pad_connected(pad)||button<0||button>16)return 0;
- if(button==6||button==7)return helix_pad_axis(pad,button==6?4:5)>0.5f;
- return SDL_GetGamepadButton(pads[pad],buttons[button]);
+int helix_gamepad_button(int gamepad,int button){
+ if(!helix_gamepad_connected(gamepad)||button<0||button>16)return 0;
+ if(button==6||button==7)return helix_gamepad_axis(gamepad,button==6?4:5)>0.5f;
+ return SDL_GetGamepadButton(gamepads[gamepad],buttons[button]);
 }

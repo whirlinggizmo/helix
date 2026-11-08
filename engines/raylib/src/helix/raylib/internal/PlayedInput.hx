@@ -44,16 +44,16 @@ interface PlayedInput {
 	final touchY:Array<Float>;
 
 	/** Each gamepad connected. */
-	final pads:Array<Bool>;
+	final gamepads:Array<Bool>;
 
 	/** Each gamepad's buttons down (`GAMEPAD_BUTTON_*`, gamepad times 32 plus the button). */
-	final padButtons:Array<Bool>;
+	final gamepadButtons:Array<Bool>;
 
 	/** Each gamepad's buttons down as the last frame had it. */
-	final previousPadButtons:Array<Bool>;
+	final previousGamepadButtons:Array<Bool>;
 
 	/** Each gamepad's axes (gamepad times 8 plus the axis). */
-	final padAxes:Array<Float>;
+	final gamepadAxes:Array<Float>;
 
 	/** The gesture detected now (`GESTURE_*`). */
 	var gesture:Int;

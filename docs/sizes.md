@@ -46,7 +46,7 @@ Programs on helix-services and what it sits on (`libs/services/tests/sizes/`), e
 | 1-clear | a window cleared each frame: the platform's window, its events and the GPU, no service | 34.6 | 7.6 (6.8) |  |
 | 2-time | the game's time and a timer | 38.1 | 8.4 (7.5) | +0.8 |
 | 3-config | an option read | 40.5 | 9.1 (8.1) | +0.7 |
-| 4-input | an action bound to a key and a pad button, read each frame | 62.5 | 13.3 (11.7) | +4.2 |
+| 4-input | an action bound to a key and a gamepad button, read each frame | 62.5 | 13.3 (11.7) | +4.2 |
 | 5-saves | a value loaded, set and written | 77.4 | 16.8 (14.7) | +3.5 |
 | 6-assets | a file loaded from a file system | 81.0 | 17.5 (15.3) | +0.7 |
 | 7-server | a server after the file system, its files downloaded and kept (RevalidateCache) | 103.3 | 22.5 (19.5) | +5.0 |

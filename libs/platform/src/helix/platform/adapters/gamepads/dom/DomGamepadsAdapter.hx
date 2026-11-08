@@ -12,7 +12,7 @@ import js.Browser;
 class DomGamepadsAdapter implements IGamepads {
 	final stream:EventStream;
 	// The gamepads in slots 0 to 3 as of the last poll: the browser's gamepad, or null.
-	final pads:Array<Dynamic> = [null, null, null, null];
+	final gamepads:Array<Dynamic> = [null, null, null, null];
 	// Each slot's buttons as the last poll read them.
 	final held:Array<Array<Bool>> = [for (_ in 0...4) [for (_ in 0...GamepadButton.COUNT) false]];
 	final reading:Void->Void;
@@ -29,18 +29,18 @@ class DomGamepadsAdapter implements IGamepads {
 	function read():Void {
 		var list:Dynamic = Browser.navigator.getGamepads();
 		for (slot in 0...4) {
-			var pad:Dynamic = list != null && slot < list.length ? list[slot] : null;
-			if (pad != null && !pad.connected)
-				pad = null;
-			if (pad != null && pads[slot] == null)
+			var gamepad:Dynamic = list != null && slot < list.length ? list[slot] : null;
+			if (gamepad != null && !gamepad.connected)
+				gamepad = null;
+			if (gamepad != null && gamepads[slot] == null)
 				stream.deliver(GamepadConnected(slot));
-			else if (pad == null && pads[slot] != null)
+			else if (gamepad == null && gamepads[slot] != null)
 				stream.deliver(GamepadDisconnected(slot));
-			pads[slot] = pad;
+			gamepads[slot] = gamepad;
 			var was = held[slot];
 			for (i in 0...GamepadButton.COUNT) {
-				var down = pad != null && isButtonDown(slot, cast i);
-				if (down != was[i] && pad != null)
+				var down = gamepad != null && isButtonDown(slot, cast i);
+				if (down != was[i] && gamepad != null)
 					stream.deliver(down ? GamepadButtonDown(slot, cast i) : GamepadButtonUp(slot, cast i));
 				was[i] = down;
 			}
@@ -48,32 +48,32 @@ class DomGamepadsAdapter implements IGamepads {
 	}
 
 	public function isConnected(slot:Int):Bool
-		return slot >= 0 && slot < 4 && pads[slot] != null;
+		return slot >= 0 && slot < 4 && gamepads[slot] != null;
 
 	public function getName(slot:Int):String
-		return isConnected(slot) ? pads[slot].id : "";
+		return isConnected(slot) ? gamepads[slot].id : "";
 
 	public function isButtonDown(slot:Int, button:GamepadButton):Bool {
 		if (!isConnected(slot))
 			return false;
-		var buttons:Dynamic = pads[slot].buttons, i:Int = button;
+		var buttons:Dynamic = gamepads[slot].buttons, i:Int = button;
 		return i < buttons.length && buttons[i].pressed;
 	}
 
 	public function getAxis(slot:Int, axis:GamepadAxis):Float {
 		if (!isConnected(slot))
 			return 0;
-		var pad:Dynamic = pads[slot], i:Int = axis;
+		var gamepad:Dynamic = gamepads[slot], i:Int = axis;
 		// The triggers are the standard layout's buttons 6 and 7, read by their value.
 		if (i >= 4)
-			return pad.buttons.length > i + 2 ? pad.buttons[i + 2].value : 0;
-		return pad.axes.length > i ? pad.axes[i] : 0;
+			return gamepad.buttons.length > i + 2 ? gamepad.buttons[i + 2].value : 0;
+		return gamepad.axes.length > i ? gamepad.axes[i] : 0;
 	}
 
 	// The Gamepad API's vibration actuator ("dual-rumble"), where the browser has one.
 	public function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool {
-		var pad:Dynamic = slot >= 0 && slot < 4 ? pads[slot] : null;
-		var actuator:Dynamic = pad != null ? pad.vibrationActuator : null;
+		var gamepad:Dynamic = slot >= 0 && slot < 4 ? gamepads[slot] : null;
+		var actuator:Dynamic = gamepad != null ? gamepad.vibrationActuator : null;
 		if (actuator == null || actuator.playEffect == null)
 			return false;
 		var clamp = (v:Float) -> v < 0 ? 0. : v > 1 ? 1. : v;
@@ -90,6 +90,6 @@ class DomGamepadsAdapter implements IGamepads {
 	public function dispose():Void {
 		stream.polls.remove(reading);
 		for (slot in 0...4)
-			pads[slot] = null;
+			gamepads[slot] = null;
 	}
 }

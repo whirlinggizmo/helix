@@ -7,7 +7,7 @@ import helix.platform.ITouch;
 import helix.platform.GamepadAxis;
 import helix.platform.GamepadButton;
 
-/** Stands in for the platform's keyboard, mouse, touch, gamepads and tilt in the services' tests: the pads' axes set by the test, and whether
+/** Stands in for the platform's keyboard, mouse, touch, gamepads and tilt in the services' tests: the gamepads' axes set by the test, and whether
 	tilt access is held. */
 class FakeDevices implements IKeyboard implements IMouse implements ITouch implements IGamepads implements ITilt {
 	/** Gets or sets whether the cursor shows. */
@@ -59,7 +59,7 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 			f();
 	}
 
-	/** Says the pad shakes when one is connected. */
+	/** Says the gamepad shakes when one is connected. */
 	public function setVibration(slot:Int, low:Float, high:Float, seconds:Float):Bool
 		return isConnected(slot);
 
@@ -75,13 +75,13 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 	public function setPosition(x:Float, y:Float):Bool
 		return true;
 
-	/** Gets the pads' axes, slot * GamepadAxis.COUNT + axis. */
+	/** Gets the gamepads' axes, slot * GamepadAxis.COUNT + axis. */
 	public final axes = [for (_ in 0...4 * GamepadAxis.COUNT) 0.];
 
 	/** Gets a value indicating whether tilt access was asked for and not released. */
 	public var tiltRequested(default, null) = false;
 
-	/** Creates them, with a pad in slot 0 alone. */
+	/** Creates them, with a gamepad in slot 0 alone. */
 	public function new() {}
 
 	/** Gets or sets whether typed text arrives; nothing types in the tests. */
@@ -95,14 +95,14 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 	function set_textInput(on:Bool):Bool
 		return typing = on;
 
-	/** Gets or sets whether a pad is in slot 0. */
-	public var padConnected = true;
+	/** Gets or sets whether a gamepad is in slot 0. */
+	public var gamepadConnected = true;
 
 	public function isConnected(slot:Int):Bool
-		return slot == 0 && padConnected;
+		return slot == 0 && gamepadConnected;
 
 	public function getName(slot:Int):String
-		return slot == 0 && padConnected ? "Fake" : "";
+		return slot == 0 && gamepadConnected ? "Fake" : "";
 
 	public function isButtonDown(slot:Int, button:GamepadButton):Bool
 		return false;

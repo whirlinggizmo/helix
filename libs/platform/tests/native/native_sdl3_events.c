@@ -2,7 +2,7 @@
    wanted, the first press alone arrives, then SDL drops the devices' events; with them wanted, events pushed through SDL come out of a poll
    as records in order, with the platform's codes; the window's focus, visibility and close arrive as events; and an SDL virtual gamepad,
    attached and detached while running, connects in a slot and reads as the W3C standard layout. A virtual
-   gamepad uses SDL's identity mapping, so this checks the adapter's translation, not SDL's controller database or a real pad. */
+   gamepad uses SDL's identity mapping, so this checks the adapter's translation, not SDL's controller database or a real gamepad. */
 #include "events_sdl3.h"
 #include "sdl3.h"
 #include <SDL3/SDL.h>
@@ -17,9 +17,9 @@ static int checks;
 static int next(int kind, int code, int value) {
     return helix_events_next() && helix_events_kind() == kind && helix_events_code() == code && helix_events_value() == value;
 }
-/* The virtual pad's slot, or -1: found by its name, as a real pad may be plugged in too. */
+/* The virtual gamepad's slot, or -1: found by its name, as a real gamepad may be plugged in too. */
 static int virtual_slot(void) {
-    for (int i = 0; i < 4; i++) if (helix_pad_connected(i) && SDL_strcmp(helix_pad_name(i), "HeliX virtual pad") == 0) return i;
+    for (int i = 0; i < 4; i++) if (helix_gamepad_connected(i) && SDL_strcmp(helix_gamepad_name(i), "HeliX virtual gamepad") == 0) return i;
     return -1;
 }
 static void key(SDL_Scancode scancode, int down, int repeat) {
@@ -107,14 +107,14 @@ int main(void) {
     helix_events_want(HELIX_EVENTS_GAMEPADS, 1);
     helix_events_poll(); CHECK(virtual_slot() < 0);
     SDL_VirtualJoystickDesc desc; SDL_INIT_INTERFACE(&desc);
-    desc.type = SDL_JOYSTICK_TYPE_GAMEPAD; desc.naxes = SDL_GAMEPAD_AXIS_COUNT; desc.nbuttons = SDL_GAMEPAD_BUTTON_COUNT; desc.name = "HeliX virtual pad";
+    desc.type = SDL_JOYSTICK_TYPE_GAMEPAD; desc.naxes = SDL_GAMEPAD_AXIS_COUNT; desc.nbuttons = SDL_GAMEPAD_BUTTON_COUNT; desc.name = "HeliX virtual gamepad";
     SDL_JoystickID id = SDL_AttachVirtualJoystick(&desc); CHECK(id != 0);
     SDL_Joystick *stick = SDL_OpenJoystick(id); CHECK(stick != NULL);
     helix_events_poll();
-    const int pad = virtual_slot(); CHECK(pad >= 0);
-    int connected = 0; while (helix_events_next()) if (helix_events_kind() == HELIX_EVENTS_PAD_CONNECTED && helix_events_code() == pad) connected = 1;
+    const int gamepad = virtual_slot(); CHECK(gamepad >= 0);
+    int connected = 0; while (helix_events_next()) if (helix_events_kind() == HELIX_EVENTS_GAMEPAD_CONNECTED && helix_events_code() == gamepad) connected = 1;
     CHECK(connected);
-    /* Each W3C button from SDL's: face buttons by position, shoulders, back and start, stick clicks, the pad, guide. */
+    /* Each W3C button from SDL's: face buttons by position, shoulders, back and start, stick clicks, the gamepad, guide. */
     static const int w3c[] = {0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     static const SDL_GamepadButton sdl[] = {SDL_GAMEPAD_BUTTON_SOUTH, SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_WEST, SDL_GAMEPAD_BUTTON_NORTH,
         SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, SDL_GAMEPAD_BUTTON_BACK, SDL_GAMEPAD_BUTTON_START,
@@ -123,35 +123,35 @@ int main(void) {
     /* Each read as state, and arriving as a record going down and another going up. */
     for (int i = 0; i < 15; i++) {
         SDL_SetJoystickVirtualButton(stick, sdl[i], true); SDL_UpdateJoysticks(); helix_events_poll();
-        for (int b = 0; b < 17; b++) CHECK(helix_pad_button(pad, b) == (b == w3c[i]));
-        CHECK(next(HELIX_EVENTS_PAD_BUTTON_DOWN, pad, w3c[i]));
+        for (int b = 0; b < 17; b++) CHECK(helix_gamepad_button(gamepad, b) == (b == w3c[i]));
+        CHECK(next(HELIX_EVENTS_GAMEPAD_BUTTON_DOWN, gamepad, w3c[i]));
         SDL_SetJoystickVirtualButton(stick, sdl[i], false); SDL_UpdateJoysticks();
         /* SDL holds back Guide's release until a quarter second after its press, then sends it at a later update. */
         if (sdl[i] == SDL_GAMEPAD_BUTTON_GUIDE) { SDL_Delay(300); SDL_UpdateJoysticks(); }
         helix_events_poll();
-        CHECK(next(HELIX_EVENTS_PAD_BUTTON_UP, pad, w3c[i]));
+        CHECK(next(HELIX_EVENTS_GAMEPAD_BUTTON_UP, gamepad, w3c[i]));
     }
     /* Pressed and let go between two polls: both records, in order, though the state reads up. */
     SDL_SetJoystickVirtualButton(stick, SDL_GAMEPAD_BUTTON_SOUTH, true); SDL_UpdateJoysticks();
     SDL_SetJoystickVirtualButton(stick, SDL_GAMEPAD_BUTTON_SOUTH, false); SDL_UpdateJoysticks(); helix_events_poll();
-    CHECK(next(HELIX_EVENTS_PAD_BUTTON_DOWN, pad, 0) && next(HELIX_EVENTS_PAD_BUTTON_UP, pad, 0) && !helix_pad_button(pad, 0));
+    CHECK(next(HELIX_EVENTS_GAMEPAD_BUTTON_DOWN, gamepad, 0) && next(HELIX_EVENTS_GAMEPAD_BUTTON_UP, gamepad, 0) && !helix_gamepad_button(gamepad, 0));
     /* Sticks -1..1, down and right positive; triggers 0..1, and pressed past a half as buttons 6 and 7. */
     SDL_SetJoystickVirtualAxis(stick, SDL_GAMEPAD_AXIS_LEFTY, SDL_JOYSTICK_AXIS_MAX);
     SDL_SetJoystickVirtualAxis(stick, SDL_GAMEPAD_AXIS_RIGHTX, SDL_JOYSTICK_AXIS_MIN);
     SDL_SetJoystickVirtualAxis(stick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, SDL_JOYSTICK_AXIS_MAX);
     SDL_UpdateJoysticks(); helix_events_poll();
-    CHECK(helix_pad_axis(pad, 1) == 1 && helix_pad_axis(pad, 2) == -1 && helix_pad_axis(pad, 0) == 0);
-    CHECK(fabsf(helix_pad_axis(pad, 5) - 1) < 1e-4f && helix_pad_button(pad, 7) && !helix_pad_button(pad, 6));
-    CHECK(next(HELIX_EVENTS_PAD_BUTTON_DOWN, pad, 7));
+    CHECK(helix_gamepad_axis(gamepad, 1) == 1 && helix_gamepad_axis(gamepad, 2) == -1 && helix_gamepad_axis(gamepad, 0) == 0);
+    CHECK(fabsf(helix_gamepad_axis(gamepad, 5) - 1) < 1e-4f && helix_gamepad_button(gamepad, 7) && !helix_gamepad_button(gamepad, 6));
+    CHECK(next(HELIX_EVENTS_GAMEPAD_BUTTON_DOWN, gamepad, 7));
     SDL_SetJoystickVirtualAxis(stick, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, SDL_JOYSTICK_AXIS_MIN); SDL_UpdateJoysticks();
-    CHECK(helix_pad_axis(pad, 5) == 0 && !helix_pad_button(pad, 7));
+    CHECK(helix_gamepad_axis(gamepad, 5) == 0 && !helix_gamepad_button(gamepad, 7));
     helix_events_poll();
-    CHECK(next(HELIX_EVENTS_PAD_BUTTON_UP, pad, 7));
+    CHECK(next(HELIX_EVENTS_GAMEPAD_BUTTON_UP, gamepad, 7));
     /* Detached while running: its slot empties, and says so, at the next poll. */
     SDL_CloseJoystick(stick); SDL_DetachVirtualJoystick(id); helix_events_poll();
-    int disconnected = 0; while (helix_events_next()) if (helix_events_kind() == HELIX_EVENTS_PAD_DISCONNECTED && helix_events_code() == pad) disconnected = 1;
+    int disconnected = 0; while (helix_events_next()) if (helix_events_kind() == HELIX_EVENTS_GAMEPAD_DISCONNECTED && helix_events_code() == gamepad) disconnected = 1;
     CHECK(disconnected);
-    CHECK(virtual_slot() < 0 && !helix_pad_connected(pad) && !helix_pad_button(pad, 0) && helix_pad_axis(pad, 1) == 0 && helix_pad_name(pad)[0] == 0);
+    CHECK(virtual_slot() < 0 && !helix_gamepad_connected(gamepad) && !helix_gamepad_button(gamepad, 0) && helix_gamepad_axis(gamepad, 1) == 0 && helix_gamepad_name(gamepad)[0] == 0);
 
     /* Text input is started on the window only while text entry is on. */
     SDL_Window *window = (SDL_Window*)helix_sdl3_window();

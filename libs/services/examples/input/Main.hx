@@ -28,7 +28,7 @@ class Main {
 	static var color = WAITING;
 	static var framesLeft = -1;
 	static var keyboard:Keyboard;
-	static var pads:Gamepads;
+	static var gamepads:Gamepads;
 	static var actions:Actions;
 
 	static function main():Void {
@@ -68,12 +68,12 @@ class Main {
 	/** Makes the keyboard and the gamepads over the events and the platform's devices, and the action over them. */
 	static function setup():Void {
 		keyboard = new Keyboard(events, keyboardAdapter);
-		pads = new Gamepads(events, gamepadsAdapter);
+		gamepads = new Gamepads(events, gamepadsAdapter);
 		polled.push(keyboard);
-		polled.push(pads);
-		actions = new Actions([keyboard, pads]);
+		polled.push(gamepads);
+		actions = new Actions([keyboard, gamepads]);
 		actions.bind("jump", Keyboard(Space), Gamepad(0, South));
-		trace("hold Space or the pad's bottom button");
+		trace("hold Space or the gamepad's bottom button");
 	}
 
 	/** Runs one frame: polls what answers later, then clears the screen to its color; false once the program should stop. */

@@ -457,12 +457,12 @@ The first touch anywhere in the window plugs the virtual gamepad in. A physical 
 Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick included. Drawing is the engine's, from each stick's `held`, base, knob and radius. An engine draws the hints while `hintVisible` is true and the device has a touch screen.
 
 ```haxe
-var virtualPad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
-var gamepads = new Gamepads(events, virtualPad);
+var virtualGamepad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
+var gamepads = new Gamepads(events, virtualGamepad);
 // each frame:
 events.poll();
 touch.poll();
-virtualPad.poll();
+virtualGamepad.poll();
 gamepads.poll();
 var moveX = gamepads.getAxis(0, LeftX);
 ```

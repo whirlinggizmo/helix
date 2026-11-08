@@ -22,7 +22,7 @@ class InputTests {
 		var events = new FakeEvents(), devices = new FakeDevices();
 		var keyboard = new Keyboard(events, devices),
 			mouse = new Mouse(events, devices),
-			pads = new Gamepads(events, devices),
+			gamepads = new Gamepads(events, devices),
 			tilt = new Tilt(events, devices),
 			touch = new Touch(events, devices);
 		function frame(?list:Array<helix.platform.Event>) {
@@ -32,7 +32,7 @@ class InputTests {
 			events.poll();
 			keyboard.poll();
 			mouse.poll();
-			pads.poll();
+			gamepads.poll();
 			tilt.poll();
 			touch.poll();
 		}
@@ -72,37 +72,37 @@ class InputTests {
 			"focus lost lets go of what's held");
 
 		frame([GamepadButtonDown(0, South)]);
-		check(pads.isButtonDown(0, South) && pads.isButtonPressed(0, South) && !pads.isButtonDown(1, South), "a pad's button");
+		check(gamepads.isButtonDown(0, South) && gamepads.isButtonPressed(0, South) && !gamepads.isButtonDown(1, South), "a gamepad's button");
 		frame([GamepadDisconnected(0)]);
-		check(!pads.isButtonDown(0, South) && pads.isButtonReleased(0, South), "a pad gone lets go of its buttons");
+		check(!gamepads.isButtonDown(0, South) && gamepads.isButtonReleased(0, South), "a gamepad gone lets go of its buttons");
 
 		devices.axes[0] = .1;
 		frame();
-		check(pads.getAxis(0, LeftX) == 0, "inside the dead zone: 0");
+		check(gamepads.getAxis(0, LeftX) == 0, "inside the dead zone: 0");
 		devices.axes[0] = 1;
 		frame();
-		check(pads.getAxis(0, LeftX) == 1, "pushed all the way: 1");
+		check(gamepads.getAxis(0, LeftX) == 1, "pushed all the way: 1");
 		devices.axes[0] = .15;
 		devices.axes[1] = .15;
 		frame();
-		check(pads.getAxis(0, LeftX) > 0, "a diagonal past the round dead zone counts on each axis");
+		check(gamepads.getAxis(0, LeftX) > 0, "a diagonal past the round dead zone counts on each axis");
 		devices.axes[0] = 0;
 		devices.axes[1] = 0;
 		devices.axes[4] = .6;
 		frame();
-		check(Math.abs(pads.getAxis(0, LeftTrigger) - .5) < 1e-9, "a trigger past the dead zone, scaled to reach 1");
+		check(Math.abs(gamepads.getAxis(0, LeftTrigger) - .5) < 1e-9, "a trigger past the dead zone, scaled to reach 1");
 		devices.axes[4] = 0;
-		pads.deadZone = 2;
-		check(pads.deadZone == 1, "the dead zone is clamped to 1, and reads back so");
+		gamepads.deadZone = 2;
+		check(gamepads.deadZone == 1, "the dead zone is clamped to 1, and reads back so");
 		devices.axes[0] = 1;
 		frame();
-		check(pads.getAxis(0, LeftX) == 1, "a dead zone of 1 still lets a full push through");
+		check(gamepads.getAxis(0, LeftX) == 1, "a dead zone of 1 still lets a full push through");
 		devices.axes[0] = 0;
 		frame();
-		pads.deadZone = .2;
-		check(pads.getAxis(9, LeftX) == 0, "a slot past 3 reads 0");
+		gamepads.deadZone = .2;
+		check(gamepads.getAxis(9, LeftX) == 0, "a slot past 3 reads 0");
 
-		var actions = new Actions([keyboard, mouse, pads, tilt]);
+		var actions = new Actions([keyboard, mouse, gamepads, tilt]);
 		check(actions.bind("jump", Keyboard(Space), Gamepad(0, South)), "bind: some new");
 		check(!actions.bind("jump", Keyboard(Space)), "bind: none new");
 		check(actions.getBindings("jump").length == 2 && actions.getBindings("none").length == 0, "the bindings, a copy");
@@ -201,7 +201,7 @@ class InputTests {
 		var keysOnly = new Actions([keyboard]);
 		keysOnly.bind("jump", Gamepad(0, South));
 		frame([GamepadButtonDown(0, South)]);
-		check(pads.isButtonDown(0, South) && !keysOnly.isDown("jump") && keysOnly.getValue("jump") == 0,
+		check(gamepads.isButtonDown(0, South) && !keysOnly.isDown("jump") && keysOnly.getValue("jump") == 0,
 			"a binding to a device Actions wasn't given reads as not held");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

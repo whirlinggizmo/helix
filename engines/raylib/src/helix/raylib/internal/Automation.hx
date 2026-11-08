@@ -62,9 +62,9 @@ class Automation implements PlayedInput {
 	static inline final KEYS = 512;
 	static inline final BUTTONS = 8;
 	static inline final TOUCHES = 8;
-	static inline final PADS = 4;
-	static inline final PAD_BUTTONS = 32;
-	static inline final PAD_AXES = 8;
+	static inline final GAMEPADS = 4;
+	static inline final GAMEPAD_BUTTONS = 32;
+	static inline final GAMEPAD_AXES = 8;
 	// raylib's MAX_KEY_PRESSED_QUEUE.
 	static inline final KEY_QUEUE = 16;
 
@@ -116,11 +116,11 @@ class Automation implements PlayedInput {
 
 	/** Each gamepad connected, its buttons down (`GAMEPAD_BUTTON_*`, gamepad times 32 plus the button) as now and the last frame, and its
 		axes (gamepad times 8 plus the axis). */
-	public final pads = flags(PADS);
+	public final gamepads = flags(GAMEPADS);
 
-	public final padButtons = flags(PADS * PAD_BUTTONS);
-	public final previousPadButtons = flags(PADS * PAD_BUTTONS);
-	public final padAxes = [for (_ in 0...PADS * PAD_AXES) 0.];
+	public final gamepadButtons = flags(GAMEPADS * GAMEPAD_BUTTONS);
+	public final previousGamepadButtons = flags(GAMEPADS * GAMEPAD_BUTTONS);
+	public final gamepadAxes = [for (_ in 0...GAMEPADS * GAMEPAD_AXES) 0.];
 
 	/** The gesture detected now (`GESTURE_*`). */
 	public var gesture = 0;
@@ -158,9 +158,9 @@ class Automation implements PlayedInput {
 			previousTouchX[i] = touchX[i];
 			previousTouchY[i] = touchY[i];
 		}
-		readPads();
-		for (i in 0...padButtons.length)
-			previousPadButtons[i] = padButtons[i];
+		readGamepads();
+		for (i in 0...gamepadButtons.length)
+			previousGamepadButtons[i] = gamepadButtons[i];
 		gesture = seenGesture = RCore.realGesture();
 	}
 
@@ -201,9 +201,9 @@ class Automation implements PlayedInput {
 			previousTouchY[i] = touchY[i];
 		}
 		readTouches();
-		for (i in 0...padButtons.length)
-			previousPadButtons[i] = padButtons[i];
-		readPads();
+		for (i in 0...gamepadButtons.length)
+			previousGamepadButtons[i] = gamepadButtons[i];
+		readGamepads();
 		var now = RCore.realGesture();
 		if (now != seenGesture)
 			gesture = seenGesture = now;
@@ -226,27 +226,31 @@ class Automation implements PlayedInput {
 	}
 
 	// The gamepads as the devices have them now, read every poll as raylib reads them; a gamepad not connected keeps its buttons.
-	function readPads():Void {
-		for (pad in 0...PADS) {
-			pads[pad] = RCore.realPadReady(pad);
-			if (!pads[pad])
+	function readGamepads():Void {
+		for (gamepad in 0...GAMEPADS) {
+			gamepads[gamepad] = RCore.realGamepadReady(gamepad);
+			if (!gamepads[gamepad])
 				continue;
-			for (b in 0...PAD_BUTTONS)
-				padButtons[pad * PAD_BUTTONS + b] = RCore.realPadButtonDown(pad, b);
-			for (a in 0...PAD_AXES)
-				padAxes[pad * PAD_AXES + a] = RCore.realPadAxis(pad, a);
+			for (b in 0...GAMEPAD_BUTTONS)
+				gamepadButtons[gamepad * GAMEPAD_BUTTONS + b] = RCore.realGamepadButtonDown(gamepad, b);
+			for (a in 0...GAMEPAD_AXES)
+				gamepadAxes[gamepad * GAMEPAD_AXES + a] = RCore.realGamepadAxis(gamepad, a);
 		}
 	}
 
 	/** Returns a gamepad's axis as raylib's `GetGamepadAxisMovement` gives it: its value while the gamepad is connected, else -1 for a
 		trigger and 0 for the rest.
 
-		@param pad  The gamepad.
+		@param gamepad  The gamepad.
 		@param axis  The axis.
 		@return  The value. */
-	public function axisMovement(pad:Int, axis:Int):Float {
+	public function axisMovement(gamepad:Int, axis:Int):Float {
 		var resting = axis == 4 || axis == 5 ? -1. : 0.;
-		return pad >= 0 && pad < PADS && axis >= 0 && axis < PAD_AXES && pads[pad] ? padAxes[pad * PAD_AXES + axis] : resting;
+		return gamepad >= 0
+			&& gamepad < GAMEPADS
+			&& axis >= 0
+			&& axis < GAMEPAD_AXES
+			&& gamepads[gamepad] ? gamepadAxes[gamepad * GAMEPAD_AXES + axis] : resting;
 	}
 
 	// raylib's RecordAutomationEvent: the frame's input into the list, as the frame ends.
@@ -282,18 +286,18 @@ class Automation implements PlayedInput {
 				&& !add(l, 16, "INPUT_TOUCH_POSITION", id, Std.int(touchX[id]), Std.int(touchY[id])))
 				return;
 		}
-		for (pad in 0...PADS) {
-			for (button in 0...PAD_BUTTONS) {
-				var i = pad * PAD_BUTTONS + button;
-				if (previousPadButtons[i] && !padButtons[i] && !add(l, 11, "INPUT_GAMEPAD_BUTTON_UP", pad, button))
+		for (gamepad in 0...GAMEPADS) {
+			for (button in 0...GAMEPAD_BUTTONS) {
+				var i = gamepad * GAMEPAD_BUTTONS + button;
+				if (previousGamepadButtons[i] && !gamepadButtons[i] && !add(l, 11, "INPUT_GAMEPAD_BUTTON_UP", gamepad, button))
 					return;
-				if (padButtons[i] && !add(l, 12, "INPUT_GAMEPAD_BUTTON_DOWN", pad, button))
+				if (gamepadButtons[i] && !add(l, 12, "INPUT_GAMEPAD_BUTTON_DOWN", gamepad, button))
 					return;
 			}
-			for (axis in 0...PAD_AXES) {
+			for (axis in 0...GAMEPAD_AXES) {
 				var resting = axis == 4 || axis == 5 ? -1. : 0.;
-				if (axisMovement(pad, axis) != resting
-					&& !add(l, 13, "INPUT_GAMEPAD_AXIS_MOTION", pad, axis, Std.int(padAxes[pad * PAD_AXES + axis] * 32768)))
+				if (axisMovement(gamepad, axis) != resting
+					&& !add(l, 13, "INPUT_GAMEPAD_AXIS_MOTION", gamepad, axis, Std.int(gamepadAxes[gamepad * GAMEPAD_AXES + axis] * 32768)))
 					return;
 			}
 		}
@@ -364,20 +368,20 @@ class Automation implements PlayedInput {
 					touchY[p[0]] = p[2];
 				}
 			case 9:
-				if (within(p[0], PADS))
-					pads[p[0]] = true;
+				if (within(p[0], GAMEPADS))
+					gamepads[p[0]] = true;
 			case 10:
-				if (within(p[0], PADS))
-					pads[p[0]] = false;
+				if (within(p[0], GAMEPADS))
+					gamepads[p[0]] = false;
 			case 11:
-				if (within(p[0], PADS) && within(p[1], PAD_BUTTONS))
-					padButtons[p[0] * PAD_BUTTONS + p[1]] = false;
+				if (within(p[0], GAMEPADS) && within(p[1], GAMEPAD_BUTTONS))
+					gamepadButtons[p[0] * GAMEPAD_BUTTONS + p[1]] = false;
 			case 12:
-				if (within(p[0], PADS) && within(p[1], PAD_BUTTONS))
-					padButtons[p[0] * PAD_BUTTONS + p[1]] = true;
+				if (within(p[0], GAMEPADS) && within(p[1], GAMEPAD_BUTTONS))
+					gamepadButtons[p[0] * GAMEPAD_BUTTONS + p[1]] = true;
 			case 13:
-				if (within(p[0], PADS) && within(p[1], PAD_AXES))
-					padAxes[p[0] * PAD_AXES + p[1]] = p[2] / 32768;
+				if (within(p[0], GAMEPADS) && within(p[1], GAMEPAD_AXES))
+					gamepadAxes[p[0] * GAMEPAD_AXES + p[1]] = p[2] / 32768;
 			case 17:
 				gesture = p[0];
 			case 18:

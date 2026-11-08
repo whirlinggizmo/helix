@@ -8,8 +8,8 @@ press 333
 press 334
 keys 32
 keys 341
-pad 0.6 -0.4 -0.8 0.5
-pad -0.3 0.7 0.9 -0.6
+gamepad 0.6 -0.4 -0.8 0.5
+gamepad -0.3 0.7 0.9 -0.6
 mouse 0 -900
 mouse 0 1800
 keys 87 32 263

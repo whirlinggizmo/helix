@@ -5,8 +5,8 @@ import helix.services.input.Mouse;
 import helix.services.screen.Screen;
 
 /** Checks helix-raylib's warnings when the platform refuses a request: `SetMousePosition` where the cursor can't be moved (a page) and where
-	the system refuses, and `SetGamepadVibration` on a pad that can't shake. Each warns once a run for each reason, however often it is
-	called; the position asked for is still recorded, as raylib's; an empty pad slot and a request granted warn of nothing. On devices the
+	the system refuses, and `SetGamepadVibration` on a gamepad that can't shake. Each warns once a run for each reason, however often it is
+	called; the position asked for is still recorded, as raylib's; an empty gamepad slot and a request granted warn of nothing. On devices the
 	test sets (services' `FakeDevices`), the program's log taken by the test. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.modules.RCore)
@@ -51,7 +51,8 @@ class RefusalTests {
 		check(warnings.length == 2, 'an empty slot is passed over, as raylib\'s: $warnings');
 		for (_ in 0...3)
 			SetGamepadVibration(0, 1, 1, 1);
-		check(warnings.length == 3 && warnings[2].indexOf("SetGamepadVibration") >= 0, 'a pad that can\'t shake warns once: $warnings');
+		check(warnings.length == 3
+			&& warnings[2].indexOf("SetGamepadVibration") >= 0, 'a gamepad that can\'t shake warns once: $warnings');
 		SetMousePosition(70, 80);
 		SetGamepadVibration(0, 1, 1, 1);
 		check(warnings.length == 3, 'each reason warns once a run: $warnings');
@@ -72,7 +73,7 @@ class RefusalTests {
 	}
 }
 
-/** The fake's devices refusing: the cursor doesn't move, the pad doesn't shake. */
+/** The fake's devices refusing: the cursor doesn't move, the gamepad doesn't shake. */
 class RefusingDevices extends FakeDevices {
 	/** Gets or sets what `canSetPosition` answers: false as a page has it, true where the system refuses. */
 	public var movable = false;

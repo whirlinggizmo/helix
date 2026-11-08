@@ -23,12 +23,12 @@ import helix.platform.GamepadButton;
 	the device has a touch screen.
 
 	```haxe
-	var virtualPad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
-	var gamepads = new Gamepads(events, virtualPad);
+	var virtualGamepad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
+	var gamepads = new Gamepads(events, virtualGamepad);
 	// each frame:
 	events.poll();
 	touch.poll();
-	virtualPad.poll();
+	virtualGamepad.poll();
 	gamepads.poll();
 	var moveX = gamepads.getAxis(0, LeftX);
 	``` */

@@ -46,9 +46,9 @@ class UpdateSteps {
 						a.previousMouseY = a.mouseY;
 						a.wheelX = 0;
 						a.wheelY = 0;
-						a.pads[0] = false;
+						a.gamepads[0] = false;
 						for (x in 0...8)
-							a.padAxes[x] = 0;
+							a.gamepadAxes[x] = 0;
 						switch t[0] {
 							case "mouse" | "pan":
 								a.mouseX += Std.parseFloat(t[1]);
@@ -60,12 +60,12 @@ class UpdateSteps {
 									a.keys[Std.parseInt(k)] = true;
 							case "wheel":
 								a.wheelY = Std.parseFloat(t[1]);
-							case "pad":
-								a.pads[0] = true;
-								a.padAxes[GAMEPAD_AXIS_RIGHT_X] = Std.parseFloat(t[1]);
-								a.padAxes[GAMEPAD_AXIS_RIGHT_Y] = Std.parseFloat(t[2]);
-								a.padAxes[GAMEPAD_AXIS_LEFT_Y] = Std.parseFloat(t[3]);
-								a.padAxes[GAMEPAD_AXIS_LEFT_X] = Std.parseFloat(t[4]);
+							case "gamepad":
+								a.gamepads[0] = true;
+								a.gamepadAxes[GAMEPAD_AXIS_RIGHT_X] = Std.parseFloat(t[1]);
+								a.gamepadAxes[GAMEPAD_AXIS_RIGHT_Y] = Std.parseFloat(t[2]);
+								a.gamepadAxes[GAMEPAD_AXIS_LEFT_Y] = Std.parseFloat(t[3]);
+								a.gamepadAxes[GAMEPAD_AXIS_LEFT_X] = Std.parseFloat(t[4]);
 						}
 						UpdateCamera(c, mode);
 						var p = c.position, g = c.target, u = c.up;
