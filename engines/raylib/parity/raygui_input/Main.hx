@@ -37,7 +37,7 @@ class Main {
 			keys = ["abcdef"],
 			input = ["secret"],
 			secret = [false];
-		var color = new Color(40, 160, 90, 255);
+		var color = [new Color(40, 160, 90, 255)];
 		var hsv = new Vector3(200, 0.5, 0.8);
 		var alpha = [0.6];
 		var scroll = new Vector2(-50, -30),
@@ -110,7 +110,7 @@ class Main {
 			GuiColorBarAlpha(R(780, 170, 160, 16), null, alpha);
 			GuiColorPickerHSV(R(780, 200, 120, 120), null, hsv);
 			GuiColorPicker(R(780, 20, 120, 140), null, color);
-			DrawRectangle(780, 330, 40, 40, color);
+			DrawRectangle(780, 330, 40, 40, color[0]);
 			for (i in 0...16)
 				GuiDrawIcon(i + 1, 20 + i * 36, 490, 2, DARKGRAY);
 			GuiSetStyle(DEFAULT, TEXT_WRAP_MODE, TEXT_WRAP_WORD);

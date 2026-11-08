@@ -960,8 +960,8 @@ static function GuiListView(bounds:Rectangle, text:String, scrollIndex:Array<Int
 static function GuiListViewEx(bounds:Rectangle, text:Array<String>, count:Int, scrollIndex:Array<Int>, active:Array<Int>, focus:Array<Int>):Int
 static function GuiMessageBox(bounds:Rectangle, title:String, message:String, buttons:String):Int
 static function GuiTextInputBox(bounds:Rectangle, title:String, message:String, buttons:String, text:Array<String>, textMaxSize:Int, secretViewActive:Array<Bool>):Int
-static function GuiColorPicker(bounds:Rectangle, text:String, color:Color):Int
-static function GuiColorPanel(bounds:Rectangle, text:String, color:Color):Int
+static function GuiColorPicker(bounds:Rectangle, text:String, color:Null<Array<Color>>):Int
+static function GuiColorPanel(bounds:Rectangle, text:String, color:Array<Color>):Int
 static function GuiColorBarAlpha(bounds:Rectangle, text:String, alpha:Array<Float>):Int
 static function GuiColorBarHue(bounds:Rectangle, text:String, value:Array<Float>):Int
 static function GuiColorPickerHSV(bounds:Rectangle, text:String, colorHsv:Vector3):Int
@@ -1206,14 +1206,14 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
 - `GuiColorPicker`: Draws a color picker, a saturation and value panel with a hue bar beside it, both dragged with the left button. See `GuiColorPickerHSV` for keeping the hue steady.
   - `bounds`: The panel; the hue bar is beside it.
   - `text`: Not drawn.
-  - `color`: The color, changed in place, or null; its alpha is kept.
+  - `color`: The color in a one-element array, as raygui takes a pointer, changed there; or null. Its alpha is kept.
   - returns: 0.
 
   Converts the color through HSV each call, so its hue may shift where red, green and blue are close.
 - `GuiColorPanel`: Draws a color panel, saturation across and value down at the color's hue, dragged with the left button. See `GuiColorPanelHSV` for editing an HSV color.
   - `bounds`: The panel.
   - `text`: Not drawn.
-  - `color`: The color, changed in place when the panel changes it; its alpha is kept.
+  - `color`: The color in a one-element array, as raygui takes a pointer, changed there when the panel changes it. Its alpha is kept.
   - returns: 0.
 - `GuiColorBarAlpha`: Draws an alpha bar, clear to opaque across over a checked background, its selector dragged with the left button.
   - `bounds`: The bar.

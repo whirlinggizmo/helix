@@ -185,33 +185,23 @@ function copy(?out:Camera3D):Camera3D
 
 ## Color
 
-*class* in [`engines/raylib/src/helix/raylib/Color.hx`](../src/helix/raylib/Color.hx), `import helix.raylib.Color;`
+*abstract* in [`engines/raylib/src/helix/raylib/Color.hx`](../src/helix/raylib/Color.hx), `import helix.raylib.Color;`
 
 Represents raylib's `Color`: red, green, blue and alpha, each 0 to 255.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
+A value, as in C: assigning one copies it, so changing the copy leaves the original as it was. `c.a = 128` changes the variable or field `c` names.
 
 ```haxe
-{?r:Int, ?g:Int, ?b:Int, ?a:Int}
-```
-
-```haxe
-var r:Int
-var g:Int
-var b:Int
-var a:Int
-function copy(?out:Color):Color
+var r(get, set):Int
+var g(get, set):Int
+var b(get, set):Int
+var a(get, set):Int
 ```
 
 - `r`: Gets or sets the red, 0 to 255.
 - `g`: Gets or sets the green, 0 to 255.
 - `b`: Gets or sets the blue, 0 to 255.
 - `a`: Gets or sets the alpha, 0 (clear) to 255 (opaque).
-- `copy`: Returns a separate copy.
-  - `out`: Optional. The Color to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
 
 ## FilePathList
 
@@ -849,7 +839,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.Raygui.*;
 ```
 
-A value a control changes is passed in a one-element array, as raygui takes a pointer: `GuiCheckBox(bounds, "On", checked)` with `var checked = [false];`. A struct a control changes (`Color`, `Vector2`, `Rectangle`, `Vector3`) is changed in place.
+A value a control changes is passed in a one-element array, as raygui takes a pointer: `GuiCheckBox(bounds, "On", checked)` with `var checked = [false];`. So is a `Color`, a value. A struct a control changes (`Vector2`, `Rectangle`, `Vector3`) is changed in place.
 
 Its members are on their own page: [raygui.md](raygui.md).
 

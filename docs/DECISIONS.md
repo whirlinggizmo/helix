@@ -748,3 +748,14 @@ Why things are the way they are, numbered, in order.
     dialect in a target's build, as a page and a native program share one files folder. Rejected: keeping `LoadShader` for a shader
     the build holds beside the files (two paths, the one taking constants alone); and `LoadShaderFromMemory` taking compiled bytes
     (raylib's name, another input).
+
+55. **raylib's `Color` is a value, and its other structs copy with `copy`.** C copies a struct on assignment and Haxe shares an object,
+    so `var c = RED; c.a = 128;`, raylib's way of fading a color, changed `RED` for the whole program, and a run-4 entrant asked whether a
+    map's color was its own. `Color` is now an abstract over an `Int`, its four bytes packed: assigning one copies it, `c.a = 128`
+    changes the variable or field `c` names, and no color is ever allocated. raygui's color picker and panel, which write through a
+    `Color *`, take it in a one-element array, as its other controls take their pointers. The other value structs (`Vector2` to `Vector4`,
+    `Rectangle`, `Matrix`, `Ray`, `BoundingBox`, `Camera2D`, `Camera3D`, `Transform`, `RayCollision`, `NPatchInfo`, `BoneInfo`) stay
+    objects, as their floats don't pack, and gain `copy(?out)`, their descriptions saying assignment gives a reference. Handles and
+    configs (`Texture2D`, `MaterialMap` and the rest) have no `copy`, as a field copy bypasses their counted references. Rejected: a
+    read-only `ConstColor` for the named colors (Haxe infers `var c = RED` as read-only, so reassigning it with a `Color` fails, and an
+    explicit `Color` type reopens the hole); a build macro copying on every assignment; and `Color.copy`, which a value has no use for.

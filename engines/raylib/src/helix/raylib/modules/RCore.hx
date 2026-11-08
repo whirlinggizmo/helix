@@ -3182,7 +3182,7 @@ class RCore {
 			return;
 		}
 		Runtime.frame.cut();
-		shader.program.write(locIndex, numbers(value));
+		shader.program.write(locIndex, numbers(value, uniformType));
 	}
 
 	/** Sets a shader's matrix uniform, for the draws after the call.

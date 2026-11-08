@@ -2117,8 +2117,12 @@ class RModels {
 	}
 
 	// The numbers of a shader value as a program writes them.
-
-	static function numbers(value:Dynamic):Array<Float> {
+	// A value's numbers: a Color given for a vec4 (an Int, as a Color is) its channels, 0 to 1.
+	static function numbers(value:Dynamic, ?uniformType:Int):Array<Float> {
+		if (uniformType == SHADER_UNIFORM_VEC4 && Std.isOfType(value, Int)) {
+			var c:Color = cast value;
+			return [c.r / 255, c.g / 255, c.b / 255, c.a / 255];
+		}
 		if (Std.isOfType(value, Array))
 			return [for (x in (value : Array<Dynamic>)) (x : Float)];
 		if (Std.isOfType(value, Vector2))
@@ -2127,8 +2131,6 @@ class RModels {
 			return [value.x, value.y, value.z];
 		if (Std.isOfType(value, Vector4))
 			return [value.x, value.y, value.z, value.w];
-		if (Std.isOfType(value, Color))
-			return [value.r / 255, value.g / 255, value.b / 255, value.a / 255];
 		if (Std.isOfType(value, Matrix))
 			return toMatrix3D(value).values;
 		return [(value : Float)];

@@ -25,7 +25,7 @@ class MaterialMap {
 		@param value  The value. */
 	public function new(?texture:Texture2D, ?color:Color, value:Float = 0) {
 		this.texture = texture == null ? new Texture2D() : texture;
-		this.color = color == null ? new Color() : color;
+		this.color = color == null ? new Color(0, 0, 0, 0) : color;
 		this.value = value;
 	}
 

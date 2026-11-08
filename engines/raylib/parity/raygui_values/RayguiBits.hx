@@ -227,14 +227,14 @@ class RayguiBits {
 		vec2("grid.outside", cell);
 		shape("panels");
 
-		var col = new Color(200, 50, 50, 255);
+		var col = [new Color(200, 50, 50, 255)];
 		var p = R(10, 10, 100, 100);
 		F(30, 40, true, 0);
 		GuiColorPanel(p, null, col);
-		color("colorpanel", col);
+		color("colorpanel", col[0]);
 		F(80, 90, true, 0);
 		GuiColorPanel(p, null, col);
-		color("colorpanel.drag", col);
+		color("colorpanel.drag", col[0]);
 		F(80, 90, false, 0);
 		GuiColorPanel(p, null, col);
 		var hue = [0.];
@@ -252,13 +252,13 @@ class RayguiBits {
 		num("alpha", alpha[0]);
 		F(47, 15, false, 0);
 		GuiColorBarAlpha(R(10, 10, 120, 16), null, alpha);
-		var pick = new Color(10, 120, 240, 255);
+		var pick = [new Color(10, 120, 240, 255)];
 		F(500, 500, false, 0);
 		GuiColorPicker(p, null, pick);
-		color("picker.idle", pick);
+		color("picker.idle", pick[0]);
 		F(120, 40, true, 0);
 		GuiColorPicker(p, null, pick);
-		color("picker.hue", pick);
+		color("picker.hue", pick[0]);
 		F(120, 40, false, 0);
 		GuiColorPicker(p, null, pick);
 		var hsv = V3(120, 0.5, 0.5);

@@ -1431,21 +1431,21 @@ class RGuiControls {
 
 		@param bounds  The panel; the hue bar is beside it.
 		@param text  Not drawn.
-		@param color  The color, changed in place, or null; its alpha is kept.
+		@param color  The color in a one-element array, as raygui takes a pointer, changed there; or null. Its alpha is kept.
 		@return  0. */
-	static function GuiColorPicker(bounds:Rectangle, text:String, color:Color):Int {
+	static function GuiColorPicker(bounds:Rectangle, text:String, color:Null<Array<Color>>):Int {
 		if (color == null)
-			color = new Color(200, 0, 0, 255);
+			color = [new Color(200, 0, 0, 255)];
 		GuiColorPanel(bounds, null, color);
 		var boundsHue = new Rectangle(bounds.x + bounds.width + GuiGetStyle(COLORPICKER, HUEBAR_PADDING), bounds.y, GuiGetStyle(COLORPICKER, HUEBAR_WIDTH),
 			bounds.height);
-		var hsv = rgbToHsv(f32(color.r / 255), f32(color.g / 255), f32(color.b / 255));
+		var hsv = rgbToHsv(f32(color[0].r / 255), f32(color[0].g / 255), f32(color[0].b / 255));
 		var hue = [hsv.x];
 		GuiColorBarHue(boundsHue, null, hue);
 		var rgb = hsvToRgb(hue[0], hsv.y, hsv.z);
-		color.r = Math.round(f32(rgb.x * 255));
-		color.g = Math.round(f32(rgb.y * 255));
-		color.b = Math.round(f32(rgb.z * 255));
+		color[0].r = Math.round(f32(rgb.x * 255));
+		color[0].g = Math.round(f32(rgb.y * 255));
+		color[0].b = Math.round(f32(rgb.z * 255));
 		return 0;
 	}
 
@@ -1454,17 +1454,18 @@ class RGuiControls {
 
 		@param bounds  The panel.
 		@param text  Not drawn.
-		@param color  The color, changed in place when the panel changes it; its alpha is kept.
+		@param color  The color in a one-element array, as raygui takes a pointer, changed there when the panel changes it. Its alpha is
+			kept.
 		@return  0. */
-	static function GuiColorPanel(bounds:Rectangle, text:String, color:Color):Int {
-		var hsv = rgbToHsv(f32(color.r / 255), f32(color.g / 255), f32(color.b / 255));
+	static function GuiColorPanel(bounds:Rectangle, text:String, color:Array<Color>):Int {
+		var hsv = rgbToHsv(f32(color[0].r / 255), f32(color[0].g / 255), f32(color[0].b / 255));
 		var prev = new Vector3(hsv.x, hsv.y, hsv.z);
 		GuiColorPanelHSV(bounds, text, hsv);
 		if (hsv.x != prev.x || hsv.y != prev.y || hsv.z != prev.z) {
 			var rgb = hsvToRgb(hsv.x, hsv.y, hsv.z);
-			color.r = Std.int(f32(255 * rgb.x));
-			color.g = Std.int(f32(255 * rgb.y));
-			color.b = Std.int(f32(255 * rgb.z));
+			color[0].r = Std.int(f32(255 * rgb.x));
+			color[0].g = Std.int(f32(255 * rgb.y));
+			color[0].b = Std.int(f32(255 * rgb.z));
 		}
 		return 0;
 	}
