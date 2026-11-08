@@ -12,6 +12,9 @@ class VirtualStickOptions {
 	/** Gets where the stick captures a landing finger. */
 	@:optional public final touchZone:Null<Bounds2D>;
 
+	/** Gets a value indicating whether the stick reads the tilt in place of a finger (`VirtualStick.tilt`). Defaults to false. */
+	@:optional public final tilt:Null<Bool>;
+
 	/** Gets where the base goes. */
 	@:optional public final basePlacement:Null<VirtualStickBase>;
 

@@ -14,14 +14,14 @@ import helix.platform.GamepadButton;
 	through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both
 	through `Actions`, as any gamepad's do.
 
-	The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot
+	The first touch anywhere in the window plugs the virtual gamepad in, and so does the tilt while a tilt stick reads it. A physical gamepad plugged into the virtual gamepad's slot
 	replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after
 	the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical
 	gamepads alone.
 
 	Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick or a button
 	included. Drawing is the engine's: each button and each `Fixed` stick while `visible` is true, each other stick while `held`, and each
-	stick's hint while `hintVisible` is true.
+	stick's hint while `hintVisible` is true. A tilt stick (`VirtualStick.tilt`) isn't drawn, and has no hint.
 
 	```haxe
 	var virtualGamepad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
@@ -87,6 +87,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		var mine:VirtualStickOptions = own != null ? own : {};
 		stick.enabled = mine.enabled != false;
 		stick.touchZone = mine.touchZone;
+		stick.tilt = mine.tilt == true;
 		var placement = mine.basePlacement != null ? mine.basePlacement : all.basePlacement;
 		stick.basePlacement = placement != null ? placement : Floating;
 		stick.fixedBasePosition = mine.fixedBasePosition;
@@ -119,12 +120,16 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		return enabled = value;
 	}
 
-	/** Gets a value indicating whether it's plugged in: enabled, touched, and its slot free of physical gamepads. While a physical
-		gamepad is in its slot, the virtual gamepad's sticks ignore touches. */
+	/** Gets a value indicating whether it's plugged in: enabled, touched or with a tilt stick reading the tilt, and its slot free of
+		physical gamepads. While a physical gamepad is in its slot, the virtual gamepad's sticks ignore touches. */
 	public var pluggedIn(get, never):Bool;
 
 	function get_pluggedIn():Bool
-		return enabled && touched && !gamepads.isConnected(slot);
+		return enabled && (touched || tilting()) && !gamepads.isConnected(slot);
+
+	// Whether an enabled tilt stick reads a tilt that's on.
+	function tilting():Bool
+		return tilt != null && tilt.status == On && ((left.enabled && left.tilt) || (right.enabled && right.tilt));
 
 	/** Gets a value indicating whether a physical gamepad is in the virtual gamepad's slot. */
 	public var physicalConnected(get, never):Bool;
@@ -139,7 +144,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 	function get_visible():Bool
 		return enabled && !gamepads.isConnected(slot) && touch.available;
 
-	/** Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, its slot free of physical
+	/** Gets a value indicating whether an engine draws a hint at the base of each unheld stick read by fingers: enabled, untouched, its slot free of physical
 		gamepads, and on a device with touch (`Touch.available`). The first touch ends every stick's hint. */
 	public var hintVisible(get, never):Bool;
 
@@ -151,6 +156,10 @@ class VirtualGamepad implements IPollable implements IGamepads {
 
 	/** Gets the right stick, read as `RightX` and `RightY`. */
 	public var right(default, null):VirtualStick;
+
+	/** Gets or sets the tilt a tilt stick reads (`VirtualStick.tilt`), polled by the program before the virtual gamepad. While the tilt is
+		null, a tilt stick reads 0. */
+	public var tilt:Null<Tilt> = null;
 
 	/** Gets the buttons, as the options gave them. */
 	public var buttons(default, null):Array<VirtualButton>;
@@ -165,7 +174,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		var resized = lastWidth >= 0 && (width != lastWidth || height != lastHeight);
 		lastWidth = width;
 		lastHeight = height;
-		var alone = !(left.enabled && right.enabled);
+		var alone = !(left.enabled && !left.tilt && right.enabled && !right.tilt);
 		left.updateZone(width, height, alone);
 		right.updateZone(width, height, alone);
 		left.lifted = right.lifted = -1;
@@ -177,7 +186,9 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		else if (touch.pressed.length > 0)
 			touched = true;
 		for (stick in [left, right])
-			if (idle || resized || !stick.held)
+			if (stick.tilt)
+				stick.readTilt(idle || !stick.enabled ? null : tilt);
+			else if (idle || resized || !stick.held)
 				stick.release();
 			else
 				follow(stick);
@@ -243,8 +254,8 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		for (bounds in blockedBounds)
 			if (bounds.contains(atX, atY))
 				return;
-		var inLeft = left.enabled && left.zone.contains(atX, atY),
-			inRight = right.enabled && right.zone.contains(atX, atY);
+		var inLeft = left.enabled && !left.tilt && left.zone.contains(atX, atY),
+			inRight = right.enabled && !right.tilt && right.zone.contains(atX, atY);
 		// Where the zones overlap, the free stick, else the left.
 		var stick = inLeft && (!inRight || !left.held || right.held) ? left : inRight ? right : null;
 		if (stick != null)

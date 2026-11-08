@@ -1,10 +1,12 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Device.*;
 import helix.raylib.extras.VirtualGamepad.*;
 import helix.raylib.internal.Runtime;
 import helix.raylib.internal.VirtualGamepads;
 import helix.services.input.Gamepads;
 import helix.services.input.Mouse;
+import helix.services.input.Tilt;
 import helix.services.input.Touch;
 import helix.services.screen.Screen;
 
@@ -12,7 +14,8 @@ import helix.services.screen.Screen;
 	first touch; then gamepad 0, virtual, its left stick read through `GetGamepadAxisMovement`; a finger holding a stick leaving the mouse
 	up, and a free finger tapping a blocked bound as a click there; a physical gamepad replacing it; disabled, unplugged; and a button pressed and released through raylib's
 	gamepad functions, following its position, in a design's pixels too;
-	the default diamond; a button and a stick that aren't visible still reading; and the sticks' read-backs. */
+	the default diamond; a button and a stick that aren't visible still reading; the sticks' read-backs; and the tilt's status and a tilt
+	stick. */
 @:access(helix.raylib.internal.Runtime)
 class VirtualGamepadExtraTests {
 	static var checks = 0;
@@ -37,12 +40,14 @@ class VirtualGamepadExtraTests {
 		Runtime.mouseService = new Mouse(events, devices);
 		Runtime.gamepadsAdapter = devices;
 		Runtime.gamepadsService = new Gamepads(events, devices);
+		Runtime.tiltService = new Tilt(events, devices);
 		function frame(?list:Array<helix.platform.Event>) {
 			if (list != null)
 				for (e in list)
 					events.next.push(e);
 			events.poll();
 			Runtime.touch().poll();
+			Runtime.tilt().poll();
 			Runtime.mouse().poll();
 			VirtualGamepads.inSlot(0).poll();
 			Runtime.gamepads().poll();
@@ -138,6 +143,39 @@ class VirtualGamepadExtraTests {
 		check(base.x == 400 && base.y == 300 && knob.x == 430 && knob.y == 300 && IsVirtualGamepadVisible(0),
 			'the base and knob read back in the screen\'s pixels: $base, $knob');
 		frame([TouchUp(10, 430, 300)]);
+
+		// The tilt's status, and a tilt stick read as the left stick.
+		check(GetTiltStatus() == TILT_STATUS_OFF && !IsTiltCalibrating(), "the tilt off until asked for");
+		EnableVirtualGamepad(0, {left: {tilt: true}, right: {enabled: false}});
+		EnableTiltAsync();
+		frame([TiltState(WaitingForTap)]);
+		check(GetTiltStatus() == TILT_STATUS_WAITING_FOR_TAP, "waiting for the tap that allows the tilt");
+		frame([TiltState(Starting)]);
+		check(GetTiltStatus() == TILT_STATUS_STARTING, "allowed: starting, waiting for the first reading");
+		frame([TouchDown(11, 400, 300), TiltState(On), Tilt(10, 5, 0)]);
+		check(GetTiltStatus() == TILT_STATUS_ON
+			&& IsTiltCalibrating()
+			&& !IsTiltReady()
+			&& GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) == 0,
+			"on, and calibrating: the tilt stick reads 0");
+		var started = haxe.Timer.stamp();
+		while (haxe.Timer.stamp() - started < .6) {}
+		frame([Tilt(10, 5, 0)]);
+		frame([Tilt(10, 35, 0)]);
+		check(!IsTiltCalibrating()
+			&& IsTiltReady()
+			&& GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) == 1
+			&& !IsVirtualStickHeld(0, VIRTUAL_STICK_LEFT),
+			"a full tilt across reads 1 on the left stick, which captures no finger");
+		var base = GetVirtualStickBase(0, VIRTUAL_STICK_LEFT),
+			knob = GetVirtualStickKnob(0, VIRTUAL_STICK_LEFT);
+		check(knob.x > base.x && knob.y == base.y, 'the tilt stick\'s knob pushed from its base by the tilt: $base, $knob');
+		CalibrateTilt();
+		check(IsTiltCalibrating(), "taking level again");
+		DisableTilt();
+		check(!IsTiltCalibrating(), "the tilt turned off while level is being taken: not calibrating");
+		frame([TouchUp(11, 400, 300), TiltState(Refused)]);
+		check(GetTiltStatus() == TILT_STATUS_REFUSED && GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) == 0, "refused: reads 0");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

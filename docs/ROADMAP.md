@@ -163,9 +163,6 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
   and `Mouse`, as helix-legacy's `PointerGestures` and touch gesture had them.
-- **A tilt gamepad (DECISIONS 57's pattern):** `TiltGamepad` implements `IGamepads` in front of the platform's gamepads, as the virtual
-  gamepad does, and reads `Tilt` as a stick, so a tilt-steered game's gamepad code reads it unchanged. helix-raylib enables it as it
-  enables the virtual gamepad.
 - **From a jam game's friction log (F numbers), for the layers that own them:**
   - helix-scene: `find` by name and kind, `addChildAt`, `getChildIndex`, `removeChildAt`, `contains` (F1, F2, F4); text pivot or
     vertical align (F20); a sprite keeping its sheet and index across a reload (F56); a matrix transform, so skew (F57); a pointer

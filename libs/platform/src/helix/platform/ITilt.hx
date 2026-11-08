@@ -6,16 +6,16 @@ package helix.platform;
 interface ITilt {
 	/** Asks for the device's motion sensor, whose readings then arrive as `Tilt` events.
 
-		A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change, for a game
-		that shows "tap to start tilt" while it waits. A reading that arrives after the tilt was reported unavailable turns it on, as a
+		A page may need permission, which is asked at the next tap. `TiltState` events report each change: WaitingForTap while a tap is
+		awaited, Starting until the first reading, then On. A game shows "tap to allow tilt" while the tilt waits for a tap. A reading that arrives after the tilt was reported unavailable turns it on, as a
 		phone's sensor may start late.
 		@param done  Optional. Called once readings arrive.
-		@param failed  Optional. Receives why there will be none: the player refused, the page isn't secure (not HTTPS), or the browser
+		@param failed  Optional. Receives why there will be none: permission was refused, the page isn't secure (not HTTPS), or the browser
 			reads no orientation.
 		@return  False, calling neither and reporting `Unavailable`, where the tilt can't be read at all. */
 	function requestAccess(?done:Void->Void, ?failed:String->Void):Bool;
 
-	/** Stops the readings. A permission the player granted stays granted, so a later `requestAccess` usually starts without asking
+	/** Stops the readings. A permission granted stays granted, so a later `requestAccess` usually starts without asking
 		again. */
 	function releaseAccess():Void;
 

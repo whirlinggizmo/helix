@@ -142,7 +142,8 @@ class RDevice {
 
 		Natively it is refused.
 
-		A page may need permission, which the browser asks for at the next tap. A game asks before the tap that starts play.
+		A page may need permission, which the browser asks for at the next tap. A game asks before the tap that starts play, and that tap
+		also asks for permission.
 
 		@param done  Optional. Called once readings arrive, at a later poll.
 		@param failed  Optional. Receives why there will be none: refused, the page isn't HTTPS, or no sensor; when omitted, it is logged. */
@@ -164,7 +165,7 @@ class RDevice {
 
 		A full tilt of 1 is `SetTiltRange`'s angle.
 
-		The tilt is 0 until readings arrive and the device has been held steady once. Level is taken then.
+		The tilt is 0 until readings arrive, and while level is being taken (`IsTiltCalibrating`).
 
 		@return  The tilt. */
 	static function GetTilt():Vector2 {
@@ -179,7 +180,41 @@ class RDevice {
 		Runtime.tilt().range = degrees;
 	}
 
-	/** Takes how the device is held now as level. See `GetTilt` for reading the tilt from it. */
+	/** Returns the tilt's status: `TILT_STATUS_OFF`, `TILT_STATUS_WAITING_FOR_TAP`, `TILT_STATUS_STARTING`, `TILT_STATUS_ON`,
+		`TILT_STATUS_REFUSED`, `TILT_STATUS_UNAVAILABLE` or `TILT_STATUS_NEEDS_HTTPS`. A game shows "tap to allow tilt" while the tilt waits
+		for a tap.
+
+		@return  The status. */
+	static function GetTiltStatus():Int {
+		return switch Runtime.tilt().status {
+			case Off: 0;
+			case WaitingForTap: 1;
+			case Starting: 2;
+			case On: 3;
+			case Refused: 4;
+			case Unavailable: 5;
+			case NeedsHttps: 6;
+		}
+	}
+
+	/** Returns whether level is being taken: the tilt is on, and reads 0 until the device is held steady for half a second. Level is
+		taken when the readings start, after the screen turns, and after `CalibrateTilt`. A game shows "hold steady" meanwhile.
+
+		@return  True while level is being taken. */
+	static function IsTiltCalibrating():Bool {
+		return Runtime.tilt().calibrating;
+	}
+
+	/** Returns whether the tilt steers: the tilt is on (`TILT_STATUS_ON`) and level is taken (`IsTiltCalibrating` is false). A game
+		starts a race, or resumes one, while this is true.
+
+		@return  True while the tilt steers. */
+	static function IsTiltReady():Bool {
+		return Runtime.tilt().ready;
+	}
+
+	/** Takes level again: the tilt reads 0 until the device is held steady for half a second, and how the device is held then becomes
+		level (`IsTiltCalibrating`). A game's "Level" button is this call. See `GetTilt` for reading the tilt from level. */
 	static function CalibrateTilt():Void {
 		Runtime.tilt().calibrate();
 	}

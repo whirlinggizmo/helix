@@ -103,6 +103,7 @@ class VirtualGamepads implements IPollable {
 		for (i in 0...rects.length)
 			Stick.toFramebuffer(rects[i], blocked[i]);
 		service.blockedBounds = blocked;
+		service.tilt = Runtime.tiltService;
 		left.place();
 		right.place();
 		for (button in buttons)
@@ -163,7 +164,12 @@ private class Stick {
 		fill = color != null ? color : new Color(0, 0, 0, 0);
 		color = mine.knobColor != null ? mine.knobColor : all.knobColor;
 		knob = color != null ? color : knobTexture != null ? new Color(255, 255, 255, 255) : faded(outline, 1.5);
-		return {enabled: mine.enabled, basePlacement: cast mine.basePlacement, deadZone: mine.deadZone};
+		return {
+			enabled: mine.enabled,
+			basePlacement: cast mine.basePlacement,
+			deadZone: mine.deadZone,
+			tilt: mine.tilt
+		};
 	}
 
 	// Sets the stick's radius, zone and fixed base in framebuffer pixels.
@@ -178,7 +184,7 @@ private class Stick {
 	public function draw(hintShown:Bool, shown:Bool):Void {
 		var held = stick.held,
 			resting = !held && shown && stick.basePlacement == helix.services.input.VirtualStickBase.Fixed;
-		if (!stick.enabled || !visible || !held && !resting && !(hintShown && hint))
+		if (!stick.enabled || stick.tilt || !visible || !held && !resting && !(hintShown && hint))
 			return;
 		var screen = Runtime.screen, full = held || resting;
 		var at = new Vector2(screen.toDesignX(stick.baseX), screen.toDesignY(stick.baseY));

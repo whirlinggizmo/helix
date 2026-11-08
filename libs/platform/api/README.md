@@ -1461,11 +1461,11 @@ function dispose():Void
 
 - `requestAccess`: Asks for the device's motion sensor, whose readings then arrive as `Tilt` events.
   - `done`: Optional. Called once readings arrive.
-  - `failed`: Optional. Receives why there will be none: the player refused, the page isn't secure (not HTTPS), or the browser reads no orientation.
+  - `failed`: Optional. Receives why there will be none: permission was refused, the page isn't secure (not HTTPS), or the browser reads no orientation.
   - returns: False, calling neither and reporting `Unavailable`, where the tilt can't be read at all.
 
-  A page may need the player's permission, which is asked at the player's next tap. `TiltState` events report each change, for a game that shows "tap to start tilt" while it waits. A reading that arrives after the tilt was reported unavailable turns it on, as a phone's sensor may start late.
-- `releaseAccess`: Stops the readings. A permission the player granted stays granted, so a later `requestAccess` usually starts without asking again.
+  A page may need permission, which is asked at the next tap. `TiltState` events report each change: WaitingForTap while a tap is awaited, Starting until the first reading, then On. A game shows "tap to allow tilt" while the tilt waits for a tap. A reading that arrives after the tilt was reported unavailable turns it on, as a phone's sensor may start late.
+- `releaseAccess`: Stops the readings. A permission granted stays granted, so a later `requestAccess` usually starts without asking again.
 - `dispose`: Stops the readings and any request still waiting.
 
 ## ITouch
@@ -2028,12 +2028,13 @@ function toString():String
 
 *enum* in [`libs/platform/src/helix/platform/TiltStatus.hx`](../src/helix/platform/TiltStatus.hx), `import helix.platform.TiltStatus;`
 
-Specifies where the device's tilt is (`Event.TiltState`, after `ITilt.requestAccess`).
+Specifies the device's tilt status (`Event.TiltState`, after `ITilt.requestAccess`).
 
 - `Off`: Not read: it was never asked for, or it was turned off.
-- `WaitingForTap`: Waiting for the player's next tap, where a page asks for permission.
+- `WaitingForTap`: Waiting for the next tap, where a page asks for permission.
+- `Starting`: Asked for, and listening. The first reading turns the tilt On. After a second and a half without a reading, the status is Unavailable.
 - `On`: Read: `Tilt` events arrive.
-- `Refused`: The player refused permission.
+- `Refused`: Permission was refused.
 - `Unavailable`: The device gives no readings: there is no sensor, or none answered, or none is read on this target.
 - `NeedsHttps`: The page isn't secure (not HTTPS), so the browser gives no readings.
 

@@ -8,7 +8,7 @@ import helix.platform.TiltStatus;
 /** Provides the device's tilt, from level and turned with the screen, for a game steered by tilting a phone or a tablet.
 
 	The program constructs one over its `IEvents` and its `ITilt`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need
-	the player's permission, asked at the player's next tap, so a game asks before the tap that starts play. Level is taken once the
+	permission, asked at the next tap, so a game asks before the tap that starts play. Level is taken once the
 	device is held steady, and the tilt reads 0 until then (`calibrating`). Natively it is unavailable.
 
 	```haxe
@@ -49,25 +49,26 @@ class Tilt implements IPollable implements IActionDevice {
 
 	/** Asks for the device's motion sensor, as `ITilt.requestAccess` does.
 
-		A page may need the player's permission, which is asked at the player's next tap. `status` follows each change, for a game that shows
-		"tap to start tilt" while it waits.
+		A page may need permission, which is asked at the next tap. `status` follows each change: WaitingForTap while a tap is awaited,
+		Starting until the first reading, then On. A game shows "tap to allow tilt" while the tilt waits for a tap.
 		@param done  Optional. Called once readings arrive.
-		@param failed  Optional. Receives why there will be none: the player refused, the page isn't secure, or the browser reads no
+		@param failed  Optional. Receives why there will be none: permission was refused, the page isn't secure, or the browser reads no
 			orientation.
 		@return  False, calling neither, where the tilt can't be read at all, as natively. */
 	public function requestAccess(?done:Void->Void, ?failed:String->Void):Bool {
 		return device.requestAccess(done, failed);
 	}
 
-	/** Stops the readings, and reads 0 from then. A permission the player granted stays granted, so a later `requestAccess` usually starts
+	/** Stops the readings, and reads 0 from then. A permission granted stays granted, so a later `requestAccess` usually starts
 		without asking again. */
 	public function releaseAccess():Void {
 		device.releaseAccess();
 		tilt[0] = tilt[1] = 0;
 		level = false;
+		calibrating = false;
 	}
 
-	/** Gets where the tilt is: Off, WaitingForTap, On, Refused, Unavailable or NeedsHttps. Defaults to Off. */
+	/** Gets the tilt's status: Off, WaitingForTap, Starting, On, Refused, Unavailable or NeedsHttps. Defaults to Off. */
 	public var status(default, null):TiltStatus = Off;
 
 	/** Gets a value indicating whether level is being taken.
@@ -75,6 +76,12 @@ class Tilt implements IPollable implements IActionDevice {
 		Level is taken once the device is held within 3 degrees for half a second: when the tilt starts, after the screen turns, and after
 		`calibrate`. The tilt reads 0 meanwhile. */
 	public var calibrating(default, null):Bool = false;
+
+	/** Gets a value indicating whether the tilt steers: `status` is On and level is taken (`calibrating` is false). */
+	public var ready(get, never):Bool;
+
+	function get_ready():Bool
+		return status == On && !calibrating;
 
 	/** Takes level again from how the device is held next, as a game's "Level" button does. */
 	public function calibrate():Void {
@@ -108,8 +115,10 @@ class Tilt implements IPollable implements IActionDevice {
 			switch event {
 				case TiltState(next):
 					status = next;
-					if (next != On)
+					if (next != On) {
 						tilt[0] = tilt[1] = 0;
+						calibrating = false;
+					}
 				case Tilt(beta, gamma, screenAngle):
 					reading(beta, gamma, screenAngle);
 				case _:

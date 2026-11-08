@@ -166,12 +166,14 @@ class InputTests {
 		actions.unbindAll();
 		// Tilt: asked through the platform's tilt, level taken once held steady for half a second, then read turned with the screen.
 		check(tilt.requestAccess() && devices.tiltRequested && tilt.status == Off, "tilt asked for through the platform's tilt");
+		frame([TiltState(Starting)]);
+		check(tilt.status == Starting && tilt.getAxis(X) == 0, "starting: waiting for the first reading, reading 0");
 		frame([TiltState(On), Tilt(10, 5, 0)]);
-		check(tilt.status == On && tilt.calibrating && tilt.getAxis(X) == 0, "the first reading: level being taken, reading 0");
+		check(tilt.status == On && tilt.calibrating && !tilt.ready && tilt.getAxis(X) == 0, "the first reading: level being taken, reading 0");
 		var started = haxe.Timer.stamp();
 		while (haxe.Timer.stamp() - started < .6) {}
 		frame([Tilt(11, 6, 0)]);
-		check(!tilt.calibrating, "held within 3 degrees for half a second: level taken");
+		check(!tilt.calibrating && tilt.ready, "held within 3 degrees for half a second: level taken, ready");
 		frame([Tilt(26, 21, 0)]);
 		check(Math.abs(tilt.getAxis(Y) - .5) < 1e-9 && Math.abs(tilt.getAxis(X) - .5) < 1e-9, "15 degrees of 30 from level: 0.5 each way");
 		frame([Tilt(11, 66, 0)]);

@@ -6,7 +6,7 @@ import helix.platform.adapters.shared.EventStream;
 import helix.platform.adapters.shared.dom.DomListeners;
 import js.Browser;
 
-/** Provides `ITilt` in a browser page: the device's orientation (deviceorientation), asked for at the player's next tap where the browser
+/** Provides `ITilt` in a browser page: the device's orientation (deviceorientation), asked for at the next tap where the browser
 	wants permission (iOS, and Chrome on Android). */
 class DomTiltAdapter implements ITilt {
 	final stream:EventStream;
@@ -37,9 +37,10 @@ class DomTiltAdapter implements ITilt {
 
 	/** Asks for the device's orientation.
 
-		Where the browser asks for permission (iOS, and Chrome on Android), it is asked at the player's next tap, which shows its prompt. A
-		page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported
-		unavailable without calling `failed`, and it goes on listening, as a phone's sensor may start late. */
+		Where the browser asks for permission (iOS, and Chrome on Android), permission is asked at the next tap, which shows the browser's
+		prompt. A page that isn't secure gets no readings (NeedsHttps). Once the browser needs no permission, or has granted it, the status
+		is Starting until the first reading. A second and a half without a reading, counted from when the page has its focus, is reported
+		unavailable without calling `failed`, and the adapter goes on listening, as a phone's sensor may start late. */
 	public function requestAccess(?done:Void->Void, ?failed:String->Void):Bool {
 		var window:Dynamic = Browser.window;
 		whenDone = done;
@@ -63,6 +64,7 @@ class DomTiltAdapter implements ITilt {
 		if (listening)
 			return;
 		listening = true;
+		stream.record(TiltState(Starting));
 		var window = Browser.window, read = false;
 		reading.add(window, "deviceorientation", e -> {
 			// A reading without numbers (a sensor starting, or none) is passed over.

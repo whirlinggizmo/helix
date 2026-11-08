@@ -855,7 +855,7 @@ function getCacheDirectory():String
 
 *class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx`](../src/helix/platform/adapters/tilt/dom/DomTiltAdapter.hx), `import helix.platform.adapters.tilt.dom.DomTiltAdapter;`, implements `ITilt`
 
-Provides `ITilt` in a browser page: the device's orientation (deviceorientation), asked for at the player's next tap where the browser wants permission (iOS, and Chrome on Android).
+Provides `ITilt` in a browser page: the device's orientation (deviceorientation), asked for at the next tap where the browser wants permission (iOS, and Chrome on Android).
 
 ```haxe
 function new(options:DomTiltAdapterOptions)
@@ -867,7 +867,7 @@ function dispose():Void
 - `new`: Creates the tilt, off until `requestAccess`.
   - `options`: The events adapter its events are delivered by.
 - `requestAccess`: Asks for the device's orientation.
-  Where the browser asks for permission (iOS, and Chrome on Android), it is asked at the player's next tap, which shows its prompt. A page that isn't secure gets no readings (NeedsHttps). No reading within a second and a half of the page having its focus is reported unavailable without calling `failed`, and it goes on listening, as a phone's sensor may start late.
+  Where the browser asks for permission (iOS, and Chrome on Android), permission is asked at the next tap, which shows the browser's prompt. A page that isn't secure gets no readings (NeedsHttps). Once the browser needs no permission, or has granted it, the status is Starting until the first reading. A second and a half without a reading, counted from when the page has its focus, is reported unavailable without calling `failed`, and the adapter goes on listening, as a phone's sensor may start late.
 - `releaseAccess`: Stops the readings and any ask still waiting for a tap.
 
 ## DomTiltAdapterOptions

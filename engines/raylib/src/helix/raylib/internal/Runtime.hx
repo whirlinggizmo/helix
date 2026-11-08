@@ -661,7 +661,7 @@ class Runtime {
 	/** What draws over the frame as `EndDrawing` ends it, such as a virtual gamepad, or null while nothing does. */
 	public static var overlay:Null<Void->Void> = null;
 
-	/** Gets the tilt, made when first asked for. Only the tilt's functions ask, so a program that never calls one links none of it. */
+	/** Gets the tilt, made when first asked for. Only the tilt's functions ask, so a program that never calls one links no tilt adapter. */
 	public static function tilt():helix.services.input.Tilt {
 		if (tiltService == null) {
 			#if js
@@ -669,12 +669,14 @@ class Runtime {
 			#else
 			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter({events: cast eventsAdapter}));
 			#end
-			devices.push(tiltService);
+			// Polled first: a virtual gamepad's tilt stick reads it the same frame.
+			devices.unshift(tiltService);
 		}
 		return tiltService;
 	}
 
-	static var tiltService:Null<helix.services.input.Tilt> = null;
+	/** Gets the tilt once a tilt function has made it (`tilt`), or null before. A virtual gamepad's tilt stick reads it. */
+	public static var tiltService(default, null):Null<helix.services.input.Tilt> = null;
 
 	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. With
 		`-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only draws the frame: `SwapScreenBuffer` shows it

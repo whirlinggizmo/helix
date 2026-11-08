@@ -11,15 +11,22 @@ import helix.math.Vector2D;
 	still down in its zone, without moving the knob. Fingers the buttons (`VirtualButton`) captured stay with the buttons.
 
 	The stick releases its finger when the window changes size, when the stick is disabled, and when a physical gamepad replaces the
-	virtual gamepad. The next finger landing in its zone is captured again. Positions and sizes are framebuffer pixels. */
+	virtual gamepad. The next finger landing in its zone is captured again. Positions and sizes are framebuffer pixels.
+
+	A stick with `tilt` reads the tilt in place of a finger, and captures none. */
 @:allow(helix.services.input.VirtualGamepad)
 class VirtualStick {
 	/** Gets or sets whether it's enabled. Disabled, the stick reads 0, ignores fingers and releases the finger it captured. */
 	public var enabled(default, set):Bool = true;
 
 	/** Gets or sets where the stick captures a landing finger. The zone follows changes to these bounds' fields. Null for its default: the
-		window's left or right half with both sticks enabled, and the whole window with one, following the window's size. */
+		window's left or right half with both sticks enabled and read by fingers, and the whole window with one, following the window's
+		size. */
 	public var touchZone:Null<Bounds2D> = null;
+
+	/** Gets or sets whether the stick reads the virtual gamepad's tilt (`VirtualGamepad.tilt`) in place of a finger: `Tilt.getAxis(X)` as
+		x and `Tilt.getAxis(Y)` as y, past the stick's dead zone. A tilt stick ignores fingers. Defaults to false. */
+	public var tilt(default, set):Bool = false;
 
 	/** Gets or sets where the base goes. */
 	public var basePlacement:VirtualStickBase = Floating;
@@ -41,21 +48,22 @@ class VirtualStick {
 	/** Gets the id of the finger holding it, as `Touch` knows the finger. -1 while not held. */
 	public var finger(default, null):Int = -1;
 
-	/** Gets where it's pushed across, -1 (left) to 1 (right), within a circle of radius 1. 0 while not held. */
+	/** Gets where it's pushed across, -1 (left) to 1 (right), within a circle of radius 1. 0 while a stick read by fingers isn't held. */
 	public var x(default, null):Float = 0;
 
-	/** Gets where it's pushed up and down, -1 (up) to 1 (down), within a circle of radius 1. 0 while not held. */
+	/** Gets where it's pushed up and down, -1 (up) to 1 (down), within a circle of radius 1. 0 while a stick read by fingers isn't
+		held. */
 	public var y(default, null):Float = 0;
 
-	/** Gets the base's distance from the window's left edge. While not held, it's the stick's home: the fixed base, or centered one and a
+	/** Gets the base's distance from the window's left edge. While not held, and for a tilt stick, the base is at the stick's home: the fixed base, or centered one and a
 		half radii in from the touch zone's bottom outer corner. */
 	public var baseX(default, null):Float = 0;
 
 	/** Gets the base's distance from the window's top edge. */
 	public var baseY(default, null):Float = 0;
 
-	/** Gets the knob's distance from the window's left edge. It's the finger's position, held within the radius. While not held, it's
-		the base's position. */
+	/** Gets the knob's distance from the window's left edge. The knob is at the finger's position, held within the radius, and for a tilt
+		stick at the base moved by `x` and `y` times the radius. While a stick read by fingers isn't held, the knob is at the base. */
 	public var knobX(default, null):Float = 0;
 
 	/** Gets the knob's distance from the window's top edge. */
@@ -78,6 +86,25 @@ class VirtualStick {
 		if (!value)
 			release();
 		return enabled = value;
+	}
+
+	// Reads a tilt past the dead zone, or 0 without one, the base at its home and the knob pushed from it.
+	function readTilt(source:Null<Tilt>):Void {
+		release();
+		var dx = source != null ? source.getAxis(X) : 0.,
+			dy = source != null ? source.getAxis(Y) : 0.,
+			length = Math.sqrt(dx * dx + dy * dy);
+		var push = length > 0 ? Gamepads.beyond(length < 1 ? length : 1, deadZone) / length : 0;
+		x = dx * push;
+		y = dy * push;
+		knobX = baseX + x * radius;
+		knobY = baseY + y * radius;
+	}
+
+	function set_tilt(value:Bool):Bool {
+		if (value)
+			release();
+		return tilt = value;
 	}
 
 	function set_deadZone(value:Float):Float

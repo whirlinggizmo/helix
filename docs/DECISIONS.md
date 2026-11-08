@@ -791,3 +791,15 @@ Why things are the way they are, numbered, in order.
     bottom-right corner, in the service beside the sticks' default zones; helix-raylib labels the face buttons A, B, X and Y. Sticks and buttons take images and a label font, and a program draws its own
     controls from `visible: false` and the sticks' read-backs (`GetVirtualStickBase`, `GetVirtualStickKnob`, `IsVirtualStickHeld`,
     `IsVirtualGamepadVisible`). Three trials shaped these: the third had to blank four colors to hide a stick, which `visible` replaced.
+59. **Tilt is a stick of the virtual gamepad.** A stick with `tilt` reads the device's tilt in place of a finger, past the stick's dead
+    zone, and a tilt-steered game reads it as any gamepad's stick. The ROADMAP's separate tilt gamepad would have wanted the same slot
+    as the virtual gamepad, whose buttons a tilt game needs (gas, brake, fire). The game turns the tilt on itself (`EnableTiltAsync`), as
+    helix-legacy's Tilt button did: a browser asks only at a tap, and the game hears a refusal and offers a finger stick. helix-raylib
+    gains `GetTiltStatus` and `IsTiltCalibrating`, for "tap to allow tilt" and "hold steady", which helix-legacy's states gave a game.
+    The platform's `TiltStatus` gains `Starting`, between the ask and the first reading: without it the status read Off there where no
+    tap is asked, and WaitingForTap after the tap on iOS, so "tap to allow tilt" stayed up after the tap that allowed it. The tilt plugs
+    the virtual gamepad in, as a touch does: a phone that asks no permission has no tap to wait for. The virtual gamepad reads the tilt
+    only once a tilt function has made it, so a program without one links no tilt adapter. One trial of the doc comments found no
+    guess about the tilt, and a review found the rest. Rejected: a `TiltGamepad` beside the virtual gamepad (two gamepads in
+    one slot); asking for the tilt when the virtual gamepad is enabled (the game would never hear the answer); and a third stick (a
+    gamepad has two, and its axes end there).

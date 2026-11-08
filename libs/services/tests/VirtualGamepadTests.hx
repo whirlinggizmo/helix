@@ -1,6 +1,7 @@
 import helix.math.Bounds2D;
 import helix.math.Vector2D;
 import helix.services.input.Gamepads;
+import helix.services.input.Tilt;
 import helix.services.input.Touch;
 import helix.services.input.VirtualGamepad;
 
@@ -8,7 +9,8 @@ import helix.services.input.VirtualGamepad;
 	stick on each half read through Gamepads; the dead zone; a finger landing on a held stick taking it over; a blocked bound; a lift
 	handing the stick to a finger still down; a fixed stick pushed from its base; a following base; a resize letting go; a physical
 	gamepad replacing the virtual one until the next touch after it leaves; and buttons: shown from the start, pressed by the first touch,
-	slid off and onto, a button turned off, kept from the sticks, and released by a physical gamepad. */
+	slid off and onto, a button turned off, kept from the sticks, and released by a physical gamepad; the diamond; and a tilt
+	stick. */
 class VirtualGamepadTests {
 	static var checks = 0;
 
@@ -30,6 +32,7 @@ class VirtualGamepadTests {
 		var pause = new Bounds2D().set(700, 0, 800, 100);
 		var virtualGamepad = new VirtualGamepad(touch, window, devices, 0, {blockedBounds: [pause]});
 		var gamepads = new Gamepads(events, virtualGamepad);
+		var tilt = new Tilt(events, devices);
 		gamepads.deadZone = 0;
 		function frame(?list:Array<helix.platform.Event>) {
 			if (list != null)
@@ -37,6 +40,7 @@ class VirtualGamepadTests {
 					events.next.push(e);
 			events.poll();
 			touch.poll();
+			tilt.poll();
 			virtualGamepad.poll();
 			gamepads.poll();
 		}
@@ -168,6 +172,52 @@ class VirtualGamepadTests {
 		check(gamepads.isButtonDown(0, East) && !virtualGamepad.buttons[1].placed,
 			"East without a position, in the diamond 3.5 radii in from the corner; Start without one, unplaced");
 		frame([TouchUp(13, 724, 460)]);
+
+		// A tilt stick: the left stick reads the tilt past its dead zone, and the right stick's default zone is the whole window.
+		virtualGamepad.tilt = tilt;
+		virtualGamepad.configure({left: {tilt: true}});
+		frame([TouchDown(14, 100, 300)]);
+		check(virtualGamepad.right.held && !virtualGamepad.left.held && gamepads.getAxis(0, LeftX) == 0,
+			"a finger on the left half goes to the right stick; the tilt stick reads 0 before the tilt is on");
+		frame([TouchUp(14, 100, 300)]);
+		tilt.requestAccess();
+		frame([TiltState(On), Tilt(10, 5, 0)]);
+		var started = haxe.Timer.stamp();
+		while (haxe.Timer.stamp() - started < .6) {}
+		frame([Tilt(10, 5, 0)]);
+		check(!tilt.calibrating && gamepads.getAxis(0, LeftX) == 0, "level taken: the tilt stick reads 0 at level");
+		frame([Tilt(10, 20, 0)]);
+		check(near(gamepads.getAxis(0, LeftX), (.5 - .12) / (1 - .12)) && gamepads.getAxis(0, LeftY) == 0,
+			"15 degrees of 30 across: 0.5, past the dead zone of 0.12");
+		devices.gamepadConnected = true;
+		frame();
+		check(gamepads.getAxis(0, LeftX) == 0, "a physical gamepad replaces the tilt stick too");
+		devices.gamepadConnected = false;
+		frame([Tilt(10, 20, 0)]);
+		check(virtualGamepad.pluggedIn && gamepads.getAxis(0, LeftX) > 0 && virtualGamepad.hintVisible,
+			"the physical gamepad gone: the tilt plugs the virtual gamepad in without a touch, the finger stick's hint still shown");
+		var stick = virtualGamepad.left;
+		check(near(stick.baseX, 90)
+			&& near(stick.baseY, 510)
+			&& near(stick.knobX, stick.baseX + stick.x * 60)
+			&& near(stick.knobY, stick.baseY),
+			"the tilt stick's base at its home, its knob pushed from the base by the tilt");
+		frame([Tilt(40, 40, 0)]);
+		check(near(gamepads.getAxis(0, LeftX), Math.sqrt(.5)) && near(gamepads.getAxis(0, LeftY), Math.sqrt(.5)),
+			"a full tilt both ways: held to a circle of radius 1");
+		virtualGamepad.configure({right: {tilt: true}});
+		frame([Tilt(10, 20, 0), TouchDown(15, 700, 300)]);
+		check(near(gamepads.getAxis(0, RightX), (.5 - .12) / (1 - .12)) && gamepads.getAxis(0, LeftX) == 0 && virtualGamepad.left.held,
+			"the right stick as the tilt stick: RightX reads the tilt, a finger on the right half goes to the left stick");
+		frame([TouchUp(15, 700, 300)]);
+		virtualGamepad.configure({});
+		frame([TouchDown(16, 100, 300), TouchDown(17, 700, 300)]);
+		check(virtualGamepad.left.finger == 16 && virtualGamepad.right.finger == 17, "tilt turned off: the sticks' zones are the halves again");
+		frame([TouchUp(16, 100, 300), TouchUp(17, 700, 300)]);
+		tilt.calibrate();
+		check(tilt.calibrating, "taking level again");
+		tilt.releaseAccess();
+		check(!tilt.calibrating, "the tilt released while level is being taken: not calibrating");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);
