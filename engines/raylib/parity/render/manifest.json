@@ -3,10 +3,21 @@
   "covers": "rlgl's blending as rlSetBlendMode sets GL's (every BLEND_ mode, BLEND_ALPHA's alpha by glBlendFunc's one pair of factors, the custom factors and when they take effect, a factor GL refuses) and rlColorMask, a render texture's alpha under them drawn over the screen; UpdateTexture and UpdateTextureRec (from bytes, a grayscale texture, a rectangle past the edge, in memory and on the GPU, ordered among render texture passes and the batch); render textures keeping what they hold, from pass to pass and frame to frame, and an update (from colors) between two draws in one; LoadImageFromTexture of a texture drawn and updated; DrawMeshInstanced, its shader's instanceTransform attribute; GenTextureMipmaps on the CPU, before and after a texture's first draw, and SetTextureFilter's mipmapped filters and anisotropy, drawn into a 640 x 480 frame",
   "kind": "pixels",
   "generated": true,
-  "frames": 5,
+  "frames": 40,
   "backends": {
     "gl": 10,
     "sdl_gpu": 12600
   },
-  "notes": "SDL_GPU's frame (Vulkan on lavapipe) differs from Mesa's GL by one level in about 11,600 blended pixels, its blending rounding apart, and in about 830 of the mipmapped squares, lavapipe choosing levels a little apart from llvmpipe; GL's matches raylib's exactly, the mipmaps made on the CPU too."
+  "notes": "SDL_GPU's frame (Vulkan on lavapipe) differs from Mesa's GL by one level in about 11,600 blended pixels, its blending rounding apart, and in about 830 of the mipmapped squares, lavapipe choosing levels a little apart from llvmpipe; GL's matches raylib's exactly, the mipmaps made on the CPU too.",
+  "assets": {
+    "web/instancing.vs": "instancing.vs",
+    "web/instancing.fs": "instancing.fs"
+  },
+  "shaders": [
+    [
+      "web/instancing.vs",
+      "web/instancing.fs",
+      "web/instancing.shader"
+    ]
+  ]
 }

@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Shaders.*;
 import helix.raylib.extras.Window.*;
 
 // scene.c.in's 3D scene, drawn by helix-raylib; its third frame saved as helix.png. cases.py's list is put into it.
@@ -35,11 +36,17 @@ class Main {
 		var models = [for (m in meshes) LoadModelFromMesh(m)];
 		for (m in models)
 			SetMaterialTexture(m.materials[0], MATERIAL_MAP_DIFFUSE, checks);
-		var shader = LoadShaderFromMemory("#version 330\nin vec3 vertexPosition;\nin vec4 vertexTangent;\nin vec2 vertexTexCoord2;\nuniform mat4 mvp;\nout vec4 c;\nvoid main() { c = vec4(vertexTangent.xyz*0.5 + 0.5, 1.0) + vec4(vertexTexCoord2, 0.0, 0.0); gl_Position = mvp*vec4(vertexPosition, 1.0); }\n",
-			"#version 330\nin vec4 c;\nout vec4 finalColor;\nvoid main() { finalColor = c; }\n");
+		var shader:Shader = null;
+		LoadCompiledShaderAsync("shader.shader", loaded -> shader = loaded);
 		var strip = [V3(-1, 0, 0.5), V3(-0.5, 0, 0.5), V3(-1, 0.6, 0.2), V3(-0.5, 0.6, 0.2), V3(-1, 1.2, 0), V3(-0.5, 1.2, 0)];
 		var frame = 0;
 		while (!WindowShouldClose()) {
+			// Drawn once the shader is loaded.
+			if (shader == null) {
+				BeginDrawing();
+				EndDrawing();
+				continue;
+			}
 			BeginDrawing();
 			ClearBackground(RAYWHITE);
 			BeginMode3D(camera);

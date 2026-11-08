@@ -4,9 +4,20 @@
   "notes": "raylib 6.2's clip planes are set to 5.5's (rlSetClipPlanes(0.01, 1000)), as helix-raylib keeps them. A flipped billboard's part is kept inside its texture: helix-raylib's textures clamp by default, where raylib's desktop build repeats.",
   "kind": "pixels",
   "generated": true,
-  "frames": 5,
+  "frames": 40,
   "backends": {
     "gl": 20,
     "sdl_gpu": 1000
-  }
+  },
+  "assets": {
+    "web/shader.vs": "shader.vs",
+    "web/shader.fs": "shader.fs"
+  },
+  "shaders": [
+    [
+      "web/shader.vs",
+      "web/shader.fs",
+      "web/shader.shader"
+    ]
+  ]
 }
