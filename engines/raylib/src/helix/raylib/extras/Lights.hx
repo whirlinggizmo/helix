@@ -73,6 +73,9 @@ class Lights {
 		posed by `UpdateModelAnimation` under it is skinned on the GPU. A material marked `unlit` (glTF's `KHR_materials_unlit`) draws its
 		base color and no light.
 
+		A point light with a `range` dims with distance, and `intensity` makes any light brighter. Light brighter than white rolls off
+		toward white instead of clipping, and colors in the usual range come out as authored.
+
 		What each draw reads from the material: its maps, bound at `locs[SHADER_LOC_MAP_ALBEDO]`, `METALNESS`, `ROUGHNESS`, `NORMAL`,
 		`OCCLUSION` and `EMISSION` (the samplers `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and
 		`emissiveMap`, each set to its map's unit), a missing map reading white and a missing normal map a flat normal; and its values,
@@ -110,7 +113,7 @@ class Lights {
 		return RLights.CreateLight(type, position, target, color, shader);
 
 	/** Sets a light's values in a lit shader, as rlights' `UpdateLightValues`: whether it is on, its type, position, target and color,
-		for the draws after it.
+		and its range and intensity where the shader has them, for the draws after it.
 
 		@param shader  The lit shader.
 		@param light  The light. */

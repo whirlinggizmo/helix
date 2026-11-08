@@ -759,3 +759,13 @@ Why things are the way they are, numbered, in order.
     configs (`Texture2D`, `MaterialMap` and the rest) have no `copy`, as a field copy bypasses their counted references. Rejected: a
     read-only `ConstColor` for the named colors (Haxe infers `var c = RED` as read-only, so reassigning it with a `Color` fails, and an
     explicit `Color` type reopens the hole); a build macro copying on every assignment; and `Color.copy`, which a value has no use for.
+
+56. **A light has a range and an intensity, and the PBR shader tone maps.** rlights' point light doesn't dim with distance and its
+    shader clips at white, so four near-white lights clipped the robots' scene to white. `Light.range` and `Light.intensity` are
+    helix-raylib's own: within its range a point light falls off with the square of the distance, faded to nothing at the range by glTF's
+    `KHR_lights_punctual` window, and intensity multiplies the color of either kind of light. A range of 0, the default, is no falloff,
+    and a light's intensity starts at 1 in every lit shader, so `LoadLightingShader` stays raylib's pixel for pixel and a shader whose
+    lights a program sets by hand shines as before. One function, `helixLightStrength` in `lights.glsl`, applies them for both lit
+    shaders. `LoadPbrShader` tone maps with Khronos PBR Neutral, always: colors in the usual range come out as authored, and brighter
+    light rolls off toward white. Rejected: a falloff window alone (not physical, so a lit scene changes as the camera moves, and glTF's
+    lights would need converting); and a switch for tone mapping, which a program's own fragment stage over `pbr.glsl` covers.

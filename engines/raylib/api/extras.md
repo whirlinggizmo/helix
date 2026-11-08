@@ -620,6 +620,8 @@ static function UpdateLightValues(shader:Shader, light:Light):Void
 
   Set up as that one: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from `CreateLight`, a light's color what a white surface facing it shows. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. A material marked `unlit` (glTF's `KHR_materials_unlit`) draws its base color and no light.
 
+  A point light with a `range` dims with distance, and `intensity` makes any light brighter. Light brighter than white rolls off toward white instead of clipping, and colors in the usual range come out as authored.
+
   What each draw reads from the material: its maps, bound at `locs[SHADER_LOC_MAP_ALBEDO]`, `METALNESS`, `ROUGHNESS`, `NORMAL`, `OCCLUSION` and `EMISSION` (the samplers `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and `emissiveMap`, each set to its map's unit), a missing map reading white and a missing normal map a flat normal; and its values, `maps[MATERIAL_MAP_ALBEDO].color` times the tint as `colDiffuse`, `maps[MATERIAL_MAP_METALNESS].value` as `metallicValue`, `maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as `emissiveColor`. Colors are taken as linear, as a glTF's factors are, and an image's texels decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set. A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`). A program's own shader draws the same way by including `<helix/raylib/shaders/pbr.glsl>`.
 
   ```haxe
@@ -639,7 +641,7 @@ static function UpdateLightValues(shader:Shader, light:Light):Void
   - `color`: Its color.
   - `shader`: The lit shader.
   - returns: The light.
-- `UpdateLightValues`: Sets a light's values in a lit shader, as rlights' `UpdateLightValues`: whether it is on, its type, position, target and color, for the draws after it.
+- `UpdateLightValues`: Sets a light's values in a lit shader, as rlights' `UpdateLightValues`: whether it is on, its type, position, target and color, and its range and intensity where the shader has them, for the draws after it.
   - `shader`: The lit shader.
   - `light`: The light.
 

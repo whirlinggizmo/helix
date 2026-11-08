@@ -5,12 +5,15 @@
 // vec3 helixDecodeSrgb(vec3 color) converts sRGB to linear. vec3 helixEncodeSrgb(vec3 linear) converts back.
 //
 // vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal)
-// returns the fragment's lit color, encoded to sRGB. Its alpha is baseColor's.
+// returns the fragment's lit color, tone mapped (Khronos PBR Neutral) and encoded to sRGB. Its alpha is baseColor's. Colors in the usual
+// range come out as authored, and brighter light rolls off toward white instead of clipping.
 //
 // Its inputs are linear, as a glTF's factors are. Decode a texel from an sRGB image first. fragPosition is in world space. normal
 // needn't be normalized.
 //
-// A point light doesn't dim with distance.
+// A point light dims with distance as in lights.glsl.
+//
+// vec3 helixToneMap(vec3 color) tone maps a linear color, as helixPbr does.
 //
 // LoadPbrShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
 //
@@ -61,6 +64,23 @@ vec3 helixGgx(vec3 l, vec3 v, vec3 n, vec3 f0, float roughness) {
     return helixSchlick(f0, vh)*(visibility*distribution);
 }
 
+// Khronos PBR Neutral tone mapping: colors in the usual range kept as authored, brighter light rolled off toward white instead of clipped.
+vec3 helixToneMap(vec3 color) {
+    const float startCompression = 0.76;
+    const float desaturation = 0.15;
+    float x = min(color.r, min(color.g, color.b));
+    float offset = x < 0.08 ? x - 6.25*x*x : 0.04;
+    color -= offset;
+    float peak = max(color.r, max(color.g, color.b));
+    if (peak < startCompression)
+        return color;
+    const float d = 1.0 - startCompression;
+    float newPeak = 1.0 - d*d/(peak + d - startCompression);
+    color *= newPeak/peak;
+    float g = 1.0 - 1.0/(desaturation*(peak - newPeak) + 1.0);
+    return mix(color, vec3(newPeak), g);
+}
+
 vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal) {
     vec3 n = normalize(normal);
     vec3 v = normalize(viewPos - fragPosition);
@@ -77,12 +97,12 @@ vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, 
             if (lights[i].type == LIGHT_POINT)
                 l = normalize(lights[i].position - fragPosition);
             // A white surface facing the light shows its color: the BRDF scaled by pi.
-            vec3 irradiance = lights[i].color.rgb*clamp(dot(n, l), 0.0, 1.0);
+            vec3 irradiance = lights[i].color.rgb*clamp(dot(n, l), 0.0, 1.0)*helixLightStrength(i, fragPosition);
             color += irradiance*(diffuseColor + HELIX_PI*helixGgx(l, v, n, f0, roughness));
         }
     }
     color += emissive;
-    return vec4(helixEncodeSrgb(clamp(color, 0.0, 1.0)), baseColor.a);
+    return vec4(helixEncodeSrgb(clamp(helixToneMap(color), 0.0, 1.0)), baseColor.a);
 }
 
 #endif

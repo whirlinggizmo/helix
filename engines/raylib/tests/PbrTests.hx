@@ -11,7 +11,8 @@ import helix.raylib.internal.Textures;
 /** Checks `LoadPbrShader`'s draws, on graphics that count what is live: its locations name its samplers, each set to its map's unit, so a
 	material's map with a texture is bound at it, one without reads white and a missing normal map a flat normal; each draw writes the
 	material's metalness, roughness and emissive values, and gives a normal-mapped mesh its tangents; a material marked unlit is drawn
-	through the unlit twin; and a posed model's draw, through the skinned twins, binds and writes the same. */
+	through the unlit twin; a posed model's draw, through the skinned twins, binds and writes the same; and each light's intensity starts
+	at 1, its range and intensity written by `UpdateLightValues`. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)
@@ -173,6 +174,19 @@ class PbrTests {
 		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
 		check(drawnTexture(p, "emissiveMap") == Textures.handle(normal.id) && p.textures[p.slotOf("emissiveMap")] == normal.id,
 			"a texture set on the shader, kept by its id and bound by its handle");
+
+		// A light's range and intensity: each light starts at intensity 1, and CreateLight finds both, UpdateLightValues writes them.
+		var at = p.locate("lights[0].intensity");
+		check(at >= 0 && p.written[at][0] == 1, "each light's intensity starts at 1");
+		var light = CreateLight(LIGHT_POINT, new Vector3(0, 2, 0), new Vector3(0, 0, 0), WHITE, pbr);
+		light.range = 6;
+		light.intensity = 9;
+		UpdateLightValues(pbr, light);
+		check(light.rangeLoc >= 0
+			&& light.intensityLoc >= 0
+			&& p.written[light.rangeLoc][0] == 6
+			&& p.written[light.intensityLoc][0] == 9,
+			"a light's range and intensity written");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

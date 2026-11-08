@@ -39,9 +39,13 @@ raylib's lighting from its examples' rlights.h and lighting.fs, for a fragment s
 
 It declares rlights' uniforms: lights[MAX_LIGHTS] (MAX_LIGHTS is 4), ambient and viewPos. CreateLight and UpdateLightValues set the lights. The program sets viewPos, the camera's position, each frame at shader.locs[SHADER_LOC_VECTOR_VIEW].
 
+Each light also has helix-raylib's range and intensity, from Light's fields. Its intensity starts at 1.
+
 vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) returns the fragment's lit color, gamma corrected. fragPosition is in world space. fragNormal needn't be normalized.
 
-A point light doesn't dim with distance.
+A point light with a range dims with the square of the distance, to nothing at its range. Without one, it doesn't dim.
+
+float helixLightStrength(int i, vec3 fragPosition) returns light i's strength at the fragment: its intensity, dimmed by its range.
 
 The stage declares its inputs, textures, uniforms and output itself, as the example does.
 
@@ -70,11 +74,13 @@ It includes <helix/raylib/shaders/lights.glsl>, so it declares the same uniforms
 
 vec3 helixDecodeSrgb(vec3 color) converts sRGB to linear. vec3 helixEncodeSrgb(vec3 linear) converts back.
 
-vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal) returns the fragment's lit color, encoded to sRGB. Its alpha is baseColor's.
+vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal) returns the fragment's lit color, tone mapped (Khronos PBR Neutral) and encoded to sRGB. Its alpha is baseColor's. Colors in the usual range come out as authored, and brighter light rolls off toward white instead of clipping.
 
 Its inputs are linear, as a glTF's factors are. Decode a texel from an sRGB image first. fragPosition is in world space. normal needn't be normalized.
 
-A point light doesn't dim with distance.
+A point light dims with distance as in lights.glsl.
+
+vec3 helixToneMap(vec3 color) tone maps a linear color, as helixPbr does.
 
 LoadPbrShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
 

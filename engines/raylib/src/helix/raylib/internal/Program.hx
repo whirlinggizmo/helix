@@ -114,6 +114,10 @@ class Program {
 		matProjection = shader.findUniform("matProjection");
 		matNormal = shader.findUniform("matNormal");
 		colDiffuse = shader.findUniform("colDiffuse");
+		// Each light of lights.glsl starts at intensity 1, so a shader whose lights a program sets by hand shines as raylib's do.
+		var i = 0, loc;
+		while ((loc = locate('lights[${i++}].intensity')) >= 0)
+			write(loc, [1]);
 	}
 
 	function slotOf(name:String):Int {

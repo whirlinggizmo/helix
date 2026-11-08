@@ -49,6 +49,9 @@ class RLights {
 		posed by `UpdateModelAnimation` under it is skinned on the GPU. A material marked `unlit` (glTF's `KHR_materials_unlit`) draws its
 		base color and no light.
 
+		A point light with a `range` dims with distance, and `intensity` makes any light brighter. Light brighter than white rolls off
+		toward white instead of clipping, and colors in the usual range come out as authored.
+
 		What each draw reads from the material: its maps, bound at `locs[SHADER_LOC_MAP_ALBEDO]`, `METALNESS`, `ROUGHNESS`, `NORMAL`,
 		`OCCLUSION` and `EMISSION` (the samplers `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and
 		`emissiveMap`, each set to its map's unit), a missing map reading white and a missing normal map a flat normal; and its values,
@@ -137,6 +140,8 @@ class RLights {
 			light.positionLoc = GetShaderLocation(shader, 'lights[$count].position');
 			light.targetLoc = GetShaderLocation(shader, 'lights[$count].target');
 			light.colorLoc = GetShaderLocation(shader, 'lights[$count].color');
+			light.rangeLoc = GetShaderLocation(shader, 'lights[$count].range');
+			light.intensityLoc = GetShaderLocation(shader, 'lights[$count].intensity');
 			UpdateLightValues(shader, light);
 			lightsCount = count + 1;
 		}
@@ -144,7 +149,7 @@ class RLights {
 	}
 
 	/** Sets a light's values in a lit shader, as rlights' `UpdateLightValues`: whether it is on, its type, position, target and color,
-		for the draws after it.
+		and its range and intensity where the shader has them, for the draws after it.
 
 		@param shader  The lit shader.
 		@param light  The light. */
@@ -159,6 +164,10 @@ class RLights {
 			light.color.b / 255,
 			light.color.a / 255
 		], SHADER_UNIFORM_VEC4);
+		if (light.rangeLoc >= 0)
+			SetShaderValue(shader, light.rangeLoc, light.range, SHADER_UNIFORM_FLOAT);
+		if (light.intensityLoc >= 0)
+			SetShaderValue(shader, light.intensityLoc, light.intensity, SHADER_UNIFORM_FLOAT);
 	}
 	#end
 }

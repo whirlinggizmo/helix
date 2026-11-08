@@ -21,8 +21,16 @@ class Light {
 	/** Gets or sets the light's color. */
 	public var color:Color = new Color(0, 0, 0, 0);
 
-	/** Gets or sets the attenuation, which rlights keeps and its shader ignores. */
+	/** Gets or sets the attenuation, which rlights keeps and its shader ignores. See `range` for a point light that dims with distance. */
 	public var attenuation:Float = 0;
+
+	/** Gets or sets how far a point light reaches, in world units: helix-raylib's own. Within it the light falls off with the square of
+		the distance, fading to nothing at the range. 0, the default, is no falloff, as rlights' lights have none. */
+	public var range:Float = 0;
+
+	/** Gets or sets how bright the light is, a multiple of its color: helix-raylib's own. With a range, a white surface 1 unit from the
+		light shows its color at intensity 1, and one 4 units away needs intensity 16. */
+	public var intensity:Float = 1;
 
 	/** Gets or sets the location of `enabled` in the light's shader. */
 	public var enabledLoc:Int = 0;
@@ -41,6 +49,12 @@ class Light {
 
 	/** Gets or sets the location of `attenuation`, which rlights never finds. */
 	public var attenuationLoc:Int = 0;
+
+	/** Gets or sets the location of `range`, -1 for a shader without it. */
+	public var rangeLoc:Int = -1;
+
+	/** Gets or sets the location of `intensity`, -1 for a shader without it. */
+	public var intensityLoc:Int = -1;
 
 	/** Creates a light that is off, every field 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light that shines. */
 	public function new() {}

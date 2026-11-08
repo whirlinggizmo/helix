@@ -443,12 +443,16 @@ var position:Vector3
 var target:Vector3
 var color:Color
 var attenuation:Float
+var range:Float
+var intensity:Float
 var enabledLoc:Int
 var typeLoc:Int
 var positionLoc:Int
 var targetLoc:Int
 var colorLoc:Int
 var attenuationLoc:Int
+var rangeLoc:Int
+var intensityLoc:Int
 ```
 
 - `new`: Creates a light that is off, every field 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light that shines.
@@ -457,13 +461,17 @@ var attenuationLoc:Int
 - `position`: Gets or sets the light's position.
 - `target`: Gets or sets the target, the point setting a directional light's direction.
 - `color`: Gets or sets the light's color.
-- `attenuation`: Gets or sets the attenuation, which rlights keeps and its shader ignores.
+- `attenuation`: Gets or sets the attenuation, which rlights keeps and its shader ignores. See `range` for a point light that dims with distance.
+- `range`: Gets or sets how far a point light reaches, in world units: helix-raylib's own. Within it the light falls off with the square of the distance, fading to nothing at the range. 0, the default, is no falloff, as rlights' lights have none.
+- `intensity`: Gets or sets how bright the light is, a multiple of its color: helix-raylib's own. With a range, a white surface 1 unit from the light shows its color at intensity 1, and one 4 units away needs intensity 16.
 - `enabledLoc`: Gets or sets the location of `enabled` in the light's shader.
 - `typeLoc`: Gets or sets the location of `type`.
 - `positionLoc`: Gets or sets the location of `position`.
 - `targetLoc`: Gets or sets the location of `target`.
 - `colorLoc`: Gets or sets the location of `color`.
 - `attenuationLoc`: Gets or sets the location of `attenuation`, which rlights never finds.
+- `rangeLoc`: Gets or sets the location of `range`, -1 for a shader without it.
+- `intensityLoc`: Gets or sets the location of `intensity`, -1 for a shader without it.
 
 ## Material
 
