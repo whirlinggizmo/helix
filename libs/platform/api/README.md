@@ -70,6 +70,7 @@ var keepAlpha = new Blend(SourceAlpha, OneMinusSourceAlpha, Add, Zero, One);
 ```
 
 ```haxe
+function new(colorSource:BlendFactor, colorDestination:BlendFactor, ?colorOperation:BlendOperation = Add, ?alphaSource:BlendFactor, ?alphaDestination:BlendFactor, ?alphaOperation:BlendOperation)
 static inline var OPAQUE:Blend
 static inline var ALPHA:Blend
 static inline var ADDITIVE:Blend
@@ -81,6 +82,13 @@ var colorOperation(get, never):BlendOperation
 var alphaOperation(get, never):BlendOperation
 ```
 
+- `new`: Creates a blend.
+  - `colorSource`: The factor for the source's red, green and blue.
+  - `colorDestination`: The factor for the destination's red, green and blue.
+  - `colorOperation`: Optional. How red, green and blue are combined; defaults to Add.
+  - `alphaSource`: Optional. The factor for the source's alpha; defaults to colorSource.
+  - `alphaDestination`: Optional. The factor for the destination's alpha; defaults to colorDestination.
+  - `alphaOperation`: Optional. How the alphas are combined; defaults to colorOperation.
 - `OPAQUE`: No blending: the color replaces the target's.
 - `ALPHA`: The color blended over the target's by its alpha. The target's alpha becomes `a + destination alpha * (1 - a)`, so what is drawn over a clear target stays as opaque as it was drawn.
 - `ADDITIVE`: The color, multiplied by its alpha, added to the target's. It suits light, fire and glows.
@@ -1844,6 +1852,7 @@ var floor = new Sampling(Linear, Repeat, Repeat, Linear, 8);
 ```
 
 ```haxe
+function new(filter:Filter, ?wrapU:Wrap = Clamp, ?wrapV:Wrap = Clamp, ?mipmapFilter:MipmapFilter, ?anisotropy:Int = 1)
 static inline var NEAREST:Sampling
 static inline var LINEAR:Sampling
 var filter(get, never):Filter
@@ -1858,6 +1867,12 @@ function withAnisotropy(anisotropy:Int):Sampling
 static inline var COUNT:Int
 ```
 
+- `new`: Creates a sampling.
+  - `filter`: How the texture is filtered.
+  - `wrapU`: Optional. How the texture wraps along u; defaults to Clamp.
+  - `wrapV`: Optional. How the texture wraps along v; defaults to Clamp.
+  - `mipmapFilter`: Optional. How a texture's mipmaps are read; defaults to Linear for a Linear filter and Nearest for a Nearest one.
+  - `anisotropy`: Optional. The most texels read along a surface seen at a slant, 1 to 16, rounded down to 1, 2, 4, 8 or 16 and clamped to what the GPU has; defaults to 1, for none. It is used only with a Linear filter and Linear mipmaps, and ignored otherwise.
 - `NEAREST`: Nearest filtering, clamped, for pixel art.
 - `LINEAR`: Linear filtering, clamped, for a smooth look.
 - `filter`: Gets how the texture is filtered, Linear or Nearest.

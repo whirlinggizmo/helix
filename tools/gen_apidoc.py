@@ -232,8 +232,10 @@ def short_types(text):
 def member_lines(member,known,instance=()):
     """A public member as a Haxe signature and its doc, or None for a private one or the meta; instance names an abstract's properties,
     statics of its implementation whose accessors take the value."""
-    if member.tag in ('haxe_doc','meta') or member.get('public')!='1' or hidden(member):return None
-    name=member.tag;static='static ' if member.get('static')=='1' else ''
+    # An abstract's constructor, its implementation's _new, which the compiler hides itself: shown as the new a program calls.
+    constructor=member.tag=='_new' and bool(instance)
+    if member.tag in ('haxe_doc','meta') or member.get('public')!='1' or hidden(member) and not constructor:return None
+    name='new' if constructor else member.tag;static='' if constructor else 'static ' if member.get('static')=='1' else ''
     kids=[c for c in member if c.tag not in ('haxe_doc','meta')]
     if not kids:return None
     t=kids[0]
