@@ -9,7 +9,7 @@ import js.Browser;
 
 /** Provides `ISystem` in a browser page: the device as the browser describes it, and options from the URL's query.
 
-	The system comes from the user agent, a touch screen from its touch points, a fine pointer from the any-pointer media query. */
+	The system comes from the user agent (an iPad's from its touch points), a fine pointer from the any-pointer media query. */
 class DomSystemAdapter implements ISystem {
 	var params = new js.html.URLSearchParams(Browser.window.location.search);
 
@@ -26,7 +26,7 @@ class DomSystemAdapter implements ISystem {
 		var touches:Int = js.Syntax.code("navigator.maxTouchPoints || 0");
 		var fine:Bool = js.Syntax.code("window.matchMedia ? window.matchMedia('(any-pointer: fine)').matches : true");
 		var agent = Browser.navigator.userAgent;
-		return new Device(true, systemOf(agent, touches), architectureOf(agent), touches > 0, fine);
+		return new Device(true, systemOf(agent, touches), architectureOf(agent), fine);
 	}
 
 	// The architecture a browser's user agent names ("" for none): ARM's names, then x86-64's, then 32-bit x86's.

@@ -11,21 +11,21 @@ using StringTools;
 #end
 
 /** Warns, as the program builds, where the program's own code reaches the page or the host for something `helix.raylib.extras` or `Raylib` answers
-	on every target: the URL's query or an environment variable (`GetRunOption`), the device's touch screen or pointer
-	(`IsTouchScreenAvailable`, `IsFinePointerAvailable`), the screen's orientation (`SetScreenOrientationAsync`), the safe area's insets
+	on every target: the URL's query or an environment variable (`GetRunOption`), the device's touch or pointer
+	(`IsTouchAvailable`, `IsFinePointerAvailable`), the screen's orientation (`SetScreenOrientationAsync`), the safe area's insets
 	(`GetWindowSafeArea`), the device's tilt (`EnableTiltAsync`), the page's storage (`SaveFileTextAsync`, `LoadFileTextAsync`) and its
 	fullscreen (`IsFullscreenAvailable`, `IsWindowFullscreen`, `ToggleFullscreenAsync`), when the program is built with
 	`-D helix-raylib-host-warnings`: off by default, as a person reads the README and may reach the host on purpose, and on for an agent
 	writing raylib from memory (a trial). Each warning reads as a refusal does ("js.html.Window.matchMedia: Works only in a browser. See
-	IsTouchScreenAvailable() or IsFinePointerAvailable() in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)."). Each site warns
+	IsTouchAvailable() or IsFinePointerAvailable() in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)."). Each site warns
 	once for each call, and libraries' code isn't looked at. Read from the compiler's typed code, after typing: the fields and types reached, and the text
 	of a string or a `js.Syntax.code` call. Run by the library's `extraParams.hxml`. */
 @:noCompletion
 class HostReach {
 	#if macro
 	static inline final RUN_OPTION = "GetRunOption(name:String)";
-	static inline final POINTER = "IsTouchScreenAvailable() or IsFinePointerAvailable()";
-	static inline final TOUCH_SCREEN = "IsTouchScreenAvailable()";
+	static inline final POINTER = "IsTouchAvailable() or IsFinePointerAvailable()";
+	static inline final TOUCH = "IsTouchAvailable()";
 	static inline final ORIENTATION = "SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) with ORIENTATION_LANDSCAPE, ORIENTATION_PORTRAIT or ORIENTATION_ANY";
 	static inline final TILT = "EnableTiltAsync(?done:Void->Void, ?failed:String->Void)";
 	static inline final SAFE_AREA = "GetWindowSafeArea()";
@@ -38,7 +38,7 @@ class HostReach {
 	static final MODULES:Map<String, String> = [
 		RUN_OPTION => "Device",
 		POINTER => "Device",
-		TOUCH_SCREEN => "Device",
+		TOUCH => "Device",
 		ORIENTATION => "Device",
 		TILT => "Device",
 		SAFE_AREA => "Device",
@@ -61,7 +61,7 @@ class HostReach {
 		"Sys.getEnv" => RUN_OPTION,
 		"Sys.args" => RUN_OPTION,
 		"js.html.Window.matchMedia" => POINTER,
-		"js.html.Navigator.maxTouchPoints" => TOUCH_SCREEN,
+		"js.html.Navigator.maxTouchPoints" => TOUCH,
 		"js.html.Screen.orientation" => ORIENTATION,
 		"js.html.Window.ondeviceorientation" => TILT,
 		"js.Browser.getLocalStorage" => SAVE,
@@ -88,7 +88,7 @@ class HostReach {
 	static final SCRIPT:Array<{pattern:EReg, call:String}> = [
 		{pattern: ~/\blocation\b|URLSearchParams/, call: RUN_OPTION},
 		{pattern: ~/\bmatchMedia\b/, call: POINTER},
-		{pattern: ~/\bmaxTouchPoints\b/, call: TOUCH_SCREEN},
+		{pattern: ~/\bmaxTouchPoints\b/, call: TOUCH},
 		{pattern: ~/screen\.orientation/, call: ORIENTATION},
 		{pattern: ~/\b(localStorage|sessionStorage|indexedDB)\b/, call: SAVE},
 		{pattern: ~/\bfullscreenEnabled\b/, call: CAN_FULLSCREEN},

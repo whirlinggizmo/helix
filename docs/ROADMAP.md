@@ -168,8 +168,6 @@ keeps helix-raylib's size and speed where docs/speed.md records them.
 - **A tilt gamepad (DECISIONS 57's pattern):** `TiltGamepad` implements `IGamepads` in front of the platform's gamepads, as the virtual
   gamepad does, and reads `Tilt` as a stick, so a tilt-steered game's gamepad code reads it unchanged. helix-raylib enables it as it
   enables the virtual gamepad.
-- **`IsTouchScreenAvailable` natively:** it's always false there, as the native system adapter reports no touch screen. `ITouch.available`
-  answers natively from SDL's touch devices, so the device could read it.
 - **From a jam game's friction log (F numbers), for the layers that own them:**
   - helix-scene: `find` by name and kind, `addChildAt`, `getChildIndex`, `removeChildAt`, `contains` (F1, F2, F4); text pivot or
     vertical align (F20); a sprite keeping its sheet and index across a reload (F56); a matrix transform, so skew (F57); a pointer

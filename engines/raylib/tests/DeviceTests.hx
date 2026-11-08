@@ -5,6 +5,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.extras.Device.*;
 import helix.raylib.internal.Runtime;
 import helix.services.input.Tilt;
+import helix.services.input.Touch;
 import helix.services.screen.Screen;
 
 /** Checks `extras.Device`'s answers about the device and the page over fakes (services' `FakeSystem`, `FakeWindow`, `FakeEvents` and
@@ -81,10 +82,13 @@ class DeviceTests {
 		check(GetRunOption("speed") == null, "a run option not set is null");
 
 		// The device.
-		system.described = new Device(true, "android", "arm64", true, false);
-		check(IsPlatformWeb() && GetPlatformOS() == "android" && IsTouchScreenAvailable() && !IsFinePointerAvailable(), "a phone's page");
-		system.described = new Device(false, "linux", "x86_64", false, true);
-		check(!IsPlatformWeb() && GetPlatformOS() == "linux" && !IsTouchScreenAvailable() && IsFinePointerAvailable(), "a desktop");
+		var devices = new FakeDevices();
+		Runtime.touchService = new Touch(events, devices);
+		system.described = new Device(true, "android", "arm64", false);
+		check(IsPlatformWeb() && GetPlatformOS() == "android" && IsTouchAvailable() && !IsFinePointerAvailable(), "a phone's page");
+		system.described = new Device(false, "linux", "x86_64", true);
+		devices.touchAvailable = false;
+		check(!IsPlatformWeb() && GetPlatformOS() == "linux" && !IsTouchAvailable() && IsFinePointerAvailable(), "a desktop");
 
 		// The window's abilities.
 		check(!IsWindowCloseable(), "a window that can't close (the fake's, as a page's)");

@@ -808,7 +808,7 @@ final events:Sdl3EventsAdapter
 
 Provides `ISystem` in a browser page: the device as the browser describes it, and options from the URL's query.
 
-The system comes from the user agent, a touch screen from its touch points, a fine pointer from the any-pointer media query.
+The system comes from the user agent (an iPad's from its touch points), a fine pointer from the any-pointer media query.
 
 ```haxe
 function new()
@@ -832,7 +832,7 @@ function getCacheDirectory():String
 
 Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX_ environment variables, SDL's monotonic clock, the program's directory as SDL finds it, and the OS's directories by each OS's rules.
 
-A mouse is assumed and no touch screen reported. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its making the directory, and the same OS conventions for the cache, which SDL has no call for. Each comes from its environment variable when that's set, and from the OS when it isn't (the user database's home directory, Windows' shell folders); an empty one counts as unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and quietly writing elsewhere would hide the mistake.
+A mouse is assumed. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its making the directory, and the same OS conventions for the cache, which SDL has no call for. Each comes from its environment variable when that's set, and from the OS when it isn't (the user database's home directory, Windows' shell folders); an empty one counts as unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and quietly writing elsewhere would hide the mistake.
 
 ```haxe
 function new()

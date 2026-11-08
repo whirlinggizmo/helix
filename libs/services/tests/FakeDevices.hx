@@ -95,13 +95,13 @@ class FakeDevices implements IKeyboard implements IMouse implements ITouch imple
 	function set_textInput(on:Bool):Bool
 		return typing = on;
 
-	/** Gets or sets whether the device has a touch screen. */
-	public var touchScreen = true;
+	/** Gets or sets whether the device has touch. */
+	public var touchAvailable = true;
 
 	public var available(get, never):Bool;
 
 	function get_available():Bool
-		return touchScreen;
+		return touchAvailable;
 
 	/** Gets or sets whether a gamepad is in slot 0. */
 	public var gamepadConnected = true;

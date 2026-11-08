@@ -425,7 +425,7 @@ function getY(id:Int):Float
 - `new`: Creates the touch over the platform's events and touch, with no finger down.
   - `events`: The platform's events, whose last `poll` this one reads.
   - `touch`: The platform's touch, whose fingers those events carry.
-- `available`: Gets a value indicating whether the device has a touch screen.
+- `available`: Gets a value indicating whether the device has touch.
 - `fingers`: Gets the fingers down, by id, in the order they landed. The array is reused by the next poll.
 - `pressed`: Gets the fingers that landed this frame, by id. The array is reused by the next poll.
 - `released`: Gets the fingers that lifted this frame, by id. The array is reused by the next poll.
@@ -504,7 +504,7 @@ function dispose():Void
 - `enabled`: Gets or sets whether it's enabled. Turned off, the virtual gamepad is unplugged and its sticks let go. Defaults to true.
 - `pluggedIn`: Gets a value indicating whether it's plugged in: enabled, touched, and its slot free of physical gamepads. While a physical gamepad is in its slot, the virtual gamepad's sticks ignore touches.
 - `physicalConnected`: Gets a value indicating whether a physical gamepad is in the virtual gamepad's slot.
-- `hintVisible`: Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, its slot free of physical gamepads, and on a device with a touch screen (`Touch.available`). The first touch ends every stick's hint.
+- `hintVisible`: Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, its slot free of physical gamepads, and on a device with touch (`Touch.available`). The first touch ends every stick's hint.
 - `left`: Gets the left stick, read as `LeftX` and `LeftY`.
 - `right`: Gets the right stick, read as `RightX` and `RightY`.
 - `blockedBounds`: Gets or sets bounds cut out of the sticks' touch zones, such as a pause button's. The blocked bounds follow changes to these bounds' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound.

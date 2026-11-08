@@ -6211,12 +6211,12 @@ class Raylib {
 
 	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's options. */
 	public static macro function emscripten_run_script(script:ExprOf<String>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).",
+		return helix.platform.macros.Build.unsupported("emscripten_run_script: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).",
 			macro {});
 
 	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's options. */
 	public static macro function emscripten_run_script_int(script:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetScreenOrientation; or write plain Haxe (js.Browser, in #if js).",
+		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchAvailable and IsFinePointerAvailable for the device, GetScreenOrientation; or write plain Haxe (js.Browser, in #if js).",
 			macro(0 : Int));
 
 	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetPlatformOS` for reading the system. */

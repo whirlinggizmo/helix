@@ -115,7 +115,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		return gamepads.isConnected(slot);
 
 	/** Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, its slot free of physical
-		gamepads, and on a device with a touch screen (`Touch.available`). The first touch ends every stick's hint. */
+		gamepads, and on a device with touch (`Touch.available`). The first touch ends every stick's hint. */
 	public var hintVisible(get, never):Bool;
 
 	function get_hintVisible():Bool

@@ -69,17 +69,16 @@ class Device {
 	public static inline function GetPlatformOS():String
 		return RDevice.GetPlatformOS();
 
-	/** Returns whether the device has a touch screen. See `IsFinePointerAvailable` for whether there is a mouse, a trackpad or a pen.
+	/** Returns whether the device has touch. A trackpad isn't touch. See `IsFinePointerAvailable` for whether there is a mouse, a trackpad
+		or a pen.
 
-		Always false natively.
+		A laptop may have both touch and a mouse.
 
-		A laptop may have both a touch screen and a mouse. Touch controls also belong on the first touch, not on this alone.
+		@return  True with touch. */
+	public static inline function IsTouchAvailable():Bool
+		return RDevice.IsTouchAvailable();
 
-		@return  True with a touch screen. */
-	public static inline function IsTouchScreenAvailable():Bool
-		return RDevice.IsTouchScreenAvailable();
-
-	/** Returns whether the device has a fine pointer, such as a mouse, a trackpad or a pen. See `IsTouchScreenAvailable` for whether there is a touch screen.
+	/** Returns whether the device has a fine pointer, such as a mouse, a trackpad or a pen. See `IsTouchAvailable` for whether there is touch.
 
 		False on a phone or a tablet alone.
 

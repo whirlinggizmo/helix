@@ -250,17 +250,15 @@ function toString():String
 
 Represents what the program runs on, as far as the platform reports it.
 
-It tells a browser from native, and names the operating system and the processor's architecture. It also reports whether there is a touch screen and whether there is a fine pointer.
+It tells a browser from native, and names the operating system and the processor's architecture. It also reports whether there is a fine pointer. `ITouch.available` reports touch.
 
-A game uses it to choose what it shows on each device, such as touch controls on a phone, "tap" or "click" in a prompt, or a landscape lock. A browser can be wrong about a laptop with a touch screen, which has both. Touch controls therefore also appear on the first touch, not by device alone.
+A game uses it to choose what it shows on each device, such as "tap" or "click" in a prompt, or a landscape lock.
 
 ```haxe
 final browser:Bool
 final os:String
 final architecture:String
-final touchScreen:Bool
 final finePointer:Bool
-var mobile(get, never):Bool
 ```
 
 - `browser`: Gets a value indicating whether the program runs in a browser page rather than natively.
@@ -268,10 +266,8 @@ var mobile(get, never):Bool
   It is "" when the platform doesn't report one.
 - `architecture`: Gets the processor architecture the program runs as, in lowercase: "x86_64", "arm64" or "x86".
   Natively it is the architecture the program was built for. In a page it is the one the browser names, or "" when the browser names none. A browser may name none, or the wrong one. Safari on Apple silicon reports Intel.
-- `touchScreen`: Gets a value indicating whether there is a touch screen. It is always false natively.
 - `finePointer`: Gets a value indicating whether there is a fine pointer, such as a mouse, a trackpad or a pen.
   It is false on a phone or a tablet alone.
-- `mobile`: Gets a value indicating whether the device is a phone or a tablet, which means a touch screen and no fine pointer.
 
 ## Event
 
@@ -1485,7 +1481,7 @@ var available(get, never):Bool
 function dispose():Void
 ```
 
-- `available`: Gets a value indicating whether the device has a touch screen. A trackpad isn't one.
+- `available`: Gets a value indicating whether the device has touch. A trackpad isn't touch.
 - `dispose`: Stops listening to touch.
 
 ## IWindow

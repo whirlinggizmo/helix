@@ -2388,7 +2388,7 @@ class RCore {
 		options.
 
 		@param script  The JavaScript. */
-	@:unsupported("emscripten_run_script: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).")
+	@:unsupported("emscripten_run_script: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).")
 	static function emscripten_run_script(script:String):Void {
 		throw "emscripten_run_script is unsupported";
 	}
@@ -2398,7 +2398,7 @@ class RCore {
 
 		@param script  The JavaScript.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_run_script_int: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchScreenAvailable and IsFinePointerAvailable for the device, GetScreenOrientation; or write plain Haxe (js.Browser, in #if js).")
+	@:unsupported("emscripten_run_script_int: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchAvailable and IsFinePointerAvailable for the device, GetScreenOrientation; or write plain Haxe (js.Browser, in #if js).")
 	static function emscripten_run_script_int(script:String):Int {
 		throw "emscripten_run_script_int is unsupported";
 	}

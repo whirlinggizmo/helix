@@ -35,7 +35,7 @@ class Touch implements IPollable {
 		this.touch = touch;
 	}
 
-	/** Gets a value indicating whether the device has a touch screen. */
+	/** Gets a value indicating whether the device has touch. */
 	public var available(get, never):Bool;
 
 	function get_available():Bool

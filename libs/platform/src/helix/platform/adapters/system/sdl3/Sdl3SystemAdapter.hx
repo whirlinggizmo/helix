@@ -10,7 +10,7 @@ import helix.platform.adapters.shared.sdl3.Sdl3Bridge;
 /** Provides `ISystem` on SDL3, natively: the platform SDL names, options from HELIX_ environment variables, SDL's monotonic clock, the
 	program's directory as SDL finds it, and the OS's directories by each OS's rules.
 
-	A mouse is assumed and no touch screen reported. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its
+	A mouse is assumed. The directories follow the rules SDL's `SDL_GetPrefPath` does for data, without its
 	making the directory, and the same OS conventions for the cache, which SDL has no call for. Each comes from its environment variable
 	when that's set, and from the OS when it isn't (the user database's home directory, Windows' shell folders); an empty one counts as
 	unset. A variable set to a path that isn't absolute throws, naming it, where the XDG specification would ignore it: someone set it, and
@@ -39,7 +39,7 @@ class Sdl3SystemAdapter implements ISystem {
 		};
 		// The architecture the program was built for, which is the one it runs as.
 		var architecture = #if HXCPP_ARM64 "arm64" #elseif HXCPP_M64 "x86_64" #elseif HXCPP_M32 "x86" #else "" #end;
-		return new Device(false, os, architecture, false, true);
+		return new Device(false, os, architecture, true);
 	}
 
 	public function getOption(name:String):Null<String> {

@@ -188,7 +188,7 @@ static function GetWindowSafeArea():Rectangle
 static function GetRunOption(name:String):Null<String>
 static function IsPlatformWeb():Bool
 static function GetPlatformOS():String
-static function IsTouchScreenAvailable():Bool
+static function IsTouchAvailable():Bool
 static function IsFinePointerAvailable():Bool
 static function IsWindowCloseable():Bool
 static function IsFullscreenAvailable():Bool
@@ -220,13 +220,11 @@ static function CalibrateTilt():Void
   - returns: The system's name.
 
   The names are "windows", "macos", "linux", "android", "ios" and "chromeos".
-- `IsTouchScreenAvailable`: Returns whether the device has a touch screen. See `IsFinePointerAvailable` for whether there is a mouse, a trackpad or a pen.
-  - returns: True with a touch screen.
+- `IsTouchAvailable`: Returns whether the device has touch. A trackpad isn't touch. See `IsFinePointerAvailable` for whether there is a mouse, a trackpad or a pen.
+  - returns: True with touch.
 
-  Always false natively.
-
-  A laptop may have both a touch screen and a mouse. Touch controls also belong on the first touch, not on this alone.
-- `IsFinePointerAvailable`: Returns whether the device has a fine pointer, such as a mouse, a trackpad or a pen. See `IsTouchScreenAvailable` for whether there is a touch screen.
+  A laptop may have both touch and a mouse.
+- `IsFinePointerAvailable`: Returns whether the device has a fine pointer, such as a mouse, a trackpad or a pen. See `IsTouchAvailable` for whether there is touch.
   - returns: True with a fine pointer.
 
   False on a phone or a tablet alone.
