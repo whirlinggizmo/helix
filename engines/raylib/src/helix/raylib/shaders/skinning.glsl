@@ -1,16 +1,17 @@
-// <helix/raylib/shaders/skinning.glsl>: skinning on the GPU, for a vertex stage of helix-raylib's.
+// <helix/raylib/shaders/skinning.glsl>: skinning on the GPU, for a vertex stage.
 //
-// It declares the bone inputs a skinned mesh feeds, vertexBoneIds and vertexBoneWeights (four bones a vertex, as raylib's), the frame's
-// bone palette (uniform sampler2D bonePalette) and the draw's first bone in it plus one (uniform int boneOffset, 0 for a draw without
-// bones), and two functions:
-// mat4 helixSkin() returns the vertex's skin matrix, each of its bones' matrices times its weight, added; vec3 helixSkinNormal(vec3 normal)
-// returns a normal moved as raylib moves one, by each bone's matrix inverted and transposed, times its weight, added, and not normalized.
+// It declares the bone inputs a skinned mesh feeds: vertexBoneIds and vertexBoneWeights, four bones a vertex, as raylib's.
 //
-// It declares nothing else: the stage declares raylib's attributes, its uniforms and its outputs itself, as the example does.
+// It declares the uniforms each draw sets: bonePalette and boneOffset.
 //
-// A shader including it skins on the GPU: a mesh UpdateModelAnimation or UpdateModelAnimationBones posed is drawn with its bones written
-// into the palette and boneOffset set, so one model drawn in many poses in a frame draws each as it was asked for. A mesh drawn before
-// either posed it, or without bones, is drawn in its bind pose, as are the vertices with no weight at all.
+// mat4 helixSkin() returns the vertex's skin matrix.
+//
+// vec3 helixSkinNormal(vec3 normal) returns the normal moved by the bones, not normalized.
+//
+// The stage declares raylib's attributes, its own uniforms and its outputs itself, as the example does.
+//
+// A mesh posed by UpdateModelAnimation or UpdateModelAnimationBones is drawn in that pose. A model drawn several times in a frame shows
+// each pose it was given. A mesh never posed, or without bones, is drawn in its bind pose.
 //
 //     #version 330
 //     #include <helix/raylib/shaders/skinning.glsl>

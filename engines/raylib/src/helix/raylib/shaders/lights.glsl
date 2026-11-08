@@ -1,17 +1,16 @@
-// <helix/raylib/shaders/lights.glsl>: raylib's lighting, as its examples' rlights.h and lighting.fs (raylib 5.5) light a model, for a
-// fragment stage of helix-raylib's.
+// <helix/raylib/shaders/lights.glsl>: raylib's lighting from its examples' rlights.h and lighting.fs, for a fragment stage.
 //
-// It declares rlights' uniforms: lights[MAX_LIGHTS] (MAX_LIGHTS is 4), each with enabled, type (LIGHT_DIRECTIONAL or LIGHT_POINT),
-// position, target and color, which CreateLight and UpdateLightValues (helix.raylib.extras.Lights) set; ambient, a color; and viewPos,
-// the camera's position, which a program sets each frame at shader.locs[SHADER_LOC_VECTOR_VIEW]. And one function,
-// vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal), the fragment's color as lighting.fs computes it: each
-// enabled light's diffuse and specular (a shine of 16), the ambient light a tenth of ambient, and the result gamma corrected (to the
-// power 1/2.2). fragPosition is the fragment's in the world, and fragNormal its own, normalized here.
+// It declares rlights' uniforms: lights[MAX_LIGHTS] (MAX_LIGHTS is 4), ambient and viewPos. CreateLight and UpdateLightValues set the
+// lights. The program sets viewPos, the camera's position, each frame at shader.locs[SHADER_LOC_VECTOR_VIEW].
 //
-// It declares nothing else: the stage declares its inputs (raylib's varyings fragPosition, fragTexCoord, fragColor and fragNormal, as
-// its vertex stage names them), its textures and uniforms, and its output itself, as the example does.
+// vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) returns the fragment's lit color, gamma corrected.
+// fragPosition is in world space. fragNormal needn't be normalized.
 //
-// LoadLightingShader (helix.raylib.extras.Lights) is a shader built on it. A program's own fragment stage lights with it so:
+// A point light doesn't dim with distance.
+//
+// The stage declares its inputs, textures, uniforms and output itself, as the example does.
+//
+// LoadLightingShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
 //
 //     #version 330
 //     #include <helix/raylib/shaders/lights.glsl>

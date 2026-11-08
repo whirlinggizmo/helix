@@ -1,15 +1,18 @@
-// <helix/raylib/shaders/pbr.glsl>: a metallic-roughness surface lit by rlights' lights, for a fragment stage of helix-raylib's.
+// <helix/raylib/shaders/pbr.glsl>: a metallic-roughness surface lit by rlights' lights, for a fragment stage.
 //
-// It includes <helix/raylib/shaders/lights.glsl>, so it declares rlights' uniforms (lights[MAX_LIGHTS], ambient and viewPos, set as
-// LoadLightingShader's are), and three functions more. vec3 helixDecodeSrgb(vec3 color) and vec3 helixEncodeSrgb(vec3 linear) go between
-// sRGB and linear. vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition,
-// vec3 normal) is the fragment's color: from each enabled light a Lambert diffuse and a GGX specular (Schlick's Fresnel, Smith's
-// height-correlated visibility), a light's color what a white surface facing it shows and a point light undimmed by distance, as
-// lights.glsl has them; a tenth of ambient as the light from everywhere, dimmed by occlusion; and emissive added. Every input is linear,
-// baseColor and emissive as a glTF's factors are, so a texel from an sRGB image is decoded first. The result is encoded to sRGB, its
-// alpha baseColor's. fragPosition is the fragment's in the world, and normal its own, normalized here.
+// It includes <helix/raylib/shaders/lights.glsl>, so it declares the same uniforms, set the same way.
 //
-// LoadPbrShader (helix.raylib.extras.Lights) is a shader built on it. A program's own fragment stage lights with it so:
+// vec3 helixDecodeSrgb(vec3 color) converts sRGB to linear. vec3 helixEncodeSrgb(vec3 linear) converts back.
+//
+// vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal)
+// returns the fragment's lit color, encoded to sRGB. Its alpha is baseColor's.
+//
+// Its inputs are linear, as a glTF's factors are. Decode a texel from an sRGB image first. fragPosition is in world space. normal
+// needn't be normalized.
+//
+// A point light doesn't dim with distance.
+//
+// LoadPbrShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
 //
 //     #version 330
 //     #include <helix/raylib/shaders/pbr.glsl>
