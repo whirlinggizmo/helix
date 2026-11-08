@@ -1478,14 +1478,14 @@ function dispose():Void
 
 Defines touch: `TouchDown`, `TouchMove` and `TouchUp` in `IEvents.events` while it exists.
 
-Its adapter is constructed over the events adapter, whose `poll` delivers its events. A finger is never reported as the mouse.
+Its adapter is constructed over the events adapter, whose `poll` delivers its events. A finger is never reported as the mouse, and a trackpad's fingers aren't touch.
 
 ```haxe
 var available(get, never):Bool
 function dispose():Void
 ```
 
-- `available`: Gets a value indicating whether the device has a touch screen.
+- `available`: Gets a value indicating whether the device has a touch screen. A trackpad isn't one.
 - `dispose`: Stops listening to touch.
 
 ## IWindow

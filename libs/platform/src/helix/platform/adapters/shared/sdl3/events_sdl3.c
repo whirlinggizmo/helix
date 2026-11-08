@@ -196,7 +196,10 @@ static void translate(SDL_Event *e){
    /* Fingers are in 0..1 of the window: framebuffer pixels by its size in pixels. */
    const int down=e->type==SDL_EVENT_FINGER_DOWN||e->type==SDL_EVENT_FINGER_MOTION;
    if(e->type==SDL_EVENT_FINGER_UP)press();
+   /* A trackpad's fingers are the mouse's, not touch: only a touch screen's are read. */
    if(!(wanted&HELIX_EVENTS_TOUCH))break;
+   const SDL_TouchDeviceType type=SDL_GetTouchDeviceType(e->tfinger.touchID);
+   if(type==SDL_TOUCH_DEVICE_INDIRECT_ABSOLUTE||type==SDL_TOUCH_DEVICE_INDIRECT_RELATIVE)break;
    SDL_Window *w=SDL_GetWindowFromID(e->tfinger.windowID);int pw=0,ph=0;if(w)SDL_GetWindowSizeInPixels(w,&pw,&ph);
    int known=0;for(int i=0;i<16;i++)if(fingers[i]==e->tfinger.fingerID)known=1;
    int id=finger(e->tfinger.fingerID,down);
@@ -237,7 +240,11 @@ void helix_events_setup(void){
 void helix_events_dispose(void){
  helix_events_want(HELIX_EVENTS_KEYBOARD|HELIX_EVENTS_MOUSE|HELIX_EVENTS_TOUCH|HELIX_EVENTS_GAMEPADS,0);
 }
-int helix_touch_devices(void){int count=0;SDL_TouchID *ids=SDL_GetTouchDevices(&count);SDL_free(ids);return count;}
+int helix_touch_devices(void){
+ int count=0,direct=0;SDL_TouchID *ids=SDL_GetTouchDevices(&count);
+ for(int i=0;i<count;i++)if(SDL_GetTouchDeviceType(ids[i])==SDL_TOUCH_DEVICE_DIRECT)direct++;
+ SDL_free(ids);return direct;
+}
 void helix_events_want(int device,int on){
  const int had=wanted&HELIX_EVENTS_GAMEPADS;
  wanted=on?wanted|device:wanted&~device;
