@@ -13,6 +13,11 @@ class Sdl3TouchAdapter implements ITouch {
 		Sdl3EventsBridge.want(Sdl3EventsBridge.TOUCH, 1);
 	}
 
+	public var available(get, never):Bool;
+
+	function get_available():Bool
+		return Sdl3EventsBridge.touchDevices() > 0;
+
 	public function dispose():Void
 		Sdl3EventsBridge.want(Sdl3EventsBridge.TOUCH, 0);
 }

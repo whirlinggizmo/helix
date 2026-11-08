@@ -654,8 +654,9 @@ class Runtime {
 		devices.push(gamepadsService);
 	}
 
-	/** The fingers a virtual gamepad's sticks hold, and those that lifted from one this frame: the mouse follows the others. */
-	public static final stickFingers:Array<Int> = [];
+	/** Whether a virtual gamepad's stick holds a finger, or held it until it lifted this frame: the mouse follows the other fingers. Null
+		while no virtual gamepad is enabled. */
+	public static var holdsFinger:Null<Int->Bool> = null;
 
 	/** What draws over the frame as `EndDrawing` ends it, such as a virtual gamepad, or null while nothing does. */
 	public static var overlay:Null<Void->Void> = null;

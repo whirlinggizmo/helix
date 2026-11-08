@@ -31,6 +31,7 @@ extern class Sdl3EventsBridge {
 	@:native("helix_events_wait") static function wait(milliseconds:Int):Void;
 	@:native("helix_events_set_text") static function setText(on:Int):Void;
 	@:native("helix_events_want") static function want(device:Int, on:Int):Void;
+	@:native("helix_touch_devices") static function touchDevices():Int;
 	@:native("helix_events_next") static function next():Int;
 	@:native("helix_events_kind") static function kind():Int;
 	@:native("helix_events_code") static function code():Int;

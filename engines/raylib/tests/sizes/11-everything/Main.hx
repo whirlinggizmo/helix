@@ -18,7 +18,7 @@ import helix.raylib.extras.Audio.*;
 	"helix.raylib.modules.RGuiControls", "helix.raylib.modules.RGuiSkins", "helix.raylib.modules.RModelsPosed", "helix.services.input.Tilt",
 	"helix.services.input.TiltAxis", "helix.services.screenshots", "helix.raylib.internal.VirtualGamepads", "helix.raylib.modules.RVirtualGamepad",
 	"helix.services.input.VirtualGamepad", "helix.services.input.VirtualGamepadOptions", "helix.services.input.VirtualStick",
-	"helix.services.input.VirtualStickBase", "helix.services.input.VirtualStickOptions")
+	"helix.services.input.VirtualStickOptions")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

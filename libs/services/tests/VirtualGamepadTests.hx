@@ -45,6 +45,10 @@ class VirtualGamepadTests {
 		check(near(virtualGamepad.left.baseX, 90) && near(virtualGamepad.left.baseY, 510) && near(virtualGamepad.right.baseX, 710),
 			"each stick's home: one and a half radii in from its half's bottom outer corner");
 
+		devices.touchScreen = false;
+		check(!virtualGamepad.hintVisible && !touch.available, "no touch screen: no hint");
+		devices.touchScreen = true;
+
 		frame([TouchDown(1, 200, 300)]);
 		check(virtualGamepad.pluggedIn
 			&& !virtualGamepad.hintVisible

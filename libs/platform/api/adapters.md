@@ -935,6 +935,7 @@ The canvas keeps a finger until it lifts, so one sliding off it still arrives. W
 
 ```haxe
 function new(options:DomTouchAdapterOptions)
+var available(get, never):Bool
 function dispose():Void
 ```
 
@@ -967,6 +968,7 @@ Provides `ITouch` on SDL3, natively: fingers on the window, in framebuffer pixel
 
 ```haxe
 function new(options:Sdl3TouchAdapterOptions)
+var available(get, never):Bool
 function dispose():Void
 ```
 

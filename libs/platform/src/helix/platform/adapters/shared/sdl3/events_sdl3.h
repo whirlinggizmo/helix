@@ -12,7 +12,7 @@ enum {HELIX_EVENTS_KEY_DOWN=1,HELIX_EVENTS_KEY_UP,HELIX_EVENTS_TEXT,HELIX_EVENTS
 /* The devices whose events are wanted, each added by its adapter: what isn't wanted isn't listened to. */
 enum {HELIX_EVENTS_KEYBOARD=1,HELIX_EVENTS_MOUSE=2,HELIX_EVENTS_TOUCH=4,HELIX_EVENTS_GAMEPADS=8};
 void helix_events_setup(void);void helix_events_dispose(void);void helix_events_poll(void);void helix_events_wait(int milliseconds);
-void helix_events_set_text(int on);void helix_events_want(int device,int on);
+void helix_events_set_text(int on);void helix_events_want(int device,int on);int helix_touch_devices(void);
 int helix_events_next(void);int helix_events_kind(void);int helix_events_code(void);int helix_events_value(void);float helix_events_x(void);float helix_events_y(void);
 /* The mouse's cursor and lock (Sdl3MouseAdapter): its shape is CursorShape's number; the lock is SDL's relative mouse mode. */
 void helix_mouse_set_cursor_visible(int on);int helix_mouse_cursor_visible(void);void helix_mouse_set_cursor_shape(int shape);

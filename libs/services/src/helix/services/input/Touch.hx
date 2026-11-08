@@ -18,6 +18,7 @@ import helix.platform.ITouch;
 	``` */
 class Touch implements IPollable {
 	final events:IEvents;
+	final touch:ITouch;
 	final down:Array<Int> = [];
 	final landed:Array<Int> = [];
 	final lifted:Array<Int> = [];
@@ -31,7 +32,14 @@ class Touch implements IPollable {
 		@param touch  The platform's touch, whose fingers those events carry. */
 	public function new(events:IEvents, touch:ITouch) {
 		this.events = events;
+		this.touch = touch;
 	}
+
+	/** Gets a value indicating whether the device has a touch screen. */
+	public var available(get, never):Bool;
+
+	function get_available():Bool
+		return touch.available;
 
 	/** Gets the fingers down, by id, in the order they landed. The array is reused by the next poll. */
 	public var fingers(get, never):Array<Int>;

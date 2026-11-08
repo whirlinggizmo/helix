@@ -1199,7 +1199,7 @@ var right:Null<VirtualStickOptions>
 
 - `basePlacement`: Gets or sets where each stick's base goes: `VIRTUAL_STICK_BASE_FLOATING`, `VIRTUAL_STICK_BASE_FOLLOWING` or `VIRTUAL_STICK_BASE_FIXED`. Defaults to `VIRTUAL_STICK_BASE_FLOATING`.
 - `deadZone`: Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. A push past the dead zone reads from 0. Defaults to 0.12. A game's own dead zone applies on top.
-- `drawHint`: Gets or sets a value indicating whether each stick draws a hint until the first touch. The hint is a faint ring of the stick's radius, at the fixed base, or centered one and a half radii in from the touch zone's bottom outer corner. Drawn only where `IsTouchScreenAvailable` is true. Defaults to true.
+- `drawHint`: Gets or sets a value indicating whether each stick draws a hint until the first touch. The hint is a faint ring of the stick's radius, at the fixed base, or centered one and a half radii in from the touch zone's bottom outer corner. Drawn only on a device with a touch screen. Defaults to true.
 - `baseOutlineColor`: Gets or sets each stick's ring around the base. Defaults to `Fade(LIGHTGRAY, 0.5)`. The hint is this ring, fainter.
 - `baseFillColor`: Gets or sets each stick's disc inside the ring. Defaults to `BLANK`.
 - `knobColor`: Gets or sets each stick's knob, the disc under the finger. Defaults to the stick's base outline color, a little more opaque.

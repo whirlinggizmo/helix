@@ -1481,9 +1481,11 @@ Defines touch: `TouchDown`, `TouchMove` and `TouchUp` in `IEvents.events` while 
 Its adapter is constructed over the events adapter, whose `poll` delivers its events. A finger is never reported as the mouse.
 
 ```haxe
+var available(get, never):Bool
 function dispose():Void
 ```
 
+- `available`: Gets a value indicating whether the device has a touch screen.
 - `dispose`: Stops listening to touch.
 
 ## IWindow

@@ -894,8 +894,8 @@ class RCore {
 
 	// The fingers the mouse follows: every finger but those a virtual gamepad's sticks hold, and those that lifted from one this frame.
 	static function freeFingers(fingers:Array<Int>):Array<Int> {
-		var held = Runtime.stickFingers;
-		return held.length == 0 ? fingers : [for (id in fingers) if (held.indexOf(id) < 0) id];
+		var holds = Runtime.holdsFinger;
+		return holds == null ? fingers : [for (id in fingers) if (!holds(id)) id];
 	}
 
 	// The pointer's position, as the devices have it, in the screen's pixels.

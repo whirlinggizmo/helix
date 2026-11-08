@@ -186,8 +186,7 @@ class Gamepads implements IPollable implements IActionDevice {
 	function pastDeadZone(from:Array<Float>, slot:Int, axis:GamepadAxis):Float {
 		if (slot < 0 || slot >= SLOTS)
 			return 0;
-		var value = from[slot * GamepadAxis.COUNT + axis];
-		var dead = deadZone < MOST_DEAD_ZONE ? deadZone : MOST_DEAD_ZONE;
+		var value = from[slot * GamepadAxis.COUNT + axis], dead = deadZone;
 		switch axis {
 			case LeftX | LeftY | RightX | RightY:
 				var other = from[
@@ -199,12 +198,20 @@ class Gamepads implements IPollable implements IActionDevice {
 					}
 				];
 				var length = Math.sqrt(value * value + other * other);
-				if (length <= dead)
+				if (length == 0)
 					return 0;
-				var scaled = value * Math.min(1, (length - dead) / (1 - dead)) / length;
+				var scaled = value * beyond(length, dead) / length;
 				return scaled < -1 ? -1 : scaled > 1 ? 1 : scaled;
 			case _:
-				return value <= dead ? 0 : Math.min(1, (value - dead) / (1 - dead));
+				return beyond(value, dead);
 		}
+	}
+
+	// How far an amount, 0 to 1, is past a dead zone, rescaled to read from 0 there and 1 at 1; the dead zone held to MOST_DEAD_ZONE.
+
+	@:allow(helix.services.input)
+	static function beyond(amount:Float, deadZone:Float):Float {
+		var dead = deadZone < MOST_DEAD_ZONE ? deadZone : MOST_DEAD_ZONE;
+		return amount <= dead ? 0 : Math.min(1, (amount - dead) / (1 - dead));
 	}
 }

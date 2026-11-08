@@ -1,14 +1,14 @@
 package helix.services.input;
 
 /** Specifies where a virtual stick's base goes. */
-enum VirtualStickBase {
+enum abstract VirtualStickBase(Int) to Int {
 	/** Where the finger lands. It stays there while held. */
-	Floating;
+	var Floating = 0;
 
 	/** Where the finger lands. It's pulled along when the finger moves past the radius. */
-	Following;
+	var Following = 1;
 
 	/** At the stick's fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the
 		finger. */
-	Fixed;
+	var Fixed = 2;
 }

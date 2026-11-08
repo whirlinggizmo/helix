@@ -13,7 +13,7 @@ package helix.raylib;
 	@:optional public var deadZone:Null<Float>;
 
 	/** Gets or sets a value indicating whether each stick draws a hint until the first touch. The hint is a faint ring of the stick's radius, at the fixed base, or
-		centered one and a half radii in from the touch zone's bottom outer corner. Drawn only where `IsTouchScreenAvailable` is true.
+		centered one and a half radii in from the touch zone's bottom outer corner. Drawn only on a device with a touch screen.
 		Defaults to true. */
 	@:optional public var drawHint:Null<Bool>;
 

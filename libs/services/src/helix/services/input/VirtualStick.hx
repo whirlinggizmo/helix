@@ -60,10 +60,11 @@ class VirtualStick {
 	/** Gets the knob's distance from the window's top edge. */
 	public var knobY(default, null):Float = 0;
 
-	// Which side of the screen its default zone and its home are on.
+	// Which side of the screen its default zone and its home are on; its zone this frame, its own or its default; and the finger that
+	// lifted from it this frame, -1 for none.
 	final right:Bool;
-	// Its zone this frame: its own, or its default.
 	final zone = new Bounds2D();
+	var lifted = -1;
 
 	function new(right:Bool) {
 		this.right = right;
@@ -81,34 +82,34 @@ class VirtualStick {
 	function set_deadZone(value:Float):Float
 		return deadZone = value > 0 ? (value < 1 ? value : 1) : 0;
 
-	// Lets go of its finger, and rests at its home.
+	// Lets go of its finger, at rest at its home: the fixed base, or one and a half radii in from its zone's bottom outer corner.
 	function release():Void {
+		if (finger >= 0)
+			lifted = finger;
 		finger = -1;
 		x = y = 0;
+		if (basePlacement == Fixed)
+			placeFixed();
+		else {
+			baseX = right ? zone.maxX - radius * 1.5 : zone.minX + radius * 1.5;
+			baseY = zone.maxY - radius * 1.5;
+		}
 		knobX = baseX;
 		knobY = baseY;
 	}
 
-	// Takes a finger at a point, its base where its placement puts it.
-	function take(id:Int, atX:Float, atY:Float):Void {
+	// Takes a finger at a point. Landing, the base goes where its placement puts it; handed over, the knob stays where it was, the base
+	// moving by as much as the finger is from the knob.
+	function take(id:Int, atX:Float, atY:Float, handed:Bool):Void {
 		finger = id;
 		if (basePlacement == Fixed)
 			placeFixed();
-		else {
-			baseX = atX;
-			baseY = atY;
-		}
-		moveTo(atX, atY);
-	}
-
-	// Takes a finger still down when its own lifts, the knob where it was: the base moves by as much as the finger is from the knob.
-	function handTo(id:Int, atX:Float, atY:Float):Void {
-		finger = id;
-		if (basePlacement == Fixed)
-			placeFixed();
-		else {
+		else if (handed) {
 			baseX += atX - knobX;
 			baseY += atY - knobY;
+		} else {
+			baseX = atX;
+			baseY = atY;
 		}
 		moveTo(atX, atY);
 	}
@@ -129,15 +130,9 @@ class VirtualStick {
 		}
 		knobX = baseX + dx;
 		knobY = baseY + dy;
-		var push = radius > 0 ? length / radius : 0,
-			dead = deadZone < .95 ? deadZone : .95;
-		if (push <= dead || length == 0) {
-			x = y = 0;
-			return;
-		}
-		var scaled = (push - dead) / (1 - dead);
-		x = dx / length * scaled;
-		y = dy / length * scaled;
+		var push = length > 0 ? Gamepads.beyond(length / radius, deadZone) / length : 0;
+		x = dx * push;
+		y = dy * push;
 	}
 
 	// Its zone this frame, from its own or from the window: a half with both sticks on the screen, else the whole window.
@@ -145,24 +140,8 @@ class VirtualStick {
 		var own = touchZone;
 		if (own != null)
 			zone.copyFrom(own);
-		else if (alone)
-			zone.set(0, 0, width, height);
-		else if (right)
-			zone.set(width / 2, 0, width, height);
 		else
-			zone.set(0, 0, width / 2, height);
-	}
-
-	// Rests at its home while not held: the fixed base, or one and a half radii in from its zone's bottom outer corner.
-	function rest():Void {
-		if (basePlacement == Fixed)
-			placeFixed();
-		else {
-			baseX = right ? zone.maxX - radius * 1.5 : zone.minX + radius * 1.5;
-			baseY = zone.maxY - radius * 1.5;
-		}
-		knobX = baseX;
-		knobY = baseY;
+			zone.set(right && !alone ? width / 2 : 0, 0, !right && !alone ? width / 2 : width, height);
 	}
 
 	function placeFixed():Void {

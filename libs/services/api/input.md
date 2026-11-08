@@ -410,6 +410,7 @@ for (id in touch.pressed) tapAt(touch.getX(id), touch.getY(id));
 
 ```haxe
 function new(events:IEvents, touch:ITouch)
+var available(get, never):Bool
 var fingers(get, never):Array<Int>
 var pressed(get, never):Array<Int>
 var released(get, never):Array<Int>
@@ -424,6 +425,7 @@ function getY(id:Int):Float
 - `new`: Creates the touch over the platform's events and touch, with no finger down.
   - `events`: The platform's events, whose last `poll` this one reads.
   - `touch`: The platform's touch, whose fingers those events carry.
+- `available`: Gets a value indicating whether the device has a touch screen.
 - `fingers`: Gets the fingers down, by id, in the order they landed. The array is reused by the next poll.
 - `pressed`: Gets the fingers that landed this frame, by id. The array is reused by the next poll.
 - `released`: Gets the fingers that lifted this frame, by id. The array is reused by the next poll.
@@ -454,7 +456,7 @@ The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and give
 
 The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical gamepads alone.
 
-Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick included. Drawing is the engine's, from each stick's `held`, base, knob and radius. An engine draws the hints while `hintVisible` is true and the device has a touch screen.
+Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick included. Drawing is the engine's, from each stick's `held`, base, knob and radius, and its hint while `hintVisible` is true.
 
 ```haxe
 var virtualGamepad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
@@ -469,6 +471,8 @@ var moveX = gamepads.getAxis(0, LeftX);
 
 ```haxe
 function new(touch:Touch, window:IWindow, gamepads:IGamepads, slot:Int, ?options:VirtualGamepadOptions)
+function configure(?options:VirtualGamepadOptions):Void
+function holdsFinger(id:Int):Bool
 var enabled(default, set):Bool
 var pluggedIn(get, never):Bool
 var physicalConnected(get, never):Bool
@@ -492,10 +496,15 @@ function dispose():Void
   - `gamepads`: The gamepads it stands in front of. They stay the program's to dispose.
   - `slot`: The slot it's plugged into, 0 to 3.
   - `options`: Optional. Its sticks. Two floating sticks, on the window's left and right halves, when omitted.
+- `configure`: Applies options, as the constructor does. A held stick stays held.
+  - `options`: Optional. Its sticks. Two floating sticks, on the window's left and right halves, when omitted.
+- `holdsFinger`: Returns whether a stick holds a finger, or held it until it lifted this frame. An engine that turns fingers into a mouse leaves these out.
+  - `id`: The finger, as `Touch` knows it.
+  - returns: True for a stick's finger.
 - `enabled`: Gets or sets whether it's enabled. Turned off, the virtual gamepad is unplugged and its sticks let go. Defaults to true.
 - `pluggedIn`: Gets a value indicating whether it's plugged in: enabled, touched, and its slot free of physical gamepads. While a physical gamepad is in its slot, the virtual gamepad's sticks ignore touches.
 - `physicalConnected`: Gets a value indicating whether a physical gamepad is in the virtual gamepad's slot.
-- `hintVisible`: Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, and its slot free of physical gamepads. The first touch ends every stick's hint.
+- `hintVisible`: Gets a value indicating whether an engine draws a hint at each unheld stick's base: enabled, untouched, its slot free of physical gamepads, and on a device with a touch screen (`Touch.available`). The first touch ends every stick's hint.
 - `left`: Gets the left stick, read as `LeftX` and `LeftY`.
 - `right`: Gets the right stick, read as `RightX` and `RightY`.
 - `blockedBounds`: Gets or sets bounds cut out of the sticks' touch zones, such as a pause button's. The blocked bounds follow changes to these bounds' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound.
@@ -595,13 +604,13 @@ var knobY(default, null):Float
 
 ## VirtualStickBase
 
-*enum* in [`libs/services/src/helix/services/input/VirtualStickBase.hx`](../src/helix/services/input/VirtualStickBase.hx), `import helix.services.input.VirtualStickBase;`
+*abstract* in [`libs/services/src/helix/services/input/VirtualStickBase.hx`](../src/helix/services/input/VirtualStickBase.hx), `import helix.services.input.VirtualStickBase;`
 
 Specifies where a virtual stick's base goes.
 
-- `Floating`: Where the finger lands. It stays there while held.
-- `Following`: Where the finger lands. It's pulled along when the finger moves past the radius.
-- `Fixed`: At the stick's fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the finger.
+- `VirtualStickBase.Floating`: Where the finger lands. It stays there while held.
+- `VirtualStickBase.Following`: Where the finger lands. It's pulled along when the finger moves past the radius.
+- `VirtualStickBase.Fixed`: At the stick's fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the finger.
 
 ## VirtualStickOptions
 

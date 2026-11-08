@@ -237,6 +237,7 @@ void helix_events_setup(void){
 void helix_events_dispose(void){
  helix_events_want(HELIX_EVENTS_KEYBOARD|HELIX_EVENTS_MOUSE|HELIX_EVENTS_TOUCH|HELIX_EVENTS_GAMEPADS,0);
 }
+int helix_touch_devices(void){int count=0;SDL_TouchID *ids=SDL_GetTouchDevices(&count);SDL_free(ids);return count;}
 void helix_events_want(int device,int on){
  const int had=wanted&HELIX_EVENTS_GAMEPADS;
  wanted=on?wanted|device:wanted&~device;

@@ -21,6 +21,11 @@ class DomTouchAdapter implements ITouch {
 	// The canvas's touch-action before, put back at dispose.
 	final touchAction:String;
 
+	public var available(get, never):Bool;
+
+	function get_available():Bool
+		return js.Syntax.code("(navigator.maxTouchPoints || 0) > 0");
+
 	/** Starts listening to fingers on the canvas.
 
 		@param options  The events adapter its events are delivered by. */
