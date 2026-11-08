@@ -1006,6 +1006,62 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `loaded`: Receives the frames.
   - `failed`: Optional. Receives why they couldn't be decoded; when omitted, it is logged.
 
+## VirtualGamepad
+
+*class* in [`engines/raylib/src/helix/raylib/extras/VirtualGamepad.hx`](../src/helix/raylib/extras/VirtualGamepad.hx), `import helix.raylib.extras.VirtualGamepad;`
+
+Provides on-screen gamepads for phones: sticks a finger works, read through raylib's gamepad functions. Imported apart, with its constants: `import helix.raylib.extras.VirtualGamepad.*;`.
+
+The first touch anywhere on the screen plugs an enabled virtual gamepad in. A mouse click leaves the virtual gamepad unplugged. Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
+
+A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
+
+Every finger is a free finger until a stick takes it. A free finger counts as the mouse, as every finger does without a virtual gamepad. The touch functions list every finger.
+
+The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. The virtual gamepad is hidden while a physical gamepad is in its slot.
+
+```haxe
+InitWindow(800, 450, "twin stick");
+EnableVirtualGamepad(0);
+while (!WindowShouldClose()) {
+var moveX = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
+var aimX = GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
+// ...
+}
+```
+
+```haxe
+static inline var VIRTUAL_STICK_BASE_FLOATING:Int
+static inline var VIRTUAL_STICK_BASE_FOLLOWING:Int
+static inline var VIRTUAL_STICK_BASE_FIXED:Int
+```
+
+- `VIRTUAL_STICK_BASE_FLOATING`: A stick whose base is where the finger lands. The base stays there while the stick is held.
+- `VIRTUAL_STICK_BASE_FOLLOWING`: A stick whose base is where the finger lands. The base is pulled along when the finger moves past the radius.
+- `VIRTUAL_STICK_BASE_FIXED`: A stick whose base stays at the fixed base position. A finger landing anywhere in the stick's touch zone pushes the stick from the base toward the finger.
+
+### virtual gamepad: on-screen sticks read as a gamepad's
+
+```haxe
+static function EnableVirtualGamepad(gamepad:Int, ?options:VirtualGamepadOptions):Void
+static function DisableVirtualGamepad(gamepad:Int):Void
+static function IsGamepadVirtual(gamepad:Int):Bool
+```
+
+- `EnableVirtualGamepad`: Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in. Enabling it again applies the new options. Its held sticks, and whether it's plugged in, stay as they were.
+  - `gamepad`: The slot, 0 to 3.
+  - `options`: Optional. Its sticks and their look. Two floating sticks, on the screen's left and right halves, when omitted.
+
+  ```haxe
+  var pause = new Rectangle(GetScreenWidth() - 64, 0, 64, 64);
+  EnableVirtualGamepad(0, {blockedBounds: [pause], right: {enabled: false}});
+  ```
+- `DisableVirtualGamepad`: Disables the virtual gamepad in a slot, unplugging it. A physical gamepad in that slot is unaffected.
+  - `gamepad`: The slot, 0 to 3.
+- `IsGamepadVirtual`: Returns whether the gamepad in a slot is a virtual one (`EnableVirtualGamepad`).
+  - `gamepad`: The slot, 0 to 3.
+  - returns: True while a virtual gamepad is plugged in there. False for a physical one or an empty slot.
+
 ## Window
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Window.hx`](../src/helix/raylib/extras/Window.hx), `import helix.raylib.extras.Window;`

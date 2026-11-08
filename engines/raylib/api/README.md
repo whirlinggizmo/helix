@@ -4,7 +4,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 ## Packages
 
-- [`helix.raylib.extras`](extras.md): Audio, Debug, Device, Files, Gui, GuiSkins, Lights, Models, Shaders, Sprites, Text, Textures, Window
+- [`helix.raylib.extras`](extras.md): Audio, Debug, Device, Files, Gui, GuiSkins, Lights, Models, Shaders, Sprites, Text, Textures, VirtualGamepad, Window
 
 ## Shader includes
 
@@ -1172,6 +1172,78 @@ function copy(?out:Vector4):Vector4
 - `copy`: Returns a separate copy.
   - `out`: Optional. The Vector4 to copy into, so nothing is made; a new one when omitted.
   - returns: The copy: out, when given.
+
+## VirtualGamepadOptions
+
+*class* in [`engines/raylib/src/helix/raylib/VirtualGamepadOptions.hx`](../src/helix/raylib/VirtualGamepadOptions.hx), `import helix.raylib.VirtualGamepadOptions;`
+
+Represents how a virtual gamepad starts and looks (`EnableVirtualGamepad`, in `helix.raylib.extras.VirtualGamepad`). Every field has a default, so options set only what they change. Each field here is both sticks' default. A field set in a stick's own options replaces it for that stick. Positions and sizes are in the screen's pixels.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{?basePlacement:Int, ?deadZone:Float, ?drawHint:Bool, ?baseOutlineColor:Color, ?baseFillColor:Color, ?knobColor:Color, ?blockedBounds:Array<Rectangle>, ?left:VirtualStickOptions, ?right:VirtualStickOptions}
+```
+
+```haxe
+var basePlacement:Null<Int>
+var deadZone:Null<Float>
+var drawHint:Null<Bool>
+var baseOutlineColor:Null<Color>
+var baseFillColor:Null<Color>
+var knobColor:Null<Color>
+var blockedBounds:Null<Array<Rectangle>>
+var left:Null<VirtualStickOptions>
+var right:Null<VirtualStickOptions>
+```
+
+- `basePlacement`: Gets or sets where each stick's base goes: `VIRTUAL_STICK_BASE_FLOATING`, `VIRTUAL_STICK_BASE_FOLLOWING` or `VIRTUAL_STICK_BASE_FIXED`. Defaults to `VIRTUAL_STICK_BASE_FLOATING`.
+- `deadZone`: Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. A push past the dead zone reads from 0. Defaults to 0.12. A game's own dead zone applies on top.
+- `drawHint`: Gets or sets a value indicating whether each stick draws a hint until the first touch. The hint is a faint ring of the stick's radius, at the fixed base, or centered one and a half radii in from the touch zone's bottom outer corner. Drawn only where `IsTouchScreenAvailable` is true. Defaults to true.
+- `baseOutlineColor`: Gets or sets each stick's ring around the base. Defaults to `Fade(LIGHTGRAY, 0.5)`. The hint is this ring, fainter.
+- `baseFillColor`: Gets or sets each stick's disc inside the ring. Defaults to `BLANK`.
+- `knobColor`: Gets or sets each stick's knob, the disc under the finger. Defaults to the stick's base outline color, a little more opaque.
+- `blockedBounds`: Gets or sets the bounds cut out of the sticks' touch zones, such as a pause button's. A finger landing within a blocked bound stays a free finger. The blocked bounds follow changes to these rectangles' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound.
+- `left`: Gets or sets the left stick, read as `GAMEPAD_AXIS_LEFT_X` and `GAMEPAD_AXIS_LEFT_Y`.
+- `right`: Gets or sets the right stick, read as `GAMEPAD_AXIS_RIGHT_X` and `GAMEPAD_AXIS_RIGHT_Y`.
+
+## VirtualStickOptions
+
+*class* in [`engines/raylib/src/helix/raylib/VirtualStickOptions.hx`](../src/helix/raylib/VirtualStickOptions.hx), `import helix.raylib.VirtualStickOptions;`
+
+Represents how one stick of a virtual gamepad starts and looks (`VirtualGamepadOptions`). A field left out takes the gamepad's options, or their default. Positions and sizes are in the screen's pixels.
+
+A finger landing in the stick's touch zone takes the stick, even from the finger holding it. A finger holding the other stick keeps the other stick. Where the two zones overlap, a landing finger takes the free stick, or the left stick if both are free. The stick lets go when the window changes size, and when a physical gamepad replaces the virtual gamepad.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{?enabled:Bool, ?touchZone:Rectangle, ?basePlacement:Int, ?fixedBasePosition:Vector2, ?radius:Float, ?deadZone:Float, ?drawHint:Bool, ?baseOutlineColor:Color, ?baseFillColor:Color, ?knobColor:Color}
+```
+
+```haxe
+var enabled:Null<Bool>
+var touchZone:Null<Rectangle>
+var basePlacement:Null<Int>
+var fixedBasePosition:Null<Vector2>
+var radius:Null<Float>
+var deadZone:Null<Float>
+var drawHint:Null<Bool>
+var baseOutlineColor:Null<Color>
+var baseFillColor:Null<Color>
+var knobColor:Null<Color>
+```
+
+- `enabled`: Gets or sets a value indicating whether the stick is on the screen. Defaults to true.
+- `touchZone`: Gets or sets where a finger can land to take it. The zone follows changes to this rectangle's fields. Defaults to the screen's left or right half with both sticks enabled, and the whole screen with one. The default follows the screen's size.
+- `basePlacement`: Gets or sets where the base goes.
+- `fixedBasePosition`: Gets or sets where the base stays with `VIRTUAL_STICK_BASE_FIXED`. The base follows changes to this vector's fields. Defaults to the touch zone's center.
+- `radius`: Gets or sets how far the knob travels for a full push. Defaults to 60.
+- `deadZone`: Gets or sets how far the knob moves before the stick reads, as a share of the radius.
+- `drawHint`: Gets or sets a value indicating whether the stick draws a hint until the first touch.
+- `baseOutlineColor`: Gets or sets the ring around the base.
+- `baseFillColor`: Gets or sets the disc inside the ring.
+- `knobColor`: Gets or sets the knob, the disc under the finger. Defaults to the base outline color, a little more opaque.
 
 ## VrDeviceInfo
 

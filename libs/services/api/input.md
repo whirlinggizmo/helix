@@ -450,7 +450,7 @@ function getY(id:Int):Float
 
 Provides an on-screen gamepad worked by the fingers, read as a gamepad in a slot.
 
-The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and `Actions`, as any pad's do.
+The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and `Actions`, as any gamepad's do.
 
 The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `PadConnected` and `PadDisconnected` come from physical gamepads alone.
 
@@ -458,13 +458,13 @@ Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists
 
 ```haxe
 var virtualPad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
-var pads = new Gamepads(events, virtualPad);
+var gamepads = new Gamepads(events, virtualPad);
 // each frame:
 events.poll();
 touch.poll();
 virtualPad.poll();
-pads.poll();
-var moveX = pads.getAxis(0, LeftX);
+gamepads.poll();
+var moveX = gamepads.getAxis(0, LeftX);
 ```
 
 ```haxe
@@ -529,7 +529,7 @@ function dispose():Void
 
 *class* in [`libs/services/src/helix/services/input/VirtualGamepadOptions.hx`](../src/helix/services/input/VirtualGamepadOptions.hx), `import helix.services.input.VirtualGamepadOptions;`
 
-Specifies a virtual gamepad (`VirtualGamepad`). Every field has a default, so options set only what they change. Each field here is both sticks' default. A field set in a stick's own options replaces it for that stick. Positions and sizes are framebuffer pixels.
+Represents how a `VirtualGamepad` starts. Every field has a default, so options set only what they change. Each field here is both sticks' default. A field set in a stick's own options replaces it for that stick. Positions and sizes are framebuffer pixels.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -545,11 +545,11 @@ final left:Null<VirtualStickOptions>
 final right:Null<VirtualStickOptions>
 ```
 
-- `basePlacement`: Where each stick's base goes. Defaults to `Floating`.
-- `deadZone`: How far each stick's knob moves before the stick reads, as a share of the radius. Defaults to 0.12.
-- `blockedBounds`: Bounds cut out of the sticks' touch zones.
-- `left`: The left stick.
-- `right`: The right stick.
+- `basePlacement`: Gets where each stick's base goes. Defaults to `Floating`.
+- `deadZone`: Gets how far each stick's knob moves before the stick reads, as a share of the radius. Defaults to 0.12.
+- `blockedBounds`: Gets the bounds cut out of the sticks' touch zones.
+- `left`: Gets the left stick.
+- `right`: Gets the right stick.
 
 ## VirtualStick
 
@@ -607,7 +607,7 @@ Specifies where a virtual stick's base goes.
 
 *class* in [`libs/services/src/helix/services/input/VirtualStickOptions.hx`](../src/helix/services/input/VirtualStickOptions.hx), `import helix.services.input.VirtualStickOptions;`
 
-Specifies one stick of a virtual gamepad. A field left out takes the gamepad's options, or their default.
+Represents how one stick of a `VirtualGamepad` starts. A field left out takes the gamepad's options, or their default.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -624,9 +624,9 @@ final radius:Null<Float>
 final deadZone:Null<Float>
 ```
 
-- `enabled`: Whether it's on the screen. Defaults to true.
-- `touchZone`: Where a finger can land to take it.
-- `basePlacement`: Where the base goes.
-- `fixedBasePosition`: Where the base stays with `Fixed` placement.
-- `radius`: How far the knob travels for a full push. Defaults to 60 times the window's pixel ratio.
-- `deadZone`: How far the knob moves before the stick reads, as a share of the radius.
+- `enabled`: Gets a value indicating whether the stick is on the screen. Defaults to true.
+- `touchZone`: Gets where a finger can land to take it.
+- `basePlacement`: Gets where the base goes.
+- `fixedBasePosition`: Gets where the base stays with `Fixed` placement.
+- `radius`: Gets how far the knob travels for a full push. Defaults to 60 times the window's pixel ratio.
+- `deadZone`: Gets how far the knob moves before the stick reads, as a share of the radius.

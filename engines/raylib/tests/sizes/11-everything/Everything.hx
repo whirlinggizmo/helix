@@ -36,7 +36,8 @@ class Everything {
 		"helix.raylib.extras.GuiSkins",
 		"helix.raylib.extras.Lights",
 		"helix.raylib.extras.Debug",
-		"helix.raylib.extras.Shaders"
+		"helix.raylib.extras.Shaders",
+		"helix.raylib.extras.VirtualGamepad"
 	];
 
 	/** raylib's modules in helix-raylib, whose functions carry the refusals' metadata. */
@@ -62,6 +63,7 @@ class Everything {
 		"RTextAsync",
 		"RTextures",
 		"RTexturesAsync",
+		"RVirtualGamepad",
 		"RWindowAsync"
 	];
 

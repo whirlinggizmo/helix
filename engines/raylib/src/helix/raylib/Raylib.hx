@@ -1528,7 +1528,7 @@ class Raylib {
 
 	/** Returns whether a mouse button went down this frame.
 
-		A finger touching counts as the left button.
+		A free finger (`EnableVirtualGamepad`) touching counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -1537,7 +1537,7 @@ class Raylib {
 
 	/** Returns whether a mouse button is held.
 
-		A finger down counts as the left button.
+		A free finger (`EnableVirtualGamepad`) down counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
@@ -1546,7 +1546,7 @@ class Raylib {
 
 	/** Returns whether a mouse button went up this frame.
 
-		The last finger lifting counts as the left button.
+		The last free finger (`EnableVirtualGamepad`) lifting counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -1560,19 +1560,19 @@ class Raylib {
 	public static inline function IsMouseButtonUp(button:Int):Bool
 		return RCore.IsMouseButtonUp(button);
 
-	/** Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
+	/** Returns the mouse's x, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
 
 		@return  The x. */
 	public static inline function GetMouseX():Int
 		return RCore.GetMouseX();
 
-	/** Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
+	/** Returns the mouse's y, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
 
 		@return  The y. */
 	public static inline function GetMouseY():Int
 		return RCore.GetMouseY();
 
-	/** Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
+	/** Returns the mouse's position, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
 
 		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
@@ -1654,7 +1654,8 @@ class Raylib {
 
 	/** Returns a finger's position, in the screen's pixels.
 
-		While no finger is down, the first is where the mouse is.
+		While no finger is down, the first is where the mouse is. See `EnableVirtualGamepad`
+		(`import helix.raylib.extras.VirtualGamepad.*;`) for on-screen sticks read as a gamepad's.
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
@@ -1760,6 +1761,8 @@ class Raylib {
 
 	/** Returns whether a gamepad is connected.
 
+		A virtual gamepad (`EnableVirtualGamepad`) counts. `IsGamepadVirtual` tells it from a physical one.
+
 		@param gamepad  The gamepad, 0 to 3.
 		@return  True while one is connected there. */
 	public static inline function IsGamepadAvailable(gamepad:Int):Bool
@@ -1824,7 +1827,9 @@ class Raylib {
 	public static inline function GetGamepadAxisCount(gamepad:Int):Int
 		return RCore.GetGamepadAxisCount(gamepad);
 
-	/** Returns how far a gamepad's axis is pushed, with no dead zone.
+	/** Returns how far a gamepad's axis is pushed.
+
+		A physical gamepad's axis reads raw. A virtual gamepad's sticks (`EnableVirtualGamepad`) read past their dead zone.
 
 		A stick runs from -1 to 1, down and right positive.
 

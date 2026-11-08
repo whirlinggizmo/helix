@@ -11,7 +11,7 @@ import helix.platform.PadButton;
 
 	The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the
 	`IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read
-	through `Gamepads.getAxis` and `Actions`, as any pad's do.
+	through `Gamepads.getAxis` and `Actions`, as any gamepad's do.
 
 	The first touch anywhere in the window plugs the virtual gamepad in. A physical gamepad plugged into the virtual gamepad's slot
 	replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after
@@ -24,13 +24,13 @@ import helix.platform.PadButton;
 
 	```haxe
 	var virtualPad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
-	var pads = new Gamepads(events, virtualPad);
+	var gamepads = new Gamepads(events, virtualPad);
 	// each frame:
 	events.poll();
 	touch.poll();
 	virtualPad.poll();
-	pads.poll();
-	var moveX = pads.getAxis(0, LeftX);
+	gamepads.poll();
+	var moveX = gamepads.getAxis(0, LeftX);
 	``` */
 class VirtualGamepad implements IPollable implements IGamepads {
 	final touch:Touch;

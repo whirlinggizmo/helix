@@ -640,6 +640,26 @@ class Runtime {
 		return gamepadsService;
 	}
 
+	/** Makes the gamepads read through a pad standing in front of the platform's, as a virtual gamepad does (`EnableVirtualGamepad`). The
+		gamepads are made again over it, and it's polled after the touch and before the gamepads.
+
+		@param pad  The pad the gamepads read.
+		@param poller  What brings the pad up to date each frame. */
+	public static function standInFront(pad:helix.platform.IGamepads, poller:IPollable):Void {
+		touch();
+		devices.remove(gamepads());
+		gamepadsService = new Gamepads(events, pad);
+		gamepadsService.deadZone = 0;
+		devices.push(poller);
+		devices.push(gamepadsService);
+	}
+
+	/** The fingers a virtual gamepad's sticks hold, and those that lifted from one this frame: the mouse follows the others. */
+	public static final stickFingers:Array<Int> = [];
+
+	/** What draws over the frame as `EndDrawing` ends it, such as a virtual gamepad, or null while nothing does. */
+	public static var overlay:Null<Void->Void> = null;
+
 	/** Gets the tilt, made when first asked for. Only the tilt's functions ask, so a program that never calls one links none of it. */
 	public static function tilt():helix.services.input.Tilt {
 		if (tiltService == null) {
