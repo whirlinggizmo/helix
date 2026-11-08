@@ -399,9 +399,8 @@ class RAudio {
 
 	/** Returns an alias that plays another sound's samples with its own volume, pitch, pan and voice, as raylib's does.
 
-		Takes no memory for samples of its own.
-
-		Once the source is unloaded, the alias plays nothing.
+		Takes no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded;
+		they're freed when the last held reference, a load or an alias, is released.
 
 		@param source  The sound whose samples it plays.
 		@return  The alias, or one that isn't valid when the source isn't loaded. */
@@ -417,6 +416,10 @@ class RAudio {
 		alias.frameCount = owner.frameCount;
 		alias.volume = owner.volume;
 		owner.aliases.push(alias);
+		// A share of a file's decoded sound, as each load holds one.
+		var entry = owner.path == "" ? null : sounds.get(owner.path);
+		if (entry != null)
+			entry.refs++;
 		return alias;
 	}
 
@@ -470,13 +473,13 @@ class RAudio {
 
 	/** Frees a sound, stopping it.
 
-		What is freed:
+		Releases the sound's reference to its samples; they're freed when the last held reference, a load or an alias, is released:
 
-		- a sound loaded from a file: one load of the file, and the decoded sound with the last load.
-		- a sound made from a wave: its samples.
-		- an alias: as `UnloadSoundAlias` frees it.
+		- a sound loaded from a file: its load's reference to the file's decoded sound.
+		- a sound made from a wave: its own reference to its samples.
+		- an alias: as `UnloadSoundAlias` releases it.
 
-		The sound's aliases play nothing after.
+		Its aliases play on.
 
 		@param sound  The sound. */
 	static function UnloadSound(sound:Sound):Void {
@@ -486,36 +489,49 @@ class RAudio {
 		}
 		StopSound(sound);
 		sound.unloaded = true;
-		for (alias in sound.aliases) {
-			StopSound(alias);
-			alias.sound = null;
-		}
-		sound.aliases = [];
 		var service = sound.sound;
 		sound.sound = null;
-		sound.samples = null;
 		if (sound.path == "") {
-			if (service != null && Runtime.audio != null)
-				Runtime.audio.unload(service);
+			// Made from a wave: its samples are freed once its aliases are unloaded too.
+			sound.held = service;
+			freeHeld(sound);
 			return;
 		}
 		release(sound);
 	}
 
-	/** Frees an alias, stopping it, and keeps its source's samples.
+	/** Frees an alias, stopping it, and releases its reference to its source's samples. They're freed when it held the last.
 
 		@param alias  The alias. */
 	static function UnloadSoundAlias(alias:Sound):Void {
 		StopSound(alias);
+		if (alias.unloaded)
+			return;
 		alias.unloaded = true;
 		alias.sound = null;
-		if (alias.source != null)
-			alias.source.aliases.remove(alias);
+		var owner = alias.source;
+		if (owner == null)
+			return;
+		owner.aliases.remove(alias);
+		if (owner.path != "")
+			release(alias, owner.path);
+		else if (owner.unloaded)
+			freeHeld(owner);
+	}
+
+	// Frees an unloaded sound made from a wave once no alias holds its samples.
+	static function freeHeld(owner:Sound):Void {
+		if (owner.aliases.length > 0)
+			return;
+		owner.samples = null;
+		if (owner.held != null && Runtime.audio != null)
+			Runtime.audio.unload(owner.held);
+		owner.held = null;
 	}
 
 	// Lets go of a sound's share of its file's decoded sound, the last share unloading it.
-	static function release(sound:Sound):Void {
-		var entry = sounds.get(sound.path);
+	static function release(sound:Sound, ?path:String):Void {
+		var entry = sounds.get(path == null ? sound.path : path);
 		if (entry == null)
 			return;
 		entry.waiting.remove(sound);

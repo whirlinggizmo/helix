@@ -123,18 +123,16 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
   - `source`: The sound whose samples it plays.
   - returns: The alias, or one that isn't valid when the source isn't loaded.
 
-  Takes no memory for samples of its own.
-
-  Once the source is unloaded, the alias plays nothing.
+  Takes no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded; they're freed when the last held reference, a load or an alias, is released.
 - `UnloadSound`: Frees a sound, stopping it.
   - `sound`: The sound.
 
-  What is freed:
+  Releases the sound's reference to its samples; they're freed when the last held reference, a load or an alias, is released:
 
-  - a sound loaded from a file: one load of the file, and the decoded sound with the last load. - a sound made from a wave: its samples. - an alias: as `UnloadSoundAlias` frees it.
+  - a sound loaded from a file: its load's reference to the file's decoded sound. - a sound made from a wave: its own reference to its samples. - an alias: as `UnloadSoundAlias` releases it.
 
-  The sound's aliases play nothing after.
-- `UnloadSoundAlias`: Frees an alias, stopping it, and keeps its source's samples.
+  Its aliases play on.
+- `UnloadSoundAlias`: Frees an alias, stopping it, and releases its reference to its source's samples. They're freed when it held the last.
   - `alias`: The alias.
 - `IsSoundValid`: Returns whether a sound is loaded.
   - `sound`: The sound.

@@ -11,6 +11,9 @@ class Sound {
 	// an alias shares, and an owner's aliases.
 	@:allow(helix.raylib)
 	var sound:Null<helix.services.audio.Sound> = null;
+	// A sound made from a wave and unloaded while its aliases play: its samples, freed with the last alias.
+	@:allow(helix.raylib)
+	var held:Null<helix.services.audio.Sound> = null;
 	@:allow(helix.raylib)
 	var voice:Null<helix.services.audio.Voice> = null;
 	@:allow(helix.raylib)

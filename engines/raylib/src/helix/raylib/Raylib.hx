@@ -5650,9 +5650,8 @@ class Raylib {
 
 	/** Returns an alias that plays another sound's samples with its own volume, pitch, pan and voice, as raylib's does.
 
-		Takes no memory for samples of its own.
-
-		Once the source is unloaded, the alias plays nothing.
+		Takes no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded;
+		they're freed when the last held reference, a load or an alias, is released.
 
 		@param source  The sound whose samples it plays.
 		@return  The alias, or one that isn't valid when the source isn't loaded. */
@@ -5661,19 +5660,19 @@ class Raylib {
 
 	/** Frees a sound, stopping it.
 
-		What is freed:
+		Releases the sound's reference to its samples; they're freed when the last held reference, a load or an alias, is released:
 
-		- a sound loaded from a file: one load of the file, and the decoded sound with the last load.
-		- a sound made from a wave: its samples.
-		- an alias: as `UnloadSoundAlias` frees it.
+		- a sound loaded from a file: its load's reference to the file's decoded sound.
+		- a sound made from a wave: its own reference to its samples.
+		- an alias: as `UnloadSoundAlias` releases it.
 
-		The sound's aliases play nothing after.
+		Its aliases play on.
 
 		@param sound  The sound. */
 	public static inline function UnloadSound(sound:Sound):Void
 		RAudio.UnloadSound(sound);
 
-	/** Frees an alias, stopping it, and keeps its source's samples.
+	/** Frees an alias, stopping it, and releases its reference to its source's samples. They're freed when it held the last.
 
 		@param alias  The alias. */
 	public static inline function UnloadSoundAlias(alias:Sound):Void

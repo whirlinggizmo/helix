@@ -1,5 +1,6 @@
 import haxe.io.Bytes;
 import helix.raylib.AudioStream;
+import helix.raylib.Wave;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Audio.*;
 import helix.raylib.internal.AudioStreams;
@@ -9,7 +10,8 @@ import helix.raylib.internal.Runtime;
 	polled for it, its two buffers taken and a third refused until one is heard; the first `SetAudioStreamCallback` adds what tops a
 	stream up to the poll, which fills a playing stream's two buffers as it starts and again each poll once they're heard, and nothing
 	once its callback is taken away; FLAC music and a missing file refused by `LoadMusicStreamAsync`, FLAC by `LoadMusicStreamFromMemory`; `CloseAudioDevice` takes
-	it out of the poll, and the next callback adds it again. */
+	it out of the poll, and the next callback adds it again. And a sound's aliases: each holds a reference to the sound's samples, which are
+	freed when the last, the sound's or an alias's, is released. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.AudioStream)
 class AudioStreamTests {
@@ -100,6 +102,27 @@ class AudioStreamTests {
 		var again = LoadAudioStream(44100, 16, 1);
 		SetAudioStreamCallback(again, (data, frames) -> calls++);
 		check(polled() == 1, "the next callback adds it again");
+
+		// A sound's aliases hold a reference to its samples: freed when the last held reference, the sound's or an alias's, is released.
+		var held = () -> Lambda.count(output.sounds);
+		var none = held();
+		var owner = LoadSoundFromWave(new Wave(4410, 44100, 16, 1, Bytes.alloc(8820)));
+		var alias = LoadSoundAlias(owner), second = LoadSoundAlias(owner);
+		check(held() == none + 1 && IsSoundValid(alias) && IsSoundValid(second), "a sound and its aliases share one set of samples");
+		UnloadSound(owner);
+		check(held() == none + 1, "the sound unloaded: its samples kept while its aliases hold them");
+		PlaySound(alias);
+		check(IsSoundPlaying(alias), "an alias plays on after its sound is unloaded");
+		UnloadSoundAlias(alias);
+		check(held() == none + 1, "one alias unloaded: the other still holds them");
+		UnloadSoundAlias(second);
+		check(held() == none, "the last alias unloaded: the samples freed");
+		var first = LoadSoundFromWave(new Wave(4410, 44100, 16, 1, Bytes.alloc(8820)));
+		var late = LoadSoundAlias(first);
+		UnloadSoundAlias(late);
+		check(held() == none + 1, "an alias unloaded first: the sound keeps its samples");
+		UnloadSound(first);
+		check(held() == none, "then the sound unloaded: freed");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
