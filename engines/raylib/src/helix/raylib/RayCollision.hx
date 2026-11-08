@@ -1,6 +1,8 @@
 package helix.raylib;
 
-/** Represents raylib's `RayCollision`: whether and where a ray hit. */
+/** Represents raylib's `RayCollision`: whether and where a ray hit.
+
+	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class RayCollision {
 	/** Gets or sets a value indicating whether the ray hit. */
@@ -26,5 +28,19 @@ class RayCollision {
 		this.distance = distance;
 		this.point = point == null ? new Vector3() : point;
 		this.normal = normal == null ? new Vector3() : normal;
+	}
+
+	/** Returns a separate copy. Its point and normal are copied too.
+
+		@param out  Optional. The RayCollision to copy into, so nothing is made; a new one when omitted.
+		@return  The copy: out, when given. */
+	public function copy(?out:RayCollision):RayCollision {
+		if (out == null)
+			return new RayCollision(hit, distance, point.copy(), normal.copy());
+		point.copy(out.point);
+		normal.copy(out.normal);
+		out.hit = hit;
+		out.distance = distance;
+		return out;
 	}
 }

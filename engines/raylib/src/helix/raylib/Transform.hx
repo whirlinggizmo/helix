@@ -1,6 +1,8 @@
 package helix.raylib;
 
-/** Represents raylib's `Transform`: a translation, a rotation and a scale, as a bone's pose holds them. */
+/** Represents raylib's `Transform`: a translation, a rotation and a scale, as a bone's pose holds them.
+
+	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class Transform {
 	/** Gets or sets the translation. */
@@ -21,5 +23,18 @@ class Transform {
 		this.translation = translation == null ? new Vector3() : translation;
 		this.rotation = rotation == null ? new Quaternion() : rotation;
 		this.scale = scale == null ? new Vector3() : scale;
+	}
+
+	/** Returns a separate copy. Its vectors are copied too.
+
+		@param out  Optional. The Transform to copy into, so nothing is made; a new one when omitted.
+		@return  The copy: out, when given. */
+	public function copy(?out:Transform):Transform {
+		if (out == null)
+			return new Transform(translation.copy(), rotation.copy(), scale.copy());
+		translation.copy(out.translation);
+		rotation.copy(out.rotation);
+		scale.copy(out.scale);
+		return out;
 	}
 }

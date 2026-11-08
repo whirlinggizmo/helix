@@ -1,6 +1,8 @@
 package helix.raylib;
 
-/** Represents raylib's `Camera2D`: its target, where the target shows on the screen, its rotation and its zoom. */
+/** Represents raylib's `Camera2D`: its target, where the target shows on the screen, its rotation and its zoom.
+
+	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class Camera2D {
 	/** Gets or sets where the target shows, in the screen's pixels. */
@@ -26,5 +28,19 @@ class Camera2D {
 		this.target = target == null ? new Vector2() : target;
 		this.rotation = rotation;
 		this.zoom = zoom;
+	}
+
+	/** Returns a separate copy. Its offset and target are copied too.
+
+		@param out  Optional. The Camera2D to copy into, so nothing is made; a new one when omitted.
+		@return  The copy: out, when given. */
+	public function copy(?out:Camera2D):Camera2D {
+		if (out == null)
+			return new Camera2D(offset.copy(), target.copy(), rotation, zoom);
+		offset.copy(out.offset);
+		target.copy(out.target);
+		out.rotation = rotation;
+		out.zoom = zoom;
+		return out;
 	}
 }

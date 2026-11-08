@@ -1,6 +1,8 @@
 package helix.raylib;
 
-/** Represents raylib's `BoneInfo`: one bone of a skeleton, its name and its parent. */
+/** Represents raylib's `BoneInfo`: one bone of a skeleton, its name and its parent.
+
+	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class BoneInfo {
 	/** Gets or sets the name, its node's cut to 31 bytes as raylib's struct holds it. */
@@ -16,5 +18,17 @@ class BoneInfo {
 	public function new(name:String = "", parent:Int = -1) {
 		this.name = name;
 		this.parent = parent;
+	}
+
+	/** Returns a separate copy.
+
+		@param out  Optional. The BoneInfo to copy into, so nothing is made; a new one when omitted.
+		@return  The copy: out, when given. */
+	public function copy(?out:BoneInfo):BoneInfo {
+		if (out == null)
+			return new BoneInfo(name, parent);
+		out.name = name;
+		out.parent = parent;
+		return out;
 	}
 }

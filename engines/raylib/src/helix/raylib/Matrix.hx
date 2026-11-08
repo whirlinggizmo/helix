@@ -4,7 +4,9 @@ package helix.raylib;
 
 	`m0, m4, m8, m12` is the first row.
 
-	`m0` to `m3` is the first column, stored first and sent to shaders first. */
+	`m0` to `m3` is the first column, stored first and sent to shaders first.
+
+	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class Matrix {
 	/** Gets or sets row 1, column 1. */
@@ -91,5 +93,31 @@ class Matrix {
 		this.m7 = m7;
 		this.m11 = m11;
 		this.m15 = m15;
+	}
+
+	/** Returns a separate copy.
+
+		@param out  Optional. The Matrix to copy into, so nothing is made; a new one when omitted.
+		@return  The copy: out, when given. */
+	public function copy(?out:Matrix):Matrix {
+		if (out == null)
+			return new Matrix(m0, m4, m8, m12, m1, m5, m9, m13, m2, m6, m10, m14, m3, m7, m11, m15);
+		out.m0 = m0;
+		out.m4 = m4;
+		out.m8 = m8;
+		out.m12 = m12;
+		out.m1 = m1;
+		out.m5 = m5;
+		out.m9 = m9;
+		out.m13 = m13;
+		out.m2 = m2;
+		out.m6 = m6;
+		out.m10 = m10;
+		out.m14 = m14;
+		out.m3 = m3;
+		out.m7 = m7;
+		out.m11 = m11;
+		out.m15 = m15;
+		return out;
 	}
 }

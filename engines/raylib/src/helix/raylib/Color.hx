@@ -1,6 +1,8 @@
 package helix.raylib;
 
-/** Represents raylib's `Color`: red, green, blue and alpha, each 0 to 255. */
+/** Represents raylib's `Color`: red, green, blue and alpha, each 0 to 255.
+
+	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class Color {
 	/** Gets or sets the red, 0 to 255. */
@@ -26,5 +28,19 @@ class Color {
 		this.g = g;
 		this.b = b;
 		this.a = a;
+	}
+
+	/** Returns a separate copy.
+
+		@param out  Optional. The Color to copy into, so nothing is made; a new one when omitted.
+		@return  The copy: out, when given. */
+	public function copy(?out:Color):Color {
+		if (out == null)
+			return new Color(r, g, b, a);
+		out.r = r;
+		out.g = g;
+		out.b = b;
+		out.a = a;
+		return out;
 	}
 }

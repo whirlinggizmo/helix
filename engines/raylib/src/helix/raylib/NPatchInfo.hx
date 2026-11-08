@@ -1,6 +1,8 @@
 package helix.raylib;
 
-/** Represents raylib's `NPatchInfo`: how `DrawTextureNPatch` cuts a texture into a nine-patch or a three-patch. */
+/** Represents raylib's `NPatchInfo`: how `DrawTextureNPatch` cuts a texture into a nine-patch or a three-patch.
+
+	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class NPatchInfo {
 	/** Gets or sets the patch's rectangle on the texture, in texels. */
@@ -36,5 +38,21 @@ class NPatchInfo {
 		this.right = right;
 		this.bottom = bottom;
 		this.layout = layout;
+	}
+
+	/** Returns a separate copy. Its source rectangle is copied too.
+
+		@param out  Optional. The NPatchInfo to copy into, so nothing is made; a new one when omitted.
+		@return  The copy: out, when given. */
+	public function copy(?out:NPatchInfo):NPatchInfo {
+		if (out == null)
+			return new NPatchInfo(source.copy(), left, top, right, bottom, layout);
+		source.copy(out.source);
+		out.left = left;
+		out.top = top;
+		out.right = right;
+		out.bottom = bottom;
+		out.layout = layout;
+		return out;
 	}
 }

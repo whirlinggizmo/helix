@@ -67,6 +67,8 @@ var events:Array<AutomationEvent>
 
 Represents raylib's `BoneInfo`: one bone of a skeleton, its name and its parent.
 
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -76,16 +78,22 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 ```haxe
 var name:String
 var parent:Int
+function copy(?out:BoneInfo):BoneInfo
 ```
 
 - `name`: Gets or sets the name, its node's cut to 31 bytes as raylib's struct holds it.
 - `parent`: Gets or sets the parent, by its index in the same bones, or -1 for a root.
+- `copy`: Returns a separate copy.
+  - `out`: Optional. The BoneInfo to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## BoundingBox
 
 *class* in [`engines/raylib/src/helix/raylib/BoundingBox.hx`](../src/helix/raylib/BoundingBox.hx), `import helix.raylib.BoundingBox;`
 
 Represents raylib's `BoundingBox`: an axis-aligned box by its corners.
+
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -96,10 +104,14 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 ```haxe
 var min:Vector3
 var max:Vector3
+function copy(?out:BoundingBox):BoundingBox
 ```
 
 - `min`: Gets or sets the lowest corner.
 - `max`: Gets or sets the highest corner.
+- `copy`: Returns a separate copy. Its corners are copied too.
+  - `out`: Optional. The BoundingBox to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Camera
 
@@ -115,6 +127,8 @@ An alias of `Camera3D`.
 
 Represents raylib's `Camera2D`: its target, where the target shows on the screen, its rotation and its zoom.
 
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -126,18 +140,24 @@ var offset:Vector2
 var target:Vector2
 var rotation:Float
 var zoom:Float
+function copy(?out:Camera2D):Camera2D
 ```
 
 - `offset`: Gets or sets where the target shows, in the screen's pixels.
 - `target`: Gets or sets the camera's target, the point in the world shown at `offset`.
 - `rotation`: Gets or sets the rotation, in degrees.
 - `zoom`: Gets or sets the zoom, 1 for none.
+- `copy`: Returns a separate copy. Its offset and target are copied too.
+  - `out`: Optional. The Camera2D to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Camera3D
 
 *class* in [`engines/raylib/src/helix/raylib/Camera3D.hx`](../src/helix/raylib/Camera3D.hx), `import helix.raylib.Camera3D;`
 
 Represents raylib's `Camera3D`, also its `Camera`: the camera's position, its target and its lens.
+
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -151,6 +171,7 @@ var target:Vector3
 var up:Vector3
 var fovy:Float
 var projection:Int
+function copy(?out:Camera3D):Camera3D
 ```
 
 - `position`: Gets or sets the camera's position.
@@ -158,12 +179,17 @@ var projection:Int
 - `up`: Gets or sets the camera's up direction.
 - `fovy`: Gets or sets the field of view, top to bottom, in degrees, or the height seen in orthographic.
 - `projection`: Gets or sets the projection: `CAMERA_PERSPECTIVE` or `CAMERA_ORTHOGRAPHIC`.
+- `copy`: Returns a separate copy. Its position, target and up are copied too.
+  - `out`: Optional. The Camera3D to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Color
 
 *class* in [`engines/raylib/src/helix/raylib/Color.hx`](../src/helix/raylib/Color.hx), `import helix.raylib.Color;`
 
 Represents raylib's `Color`: red, green, blue and alpha, each 0 to 255.
+
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -176,12 +202,16 @@ var r:Int
 var g:Int
 var b:Int
 var a:Int
+function copy(?out:Color):Color
 ```
 
 - `r`: Gets or sets the red, 0 to 255.
 - `g`: Gets or sets the green, 0 to 255.
 - `b`: Gets or sets the blue, 0 to 255.
 - `a`: Gets or sets the alpha, 0 (clear) to 255 (opaque).
+- `copy`: Returns a separate copy.
+  - `out`: Optional. The Color to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## FilePathList
 
@@ -505,6 +535,8 @@ Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as ra
 
 `m0` to `m3` is the first column, stored first and sent to shaders first.
 
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -528,6 +560,7 @@ var m3:Float
 var m7:Float
 var m11:Float
 var m15:Float
+function copy(?out:Matrix):Matrix
 ```
 
 - `m0`: Gets or sets row 1, column 1.
@@ -546,6 +579,9 @@ var m15:Float
 - `m7`: Gets or sets row 4, column 2.
 - `m11`: Gets or sets row 4, column 3.
 - `m15`: Gets or sets row 4, column 4.
+- `copy`: Returns a separate copy.
+  - `out`: Optional. The Matrix to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Mesh
 
@@ -710,6 +746,8 @@ var frameCount(get, never):Int
 
 Represents raylib's `NPatchInfo`: how `DrawTextureNPatch` cuts a texture into a nine-patch or a three-patch.
 
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -723,6 +761,7 @@ var top:Int
 var right:Int
 var bottom:Int
 var layout:Int
+function copy(?out:NPatchInfo):NPatchInfo
 ```
 
 - `source`: Gets or sets the patch's rectangle on the texture, in texels.
@@ -731,6 +770,9 @@ var layout:Int
 - `right`: Gets or sets the right border's width, in texels.
 - `bottom`: Gets or sets the bottom border's height, in texels.
 - `layout`: Gets or sets the layout (`NPATCH_*`): nine patches, or three across or down.
+- `copy`: Returns a separate copy. Its source rectangle is copied too.
+  - `out`: Optional. The NPatchInfo to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Quaternion
 
@@ -746,6 +788,8 @@ An alias of `Vector4`.
 
 Represents raylib's `Ray`: an origin and a direction.
 
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -755,16 +799,22 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 ```haxe
 var position:Vector3
 var direction:Vector3
+function copy(?out:Ray):Ray
 ```
 
 - `position`: Gets or sets the origin.
 - `direction`: Gets or sets the direction, of length 1.
+- `copy`: Returns a separate copy. Its position and direction are copied too.
+  - `out`: Optional. The Ray to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## RayCollision
 
 *class* in [`engines/raylib/src/helix/raylib/RayCollision.hx`](../src/helix/raylib/RayCollision.hx), `import helix.raylib.RayCollision;`
 
 Represents raylib's `RayCollision`: whether and where a ray hit.
+
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -777,12 +827,16 @@ var hit:Bool
 var distance:Float
 var point:Vector3
 var normal:Vector3
+function copy(?out:RayCollision):RayCollision
 ```
 
 - `hit`: Gets or sets a value indicating whether the ray hit.
 - `distance`: Gets or sets the distance to the hit.
 - `point`: Gets or sets the point hit.
 - `normal`: Gets or sets the surface's normal there.
+- `copy`: Returns a separate copy. Its point and normal are copied too.
+  - `out`: Optional. The RayCollision to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Raygui
 
@@ -848,6 +902,8 @@ Its members are on their own page: [raymath.md](raymath.md).
 
 Represents raylib's `Rectangle`: its top-left corner and its size.
 
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -859,12 +915,16 @@ var x:Float
 var y:Float
 var width:Float
 var height:Float
+function copy(?out:Rectangle):Rectangle
 ```
 
 - `x`: Gets or sets the left edge.
 - `y`: Gets or sets the top edge.
 - `width`: Gets or sets the width.
 - `height`: Gets or sets the height.
+- `copy`: Returns a separate copy.
+  - `out`: Optional. The Rectangle to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## RenderTexture
 
@@ -999,6 +1059,8 @@ An alias of `Texture`.
 
 Represents raylib's `Transform`: a translation, a rotation and a scale, as a bone's pose holds them.
 
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
@@ -1009,17 +1071,23 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 var translation:Vector3
 var rotation:Quaternion
 var scale:Vector3
+function copy(?out:Transform):Transform
 ```
 
 - `translation`: Gets or sets the translation.
 - `rotation`: Gets or sets the rotation, a quaternion.
 - `scale`: Gets or sets the scale on each axis.
+- `copy`: Returns a separate copy. Its vectors are copied too.
+  - `out`: Optional. The Transform to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Vector2
 
 *class* in [`engines/raylib/src/helix/raylib/Vector2.hx`](../src/helix/raylib/Vector2.hx), `import helix.raylib.Vector2;`
 
 Represents raylib's `Vector2`: a point or a direction in two dimensions.
+
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -1030,16 +1098,22 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 ```haxe
 var x:Float
 var y:Float
+function copy(?out:Vector2):Vector2
 ```
 
 - `x`: Gets or sets the x component.
 - `y`: Gets or sets the y component.
+- `copy`: Returns a separate copy.
+  - `out`: Optional. The Vector2 to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Vector3
 
 *class* in [`engines/raylib/src/helix/raylib/Vector3.hx`](../src/helix/raylib/Vector3.hx), `import helix.raylib.Vector3;`
 
 Represents raylib's `Vector3`: a point or a direction in three dimensions.
+
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -1051,17 +1125,23 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 var x:Float
 var y:Float
 var z:Float
+function copy(?out:Vector3):Vector3
 ```
 
 - `x`: Gets or sets the x component.
 - `y`: Gets or sets the y component.
 - `z`: Gets or sets the z component.
+- `copy`: Returns a separate copy.
+  - `out`: Optional. The Vector3 to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## Vector4
 
 *class* in [`engines/raylib/src/helix/raylib/Vector4.hx`](../src/helix/raylib/Vector4.hx), `import helix.raylib.Vector4;`
 
 Represents raylib's `Vector4`, also its `Quaternion`: four components.
+
+Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -1074,12 +1154,16 @@ var x:Float
 var y:Float
 var z:Float
 var w:Float
+function copy(?out:Vector4):Vector4
 ```
 
 - `x`: Gets or sets the x component.
 - `y`: Gets or sets the y component.
 - `z`: Gets or sets the z component.
 - `w`: Gets or sets the w component.
+- `copy`: Returns a separate copy.
+  - `out`: Optional. The Vector4 to copy into, so nothing is made; a new one when omitted.
+  - returns: The copy: out, when given.
 
 ## VrDeviceInfo
 
