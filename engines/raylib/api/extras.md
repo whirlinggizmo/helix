@@ -742,6 +742,29 @@ static function GetModelBoundingBoxPosed(model:Model):BoundingBox
   - `model`: The model.
   - returns: The box.
 
+### models: models merged into one
+
+```haxe
+static function LoadModelFromModels(models:Array<Model>, ?skeleton:Model):Null<Model>
+```
+
+- `LoadModelFromModels`: Returns a new model with the provided models' meshes merged where possible. The provided models are unchanged. For example, a character's head, body, legs and feet models, whose materials differ only in color, are merged into one character model with one mesh.
+  - `models`: The models.
+  - `skeleton`: Optional. The model whose bones, bind pose and transform the new model takes. Usually one of the provided models.
+  - returns: The new model, or null when refused.
+
+  Meshes whose materials differ only in diffuse color are merged into one mesh. Each material's diffuse color is multiplied into the vertex colors, and the merged mesh has one material, the same material with a white diffuse color. Meshes whose materials differ in anything else (the shader, a texture, `unlit`, or another map's color or value) stay separate meshes.
+
+  A shader that ignores the vertex color draws a merged mesh without the materials' colors.
+
+  A mesh lacking normals, texture coordinates or colors that another merged mesh has gets normals (0, 0, 1), texture coordinates (0, 0) and white colors. Tangents are kept when every merged mesh has them. `texcoords2` is dropped.
+
+  With `skeleton`, the new model has the bones, bind pose and transform of `skeleton`, and an animation that poses `skeleton` poses the new model. Each provided model's bones are matched to the bones of `skeleton` by name. A vertex following a bone that `skeleton` lacks follows the nearest ancestor of that bone that `skeleton` has. A vertex with no such ancestor stays where it is when the new model is posed. A provided model bound in another bind pose is rebound to the bind pose of `skeleton`. A vertex following several bones whose bind poses differ by different amounts is rebound approximately. A provided model without bones is placed where its transform put it.
+
+  Without `skeleton`, the new model has no bones and the identity transform. Each provided model's transform is multiplied into the model's vertices, and a provided model with bones is merged at its bind pose.
+
+  The merged meshes are uploaded. Refused, with the reason logged, for an empty list, for a provided model with bones whose transform differs from the transform of `skeleton`, and for a `skeleton` of more than 256 bones.
+
 ### Macros, run as the program builds
 
 ```haxe

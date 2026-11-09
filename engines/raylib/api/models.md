@@ -214,7 +214,7 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `origin`: The point of it at the position, from its bottom left, in the size's units.
   - `rotation`: How far it turns about its origin, in degrees.
   - `tint`: The tint.
-- `LoadModelFromMesh`: Returns a model of one mesh with the default material.
+- `LoadModelFromMesh`: Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
   - `mesh`: The mesh.
   - returns: The model.
 
@@ -236,12 +236,12 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   Frees a material or mesh shared between models once, when the last model lets go of it.
 
   Leaves the model empty, so unloading it again does nothing.
-- `DrawModel`: Draws a model at a position and a scale, its materials' colors times a tint.
+- `DrawModel`: Draws a model at a position and a scale, its materials' colors times a tint. See `LoadModelFromModels` for merging models' meshes into one model.
   - `model`: The model.
   - `position`: Where.
   - `scale`: The scale, the same on each axis.
   - `tint`: The tint.
-- `DrawModelEx`: Draws a model scaled, turned about an axis and moved, after its own transform.
+- `DrawModelEx`: Draws a model scaled, turned about an axis and moved, after its own transform. See `LoadModelFromModels` for merging models' meshes into one model.
   - `model`: The model.
   - `position`: Where.
   - `rotationAxis`: The axis.
@@ -280,7 +280,7 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   Draws a point at each index of a mesh's triangles, or at each vertex when the mesh has no indices.
 
   Turns backface culling off through rlgl's point mode and on after, as raylib leaves it.
-- `DrawMesh`: Draws a mesh with a material and a transform.
+- `DrawMesh`: Draws a mesh with a material and a transform. See `LoadModelFromModels` for merging models' meshes into one model.
   - `mesh`: The mesh.
   - `material`: The material.
   - `transform`: The transform.
@@ -290,13 +290,15 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - The first three at `texture0` to `texture2`. - Each other map with a texture at the sampler `shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to the map's index with `SetShaderValue`. raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
 
   Binds a cubemap (`LoadTextureCubemap`) to a `samplerCube` for `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and `MATERIAL_MAP_PREFILTER`, and a 2D texture to a `sampler2D` for the rest. A texture of the other kind binds nothing.
-- `DrawMeshInstanced`: Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does.
+- `DrawMeshInstanced`: Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
   - `mesh`: The mesh.
   - `material`: Its material: the shader, the diffuse color and the textures.
   - `transforms`: The instances' transforms.
   - `instances`: How many instances, at most the transforms given.
 
   The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself. raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
+
+  A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
 
   Draws nothing, with a warning, when the shader has no `mat4` attribute there.
 

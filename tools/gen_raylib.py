@@ -76,6 +76,7 @@ TARGETS = {
     'extras/Models.hx': ([
         ('RModelsAsync', "models: the model, material and animation loads and mesh writes in place of rmodels' that wait"),
         ('RModelsPosed', "models: a skinned model's bounds as posed"),
+        ('RModelsMerged', "models: models merged into one"),
     ], None, 'Models'),
     'extras/Audio.hx': ([('RAudioAsync', "audio: the sound, wave and music loads and wave writes in place of raudio's that wait")], None, 'Audio'),
     'extras/Device.hx': ([

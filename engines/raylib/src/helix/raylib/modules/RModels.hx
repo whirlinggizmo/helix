@@ -715,7 +715,7 @@ class RModels {
 		return model;
 	}
 
-	/** Returns a model of one mesh with the default material.
+	/** Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
@@ -762,7 +762,7 @@ class RModels {
 		}
 	}
 
-	/** Draws a model at a position and a scale, its materials' colors times a tint.
+	/** Draws a model at a position and a scale, its materials' colors times a tint. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -772,7 +772,7 @@ class RModels {
 		drawModelAt(model, position.x, position.y, position.z, 0, 1, 0, 0, scale, scale, scale, tint);
 	}
 
-	/** Draws a model scaled, turned about an axis and moved, after its own transform.
+	/** Draws a model scaled, turned about an axis and moved, after its own transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -868,7 +868,7 @@ class RModels {
 		rlDisableWireMode();
 	}
 
-	/** Draws a mesh with a material and a transform.
+	/** Draws a mesh with a material and a transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		Binds the material's maps as raylib does:
 
@@ -886,10 +886,12 @@ class RModels {
 		drawMesh(mesh, material, toMatrix3D(transform, placing), WHITE);
 	}
 
-	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does.
+	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
 		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
+
+		A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
 
 		Draws nothing, with a warning, when the shader has no `mat4` attribute there.
 

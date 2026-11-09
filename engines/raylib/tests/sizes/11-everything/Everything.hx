@@ -57,6 +57,7 @@ class Everything {
 		"RModels",
 		"RModelsAsync",
 		"RModelsPosed",
+		"RModelsMerged",
 		"RRlgl",
 		"RShapes",
 		"RText",

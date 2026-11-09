@@ -4964,7 +4964,7 @@ class Raylib {
 			origin:Vector2, rotation:Float, tint:Color):Void
 		RModels.DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint);
 
-	/** Returns a model of one mesh with the default material.
+	/** Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
@@ -5000,7 +5000,7 @@ class Raylib {
 	public static inline function UnloadModel(model:Model):Void
 		RModels.UnloadModel(model);
 
-	/** Draws a model at a position and a scale, its materials' colors times a tint.
+	/** Draws a model at a position and a scale, its materials' colors times a tint. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -5009,7 +5009,7 @@ class Raylib {
 	public static inline function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color):Void
 		RModels.DrawModel(model, position, scale, tint);
 
-	/** Draws a model scaled, turned about an axis and moved, after its own transform.
+	/** Draws a model scaled, turned about an axis and moved, after its own transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -5069,7 +5069,7 @@ class Raylib {
 	public static inline function DrawModelPointsEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 		RModels.DrawModelPointsEx(model, position, rotationAxis, rotationAngle, scale, tint);
 
-	/** Draws a mesh with a material and a transform.
+	/** Draws a mesh with a material and a transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		Binds the material's maps as raylib does:
 
@@ -5086,10 +5086,12 @@ class Raylib {
 	public static inline function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 		RModels.DrawMesh(mesh, material, transform);
 
-	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does.
+	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
 		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
+
+		A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
 
 		Draws nothing, with a warning, when the shader has no `mat4` attribute there.
 
