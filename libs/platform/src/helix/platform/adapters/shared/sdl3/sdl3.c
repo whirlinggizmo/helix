@@ -15,6 +15,13 @@
 #include <unistd.h>
 #endif
 
+#if defined(_WIN32)
+/* Read by the NVIDIA and AMD drivers when the program loads: on a machine with integrated and discrete GPUs, the program's GL context is on
+   the discrete one. */
+__declspec(dllexport) DWORD NvOptimusEnablement=1;
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance=1;
+#endif
+
 static SDL_Window *window;
 static SDL_GLContext context;
 static int samples=1,focused=1,vsync=1;
