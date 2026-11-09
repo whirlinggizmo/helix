@@ -719,6 +719,9 @@ class RModels {
 
 		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
+		The model has no bones. Once the program sets its `bones`, `bindPose` and `boneCount`, and the mesh's `boneIds` and `boneWeights`,
+		`UpdateModelAnimation` and the other animation calls pose it as they pose a loaded model.
+
 		@param mesh  The mesh.
 		@return  The model. */
 	static function LoadModelFromMesh(mesh:Mesh):Model {
@@ -1616,6 +1619,7 @@ class RModels {
 		@param anim  The animation, of the model's skeleton (`IsModelAnimationValid`).
 		@param frame  The frame, from 0. */
 	static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void {
+		Models.posable(model);
 		if (anim.frameCount > 0 && model.bones != null && anim.framePoses != null && model.boneMatrices != null) {
 			Animations.updateBones(model, anim, frame);
 			helix.raylib.internal.Skinning.pose(model, true);
@@ -1654,6 +1658,7 @@ class RModels {
 		@param anim  The animation, of the model's skeleton.
 		@param frame  The frame, from 0, fractional. */
 	static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void {
+		Models.posable(model);
 		if (anim.frameCount > 0 && model.bones != null && anim.framePoses != null && model.boneMatrices != null) {
 			Animations.updateBones(model, anim, frame);
 			helix.raylib.internal.Skinning.pose(model);
@@ -1678,6 +1683,7 @@ class RModels {
 		@param frameB  Its frame, fractional.
 		@param blend  How much of the second: 0 the first alone, 1 the second alone. */
 	static function UpdateModelAnimationEx(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, blend:Float):Void {
+		Models.posable(model);
 		if (model.boneMatrices == null)
 			return;
 		if (animA.frameCount > 0 && animA.framePoses != null && animB.frameCount > 0 && animB.framePoses != null && blend >= 0 && blend <= 1) {

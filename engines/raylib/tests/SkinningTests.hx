@@ -14,7 +14,7 @@ import helix.raylib.internal.Textures;
 	a program's own shader including `<helix/raylib/shaders/skinning.glsl>` before any pose reads no bones (its `boneOffset` 0, the bind
 	pose), posed reads its first bone plus one, and a draw after the posed one reads no bones again; and a texture or a texture unit set
 	on the lit shader (`SetShaderValueTexture`, `SetShaderValue` on a sampler), before its skinned twin is made and after, is set on the
-	twin too. */
+	twin too. Each model is a model of a mesh whose bones the program set, posed as a loaded model is. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)
@@ -31,7 +31,8 @@ class SkinningTests {
 		checks++;
 	}
 
-	// A cube of one bone, every vertex its whole, posed by an animation of one frame raising it by one.
+	// A cube of one bone, every vertex its whole, posed by an animation of one frame raising it by one: a model of a mesh whose bones
+	// the program sets, as a raylib program does.
 	static function skinned(shader:Shader):Model {
 		var mesh = GenMeshCube(1, 1, 1);
 		mesh.boneIds = [for (k in 0...mesh.vertexCount * 4) 0];
@@ -42,7 +43,6 @@ class SkinningTests {
 		model.bindPose = [
 			new Transform(new Vector3(0, 0, 0), new Quaternion(0, 0, 0, 1), new Vector3(1, 1, 1))
 		];
-		Models.animated(model);
 		model.materials[0].shader = shader;
 		return model;
 	}
@@ -134,6 +134,8 @@ class SkinningTests {
 			posed = GetModelBoundingBoxPosed(moving);
 		check(near(bind.min.y, -0.5) && near(bind.max.y, 0.5), "GetModelBoundingBox keeps the bind pose");
 		check(near(posed.min.y, 0.5) && near(posed.max.y, 1.5) && near(posed.min.x, -0.5) && near(posed.max.x, 0.5), "the posed box is raised by one");
+		check(moving.meshes[0].boneMatrices != null && moving.meshes[0].boneMatrices[0].m13 == 1,
+			"a model of a mesh whose bones the program set is posed, its mesh's boneMatrices raised by one");
 		var unposed = GetModelBoundingBoxPosed(still);
 		check(near(unposed.min.y, -0.5) && near(unposed.max.y, 0.5), "a model never posed is bounded as bound");
 		var dancing = GetModelBoundingBoxPosed(dancer);

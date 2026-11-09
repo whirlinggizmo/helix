@@ -576,6 +576,15 @@ class Models {
 		animated(model);
 	}
 
+	/** Gives a model whose bones the program set, such as a model of a mesh, its bone matrices at rest, as a loaded model has them, so the
+		animation calls pose it. Nothing for a model that has them or has no bones.
+
+		@param model  The model. */
+	public static function posable(model:Model):Void {
+		if (model.boneMatrices == null && model.bones != null)
+			animated(model);
+	}
+
 	// A model's bone matrices, at rest: identities, every mesh's boneMatrices those (raylib 5.5 gives each mesh of a skinned model its own).
 	static function animated(model:Model):Void {
 		if (model.boneCount == 0)

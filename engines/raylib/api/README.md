@@ -686,10 +686,10 @@ var bindPose:Null<Array<Transform>>
 - `materials`: Gets or sets the materials, each held by the model.
   Setting copies the array, retains its materials, releases the ones it replaces and sets `materialCount`.
 - `meshMaterial`: Gets the material of each mesh, by its index in `materials`.
-- `boneCount`: Gets the number of bones, the joints of the file's first skin, or 0 for a model without one.
-- `bones`: Gets the bones, or null without a skin.
+- `boneCount`: Gets or sets the number of bones, the joints of the file's first skin, or 0 for a model without one.
+- `bones`: Gets or sets the bones, or null without a skin.
   The file's first skin's joints, in its order, each parent the nearest joint above it.
-- `bindPose`: Gets each bone's transform in the model as the skin was bound to it, or null without a skin.
+- `bindPose`: Gets or sets each bone's transform in the model as the skin was bound to it, or null without a skin.
   Each is its inverse bind matrix inverted, or its node's at rest for a file that gives none.
 
 ## ModelAnimation

@@ -219,6 +219,8 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - returns: The model.
 
   The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
+
+  The model has no bones. Once the program sets its `bones`, `bindPose` and `boneCount`, and the mesh's `boneIds` and `boneWeights`, `UpdateModelAnimation` and the other animation calls pose it as they pose a loaded model.
 - `IsModelValid`: Returns whether a model has meshes.
   - `model`: The model.
   - returns: True when the model has meshes.
