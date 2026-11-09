@@ -359,7 +359,7 @@ static function fromCylinder(bottomRadius:Float, topRadius:Float, height:Float, 
 static function fromCapsule(radius:Float, height:Float, sliceCount:Int, stackCount:Int, ?out:Mesh3D):Mesh3D
 static function fromTorus(radius:Float, tubeRadius:Float, sliceCount:Int, sideCount:Int, ?out:Mesh3D):Mesh3D
 static function fromTorusKnot(radius:Float, tubeRadius:Float, sliceCount:Int, sideCount:Int, p:Int, q:Int, ?out:Mesh3D):Mesh3D
-static function merge(first:Mesh3D, second:Mesh3D, ?out:Mesh3D):Mesh3D
+static function merge(meshes:Array<Mesh3D>, ?out:Mesh3D):Mesh3D
 var positions:Array<Float>
 var normals:Null<Array<Float>>
 var texCoords:Null<Array<Float>>
@@ -370,6 +370,8 @@ var jointIndices:Null<Array<Int>>
 var weights:Null<Array<Float>>
 var vertexCount(get, never):Int
 var triangleCount(get, never):Int
+function tint(color:Int, ?out:Mesh3D):Mesh3D
+function remapJointIndices(newJointIndices:Array<Int>, ?out:Mesh3D):Mesh3D
 function copyFrom(other:Mesh3D):Mesh3D
 function transform(matrix:Matrix3D, ?out:Mesh3D):Mesh3D
 function toUnindexed(?out:Mesh3D):Mesh3D
@@ -442,11 +444,14 @@ function computeBounds(?out:Bounds3D):Bounds3D
   - `q`: Turns through the ring, at least 1.
   - `out`: Optional. Set to the knot.
   - returns: The knot.
-- `merge`: Returns two meshes as one: the second's vertices after the first's. What one has and the other lacks (normals, texture coordinates, tangents, colors, joints and weights) is dropped; the result has indices when either has.
-  - `first`: One.
-  - `second`: The other.
-  - `out`: Optional. Set to the two; may be either.
-  - returns: The mesh.
+- `merge`: Returns the provided meshes merged into one, each mesh's vertices after the previous mesh's.
+  - `meshes`: The meshes, in order.
+  - `out`: Optional. Set to the merged mesh. May be one of the meshes.
+  - returns: The merged mesh.
+
+  A mesh lacking an attribute that another mesh has is given default values: normals (0, 1, 0), texture coordinates (0, 0), white colors, and joint indices 0 with weights 0. A vertex with weights 0 stays where it is when the merged mesh is posed.
+
+  Tangents are kept when every mesh has them. The merged mesh has indices when any mesh has them. An empty list gives an empty mesh.
 - `positions`: Gets or sets the positions, x, y and z each.
 - `normals`: Gets or sets the normals, x, y and z a vertex, of length 1; null for none.
 - `texCoords`: Gets or sets the texture coordinates, u and v a vertex; null for none.
@@ -457,6 +462,16 @@ function computeBounds(?out:Bounds3D):Bounds3D
 - `weights`: Gets or sets the weights, four a vertex, one for each of its joints, adding up to 1; null for none.
 - `vertexCount`: Gets the number of vertices.
 - `triangleCount`: Gets the number of triangles.
+- `tint`: Returns the mesh with each vertex's color multiplied by `color`. A mesh without colors gets `color` at every vertex.
+  - `color`: The color, `0xAARRGGBB`.
+  - `out`: Optional. Set to the tinted mesh. May be this one.
+  - returns: The tinted mesh.
+- `remapJointIndices`: Returns the mesh with each joint index replaced by its new index.
+  - `newJointIndices`: The new index of each joint, by its old index, or -1.
+  - `out`: Optional. Set to the remapped mesh. May be this one.
+  - returns: The remapped mesh.
+
+  Mapping a joint to -1 sets its weight to 0 and scales the vertex's other weights to add up to 1. A vertex left with weights 0 stays where it is when the mesh is posed.
 - `copyFrom`: Copies another mesh into this one, its arrays copied.
   - `other`: The mesh.
   - returns: This mesh.

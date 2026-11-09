@@ -319,33 +319,86 @@ class Mesh3D {
 		return m;
 	}
 
-	/** Returns two meshes as one: the second's vertices after the first's. What one has and the other lacks (normals, texture
-		coordinates, tangents, colors, joints and weights) is dropped; the result has indices when either has.
+	/** Returns the provided meshes merged into one, each mesh's vertices after the previous mesh's.
 
-		@param first  One.
-		@param second  The other.
-		@param out  Optional. Set to the two; may be either.
-		@return  The mesh. */
-	public static function merge(first:Mesh3D, second:Mesh3D, ?out:Mesh3D):Mesh3D {
-		inline function both(a:Null<Array<Float>>, b:Null<Array<Float>>):Null<Array<Float>>
-			return a == null || b == null ? null : a.concat(b);
-		var count = first.vertexCount;
-		var positions = first.positions.concat(second.positions);
-		var normals = both(first.normals, second.normals),
-			texCoords = both(first.texCoords, second.texCoords),
-			tangents = both(first.tangents, second.tangents),
-			colors = both(first.colors, second.colors),
-			weights = both(first.weights, second.weights);
-		var joints = first.jointIndices == null || second.jointIndices == null ? null : first.jointIndices.concat(second.jointIndices);
-		var indices:Null<Array<Int>> = null;
-		if (first.indices != null || second.indices != null) {
-			indices = first.indices != null ? first.indices.copy() : [for (i in 0...count) i];
-			if (second.indices != null)
-				for (i in second.indices)
-					indices.push(count + i);
-			else
-				for (i in 0...second.vertexCount)
-					indices.push(count + i);
+		A mesh lacking an attribute that another mesh has is given default values: normals (0, 1, 0), texture coordinates (0, 0), white
+		colors, and joint indices 0 with weights 0. A vertex with weights 0 stays where it is when the merged mesh is posed.
+
+		Tangents are kept when every mesh has them. The merged mesh has indices when any mesh has them. An empty list gives an empty mesh.
+
+		@param meshes  The meshes, in order.
+		@param out  Optional. Set to the merged mesh. May be one of the meshes.
+		@return  The merged mesh. */
+	public static function merge(meshes:Array<Mesh3D>, ?out:Mesh3D):Mesh3D {
+		var vertexTotal = 0, indexTotal = 0;
+		var anyNormals = false,
+			anyTexCoords = false,
+			anyColors = false,
+			anyJoints = false,
+			anyIndices = false,
+			allTangents = meshes.length > 0;
+		for (mesh in meshes) {
+			var count = mesh.vertexCount;
+			vertexTotal += count;
+			indexTotal += mesh.indices != null ? mesh.indices.length : count;
+			anyNormals = anyNormals || mesh.normals != null;
+			anyTexCoords = anyTexCoords || mesh.texCoords != null;
+			anyColors = anyColors || mesh.colors != null;
+			anyJoints = anyJoints || (mesh.jointIndices != null && mesh.weights != null);
+			anyIndices = anyIndices || mesh.indices != null;
+			allTangents = allTangents && mesh.tangents != null;
+		}
+		// Every array is sized once and filled by index, as pushing vertex by vertex is slow in a page.
+		function sized<T>(length:Int):Array<T> {
+			var a:Array<T> = [];
+			a.resize(length);
+			return a;
+		}
+		var positions:Array<Float> = sized(vertexTotal * 3);
+		var normals:Null<Array<Float>> = anyNormals ? sized(vertexTotal * 3) : null,
+			texCoords:Null<Array<Float>> = anyTexCoords ? sized(vertexTotal * 2) : null,
+			tangents:Null<Array<Float>> = allTangents ? sized(vertexTotal * 4) : null,
+			colors:Null<Array<Float>> = anyColors ? sized(vertexTotal * 4) : null,
+			jointIndices:Null<Array<Int>> = anyJoints ? sized(vertexTotal * 4) : null,
+			weights:Null<Array<Float>> = anyJoints ? sized(vertexTotal * 4) : null,
+			indices:Null<Array<Int>> = anyIndices ? sized(indexTotal) : null;
+		var base = 0, at = 0;
+		for (mesh in meshes) {
+			var count = mesh.vertexCount;
+			for (i in 0...count * 3)
+				positions[base * 3 + i] = mesh.positions[i];
+			if (normals != null)
+				for (k in 0...count) {
+					var n = mesh.normals;
+					normals[(base + k) * 3] = n != null ? n[k * 3] : 0;
+					normals[(base + k) * 3 + 1] = n != null ? n[k * 3 + 1] : 1;
+					normals[(base + k) * 3 + 2] = n != null ? n[k * 3 + 2] : 0;
+				}
+			if (texCoords != null)
+				for (i in 0...count * 2)
+					texCoords[base * 2 + i] = mesh.texCoords != null ? mesh.texCoords[i] : 0;
+			if (tangents != null)
+				for (i in 0...count * 4)
+					tangents[base * 4 + i] = mesh.tangents[i];
+			if (colors != null)
+				for (i in 0...count * 4)
+					colors[base * 4 + i] = mesh.colors != null ? mesh.colors[i] : 1;
+			if (jointIndices != null) {
+				var has = mesh.jointIndices != null && mesh.weights != null;
+				for (i in 0...count * 4) {
+					jointIndices[base * 4 + i] = has ? mesh.jointIndices[i] : 0;
+					weights[base * 4 + i] = has ? mesh.weights[i] : 0;
+				}
+			}
+			if (indices != null) {
+				if (mesh.indices != null)
+					for (i in mesh.indices)
+						indices[at++] = base + i;
+				else
+					for (i in 0...count)
+						indices[at++] = base + i;
+			}
+			base += count;
 		}
 		if (out == null)
 			out = new Mesh3D();
@@ -355,8 +408,82 @@ class Mesh3D {
 		out.tangents = tangents;
 		out.colors = colors;
 		out.indices = indices;
-		out.jointIndices = joints;
+		out.jointIndices = jointIndices;
 		out.weights = weights;
+		return out;
+	}
+
+	/** Returns the mesh with each vertex's color multiplied by `color`. A mesh without colors gets `color` at every vertex.
+
+		@param color  The color, `0xAARRGGBB`.
+		@param out  Optional. Set to the tinted mesh. May be this one.
+		@return  The tinted mesh. */
+	public function tint(color:Int, ?out:Mesh3D):Mesh3D {
+		if (out == null)
+			out = new Mesh3D();
+		if (out != this)
+			out.copyFrom(this);
+		var a = (color >>> 24) / 255,
+			r = ((color >> 16) & 0xff) / 255,
+			g = ((color >> 8) & 0xff) / 255,
+			b = (color & 0xff) / 255;
+		var count = out.vertexCount;
+		if (out.colors == null) {
+			var c:Array<Float> = [];
+			c.resize(count * 4);
+			for (k in 0...count) {
+				c[k * 4] = r;
+				c[k * 4 + 1] = g;
+				c[k * 4 + 2] = b;
+				c[k * 4 + 3] = a;
+			}
+			out.colors = c;
+		} else {
+			var c = out.colors;
+			for (k in 0...count) {
+				c[k * 4] *= r;
+				c[k * 4 + 1] *= g;
+				c[k * 4 + 2] *= b;
+				c[k * 4 + 3] *= a;
+			}
+		}
+		return out;
+	}
+
+	/** Returns the mesh with each joint index replaced by its new index.
+
+		Mapping a joint to -1 sets its weight to 0 and scales the vertex's other weights to add up to 1. A vertex left with weights 0 stays
+		where it is when the mesh is posed.
+
+		@param newJointIndices  The new index of each joint, by its old index, or -1.
+		@param out  Optional. Set to the remapped mesh. May be this one.
+		@return  The remapped mesh. */
+	public function remapJointIndices(newJointIndices:Array<Int>, ?out:Mesh3D):Mesh3D {
+		if (out == null)
+			out = new Mesh3D();
+		if (out != this)
+			out.copyFrom(this);
+		var joints = out.jointIndices, weights = out.weights;
+		if (joints == null || weights == null)
+			return out;
+		for (k in 0...Std.int(joints.length / 4)) {
+			var kept = 0.0, dropped = false;
+			for (j in k * 4...k * 4 + 4) {
+				var old = joints[j];
+				var mapped = old >= 0 && old < newJointIndices.length ? newJointIndices[old] : -1;
+				if (mapped < 0) {
+					joints[j] = 0;
+					dropped = dropped || weights[j] != 0;
+					weights[j] = 0;
+				} else {
+					joints[j] = mapped;
+					kept += weights[j];
+				}
+			}
+			if (dropped && kept > 0)
+				for (j in k * 4...k * 4 + 4)
+					weights[j] /= kept;
+		}
 		return out;
 	}
 

@@ -285,18 +285,51 @@ class Mesh3DTests {
 		check(near(volume(flatMirror), 1, 1e-12), "mirrored without indices: its vertices turned round");
 
 		// Merging and copying.
-		var lamp = Mesh3D.merge(Mesh3D.fromCylinder(.1, .1, 3, 12, 1, true), Mesh3D.fromCylinder(.4, 0, .5, 16, 1, false));
+		var lamp = Mesh3D.merge([
+			Mesh3D.fromCylinder(.1, .1, 3, 12, 1, true),
+			Mesh3D.fromCylinder(.4, 0, .5, 16, 1, false)
+		]);
 		check(lamp.vertexCount == Mesh3D.fromCylinder(.1, .1, 3, 12, 1, true).vertexCount + Mesh3D.fromCylinder(.4, 0, .5, 16, 1, false).vertexCount
 			&& lamp.triangleCount == Mesh3D.fromCylinder(.1, .1, 3, 12, 1, true).triangleCount + Mesh3D.fromCylinder(.4, 0, .5, 16, 1, false).triangleCount,
 			"merged: both's vertices and triangles");
 		check(lamp.normals != null && lamp.texCoords != null, "merged: what both have kept");
 		var withTangents = Mesh3D.fromBox(1, 1, 1);
 		withTangents.tangents = withTangents.computeTangents();
-		check(Mesh3D.merge(withTangents, Mesh3D.fromBox(1, 1, 1)).tangents == null, "merged: what one lacks dropped");
-		var mixed = Mesh3D.merge(Mesh3D.fromBox(1, 1, 1), Mesh3D.fromBox(1, 1, 1).toUnindexed());
+		check(Mesh3D.merge([withTangents, Mesh3D.fromBox(1, 1, 1)]).tangents == null, "merged: tangents only when every mesh has them");
+		check(Mesh3D.merge([withTangents, withTangents]).tangents.length == 48 * 4, "merged: tangents every mesh has kept");
+		var bare = new Mesh3D();
+		bare.positions = [0, 0, 0, 1, 0, 0, 0, 1, 0];
+		var filled = Mesh3D.merge([Mesh3D.fromBox(1, 1, 1).tint(0xff808080), bare]);
+		check(filled.vertexCount == 27
+			&& filled.normals[24 * 3 + 1] == 1
+			&& filled.normals[24 * 3] == 0
+			&& filled.texCoords[24 * 2] == 0,
+			"merged: normals and texture coordinates given to the mesh without");
+		check(filled.colors[24 * 4] == 1 && filled.colors[24 * 4 + 3] == 1 && filled.triangleCount == 13,
+			"merged: white given to the mesh without colors, indexed with it");
+		check(Mesh3D.merge([]).vertexCount == 0 && Mesh3D.merge([]).indices == null, "merged: an empty list, an empty mesh");
+		var single = Mesh3D.merge([bare]);
+		check(single != bare && single.vertexCount == 3 && single.normals == null && single.indices == null, "merged: one mesh, a copy of what it has");
+
+		// Tinted.
+		var tinted = Mesh3D.fromBox(1, 1, 1).tint(0x80ff0000);
+		check(tinted.colors.length == 24 * 4
+			&& tinted.colors[0] == 1
+			&& tinted.colors[1] == 0
+			&& tinted.colors[2] == 0
+			&& near(tinted.colors[3], 128 / 255, 1e-12),
+			"tinted: the mesh without colors gets the color");
+		var twice = tinted.tint(0xff808080);
+		check(near(twice.colors[0], 128 / 255, 1e-12)
+			&& twice.colors[1] == 0
+			&& near(twice.colors[3], 128 / 255, 1e-12)
+			&& tinted.colors[0] == 1,
+			"tinted again: multiplied, the original unchanged");
+		check(tinted.tint(0xffffffff, tinted) == tinted && tinted.colors[0] == 1, "tinted in place");
+		var mixed = Mesh3D.merge([Mesh3D.fromBox(1, 1, 1), Mesh3D.fromBox(1, 1, 1).toUnindexed()]);
 		check(mixed.indices != null && mixed.triangleCount == 24 && near(volume(mixed), 2, 1e-12), "merged with one unindexed: indexed, both whole");
 		var first = Mesh3D.fromBox(1, 1, 1);
-		check(Mesh3D.merge(first, Mesh3D.fromBox(2, 2, 2), first) == first && near(volume(first), 9, 1e-12), "merged into the first");
+		check(Mesh3D.merge([first, Mesh3D.fromBox(2, 2, 2)], first) == first && near(volume(first), 9, 1e-12), "merged into the first");
 		var copy = new Mesh3D().copyFrom(sphere);
 		copy.positions[0] = 99;
 		check(sphere.positions[0] != 99 && copy.vertexCount == sphere.vertexCount, "copied: its own arrays");

@@ -144,9 +144,29 @@ class AnimationTests {
 		a.weights = [for (i in 0...a.vertexCount * 4) i % 4 == 0 ? 1. : 0];
 		b.jointIndices = a.jointIndices.copy();
 		b.weights = a.weights.copy();
-		var merged = Mesh3D.merge(a, b);
+		var merged = Mesh3D.merge([a, b]);
 		check(merged.jointIndices.length == 48 * 4 && merged.weights.length == 48 * 4, "merged: joints and weights, both's");
-		check(Mesh3D.merge(a, Mesh3D.fromBox(1, 1, 1)).jointIndices == null, "merged with a mesh without: dropped");
+		var withBare = Mesh3D.merge([a, Mesh3D.fromBox(1, 1, 1)]);
+		check(withBare.jointIndices.length == 48 * 4
+			&& withBare.jointIndices[0] == 1
+			&& withBare.jointIndices[24 * 4] == 0
+			&& withBare.weights[24 * 4] == 0,
+			"merged with a mesh without: its vertices joint 0, weight 0");
+
+		// Joint indices remapped.
+		var remapping = new Mesh3D();
+		remapping.positions = [0, 0, 0, 1, 0, 0, 2, 0, 0];
+		remapping.jointIndices = [0, 1, 0, 0, 2, 1, 0, 0, 2, 0, 0, 0];
+		remapping.weights = [.5, .5, 0, 0, .75, .25, 0, 0, 1, 0, 0, 0];
+		var remapped = remapping.remapJointIndices([3, 7, -1]);
+		check(remapped.jointIndices[0] == 3 && remapped.jointIndices[1] == 7 && remapped.weights[0] == .5 && remapped.weights[1] == .5,
+			"remapped: new indices, weights kept");
+		check(remapped.jointIndices[4] == 0 && remapped.weights[4] == 0 && remapped.jointIndices[5] == 7 && remapped.weights[5] == 1,
+			"remapped to -1: weight 0, the vertex's others scaled to 1");
+		check(remapped.jointIndices[8] == 0 && remapped.weights[8] == 0 && remapping.jointIndices[4] == 2,
+			"remapped: a vertex left with none has weights 0, and the original is unchanged");
+		check(remapping.remapJointIndices([3, 7, -1], remapping) == remapping && remapping.jointIndices[0] == 3, "remapped in place");
+		check(Mesh3D.fromBox(1, 1, 1).remapJointIndices([0]).jointIndices == null, "remapped without joints: none");
 		var flat = a.toUnindexed();
 		check(flat.jointIndices.length == flat.vertexCount * 4 && flat.weights.length == flat.vertexCount * 4 && flat.jointIndices[0] == 1,
 			"unindexed: spread");
