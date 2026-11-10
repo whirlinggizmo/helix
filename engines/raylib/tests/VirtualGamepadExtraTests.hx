@@ -10,7 +10,8 @@ import helix.services.input.Tilt;
 import helix.services.input.Touch;
 import helix.services.screen.Screen;
 
-/** Checks `extras.VirtualGamepad` over fakes (services' `FakeSystem`, `FakeWindow`, `FakeEvents` and `FakeDevices`): unplugged until the
+/** Checks `extras.VirtualGamepad` over fakes (services' `FakeSystem`, `FakeWindow`, `FakeEvents` and `FakeDevices`), after a finger
+	landing and lifting within a frame as a click: unplugged until the
 	first touch; then gamepad 0, virtual, its left stick read through `GetGamepadAxisMovement`; a finger holding a stick leaving the mouse
 	up, and a free finger tapping a blocked bound as a click there; a physical gamepad replacing it; disabled, unplugged; and a button pressed and released through raylib's
 	gamepad functions, following its position, in a design's pixels too;
@@ -49,9 +50,17 @@ class VirtualGamepadExtraTests {
 			Runtime.touch().poll();
 			Runtime.tilt().poll();
 			Runtime.mouse().poll();
-			VirtualGamepads.inSlot(0).poll();
+			var pad = VirtualGamepads.inSlot(0);
+			if (pad != null)
+				pad.poll();
 			Runtime.gamepads().poll();
 		}
+
+		frame([TouchDown(9, 120, 140), TouchUp(9, 120, 140)]);
+		var tap = GetMousePosition();
+		check(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && tap.x == 120 && tap.y == 140,
+			"a finger landing and lifting within a frame presses and releases the mouse there");
+		frame();
 
 		var pause = new Rectangle(736, 0, 64, 64);
 		EnableVirtualGamepad(0, {blockedBounds: [pause], right: {basePlacement: VIRTUAL_STICK_BASE_FIXED}});
@@ -73,6 +82,9 @@ class VirtualGamepadExtraTests {
 			&& mouse.y == 30, "a free finger in a blocked bound is a click there");
 		frame([TouchUp(2, 760, 30)]);
 		check(IsMouseButtonReleased(MOUSE_BUTTON_LEFT), "its lift releases the mouse");
+		frame([TouchDown(4, 760, 30), TouchUp(4, 760, 30)]);
+		check(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT),
+			"a free finger tapping within a frame, while a stick holds another, presses and releases the mouse");
 		frame([TouchUp(1, 260, 300)]);
 		check(!IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) == 0,
 			"the stick's finger lifting leaves the mouse alone");

@@ -808,7 +808,10 @@ class RCore {
 	static function realButtonPressed(button:Int):Bool {
 		var mouse = Runtime.mouse();
 		var pressed = freeFingers(Runtime.touch().pressed);
-		if (button == MOUSE_BUTTON_LEFT && pressed.length > 0 && freeFingers(Runtime.touch().fingers).length == pressed.length)
+		// Pressed when no free finger now down was down before this frame, so a finger that landed and lifted within the frame counts.
+		if (button == MOUSE_BUTTON_LEFT
+			&& pressed.length > 0
+			&& [for (id in freeFingers(Runtime.touch().fingers)) if (pressed.indexOf(id) < 0) id].length == 0)
 			return true;
 		return button >= 0 && button <= 2 && mouse.isButtonPressed(cast button);
 	}
