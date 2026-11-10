@@ -363,25 +363,25 @@ static function EndScissorMode():Void
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True for that frame alone.
 
-  A finger landing counts as the left button, when no other finger is down.
+  A free finger (`EnableVirtualGamepad`) touching counts as the left button.
 - `IsMouseButtonDown`: Returns whether a mouse button is held.
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True while it is down.
 
-  A finger down counts as the left button.
+  A free finger (`EnableVirtualGamepad`) down counts as the left button.
 - `IsMouseButtonReleased`: Returns whether a mouse button went up this frame.
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True for that frame alone.
 
-  The last finger lifting counts as the left button.
+  The last free finger (`EnableVirtualGamepad`) lifting counts as the left button.
 - `IsMouseButtonUp`: Returns whether a mouse button isn't held.
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True while it is up.
-- `GetMouseX`: Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
+- `GetMouseX`: Returns the mouse's x, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
   - returns: The x.
-- `GetMouseY`: Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
+- `GetMouseY`: Returns the mouse's y, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
   - returns: The y.
-- `GetMousePosition`: Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
+- `GetMousePosition`: Returns the mouse's position, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
   - returns: The position.
 
   `SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
@@ -416,7 +416,7 @@ static function EndScissorMode():Void
   - `index`: Which finger, 0 for the first down.
   - returns: The position, or (0, 0) when fewer are down.
 
-  While no finger is down, the first is where the mouse is.
+  While no finger is down, the first is where the mouse is. See `EnableVirtualGamepad` (`import helix.raylib.extras.VirtualGamepad.*;`) for on-screen sticks read as a gamepad's.
 - `GetTouchPointId`: Returns a finger's id, which stays the same while it is down.
   - `index`: Which finger, 0 for the first down.
   - returns: The id, or -1 when fewer are down.
@@ -464,18 +464,20 @@ static function EndScissorMode():Void
 - `IsGamepadAvailable`: Returns whether a gamepad is connected.
   - `gamepad`: The gamepad, 0 to 3.
   - returns: True while one is connected there.
+
+  A virtual gamepad (`EnableVirtualGamepad`) counts. `IsGamepadVirtual` tells it from a physical one.
 - `GetGamepadName`: Returns a gamepad's name.
   - `gamepad`: The gamepad, 0 to 3.
   - returns: Its name, or "" when none is connected.
-- `IsGamepadButtonPressed`: Returns whether a gamepad's button went down this frame.
+- `IsGamepadButtonPressed`: Returns whether a gamepad's button went down this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
   - `gamepad`: The gamepad, 0 to 3.
   - `button`: The button (`GAMEPAD_BUTTON_*`).
   - returns: True for that frame alone.
-- `IsGamepadButtonDown`: Returns whether a gamepad's button is held.
+- `IsGamepadButtonDown`: Returns whether a gamepad's button is held. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
   - `gamepad`: The gamepad, 0 to 3.
   - `button`: The button (`GAMEPAD_BUTTON_*`).
   - returns: True while it is down.
-- `IsGamepadButtonReleased`: Returns whether a gamepad's button went up this frame.
+- `IsGamepadButtonReleased`: Returns whether a gamepad's button went up this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
   - `gamepad`: The gamepad, 0 to 3.
   - `button`: The button (`GAMEPAD_BUTTON_*`).
   - returns: True for that frame alone.
@@ -490,10 +492,12 @@ static function EndScissorMode():Void
 - `GetGamepadAxisCount`: Returns the number of axes a gamepad has.
   - `gamepad`: The gamepad, 0 to 3.
   - returns: 6 while one is connected, else 0.
-- `GetGamepadAxisMovement`: Returns how far a gamepad's axis is pushed, with no dead zone.
+- `GetGamepadAxisMovement`: Returns how far a gamepad's axis is pushed.
   - `gamepad`: The gamepad, 0 to 3.
   - `axis`: The axis (`GAMEPAD_AXIS_*`).
   - returns: The value.
+
+  A physical gamepad's axis reads raw. A virtual gamepad's sticks (`EnableVirtualGamepad`) read past their dead zone.
 
   A stick runs from -1 to 1, down and right positive.
 

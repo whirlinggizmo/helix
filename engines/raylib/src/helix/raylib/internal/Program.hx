@@ -114,6 +114,10 @@ class Program {
 		matProjection = shader.findUniform("matProjection");
 		matNormal = shader.findUniform("matNormal");
 		colDiffuse = shader.findUniform("colDiffuse");
+		// Each light of lights.glsl starts at intensity 1, so a shader whose lights a program sets by hand shines as raylib's do.
+		var i = 0, loc;
+		while ((loc = locate('lights[${i++}].intensity')) >= 0)
+			write(loc, [1]);
 	}
 
 	function slotOf(name:String):Int {
@@ -179,7 +183,7 @@ class Program {
 			t.write(t.locate(l.name), numbers);
 	}
 
-	/** Makes a program a twin of this one (the default shader's skinned version, `Skinning`): every
+	/** Makes a program a twin of this one (a skinned version of a built-in shader, `Skinning`, or its unlit version, `unlitOf`): every
 		uniform written here, and every one written after, is written there by name, and every texture and unit set here is set there,
 		so a draw through the twin reads what the program set on this one. The skinned twin is `twin`.
 
@@ -188,6 +192,7 @@ class Program {
 		if (program.shader.findSampler("bonePalette") != null)
 			twin = program;
 		twins.push(program);
+		program.material = material;
 		for (location => numbers in written)
 			if (numbers != null)
 				program.write(program.locate(locations[location].name), numbers);
@@ -317,6 +322,77 @@ class Program {
 
 	/** How many of `refs` are the program's own, from `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData`, so `UnloadShader` on a material's copy lets go of one of those first. */
 	public var held = 1;
+
+	/** The skinned version of a built-in shader it is made of, which `Skinning` draws a posed mesh through in place of it (the lit
+		shader's, set by `LoadLightingShader`); null for none, or for the default shader, whose `Skinning` holds. */
+	public var skinned:Null<Shader> = null;
+
+	/** Whether each draw writes the material's values (`writeMaterial`, through `RModels.materialWriter`): the PBR shader's
+		(`LoadPbrShader`), and its twins'. */
+	public var material = false;
+
+	/** The unlit version of a built-in shader it is made of, which `DrawMesh` draws a material marked `unlit` through in place of it
+		(the PBR shader's, set by `LoadPbrShader`); null for none. */
+	public var unlit:Null<Shader> = null;
+
+	/** The unlit version skinned, the `skinned` of the twin `unlitOf` makes; null for none. */
+	public var unlitSkinned:Null<Shader> = null;
+
+	/** Gets the program of `unlit` (`unlitOf`), null until a material marked `unlit` is drawn: freed with this one. */
+	public var unlitTwin(default, null):Null<Program> = null;
+
+	/** Returns the program of `unlit`, made on the first call and mirrored (`mirror`), so a draw through it reads what the program set.
+
+		@return  The unlit twin. */
+	public function unlitOf():Program {
+		if (unlitTwin == null) {
+			unlitTwin = new Program(graphics, unlit);
+			unlitTwin.skinned = unlitSkinned;
+			mirror(unlitTwin);
+		}
+		return unlitTwin;
+	}
+
+	// The PBR shader's uniforms of the material's values, found when first written: null for one the shader doesn't declare.
+	var metallicValue:Null<ShaderUniform>;
+	var roughnessValue:Null<ShaderUniform>;
+	var emissiveColor:Null<ShaderUniform>;
+	var materialFound = false;
+
+	// What a draw's values are written from, so a draw allocates none.
+	static final one:Array<Float> = [0];
+	static final four:Array<Float> = [0, 0, 0, 0];
+
+	/** Writes a material's values for the draw after, as the PBR shader reads them: `maps[MATERIAL_MAP_METALNESS].value` as
+		`metallicValue`, `maps[MATERIAL_MAP_ROUGHNESS].value` as `roughnessValue` and `maps[MATERIAL_MAP_EMISSION].color` as
+		`emissiveColor`, taken as linear.
+
+		@param m  The material. */
+	public function writeMaterial(m:helix.raylib.Material):Void {
+		if (!materialFound) {
+			materialFound = true;
+			metallicValue = shader.findUniform("metallicValue");
+			roughnessValue = shader.findUniform("roughnessValue");
+			emissiveColor = shader.findUniform("emissiveColor");
+		}
+		var maps = m.maps;
+		if (metallicValue != null) {
+			one[0] = maps[helix.raylib.Raylib.MATERIAL_MAP_METALNESS].value;
+			put(metallicValue, one, 0);
+		}
+		if (roughnessValue != null) {
+			one[0] = maps[helix.raylib.Raylib.MATERIAL_MAP_ROUGHNESS].value;
+			put(roughnessValue, one, 0);
+		}
+		if (emissiveColor != null) {
+			var c = maps[helix.raylib.Raylib.MATERIAL_MAP_EMISSION].color;
+			four[0] = c.r / 255;
+			four[1] = c.g / 255;
+			four[2] = c.b / 255;
+			four[3] = c.a / 255;
+			put(emissiveColor, four, 0);
+		}
+	}
 
 	/** Gets its skinned twin (`mirror`), null for none: freed with it. */
 	public var twin(default, null):Null<Program> = null;

@@ -8,7 +8,9 @@ lighting examples include.
 What helix-raylib adds to raylib's API is in the package helix.raylib.extras, a module for each section: the calls its refusals name in
 place of raylib's, the async versions of a raylib module's calls in one module each (extras.Textures from RTexturesAsync, extras.Text
 from RTextAsync, extras.Models from RModelsAsync, extras.Audio from RAudioAsync, extras.Gui from RGuiAsync), rcore's split two ways
-(extras.Window from RWindowAsync, extras.Files from RFilesAsync), and the compiled shaders (extras.Shaders from RCompiledShaders). The
+(extras.Window from RWindowAsync, extras.Files from RFilesAsync), and the compiled shaders (extras.Shaders from RCompiledShaders); and
+what a program opts into that raylib has no call for, a module and a section of its own each (extras.Lighting from RLighting,
+extras.VirtualGamepad from RVirtualGamepad, a model's posed bounds and merge in extras.Models from RModelsPosed and RModelsMerged). The
 sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
 (docs/CONVENTIONS.md). Each file's generated part has two halves:
 
@@ -77,10 +79,14 @@ TARGETS = {
     'extras/Text.hx': ([('RTextAsync', "text: the font loads and writes in place of rtext's that wait")], None, 'Text'),
     'extras/Models.hx': ([
         ('RModelsAsync', "models: the model, material and animation loads and mesh writes in place of rmodels' that wait"),
+        ('RModelsPosed', "models: a skinned model's bounds as posed"),
+        ('RModelsMerged', "models: models merged into one"),
     ], None, 'Models'),
     'extras/Audio.hx': ([('RAudioAsync', "audio: the sound, wave and music loads and wave writes in place of raudio's that wait")], None, 'Audio'),
     'extras/Shaders.hx': ([('RCompiledShaders', "shaders: the loads of shaders compiled ahead of time")], None, 'Shaders'),
     'extras/Gui.hx': ([('RGuiAsync', "gui: the style and icon loads in place of raygui's that wait for a file")], None, 'Gui'),
+    'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders rlights' lights light")], None, 'Lighting'),
+    'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
 }
 # The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.
 EXTRAS = 'helix.raylib.extras'

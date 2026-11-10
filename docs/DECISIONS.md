@@ -819,3 +819,12 @@ Why things are the way they are, numbered, in order.
     which the first touch answers. Agents given helix-raylib's docs never reached for `LoadModelFromModels` unprompted, and two of the
     three C entrants merged their characters by hand. A raylib developer knows raylib's API and nothing else of ours, so what the
     compiler can't lead to isn't found. Rejected: moving the extras to a `helix-raylib-extras` (the same drift under another name).
+61. **helix-raylib keeps opt-in extras beside raylib's API.** This revises 60. An agent writing from raylib's API never finds an extra,
+    but a developer reading the README does, so an extra that saves a program real work comes back, in `helix.raylib.extras`, linked
+    only by a program that calls it: `extras.Lighting` (`LoadLightingShader` and `LoadPbrShader`, with `lights.glsl`, `pbr.glsl` and
+    `Material.unlit`), `extras.VirtualGamepad`, and `LoadModelFromModels` and `GetModelBoundingBoxPosed` in `extras.Models`. rlights
+    stays raylib's: `Light` keeps rlights' fields alone, and a PBR light's range and intensity are its shader's uniforms, set as any
+    is. The virtual gamepad's tilt stick doesn't come back, as nothing turns the tilt on without `extras.Device`. Why: every Wardens
+    entrant (2026-11-10, C on stock raylib 5.5 and helix-raylib blind) wrote its own lit, skinned shader, its own touch stick and
+    buttons, and most read the glTF's roughness themselves. Two of three earlier C entrants merged their characters' meshes. Still out:
+    `extras.Device`, `extras.Debug`, `extras.GuiSkins`, `extras.Sprites`.

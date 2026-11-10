@@ -2,7 +2,7 @@
 
 The order (DECISIONS 40, 53, 60): raygui on helix-raylib (done, DECISIONS 41), then helix-render's stages 1 to 3 (done, and set aside,
 DECISIONS 53), then a retained-mode engine tried on helix-raylib, Gyre's or a three.js-style one as the jam decides. helix-raylib itself
-is raylib 5.5's API and the calls its refusals name, nothing more (DECISIONS 60). Whatever comes next keeps helix-raylib's size and
+is raylib 5.5's API, the calls its refusals name, and the extras a program opts into (DECISIONS 60, 61). Whatever comes next keeps helix-raylib's size and
 speed where docs/speed.md records them.
 
 - **helix-render, set aside (DECISIONS 53)** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS

@@ -1495,7 +1495,7 @@ class Raylib {
 
 	/** Returns whether a mouse button went down this frame.
 
-		A finger landing counts as the left button, when no other finger is down.
+		A free finger (`EnableVirtualGamepad`) touching counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -1504,7 +1504,7 @@ class Raylib {
 
 	/** Returns whether a mouse button is held.
 
-		A finger down counts as the left button.
+		A free finger (`EnableVirtualGamepad`) down counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
@@ -1513,7 +1513,7 @@ class Raylib {
 
 	/** Returns whether a mouse button went up this frame.
 
-		The last finger lifting counts as the left button.
+		The last free finger (`EnableVirtualGamepad`) lifting counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -1527,19 +1527,19 @@ class Raylib {
 	public static inline function IsMouseButtonUp(button:Int):Bool
 		return RCore.IsMouseButtonUp(button);
 
-	/** Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
+	/** Returns the mouse's x, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
 
 		@return  The x. */
 	public static inline function GetMouseX():Int
 		return RCore.GetMouseX();
 
-	/** Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
+	/** Returns the mouse's y, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
 
 		@return  The y. */
 	public static inline function GetMouseY():Int
 		return RCore.GetMouseY();
 
-	/** Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
+	/** Returns the mouse's position, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
 
 		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
@@ -1621,7 +1621,8 @@ class Raylib {
 
 	/** Returns a finger's position, in the screen's pixels.
 
-		While no finger is down, the first is where the mouse is.
+		While no finger is down, the first is where the mouse is. See `EnableVirtualGamepad`
+		(`import helix.raylib.extras.VirtualGamepad.*;`) for on-screen sticks read as a gamepad's.
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
@@ -1726,6 +1727,8 @@ class Raylib {
 
 	/** Returns whether a gamepad is connected.
 
+		A virtual gamepad (`EnableVirtualGamepad`) counts. `IsGamepadVirtual` tells it from a physical one.
+
 		@param gamepad  The gamepad, 0 to 3.
 		@return  True while one is connected there. */
 	public static inline function IsGamepadAvailable(gamepad:Int):Bool
@@ -1738,7 +1741,7 @@ class Raylib {
 	public static inline function GetGamepadName(gamepad:Int):String
 		return RCore.GetGamepadName(gamepad);
 
-	/** Returns whether a gamepad's button went down this frame.
+	/** Returns whether a gamepad's button went down this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1746,7 +1749,7 @@ class Raylib {
 	public static inline function IsGamepadButtonPressed(gamepad:Int, button:Int):Bool
 		return RCore.IsGamepadButtonPressed(gamepad, button);
 
-	/** Returns whether a gamepad's button is held.
+	/** Returns whether a gamepad's button is held. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1754,7 +1757,7 @@ class Raylib {
 	public static inline function IsGamepadButtonDown(gamepad:Int, button:Int):Bool
 		return RCore.IsGamepadButtonDown(gamepad, button);
 
-	/** Returns whether a gamepad's button went up this frame.
+	/** Returns whether a gamepad's button went up this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1785,7 +1788,9 @@ class Raylib {
 	public static inline function GetGamepadAxisCount(gamepad:Int):Int
 		return RCore.GetGamepadAxisCount(gamepad);
 
-	/** Returns how far a gamepad's axis is pushed, with no dead zone.
+	/** Returns how far a gamepad's axis is pushed.
+
+		A physical gamepad's axis reads raw. A virtual gamepad's sticks (`EnableVirtualGamepad`) read past their dead zone.
 
 		A stick runs from -1 to 1, down and right positive.
 
@@ -4910,7 +4915,7 @@ class Raylib {
 			origin:Vector2, rotation:Float, tint:Color):Void
 		RModels.DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint);
 
-	/** Returns a model of one mesh with the default material.
+	/** Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
@@ -4946,7 +4951,7 @@ class Raylib {
 	public static inline function UnloadModel(model:Model):Void
 		RModels.UnloadModel(model);
 
-	/** Draws a model at a position and a scale, its materials' colors times a tint.
+	/** Draws a model at a position and a scale, its materials' colors times a tint. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -4955,7 +4960,7 @@ class Raylib {
 	public static inline function DrawModel(model:Model, position:Vector3, scale:Float, tint:Color):Void
 		RModels.DrawModel(model, position, scale, tint);
 
-	/** Draws a model scaled, turned about an axis and moved, after its own transform.
+	/** Draws a model scaled, turned about an axis and moved, after its own transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -5015,7 +5020,7 @@ class Raylib {
 	public static inline function DrawModelPointsEx(model:Model, position:Vector3, rotationAxis:Vector3, rotationAngle:Float, scale:Vector3, tint:Color):Void
 		RModels.DrawModelPointsEx(model, position, rotationAxis, rotationAngle, scale, tint);
 
-	/** Draws a mesh with a material and a transform.
+	/** Draws a mesh with a material and a transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		Binds the material's maps as raylib does:
 
@@ -5032,7 +5037,7 @@ class Raylib {
 	public static inline function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void
 		RModels.DrawMesh(mesh, material, transform);
 
-	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does.
+	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
 		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.

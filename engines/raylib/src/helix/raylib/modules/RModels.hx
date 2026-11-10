@@ -714,7 +714,7 @@ class RModels {
 		return model;
 	}
 
-	/** Returns a model of one mesh with the default material.
+	/** Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
@@ -761,7 +761,7 @@ class RModels {
 		}
 	}
 
-	/** Draws a model at a position and a scale, its materials' colors times a tint.
+	/** Draws a model at a position and a scale, its materials' colors times a tint. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -771,7 +771,7 @@ class RModels {
 		drawModelAt(model, position.x, position.y, position.z, 0, 1, 0, 0, scale, scale, scale, tint);
 	}
 
-	/** Draws a model scaled, turned about an axis and moved, after its own transform.
+	/** Draws a model scaled, turned about an axis and moved, after its own transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		@param model  The model.
 		@param position  Where.
@@ -867,7 +867,7 @@ class RModels {
 		rlDisableWireMode();
 	}
 
-	/** Draws a mesh with a material and a transform.
+	/** Draws a mesh with a material and a transform. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		Binds the material's maps as raylib does:
 
@@ -885,7 +885,7 @@ class RModels {
 		drawMesh(mesh, material, toMatrix3D(transform, placing), WHITE);
 	}
 
-	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does.
+	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
 		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
@@ -2214,10 +2214,16 @@ class RModels {
 	// What drawMesh writes each draw's diffuse color, textures and bones into, read as the draw is recorded.
 	static final diffuseScratch:Array<Float> = [0, 0, 0, 0];
 	static final textureScratch:Array<Int> = [];
+	// A twin's locations, by SHADER_LOC_*: none set, so its maps bind by the units its samplers were set to.
+	static final noLocs = [for (_ in 0...32) -1];
 
 	// Writes a mesh's bones' matrices into a skinning shader's boneMatrices (Models.writeBones), set once a model with bones is made, so
 	// a program without one links none of it.
 	static var boneWriter:Null<(mesh:Mesh, shader:Shader) -> Void>;
+
+	// Writes a material's values into a program whose draws read them (Program.material), and gives a normal-mapped mesh its tangents:
+	// set by LoadPbrShader (RLights.writeMaterial), so a program without it links none of it.
+	static var materialWriter:Null<(p:helix.raylib.internal.Program, mesh:Mesh, material:Material) -> Void>;
 
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
 		if (mesh.gpu.buffers == null)
@@ -2240,7 +2246,11 @@ class RModels {
 		if (mesh.boneMatrices != null && boneWriter != null)
 			boneWriter(mesh, shader);
 		var p = shader.program;
-		var textures = mapTextures(shader, material);
+		// A material marked unlit, through the shader's unlit twin, whose maps bind by their units (the twin's own locations are none).
+		var textures = material.unlit
+			&& p.unlit != null ? mapProgramTextures(p = p.unlitOf(), noLocs, material) : mapTextures(shader, material);
+		if (p.material && materialWriter != null)
+			materialWriter(p, mesh, material);
 		Runtime.frame.mesh(mesh, p, transform, diffuse, textures, instances, instanceCount);
 	}
 	#end
