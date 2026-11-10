@@ -20,7 +20,7 @@ class FontCodeBits {
 			Runtime.waiting = [];
 			for (f in now)
 				f();
-			Sys.sleep(0.001);
+			WaitTime(0.001);
 		}
 		throw "never answered";
 	}

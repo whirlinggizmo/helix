@@ -3,3 +3,4 @@
 --macro helix.raylib.internal.Defines.register()
 --macro helix.raylib.internal.HostReach.register()
 --macro helix.raylib.internal.TypeHints.register()
+--macro helix.raylib.internal.SysCalls.register()

@@ -52,7 +52,7 @@ class WaveBits {
 				haxe.Timer.delay(step, 1);
 				return;
 				#else
-				Sys.sleep(0.001);
+				WaitTime(0.001);
 				#end
 			}
 			throw '$name never answered';

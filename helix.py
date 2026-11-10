@@ -70,7 +70,7 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
 # helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/raylib_parity.py).
-RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','LoopTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests')
+RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','LoopTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.
 TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader')]
@@ -78,7 +78,7 @@ TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emis
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
     base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
-    base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
+    base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','--macro','helix.raylib.internal.SysCalls.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
     def path(name,folder):return 'null' if name is None else json.dumps(f'{folder}/{name}')
     run(['haxe',*base,*[a for vs,fs,out in TEST_SHADERS for a in ('--macro',f'helix.raylib.extras.Shaders.CompileShaderFile({path(vs,"engines/raylib/tests/shaders")}, {path(fs,"engines/raylib/tests/shaders")}, {path(out,"build/tests")})')]])
     extra=[a for _,_,out in TEST_SHADERS for a in ('-resource',f'build/tests/{out}@{out}')]

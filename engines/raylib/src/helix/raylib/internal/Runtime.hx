@@ -684,11 +684,13 @@ class Runtime {
 	public static function sleep(seconds:Float):Void {
 		if (seconds <= 0)
 			return;
-		var until = system.getTime() + seconds;
+		// Before InitWindow there is no system yet, and the clock is Haxe's, as raylib's WaitTime waits before a window too.
+		var clock = system == null ? haxe.Timer.stamp : system.getTime;
+		var until = clock() + seconds;
 		#if !js
 		Sys.sleep(seconds * .95);
 		#end
-		while (system.getTime() < until) {}
+		while (clock() < until) {}
 	}
 
 	#if !js
