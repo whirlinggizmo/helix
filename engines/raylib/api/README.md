@@ -4,11 +4,11 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 ## Packages
 
-- [`helix.raylib.extras`](extras.md): Audio, Debug, Device, Files, Gui, GuiSkins, Lights, Models, Shaders, Sprites, Text, Textures, VirtualGamepad, Window
+- [`helix.raylib.extras`](extras.md): Audio, Files, Gui, Models, Shaders, Text, Textures, Window
 
 ## Shader includes
 
-[shaders.md](shaders.md): `<helix/raylib/shaders/skinning.glsl>`, `<helix/raylib/shaders/lights.glsl>`, `<helix/raylib/shaders/pbr.glsl>`
+[shaders.md](shaders.md): `<helix/raylib/shaders/skinning.glsl>`
 
 ## AudioStream
 
@@ -255,68 +255,6 @@ var glyphs:Array<GlyphInfo>
 - `recs`: Gets or sets each glyph's rectangle on the texture.
 - `glyphs`: Gets or sets each glyph's character, offsets, advance and image.
 
-## FrameStatsStyle
-
-*class* in [`engines/raylib/src/helix/raylib/FrameStatsStyle.hx`](../src/helix/raylib/FrameStatsStyle.hx), `import helix.raylib.FrameStatsStyle;`
-
-Represents how `DrawFrameStatsEx` (`helix.raylib.extras.Debug`) draws the frame's cost: which stats it shows, and their look.
-
-Every field has a default, so a style sets only what it changes: `{fontSize: 24, triangles: true}`.
-
-Each stat shown is a line of its own.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?fps:Bool, ?frameTime:Bool, ?drawCalls:Bool, ?triangles:Bool, ?stateChanges:Bool, ?gpuTextures:Bool, ?gpuBuffers:Bool, ?memory:Bool, ?targetFps:Int, ?onTargetColor:Color, ?belowTargetColor:Color, ?farBelowTargetColor:Color, ?font:Null<Font>, ?fontSize:Int, ?spacing:Float, ?padding:Int, ?backgroundColor:Color}
-```
-
-```haxe
-var fps:Bool = true
-var frameTime:Bool = true
-var drawCalls:Bool = true
-var triangles:Bool = false
-var stateChanges:Bool = false
-var gpuTextures:Bool = false
-var gpuBuffers:Bool = false
-var memory:Bool = false
-var targetFps:Int = 0
-var onTargetColor:Color = GREEN
-var belowTargetColor:Color = YELLOW
-var farBelowTargetColor:Color = RED
-var font:Null<Font> = null
-var fontSize:Null<Int> = null
-var spacing:Float = 1
-var padding:Int = 4
-var backgroundColor:Color = BLANK
-```
-
-- `fps`: Gets or sets a value indicating whether the frames a second show. Defaults to true.
-- `frameTime`: Gets or sets a value indicating whether the frame time shows: its mean and its slowest 5% (p95) over the last half second, in milliseconds. Defaults to true.
-- `drawCalls`: Gets or sets a value indicating whether the last frame's draw calls show: how many draws it sent the GPU. Defaults to true.
-- `triangles`: Gets or sets a value indicating whether the last frame's triangles drawn show. Defaults to false.
-- `stateChanges`: Gets or sets a value indicating whether the last frame's state changes show: how often its draws switched shader, render state or textures. Defaults to false.
-- `gpuTextures`: Gets or sets a value indicating whether the megabytes of textures helix-raylib holds on the GPU show. Defaults to false.
-  Counts textures, cubemaps, render textures and the skinning palettes, as their levels' bytes, without the GPU's own padding.
-- `gpuBuffers`: Gets or sets a value indicating whether the megabytes of buffers helix-raylib holds on the GPU show. Defaults to false.
-  Counts meshes' vertices and indices, the frame's batch and its quad indices, and a frame's instances.
-- `memory`: Gets or sets a value indicating whether the megabytes of memory the program holds show, as `ISystem.getMemoryBytes` reports them. Defaults to false.
-  Natively, the process's resident memory.
-
-  In a page, the script heap where the browser reports it, and nothing where it doesn't.
-- `targetFps`: Gets or sets the frame rate that sets the stats' color, in frames a second. Defaults to 0, for the target `SetTargetFPS` set, or the monitor's refresh rate when none is set.
-- `onTargetColor`: Gets or sets the text's color when the frame rate is at or above the target. Defaults to `GREEN`.
-- `belowTargetColor`: Gets or sets the text's color when the frame rate is below the target. Defaults to `YELLOW`.
-- `farBelowTargetColor`: Gets or sets the text's color when the frame rate is below half the target. Defaults to `RED`.
-- `font`: Gets or sets the font. Defaults to null, for raylib's default font.
-- `fontSize`: Gets or sets the text's height, in pixels. Defaults to null, which scales the text to the window.
-  Null draws at a 36th of the screen's height (20 at 720 lines, as `DrawFPS` draws), so the stats read alike at any window size.
-
-  A size provided is used unchanged. One under 1 is refused.
-- `spacing`: Gets or sets the space between letters, in pixels at the font's size, as `DrawTextEx`'s. Defaults to 1.
-- `padding`: Gets or sets the space around the text inside its background, in pixels. Defaults to 4.
-- `backgroundColor`: Gets or sets the background's color behind the text and its padding. Defaults to `BLANK`, for none.
-
 ## GlyphInfo
 
 *class* in [`engines/raylib/src/helix/raylib/GlyphInfo.hx`](../src/helix/raylib/GlyphInfo.hx), `import helix.raylib.GlyphInfo;`
@@ -338,36 +276,6 @@ var image:Image
 - `offsetY`: Character offset Y when drawing.
 - `advanceX`: Character advance position X.
 - `image`: Character image data.
-
-## GuiSkin
-
-*class* in [`engines/raylib/src/helix/raylib/GuiSkin.hx`](../src/helix/raylib/GuiSkin.hx), `import helix.raylib.GuiSkin;`
-
-Represents a skin: how one part of raygui's controls is drawn from a texture, a nine-patch for each state, in place of its style's flat colors.
-
-Made by `GuiSkinFromTexture` and set by `GuiSetSkin`, both in `helix.raylib.extras.GuiSkins`.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{texture:Texture2D, normal:NPatchInfo, focused:Null<NPatchInfo>, pressed:Null<NPatchInfo>, disabled:Null<NPatchInfo>, tint:Color}
-```
-
-```haxe
-var texture:Texture2D
-var normal:NPatchInfo
-var focused:Null<NPatchInfo>
-var pressed:Null<NPatchInfo>
-var disabled:Null<NPatchInfo>
-var tint:Color
-```
-
-- `texture`: Gets or sets the texture holding the patches, often one sheet for every skin.
-- `normal`: Gets or sets the patch drawn in `STATE_NORMAL`.
-- `focused`: Gets or sets the patch drawn in `STATE_FOCUSED`, with the pointer over the control, or null to draw `normal`.
-- `pressed`: Gets or sets the patch drawn in `STATE_PRESSED`, or null to draw `focused`, or `normal` when that is null too.
-- `disabled`: Gets or sets the patch drawn in `STATE_DISABLED`, or null to draw `normal`.
-- `tint`: Gets or sets the tint multiplying the patches, `WHITE` to draw them unchanged.
 
 ## GuiStyleProp
 
@@ -433,7 +341,7 @@ Represents rlights' `Light` (raylib's examples' `rlights.h`): one light of a lit
 
 Made by `CreateLight`.
 
-`UpdateLightValues` (`helix.raylib.extras.Lights`) sends a changed field to the shader.
+`UpdateLightValues` (`helix.raylib.Rlights`) sends a changed field to the shader.
 
 ```haxe
 function new()
@@ -443,16 +351,12 @@ var position:Vector3
 var target:Vector3
 var color:Color
 var attenuation:Float
-var range:Float
-var intensity:Float
 var enabledLoc:Int
 var typeLoc:Int
 var positionLoc:Int
 var targetLoc:Int
 var colorLoc:Int
 var attenuationLoc:Int
-var rangeLoc:Int
-var intensityLoc:Int
 ```
 
 - `new`: Creates a light that is off, every field 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light that shines.
@@ -461,17 +365,13 @@ var intensityLoc:Int
 - `position`: Gets or sets the light's position.
 - `target`: Gets or sets the target, the point setting a directional light's direction.
 - `color`: Gets or sets the light's color.
-- `attenuation`: Gets or sets the attenuation, which rlights keeps and its shader ignores. See `range` for a point light that dims with distance.
-- `range`: Gets or sets how far a point light reaches, in world units: helix-raylib's own. Within it the light falls off with the square of the distance, fading to nothing at the range. 0, the default, is no falloff, as rlights' lights have none.
-- `intensity`: Gets or sets how bright the light is, a multiple of its color: helix-raylib's own. With a range, a white surface 1 unit from the light shows its color at intensity 1, and one 4 units away needs intensity 16.
+- `attenuation`: Gets or sets the attenuation, which rlights keeps and its shader ignores.
 - `enabledLoc`: Gets or sets the location of `enabled` in the light's shader.
 - `typeLoc`: Gets or sets the location of `type`.
 - `positionLoc`: Gets or sets the location of `position`.
 - `targetLoc`: Gets or sets the location of `target`.
 - `colorLoc`: Gets or sets the location of `color`.
 - `attenuationLoc`: Gets or sets the location of `attenuation`, which rlights never finds.
-- `rangeLoc`: Gets or sets the location of `range`, -1 for a shader without it.
-- `intensityLoc`: Gets or sets the location of `intensity`, -1 for a shader without it.
 
 ## Material
 
@@ -488,7 +388,6 @@ function new(shader:Shader, maps:Array<MaterialMap>, ?params:Array<Float>)
 var shader(default, set):Shader
 var maps:Array<MaterialMap>
 var params:Array<Float>
-var unlit:Bool
 ```
 
 - `new`: Creates a material. See `Raylib.LoadMaterialDefault` for making raylib's default material, and `extras.Models.LoadModelAsync` for loading a model's materials.
@@ -501,10 +400,6 @@ var unlit:Bool
   A freed material lets go of its shader. The default shader is never freed.
 - `maps`: Gets the maps, `MAX_MATERIAL_MAPS` of them, by `MATERIAL_MAP_*`.
 - `params`: Gets four values for a shader's own use.
-- `unlit`: Gets or sets a value indicating whether the material is unlit (a glTF's `KHR_materials_unlit`), showing its base color lit by nothing.
-  `LoadModel` sets it from the file.
-
-  `LoadPbrShader` draws an unlit material through its unlit twin. raylib's own shaders ignore it.
 
 ## MaterialMap
 
@@ -985,13 +880,28 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 `rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
 
+## Rlights
+
+*class* in [`engines/raylib/src/helix/raylib/Rlights.hx`](../src/helix/raylib/Rlights.hx), `import helix.raylib.Rlights;`
+
+Provides rlights, the lights raylib 5.5's lighting examples include (`examples/shaders/rlights.h`). As in raylib, it is imported apart from `Raylib`:
+
+```haxe
+import helix.raylib.Raylib.*;
+import helix.raylib.Rlights.*;
+```
+
+A light is set in a shader that declares rlights' uniforms, such as the examples' `lighting.fs`. The light's type, `Light`, is `helix.raylib`'s.
+
+Its members are on their own page: [rlights.md](rlights.md).
+
 ## Shader
 
 *class* in [`engines/raylib/src/helix/raylib/Shader.hx`](../src/helix/raylib/Shader.hx), `import helix.raylib.Shader;`
 
 Represents raylib's `Shader`: a program and the locations of what it declares.
 
-Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData` (`helix.raylib.extras.Shaders`), or by helix-raylib's own, such as `LoadPbrShader`.
+Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData` (`helix.raylib.extras.Shaders`).
 
 ```haxe
 var id(default, null):Int
@@ -1173,137 +1083,6 @@ function copy(?out:Vector4):Vector4
   - `out`: Optional. The Vector4 to copy into, so nothing is made; a new one when omitted.
   - returns: The copy: out, when given.
 
-## VirtualButtonOptions
-
-*class* in [`engines/raylib/src/helix/raylib/VirtualButtonOptions.hx`](../src/helix/raylib/VirtualButtonOptions.hx), `import helix.raylib.VirtualButtonOptions;`
-
-Represents one on-screen button of a virtual gamepad (`VirtualGamepadOptions.buttons`), read as a gamepad button. Positions and sizes are in the screen's pixels.
-
-The buttons capture a finger landing on one of them, even within a stick's touch zone, until the finger lifts. A button is down while a finger the buttons captured is within its circle, including a finger that slid there from another button. The mouse follows the free fingers.
-
-The buttons are drawn at `EndDrawing` while the virtual gamepad is enabled, on a device with touch. The buttons are hidden while a physical gamepad is in the virtual gamepad's slot.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{button:Int, ?position:Vector2, ?enabled:Bool, ?visible:Bool, ?radius:Float, ?label:String, ?outlineColor:Color, ?fillColor:Color, ?labelColor:Color, ?texture:Texture2D, ?downTexture:Texture2D}
-```
-
-```haxe
-var button:Int
-var position:Null<Vector2>
-var enabled:Null<Bool>
-var visible:Null<Bool>
-var radius:Null<Float>
-var label:Null<String>
-var outlineColor:Null<Color>
-var fillColor:Null<Color>
-var labelColor:Null<Color>
-var texture:Null<Texture2D>
-var downTexture:Null<Texture2D>
-```
-
-- `button`: Gets or sets the gamepad button the button is read as, such as `GAMEPAD_BUTTON_RIGHT_FACE_DOWN`.
-- `position`: Gets or sets the button's center. The center follows changes to this vector's fields. Defaults to the button's place in a diamond of the four face buttons (`GAMEPAD_BUTTON_RIGHT_FACE_*`) at the screen's bottom-right corner, following the screen's size: the diamond's center three and a half radii in from the corner, each face button 1.6 radii from that center. Another button without a position is up and isn't drawn.
-- `enabled`: Gets or sets a value indicating whether the button is enabled. Defaults to true. A disabled button is up, hidden, and ignores fingers.
-- `visible`: Gets or sets a value indicating whether the button is visible. A button that isn't visible still reads. Defaults to true.
-- `radius`: Gets or sets the button's radius, the reach of a finger landing on the button. Defaults to 40.
-- `label`: Gets or sets the text drawn at the button's center, in the gamepad's font (`VirtualGamepadOptions.font`), as tall as the radius, or smaller to fit within the button's width. Defaults to "A", "B", "X" or "Y" for the face buttons (`GAMEPAD_BUTTON_RIGHT_FACE_DOWN`, `_RIGHT`, `_LEFT` and `_UP`), and "" for another button.
-- `outlineColor`: Gets or sets the ring's color. Defaults to the gamepad's base outline color.
-- `fillColor`: Gets or sets the color of the disc inside the ring, drawn while the button is down. Defaults to the gamepad's knob color.
-- `labelColor`: Gets or sets the label's color. Defaults to the ring's color while the button is up, and `Fade(BLACK, 0.6)` while the button is down.
-- `texture`: Gets or sets the image of the button while up, drawn in place of the ring, scaled to the button's diameter and tinted by the outline color. With a texture, the outline color defaults to `WHITE`. The label is drawn over the image.
-- `downTexture`: Gets or sets the image of the button while down, drawn in place of the ring and the disc. Defaults to the texture, tinted by the fill color.
-
-## VirtualGamepadOptions
-
-*class* in [`engines/raylib/src/helix/raylib/VirtualGamepadOptions.hx`](../src/helix/raylib/VirtualGamepadOptions.hx), `import helix.raylib.VirtualGamepadOptions;`
-
-Represents how a virtual gamepad starts and looks (`EnableVirtualGamepad`, in `helix.raylib.extras.VirtualGamepad`). Every field has a default, so options set only what they change. Its placement, dead zone, hint and colors are both sticks' defaults, and its colors the buttons' too. A field set in a stick's or a button's own options replaces it for that stick or button. Positions and sizes are in the screen's pixels.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?basePlacement:Int, ?deadZone:Float, ?hintVisible:Bool, ?baseOutlineColor:Color, ?baseFillColor:Color, ?knobColor:Color, ?baseTexture:Texture2D, ?knobTexture:Texture2D, ?font:Font, ?blockedBounds:Array<Rectangle>, ?left:VirtualStickOptions, ?right:VirtualStickOptions, ?buttons:Array<VirtualButtonOptions>}
-```
-
-```haxe
-var basePlacement:Null<Int>
-var deadZone:Null<Float>
-var hintVisible:Null<Bool>
-var baseOutlineColor:Null<Color>
-var baseFillColor:Null<Color>
-var knobColor:Null<Color>
-var baseTexture:Null<Texture2D>
-var knobTexture:Null<Texture2D>
-var font:Null<Font>
-var blockedBounds:Null<Array<Rectangle>>
-var left:Null<VirtualStickOptions>
-var right:Null<VirtualStickOptions>
-var buttons:Null<Array<VirtualButtonOptions>>
-```
-
-- `basePlacement`: Gets or sets where each stick's base goes: `VIRTUAL_STICK_BASE_FLOATING`, `VIRTUAL_STICK_BASE_FOLLOWING` or `VIRTUAL_STICK_BASE_FIXED`. Defaults to `VIRTUAL_STICK_BASE_FLOATING`.
-- `deadZone`: Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. A push past the dead zone reads from 0. Defaults to 0.12. A game's own dead zone applies on top.
-- `hintVisible`: Gets or sets a value indicating whether each floating or following stick's hint is visible until the first touch. The hint is a fainter copy of the stick at rest, centered one and a half radii in from the touch zone's bottom outer corner, on a device with touch. Defaults to true.
-- `baseOutlineColor`: Gets or sets each stick's ring around the base. Defaults to `Fade(LIGHTGRAY, 0.5)`. The hint is this ring, fainter.
-- `baseFillColor`: Gets or sets each stick's disc inside the ring. Defaults to `BLANK`.
-- `knobColor`: Gets or sets each stick's knob, the disc under the finger, 0.4 of the radius. Defaults to the stick's base outline color, a little more opaque.
-- `baseTexture`: Gets or sets each stick's image of the base, drawn in place of the ring and the disc, scaled to the base's diameter and tinted by the base outline color. With a base texture, the base outline color defaults to `WHITE`.
-- `knobTexture`: Gets or sets each stick's image of the knob, drawn in place of the knob's disc, scaled to the knob's diameter and tinted by the knob color. With a knob texture, the knob color defaults to `WHITE`.
-- `font`: Gets or sets the font every button's label is drawn in. Defaults to the default font (`GetFontDefault`).
-- `blockedBounds`: Gets or sets bounds where a landing finger stays a free finger, even within a stick's touch zone, such as a raygui button's bounds. The blocked bounds follow changes to these rectangles' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound.
-- `left`: Gets or sets the left stick, read as `GAMEPAD_AXIS_LEFT_X` and `GAMEPAD_AXIS_LEFT_Y`.
-- `right`: Gets or sets the right stick, read as `GAMEPAD_AXIS_RIGHT_X` and `GAMEPAD_AXIS_RIGHT_Y`.
-- `buttons`: Gets or sets the buttons, each read as a gamepad button. A finger landing on a button presses the button, even within a stick's touch zone. Defaults to `[]`.
-
-## VirtualStickOptions
-
-*class* in [`engines/raylib/src/helix/raylib/VirtualStickOptions.hx`](../src/helix/raylib/VirtualStickOptions.hx), `import helix.raylib.VirtualStickOptions;`
-
-Represents how one stick of a virtual gamepad starts and looks (`VirtualGamepadOptions`). A field left out takes the gamepad's options, or their default. Positions and sizes are in the screen's pixels.
-
-A stick captures a finger landing in its touch zone, even while it has captured another, and releases the earlier finger. A finger the other stick captured stays with the other stick. Where the two zones overlap, the stick that is not currently capturing a finger captures the landing finger, or the left stick when both are free. The stick releases its finger when the window changes size, and when a physical gamepad replaces the virtual gamepad.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?enabled:Bool, ?touchZone:Rectangle, ?tilt:Bool, ?basePlacement:Int, ?fixedBasePosition:Vector2, ?radius:Float, ?deadZone:Float, ?hintVisible:Bool, ?visible:Bool, ?baseOutlineColor:Color, ?baseFillColor:Color, ?knobColor:Color, ?baseTexture:Texture2D, ?knobTexture:Texture2D}
-```
-
-```haxe
-var enabled:Null<Bool>
-var touchZone:Null<Rectangle>
-var tilt:Null<Bool>
-var basePlacement:Null<Int>
-var fixedBasePosition:Null<Vector2>
-var radius:Null<Float>
-var deadZone:Null<Float>
-var hintVisible:Null<Bool>
-var visible:Null<Bool>
-var baseOutlineColor:Null<Color>
-var baseFillColor:Null<Color>
-var knobColor:Null<Color>
-var baseTexture:Null<Texture2D>
-var knobTexture:Null<Texture2D>
-```
-
-- `enabled`: Gets or sets a value indicating whether the stick is enabled. Defaults to true. A disabled stick reads 0, is hidden, and ignores fingers.
-- `touchZone`: Gets or sets where the stick captures a landing finger. The zone follows changes to this rectangle's fields. Defaults to the screen's left or right half with both sticks enabled and read by fingers, and the whole screen with one. The default follows the screen's size.
-- `tilt`: Gets or sets a value indicating whether the stick reads the device's tilt (`EnableTiltAsync`) in place of a finger: across the screen as x and down it as y, past the stick's dead zone, a full tilt at `SetTiltRange`'s angle. Defaults to false.
-  A tilt stick is hidden and ignores fingers. The tilt plugs the virtual gamepad in once the tilt is on, as a touch does. A tilt stick reads 0 until the tilt is on and level (`GetTiltStatus`, `IsTiltCalibrating`).
-- `basePlacement`: Gets or sets where the base goes.
-- `fixedBasePosition`: Gets or sets where the base stays with `VIRTUAL_STICK_BASE_FIXED`. The base follows changes to this vector's fields. Defaults to the touch zone's center.
-- `radius`: Gets or sets how far the knob travels for a full push. Defaults to 60.
-- `deadZone`: Gets or sets how far the knob moves before the stick reads, as a share of the radius.
-- `hintVisible`: Gets or sets a value indicating whether the stick's hint is visible until the first touch.
-- `visible`: Gets or sets a value indicating whether the stick is visible. A stick that isn't visible still reads. Defaults to true.
-- `baseOutlineColor`: Gets or sets the ring around the base.
-- `baseFillColor`: Gets or sets the disc inside the ring.
-- `knobColor`: Gets or sets the knob, the disc under the finger. Defaults to the base outline color, a little more opaque.
-- `baseTexture`: Gets or sets the image of the base, drawn in place of the ring and the disc.
-- `knobTexture`: Gets or sets the image of the knob, drawn in place of the knob's disc.
-
 ## VrDeviceInfo
 
 *class* in [`engines/raylib/src/helix/raylib/VrDeviceInfo.hx`](../src/helix/raylib/VrDeviceInfo.hx), `import helix.raylib.VrDeviceInfo;`
@@ -1412,5 +1191,5 @@ var data:Null<haxe.io.Bytes>
 Set in a build's hxml, as `-D helix-raylib-native-root=../assets`. `haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.
 
 - `helix-raylib-native-root=<directory>`: Where a native program finds its files, relative to its own directory. Defaults to ../web.
-- `helix-raylib-host-warnings`: Warns where the program's own code reaches the page or the host (the URL's query, Sys.getEnv, matchMedia, maxTouchPoints, screen.orientation, the safe area's insets, deviceorientation, localStorage, the page's fullscreen) for what helix.raylib.extras or Raylib answers on every target, naming the call. Off by default.
+- `helix-raylib-host-warnings`: Warns where the program's own code reaches the page (localStorage, the page's fullscreen) for what helix.raylib.extras or Raylib answers on every target, naming the call. Off by default.
 - `helix-raylib-custom-frame-control`: raylib's SUPPORT_CUSTOM_FRAME_CONTROL: EndDrawing only draws, and the program calls SwapScreenBuffer, WaitTime and PollInputEvents itself.

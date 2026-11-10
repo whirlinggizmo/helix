@@ -1,6 +1,5 @@
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Textures.*;
-import helix.raylib.extras.Device.*;
 import helix.raylib.Vector2;
 import helix.raylib.Color;
 import helix.raylib.Texture2D;
@@ -71,10 +70,22 @@ class Main {
 		#end
 	}
 
+	// A run option as compare.py passes it: in a page the URL's query (?count=N), natively the command line (--count=N).
+	static function option(name:String):Null<String> {
+		#if js
+		return new js.html.URLSearchParams(js.Browser.location.search).get(name);
+		#else
+		for (arg in Sys.args())
+			if (StringTools.startsWith(arg, '--$name='))
+				return arg.substr(name.length + 3);
+		return null;
+		#end
+	}
+
 	static function main():Void {
 		var target = #if js "page" #elseif sdl_gpu "native-sdlgpu" #else "native-gl" #end;
-		var countOption = GetRunOption("count");
-		var ramp = GetRunOption("ramp") == "1";
+		var countOption = option("count");
+		var ramp = option("ramp") == "1";
 		var count = ramp ? 1000 : (countOption == null ? 1000 : Std.parseInt(countOption));
 		InitWindow(800, 450, "helix-raylib bunnymark");
 		var texture:Null<Texture2D> = null;

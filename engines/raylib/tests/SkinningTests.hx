@@ -2,8 +2,6 @@ import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Shaders.*;
-import helix.raylib.extras.Lights.*;
-import helix.raylib.extras.Models.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Program;
@@ -13,8 +11,8 @@ import helix.raylib.internal.Textures;
 /** Checks the draws `UpdateModelAnimation` poses (docs/DECISIONS.md 44, 45), on graphics that count what is live: a mesh drawn through
 	a program's own shader including `<helix/raylib/shaders/skinning.glsl>` before any pose reads no bones (its `boneOffset` 0, the bind
 	pose), posed reads its first bone plus one, and a draw after the posed one reads no bones again; and a texture or a texture unit set
-	on the lit shader (`SetShaderValueTexture`, `SetShaderValue` on a sampler), before its skinned twin is made and after, is set on the
-	twin too. Each model is a model of a mesh whose bones the program set, posed as a loaded model is. */
+	on the default shader (`SetShaderValueTexture`, `SetShaderValue` on a sampler), before its skinned twin is made and after, is set on
+	the twin too. Each model is a model of a mesh whose bones the program set, posed as a loaded model is. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)
@@ -99,47 +97,29 @@ class SkinningTests {
 			"UpdateModelAnimationBones under the default shader leaves the mesh as it was, as raylib's");
 		check(moving.meshes[0].animVertices == null, "a shader reading the bone ids leaves animVertices, as raylib's CPU skinning does");
 
-		// The lit shader: a texture and a unit set before its twin is made, and after, reach the twin.
-		var lit = LoadLightingShader();
+		// The default shader: a texture and a unit set before its skinned twin is made, and after, reach the twin.
+		var shader = LoadMaterialDefault().shader;
 		var red = LoadTextureFromImage(GenImageColor(2, 2, RED)),
 			blue = LoadTextureFromImage(GenImageColor(2, 2, BLUE));
-		var location = GetShaderLocation(lit, "texture0");
-		SetShaderValueTexture(lit, location, red);
-		SetShaderValue(lit, location, MATERIAL_MAP_EMISSION, SHADER_UNIFORM_INT);
-		var dancer = skinned(lit);
+		var location = GetShaderLocation(shader, "texture0");
+		SetShaderValueTexture(shader, location, red);
+		SetShaderValue(shader, location, MATERIAL_MAP_EMISSION, SHADER_UNIFORM_INT);
+		var dancer = skinned(shader);
 		UpdateModelAnimation(dancer, anim, 0);
 		DrawModel(dancer, new Vector3(0, 0, 0), 1, WHITE);
-		var twin = lit.program.twin;
-		check(twin != null, "a posed draw through the lit shader makes its skinned twin");
+		var twin = shader.program.twin;
+		check(twin != null, "a posed draw through the default shader makes its skinned twin");
 		var slot = twin.slotOf("texture0");
 		check(twin.textures[slot] == red.id, "a texture set before the twin is set on it");
 		check(twin.units[slot] == MATERIAL_MAP_EMISSION, "a unit set before the twin is set on it");
-		SetShaderValueTexture(lit, location, blue);
-		SetShaderValue(lit, location, MATERIAL_MAP_ALBEDO, SHADER_UNIFORM_INT);
+		SetShaderValueTexture(shader, location, blue);
+		SetShaderValue(shader, location, MATERIAL_MAP_ALBEDO, SHADER_UNIFORM_INT);
 		check(twin.textures[slot] == blue.id, "a texture set after the twin is set on it");
 		check(twin.units[slot] == MATERIAL_MAP_ALBEDO, "a unit set after the twin is set on it");
-		var ambient = GetShaderLocation(lit, "ambient");
-		SetShaderValue(lit, ambient, [0.5, 0.25, 0.125, 1], SHADER_UNIFORM_VEC4);
 		DrawModel(dancer, new Vector3(0, 0, 0), 1, WHITE);
-		var place = twin.shader.findUniformPlace(twin.shader.findUniform("ambient"));
-		var pass = Runtime.frame.pass;
-		var bytes:Bytes = pass.draws[pass.draws.length - 1].uniforms[place.blockSlot];
-		check(bytes.getFloat(place.offset + 4) == 0.25, "a value set on the lit shader reaches its twin's draws");
 		check(lastOffset(twin) >= 1, "the twin's draw reads its bones");
-
-		// The posed box: raised by one where GetModelBoundingBox keeps the bind pose's, never posed the bind pose's, and alike through a
-		// shader that skins itself (whose CPU vertices raylib leaves as they were).
-		var near = (a:Float, b:Float) -> Math.abs(a - b) < 1e-5;
-		var bind = GetModelBoundingBox(moving),
-			posed = GetModelBoundingBoxPosed(moving);
-		check(near(bind.min.y, -0.5) && near(bind.max.y, 0.5), "GetModelBoundingBox keeps the bind pose");
-		check(near(posed.min.y, 0.5) && near(posed.max.y, 1.5) && near(posed.min.x, -0.5) && near(posed.max.x, 0.5), "the posed box is raised by one");
 		check(moving.meshes[0].boneMatrices != null && moving.meshes[0].boneMatrices[0].m13 == 1,
 			"a model of a mesh whose bones the program set is posed, its mesh's boneMatrices raised by one");
-		var unposed = GetModelBoundingBoxPosed(still);
-		check(near(unposed.min.y, -0.5) && near(unposed.max.y, 0.5), "a model never posed is bounded as bound");
-		var dancing = GetModelBoundingBoxPosed(dancer);
-		check(near(dancing.min.y, 0.5) && near(dancing.max.y, 1.5), "posed through the lit shader's twin");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

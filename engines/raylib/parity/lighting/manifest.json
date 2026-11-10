@@ -1,6 +1,6 @@
 {
   "oracle": "6.2",
-  "covers": "raylib's lighting example's setup (rlights.h, lighting.vs and lighting.fs, as LoadLightingShader and CreateLight build them in): a plane and a cube lit by point and directional lights, a light turned off; greenman lit and posed twice in a frame (skinned on the GPU, raylib's CPU skinning its oracle), and lit by a program's own shader over <helix/raylib/shaders/skinning.glsl> and lights.glsl",
+  "covers": "raylib's lighting example's setup (rlights.h, lighting.vs and lighting.fs, compiled ahead of time): a plane and a cube lit by point and directional lights, a light turned off; greenman lit and posed twice in a frame (skinned on the CPU, as raylib skins it), and lit by a program's own vertex stage over <helix/raylib/shaders/skinning.glsl> (skinned on the GPU, raylib's CPU skinning its oracle)",
   "kind": "pixels",
   "reference": "scene.c",
   "harness": [
@@ -11,10 +11,9 @@
     "src/rlights.h": "raylib:examples/shaders/rlights.h",
     "web/lighting.vs": "raylib:examples/shaders/resources/shaders/glsl330/lighting.vs",
     "web/lighting.fs": "raylib:examples/shaders/resources/shaders/glsl330/lighting.fs",
-    "web/own.vs": "own.vs",
-    "web/own.fs": "own.fs"
+    "web/own.vs": "own.vs"
   },
-  "shaders": [["web/own.vs", "web/own.fs", "web/own.shader"]],
+  "shaders": [["web/lighting.vs", "web/lighting.fs", "web/lighting.shader"], ["web/own.vs", "web/lighting.fs", "web/own.shader"]],
   "frames": 40,
   "backends": {
     "gl": 150,

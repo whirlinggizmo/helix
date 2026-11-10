@@ -803,3 +803,19 @@ Why things are the way they are, numbered, in order.
     guess about the tilt, and a review found the rest. Rejected: a `TiltGamepad` beside the virtual gamepad (two gamepads in
     one slot); asking for the tilt when the virtual gamepad is enabled (the game would never hear the answer); and a third stick (a
     gamepad has two, and its axes end there).
+60. **helix-raylib is raylib 5.5's API and its redirects, nothing more.** This revises 38, 42, 45, 47's extras, 53's lit extras, and 56
+    to 59 for helix-raylib. The API is raylib 5.5's, with raygui, raymath, rlgl and rlights (`helix.raylib.Rlights`, as
+    raygui is `Raygui`). A redirect is a raylib call that can't keep its promise on every target: it refuses to compile on every
+    target, and its message names the call that replaces it, in `helix.raylib.extras`. The async loads and writes, the window
+    requests and the compiled shaders are those. The program never learns where it runs. A call no redirect reaches leaves the
+    library: `extras.Device` (the safe area, run options, the device, the window's abilities, orientation and tilt),
+    `extras.VirtualGamepad`, `extras.Debug`, `extras.GuiSkins`, `extras.Sprites`, `LoadModelFromModels`, `GetModelBoundingBoxPosed`,
+    `LoadLightingShader` and `LoadPbrShader` with their shader includes, and `Material.unlit`. What they built on stays in the
+    libraries below for any engine: helix-services' virtual sticks, buttons and tilt, helix-geometry's `Mesh3D.merge`. raylib 6.2's
+    `UpdateModelAnimationEx` stays for now, for a trial of whether a blend is reached by a refusal of `UpdateModelAnimation`, a
+    warning, or neither. The `emscripten_run_script` refusals say only "Not supported". Why: three Sonnet entrants wrote the Wardens
+    spec in C on stock raylib 5.5 (2026-11-09), and everything they gated on `PLATFORM_WEB` was a redirect here or the page's work
+    underneath (the URL's options, saves, fullscreen, taps shorter than a frame, the main loop), but for whether the screen is touched,
+    which the first touch answers. Agents given helix-raylib's docs never reached for `LoadModelFromModels` unprompted, and two of the
+    three C entrants merged their characters by hand. A raylib developer knows raylib's API and nothing else of ours, so what the
+    compiler can't lead to isn't found. Rejected: moving the extras to a `helix-raylib-extras` (the same drift under another name).

@@ -1,12 +1,14 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one audio: a sound loaded with LoadSoundAsync and played once it is loaded.
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Lights.*;
+import helix.raylib.Rlights.*;
+import helix.raylib.extras.Shaders.*;
 import helix.raylib.extras.Textures.*;
 import helix.raylib.extras.Models.*;
 import helix.raylib.extras.Audio.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.ModelAnimation;
+import helix.raylib.Shader;
 import helix.raylib.Sound;
 import helix.raylib.Texture2D;
 import helix.raylib.Vector2;
@@ -19,8 +21,11 @@ import helix.raylib.Vector3;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");
-		var lit = LoadLightingShader();
-		CreateLight(LIGHT_POINT, new Vector3(2, 4, 2), new Vector3(0, 0, 0), WHITE, lit);
+		var lit:Null<Shader> = null;
+		LoadCompiledShaderAsync("lighting.shader", loaded -> {
+			lit = loaded;
+			CreateLight(LIGHT_POINT, new Vector3(2, 4, 2), new Vector3(0, 0, 0), WHITE, loaded);
+		});
 		InitAudioDevice();
 		var camera = new Camera3D(new Vector3(6, 4, 6), new Vector3(0, 1.5, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var texture:Null<Texture2D> = null;

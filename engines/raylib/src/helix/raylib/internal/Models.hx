@@ -48,11 +48,11 @@ class Models {
 			uploaded.push(mesh.gpu);
 		mesh.gpu.buffers = [
 			for (i in 0...9)
-				i < 4 ? GpuMemory.buffer(g.createStaticBuffer(bytesOf(mesh, i), bufferBytes(mesh, i), false), bufferBytes(mesh, i)) : 0
+				i < 4 ? g.createStaticBuffer(bytesOf(mesh, i), bufferBytes(mesh, i), false) : 0
 		];
 		if (mesh.indices != null && mesh.indices.length > 0) {
 			var bytes = bytesOf(mesh, 6);
-			mesh.gpu.indexBuffer = GpuMemory.buffer(g.createStaticBuffer(bytes, bytes.length, true), bytes.length);
+			mesh.gpu.indexBuffer = g.createStaticBuffer(bytes, bytes.length, true);
 		}
 	}
 
@@ -64,8 +64,7 @@ class Models {
 	public static function buffer(mesh:Mesh, index:Int):Int {
 		var buffers = mesh.gpu.buffers;
 		if (buffers[index] == 0)
-			buffers[index] = GpuMemory.buffer(Runtime.graphics.createStaticBuffer(bytesOf(mesh, index), bufferBytes(mesh, index), false),
-				bufferBytes(mesh, index));
+			buffers[index] = Runtime.graphics.createStaticBuffer(bytesOf(mesh, index), bufferBytes(mesh, index), false);
 		return buffers[index];
 	}
 
@@ -144,7 +143,7 @@ class Models {
 		mesh.gpu.contents[index] = bytes;
 		var g = Runtime.graphics,
 			old = index == 6 ? mesh.gpu.indexBuffer : buffers[index];
-		var made = GpuMemory.buffer(g.createStaticBuffer(bytes, bytes.length, index == 6), bytes.length);
+		var made = g.createStaticBuffer(bytes, bytes.length, index == 6);
 		if (index == 6) {
 			mesh.gpu.indexBuffer = made;
 			// The edges are the old indices'; made again from the mesh's when next drawn in wire mode.
@@ -177,7 +176,7 @@ class Models {
 					at += 4;
 				}
 			}
-			mesh.gpu.edgeBuffer = GpuMemory.buffer(Runtime.graphics.createStaticBuffer(bytes, bytes.length, true), bytes.length);
+			mesh.gpu.edgeBuffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, true);
 		}
 		return mesh.gpu.edgeBuffer;
 	}
@@ -210,11 +209,6 @@ class Models {
 		(`MeshGpu.contents`). */
 	public static function graphicsRestored():Void {
 		for (gpu in uploaded) {
-			if (gpu.buffers != null)
-				for (b in gpu.buffers)
-					GpuMemory.freed(b);
-			GpuMemory.freed(gpu.indexBuffer);
-			GpuMemory.freed(gpu.edgeBuffer);
 			gpu.buffers = null;
 			gpu.indexBuffer = 0;
 			gpu.edgeBuffer = 0;
@@ -230,7 +224,6 @@ class Models {
 		function dispose(b:Int):Void
 			if (b != 0) {
 				Runtime.graphics.disposeBuffer(b);
-				GpuMemory.freed(b);
 			}
 		if (gpu.buffers != null)
 			for (b in gpu.buffers)
@@ -423,7 +416,6 @@ class Models {
 	// after it is gone decodes the image's file again (Textures.fromEncoded).
 	static function material(read:Model3D, m:GltfMaterial, shader:Shader):Material {
 		var material = defaultMaterial(shader), maps = material.maps;
-		material.unlit = m.unlit;
 		if (!m.hasPbrMetallicRoughness)
 			return material;
 		// The images decoded for the GPU this material took from the model and still owns, by index: the metallic-roughness image is read

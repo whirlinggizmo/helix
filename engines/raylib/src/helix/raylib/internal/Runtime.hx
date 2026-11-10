@@ -640,44 +640,6 @@ class Runtime {
 		return gamepadsService;
 	}
 
-	/** Makes the gamepads read through a gamepad standing in front of the platform's, as a virtual gamepad does (`EnableVirtualGamepad`). The
-		gamepads are made again over it, and it's polled after the touch and before the gamepads.
-
-		@param gamepad  The gamepad the gamepads read.
-		@param poller  What brings the gamepad up to date each frame. */
-	public static function standInFront(gamepad:helix.platform.IGamepads, poller:IPollable):Void {
-		touch();
-		devices.remove(gamepads());
-		gamepadsService = new Gamepads(events, gamepad);
-		gamepadsService.deadZone = 0;
-		devices.push(poller);
-		devices.push(gamepadsService);
-	}
-
-	/** Whether a virtual gamepad captured a finger, including a finger that lifted this frame: the mouse follows the free fingers. Null
-		while no virtual gamepad is enabled. */
-	public static var capturesFinger:Null<Int->Bool> = null;
-
-	/** What draws over the frame as `EndDrawing` ends it, such as a virtual gamepad, or null while nothing does. */
-	public static var overlay:Null<Void->Void> = null;
-
-	/** Gets the tilt, made when first asked for. Only the tilt's functions ask, so a program that never calls one links no tilt adapter. */
-	public static function tilt():helix.services.input.Tilt {
-		if (tiltService == null) {
-			#if js
-			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.dom.DomTiltAdapter({events: cast eventsAdapter}));
-			#else
-			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter({events: cast eventsAdapter}));
-			#end
-			// Polled first: a virtual gamepad's tilt stick reads it the same frame.
-			devices.unshift(tiltService);
-		}
-		return tiltService;
-	}
-
-	/** Gets the tilt once a tilt function has made it (`tilt`), or null before. A virtual gamepad's tilt stick reads it. */
-	public static var tiltService(default, null):Null<helix.services.input.Tilt> = null;
-
 	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. With
 		`-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only draws the frame: `SwapScreenBuffer` shows it
 		and `PollInputEvents` reads the input. The input recorded for automation is recorded first, as raylib's is. */

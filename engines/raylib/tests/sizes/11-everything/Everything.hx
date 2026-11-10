@@ -25,19 +25,15 @@ class Everything {
 		"helix.raylib.Raymath",
 		"helix.raylib.Rlgl",
 		"helix.raylib.Raygui",
+		"helix.raylib.Rlights",
 		"helix.raylib.extras.Window",
 		"helix.raylib.extras.Files",
 		"helix.raylib.extras.Textures",
 		"helix.raylib.extras.Text",
 		"helix.raylib.extras.Models",
 		"helix.raylib.extras.Audio",
-		"helix.raylib.extras.Device",
 		"helix.raylib.extras.Gui",
-		"helix.raylib.extras.GuiSkins",
-		"helix.raylib.extras.Lights",
-		"helix.raylib.extras.Debug",
-		"helix.raylib.extras.Shaders",
-		"helix.raylib.extras.VirtualGamepad"
+		"helix.raylib.extras.Shaders"
 	];
 
 	/** raylib's modules in helix-raylib, whose functions carry the refusals' metadata. */
@@ -45,26 +41,20 @@ class Everything {
 		"RAudio",
 		"RAudioAsync",
 		"RCore",
-		"RDebug",
-		"RDevice",
 		"RFilesAsync",
 		"RGui",
 		"RGuiAsync",
 		"RGuiControls",
-		"RGuiSkins",
 		"RLights",
 		"RMath",
 		"RModels",
 		"RModelsAsync",
-		"RModelsPosed",
-		"RModelsMerged",
 		"RRlgl",
 		"RShapes",
 		"RText",
 		"RTextAsync",
 		"RTextures",
 		"RTexturesAsync",
-		"RVirtualGamepad",
 		"RWindowAsync"
 	];
 

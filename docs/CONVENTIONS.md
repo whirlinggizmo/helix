@@ -205,7 +205,7 @@ Code is written to be read, by people and agents, not packed.
       as .NET's do, and when and with what its callback answers goes on the callback's `@param` line.
     - What to call instead when this member isn't it follows as a sentence of its own, "See `X` for doing Y.", Y what X does as a
       gerund or a "whether" clause so it can't read as this member's result, never a clause after a colon or comma
-      (`LoadLightingShader`: "See `LoadPbrShader` for drawing a glTF's materials as authored.").
+      (`LoadCompiledShaderAsync`: "See `LoadCompiledShaderFromData` for making one from compiled data in memory.").
     - The remarks are short paragraphs, one fact each, the one most callers need first. A fact is cause then effect, in the order it
       happens, with the call as the subject, in the active voice: "In a page, reading a file that hasn't been saved yet asks the
       server for it and logs a 404 in the browser's console before `failed` answers", not "a file nobody saved yet is asked of the
@@ -222,24 +222,22 @@ Code is written to be read, by people and agents, not packed.
     - **One word for one thing, the API's own.** `blockedBounds` is "the blocked bounds" throughout, never also a box, a rectangle
       or an area. A side effect says what changes ("The zone follows changes to this rectangle's fields"), not a "so" clause.
 
-    Sample, `LoadLightingShader`, where the summary names the member a reader may want instead, the first paragraph is the setup
-    every caller does, and the example is the call's shape:
+    Sample, `LoadCompiledShaderAsync`, where the summary names the call it replaces and the member a reader may want instead, the
+    first paragraph is what every caller does, and the example is the build step's shape:
 
-        /** Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one
-            Phong highlight whatever the material says. See `LoadPbrShader` for drawing a glTF's materials as authored.
+        /** Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See
+            `LoadCompiledShaderFromData` for making one from compiled data in memory.
 
-            Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame;
-            `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from `CreateLight`. A model posed by
-            `UpdateModelAnimation` under it is skinned on the GPU. A program's own shader lights the same way by including
-            `<helix/raylib/shaders/lights.glsl>`.
+            Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
+            `<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
 
-            ```haxe
-            var shader = LoadLightingShader();
-            SetShaderValue(shader, GetShaderLocation(shader, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
-            model.materials[0].shader = shader;
-            var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
+            ```hxml
+            --macro helix.raylib.extras.Shaders.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
             ```
-            @return  The shader, the program's until `UnloadShader`. */
+
+            @param compiledShaderFileName  The compiled shader's file.
+            @param loaded  Receives the shader.
+            @param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
   - **Standard words.** Never "you", and no people: not "the player", "the user" or "nobody", but what happens (a key press, click
     or tap; permission the browser asks for; a file not yet saved; a size the window may take). "Optional", "provided", "omitted", "receives", "defaults to", "must be", "skipped", "ignored",
     "clamped to", "unchanged", "local units", "its subtree": not "when given", "left out", "held to", "says", "as it was", "the node's
@@ -261,9 +259,8 @@ Code is written to be read, by people and agents, not packed.
   a developer or an agent reads is what the code says; each library's `api/` holds the same as Markdown, committed and
   checked by `gen_apidoc --check`, so it moves with the library.
 - **A departure from raylib is answered where it's met.** A refused call names its replacement. The replacement's doc shows how to
-  use it, build step included. An extra with no raylib counterpart is named in the doc of the raylib call it extends. A pointer added
-  to an existing doc rewrites the sentence it qualifies ("A free finger (`EnableVirtualGamepad`) down counts as the left button"). Every name a
-  doc gives is in the reference, or follows its owner (raylib's `LoadOBJ`, MTL's `Kd`). `gen_apidoc` fails on one that isn't.
+  use it, build step included. Every name a doc gives is in the reference, or follows its owner (raylib's `LoadOBJ`, MTL's `Kd`).
+  `gen_apidoc` fails on one that isn't.
 - **Each library's reference is what its own users write against, and nothing else.** A developer or an agent given only the
   reference and a hello world should be able to build any program, and not be put off by machinery. Haxe has no internal, so what
   another package of a library must reach is public, and the library's own is marked:

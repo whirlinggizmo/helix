@@ -18,7 +18,7 @@ class Defines {
 		},
 		{
 			define: "helix-raylib-host-warnings",
-			doc: "Warns where the program's own code reaches the page or the host (the URL's query, Sys.getEnv, matchMedia, maxTouchPoints, screen.orientation, the safe area's insets, deviceorientation, localStorage, the page's fullscreen) for what helix.raylib.extras or Raylib answers on every target, naming the call. Off by default."
+			doc: "Warns where the program's own code reaches the page (localStorage, the page's fullscreen) for what helix.raylib.extras or Raylib answers on every target, naming the call. Off by default."
 		},
 		{
 			define: "helix-raylib-custom-frame-control",

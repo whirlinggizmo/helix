@@ -3,7 +3,7 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Textures.*;
 import helix.raylib.extras.Models.*;
-import helix.raylib.extras.Lights.*;
+import helix.raylib.extras.Shaders.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -99,12 +99,12 @@ class RestoreTests {
 			metalGpu = Textures.handle(metal);
 		check(albedoGpu != 0 && roughGpu != 0 && metalGpu != 0 && albedo != rough && rough != metal, "before: a model's textures on the GPU");
 		// A texture set on a shader's own sampler, bound by its handle at each draw.
-		var pbr = LoadPbrShader();
-		SetShaderValueTexture(pbr, GetShaderLocation(pbr, "emissiveMap"), file);
+		var emissive = LoadCompiledShaderFromData(haxe.Resource.getBytes("emissive.shader"));
+		SetShaderValueTexture(emissive, GetShaderLocation(emissive, "emissiveMap"), file);
 		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
-		cube.materials[0].shader = pbr;
+		cube.materials[0].shader = emissive;
 		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
-		var slot = pbr.program.slotOf("emissiveMap");
+		var slot = emissive.program.slotOf("emissiveMap");
 		function boundEmissive():Int {
 			var pass = Runtime.frame.pass;
 			var bound:Array<Int> = pass.draws[pass.draws.length - 1].textures;
@@ -142,9 +142,7 @@ class RestoreTests {
 		check(Textures.handle(file.id) == again && graphics.textureCreations == textures, "a file's texture: sent once");
 		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
 		check(boundEmissive() == again, "a texture set on a shader: bound by the handle it was sent again with");
-		// The draw sent the PBR shader's flat normal texel again, from the pixels it keeps.
-		textures++;
-		check(graphics.textureCreations == textures, "the PBR shader's flat normal: sent again from its kept pixels");
+		check(graphics.textureCreations == textures, "the draw sent no other texture");
 
 		// One from pixels, and a cubemap: sent again from the pixels kept in a page, the update with them. Natively, where a lost
 		// context isn't recovered, they aren't kept: drawn as nothing, warned of once each.

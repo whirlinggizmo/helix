@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and the modules of helix.raylib.extras, and the types
-helix-raylib doesn't have yet.
+"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx, Raygui.hx, Rlights.hx and the modules of
+helix.raylib.extras, and the types helix-raylib doesn't have yet.
 
 Raylib.hx has RCore, RShapes, RTextures, RText, RModels and RAudio, in raylib's module order; Raymath.hx has RMath, Rlgl.hx RRlgl, and
-Raygui.hx RGui and RGuiControls, raygui's API apart as raylib's examples include it.
-What helix-raylib adds to raylib's API is in the package helix.raylib.extras, a module for each section: the async versions of a raylib
-module's calls in one module each (extras.Textures from RTexturesAsync, extras.Text from RTextAsync, extras.Models from RModelsAsync,
-extras.Audio from RAudioAsync), rcore's split three ways (extras.Window from RWindowAsync, extras.Files from RFilesAsync, extras.Device
-from RDevice), and each feature helix-raylib adds on its own in a module and a section of its own, never added to an existing one. The
+Raygui.hx RGui and RGuiControls, raygui's API apart as raylib's examples include it, and Rlights.hx RLights, the rlights.h raylib's
+lighting examples include.
+What helix-raylib adds to raylib's API is in the package helix.raylib.extras, a module for each section: the calls its refusals name in
+place of raylib's, the async versions of a raylib module's calls in one module each (extras.Textures from RTexturesAsync, extras.Text
+from RTextAsync, extras.Models from RModelsAsync, extras.Audio from RAudioAsync, extras.Gui from RGuiAsync), rcore's split two ways
+(extras.Window from RWindowAsync, extras.Files from RFilesAsync), and the compiled shaders (extras.Shaders from RCompiledShaders). The
 sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
 (docs/CONVENTIONS.md). Each file's generated part has two halves:
 
@@ -67,6 +68,7 @@ TARGETS = {
         ('RGui', 'raygui: its state, style, icons and tooltips'),
         ('RGuiControls', 'raygui: its controls'),
     ], 'raygui/raygui_api.json', 'raygui.h'),
+    'Rlights.hx': ([('RLights', "rlights: the lights of raylib's lighting examples")], None, 'rlights.h'),
     'extras/Window.hx': ([
         ('RWindowAsync', "window: the window, cursor, clipboard and screenshot requests in place of rcore's that wait for the window"),
     ], None, 'Window'),
@@ -75,20 +77,10 @@ TARGETS = {
     'extras/Text.hx': ([('RTextAsync', "text: the font loads and writes in place of rtext's that wait")], None, 'Text'),
     'extras/Models.hx': ([
         ('RModelsAsync', "models: the model, material and animation loads and mesh writes in place of rmodels' that wait"),
-        ('RModelsPosed', "models: a skinned model's bounds as posed"),
-        ('RModelsMerged', "models: models merged into one"),
     ], None, 'Models'),
     'extras/Audio.hx': ([('RAudioAsync', "audio: the sound, wave and music loads and wave writes in place of raudio's that wait")], None, 'Audio'),
-    'extras/Device.hx': ([
-        ('RDevice', "device: the safe area, run options, the device, the window's abilities, orientation and tilt"),
-    ], None, 'Device'),
     'extras/Shaders.hx': ([('RCompiledShaders', "shaders: the loads of shaders compiled ahead of time")], None, 'Shaders'),
     'extras/Gui.hx': ([('RGuiAsync', "gui: the style and icon loads in place of raygui's that wait for a file")], None, 'Gui'),
-    'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
-    'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),
-    'extras/Lights.hx': ([('RLights', "lights: raylib's examples' rlights and the lit shader built on them")], None, 'Lights'),
-    'extras/Sprites.hx': ([('RSprites', "sprites: many copies of one part of a texture, each placed by a matrix, in one call")], None, 'Sprites'),
-    'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
 }
 # The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.
 EXTRAS = 'helix.raylib.extras'
@@ -338,7 +330,9 @@ def generated(file_sections, functions, api, header, written):
     sections' functions, then the functions a program can't call: the sections' marked `@:unsupported` or `@:unimplemented`, and the
     header's no section writes."""
     if api is None:
-        out = [BEGIN, "\t// helix-raylib's own functions; edit a function in its section, then run python3 tools/gen_raylib.py."]
+        # A header without an API description (rlights.h) has its functions alone, as helix-raylib's own modules do.
+        whose = f"{header}'s" if header.endswith('.h') else "helix-raylib's own"
+        out = [BEGIN, f"\t// {whose} functions; edit a function in its section, then run python3 tools/gen_raylib.py."]
         api = {'functions': []}
     else:
         out = [BEGIN, f"\t// {header}'s constants that aren't written above, then its functions; edit a function in its section, then run",

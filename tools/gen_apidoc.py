@@ -454,7 +454,7 @@ def markdown(xml,native=frozenset()):
     return out
 
 # helix-raylib's GLSL includes a program's own shader may use, each documented by the comment that opens it.
-INCLUDES=['skinning.glsl','lights.glsl','pbr.glsl']
+INCLUDES=['skinning.glsl']
 
 def includes_page():
     """helix-raylib's shader includes, as their opening comments describe them: the prose as paragraphs, an indented example as GLSL,

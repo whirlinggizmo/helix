@@ -566,9 +566,6 @@ class RCore {
 		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
 		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
 	static function EndDrawing():Void {
-		var overlay = Runtime.overlay;
-		if (overlay != null)
-			overlay();
 		Runtime.endFrame();
 	}
 
@@ -793,7 +790,7 @@ class RCore {
 
 	/** Returns whether a mouse button went down this frame.
 
-		A free finger (`EnableVirtualGamepad`) touching counts as the left button.
+		A finger landing counts as the left button, when no other finger is down.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -807,18 +804,18 @@ class RCore {
 	// Whether a mouse button went down this frame, as the devices have it.
 	static function realButtonPressed(button:Int):Bool {
 		var mouse = Runtime.mouse();
-		var pressed = freeFingers(Runtime.touch().pressed);
-		// Pressed when no free finger now down was down before this frame, so a finger that landed and lifted within the frame counts.
+		var pressed = Runtime.touch().pressed;
+		// Pressed when no finger now down was down before this frame, so a finger that landed and lifted within the frame counts.
 		if (button == MOUSE_BUTTON_LEFT
 			&& pressed.length > 0
-			&& [for (id in freeFingers(Runtime.touch().fingers)) if (pressed.indexOf(id) < 0) id].length == 0)
+			&& [for (id in Runtime.touch().fingers) if (pressed.indexOf(id) < 0) id].length == 0)
 			return true;
 		return button >= 0 && button <= 2 && mouse.isButtonPressed(cast button);
 	}
 
 	/** Returns whether a mouse button is held.
 
-		A free finger (`EnableVirtualGamepad`) down counts as the left button.
+		A finger down counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
@@ -832,14 +829,14 @@ class RCore {
 	// Whether a mouse button is held, as the devices have it.
 	static function realButtonDown(button:Int):Bool {
 		var mouse = Runtime.mouse();
-		if (button == MOUSE_BUTTON_LEFT && freeFingers(Runtime.touch().fingers).length > 0)
+		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().fingers.length > 0)
 			return true;
 		return button >= 0 && button <= 2 && mouse.isButtonDown(cast button);
 	}
 
 	/** Returns whether a mouse button went up this frame.
 
-		The last free finger (`EnableVirtualGamepad`) lifting counts as the left button.
+		The last finger lifting counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -853,9 +850,7 @@ class RCore {
 	// Whether a mouse button went up this frame, as the devices have it.
 	static function realButtonReleased(button:Int):Bool {
 		var mouse = Runtime.mouse();
-		if (button == MOUSE_BUTTON_LEFT
-			&& freeFingers(Runtime.touch().released).length > 0
-			&& freeFingers(Runtime.touch().fingers).length == 0)
+		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().released.length > 0 && Runtime.touch().fingers.length == 0)
 			return true;
 		return button >= 0 && button <= 2 && mouse.isButtonReleased(cast button);
 	}
@@ -868,21 +863,21 @@ class RCore {
 		return !IsMouseButtonDown(button);
 	}
 
-	/** Returns the mouse's x, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+	/** Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
 
 		@return  The x. */
 	static function GetMouseX():Int {
 		return Std.int(GetMousePosition().x);
 	}
 
-	/** Returns the mouse's y, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+	/** Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
 
 		@return  The y. */
 	static function GetMouseY():Int {
 		return Std.int(GetMousePosition().y);
 	}
 
-	/** Returns the mouse's position, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+	/** Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
 
 		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
@@ -893,12 +888,6 @@ class RCore {
 			return new Vector2((played.mouseX + mouseOffsetX) * mouseScaleX, (played.mouseY + mouseOffsetY) * mouseScaleY);
 		pointer();
 		return new Vector2((lastPointerX + mouseOffsetX) * mouseScaleX, (lastPointerY + mouseOffsetY) * mouseScaleY);
-	}
-
-	// The fingers the mouse follows: every finger but those a virtual gamepad's sticks hold, and those that lifted from one this frame.
-	static function freeFingers(fingers:Array<Int>):Array<Int> {
-		var holds = Runtime.capturesFinger;
-		return holds == null ? fingers : [for (id in fingers) if (!holds(id)) id];
 	}
 
 	// The pointer's position, as the devices have it, in the screen's pixels.
@@ -912,8 +901,7 @@ class RCore {
 		var mouse = Runtime.mouse(),
 			touch = Runtime.touch(),
 			screen = Runtime.screen;
-		var down = freeFingers(touch.fingers);
-		var fingers = down.length > 0 ? down : freeFingers(touch.released);
+		var fingers = touch.fingers.length > 0 ? touch.fingers : touch.released;
 		if (fingers.length > 0) {
 			lastPointerX = screen.toDesignX(touch.getX(fingers[0]));
 			lastPointerY = screen.toDesignY(touch.getY(fingers[0]));
@@ -1092,8 +1080,7 @@ class RCore {
 
 	/** Returns a finger's position, in the screen's pixels.
 
-		While no finger is down, the first is where the mouse is. See `EnableVirtualGamepad`
-		(`import helix.raylib.extras.VirtualGamepad.*;`) for on-screen sticks read as a gamepad's.
+		While no finger is down, the first is where the mouse is.
 
 		@param index  Which finger, 0 for the first down.
 		@return  The position, or (0, 0) when fewer are down. */
@@ -1238,8 +1225,6 @@ class RCore {
 
 	/** Returns whether a gamepad is connected.
 
-		A virtual gamepad (`EnableVirtualGamepad`) counts. `IsGamepadVirtual` tells it from a physical one.
-
 		@param gamepad  The gamepad, 0 to 3.
 		@return  True while one is connected there. */
 	static function IsGamepadAvailable(gamepad:Int):Bool {
@@ -1286,7 +1271,7 @@ class RCore {
 		return IsGamepadAvailable(gamepad) ? Runtime.gamepads().getName(gamepad) : "";
 	}
 
-	/** Returns whether a gamepad's button went down this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
+	/** Returns whether a gamepad's button went down this frame.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1299,7 +1284,7 @@ class RCore {
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonPressed(gamepad, cast b);
 	}
 
-	/** Returns whether a gamepad's button is held. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
+	/** Returns whether a gamepad's button is held.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1312,7 +1297,7 @@ class RCore {
 		return b >= 0 && IsGamepadAvailable(gamepad) && Runtime.gamepads().isButtonDown(gamepad, cast b);
 	}
 
-	/** Returns whether a gamepad's button went up this frame. A virtual gamepad's buttons (`EnableVirtualGamepad`) count.
+	/** Returns whether a gamepad's button went up this frame.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param button  The button (`GAMEPAD_BUTTON_*`).
@@ -1373,9 +1358,7 @@ class RCore {
 		return IsGamepadAvailable(gamepad) ? 6 : 0;
 	}
 
-	/** Returns how far a gamepad's axis is pushed.
-
-		A physical gamepad's axis reads raw. A virtual gamepad's sticks (`EnableVirtualGamepad`) read past their dead zone.
+	/** Returns how far a gamepad's axis is pushed, with no dead zone.
 
 		A stick runs from -1 to 1, down and right positive.
 
@@ -2387,30 +2370,28 @@ class RCore {
 		throw "emscripten_cancel_main_loop is unsupported";
 	}
 
-	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's
-		options.
+	/** Doesn't compile on any target, since a program runs no script of its own.
 
 		@param script  The JavaScript. */
-	@:unsupported("emscripten_run_script: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchAvailable and IsFinePointerAvailable for the device, GetWindowSafeArea, SetScreenOrientationAsync, EnableTiltAsync; or write plain Haxe (js.Browser, in #if js).")
+	@:unsupported("emscripten_run_script: Not supported.")
 	static function emscripten_run_script(script:String):Void {
 		throw "emscripten_run_script is unsupported";
 	}
 
-	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetRunOption` for reading the URL's
-		options.
+	/** Doesn't compile on any target, since a program runs no script of its own.
 
 		@param script  The JavaScript.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_run_script_int: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, IsTouchAvailable and IsFinePointerAvailable for the device, GetScreenOrientation; or write plain Haxe (js.Browser, in #if js).")
+	@:unsupported("emscripten_run_script_int: Not supported.")
 	static function emscripten_run_script_int(script:String):Int {
 		throw "emscripten_run_script_int is unsupported";
 	}
 
-	/** Doesn't compile, since a program asks helix-raylib for what the page knows instead. See `GetPlatformOS` for reading the system.
+	/** Doesn't compile on any target, since a program runs no script of its own.
 
 		@param script  The JavaScript.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_run_script_string: Not supported. Ask helix.raylib.extras.Device (import helix.raylib.extras.Device.*;): GetRunOption for the URL's options, GetPlatformOS for the system; or write plain Haxe (js.Browser, in #if js).")
+	@:unsupported("emscripten_run_script_string: Not supported.")
 	static function emscripten_run_script_string(script:String):String {
 		throw "emscripten_run_script_string is unsupported";
 	}

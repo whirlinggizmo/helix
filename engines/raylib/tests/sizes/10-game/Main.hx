@@ -1,6 +1,6 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a game: what a real game uses, its file formats one of each.
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Lights.*;
+import helix.raylib.Rlights.*;
 import helix.raylib.extras.Window.*;
 import helix.raylib.extras.Files.*;
 import helix.raylib.extras.Textures.*;
@@ -34,14 +34,17 @@ import helix.raylib.Vector3;
 	"helix.geometry.Ray3D", "helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D",
 	"helix.platform.adapters.fontrasterizer.canvas", "helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom",
 	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.FrameConverter",
-	"helix.raylib.modules.RCompiledShaders", "helix.raylib.modules.RFilesAsync", "helix.raylib.modules.RTextAsync", "helix.raylib.modules.RWindowAsync",
-	"helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Keyboard", "helix.services.input.Mouse",
+	"helix.raylib.modules.RFilesAsync", "helix.raylib.modules.RTextAsync", "helix.raylib.modules.RWindowAsync", "helix.services.fonts",
+	"helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Keyboard", "helix.services.input.Mouse",
 	"helix.services.input.Touch", "helix.services.saves")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");
-		var lit = LoadLightingShader();
-		CreateLight(LIGHT_POINT, new Vector3(2, 4, 2), new Vector3(0, 0, 0), WHITE, lit);
+		var lit:Null<Shader> = null;
+		LoadCompiledShaderAsync("lighting.shader", loaded -> {
+			lit = loaded;
+			CreateLight(LIGHT_POINT, new Vector3(2, 4, 2), new Vector3(0, 0, 0), WHITE, loaded);
+		});
 		InitAudioDevice();
 		SetTargetFPS(60);
 		var camera = new Camera3D(new Vector3(6, 4, 6), new Vector3(0, 1.5, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);

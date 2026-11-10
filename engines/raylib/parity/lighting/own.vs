@@ -1,5 +1,5 @@
 #version 330
-// A program's own lit and skinned vertex stage: raylib's lighting.vs, each vertex and normal moved by <helix/raylib/shaders/skinning.glsl>.
+// A program's own skinned vertex stage: raylib's lighting.vs, each vertex and normal moved by <helix/raylib/shaders/skinning.glsl>.
 #include <helix/raylib/shaders/skinning.glsl>
 in vec3 vertexPosition;
 in vec2 vertexTexCoord;

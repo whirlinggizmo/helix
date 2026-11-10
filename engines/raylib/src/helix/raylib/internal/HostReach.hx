@@ -10,42 +10,24 @@ import sys.FileSystem;
 using StringTools;
 #end
 
-/** Warns, as the program builds, where the program's own code reaches the page or the host for something `helix.raylib.extras` or `Raylib` answers
-	on every target: the URL's query or an environment variable (`GetRunOption`), the device's touch or pointer
-	(`IsTouchAvailable`, `IsFinePointerAvailable`), the screen's orientation (`SetScreenOrientationAsync`), the safe area's insets
-	(`GetWindowSafeArea`), the device's tilt (`EnableTiltAsync`), the page's storage (`SaveFileTextAsync`, `LoadFileTextAsync`) and its
-	fullscreen (`IsFullscreenAvailable`, `IsWindowFullscreen`, `ToggleFullscreenAsync`), when the program is built with
+/** Warns, as the program builds, where the program's own code reaches the page for something `helix.raylib.extras` or `Raylib` answers
+	on every target: the page's storage (`SaveFileTextAsync`, `LoadFileTextAsync`) and its fullscreen (`IsWindowFullscreen`,
+	`ToggleFullscreenAsync`), when the program is built with
 	`-D helix-raylib-host-warnings`: off by default, as a person reads the README and may reach the host on purpose, and on for an agent
-	writing raylib from memory (a trial). Each warning reads as a refusal does ("js.html.Window.matchMedia: Works only in a browser. See
-	IsTouchAvailable() or IsFinePointerAvailable() in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)."). Each site warns
-	once for each call, and libraries' code isn't looked at. Read from the compiler's typed code, after typing: the fields and types reached, and the text
-	of a string or a `js.Syntax.code` call. Run by the library's `extraParams.hxml`. */
+	writing raylib from memory (a trial). Each warning reads as a refusal does ("js.html.Element.requestFullscreen: Works only in a
+	browser. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import
+	helix.raylib.extras.Window.*;)."). Each site warns once for each call, and libraries' code isn't looked at. Read from the
+	compiler's typed code, after typing: the fields reached, and the text of a `js.Syntax.code` call. Run by the library's
+	`extraParams.hxml`. */
 @:noCompletion
 class HostReach {
 	#if macro
-	static inline final RUN_OPTION = "GetRunOption(name:String)";
-	static inline final POINTER = "IsTouchAvailable() or IsFinePointerAvailable()";
-	static inline final TOUCH = "IsTouchAvailable()";
-	static inline final ORIENTATION = "SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) with ORIENTATION_LANDSCAPE, ORIENTATION_PORTRAIT or ORIENTATION_ANY";
-	static inline final TILT = "EnableTiltAsync(?done:Void->Void, ?failed:String->Void)";
-	static inline final SAFE_AREA = "GetWindowSafeArea()";
 	static inline final SAVE = "SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void) and LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)";
-	static inline final CAN_FULLSCREEN = "IsFullscreenAvailable()";
 	static inline final IS_FULLSCREEN = "IsWindowFullscreen()";
 	static inline final FULLSCREEN = "ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)";
 
 	/** The module of `helix.raylib.extras` holding each call, which a warning names with its import; a call of `Raylib`'s needs none. */
-	static final MODULES:Map<String, String> = [
-		RUN_OPTION => "Device",
-		POINTER => "Device",
-		TOUCH => "Device",
-		ORIENTATION => "Device",
-		TILT => "Device",
-		SAFE_AREA => "Device",
-		CAN_FULLSCREEN => "Device",
-		SAVE => "Files",
-		FULLSCREEN => "Window"
-	];
+	static final MODULES:Map<String, String> = [SAVE => "Files", FULLSCREEN => "Window"];
 
 	/** What a warning naming a call adds, after the call. */
 	static final NOTES:Map<String, String> = [
@@ -54,44 +36,19 @@ class HostReach {
 
 	/** The fields that reach the host, by their owner's path and their name, and what answers each. */
 	static final FIELDS:Map<String, String> = [
-		"js.Browser.location" => RUN_OPTION,
-		"js.html.Window.location" => RUN_OPTION,
-		"js.html.Document.location" => RUN_OPTION,
-		"js.html.URL.searchParams" => RUN_OPTION,
-		"Sys.getEnv" => RUN_OPTION,
-		"Sys.args" => RUN_OPTION,
-		"js.html.Window.matchMedia" => POINTER,
-		"js.html.Navigator.maxTouchPoints" => TOUCH,
-		"js.html.Screen.orientation" => ORIENTATION,
-		"js.html.Window.ondeviceorientation" => TILT,
 		"js.Browser.getLocalStorage" => SAVE,
 		"js.Browser.getSessionStorage" => SAVE,
 		"js.html.Window.localStorage" => SAVE,
 		"js.html.Window.sessionStorage" => SAVE,
 		"js.html.Window.indexedDB" => SAVE,
-		"js.html.Document.fullscreenEnabled" => CAN_FULLSCREEN,
 		"js.html.Document.fullscreenElement" => IS_FULLSCREEN,
 		"js.html.Element.requestFullscreen" => FULLSCREEN,
 		"js.html.Document.exitFullscreen" => FULLSCREEN
 	];
 
-	/** The classes whose construction reaches the host, and what answers each. */
-	static final CLASSES:Map<String, String> = [
-		"js.html.URLSearchParams" => RUN_OPTION,
-		"js.html.DeviceOrientationEvent" => TILT
-	];
-
-	/** Text that reaches the host in any string, lowercased, and what answers each. */
-	static final TEXT = ["env(safe-area-inset" => SAFE_AREA, "deviceorientation" => TILT];
-
 	/** Text that reaches the host in a `js.Syntax.code` string, and what answers each. */
 	static final SCRIPT:Array<{pattern:EReg, call:String}> = [
-		{pattern: ~/\blocation\b|URLSearchParams/, call: RUN_OPTION},
-		{pattern: ~/\bmatchMedia\b/, call: POINTER},
-		{pattern: ~/\bmaxTouchPoints\b/, call: TOUCH},
-		{pattern: ~/screen\.orientation/, call: ORIENTATION},
 		{pattern: ~/\b(localStorage|sessionStorage|indexedDB)\b/, call: SAVE},
-		{pattern: ~/\bfullscreenEnabled\b/, call: CAN_FULLSCREEN},
 		{pattern: ~/\bfullscreenElement\b/, call: IS_FULLSCREEN},
 		{pattern: ~/\b(requestFullscreen|exitFullscreen)\b/, call: FULLSCREEN}
 	];
@@ -145,20 +102,13 @@ class HostReach {
 			case TCall({expr: TField(_, FStatic(_.get() => {pack: ["js"], name: "Syntax"}, _.get() => {name: "code"}))}, args) if (args.length > 0):
 				switch args[0].expr {
 					case TConst(TString(s)):
-						var calls = [for (s2 in SCRIPT) if (s2.pattern.match(s)) s2.call];
-						for (text => call in TEXT)
-							if (s.toLowerCase().indexOf(text) >= 0 && calls.indexOf(call) < 0)
-								calls.push(call);
-						for (call in calls)
+						for (call in [for (s2 in SCRIPT) if (s2.pattern.match(s)) s2.call])
 							warn("js.Syntax.code", call, e.pos);
 						for (i in 1...args.length)
 							walk(args[i], site);
 						return;
 					case _:
 				}
-			case TField(_, FDynamic("location")):
-				// js.Browser.location, inlined as the global object's location, or any value of no type's.
-				warn("location", RUN_OPTION, site);
 			case TField(_, access):
 				var name = switch access {
 					case FStatic(c, f): path(c.get()) + "." + f.get().name;
@@ -169,18 +119,6 @@ class HostReach {
 				var call = name == null ? null : FIELDS.get(name);
 				if (call != null)
 					warn(name, call, e.pos);
-			case TNew(c, _, _):
-				var name = path(c.get());
-				var call = CLASSES.get(name);
-				if (call != null)
-					warn('new $name', call, e.pos);
-			case TConst(TString(s)):
-				var lower = s.toLowerCase();
-				for (text => call in TEXT)
-					if (lower.indexOf(text) >= 0) {
-						warn('"$text"', call, e.pos);
-						break;
-					}
 			case _:
 		}
 		TypedExprTools.iter(e, inner -> walk(inner, site));
@@ -191,11 +129,10 @@ class HostReach {
 	static function warn(reached:String, call:String, pos:Position):Void {
 		if (!own(pos))
 			return;
-		var target = reached.startsWith("Sys.") ? "natively" : "in a browser";
 		var module = MODULES.get(call);
 		var where = module == null ? "" : ' in helix.raylib.extras.$module (import helix.raylib.extras.$module.*;)';
 		var note = NOTES.exists(call) ? " " + NOTES.get(call) : "";
-		Context.warning('$reached: Works only $target. See $call$where.$note', pos);
+		Context.warning('$reached: Works only in a browser. See $call$where.$note', pos);
 	}
 
 	static function path(c:ClassType):String

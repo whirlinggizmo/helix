@@ -8,7 +8,8 @@
 | `helix.raylib.Raymath` | raymath |
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
-| `helix.raylib.extras` | what helix-raylib adds: async loads, PBR lighting, device and window info |
+| `helix.raylib.Rlights` | rlights, from raylib's lighting examples |
+| `helix.raylib.extras` | the calls a refused raylib call names in its place: async loads and writes, window requests, compiled shaders |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
 ## Differences from raylib

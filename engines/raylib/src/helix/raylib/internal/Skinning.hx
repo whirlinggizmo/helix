@@ -10,8 +10,8 @@ import helix.raylib.modules.RMath.*;
 	A call stores the pose, not the vertices: each skinned mesh keeps the model's bone matrices as they are then (`MeshPose`), and is
 	drawn by them:
 
-	- through a shader including `<helix/raylib/shaders/skinning.glsl>` (raylib's default shader and the lit shader are drawn through
-	  their skinned twins, `Defaults.skinnedShader` and `litSkinnedShader`, each written every uniform its shader is), on the GPU: the draw's bones are written into the frame's bone palette, a data texture of four texels a
+	- through a shader including `<helix/raylib/shaders/skinning.glsl>` (raylib's default shader is drawn through its skinned twin,
+	  `Defaults.skinnedShader`, written every uniform the default is), on the GPU: the draw's bones are written into the frame's bone palette, a data texture of four texels a
 	  bone, 64 bones a row, uploaded once before the frame's passes, and the draw is given its first bone (`boneOffset`), so one model
 	  drawn in many poses in one frame draws each as it was asked for;
 	- through a shader reading the bone ids itself (raylib's `skinning.vs`), as it is: drawn with `boneMatrices`;
@@ -141,20 +141,12 @@ class Skinning {
 		var frame = Runtime.frame;
 		var p = shader.program;
 		var locs = shader.locs;
-		// A material marked unlit, through the shader's unlit twin (the PBR shader's), and then that twin's skinned one.
-		if (material.unlit && p.unlit != null) {
-			p = p.unlitOf();
-			locs = twinLocs;
-		}
-		// A built-in shader's skinned twin: the default's, or the lit or PBR one's.
+		// The default shader's skinned twin.
 		if (instances == 0) {
 			var twin = p.twin;
-			if (twin == null) {
-				var skinned = p == frame.defaultProgram ? Defaults.skinnedShader() : p.skinned;
-				if (skinned != null) {
-					twin = new Program(Runtime.graphics, skinned);
-					p.mirror(twin);
-				}
+			if (twin == null && p == frame.defaultProgram) {
+				twin = new Program(Runtime.graphics, Defaults.skinnedShader());
+				p.mirror(twin);
 			}
 			if (twin != null) {
 				p = twin;
@@ -173,9 +165,6 @@ class Skinning {
 				p.values.writeInt(p.boneOffset, writtenOffset + 1);
 			var textures = helix.raylib.modules.RModels.mapProgramTextures(p, locs, material);
 			textures[p.paletteSlot] = palette;
-			var materialWriter = helix.raylib.modules.RModels.materialWriter;
-			if (p.material && materialWriter != null)
-				materialWriter(p, mesh, material);
 			frame.mesh(mesh, p, transform, diffuse, textures, instances, instanceCount);
 			if (p.boneOffset != null)
 				p.values.writeInt(p.boneOffset, 0);
@@ -228,7 +217,6 @@ class Skinning {
 			if (chunks.length > 1 || chunks.length == 1 && (chunks[0].rows < wanted || chunks[0].rows > 16 && chunks[0].rows > wanted * 4))
 				for (c in chunks.splice(0, chunks.length)) {
 					Runtime.graphics.disposeTexture(c.handle);
-					GpuMemory.freed(c.handle);
 				}
 			for (c in chunks)
 				c.used = 0;
@@ -241,7 +229,7 @@ class Skinning {
 			var rows = Std.int(Math.max(Math.max(1, Math.ceil(lastBones / 64)), Math.ceil(n / 64)));
 			if (chunk != null)
 				rows = Std.int(Math.max(rows, chunk.rows * 2));
-			chunks.push(chunk = new Chunk(GpuMemory.texture(Runtime.graphics.createDataTexture(256, rows), 256 * rows * 16), rows));
+			chunks.push(chunk = new Chunk(Runtime.graphics.createDataTexture(256, rows), rows));
 		}
 		var data = chunk.bytes, at = chunk.used * 64;
 		for (i in 0...floats.length)
@@ -285,7 +273,7 @@ class Skinning {
 		var bytes = Bytes.alloc(n * 4);
 		for (i in 0...n)
 			bytes.setFloat(i * 4, i < values.length ? values[i] : 0);
-		var buffer = GpuMemory.buffer(Runtime.graphics.createStaticBuffer(bytes, bytes.length, false), bytes.length);
+		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
 		Runtime.frame.retire(buffer);
 		return buffer;
 	}

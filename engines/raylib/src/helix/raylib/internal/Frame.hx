@@ -581,7 +581,7 @@ class Frame {
 			bytes.setInt32(at + 16, v + 2);
 			bytes.setInt32(at + 20, v + 3);
 		}
-		quadIndices = GpuMemory.buffer(graphics.createStaticBuffer(bytes, bytes.length, true), bytes.length);
+		quadIndices = graphics.createStaticBuffer(bytes, bytes.length, true);
 		return quadIndices;
 	}
 
@@ -620,11 +620,11 @@ class Frame {
 			var corners = Bytes.alloc(16);
 			for (c in 0...4)
 				corners.setFloat(c * 4, c);
-			spriteQuad = GpuMemory.buffer(graphics.createStaticBuffer(corners, 16, false), 16);
+			spriteQuad = graphics.createStaticBuffer(corners, 16, false);
 			var indices = Bytes.alloc(24);
 			for (k => i in [0, 1, 2, 0, 2, 3])
 				indices.setInt32(k * 4, i);
-			spriteIndices = GpuMemory.buffer(graphics.createStaticBuffer(indices, 24, true), 24);
+			spriteIndices = graphics.createStaticBuffer(indices, 24, true);
 		}
 		var state = states();
 		var pipeline = p.pipeline('s$state', () -> graphics.createPipeline({
@@ -681,23 +681,18 @@ class Frame {
 	function makeOwn():Void {
 		var texel = Bytes.alloc(4);
 		texel.fill(0, 4, 255);
-		white = GpuMemory.texture(graphics.createTexture(1, 1, [texel]), 4);
+		white = graphics.createTexture(1, 1, [texel]);
 		var record = Bytes.alloc(CONSTANT_BYTES);
 		record.fill(0, CONSTANT_BYTES, 0);
 		for (column in 0...4)
 			record.setFloat((MATRIX_CONSTANT + column * 4 + 3) * 4, 1);
-		constants = GpuMemory.buffer(graphics.createStaticBuffer(record, CONSTANT_BYTES, false), CONSTANT_BYTES);
+		constants = graphics.createStaticBuffer(record, CONSTANT_BYTES, false);
 	}
 
 	/** Makes the frame's own GPU things again after the GPU's context was lost and given back (`Event.GraphicsRestored`): the white
 		texture and the constants, gone with the context; the quads' indices, made again when next needed. The vertex buffer, the programs
 		and the pipelines keep their handles, remade by the platform. */
 	public function graphicsRestored():Void {
-		GpuMemory.freed(white);
-		GpuMemory.freed(constants);
-		GpuMemory.freed(quadIndices);
-		GpuMemory.freed(spriteQuad);
-		GpuMemory.freed(spriteIndices);
 		makeOwn();
 		quadIndices = 0;
 		quadCapacity = 0;
@@ -1023,7 +1018,7 @@ class Frame {
 		var bytes = Bytes.alloc(corners.length * 4);
 		for (i => index in corners)
 			bytes.setInt32(i * 4, index);
-		var buffer = GpuMemory.buffer(graphics.createStaticBuffer(bytes, bytes.length, true), bytes.length);
+		var buffer = graphics.createStaticBuffer(bytes, bytes.length, true);
 		retire(buffer);
 		return [buffer, corners.length];
 	}
@@ -1133,7 +1128,7 @@ class Frame {
 			var bytes = Bytes.alloc(edgeCount * 4);
 			for (i => index in front)
 				bytes.setInt32(i * 4, index);
-			edges = GpuMemory.buffer(graphics.createStaticBuffer(bytes, bytes.length, true), bytes.length);
+			edges = graphics.createStaticBuffer(bytes, bytes.length, true);
 			retire(edges);
 		} else if (wire)
 			edges = Models.edges(mesh);
@@ -1461,7 +1456,6 @@ class Frame {
 		}
 		for (b in retired) {
 			graphics.disposeBuffer(b);
-			GpuMemory.freed(b);
 		}
 		retired.resize(0);
 		reset();
@@ -1513,10 +1507,9 @@ class Frame {
 			if (bytes > capacity) {
 				if (buffer != 0) {
 					graphics.disposeBuffer(buffer);
-					GpuMemory.freed(buffer);
 				}
 				capacity = data.length;
-				buffer = GpuMemory.buffer(graphics.createBuffer(capacity), capacity);
+				buffer = graphics.createBuffer(capacity);
 			}
 			graphics.updateBuffer(buffer, data, bytes);
 		}
@@ -1525,10 +1518,9 @@ class Frame {
 			if (bytes > spriteCapacity) {
 				if (spriteBuffer != 0) {
 					graphics.disposeBuffer(spriteBuffer);
-					GpuMemory.freed(spriteBuffer);
 				}
 				spriteCapacity = spriteData.length;
-				spriteBuffer = GpuMemory.buffer(graphics.createBuffer(spriteCapacity), spriteCapacity);
+				spriteBuffer = graphics.createBuffer(spriteCapacity);
 			}
 			graphics.updateBuffer(spriteBuffer, spriteData, bytes);
 		}
@@ -1540,8 +1532,6 @@ class Frame {
 			if (b != 0)
 				graphics.disposeBuffer(b);
 		graphics.disposeTexture(white);
-		for (h in [buffer, white, constants, quadIndices, spriteBuffer, spriteQuad, spriteIndices].concat(retired))
-			GpuMemory.freed(h);
 		defaultProgram.dispose();
 		if (spriteProgram != null)
 			spriteProgram.dispose();

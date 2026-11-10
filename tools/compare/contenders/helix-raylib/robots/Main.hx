@@ -1,7 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Models.*;
-import helix.raylib.extras.Device.*;
 
 // raylib's models_animation, many at once: N robots each posed by UpdateModelAnimation at its own frame, drawn with DrawModel, for
 // tools/compare/compare.py. count=N run option. Natively, gc-min=MB sets hxcpp's minimum working memory (cpp.vm.Gc.setMinimumWorkingMemory)
@@ -15,13 +14,25 @@ class Main {
 		#end
 	}
 
+	// A run option as compare.py passes it: in a page the URL's query (?count=N), natively the command line (--count=N).
+	static function option(name:String):Null<String> {
+		#if js
+		return new js.html.URLSearchParams(js.Browser.location.search).get(name);
+		#else
+		for (arg in Sys.args())
+			if (StringTools.startsWith(arg, '--$name='))
+				return arg.substr(name.length + 3);
+		return null;
+		#end
+	}
+
 	static function main():Void {
 		var target = #if js "page" #elseif sdl_gpu "native-sdlgpu" #else "native-gl" #end;
-		var opt = GetRunOption("count");
+		var opt = option("count");
 		var count = opt == null ? 100 : Std.parseInt(opt);
-		var copt = GetRunOption("chunk");
+		var copt = option("chunk");
 		#if cpp
-		var gcMin = GetRunOption("gc-min");
+		var gcMin = option("gc-min");
 		if (gcMin != null)
 			cpp.vm.Gc.setMinimumWorkingMemory(Std.parseInt(gcMin) * 1024 * 1024);
 		#end
