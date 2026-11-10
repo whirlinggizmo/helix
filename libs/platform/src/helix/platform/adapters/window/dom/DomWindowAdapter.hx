@@ -18,7 +18,8 @@ import js.html.CanvasElement;
 	orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later. */
 class DomWindowAdapter implements IWindow {
 	var canvas:CanvasElement;
-	var closed = false;
+	// The page's pagehide listener, added while onClose is set.
+	var pageHidden:js.html.PageTransitionEvent->Void;
 
 	/** Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the canvas's box at the ratio chosen.
 
@@ -27,13 +28,8 @@ class DomWindowAdapter implements IWindow {
 	public function new(options:DomWindowAdapterOptions) {
 		canvas = DomPage.canvas(options.canvasId);
 		DomPage.fit(canvas, options.highDpi ? Browser.window.devicePixelRatio : 1);
-		Browser.window.addEventListener("pagehide", _ -> {
-			if (closed)
-				return;
-			closed = true;
-			if (onClose != null)
-				onClose();
-		});
+		// A page kept in the back-forward cache may come back, so only a page going for good calls onClose.
+		pageHidden = e -> if (!e.persisted && onClose != null) onClose();
 	}
 
 	public var framebufferWidth(get, never):Int;
@@ -361,5 +357,13 @@ class DomWindowAdapter implements IWindow {
 
 	public function close():Void {}
 
-	public var onClose:Null<Void->Void>;
+	public var onClose(default, set):Null<Void->Void>;
+
+	function set_onClose(f:Null<Void->Void>):Null<Void->Void> {
+		if (f != null && onClose == null)
+			Browser.window.addEventListener("pagehide", pageHidden);
+		else if (f == null && onClose != null)
+			Browser.window.removeEventListener("pagehide", pageHidden);
+		return onClose = f;
+	}
 }

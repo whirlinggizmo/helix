@@ -67,7 +67,8 @@ The interfaces in `libs/platform/src/helix/platform/` are the authority; this is
 - `readDroppedFile(fileIndex, maxBytes, read(name, bytes), failed(message))`: a file the last `FilesDropped` counted, its name without
   its directory; answered never during the call, as a request is: natively read from its path at the next `IEvents.poll`, in a page
   the File the canvas's drop gave, once the browser has read it.
-- `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at pagehide). Not a
+- `onClose`, a property: the call made once, the last before the window is gone (natively in `close`, in a page at the pagehide of a page going for good, not
+  one kept in the back-forward cache). Not a
   place to save: a page's write started there isn't kept.
 - `close()` natively destroys the window and in a page does nothing (a script can't close its tab); `canClose()` says whether `close`
   removes the window: true natively, false in a page, so a menu asks it before offering Quit.
@@ -92,7 +93,7 @@ actually swaps; the window only provides the surface.
   delivered by `IEvents.poll` like a key press: it happens once, and the owner decides, closing with `close()` or not (asking "quit
   without saving?" first).
 - A page never gets `CloseRequested`: a tab closing or navigating away gives no frame to decide in. Its end is `onClose`, at
-  pagehide, the one call the platform makes upward; nothing of the program runs after it, so work started there must not need a later
+  the pagehide of a page going for good, the one call the platform makes upward; nothing of the program runs after it, so work started there must not need a later
   frame. A browser drops a write that starts as its page goes (IndexedDB's, in Chromium every time), so a program keeps what it must
   as it changes.
 - Quitting is the owner's loop ending, the same on both targets: natively the owner closes the window and ends its loop; in a page a

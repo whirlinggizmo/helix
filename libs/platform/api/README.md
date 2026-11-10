@@ -1542,7 +1542,7 @@ function getMonitorRefreshRate(monitorIndex:Int):Float
 function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
-var onClose:Null<() -> Void>
+var onClose(default, set):Null<() -> Void>
 ```
 
 - `framebufferWidth`: Gets the drawable area's width, in framebuffer pixels.
@@ -1694,7 +1694,7 @@ var onClose:Null<() -> Void>
 - `close`: Closes the window natively, and does nothing in a page.
   `onClose` runs before the window closes. The program disposes the graphics drawing in the window before calling it, and ends its loop after it.
 - `onClose`: Gets or sets the function called once, as the window goes for good. It defaults to null, for none.
-  Natively it is called in `close`. In a page it is called at pagehide, with no frame after it, so a file written there isn't kept: a browser drops a write that starts as its page goes. A page receives no `CloseRequested`, so this is a page's only end.
+  Natively it is called in `close`. In a page it is called at the pagehide of a page going for good, with no frame after it, so a file written there isn't kept: a browser drops a write that starts as its page goes. A page kept in the browser's back-forward cache isn't going, so it isn't called then, nor when the browser later drops that page or a phone ends a tab in the background. A page receives no `CloseRequested`, so this is a page's only end.
 
 ## Key
 

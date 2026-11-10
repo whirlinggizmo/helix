@@ -847,11 +847,10 @@ class Runtime {
 		listeners and the styles they set with them. */
 	public static function close():Void {
 		#if js
-		// The canvas cleared, a frame of nothing shown, and leaving the page no longer asking the program to close.
+		// The canvas cleared, and a frame of nothing shown.
 		if (frame != null) {
 			frame.clear(0);
 			frame.draw(window.framebufferWidth, window.framebufferHeight, true);
-			window.onClose = null;
 		}
 		#end
 		for (f in closing)

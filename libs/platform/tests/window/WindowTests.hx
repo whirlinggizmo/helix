@@ -176,9 +176,29 @@ class WindowTests {
 			'safe area $found, expected the window less $top,$right,$bottom,$left');
 	}
 
+	/** Checks a page's onClose with pagehides sent to the page: called at one going for good, not at one kept in the back-forward cache,
+		and not once set back to null. */
+	static function checkOnClose():Void {
+		#if js
+		var calls = 0;
+		function hide(persisted:Bool)
+			js.Browser.window.dispatchEvent(new js.html.PageTransitionEvent("pagehide", {persisted: persisted}));
+		hide(false);
+		window.onClose = () -> calls++;
+		hide(true);
+		check(calls == 0, 'onClose: called at a pagehide into the back-forward cache');
+		hide(false);
+		check(calls == 1, 'onClose: called $calls times at a pagehide going for good');
+		window.onClose = null;
+		hide(false);
+		check(calls == 1, 'onClose: called after it was set to null');
+		#end
+	}
+
 	/** Makes the requests: on both targets, then each target's own. */
 	static function setup():Void {
 		checkSafeArea();
+		checkOnClose();
 		requests = [
 			{
 				name: "a file dropped",

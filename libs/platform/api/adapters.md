@@ -1048,7 +1048,7 @@ function getMonitorHeight(monitorIndex:Int):Int
 function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
-var onClose:Null<() -> Void>
+var onClose(default, set):Null<() -> Void>
 ```
 
 - `new`: Creates the page's window over the canvas the program draws in, sizing its drawing buffer to the canvas's box at the ratio chosen.
@@ -1130,7 +1130,7 @@ function getMonitorHeight(monitorIndex:Int):Int
 function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:haxe.io.Bytes) -> Void, failed:String -> Void):Void
 function canClose():Bool
 function close():Void
-var onClose:Null<() -> Void>
+var onClose(default, set):Null<() -> Void>
 ```
 
 - `new`: Opens the program's window.

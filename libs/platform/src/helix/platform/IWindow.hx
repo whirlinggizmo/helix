@@ -288,7 +288,9 @@ interface IWindow {
 
 	/** Gets or sets the function called once, as the window goes for good. It defaults to null, for none.
 
-		Natively it is called in `close`. In a page it is called at pagehide, with no frame after it, so a file written there isn't kept: a
-		browser drops a write that starts as its page goes. A page receives no `CloseRequested`, so this is a page's only end. */
-	var onClose:Null<Void->Void>;
+		Natively it is called in `close`. In a page it is called at the pagehide of a page going for good, with no frame after it, so a
+		file written there isn't kept: a browser drops a write that starts as its page goes. A page kept in the browser's back-forward
+		cache isn't going, so it isn't called then, nor when the browser later drops that page or a phone ends a tab in the background. A
+		page receives no `CloseRequested`, so this is a page's only end. */
+	var onClose(default, set):Null<Void->Void>;
 }

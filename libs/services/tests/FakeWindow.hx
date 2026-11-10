@@ -289,5 +289,8 @@ class FakeWindow implements IWindow {
 
 	public function close():Void {}
 
-	public var onClose:Null<Void->Void> = null;
+	public var onClose(default, set):Null<Void->Void>;
+
+	function set_onClose(f:Null<Void->Void>):Null<Void->Void>
+		return onClose = f;
 }

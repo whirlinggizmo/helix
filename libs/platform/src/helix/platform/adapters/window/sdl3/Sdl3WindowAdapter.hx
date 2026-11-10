@@ -333,5 +333,8 @@ class Sdl3WindowAdapter implements IWindow {
 		Sdl3Bridge.close();
 	}
 
-	public var onClose:Null<Void->Void>;
+	public var onClose(default, set):Null<Void->Void>;
+
+	function set_onClose(f:Null<Void->Void>):Null<Void->Void>
+		return onClose = f;
 }
