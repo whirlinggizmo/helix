@@ -73,7 +73,7 @@ def test(native,audio_device):
 RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','LoopTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.
-TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader')]
+TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader'),('own_lights.vs','own_lights.fs','own_lights.shader')]
 
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""

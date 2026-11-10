@@ -1,5 +1,5 @@
 {
- "commit": "55a9d6b 2026-11-10",
+ "commit": "c9015c2 2026-11-10",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -926,9 +926,9 @@
    },
    "8-lit": {
     "adds": "light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight",
-    "raw": 459063,
-    "gzip": 96058,
-    "brotli": 77706,
+    "raw": 459051,
+    "gzip": 96063,
+    "brotli": 77669,
     "packages": {
      "platform/graphics": 47158,
      "raylib/Frame": 40049,
@@ -948,7 +948,7 @@
      "raylib/RModels": 9672,
      "raylib/RTextures": 9063,
      "raylib/RShapes": 8846,
-     "raylib/Program": 8733,
+     "raylib/Program": 8721,
      "geometry": 7677,
      "raylib": 7616,
      "platform/shared": 6200,
@@ -988,9 +988,9 @@
    },
    "9-audio": {
     "adds": "audio: a sound loaded with LoadSoundAsync and played once it is loaded",
-    "raw": 484614,
-    "gzip": 101384,
-    "brotli": 81934,
+    "raw": 484602,
+    "gzip": 101389,
+    "brotli": 81953,
     "packages": {
      "platform/graphics": 47158,
      "raylib/Frame": 40049,
@@ -1011,7 +1011,7 @@
      "platform/audio": 9266,
      "raylib/RTextures": 9063,
      "raylib/RShapes": 8846,
-     "raylib/Program": 8733,
+     "raylib/Program": 8721,
      "raylib": 7853,
      "geometry": 7677,
      "services/audio": 7053,
@@ -1055,9 +1055,9 @@
    },
    "10-game": {
     "adds": "a game: what a real game uses, its file formats one of each",
-    "raw": 678416,
-    "gzip": 137655,
-    "brotli": 111031,
+    "raw": 678404,
+    "gzip": 137660,
+    "brotli": 111043,
     "packages": {
      "platform/graphics": 47777,
      "formats": 44511,
@@ -1084,7 +1084,7 @@
      "services/audio": 9888,
      "raylib": 9762,
      "geometry": 9079,
-     "raylib/Program": 8733,
+     "raylib/Program": 8721,
      "platform/shared": 8372,
      "program": 7669,
      "raylib/RAudio": 7647,
@@ -1135,9 +1135,9 @@
    },
    "11-everything": {
     "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui, Rlights and helix.raylib.extras a program can call, and every file reader",
-    "raw": 1700931,
-    "gzip": 304683,
-    "brotli": 237101,
+    "raw": 1700919,
+    "gzip": 304685,
+    "brotli": 237086,
     "packages": {
      "formats": 131880,
      "raylib/RTextures": 111799,
@@ -1182,7 +1182,7 @@
      "services/audio": 11427,
      "services/models": 10128,
      "platform/shared": 8835,
-     "raylib/Program": 8733,
+     "raylib/Program": 8721,
      "raylib/RWindowAsync": 7952,
      "raylib/ObjModels": 7273,
      "raylib/RModelsAsync": 6981,

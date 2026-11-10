@@ -79,6 +79,14 @@ class ShaderMacro {
 		var s = stages(vsFileName == null ? "default vertex" : vsFileName, read(vsFileName), fsFileName == null ? "default fragment" : fsFileName,
 			read(fsFileName), pos, initials);
 		var source = helix.services.shaders.ShaderMacros.compileProgram(s.vertex, s.fragment, {clipScale: true, points: true, everyTarget: true}, [], pos);
+		// Each light of <helix/raylib/shaders/lights.glsl> starts at intensity 1, written as an initializer would be, so a program's own
+		// shader including it shines as raylib's lights do, and a program whose shaders don't include it carries nothing for it.
+		for (block in source.uniformBlocks)
+			for (member in block.members)
+				if (member.glslName == "lights.intensity")
+					for (i in 0...member.elementCount)
+						if (![for (initial in initials) initial.name].contains('lights[$i].intensity'))
+							initials.push({name: 'lights[$i].intensity', numbers: [1.0]});
 		var directory = Path.directory(compiledShaderFileName);
 		if (directory != "")
 			FileSystem.createDirectory(directory);

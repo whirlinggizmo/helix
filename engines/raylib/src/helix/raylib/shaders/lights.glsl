@@ -4,8 +4,7 @@
 // lights. The program sets viewPos, the camera's position, each frame at shader.locs[SHADER_LOC_VECTOR_VIEW].
 //
 // Each light also has helix-raylib's range and intensity, set with SetShaderValue at lights[i].range and lights[i].intensity.
-// LoadLightingShader and LoadPbrShader start each light at intensity 1. A program's own shader starts at 0, as any uniform, so it sets
-// each light's intensity itself.
+// Each light starts at intensity 1.
 //
 // vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) returns the fragment's lit color, gamma corrected.
 // fragPosition is in world space. fragNormal needn't be normalized.

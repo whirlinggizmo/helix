@@ -247,14 +247,15 @@ class Program {
 			values.writeFloats(u, numbers.length == count * size ? numbers : numbers.slice(0, count * size), first);
 	}
 
-	/** Writes a uniform by name, when the shader declares it.
+	/** Writes a uniform by name, or an element's or a field's by its path (`lights[1].intensity`), when the shader declares it, as
+		`write` does.
 
-		@param name  The uniform's name.
+		@param name  The uniform's name or path.
 		@param numbers  The numbers. */
 	public function writeNamed(name:String, numbers:Array<Float>):Void {
-		var u = shader.findUniform(name);
-		if (u != null)
-			put(u, numbers, 0);
+		var at = locate(name);
+		if (at >= 0)
+			write(at, numbers);
 	}
 
 	/** Returns the blocks a draw reads, raylib's own uniforms written first: the matrices and the diffuse color, each copied, as a draw is

@@ -7,7 +7,8 @@ import helix.raylib.internal.Runtime;
 
 /** Checks the loads of a shader compiled ahead of time by `CompileShaderFile` (helix.py compiles tests/shaders' glow into
 	build/tests/glow.shader first, and the build embeds it): `LoadCompiledShaderAsync` answers at a later poll with the shader, its
-	locations raylib's and its uniform's initializer written, and a draw through it uses it; `LoadCompiledShaderFromData` makes the
+	locations raylib's and its uniform's initializer written, and a draw through it uses it; a shader including lights.glsl
+	(tests/shaders' own_lights) starts each light at intensity 1; `LoadCompiledShaderFromData` makes the
 	same shader at once; and a file or data that isn't a compiled shader, or a file that isn't there, is refused with why. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
@@ -84,6 +85,12 @@ class ShaderFileTests {
 		var bytes:Bytes = draw.uniforms[place.blockSlot];
 		check(bytes.getFloat(place.offset) == 0.5, "a uniform's initializer: written");
 		check([for (_ => id in p.pipelines) id].indexOf(draw.pipeline) >= 0, "a draw through it: its pipeline");
+
+		// A program's own shader including lights.glsl: each light starts at intensity 1, as the built-in lit shaders' do.
+		var lit = LoadCompiledShaderFromData(haxe.Resource.getBytes("own_lights.shader"));
+		var intensities = [for (i in 0...4) lit.program.written[lit.program.locate('lights[$i].intensity')]];
+		check([for (v in intensities) if (v != null && v[0] == 1) v].length == 4, "an own shader including lights.glsl: each light at intensity 1");
+		check(shader.program.locate("lights[0].intensity") < 0, "a shader without lights.glsl: no intensity");
 
 		// Refused, with why.
 		var wrong = load("notes.txt");
