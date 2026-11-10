@@ -99,12 +99,11 @@ class Files {
 
 		The answer comes at a later frame, never during the call.
 
-		Natively it is a directory of the program's files.
+		A directory exists when a file `SaveFileText` or `SaveFileData` wrote is in it. The root ("", "." or "./") always exists.
 
 		`helix-raylib-dropped` and the directories under it hold the dropped files.
 
-		A page's own files are on its server, which can't be listed. There only its root ("", "." or "./") and the dropped files'
-		directories exist.
+		The program's own files aren't in directories: a program names each one it loads.
 
 		@param dirPath  The directory.
 		@param answer  Receives true when it exists. */
@@ -165,9 +164,8 @@ class Files {
 
 		The paths are sorted by name.
 
-		The directories are `DirectoryExistsAsync`'s. A page lists only the dropped files.
-
-		Files `SaveFileText` and `SaveFileData` wrote aren't listed.
+		The files listed are those `SaveFileText` and `SaveFileData` wrote, and the dropped files, in `DirectoryExistsAsync`'s
+		directories. The program's own files aren't listed: a program names each one it loads.
 
 		@param dirPath  The directory.
 		@param loaded  Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as

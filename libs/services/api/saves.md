@@ -30,6 +30,7 @@ function new(fileSystem:IFileSystem, ?name:String = "saves.json")
 function load(loaded:() -> Void, ?failed:String -> Void):Void
 var loaded(default, null):Bool
 function hasKey(key:String):Bool
+function getKeys():Array<String>
 function getString(key:String, fallback:String):String
 function getInt(key:String, fallback:Int):Int
 function getFloat(key:String, fallback:Float):Float
@@ -58,6 +59,9 @@ function dispose():Void
 - `hasKey`: Returns whether a key has a value.
   - `key`: The key.
   - returns: True when a value was set or loaded, and not deleted since.
+- `getKeys`: Returns the keys that have a value, sorted.
+  - returns: The keys.
+  - throws `String`: Before `load` has finished.
 - `getString`: Returns a key's value as a string.
   - `key`: The key.
   - `fallback`: The value to return when the key has no value, or one that isn't a string.

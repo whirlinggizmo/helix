@@ -149,6 +149,31 @@ class AsyncTests {
 		LoadFileDataAsync("bytes.bin", b -> bytes = b, e -> throw e);
 		pump(() -> bytes != null);
 		check(bytes.toString() == "abc", "and read back");
+
+		// Listings: the files the program wrote, in their directories.
+		check(answer((d, f) -> SaveFileTextAsync("saves/a.txt", "a", d, f)) == "done"
+			&& answer((d, f) -> SaveFileDataAsync("saves/b.dat", Bytes.ofString("b"), 1, d, f)) == "done"
+			&& answer((d, f) -> SaveFileTextAsync("saves/deep/c.txt", "c", d, f)) == "done",
+			"writes into directories");
+		function list(dirPath:String):String {
+			var listed:Null<FilePathList> = null;
+			LoadDirectoryFilesAsync(dirPath, l -> listed = l);
+			pump(() -> listed != null);
+			return listed.paths.join(",");
+		}
+		check(list("") == "bytes.bin,notes.txt,saves", 'the root lists what was written there, and its directories: ${list("")}');
+		check(list("saves") == "saves/a.txt,saves/b.dat,saves/deep", 'a directory: ${list("saves")}');
+		check(list("levels") == "", "a directory nothing was written into lists nothing");
+		var filtered:Null<FilePathList> = null;
+		LoadDirectoryFilesExAsync("saves", ".txt", true, l -> filtered = l);
+		pump(() -> filtered != null);
+		check(filtered.paths.join(",") == "saves/a.txt,saves/deep/c.txt", 'by extension, with the subdirectories: ${filtered.paths}');
+		var exists:Array<Bool> = [];
+		for (dir in ["saves/deep", "levels", "."])
+			DirectoryExistsAsync(dir, yes -> exists.push(yes));
+		pump(() -> exists.length == 3);
+		check(exists.join(",") == "true,false,true", 'directories exist when written into, and the root always: $exists');
+
 		check(answer((d, f) -> SaveFileDataAsync("none.bin", Bytes.ofString("abc"), 9, d, f)) == "failed: none.bin: there are no 9 bytes to write",
 			"more bytes than there are");
 		files.failWrites = true;

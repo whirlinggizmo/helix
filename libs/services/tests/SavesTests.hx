@@ -92,6 +92,7 @@ class SavesTests {
 		again.poll();
 		files.poll();
 		check(!again.pending && files.writes == before + 1, "retried after a change");
+		check(again.getKeys().join(",") == "level,sound,x", 'getKeys: every key, sorted: ${again.getKeys()}');
 
 		again.deleteKeys();
 		again.poll();
@@ -99,7 +100,7 @@ class SavesTests {
 		var cleared = new Saves(files);
 		cleared.load(() -> {});
 		files.poll();
-		check(!cleared.hasKey("level") && !cleared.hasKey("sound"), "deleteKeys: none kept");
+		check(!cleared.hasKey("level") && !cleared.hasKey("sound") && cleared.getKeys().length == 0, "deleteKeys: none kept");
 
 		files.files.set("bad.json", Bytes.ofString("not json"));
 		var bad = new Saves(files, "bad.json");

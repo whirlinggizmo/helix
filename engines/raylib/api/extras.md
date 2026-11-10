@@ -165,11 +165,11 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The answer comes at a later frame, never during the call.
 
-  Natively it is a directory of the program's files.
+  A directory exists when a file `SaveFileText` or `SaveFileData` wrote is in it. The root ("", "." or "./") always exists.
 
   `helix-raylib-dropped` and the directories under it hold the dropped files.
 
-  A page's own files are on its server, which can't be listed. There only its root ("", "." or "./") and the dropped files' directories exist.
+  The program's own files aren't in directories: a program names each one it loads.
 - `IsPathFileAsync`: Asynchronously answers whether a path is a file, not a directory, replacing raylib's `IsPathFile`. See `DirectoryExistsAsync` for a directory.
   - `path`: The path.
   - `answer`: Receives true for a file; false for a directory or nothing there.
@@ -201,9 +201,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The paths are sorted by name.
 
-  The directories are `DirectoryExistsAsync`'s. A page lists only the dropped files.
-
-  Files `SaveFileText` and `SaveFileData` wrote aren't listed.
+  The files listed are those `SaveFileText` and `SaveFileData` wrote, and the dropped files, in `DirectoryExistsAsync`'s directories. The program's own files aren't listed: a program names each one it loads.
 - `LoadDirectoryFilesExAsync`: Asynchronously lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, replacing raylib's `LoadDirectoryFilesEx`. See `LoadDirectoryFilesAsync` for listing one directory's every file and subdirectory.
   - `basePath`: The directory.
   - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.

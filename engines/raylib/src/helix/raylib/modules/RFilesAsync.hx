@@ -158,12 +158,11 @@ class RFilesAsync {
 
 		The answer comes at a later frame, never during the call.
 
-		Natively it is a directory of the program's files.
+		A directory exists when a file `SaveFileText` or `SaveFileData` wrote is in it. The root ("", "." or "./") always exists.
 
 		`helix-raylib-dropped` and the directories under it hold the dropped files.
 
-		A page's own files are on its server, which can't be listed. There only its root ("", "." or "./") and the dropped files'
-		directories exist.
+		The program's own files aren't in directories: a program names each one it loads.
 
 		@param dirPath  The directory.
 		@param answer  Receives true when it exists. */
@@ -274,9 +273,8 @@ class RFilesAsync {
 
 		The paths are sorted by name.
 
-		The directories are `DirectoryExistsAsync`'s. A page lists only the dropped files.
-
-		Files `SaveFileText` and `SaveFileData` wrote aren't listed.
+		The files listed are those `SaveFileText` and `SaveFileData` wrote, and the dropped files, in `DirectoryExistsAsync`'s
+		directories. The program's own files aren't listed: a program names each one it loads.
 
 		@param dirPath  The directory.
 		@param loaded  Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as
@@ -380,22 +378,35 @@ class RFilesAsync {
 		return path == "helix-raylib-dropped" || StringTools.startsWith(path, helix.raylib.internal.MemoryFiles.DROPPED);
 	}
 
-	// Lists a directory: of the dropped files, else natively of the program's files. Null when there is none, at a later poll; a page's
-	// own files can't be listed, so its root lists nothing and any other directory is none.
+	// Lists a directory: of the dropped files, else of the files SaveFileText and SaveFileData wrote, a subdirectory's name ending in a
+	// slash. Null when there is none, at a later poll. The root always exists. The program's own files are never listed, on any target.
 	static function listOf(directory:String, listed:Null<Array<String>>->Void):Void {
-		Runtime.loading();
-		var files:helix.platform.IFileSystem = isDropped(directory) ? Runtime.memory : Runtime.shipped;
 		if (directory != "" && !helix.platform.FilePath.isValid(directory)) {
 			Runtime.later(() -> listed(null));
 			return;
 		}
-		if (files == null) {
-			Runtime.later(() -> listed(directory == "" ? [] : null));
+		if (isDropped(directory)) {
+			Runtime.loading();
+			Runtime.memory.list(directory, names -> listed(names), () -> listed(null), error -> {
+				Runtime.log(LOG_WARNING, 'FILEIO: [$directory] $error');
+				listed(null);
+			});
 			return;
 		}
-		files.list(directory, names -> listed(names), () -> listed(null), error -> {
-			Runtime.log(LOG_WARNING, 'FILEIO: [$directory] $error');
-			listed(null);
+		Runtime.withSaves(saves -> {
+			var names = new Map<String, Bool>();
+			for (key in saves.getKeys()) {
+				var path = StringTools.startsWith(key,
+					SAVED) ? key.substr(SAVED.length) : StringTools.startsWith(key, SAVED_DATA) ? key.substr(SAVED_DATA.length) : null;
+				if (path == null || directory != "" && !StringTools.startsWith(path, directory + "/"))
+					continue;
+				var inside = directory == "" ? path : path.substr(directory.length + 1);
+				var slash = inside.indexOf("/");
+				names.set(slash < 0 ? inside : inside.substr(0, slash + 1), true);
+			}
+			var sorted = [for (name in names.keys()) name];
+			sorted.sort((a, b) -> a < b ? -1 : a > b ? 1 : 0);
+			Runtime.later(() -> listed(directory == "" || sorted.length > 0 ? sorted : null));
 		});
 	}
 

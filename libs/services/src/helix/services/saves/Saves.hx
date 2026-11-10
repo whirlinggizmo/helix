@@ -118,6 +118,17 @@ class Saves implements IPollable {
 		return values.exists(key);
 	}
 
+	/** Returns the keys that have a value, sorted.
+
+		@return  The keys.
+		@throws String  Before `load` has finished. */
+	public function getKeys():Array<String> {
+		ready();
+		var keys = values.keys();
+		keys.sort((a, b) -> a < b ? -1 : a > b ? 1 : 0);
+		return keys;
+	}
+
 	/** Returns a key's value as a string.
 
 		@param key  The key.
