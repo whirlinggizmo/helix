@@ -2,6 +2,8 @@
 # window.helixResult holds {passed, checks, failures, answers} when they're done. helix-platform alone: haxelib dev helix-platform
 # <checkout>/libs/platform first.
 -lib helix-platform
+-D helix-company=helix
+-D helix-product=platform-window-tests
 -cp .
 -main WindowTests
 -dce full

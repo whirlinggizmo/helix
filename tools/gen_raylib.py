@@ -305,7 +305,7 @@ def described(texts):
         out = Path(tmp) / 'raylib.xml'
         fields = Path(tmp) / 'fields.json'
         args = ['haxe', '-cp', str(src), '-lib', 'helix-services', '-lib', 'helix-platform', '-lib', 'helix-formats', '-lib', 'helix-geometry', '-lib', 'helix-math', '-lib', 'helix-log',
-                '--macro', "include('helix.raylib.modules')", '--macro', "include('helix.raylib', false)", '--macro', f"include('{EXTRAS}')", '-xml', str(out), '-D', 'doc-gen', '--no-output', '-js', str(Path(tmp) / 'unused.js'),
+                '--macro', "include('helix.raylib.modules')", '--macro', "include('helix.raylib', false)", '--macro', f"include('{EXTRAS}')", '-xml', str(out), '-D', 'doc-gen', '-D', 'helix-company=helix', '-D', 'helix-product=gen-raylib', '--no-output', '-js', str(Path(tmp) / 'unused.js'),
                 # The facades' macro functions are in the macro context alone, which -xml doesn't describe.
                 '-cp', str(ROOT / 'tools/haxe'), '--macro', f'Fields.write("{fields.as_posix()}", {json.dumps([class_path(n) for n in texts])})']
         ran = subprocess.run(args, env=env, capture_output=True, text=True)

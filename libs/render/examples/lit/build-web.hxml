@@ -1,6 +1,8 @@
 # The lit example in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it
 # (?quit_after_frame=60 quits after frame 60).
 -lib helix-render
+-D helix-company=helix
+-D helix-product=render-lit
 -cp .
 -cp ..
 -main Main

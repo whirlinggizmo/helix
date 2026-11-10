@@ -2,6 +2,8 @@
 # the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). It prints {passed, checks, failures} and exits 1 on a failure. Run it with
 # SDL_AUDIO_DRIVER=dummy to make no sound: the dummy driver still mixes in time.
 -lib helix-platform
+-D helix-company=helix
+-D helix-product=platform-audio-tests
 -cp .
 -main AudioTests
 -dce full

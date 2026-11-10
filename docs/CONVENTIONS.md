@@ -286,6 +286,7 @@ Code is written to be read, by people and agents, not packed.
 
 - An example shows one thing with its library alone, on both targets, from hxml files beside it. Work that a program would otherwise
   repeat belongs in a library; an example that has to do it by hand says so in its comment.
+- Every program's build names it: `-D helix-company=helix -D helix-product=<library>-<example>`, so no two share their saves.
 - An example declares each adapter with its interface's type, named for what the program uses it for: `var httpClient:IHttp = new
   HaxeHttpAdapter();`, `var shipped:IFileSystem = new NativeFileSystemAdapter({...})`, so a reader sees the adapter, the interface and
   its use on one line.

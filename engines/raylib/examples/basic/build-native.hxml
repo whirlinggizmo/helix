@@ -1,6 +1,8 @@
 # The basic window natively, SDL3 drawing with GL: haxe build-native.hxml -> native/Main; hxcpp links the SDL3 library HELIX_SDL3_LIBRARY
 # names (BUILDING.md). --quit_after_frame=60 quits it after frame 60.
 -lib helix-raylib
+-D helix-company=helix
+-D helix-product=raylib-basic
 -cp .
 -main Main
 -dce full

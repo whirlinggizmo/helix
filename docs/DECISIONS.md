@@ -843,3 +843,10 @@ Why things are the way they are, numbered, in order.
     passing each control, part and state, so `GuiSetSkin` can replace `RGui.drawSkin`. A raygui program that sets no skin pays about
     212 B gzip for those 31 calls (a probe of 14 controls). Inlining `box` cost 363 B, and one packed key in place of the control and
     part made no difference. The size ladder's rungs 1 to 10 use no raygui and pay nothing.
+64. **Every program names its company and product.** `-D helix-company` and `-D helix-product` are required, with no default, on every
+    target; a build without either fails, saying what to add and what the names are for. They name where the program's saves and cache
+    are kept, natively in the user's directories and in a page the browser's databases. The defaults ("DefaultCompany", and "Game" in a
+    page or the executable's name natively) let every page on one site that sets neither share its saves, and a native program's saves
+    move when its executable is renamed. Rejected: the page's path as a page's default
+    product, which still differs between targets and moves with the page. The check is `ProgramName`'s, typed where an adapter reads a
+    name, so a build that makes no system or SDL3 adapter (a library's tests) needs neither.

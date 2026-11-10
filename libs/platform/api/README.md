@@ -1414,8 +1414,8 @@ function getCacheDirectory():String
 function openUrl(url:String):Bool
 ```
 
-- `company`: Gets the company that makes the program: the `helix-company` define, or "DefaultCompany".
-- `product`: Gets the program's name: the `helix-product` define, or natively the executable's name and in a page "Game". It names the program wherever one is shown, such as a window's title or a log.
+- `company`: Gets the company that makes the program: the `helix-company` define, which every program sets.
+- `product`: Gets the program's name: the `helix-product` define, which every program sets. It names the program wherever one is shown, such as a window's title or a log.
 - `device`: Gets what the program runs on, as far as the platform reports it.
 - `getOption`: Returns an option the program was started with.
   - `name`: The option's name.
@@ -2116,5 +2116,5 @@ function toString():String
 
 Set in a build's hxml, as `-D helix-product=Asteroids` (quoted when the value has a space: `-D "helix-company=Whirling Gizmo"`). `haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.
 
-- `helix-company=<name>`: The company that makes the program, one directory's name. ISystem's data and cache directories are under it, and natively SDL names the program by its product. Defaults to DefaultCompany.
-- `helix-product=<name>`: The program's name, one directory's name. ISystem's data and cache directories are under the company and it, and natively SDL names the program by it, in the OS's audio mixer for one. Defaults to the executable's name natively and Game in a page.
+- `helix-company=<name>`: The company that makes the program, one directory's name. ISystem's data and cache directories are under it, and natively SDL names the program by its product. Required by every program: a build without it fails.
+- `helix-product=<name>`: The program's name, one directory's name. ISystem's data and cache directories are under the company and it, and natively SDL names the program by it, in the OS's audio mixer for one. Required by every program: a build without it fails.

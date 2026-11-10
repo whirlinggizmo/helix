@@ -19,12 +19,12 @@ class Defines {
 	public static final ALL:Array<haxe.macro.Compiler.DefineDescription> = [
 		{
 			define: "helix-company",
-			doc: "The company that makes the program, one directory's name. ISystem's data and cache directories are under it, and natively SDL names the program by its product. Defaults to DefaultCompany.",
+			doc: "The company that makes the program, one directory's name. ISystem's data and cache directories are under it, and natively SDL names the program by its product. Required by every program: a build without it fails.",
 			params: ["name"]
 		},
 		{
 			define: "helix-product",
-			doc: "The program's name, one directory's name. ISystem's data and cache directories are under the company and it, and natively SDL names the program by it, in the OS's audio mixer for one. Defaults to the executable's name natively and Game in a page.",
+			doc: "The program's name, one directory's name. ISystem's data and cache directories are under the company and it, and natively SDL names the program by it, in the OS's audio mixer for one. Required by every program: a build without it fails.",
 			params: ["name"]
 		}
 	];

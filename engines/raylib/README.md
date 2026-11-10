@@ -27,7 +27,12 @@ See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/i
 
 ```
 -lib helix-raylib
+-D helix-company=<company>
+-D helix-product=<product>
 ```
+
+The two names are required. They say where the program's saves and cache are kept, so two programs keep apart, and natively
+they name the program to the system. Each is one directory's name. A build without them fails, saying so.
 
 Until it is on haxelib, install it and the libraries it depends on from GitHub:
 

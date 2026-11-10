@@ -2,6 +2,8 @@
 # hxcpp compiles the adapters' C with it and links the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). --quit_after_frame=60 stops it
 # after 60 frames.
 -lib helix-platform
+-D helix-company=helix
+-D helix-product=platform-shader
 -cp .
 -main Main
 -D sdl_gpu

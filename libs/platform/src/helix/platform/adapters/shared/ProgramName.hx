@@ -1,31 +1,35 @@
 package helix.platform.adapters.shared;
 
-import helix.platform.FilePath;
+#if macro
+import haxe.macro.Context;
+import haxe.macro.Expr;
+#end
 
 /** Gives the program's company and product, from the `helix-company` and `helix-product` defines, for the system adapters' directories
-	and SDL's name for the program. */
+	and SDL's name for the program. Both are required: a build without either fails, saying what to add (`Defines` checks each is a
+	directory's name). */
 @:noCompletion
 class ProgramName {
-	/** Returns the company: `helix-company`, or "DefaultCompany". */
-	public static function company():String {
-		var name = haxe.macro.Compiler.getDefine("helix-company");
-		return name == null ? "DefaultCompany" : name;
-	}
+	/** Returns the company: the `helix-company` define. */
+	public static macro function company():ExprOf<String>
+		return macro $v{name("helix-company")};
 
-	/** Returns the product: `helix-product`, or natively the executable's name and in a page "Game".
+	/** Returns the product: the `helix-product` define. */
+	public static macro function product():ExprOf<String>
+		return macro $v{name("helix-product")};
 
-		@throws String  Natively, for an executable whose name can't be one directory's name, when `helix-product` is unset. */
-	public static function product():String {
-		var name = haxe.macro.Compiler.getDefine("helix-product");
-		if (name != null)
-			return name;
-		#if js
-		return "Game";
-		#else
-		var executable = haxe.io.Path.withoutExtension(haxe.io.Path.withoutDirectory(Sys.programPath()));
-		if (!FilePath.isDirectoryName(executable))
-			throw 'the executable\'s name "$executable" can\'t be a directory\'s: set -D helix-product';
-		return executable;
-		#end
+	#if macro
+	// A define's value, failing the build when it's unset.
+	static function name(define:String):String {
+		var value = Context.definedValue(define);
+		if (value == null)
+			Context.fatalError('$define isn\'t set. Every program names its company and product with two defines, as '
+				+ '-D helix-company=<company> -D helix-product=<product> (in an hxml, or on the haxe command line). They name where the '
+				+ 'program\'s saves and cache are kept (natively <company>/<product> in the user\'s data and cache directories, in a page '
+				+ 'the browser\'s databases "<company>/<product>/data" and "/cache"), so two programs keep apart, and natively the name '
+				+ 'the system shows for the program.',
+				Context.currentPos());
+		return value;
 	}
+	#end
 }

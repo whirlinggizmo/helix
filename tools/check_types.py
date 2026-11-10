@@ -51,7 +51,9 @@ def main():
     failures=subprocess.run([sys.executable,'tools/check_adapters.py'],cwd=ROOT).returncode!=0
     failures+=subprocess.run([sys.executable,'tools/check_layers.py'],cwd=ROOT).returncode!=0
     for label,args in targets(web):
-        result=subprocess.run(['haxe',*args,'--no-output'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
+        # Every program names its company and product (ProgramName); the label names the product.
+        named=['-D','helix-company=helix','-D','helix-product='+'-'.join(label.split())]
+        result=subprocess.run(['haxe',*args,*named,'--no-output'],cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
         ok=result.returncode==0
         print(('ok   ' if ok else 'FAIL ')+label,flush=True)
         if not ok:failures+=1;print('     '+result.stderr.strip().replace('\n','\n     ')[:4000])

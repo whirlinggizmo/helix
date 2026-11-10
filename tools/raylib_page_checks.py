@@ -31,7 +31,7 @@ def run(name, browser):
     web = OUT / name
     web.mkdir(parents=True, exist_ok=True)
     (web / 'index.html').write_text(PAGE, encoding='utf-8')
-    built = subprocess.run(['haxe', '-lib', 'helix-raylib', '-cp', str(TESTS), '-main', name, '-js', str(web / 'app.js'), '-D', 'js-es=6'],
+    built = subprocess.run(['haxe', '-lib', 'helix-raylib', '-cp', str(TESTS), '-main', name, '-D', 'helix-company=helix', '-D', f'helix-product={name}', '-js', str(web / 'app.js'), '-D', 'js-es=6'],
                            cwd=ROOT, env=env, capture_output=True, text=True, encoding='utf-8')
     if built.returncode:
         return [f'build failed\n{built.stdout}{built.stderr}']

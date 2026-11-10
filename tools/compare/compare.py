@@ -155,7 +155,8 @@ def build_helix_raylib(programs, page, native):
     sizes = {'bunnymark': (800, 450), 'robots': (1280, 720)}
     for program in programs:
         home = OUT / 'helix-raylib' / program
-        common = ['-lib', 'helix-raylib', '-cp', CONTENDERS_DIR / 'helix-raylib' / program, '-main', 'Main', '-dce', 'full', '-D', 'analyzer-optimize']
+        common = ['-lib', 'helix-raylib', '-cp', CONTENDERS_DIR / 'helix-raylib' / program, '-main', 'Main', '-D', 'helix-company=helix',
+                  '-D', f'helix-product=compare-{program}', '-dce', 'full', '-D', 'analyzer-optimize']
         if page:
             say(f'building helix-raylib {program} page')
             web = home / 'web'

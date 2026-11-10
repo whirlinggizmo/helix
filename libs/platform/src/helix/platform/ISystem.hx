@@ -5,10 +5,10 @@ package helix.platform;
 	They are the program's company and product, the device, the options the program was started with, the time, where the program's own
 	files are, and where the OS keeps a program's files. */
 interface ISystem {
-	/** Gets the company that makes the program: the `helix-company` define, or "DefaultCompany". */
+	/** Gets the company that makes the program: the `helix-company` define, which every program sets. */
 	var company(default, null):String;
 
-	/** Gets the program's name: the `helix-product` define, or natively the executable's name and in a page "Game". It names the program
+	/** Gets the program's name: the `helix-product` define, which every program sets. It names the program
 		wherever one is shown, such as a window's title or a log. */
 	var product(default, null):String;
 

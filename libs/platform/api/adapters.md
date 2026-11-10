@@ -851,7 +851,6 @@ function getCacheDirectory():String
 ```
 
 - `new`: Creates the system's facts for the program the `helix-company` and `helix-product` defines name.
-  - throws `String`: For an executable whose name can't be one directory's name, when `helix-product` is unset.
 
 ## DomTiltAdapter
 

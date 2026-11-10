@@ -1,6 +1,8 @@
 # The graphics tests in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it. window.helixResult
 # holds {passed, checks, failures} when they're done. helix-platform alone: haxelib dev helix-platform <checkout>/libs/platform first.
 -lib helix-platform
+-D helix-company=helix
+-D helix-product=platform-graphics-tests
 -cp .
 -main GraphicsTests
 -dce full

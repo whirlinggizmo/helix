@@ -600,8 +600,8 @@ goes to are the caller's.
 
 ```haxe
 interface ISystem {
-	var company(default, null):String;               // helix-company, or DefaultCompany
-	var product(default, null):String;               // helix-product, or the executable's name natively and Game in a page
+	var company(default, null):String;               // helix-company, which every program sets
+	var product(default, null):String;               // helix-product, which every program sets
 	var device(get, never):Device;                  // what it runs on: browser, OS, architecture, fine pointer
 	function getOption(name:String):Null<String>;   // natively --name=value or HELIX_<NAME>; in a page the URL's query parameter
 	function getTime():Float;                       // seconds on a monotonic clock: performance.now in a page, SDL's natively
@@ -622,8 +622,8 @@ interface ISystem {
   the page's own directory on its server, a URL `IHttp` fetches from.
 - `getDataDirectory` is the user's data directory (`$XDG_DATA_HOME` or `~/.local/share` on Linux, `~/Library/Application Support` on
   macOS, `%APPDATA%` on Windows), then `<company>/<product>`, the names the `helix-company` and `helix-product` defines give
-  ("DefaultCompany", and the executable's name natively or "Game" in a page, by default; the build fails for one that can't be a
-  directory's name); `getCacheDirectory` the cache's (`$XDG_CACHE_HOME` or `~/.cache`,
+  (both required, with no default, so two programs never share their files; the build fails without either, or for one that can't be
+  a directory's name); `getCacheDirectory` the cache's (`$XDG_CACHE_HOME` or `~/.cache`,
   `~/Library/Caches`, `%LOCALAPPDATA%\<company>\<product>\cache`). Each comes from its environment variable when that's set (empty
   counts as unset) and from the OS when it isn't (the user database's home directory, Windows' shell folders); a variable set to a path
   that isn't absolute throws, naming it, where XDG would ignore it, since writing elsewhere would hide the mistake. In a page each is the

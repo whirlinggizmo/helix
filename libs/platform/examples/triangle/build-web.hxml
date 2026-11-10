@@ -1,6 +1,8 @@
 # The triangle in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it (?quit_after_frame=60 quits after
 # frame 60). helix-platform alone: haxelib dev helix-platform <checkout>/libs/platform first.
 -lib helix-platform
+-D helix-company=helix
+-D helix-product=platform-triangle
 -cp .
 -main Main
 -dce full

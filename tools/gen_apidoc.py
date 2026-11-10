@@ -34,10 +34,13 @@ OUT=ROOT/'build/api'
 ADAPTERS='helix.platform.adapters'
 # What the reference says of its targets, once.
 
+# The company and product every program names (ProgramName), which the adapters' code reads as it's typed.
+NAMED=['-D','helix-company=helix','-D','helix-product=apidoc']
+
 def types_for(package,target):
     """Whether a package types for a target, as the compiler says."""
     out=['-js',str(OUT/'probe.js')] if target=='js' else ['-cpp',str(OUT/'probe-cpp')]
-    ran=subprocess.run(['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),'--macro',f"include('{package}')",'--no-output',*out],cwd=ROOT,capture_output=True,text=True)
+    ran=subprocess.run(['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),'--macro',f"include('{package}')",*NAMED,'--no-output',*out],cwd=ROOT,capture_output=True,text=True)
     return ran.returncode==0
 
 ADAPTER_TARGETS={}
@@ -64,7 +67,7 @@ def describe(target):
     # The tools run in the compiler or Haxe's interpreter, not on a target; a program meets ShaderCompiler alone, its compile a macro.
     ignore=[ADAPTERS+'*','helix.platform.tools']
     macro="include('helix',true,["+",".join(f"'{p}'" for p in ignore)+"])"
-    args=['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),'--macro',macro,'-xml',str(output),'-D','doc-gen','--no-output']
+    args=['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),'--macro',macro,'-xml',str(output),'-D','doc-gen',*NAMED,'--no-output']
     args+=['helix.platform.tools.ShaderCompiler']
     for package in adapter_packages(target):args+=['--macro',f"include('{package}')"]
     args+=['-js',str(OUT/'unused.js')] if target=='js' else ['-cpp',str(OUT/'unused-cpp')]
@@ -215,7 +218,7 @@ def macro_signatures():
     if not classes:return {}
     fields=OUT/'xml/macro-fields.json'
     subprocess.run(['haxe',*sum((['-lib',name] for name in pins.LIBRARIES),[]),*classes,'-cp',str(ROOT/'tools/haxe'),
-                    '--macro',f'Fields.write("{fields.as_posix()}", {json.dumps(classes)})','-D','doc-gen','--no-output','-js',str(OUT/'unused.js')],cwd=ROOT,check=True)
+                    '--macro',f'Fields.write("{fields.as_posix()}", {json.dumps(classes)})','-D','doc-gen',*NAMED,'--no-output','-js',str(OUT/'unused.js')],cwd=ROOT,check=True)
     shown=lambda t:short_types(re.sub(r'^ExprOf<(.*)>$',r'\1',t or 'Dynamic'))
     out={}
     for f in json.loads(fields.read_text(encoding='utf-8')):

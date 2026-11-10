@@ -1,6 +1,8 @@
 # The pixel tests in a page: haxe build-web.hxml -> web/app.js, beside web/index.html; serve web/ and open it. It leaves
 # {passed, checks, failures} in window.helixResult.
 -lib helix-render
+-D helix-company=helix
+-D helix-product=render-pixels-tests
 -cp .
 -main PixelTests
 -dce full

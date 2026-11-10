@@ -68,7 +68,7 @@ def build(ladder, rung, haxelib):
     out = OUT / ladder / rung.name / 'app.js'
     out.parent.mkdir(parents=True, exist_ok=True)
     kept = (out.parent / 'kept.json').as_posix()
-    args = ['haxe'] + LADDERS[ladder][1] + ['-cp', str(rung), '-main', 'Main', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'source-map', '-js',
+    args = ['haxe'] + LADDERS[ladder][1] + ['-cp', str(rung), '-main', 'Main', '-D', 'helix-company=helix', '-D', f'helix-product={ladder}-{rung.name}', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'source-map', '-js',
                                  str(out), '-xml', str(out.parent / 'app.xml'), '-cp', str(ROOT / 'tools/haxe'), '--macro',
                                  f'Kept.write("{kept}", ["{LIBRARY_PREFIX}"])']
     done = subprocess.run(args, cwd=rung, env=dict(os.environ, HAXELIB_PATH=str(haxelib)), capture_output=True, text=True,

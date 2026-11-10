@@ -20,9 +20,7 @@ class Sdl3SystemAdapter implements ISystem {
 
 	public var product(default, null):String;
 
-	/** Creates the system's facts for the program the `helix-company` and `helix-product` defines name.
-
-		@throws String  For an executable whose name can't be one directory's name, when `helix-product` is unset. */
+	/** Creates the system's facts for the program the `helix-company` and `helix-product` defines name. */
 	public function new() {
 		company = ProgramName.company();
 		product = ProgramName.product();

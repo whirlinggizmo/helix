@@ -276,7 +276,8 @@ def check_values(name, manifest, main, out, display, env):
     ran = run([str(out / 'ref')], display, out, what='the C reference')
     (out / 'ref.txt').write_text(ran.stdout, encoding='utf-8')
     base = sum((['-lib', lib] for lib in LIBRARIES), []) + ['-cp', 'engines/raylib/src', '--macro', 'helix.raylib.internal.Metadata.register()', '-cp',
-                                                            str(PARITY / 'shared'), '-cp', str(out / 'src'), '-main', main]
+                                                            str(PARITY / 'shared'), '-cp', str(out / 'src'), '-main', main,
+                                                            '-D', 'helix-company=helix', '-D', f'helix-product=parity-{name}']
     for resource, file in manifest.get('resources', {}).items():
         base += ['-resource', f'{PARITY / name / file}@{resource}']
     if 'js' in targets:
@@ -360,7 +361,7 @@ def check_pixels(name, manifest, main, out, display, env):
     for backend, allowance in manifest['backends'].items():
         directory = out / ('native' if backend == 'gl' else 'native-gpu')
         defines = ['-D', 'sdl_gpu'] if backend == 'sdl_gpu' else []
-        haxe(['-lib', 'helix-raylib', '-cp', str(out / 'src'), '-main', main, '-dce', 'full', '-D', f'HXCPP_COMPILE_THREADS={os.cpu_count() or 4}']
+        haxe(['-lib', 'helix-raylib', '-cp', str(out / 'src'), '-main', main, '-D', 'helix-company=helix', '-D', f'helix-product=parity-{name}', '-dce', 'full', '-D', f'HXCPP_COMPILE_THREADS={os.cpu_count() or 4}']
              + defines + compiled_shaders(manifest) + ['-cpp', str(directory)], env, cwd=out)
         native_build.place_runtimes(directory, SDL3)
         shot = directory / 'helix.png'
