@@ -4,6 +4,7 @@ import helix.math.Bounds2D;
 import helix.math.Vector2D;
 import helix.platform.IPollable;
 import helix.raylib.*;
+import helix.services.input.Touch;
 import helix.services.input.VirtualStick;
 
 /** A virtual gamepad in a slot, as `EnableVirtualGamepad` made it: the service's, given its options when enabled and its rectangles,
@@ -13,6 +14,8 @@ import helix.services.input.VirtualStick;
 class VirtualGamepads implements IPollable {
 	// The virtual gamepads made, one a slot at most.
 	static final made:Array<VirtualGamepads> = [];
+	// Every finger, the touch the virtual gamepads read, behind the view of the free ones (FreeFingers).
+	static var fingers:Null<Touch>;
 
 	/** Gets the virtual gamepad in a slot, or null while none was enabled there.
 
@@ -34,16 +37,16 @@ class VirtualGamepads implements IPollable {
 		if (gamepad == null) {
 			Runtime.gamepads();
 			var standing:helix.platform.IGamepads = made.length > 0 ? made[made.length - 1].service : Runtime.gamepadsAdapter;
-			gamepad = new VirtualGamepads(slot, new helix.services.input.VirtualGamepad(Runtime.touch(), Runtime.window, standing, slot));
+			if (fingers == null)
+				fingers = Runtime.touch();
+			gamepad = new VirtualGamepads(slot, new helix.services.input.VirtualGamepad(fingers, Runtime.window, standing, slot));
 			made.push(gamepad);
 			Runtime.standInFront(gamepad.service, gamepad);
-			Runtime.overlay = drawAll;
-			Runtime.capturesFinger = id -> {
-				for (made in made)
-					if (made.service.capturesFinger(id))
-						return true;
-				return false;
-			};
+			// The first drawn over each frame as it ends, and the touch, which the mouse follows, holding the fingers none captured.
+			if (made.length == 1) {
+				Runtime.endingFrame(drawAll);
+				@:privateAccess Runtime.touchService = new FreeFingers(Runtime.touch());
+			}
 		}
 		var all:VirtualGamepadOptions = options != null ? options : {};
 		gamepad.rects = all.blockedBounds != null ? all.blockedBounds : [];
@@ -292,5 +295,56 @@ private class Button {
 		}
 		helix.raylib.modules.RText.DrawTextEx(face, label, new Vector2(at.x - width / 2, at.y - size / 2), size, size / 10,
 			text != null ? text : down ? new Color(0, 0, 0, 153) : outline);
+	}
+}
+
+// The fingers no virtual gamepad captured, including one that lifted from a stick or button this frame: the touch the touch functions
+// and the mouse read once a virtual gamepad is enabled, standing in front of the one the gamepads read. A view of it, read as it is,
+// so polling the touch it views is enough.
+private class FreeFingers extends Touch {
+	final all:Touch;
+
+	public function new(all:Touch) {
+		super(null, null);
+		this.all = all;
+	}
+
+	override public function poll():Void {}
+
+	override function get_available():Bool
+		return all.available;
+
+	override function get_fingers():Array<Int>
+		return free(all.fingers);
+
+	override function get_pressed():Array<Int>
+		return free(all.pressed);
+
+	override function get_released():Array<Int>
+		return free(all.released);
+
+	override public function isFingerDown(id:Int):Bool
+		return !captured(id) && all.isFingerDown(id);
+
+	override public function isFingerPressed(id:Int):Bool
+		return !captured(id) && all.isFingerPressed(id);
+
+	override public function isFingerReleased(id:Int):Bool
+		return !captured(id) && all.isFingerReleased(id);
+
+	override public function getX(id:Int):Float
+		return all.getX(id);
+
+	override public function getY(id:Int):Float
+		return all.getY(id);
+
+	static function free(fingers:Array<Int>):Array<Int>
+		return [for (id in fingers) if (!captured(id)) id];
+
+	static function captured(id:Int):Bool {
+		for (gamepad in VirtualGamepads.made)
+			if (gamepad.service.capturesFinger(id))
+				return true;
+		return false;
 	}
 }

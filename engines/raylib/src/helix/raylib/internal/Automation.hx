@@ -165,9 +165,16 @@ class Automation implements PlayedInput {
 	}
 
 	function set_recording(value:Bool):Bool {
-		Runtime.recording = value ? record : null;
+		// Recorded as each frame ends, from the first recording on.
+		if (value && !recorded) {
+			recorded = true;
+			Runtime.endingFrame(() -> if (recording) record());
+		}
 		return recording = value;
 	}
+
+	// Whether the recording runs as each frame ends.
+	var recorded = false;
 
 	// After each poll: the last frame's state kept as the previous, and each state taken from the devices where they changed it.
 	function mirror():Void {

@@ -44,7 +44,7 @@ static function LoadPbrShader():Shader
 
   Set up as that one: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from rlights' `CreateLight`, a light's color what a white surface facing it shows. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. A material marked `unlit` (glTF's `KHR_materials_unlit`) draws its base color and no light.
 
-  Each light also has a range and an intensity, set with `SetShaderValue` at `GetShaderLocation(shader, "lights[0].range")` and `"lights[0].intensity"` (and the next light's at `lights[1]`). A point light with a range dims with distance, fading to nothing at the range, and 0, the default, is no falloff. Intensity is a multiple of the light's color, 1 by default. Light brighter than white rolls off toward white instead of clipping, and colors in the usual range come out as authored.
+  Each light also has a range and an intensity, set with `SetShaderValue` at `GetShaderLocation(shader, "lights[0].range")` and `"lights[0].intensity"` (and the next light's at `lights[1]`). A point light with a range dims with distance, fading to nothing at the range, and 0, the default, is no falloff. Intensity is a multiple of the light's color, 1 until set. Light brighter than white rolls off toward white instead of clipping, and colors in the usual range come out as authored.
 
   Each draw reads the material's maps `MATERIAL_MAP_ALBEDO`, `MATERIAL_MAP_METALNESS`, `MATERIAL_MAP_ROUGHNESS`, `MATERIAL_MAP_NORMAL`, `MATERIAL_MAP_OCCLUSION` and `MATERIAL_MAP_EMISSION`. Their samplers are `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and `emissiveMap`, found at `locs[SHADER_LOC_MAP_ALBEDO]` and the five after it. A missing map reads white, and a missing normal map reads a flat normal.
 
@@ -112,7 +112,7 @@ The first touch anywhere on the screen plugs an enabled virtual gamepad in. A mo
 
 A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
-A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a finger landing on one of them. A free finger counts as the mouse, as every finger does without a virtual gamepad. The touch functions list every finger.
+A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a finger landing on one of them. A free finger counts as the mouse, and as a touch point, as every finger does without a virtual gamepad. A captured finger is neither: the touch functions list the free fingers.
 
 The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch, its buttons and fixed sticks are drawn from the moment it's enabled, and every other stick while it has captured a finger. A program drawing its own controls sets their `visible` to false and draws from `IsVirtualGamepadVisible`, `IsVirtualStickHeld`, `GetVirtualStickBase` and `GetVirtualStickKnob`. The virtual gamepad is hidden while a physical gamepad is in its slot.
 

@@ -30,7 +30,7 @@ class Material {
 
 		`LoadModel` sets it from the file.
 
-		`LoadPbrShader` draws an unlit material through its unlit twin. raylib's own shaders ignore it. */
+		`LoadPbrShader` draws an unlit material's base color and no light. raylib's own shaders ignore it. */
 	public var unlit = false;
 
 	/** Creates a material. See `Raylib.LoadMaterialDefault` for making raylib's default material, and `LoadModelAsync` for

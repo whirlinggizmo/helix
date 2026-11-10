@@ -11,9 +11,9 @@ import helix.raylib.internal.Textures;
 
 /** Checks `LoadPbrShader`'s draws, on graphics that count what is live: its locations name its samplers, each set to its map's unit, so a
 	material's map with a texture is bound at it, one without reads white and a missing normal map a flat normal; each draw writes the
-	material's metalness, roughness and emissive values, and gives a normal-mapped mesh its tangents; a material marked unlit is drawn
-	through the unlit twin; a posed model's draw, through the skinned twins, binds and writes the same; and each light's intensity starts
-	at 1, its range and intensity set by `SetShaderValue`. */
+	material's metalness, roughness and emissive values, and gives a normal-mapped mesh its tangents; a material marked unlit writes
+	unlitValue 1; a posed model's draw, through the skinned twin, binds and writes the same; and each light starts at
+	intensity 1, its range and intensity set by `SetShaderValue`. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)
@@ -104,7 +104,8 @@ class PbrTests {
 			check(p.units[p.slotOf(name)] == loc - SHADER_LOC_MAP_ALBEDO, '$name reads its map\'s unit');
 		}
 		check(pbr.locs[SHADER_LOC_VECTOR_VIEW] >= 0, "the view vector's location");
-		check(p.material, "the shader's draws write the material");
+		check(Std.isOfType(p, helix.raylib.internal.LitProgram) && Std.isOfType(p.twin, helix.raylib.internal.LitProgram),
+			"loading it makes its program and its skinned twin, each writing the material's values");
 
 		// A material's values and maps in a draw: the values written, a map with a texture bound, one without reading white.
 		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
@@ -132,16 +133,14 @@ class PbrTests {
 		check(cube.meshes[0].tangents != null && cube.meshes[0].tangents.length == cube.meshes[0].vertexCount * 4,
 			"a mesh without tangents gets them for its normal map");
 
-		// A material marked unlit: drawn through the unlit twin, its maps bound by their units.
+		// A material marked unlit: drawn through the same program, its unlitValue 1, and 0 again once it isn't.
 		material.unlit = true;
 		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
-		var unlit = p.unlitTwin;
-		check(unlit != null && unlit.material && unlit.shader != p.shader, "an unlit material's draw makes the unlit twin");
-		var pipelines = [for (_ => id in unlit.pipelines) id];
-		check(pipelines.indexOf(lastDraw().pipeline) >= 0, "the draw goes through the unlit twin");
-		check(drawnTexture(unlit, "albedoMap") == Textures.handle(albedo.id), "the unlit twin binds the albedo map by its unit");
-		check(pbr.locs[SHADER_LOC_MAP_NORMAL] >= 0 && unlit.shader.findSampler("normalMap") == null, "the unlit twin has no normal map");
+		check(drawnFloat(p, "unlitValue") == 1 && [for (_ => id in p.pipelines) id].indexOf(lastDraw().pipeline) >= 0,
+			"an unlit material's draw writes unlitValue 1, through the PBR shader");
 		material.unlit = false;
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		check(drawnFloat(p, "unlitValue") == 0, "a lit material's draw writes unlitValue 0");
 
 		// A posed model: its draw through the skinned twin binds and writes the same.
 		var dancer = skinned(pbr);
@@ -150,22 +149,18 @@ class PbrTests {
 		UpdateModelAnimation(dancer, raise(), 0);
 		DrawModel(dancer, new Vector3(0, 0, 0), 1, WHITE);
 		var twin = p.twin;
-		check(twin != null && twin.material, "a posed draw through the PBR shader makes its skinned twin, which writes the material");
+		check(twin != null, "a posed draw through the PBR shader makes its skinned twin");
 		check(drawnFloat(twin, "roughnessValue") == 0.5, "the twin's draw writes the material's values");
 		check(drawnTexture(twin, "albedoMap") == Textures.handle(albedo.id), "the twin binds the albedo map at its sampler");
 		check(drawnTexture(twin, "metalnessMap") == Runtime.frame.white, "the twin's map without a texture reads white");
 		check(drawnTexture(twin, "normalMap") == flat, "the twin's missing normal map reads the flat normal texel");
 		check(twin.slotOf("bonePalette") >= 0 && drawnTexture(twin, "bonePalette") != 0, "the twin reads the bone palette");
 
-		// A posed model marked unlit: through the unlit twin's skinned twin.
+		// A posed model marked unlit: through the skinned twin, its unlitValue 1.
 		dancer.materials[0].unlit = true;
 		DrawModel(dancer, new Vector3(0, 0, 0), 1, WHITE);
-		var unlitSkinned = unlit.twin;
-		check(unlitSkinned != null && unlitSkinned.slotOf("bonePalette") >= 0 && unlitSkinned.shader.findSampler("normalMap") == null,
-			"an unlit posed draw makes the unlit twin's skinned twin");
-		check([for (_ => id in unlitSkinned.pipelines) id].indexOf(lastDraw().pipeline) >= 0, "the draw goes through it");
-		check(drawnTexture(unlitSkinned, "albedoMap") == Textures.handle(albedo.id) && drawnTexture(unlitSkinned, "bonePalette") != 0,
-			"it binds the albedo map by its unit and reads the bone palette");
+		check(drawnFloat(twin, "unlitValue") == 1 && [for (_ => id in twin.pipelines) id].indexOf(lastDraw().pipeline) >= 0,
+			"an unlit posed draw writes unlitValue 1, through the skinned twin");
 
 		// A texture set on the shader by SetShaderValueTexture is kept by its id and bound by its handle (RestoreTests: after a restore,
 		// the handle it was sent again with).
@@ -178,7 +173,7 @@ class PbrTests {
 
 		// A light's range and intensity: each light starts at intensity 1, and both are set as any uniform is.
 		var at = p.locate("lights[0].intensity");
-		check(at >= 0 && p.written[at][0] == 1, "each light's intensity starts at 1");
+		check(at >= 0 && p.written[at][0] == 1, "each light starts at intensity 1");
 		CreateLight(LIGHT_POINT, new Vector3(0, 2, 0), new Vector3(0, 0, 0), WHITE, pbr);
 		var range = GetShaderLocation(pbr, "lights[0].range"),
 			intensity = GetShaderLocation(pbr, "lights[0].intensity");

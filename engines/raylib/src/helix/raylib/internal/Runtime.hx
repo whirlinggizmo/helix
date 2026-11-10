@@ -654,19 +654,23 @@ class Runtime {
 		devices.push(gamepadsService);
 	}
 
-	/** Whether a virtual gamepad captured a finger, including a finger that lifted this frame: the mouse follows the free fingers. Null
-		while no virtual gamepad is enabled. */
-	public static var capturesFinger:Null<Int->Bool> = null;
+	/** Adds what runs as each frame ends, before the frame is drawn (`ending`), after what runs there already.
 
-	/** What draws over the frame as `EndDrawing` ends it, such as a virtual gamepad, or null while nothing does. */
-	public static var overlay:Null<Void->Void> = null;
+		@param f  What runs. */
+	public static function endingFrame(f:Void->Void):Void {
+		var before = ending;
+		ending = before == null ? f : () -> {
+			before();
+			f();
+		};
+	}
 
 	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. With
 		`-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only draws the frame: `SwapScreenBuffer` shows it
 		and `PollInputEvents` reads the input. The input recorded for automation is recorded first, as raylib's is. */
 	public static function endFrame():Void {
-		if (recording != null)
-			recording();
+		if (ending != null)
+			ending();
 		#if helix_raylib_custom_frame_control
 		frame.draw(window.framebufferWidth, window.framebufferHeight, false);
 		#else
@@ -683,8 +687,9 @@ class Runtime {
 		#end
 	}
 
-	/** What records the frame's input for automation as each frame ends, or null while nothing records. */
-	public static var recording:Null<Void->Void> = null;
+	/** What runs as each frame ends, before it is drawn (`endingFrame`): automation's recording of the frame's input, a virtual gamepad
+		drawn over the frame; null while nothing does. */
+	public static var ending:Null<Void->Void> = null;
 
 	/** The input automation plays into, which the input functions read once automation is used, or null before. */
 	public static var played:Null<PlayedInput> = null;

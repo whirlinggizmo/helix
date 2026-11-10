@@ -39,7 +39,7 @@ raylib's lighting from its examples' rlights.h and lighting.fs, for a fragment s
 
 It declares rlights' uniforms: lights[MAX_LIGHTS] (MAX_LIGHTS is 4), ambient and viewPos. CreateLight and UpdateLightValues set the lights. The program sets viewPos, the camera's position, each frame at shader.locs[SHADER_LOC_VECTOR_VIEW].
 
-Each light also has helix-raylib's range and intensity, from Light's fields. Its intensity starts at 1.
+Each light also has helix-raylib's range and intensity, set with SetShaderValue at lights[i].range and lights[i].intensity. LoadLightingShader and LoadPbrShader start each light at intensity 1. A program's own shader starts at 0, as any uniform, so it sets each light's intensity itself.
 
 vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) returns the fragment's lit color, gamma corrected. fragPosition is in world space. fragNormal needn't be normalized.
 

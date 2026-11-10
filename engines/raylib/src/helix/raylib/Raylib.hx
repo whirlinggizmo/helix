@@ -1514,7 +1514,7 @@ class Raylib {
 
 	/** Returns whether a mouse button is held.
 
-		A free finger (`EnableVirtualGamepad`) down counts as the left button.
+		A finger down counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True while it is down. */
@@ -1523,7 +1523,7 @@ class Raylib {
 
 	/** Returns whether a mouse button went up this frame.
 
-		The last free finger (`EnableVirtualGamepad`) lifting counts as the left button.
+		The last finger lifting counts as the left button.
 
 		@param button  The button (`MOUSE_BUTTON_*`).
 		@return  True for that frame alone. */
@@ -1537,19 +1537,19 @@ class Raylib {
 	public static inline function IsMouseButtonUp(button:Int):Bool
 		return RCore.IsMouseButtonUp(button);
 
-	/** Returns the mouse's x, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+	/** Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
 
 		@return  The x. */
 	public static inline function GetMouseX():Int
 		return RCore.GetMouseX();
 
-	/** Returns the mouse's y, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+	/** Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
 
 		@return  The y. */
 	public static inline function GetMouseY():Int
 		return RCore.GetMouseY();
 
-	/** Returns the mouse's position, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+	/** Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
 
 		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
@@ -1623,7 +1623,7 @@ class Raylib {
 	public static inline function GetMouseWheelMove():Float
 		return RCore.GetMouseWheelMove();
 
-	/** Returns the number of fingers down.
+	/** Returns the number of fingers down, leaving out those a virtual gamepad (`EnableVirtualGamepad`) captured.
 
 		@return  The count. */
 	public static inline function GetTouchPointCount():Int

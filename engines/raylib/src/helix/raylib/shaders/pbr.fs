@@ -1,7 +1,7 @@
 #version 330
 // helix-raylib's PBR shader's fragment stage (LoadPbrShader), over <helix/raylib/shaders/pbr.glsl>: a material's maps and values as
-// LoadModel reads a glTF's (albedo, metalness, roughness, normal, occlusion, emission), the values written by each draw. A map the
-// material lacks reads white, the normal map a flat normal.
+// LoadModel reads a glTF's (albedo, metalness, roughness, normal, occlusion, emission), the values written by each draw, and unlitValue,
+// 1 for a material marked unlit. A map the material lacks reads white, the normal map a flat normal.
 #include <helix/raylib/shaders/pbr.glsl>
 in vec3 fragPosition;
 in vec2 fragTexCoord;
@@ -18,10 +18,16 @@ uniform vec4 colDiffuse;
 uniform float metallicValue;
 uniform float roughnessValue;
 uniform vec4 emissiveColor;
+uniform float unlitValue;
 out vec4 finalColor;
 void main() {
     vec4 albedo = texture(albedoMap, fragTexCoord);
     vec4 base = vec4(helixDecodeSrgb(albedo.rgb), albedo.a)*colDiffuse*fragColor;
+    // A material marked unlit (glTF's KHR_materials_unlit): its base color as authored, encoded back, and no light.
+    if (unlitValue > 0.5) {
+        finalColor = vec4(helixEncodeSrgb(base.rgb), base.a);
+        return;
+    }
     float metallic = metallicValue*texture(metalnessMap, fragTexCoord).r;
     float roughness = roughnessValue*texture(roughnessMap, fragTexCoord).r;
     float occlusion = texture(occlusionMap, fragTexCoord).r;

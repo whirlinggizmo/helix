@@ -368,20 +368,20 @@ static function EndScissorMode():Void
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True while it is down.
 
-  A free finger (`EnableVirtualGamepad`) down counts as the left button.
+  A finger down counts as the left button.
 - `IsMouseButtonReleased`: Returns whether a mouse button went up this frame.
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True for that frame alone.
 
-  The last free finger (`EnableVirtualGamepad`) lifting counts as the left button.
+  The last finger lifting counts as the left button.
 - `IsMouseButtonUp`: Returns whether a mouse button isn't held.
   - `button`: The button (`MOUSE_BUTTON_*`).
   - returns: True while it is up.
-- `GetMouseX`: Returns the mouse's x, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+- `GetMouseX`: Returns the mouse's x, in the screen's pixels, the first finger's while one is down.
   - returns: The x.
-- `GetMouseY`: Returns the mouse's y, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+- `GetMouseY`: Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
   - returns: The y.
-- `GetMousePosition`: Returns the mouse's position, in the screen's pixels, the first free finger's (`EnableVirtualGamepad`) while one is down.
+- `GetMousePosition`: Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
   - returns: The position.
 
   `SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
@@ -410,7 +410,7 @@ static function EndScissorMode():Void
   - `cursor`: The shape (`MOUSE_CURSOR_*`). `MOUSE_CURSOR_DEFAULT` and `MOUSE_CURSOR_ARROW` are both the arrow.
 - `GetMouseWheelMove`: Returns how far the wheel turned this frame, the larger of its two directions, forward positive. See `GetMouseWheelMoveV` for reading both directions.
   - returns: The notches.
-- `GetTouchPointCount`: Returns the number of fingers down.
+- `GetTouchPointCount`: Returns the number of fingers down, leaving out those a virtual gamepad (`EnableVirtualGamepad`) captured.
   - returns: The count.
 - `GetTouchPosition`: Returns a finger's position, in the screen's pixels.
   - `index`: Which finger, 0 for the first down.

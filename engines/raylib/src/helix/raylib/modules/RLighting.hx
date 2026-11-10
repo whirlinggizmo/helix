@@ -33,8 +33,9 @@ class RLighting {
 		@return  The shader, the program's until `UnloadShader`. */
 	static function LoadLightingShader():Shader {
 		var shader = @:privateAccess RModels.makeShader(Defaults.litShader());
-		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed.
-		shader.program.skinned = Defaults.litSkinnedShader();
+		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed (Skinning).
+		shader.program.mirror(new helix.raylib.internal.Program(helix.raylib.internal.Runtime.graphics, Defaults.litSkinnedShader()));
+		startIntensities(shader);
 		return shader;
 	}
 
@@ -48,7 +49,7 @@ class RLighting {
 
 		Each light also has a range and an intensity, set with `SetShaderValue` at `GetShaderLocation(shader, "lights[0].range")` and
 		`"lights[0].intensity"` (and the next light's at `lights[1]`). A point light with a range dims with distance, fading to nothing at
-		the range, and 0, the default, is no falloff. Intensity is a multiple of the light's color, 1 by default. Light brighter than
+		the range, and 0, the default, is no falloff. Intensity is a multiple of the light's color, 1 until set. Light brighter than
 		white rolls off toward white instead of clipping, and colors in the usual range come out as authored.
 
 		Each draw reads the material's maps `MATERIAL_MAP_ALBEDO`, `MATERIAL_MAP_METALNESS`, `MATERIAL_MAP_ROUGHNESS`,
@@ -76,14 +77,11 @@ class RLighting {
 		```
 		@return  The shader, the program's until `UnloadShader`. */
 	static function LoadPbrShader():Shader {
-		var shader = @:privateAccess RModels.makeShader(Defaults.pbrShader());
-		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed.
-		shader.program.skinned = Defaults.pbrSkinnedShader();
-		// Its unlit twin, drawn for a material marked unlit, and that one's skinned twin.
-		shader.program.unlit = Defaults.pbrUnlitShader();
-		shader.program.unlitSkinned = Defaults.pbrUnlitSkinnedShader();
-		shader.program.material = true;
-		RModels.materialWriter = writeMaterial;
+		var p = new helix.raylib.internal.LitProgram(helix.raylib.internal.Runtime.graphics, Defaults.pbrShader());
+		var shader = @:privateAccess new Shader(p.handle, RModels.locations(p), p);
+		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed (Skinning).
+		p.mirror(new helix.raylib.internal.LitProgram(helix.raylib.internal.Runtime.graphics, Defaults.pbrSkinnedShader()));
+		startIntensities(shader);
 		var samplers = [
 			MATERIAL_MAP_ALBEDO => "albedoMap",
 			MATERIAL_MAP_METALNESS => "metalnessMap",
@@ -108,15 +106,10 @@ class RLighting {
 		return shader;
 	}
 
-	// Writes a material's values for a draw through the PBR shader or a twin (Program.writeMaterial), and first gives a mesh without
-	// tangents whose material has a normal map its tangents (GenMeshTangents), as glTF asks of a file without them.
-	static function writeMaterial(p:helix.raylib.internal.Program, mesh:Mesh, material:Material):Void {
-		if (mesh.tangents == null
-			&& mesh.texcoords != null
-			&& mesh.normals != null
-			&& material.maps[MATERIAL_MAP_NORMAL].texture.id > 0)
-			RModels.GenMeshTangents(mesh);
-		p.writeMaterial(material);
+	// Starts each of a lit shader's lights at intensity 1, as lights.glsl's lights are until set.
+	static function startIntensities(shader:Shader):Void {
+		for (i in 0...helix.raylib.Rlights.MAX_LIGHTS)
+			SetShaderValue(shader, GetShaderLocation(shader, 'lights[$i].intensity'), 1.0, SHADER_UNIFORM_FLOAT);
 	}
 	#end
 }

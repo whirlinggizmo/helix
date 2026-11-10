@@ -2177,53 +2177,12 @@ class RModels {
 	// with a texture at the texture unit of its index, the cubemap, irradiance and prefilter maps as cubemaps and the rest as 2D textures,
 	// and sets the sampler at shader.locs[SHADER_LOC_MAP_DIFFUSE + index] to it; a sampler set to a unit (SetShaderValue) reads what is
 	// bound there. texture0 to texture2 read the first three maps, white for none.
-	static function mapTextures(shader:Shader, material:Material):Array<Int>
-		return mapProgramTextures(shader.program, shader.locs, material);
-
-	// As mapTextures, for a program and the locations it is drawn by (a skinned twin's own, the default shader's).
-	static function mapProgramTextures(p:helix.raylib.internal.Program, locs:Array<Int>, material:Material):Array<Int> {
-		var textures = textureScratch;
-		textures.resize(p.textures.length);
-		for (i in 0...textures.length)
-			textures[i] = -1;
-		if (p.texture0 >= 0)
-			textures[p.texture0] = Textures.handle(material.maps[0].texture.id);
-		if (p.texture1 >= 0)
-			textures[p.texture1] = Textures.handle(material.maps[1].texture.id);
-		if (p.texture2 >= 0)
-			textures[p.texture2] = Textures.handle(material.maps[2].texture.id);
-		for (slot in 0...textures.length) {
-			if (slot == p.texture0 || slot == p.texture1 || slot == p.texture2)
-				continue;
-			var unit = p.units[slot];
-			for (i in 0...MATERIAL_MAP_BRDF + 1) {
-				var location = locs[SHADER_LOC_MAP_DIFFUSE + i];
-				if (location >= 0 && material.maps[i].texture.id > 0 && p.textureSlot(location) == slot)
-					unit = i;
-			}
-			if (unit < 0 || unit >= MAX_MATERIAL_MAPS || material.maps[unit].texture.id <= 0)
-				continue;
-			var id = material.maps[unit].texture.id;
-			var cube = unit == MATERIAL_MAP_CUBEMAP || unit == MATERIAL_MAP_IRRADIANCE || unit == MATERIAL_MAP_PREFILTER;
-			// A texture bound as the other kind binds nothing, as GL refuses it.
-			textures[slot] = cube == Textures.isCube(id) ? Textures.handle(id) : 0;
-		}
-		return textures;
-	}
-
 	// What drawMesh writes each draw's diffuse color, textures and bones into, read as the draw is recorded.
 	static final diffuseScratch:Array<Float> = [0, 0, 0, 0];
-	static final textureScratch:Array<Int> = [];
-	// A twin's locations, by SHADER_LOC_*: none set, so its maps bind by the units its samplers were set to.
-	static final noLocs = [for (_ in 0...32) -1];
 
 	// Writes a mesh's bones' matrices into a skinning shader's boneMatrices (Models.writeBones), set once a model with bones is made, so
 	// a program without one links none of it.
 	static var boneWriter:Null<(mesh:Mesh, shader:Shader) -> Void>;
-
-	// Writes a material's values into a program whose draws read them (Program.material), and gives a normal-mapped mesh its tangents:
-	// set by LoadPbrShader (RLights.writeMaterial), so a program without it links none of it.
-	static var materialWriter:Null<(p:helix.raylib.internal.Program, mesh:Mesh, material:Material) -> Void>;
 
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
 		if (mesh.gpu.buffers == null)
@@ -2246,11 +2205,7 @@ class RModels {
 		if (mesh.boneMatrices != null && boneWriter != null)
 			boneWriter(mesh, shader);
 		var p = shader.program;
-		// A material marked unlit, through the shader's unlit twin, whose maps bind by their units (the twin's own locations are none).
-		var textures = material.unlit
-			&& p.unlit != null ? mapProgramTextures(p = p.unlitOf(), noLocs, material) : mapTextures(shader, material);
-		if (p.material && materialWriter != null)
-			materialWriter(p, mesh, material);
+		var textures = p.mapTextures(mesh, shader.locs, material);
 		Runtime.frame.mesh(mesh, p, transform, diffuse, textures, instances, instanceCount);
 	}
 	#end

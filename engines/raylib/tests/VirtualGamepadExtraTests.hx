@@ -10,7 +10,7 @@ import helix.services.screen.Screen;
 
 /** Checks `extras.VirtualGamepad` over fakes (services' `FakeSystem`, `FakeWindow`, `FakeEvents` and `FakeDevices`): unplugged until
 	the first touch; then gamepad 0, virtual, its left stick read through `GetGamepadAxisMovement`; a finger holding a stick leaving the mouse
-	up, and a free finger tapping a blocked bound as a click there; a physical gamepad replacing it; disabled, unplugged; and a button pressed and released through raylib's
+	up and the touch functions, and a free finger tapping a blocked bound as a click there; a physical gamepad replacing it; disabled, unplugged; and a button pressed and released through raylib's
 	gamepad functions, following its position, in a design's pixels too;
 	the default diamond; a button and a stick that aren't visible still reading; and the sticks' read-backs. */
 @:access(helix.raylib.internal.Runtime)
@@ -33,7 +33,8 @@ class VirtualGamepadExtraTests {
 		Runtime.window = window;
 		Runtime.events = events;
 		Runtime.screen = new Screen(window, events);
-		Runtime.touchService = new Touch(events, devices);
+		var touch = new Touch(events, devices);
+		Runtime.touchService = touch;
 		Runtime.mouseService = new Mouse(events, devices);
 		Runtime.gamepadsAdapter = devices;
 		Runtime.gamepadsService = new Gamepads(events, devices);
@@ -42,7 +43,7 @@ class VirtualGamepadExtraTests {
 				for (e in list)
 					events.next.push(e);
 			events.poll();
-			Runtime.touch().poll();
+			touch.poll();
 			Runtime.mouse().poll();
 			var pad = VirtualGamepads.inSlot(0);
 			if (pad != null)
@@ -53,7 +54,7 @@ class VirtualGamepadExtraTests {
 		var pause = new Rectangle(736, 0, 64, 64);
 		EnableVirtualGamepad(0, {blockedBounds: [pause], right: {basePlacement: VIRTUAL_STICK_BASE_FIXED}});
 		frame();
-		check(!IsGamepadAvailable(0) && !IsGamepadVirtual(0) && Runtime.overlay != null, "enabled: unplugged until a touch, drawn at EndDrawing");
+		check(!IsGamepadAvailable(0) && !IsGamepadVirtual(0) && Runtime.ending != null, "enabled: unplugged until a touch, drawn as each frame ends");
 
 		frame([TouchDown(1, 200, 300)]);
 		check(IsGamepadAvailable(0) && IsGamepadVirtual(0) && GetGamepadName(0) == "Virtual gamepad", "the first touch plugs it in as gamepad 0");
@@ -68,6 +69,7 @@ class VirtualGamepadExtraTests {
 		check(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
 			&& mouse.x == 760
 			&& mouse.y == 30, "a free finger in a blocked bound is a click there");
+		check(GetTouchPointCount() == 1 && GetTouchPosition(0).x == 760, "the touch functions list the free finger alone");
 		frame([TouchUp(2, 760, 30)]);
 		check(IsMouseButtonReleased(MOUSE_BUTTON_LEFT), "its lift releases the mouse");
 		frame([TouchDown(4, 760, 30), TouchUp(4, 760, 30)]);

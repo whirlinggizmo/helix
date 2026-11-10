@@ -63,7 +63,7 @@ class Lighting {
 
 		Each light also has a range and an intensity, set with `SetShaderValue` at `GetShaderLocation(shader, "lights[0].range")` and
 		`"lights[0].intensity"` (and the next light's at `lights[1]`). A point light with a range dims with distance, fading to nothing at
-		the range, and 0, the default, is no falloff. Intensity is a multiple of the light's color, 1 by default. Light brighter than
+		the range, and 0, the default, is no falloff. Intensity is a multiple of the light's color, 1 until set. Light brighter than
 		white rolls off toward white instead of clipping, and colors in the usual range come out as authored.
 
 		Each draw reads the material's maps `MATERIAL_MAP_ALBEDO`, `MATERIAL_MAP_METALNESS`, `MATERIAL_MAP_ROUGHNESS`,
