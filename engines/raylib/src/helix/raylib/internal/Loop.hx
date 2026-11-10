@@ -5,12 +5,13 @@ import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
-/** Lets a program keep raylib's own shape, `while (!WindowShouldClose()) { ... }`, on every target: any `while` or `do`-`while` that
-	calls `WindowShouldClose()` in its condition or its body, whatever else its condition holds.
+/** Lets a program keep raylib's own shape, `while (!WindowShouldClose()) { ... }`, on every target: any `while` or `do`-`while` in
+	the main class that calls `WindowShouldClose()` or `EndDrawing()` in its condition or its body, whatever else its condition holds.
 
 	A page can't block, so the loop becomes a function called once a frame, its condition checked each frame as the loop would check
-	it, and what follows the loop runs when it stops. A call of `WindowShouldClose()` in any other loop doesn't compile. The
-	program's `main` runs once the system is made (`Runtime.boot`). Natively the program finds its files at
+	it, and what follows the loop runs when it stops. A call of `WindowShouldClose()` or `EndDrawing()` in any other loop doesn't
+	compile, on any target, so a program that builds natively builds for the page. The program's `main` runs once the system is made
+	(`Runtime.boot`). Natively the program finds its files at
 	`-D helix-raylib-native-root=<directory>` (default `../web`), relative to its own; a program reads them through the `...Async` loads. */
 class Loop {
 	/** Adds `build` to the program's main class. Run by the library's `extraParams.hxml`. */
@@ -20,7 +21,57 @@ class Loop {
 			return;
 		var name = main.pack.concat([main.name]).join(".");
 		Compiler.addMetadata("@:build(helix.raylib.internal.Loop.build())", name);
+		Context.onAfterTyping(types -> refuseOtherClasses(types, name));
 	}
+
+	// Refuses a loop calling WindowShouldClose or EndDrawing in a class of the program's other than the main class: only the main class's
+	// loop runs once a frame. The libraries' own classes (package helix) are left alone.
+	static function refuseOtherClasses(types:Array<haxe.macro.Type.ModuleType>, main:String):Void {
+		for (type in types)
+			switch type {
+				case TClassDecl(ref):
+					var c = ref.get();
+					if (c.isExtern || c.pack[0] == "helix" || c.pack.concat([c.name]).join(".") == main)
+						continue;
+					for (field in c.statics.get().concat(c.fields.get()))
+						switch field.expr() {
+							case null:
+							case body:
+								refuseTypedLoops(body);
+						}
+				case _:
+			}
+	}
+
+	static function refuseTypedLoops(e:haxe.macro.Type.TypedExpr):Void {
+		switch e.expr {
+			case TWhile(condition, body, _) if (typedCalls(condition) || typedCalls(body)):
+				Context.error(OUTSIDE_MAIN, e.pos);
+			case TFor(_, _, body) if (typedCalls(body)):
+				Context.error(OUTSIDE_MAIN, e.pos);
+			case _:
+				haxe.macro.TypedExprTools.iter(e, refuseTypedLoops);
+		}
+	}
+
+	static function typedCalls(e:haxe.macro.Type.TypedExpr):Bool {
+		var found = false;
+		function search(e:haxe.macro.Type.TypedExpr):Void {
+			switch e.expr {
+				case TCall({expr: TField(_, FStatic(_, field))}, []) if (FRAME_CALLS.indexOf(field.get().name) >= 0):
+					found = true;
+				case TWhile(_, _, _) | TFor(_, _, _) | TFunction(_):
+				case _:
+					haxe.macro.TypedExprTools.iter(e, search);
+			}
+		}
+		search(e);
+		return found;
+	}
+
+	static final FRAME_CALLS = ["WindowShouldClose", "EndDrawing"];
+	static final OUTSIDE_MAIN = "helix-raylib: the program's loop, the `while` or `do`-`while` that calls WindowShouldClose() or EndDrawing(), "
+		+ "must be in the main class";
 
 	/** Rewrites the main class: the loop in whichever static function holds it, and `main` to run once the system is made. */
 	public static function build():Array<Field> {
@@ -48,9 +99,9 @@ class Loop {
 		return fields;
 	}
 
-	// Finds the program's loop among a block's statements, a `while` or `do`-`while` that calls `WindowShouldClose()` in its condition or
-	// in its body (outside a loop or function of its own), and hands it as a frame, with the statements after it, to Runtime.run. Any
-	// other call of WindowShouldClose inside a loop is refused: a page couldn't run that loop.
+	// Finds the program's loop among a block's statements, a `while` or `do`-`while` that calls `WindowShouldClose()` or `EndDrawing()`
+	// in its condition or in its body (outside a loop or function of its own), and hands it as a frame, with the statements after it, to
+	// Runtime.run. Any other loop calling either is refused: it couldn't run once a frame.
 	static function rewriteLoop(e:Expr):Expr {
 		switch e.expr {
 			case EBlock(statements):
@@ -91,12 +142,12 @@ class Loop {
 			};
 	}
 
-	// Whether an expression calls WindowShouldClose, outside a loop or function of its own.
+	// Whether an expression calls WindowShouldClose or EndDrawing, outside a loop or function of its own.
 	static function calls(e:Expr):Bool {
 		var found = false;
 		function search(e:Expr):Void {
 			switch e.expr {
-				case ECall({expr: EField(_, "WindowShouldClose") | EConst(CIdent("WindowShouldClose"))}, []):
+				case ECall({expr: EField(_, name) | EConst(CIdent(name))}, []) if (FRAME_CALLS.indexOf(name) >= 0):
 					found = true;
 				case EWhile(_, _, _) | EFor(_, _) | EFunction(_, _):
 				case _:
@@ -107,8 +158,8 @@ class Loop {
 		return found;
 	}
 
-	// Refuses a call of WindowShouldClose in a loop inside the program's loop, or in a loop of the code around it: neither is a loop a
-	// page can run once a frame.
+	// Refuses a call of WindowShouldClose or EndDrawing in a loop inside the program's loop, or in a loop of the code around it: neither
+	// is a loop that can run once a frame.
 	static function refuseInner(body:Expr):Void {
 		function search(e:Expr):Void {
 			switch e.expr {
@@ -126,11 +177,12 @@ class Loop {
 		function search(e:Expr):Void {
 			switch e.expr {
 				case EWhile(condition, body, _) if (calls(condition) || calls(body)):
-					Context.error("helix-raylib: the program's loop, the `while` or `do`-`while` that calls WindowShouldClose(), must be a statement of "
-						+ "a function's own block in the main class, not inside another loop or block; a page runs it once a frame",
+					Context.error("helix-raylib: the program's loop, the `while` or `do`-`while` that calls WindowShouldClose() or EndDrawing(), must be "
+						+ "a statement of a function's own block in the main class, not inside another loop or block, and the program has one",
 						e.pos);
 				case EFor(_, body) if (calls(body)):
-					Context.error("helix-raylib: the program's loop is a `while` or `do`-`while` that calls WindowShouldClose(), not a `for`", e.pos);
+					Context.error("helix-raylib: the program's loop is a `while` or `do`-`while` that calls WindowShouldClose() or EndDrawing(), not a `for`",
+						e.pos);
 				case EFunction(_, _):
 				case _:
 					haxe.macro.ExprTools.iter(e, search);

@@ -67,7 +67,7 @@ class RCore {
 	static function WindowShouldClose():Bool {
 		#if js
 		if (++Runtime.unframed > 100000)
-			throw "WindowShouldClose: called in a loop that never lets the page draw; the program's loop is a `while` or `do`-`while` in the main class calling WindowShouldClose(), a statement of a function's own block";
+			throw "WindowShouldClose: called in a loop that isn't the program's loop; the program's loop is a `while` or `do`-`while` in the main class calling WindowShouldClose() or EndDrawing(), a statement of a function's own block";
 		#end
 		return Runtime.shouldClose;
 	}
