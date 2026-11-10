@@ -14,7 +14,8 @@ class RVirtualGamepad {
 	#if !macro
 	// ---- Virtual gamepad ----
 
-	/** Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in. Enabling it again applies the new
+	/** Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in, and so does the tilt once it's
+		on, for a tilt stick. Enabling it again applies the new
 		options. Its held sticks and buttons, and whether it's plugged in, stay as they
 		were.
 
@@ -70,7 +71,7 @@ class RVirtualGamepad {
 		return made != null && (stick == 1 ? made.service.right : made.service.left).held;
 	}
 
-	/** Returns where a stick's base is, in the screen's pixels. While the stick isn't held, the base is at the stick's home: the fixed base
+	/** Returns where a stick's base is, in the screen's pixels. While the stick isn't held, and for a tilt stick, the base is at the stick's home: the fixed base
 		position, or one and a half radii in from the touch zone's bottom outer corner.
 
 		@param gamepad  The slot, 0 to 3.
@@ -81,8 +82,8 @@ class RVirtualGamepad {
 		return made != null ? made.stickPoint(stick == 1, false) : new Vector2(0, 0);
 	}
 
-	/** Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. While the stick isn't
-		held, the knob is at the base.
+	/** Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. A tilt stick's knob
+		is pushed from the base by the tilt, a full tilt at the radius. While a stick read by fingers isn't held, the knob is at the base.
 
 		@param gamepad  The slot, 0 to 3.
 		@param stick  `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.

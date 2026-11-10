@@ -14,7 +14,8 @@ import helix.raylib.Raylib.*;
 	"helix.raylib.modules.RModelsMerged", "helix.raylib.internal.VirtualGamepads", "helix.raylib.modules.RVirtualGamepad",
 	"helix.services.input.VirtualButton", "helix.services.input.VirtualButtonOptions", "helix.services.input.VirtualGamepad",
 	"helix.services.input.VirtualGamepadOptions", "helix.services.input.VirtualStick", "helix.services.input.VirtualStickOptions",
-	"helix.raylib.modules.RLighting", "helix.raylib.internal.LitProgram", "helix.services.input.Tilt", "helix.services.input.TiltAxis")
+	"helix.raylib.modules.RLighting", "helix.raylib.internal.LitProgram", "helix.raylib.modules.RDevice", "helix.platform.adapters.tilt.dom",
+	"helix.services.input.Tilt", "helix.services.input.TiltAxis")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

@@ -760,9 +760,9 @@ static macro function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.
 - `emscripten_set_main_loop`: Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
 - `emscripten_set_main_loop_arg`: Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
 - `emscripten_cancel_main_loop`: Doesn't compile, since a program leaves raylib's own loop instead. See `WindowShouldClose` for writing the loop.
-- `emscripten_run_script`: Doesn't compile on any target, since a program runs no script of its own.
-- `emscripten_run_script_int`: Doesn't compile on any target, since a program runs no script of its own.
-- `emscripten_run_script_string`: Doesn't compile on any target, since a program runs no script of its own.
+- `emscripten_run_script`: Doesn't compile on any target, since a program runs no script of its own. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up.
+- `emscripten_run_script_int`: Doesn't compile on any target, since a program runs no script of its own. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held.
+- `emscripten_run_script_string`: Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system.
 - `emscripten_get_now`: Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
 - `emscripten_sleep`: Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame.
 - `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.

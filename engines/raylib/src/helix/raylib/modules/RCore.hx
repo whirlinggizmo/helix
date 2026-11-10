@@ -2316,28 +2316,30 @@ class RCore {
 		throw "emscripten_cancel_main_loop is unsupported";
 	}
 
-	/** Doesn't compile on any target, since a program runs no script of its own.
+	/** Doesn't compile on any target, since a program runs no script of its own. See `GetWindowSafeArea` for the part of the window
+		nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up.
 
 		@param script  The JavaScript. */
-	@:unsupported("emscripten_run_script: Not supported.")
+	@:unsupported("emscripten_run_script: Not supported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
 	static function emscripten_run_script(script:String):Void {
 		throw "emscripten_run_script is unsupported";
 	}
 
-	/** Doesn't compile on any target, since a program runs no script of its own.
+	/** Doesn't compile on any target, since a program runs no script of its own. See `IsTouchAvailable` for whether the device has
+		touch, and `GetScreenOrientation` for how the screen is held.
 
 		@param script  The JavaScript.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_run_script_int: Not supported.")
+	@:unsupported("emscripten_run_script_int: Not supported. See IsTouchAvailable() and IsFinePointerAvailable() for the device's touch and pointer, and GetScreenOrientation() for how the screen is held in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
 	static function emscripten_run_script_int(script:String):Int {
 		throw "emscripten_run_script_int is unsupported";
 	}
 
-	/** Doesn't compile on any target, since a program runs no script of its own.
+	/** Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system.
 
 		@param script  The JavaScript.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_run_script_string: Not supported.")
+	@:unsupported("emscripten_run_script_string: Not supported. See GetPlatformOS() for the system's name in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
 	static function emscripten_run_script_string(script:String):String {
 		throw "emscripten_run_script_string is unsupported";
 	}

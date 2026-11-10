@@ -10,7 +10,8 @@ import helix.raylib.modules.RVirtualGamepad;
 /** Provides on-screen gamepads for phones: sticks and buttons a finger works, read through raylib's gamepad functions. Imported apart, with its
 	constants: `import helix.raylib.extras.VirtualGamepad.*;`.
 
-	The first touch anywhere on the screen plugs an enabled virtual gamepad in. A mouse click leaves the virtual gamepad unplugged. Once
+	The first touch anywhere on the screen plugs an enabled virtual gamepad in, and so does the tilt once it's on, for a tilt stick
+	(`VirtualStickOptions.tilt`). A mouse click leaves the virtual gamepad unplugged. Once
 	the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons
 	through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`.
 	`IsGamepadVirtual` tells a virtual gamepad from a physical one.
@@ -59,7 +60,8 @@ class VirtualGamepad {
 	#if !macro
 	// ---- virtual gamepad: on-screen sticks read as a gamepad's (raylib/RVirtualGamepad.hx) ----
 
-	/** Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in. Enabling it again applies the new
+	/** Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in, and so does the tilt once it's
+		on, for a tilt stick. Enabling it again applies the new
 		options. Its held sticks and buttons, and whether it's plugged in, stay as they
 		were.
 
@@ -104,7 +106,7 @@ class VirtualGamepad {
 	public static inline function IsVirtualStickHeld(gamepad:Int, stick:Int):Bool
 		return RVirtualGamepad.IsVirtualStickHeld(gamepad, stick);
 
-	/** Returns where a stick's base is, in the screen's pixels. While the stick isn't held, the base is at the stick's home: the fixed base
+	/** Returns where a stick's base is, in the screen's pixels. While the stick isn't held, and for a tilt stick, the base is at the stick's home: the fixed base
 		position, or one and a half radii in from the touch zone's bottom outer corner.
 
 		@param gamepad  The slot, 0 to 3.
@@ -113,8 +115,8 @@ class VirtualGamepad {
 	public static inline function GetVirtualStickBase(gamepad:Int, stick:Int):Vector2
 		return RVirtualGamepad.GetVirtualStickBase(gamepad, stick);
 
-	/** Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. While the stick isn't
-		held, the knob is at the base.
+	/** Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. A tilt stick's knob
+		is pushed from the base by the tilt, a full tilt at the radius. While a stick read by fingers isn't held, the knob is at the base.
 
 		@param gamepad  The slot, 0 to 3.
 		@param stick  `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.

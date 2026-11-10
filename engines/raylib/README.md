@@ -9,7 +9,7 @@
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
 | `helix.raylib.Rlights` | rlights, from raylib's lighting examples |
-| `helix.raylib.extras` | what a program opts into that raylib has no call for: lit and PBR shaders, a virtual gamepad, a model's bounds as posed, models merged into one |
+| `helix.raylib.extras` | what a program opts into that raylib has no call for: lit and PBR shaders, a virtual gamepad, a model's bounds as posed, models merged into one, the device (safe area, touch, orientation, tilt) |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
 ## Differences from raylib

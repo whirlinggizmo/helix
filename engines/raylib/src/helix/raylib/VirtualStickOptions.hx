@@ -16,6 +16,13 @@ package helix.raylib;
 		half with both sticks enabled and read by fingers, and the whole screen with one. The default follows the screen's size. */
 	@:optional public var touchZone:Null<Rectangle>;
 
+	/** Gets or sets a value indicating whether the stick reads the device's tilt (`EnableTiltAsync`) in place of a finger: across the
+		screen as x and down it as y, past the stick's dead zone, a full tilt at `SetTiltRange`'s angle. Defaults to false.
+
+		A tilt stick is hidden and ignores fingers. The tilt plugs the virtual gamepad in once the tilt is on, as a touch does. A tilt stick
+		reads 0 until the tilt is on and level (`GetTiltStatus`, `IsTiltCalibrating`). */
+	@:optional public var tilt:Null<Bool>;
+
 	/** Gets or sets where the base goes. */
 	@:optional public var basePlacement:Null<Int>;
 

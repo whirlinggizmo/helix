@@ -2,6 +2,129 @@
 
 [Back to the library](README.md)
 
+## Device
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Device.hx`](../src/helix/raylib/extras/Device.hx), `import helix.raylib.extras.Device;`
+
+Provides what a game needs from the device that raylib 5.5 has no call for, helix-raylib's own: the safe area around a notch, what the device is, whether the window can close or go fullscreen, the screen's orientation, and the device's tilt. Imported apart: `import helix.raylib.extras.Device.*;`.
+
+Each answers on every target. Where a target has no such thing the answer says so (no tilt natively, the whole window as the safe area on a desktop) rather than the call failing to compile. Each `...Async` call answers at a later poll, never during the call. A program that calls none of them links none of them.
+
+```haxe
+static inline var ORIENTATION_ANY:Int
+static inline var ORIENTATION_LANDSCAPE:Int
+static inline var ORIENTATION_PORTRAIT:Int
+static inline var TILT_STATUS_OFF:Int
+static inline var TILT_STATUS_WAITING_FOR_TAP:Int
+static inline var TILT_STATUS_STARTING:Int
+static inline var TILT_STATUS_ON:Int
+static inline var TILT_STATUS_REFUSED:Int
+static inline var TILT_STATUS_UNAVAILABLE:Int
+static inline var TILT_STATUS_NEEDS_HTTPS:Int
+static function IsPlatformWeb():Bool
+```
+
+- `ORIENTATION_ANY`: The screen held as the device is held, or released.
+- `ORIENTATION_LANDSCAPE`: The screen held wider than tall.
+- `ORIENTATION_PORTRAIT`: The screen held taller than wide.
+- `TILT_STATUS_OFF`: The tilt isn't read: it was never asked for (`EnableTiltAsync`), or it was turned off (`DisableTilt`).
+- `TILT_STATUS_WAITING_FOR_TAP`: The tilt waits for the next tap, where the system asks for permission.
+- `TILT_STATUS_STARTING`: The tilt was asked for (`EnableTiltAsync`), and the first reading is awaited. The first reading turns the tilt on. After a second and a half without a reading, the tilt is unavailable.
+- `TILT_STATUS_ON`: The tilt is read.
+- `TILT_STATUS_REFUSED`: Permission was refused.
+- `TILT_STATUS_UNAVAILABLE`: The device gives no readings: there is no sensor, or none answered.
+- `TILT_STATUS_NEEDS_HTTPS`: The program isn't served securely, and the system gives no readings.
+- `IsPlatformWeb`: Returns whether the program is built for a browser page rather than natively. See `GetPlatformOS` for naming the operating system.
+  - returns: True in a page.
+
+  It is known as the program builds, so the code for the other target drops out of the build, as `#if js` does.
+
+### device: the safe area, the device, the window's abilities, orientation and tilt
+
+```haxe
+static function GetWindowSafeArea():Rectangle
+static function GetPlatformOS():String
+static function IsTouchAvailable():Bool
+static function IsFinePointerAvailable():Bool
+static function IsWindowCloseable():Bool
+static function IsFullscreenAvailable():Bool
+static function SetScreenOrientationAsync(orientation:Int, ?done:() -> Void, ?failed:String -> Void):Void
+static function GetScreenOrientation():Int
+static function EnableTiltAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function DisableTilt():Void
+static function GetTilt():Vector2
+static function SetTiltRange(degrees:Float):Void
+static function GetTiltStatus():Int
+static function IsTiltCalibrating():Bool
+static function IsTiltReady():Bool
+static function CalibrateTilt():Void
+```
+
+- `GetWindowSafeArea`: Returns the part of the window no notch, rounded corner or system bar covers, in the screen's coordinates as `GetScreenWidth` measures them.
+  - returns: The safe area.
+
+  A HUD and buttons go inside it.
+
+  Where nothing covers the window, as on a desktop, it is the whole window.
+- `GetPlatformOS`: Returns the operating system's name in lowercase, or "" where the platform names none. See `IsPlatformWeb` for whether the program is built for a page.
+  - returns: The system's name.
+
+  The names are "windows", "macos", "linux", "android", "ios" and "chromeos".
+- `IsTouchAvailable`: Returns whether the device has touch. A trackpad isn't touch. See `IsFinePointerAvailable` for whether there is a mouse, a trackpad or a pen.
+  - returns: True with touch.
+
+  A laptop may have both touch and a mouse.
+- `IsFinePointerAvailable`: Returns whether the device has a fine pointer, such as a mouse, a trackpad or a pen. See `IsTouchAvailable` for whether there is touch.
+  - returns: True with a fine pointer.
+
+  False on a phone or a tablet alone.
+- `IsWindowCloseable`: Returns whether `CloseWindow` removes the window. Where it doesn't, the window stays, cleared, and a game may hide its Quit.
+  - returns: True where `CloseWindow` removes the window.
+- `IsFullscreenAvailable`: Returns whether the window can go fullscreen. See `ToggleFullscreenAsync` for asking for it.
+  - returns: True where `ToggleFullscreenAsync` can be granted.
+
+  False where the system doesn't allow it, as on an iPhone.
+- `SetScreenOrientationAsync`: Asynchronously asks for the screen to be held one way up, or released. See `GetScreenOrientation` for reading how it is held.
+  - `orientation`: `ORIENTATION_LANDSCAPE`, `ORIENTATION_PORTRAIT`, or `ORIENTATION_ANY` to release a lock.
+  - `done`: Optional. Called once the screen is held, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
+
+  Refused where the system doesn't hold the screen, as natively and on iOS. Some systems hold it only in fullscreen, so a program asks in `ToggleFullscreenAsync`'s `done`.
+
+  Where the lock is refused, a game shows "turn your device" when the shape is wrong (`GetScreenWidth() < GetScreenHeight()`).
+
+  A value that isn't an `ORIENTATION_` value is refused.
+- `GetScreenOrientation`: Returns how the screen is held for the program, as `SetScreenOrientationAsync` asked, or `ORIENTATION_ANY` when it isn't held.
+  - returns: `ORIENTATION_ANY`, `ORIENTATION_LANDSCAPE` or `ORIENTATION_PORTRAIT`.
+
+  The screen is let go as the window leaves fullscreen.
+- `EnableTiltAsync`: Asynchronously asks for the device's tilt readings, for a game steered by tilting a phone. See `GetTilt` for reading them and `DisableTilt` for stopping them.
+  - `done`: Optional. Called once readings arrive, at a later poll.
+  - `failed`: Optional. Receives why there will be none: refused, not served securely, or no sensor; when omitted, it is logged.
+
+  Refused where the device has no tilt sensor, as natively.
+
+  The system may ask for permission at the next tap. A game asks before the tap that starts play, and that tap also asks for permission.
+- `DisableTilt`: Stops the tilt's readings. See `EnableTiltAsync` for asking for them.
+  A permission granted stays granted.
+- `GetTilt`: Returns the tilt from level, turned with the screen, each axis -1 to 1. See `CalibrateTilt` for setting what reads as level.
+  - returns: The tilt.
+
+  x is across the screen and y is down it.
+
+  A full tilt of 1 is `SetTiltRange`'s angle.
+
+  The tilt is 0 until readings arrive, and while level is being taken (`IsTiltCalibrating`).
+- `SetTiltRange`: Sets the angle, in degrees, that reads as a full tilt of 1. It defaults to 30.
+  - `degrees`: The angle.
+- `GetTiltStatus`: Returns the tilt's status: `TILT_STATUS_OFF`, `TILT_STATUS_WAITING_FOR_TAP`, `TILT_STATUS_STARTING`, `TILT_STATUS_ON`, `TILT_STATUS_REFUSED`, `TILT_STATUS_UNAVAILABLE` or `TILT_STATUS_NEEDS_HTTPS`. A game shows "tap to allow tilt" while the tilt waits for a tap.
+  - returns: The status.
+- `IsTiltCalibrating`: Returns whether level is being taken: the tilt is on, and reads 0 until the device is held steady for half a second. Level is taken when the readings start, after the screen turns, and after `CalibrateTilt`. A game shows "hold steady" meanwhile.
+  - returns: True while level is being taken.
+- `IsTiltReady`: Returns whether the tilt steers: the tilt is on (`TILT_STATUS_ON`) and level is taken (`IsTiltCalibrating` is false). A game starts a race, or resumes one, while this is true.
+  - returns: True while the tilt steers.
+- `CalibrateTilt`: Takes level again: the tilt reads 0 until the device is held steady for half a second, and how the device is held then becomes level (`IsTiltCalibrating`). A game's "Level" button is this call. See `GetTilt` for reading the tilt from level.
+
 ## Lighting
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Lighting.hx`](../src/helix/raylib/extras/Lighting.hx), `import helix.raylib.extras.Lighting;`
@@ -108,7 +231,7 @@ static function LoadModelFromModels(models:Array<Model>, ?skeleton:Model):Null<M
 
 Provides on-screen gamepads for phones: sticks and buttons a finger works, read through raylib's gamepad functions. Imported apart, with its constants: `import helix.raylib.extras.VirtualGamepad.*;`.
 
-The first touch anywhere on the screen plugs an enabled virtual gamepad in. A mouse click leaves the virtual gamepad unplugged. Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
+The first touch anywhere on the screen plugs an enabled virtual gamepad in, and so does the tilt once it's on, for a tilt stick (`VirtualStickOptions.tilt`). A mouse click leaves the virtual gamepad unplugged. Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
 
 A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
@@ -152,7 +275,7 @@ static function GetVirtualStickBase(gamepad:Int, stick:Int):Vector2
 static function GetVirtualStickKnob(gamepad:Int, stick:Int):Vector2
 ```
 
-- `EnableVirtualGamepad`: Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in. Enabling it again applies the new options. Its held sticks and buttons, and whether it's plugged in, stay as they were.
+- `EnableVirtualGamepad`: Enables a virtual gamepad in a slot. The first touch after enabling plugs the virtual gamepad in, and so does the tilt once it's on, for a tilt stick. Enabling it again applies the new options. Its held sticks and buttons, and whether it's plugged in, stay as they were.
   - `gamepad`: The slot, 0 to 3.
   - `options`: Optional. Its sticks, its buttons and their look. Two floating sticks, on the screen's left and right halves, when omitted.
 
@@ -174,11 +297,11 @@ static function GetVirtualStickKnob(gamepad:Int, stick:Int):Vector2
   - `gamepad`: The slot, 0 to 3.
   - `stick`: `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
   - returns: True while held.
-- `GetVirtualStickBase`: Returns where a stick's base is, in the screen's pixels. While the stick isn't held, the base is at the stick's home: the fixed base position, or one and a half radii in from the touch zone's bottom outer corner.
+- `GetVirtualStickBase`: Returns where a stick's base is, in the screen's pixels. While the stick isn't held, and for a tilt stick, the base is at the stick's home: the fixed base position, or one and a half radii in from the touch zone's bottom outer corner.
   - `gamepad`: The slot, 0 to 3.
   - `stick`: `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
   - returns: The base's center. (0, 0) without a virtual gamepad in the slot.
-- `GetVirtualStickKnob`: Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. While the stick isn't held, the knob is at the base.
+- `GetVirtualStickKnob`: Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. A tilt stick's knob is pushed from the base by the tilt, a full tilt at the radius. While a stick read by fingers isn't held, the knob is at the base.
   - `gamepad`: The slot, 0 to 3.
   - `stick`: `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
   - returns: The knob's center. (0, 0) without a virtual gamepad in the slot.

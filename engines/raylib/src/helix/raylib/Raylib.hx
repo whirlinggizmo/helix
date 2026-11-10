@@ -6933,17 +6933,20 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break; the code after the loop runs then.",
 			macro {});
 
-	/** Doesn't compile on any target, since a program runs no script of its own. */
+	/** Doesn't compile on any target, since a program runs no script of its own. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up. */
 	public static macro function emscripten_run_script(script:ExprOf<String>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script: Not supported.", macro {});
+		return helix.platform.macros.Build.unsupported("emscripten_run_script: Not supported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
+			macro {});
 
-	/** Doesn't compile on any target, since a program runs no script of its own. */
+	/** Doesn't compile on any target, since a program runs no script of its own. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held. */
 	public static macro function emscripten_run_script_int(script:ExprOf<String>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Not supported.", macro(0 : Int));
+		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Not supported. See IsTouchAvailable() and IsFinePointerAvailable() for the device's touch and pointer, and GetScreenOrientation() for how the screen is held in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
+			macro(0 : Int));
 
-	/** Doesn't compile on any target, since a program runs no script of its own. */
+	/** Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system. */
 	public static macro function emscripten_run_script_string(script:ExprOf<String>):ExprOf<String>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script_string: Not supported.", macro(null : String));
+		return helix.platform.macros.Build.unsupported("emscripten_run_script_string: Not supported. See GetPlatformOS() for the system's name in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
+			macro(null : String));
 
 	/** Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`. */
 	public static macro function emscripten_get_now():ExprOf<Float>

@@ -4,7 +4,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 ## Packages
 
-- [`helix.raylib.extras`](extras.md): Lighting, Models, VirtualGamepad
+- [`helix.raylib.extras`](extras.md): Device, Lighting, Models, VirtualGamepad
 
 ## Shader includes
 
@@ -1185,12 +1185,13 @@ A stick captures a finger landing in its touch zone, even while it has captured 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{?enabled:Bool, ?touchZone:Rectangle, ?basePlacement:Int, ?fixedBasePosition:Vector2, ?radius:Float, ?deadZone:Float, ?hintVisible:Bool, ?visible:Bool, ?baseOutlineColor:Color, ?baseFillColor:Color, ?knobColor:Color, ?baseTexture:Texture2D, ?knobTexture:Texture2D}
+{?enabled:Bool, ?touchZone:Rectangle, ?tilt:Bool, ?basePlacement:Int, ?fixedBasePosition:Vector2, ?radius:Float, ?deadZone:Float, ?hintVisible:Bool, ?visible:Bool, ?baseOutlineColor:Color, ?baseFillColor:Color, ?knobColor:Color, ?baseTexture:Texture2D, ?knobTexture:Texture2D}
 ```
 
 ```haxe
 var enabled:Null<Bool>
 var touchZone:Null<Rectangle>
+var tilt:Null<Bool>
 var basePlacement:Null<Int>
 var fixedBasePosition:Null<Vector2>
 var radius:Null<Float>
@@ -1206,6 +1207,8 @@ var knobTexture:Null<Texture2D>
 
 - `enabled`: Gets or sets a value indicating whether the stick is enabled. Defaults to true. A disabled stick reads 0, is hidden, and ignores fingers.
 - `touchZone`: Gets or sets where the stick captures a landing finger. The zone follows changes to this rectangle's fields. Defaults to the screen's left or right half with both sticks enabled and read by fingers, and the whole screen with one. The default follows the screen's size.
+- `tilt`: Gets or sets a value indicating whether the stick reads the device's tilt (`EnableTiltAsync`) in place of a finger: across the screen as x and down it as y, past the stick's dead zone, a full tilt at `SetTiltRange`'s angle. Defaults to false.
+  A tilt stick is hidden and ignores fingers. The tilt plugs the virtual gamepad in once the tilt is on, as a touch does. A tilt stick reads 0 until the tilt is on and level (`GetTiltStatus`, `IsTiltCalibrating`).
 - `basePlacement`: Gets or sets where the base goes.
 - `fixedBasePosition`: Gets or sets where the base stays with `VIRTUAL_STICK_BASE_FIXED`. The base follows changes to this vector's fields. Defaults to the touch zone's center.
 - `radius`: Gets or sets how far the knob travels for a full push. Defaults to 60.

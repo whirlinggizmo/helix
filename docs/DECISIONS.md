@@ -828,3 +828,8 @@ Why things are the way they are, numbered, in order.
     entrant (2026-11-10, C on stock raylib 5.5 and helix-raylib blind) wrote its own lit, skinned shader, its own touch stick and
     buttons, and most read the glTF's roughness themselves. Two of three earlier C entrants merged their characters' meshes. Still out:
     `extras.Device`, `extras.Debug`, `extras.GuiSkins`, `extras.Sprites`.
+62. **`extras.Device` is back, opt-in.** This revises 61's "still out". A game on a phone asks what raylib has no call for: the part of
+    the window a notch leaves, whether the device has touch or a mouse, holding the screen one way up, the tilt. `extras.Device`
+    answers each on every target, linked only by a program that calls one, with the virtual gamepad's tilt stick. Its run options
+    stay gone, as `Sys.args()` reads the command line on every target. `IsPlatformWeb` is known as the program builds, the same answer
+    as `#if js`. The `emscripten_run_script` refusals name the Device call that answers what a C program asks the page.

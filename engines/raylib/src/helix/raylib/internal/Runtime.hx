@@ -664,6 +664,25 @@ class Runtime {
 		devices.push(gamepadsService);
 	}
 
+	/** Gets the tilt, made when first asked for. Only the tilt's functions ask, so a program that never calls one links no tilt adapter. */
+	public static function tilt():helix.services.input.Tilt {
+		if (tiltService == null) {
+			#if js
+			var adapter = new helix.platform.adapters.tilt.dom.DomTiltAdapter({events: cast eventsAdapter});
+			closing.push(() -> adapter.dispose());
+			tiltService = new helix.services.input.Tilt(events, adapter);
+			#else
+			tiltService = new helix.services.input.Tilt(events, new helix.platform.adapters.tilt.sdl3.Sdl3TiltAdapter({events: cast eventsAdapter}));
+			#end
+			// Polled first: a virtual gamepad's tilt stick reads it the same frame.
+			devices.unshift(tiltService);
+		}
+		return tiltService;
+	}
+
+	/** Gets the tilt once a tilt function has made it (`tilt`), or null before. A virtual gamepad's tilt stick reads it. */
+	public static var tiltService(default, null):Null<helix.services.input.Tilt>;
+
 	/** Adds what runs as each frame ends, before the frame is drawn (`ending`), after what runs there already.
 
 		@param f  What runs. */
