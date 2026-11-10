@@ -179,13 +179,14 @@ static function EndScissorMode():Void
   - `title`: The window's title.
 
   Seeds `GetRandomValue` from the time, unless `SetRandomSeed` was called first.
-- `CloseWindow`: Closes the window, after keeping what `SaveFileTextAsync` wrote.
+- `CloseWindow`: Closes the window, after keeping what `SaveFileTextAsync` wrote. The program goes on after it: the code after the call runs.
+  The window shows nothing after it, and its keys, mouse, touch and gamepads are no longer read.
 - `WindowShouldClose`: Returns whether the window should close, after the exit key is pressed or the window is asked to close.
   - returns: True once the window should close.
 
   The exit key is Escape unless `SetExitKey` changed it.
 - `IsWindowReady`: Returns whether the window is open.
-  - returns: True after `InitWindow`.
+  - returns: True after `InitWindow`, until `CloseWindow`.
 - `IsWindowResized`: Returns whether the window changed size since the last frame.
   - returns: True for the frame after a resize.
 - `SetWindowTitle`: Sets the window's title.

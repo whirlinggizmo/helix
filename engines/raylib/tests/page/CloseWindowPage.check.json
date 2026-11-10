@@ -1,0 +1,8 @@
+{
+  "what": "The page after CloseWindow at 800 x 600: the canvas, drawn red until then and filling the page, is cleared, black where it is opaque.",
+  "points": [
+    {"x": 4, "y": 4, "color": [0, 0, 0], "tolerance": 3},
+    {"x": 400, "y": 300, "color": [0, 0, 0], "tolerance": 3},
+    {"x": 795, "y": 595, "color": [0, 0, 0], "tolerance": 3}
+  ]
+}

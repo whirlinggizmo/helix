@@ -197,10 +197,17 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			throw new helix.platform.GraphicsUnavailableException("WebGL2 is required");
 		this.msaaSampleCount = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
 		// Cancelled, so the browser restores the context (the events adapter cancels it too, and tells the program).
-		var canvas = DomPage.canvas(options.canvasId);
-		canvas.addEventListener("webglcontextlost", e -> e.preventDefault());
-		canvas.addEventListener("webglcontextrestored", _ -> restore());
+		canvas = DomPage.canvas(options.canvasId);
+		cancelLoss = e -> e.preventDefault();
+		restored = _ -> restore();
+		canvas.addEventListener("webglcontextlost", cancelLoss);
+		canvas.addEventListener("webglcontextrestored", restored);
 	}
+
+	// The canvas, and its context's listeners, removed by dispose.
+	var canvas:js.html.CanvasElement;
+	var cancelLoss:js.html.Event->Void;
+	var restored:js.html.Event->Void;
 
 	// Whether the context is lost: its calls do nothing and answer nothing, so nothing is checked or cached while it is.
 	inline function gone():Bool
@@ -1510,6 +1517,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	}
 
 	public function dispose():Void {
+		canvas.removeEventListener("webglcontextlost", cancelLoss);
+		canvas.removeEventListener("webglcontextrestored", restored);
 		for (made in placeholders)
 			if (made != 0)
 				disposeTexture(made);

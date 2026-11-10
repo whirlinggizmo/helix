@@ -77,7 +77,7 @@ class Runtime {
 
 	public static final polled:Array<IPollable> = [];
 
-	/** What runs as the window closes, before it does: keeping the saves. */
+	/** What runs as the window closes, before it does: keeping the saves, and in a page disposing the input adapters made. */
 	public static final closing:Array<Void->Void> = [];
 
 	/** The files in memory, by path, as the loads brought them in: an image file decoded for the GPU (`pictures`, until its texture is
@@ -147,6 +147,9 @@ class Runtime {
 
 	static var touchService:Null<Touch> = null;
 	static var gamepadsService:Null<Gamepads> = null;
+
+	/** Whether the window was closed (`close`). */
+	public static var closed = false;
 
 	/** The platform's gamepads, made with the gamepads: their vibration and mappings. */
 	public static var gamepadsAdapter:Null<helix.platform.IGamepads> = null;
@@ -502,7 +505,10 @@ class Runtime {
 	public static function keyboard():Keyboard {
 		if (keyboardService == null) {
 			#if js
-			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast eventsAdapter}));
+			var adapter = new helix.platform.adapters.keyboard.dom.DomKeyboardAdapter({events: cast eventsAdapter});
+			// In a page, the keys are the page's again once the window closes.
+			closing.push(() -> adapter.dispose());
+			keyboardService = new Keyboard(events, adapter);
 			#else
 			keyboardService = new Keyboard(events, new helix.platform.adapters.keyboard.sdl3.Sdl3KeyboardAdapter({events: cast eventsAdapter}));
 			#end
@@ -529,6 +535,7 @@ class Runtime {
 		if (mouseService == null) {
 			#if js
 			mouseAdapter = new helix.platform.adapters.mouse.dom.DomMouseAdapter({events: cast eventsAdapter});
+			closing.push(() -> mouseAdapter.dispose());
 			#else
 			mouseAdapter = new helix.platform.adapters.mouse.sdl3.Sdl3MouseAdapter({events: cast eventsAdapter});
 			#end
@@ -546,7 +553,9 @@ class Runtime {
 	public static function touch():Touch {
 		if (touchService == null) {
 			#if js
-			touchService = new Touch(events, new helix.platform.adapters.touch.dom.DomTouchAdapter({events: cast eventsAdapter}));
+			var adapter = new helix.platform.adapters.touch.dom.DomTouchAdapter({events: cast eventsAdapter});
+			closing.push(() -> adapter.dispose());
+			touchService = new Touch(events, adapter);
 			#else
 			touchService = new Touch(events, new helix.platform.adapters.touch.sdl3.Sdl3TouchAdapter({events: cast eventsAdapter}));
 			#end
@@ -630,6 +639,7 @@ class Runtime {
 		if (gamepadsService == null) {
 			#if js
 			gamepadsAdapter = new helix.platform.adapters.gamepads.dom.DomGamepadsAdapter({events: cast eventsAdapter});
+			closing.push(() -> gamepadsAdapter.dispose());
 			#else
 			gamepadsAdapter = new helix.platform.adapters.gamepads.sdl3.Sdl3GamepadsAdapter({events: cast eventsAdapter});
 			#end
@@ -813,8 +823,18 @@ class Runtime {
 			f();
 	}
 
-	/** Frees what was made, and closes the window where the program owns one. */
+	/** Frees what was made, and closes the window where the program owns one. In a page, which a program can't close, the canvas is
+		cleared and stays so, and the page's input is the page's again: the input adapters made are disposed (`closing`), taking their
+		listeners and the styles they set with them. */
 	public static function close():Void {
+		#if js
+		// The canvas cleared, a frame of nothing shown, and leaving the page no longer asking the program to close.
+		if (frame != null) {
+			frame.clear(0);
+			frame.draw(window.framebufferWidth, window.framebufferHeight, true);
+			window.onClose = null;
+		}
+		#end
 		for (f in closing)
 			f();
 		if (frame != null)
@@ -823,6 +843,7 @@ class Runtime {
 			graphics.dispose();
 		if (events != null)
 			events.dispose();
+		closed = true;
 		if (window != null && window.canClose())
 			window.close();
 	}

@@ -47,7 +47,9 @@ class RCore {
 			SetRandomSeed(Std.int(Date.now().getTime() % 0x7fffffff));
 	}
 
-	/** Closes the window, after keeping what `SaveFileTextAsync` wrote. */
+	/** Closes the window, after keeping what `SaveFileTextAsync` wrote. The program goes on after it: the code after the call runs.
+
+		The window shows nothing after it, and its keys, mouse, touch and gamepads are no longer read. */
 	static function CloseWindow():Void {
 		Runtime.close();
 	}
@@ -67,9 +69,9 @@ class RCore {
 
 	/** Returns whether the window is open.
 
-		@return  True after `InitWindow`. */
+		@return  True after `InitWindow`, until `CloseWindow`. */
 	static function IsWindowReady():Bool {
-		return Runtime.window != null;
+		return Runtime.window != null && !Runtime.closed;
 	}
 
 	/** Returns whether the window changed size since the last frame.

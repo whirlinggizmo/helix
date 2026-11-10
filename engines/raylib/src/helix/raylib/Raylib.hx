@@ -1107,7 +1107,9 @@ class Raylib {
 	public static inline function InitWindow(width:Int, height:Int, title:String):Void
 		RCore.InitWindow(width, height, title);
 
-	/** Closes the window, after keeping what `SaveFileTextAsync` wrote. */
+	/** Closes the window, after keeping what `SaveFileTextAsync` wrote. The program goes on after it: the code after the call runs.
+
+		The window shows nothing after it, and its keys, mouse, touch and gamepads are no longer read. */
 	public static inline function CloseWindow():Void
 		RCore.CloseWindow();
 
@@ -1121,7 +1123,7 @@ class Raylib {
 
 	/** Returns whether the window is open.
 
-		@return  True after `InitWindow`. */
+		@return  True after `InitWindow`, until `CloseWindow`. */
 	public static inline function IsWindowReady():Bool
 		return RCore.IsWindowReady();
 

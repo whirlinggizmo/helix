@@ -149,9 +149,10 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by section (`--check`) |
 | `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
-| `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py`) |
+| `tools/page_check.cjs` | A page in headless Chromium: its errors, its result and a screenshot (run by `platform_checks.py` and `raylib_page_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
 | `tools/platform_checks.py` | The platform's examples and graphics tests on the GPU, natively on a private display and in Chromium |
+| `tools/raylib_page_checks.py` | helix-raylib's page tests (`engines/raylib/tests/page`) in headless Chromium, each its result and its screenshot's points |
 | `tools/render_checks.py` | helix-render's examples and pixel tests on the GPU, natively (GL and SDL_GPU) on a private display and in Chromium (WebGL2) |
 | `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
