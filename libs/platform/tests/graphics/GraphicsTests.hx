@@ -43,9 +43,11 @@ typedef Case = {
 	multisampling chosen apart from their depth (one sample with depth, the screen's, no depth and the most, a count rounded down
 	to the most and a negative one refused) on a window asking for 4 samples, textures read
 	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
-	texel by texel, a cubemap's six faces, declared textures left unbound reading clear, and, in a page, the context lost and given back:
-	frames taken while it is lost, then a texture and a buffer made again drawn into a render target the adapter remade, and that to the
-	screen. The shaders are `shaders/*.vert` and `*.frag`,
+	texel by texel, a cubemap's six faces, declared textures left unbound reading clear, the GPU bytes counted (`textureBytes` and
+	`bufferBytes`: a texture's mipmaps, a cubemap, a data texture, a render target's samples and depth, a shadow map, a static and a
+	stream buffer, each added as made and gone as freed), and, in a page, the context lost and given back: frames taken while it is
+	lost, the bytes of what it dropped gone from the count, then a texture and a buffer made again drawn into a render target the adapter
+	remade, and that to the screen. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
 	waits for it.
 
@@ -80,6 +82,9 @@ class GraphicsTests {
 	static var lostFrames = 0;
 	static var lostThrew:Null<String> = null;
 	static var loseExtension:Dynamic = null;
+	// The GPU bytes counted as the context was lost.
+	static var lostTextureBytes = 0.;
+	static var lostBufferBytes = 0.;
 
 	static function main():Void {
 		#if js
@@ -199,9 +204,53 @@ class GraphicsTests {
 	static function fail(message:String):Void
 		failures.push('$current: $message');
 
+	/** Checks the GPU bytes counted: each texture and buffer adds its bytes as it is made, and takes them away as it is freed. */
+	static function checkBytes():Void {
+		current = "GPU bytes";
+		var textures = graphics.textureBytes, buffers = graphics.bufferBytes;
+		function added(what:String, texture:Bool, expected:Float, handle:Int):Int {
+			var now = texture ? graphics.textureBytes - textures : graphics.bufferBytes - buffers;
+			check(now == expected, '$what added $now bytes, $expected expected');
+			if (texture)
+				textures += now;
+			else
+				buffers += now;
+			return handle;
+		}
+		// A 4 x 4 texture and its two mipmaps: 64, 16 and 4 bytes.
+		var mipmapped = added("a texture with mipmaps", true, 84, graphics.createTexture(4, 4, [Bytes.alloc(64), Bytes.alloc(16), Bytes.alloc(4)]));
+		var cube = added("a cubemap", true, 2 * 2 * 4 * 6, graphics.createCubeTexture(2, [Bytes.alloc(2 * 2 * 4 * 6)], Rgba8));
+		var data = added("a data texture", true, 2 * 3 * 16, graphics.createDataTexture(2, 3));
+		// 4 samples asked for, rounded down to the most the GPU draws RGBA8 with: the texture, its samples, and its depth a sample.
+		var most = graphics.getMaxRenderTargetMsaaSampleCount(Rgba8),
+			samples = most < 4 ? most : 4;
+		var area = 8 * 4;
+		var target = added('a render target of $samples samples', true, area * 4 + (samples > 1 ? area * 4 * samples : 0) + area * 4 * samples,
+			graphics.createRenderTarget(8, 4, Rgba8, true, 4));
+		var plain = added("a render target of 1 sample without depth", true, area * 4, graphics.createRenderTarget(8, 4, Rgba8, false, 1));
+		var shadow = added("a shadow map of 2 layers", true, 4 * 4 * 4 * 2, graphics.createShadowMap(4, 2));
+		var fixed = added("a static buffer", false, 64, graphics.createStaticBuffer(Bytes.alloc(64), 64, false));
+		// With SDL_GPU, the stream buffers are written in one buffer for them all, counted as it grows.
+		var stream = added("a stream buffer", false, #if sdl_gpu 0 #else 256 #end, graphics.createBuffer(256));
+		for (t in [mipmapped, cube, data, target, plain, shadow])
+			graphics.disposeTexture(t);
+		graphics.disposeBuffer(fixed);
+		graphics.disposeBuffer(stream);
+		check(graphics.textureBytes == textures
+			- 84
+			- 96
+			- 96
+			- (area * 4 + (samples > 1 ? area * 4 * samples : 0) + area * 4 * samples)
+			- area * 4
+			- 128,
+			'freed, the textures count ${graphics.textureBytes}');
+		check(graphics.bufferBytes == buffers - 64 - #if sdl_gpu 0 #else 256 #end, 'freed, the buffers count ${graphics.bufferBytes}');
+	}
+
 	/** Makes the programs, pipelines, buffers and textures, and the cases over them. */
 	static function setup():Void {
 		window.title = "helix-platform: graphics tests";
+		checkBytes();
 		var color = shader(ShaderCompiler.compile("shaders/color.vert", "shaders/color.frag"));
 		var texture = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/texture.frag"));
 		var data = shader(ShaderCompiler.compile("shaders/texture.vert", "shaders/data.frag"));
@@ -1609,6 +1658,8 @@ class GraphicsTests {
 				loseExtension = canvas.getContext("webgl2").getExtension("WEBGL_lose_context");
 				losing = 1;
 				lostFrames = 0;
+				lostTextureBytes = graphics.textureBytes;
+				lostBufferBytes = graphics.bufferBytes;
 				loseExtension.loseContext();
 			},
 			target: 0,
@@ -1619,8 +1670,15 @@ class GraphicsTests {
 			before: () -> {
 				check(lostThrew == null, 'a call threw while the context was lost: $lostThrew');
 				check(lostFrames >= 30, '$lostFrames frames while lost, 30 or more expected');
+				// The textures and static buffers it dropped are gone from the count; the render targets, data textures and stream buffers
+				// remade stay in it.
+				var textures = graphics.textureBytes,
+					buffers = graphics.bufferBytes;
+				check(textures > 0 && textures < lostTextureBytes, 'the textures count $textures after the restore, $lostTextureBytes before');
+				check(buffers > 0 && buffers < lostBufferBytes, 'the buffers count $buffers after the restore, $lostBufferBytes before');
 				var again = texture2D(2, 2, [0xff0000ff, 0x00ff00ff, 0x0000ffff, 0xffffffff]),
 					quadAgain = buffer(uvSquare);
+				check(graphics.textureBytes - textures == 16, 'a 2 x 2 texture made again added ${graphics.textureBytes - textures} bytes');
 				graphics.beginTargetPass(target, 0, 0, 0, 1);
 				draw(sampled, quadAgain, 6, [again], [Sampling.NEAREST]);
 				graphics.endTargetPass();

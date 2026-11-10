@@ -35,6 +35,7 @@ extern class GraphicsDeviceBridge {
 	@:native("helix_end") static function end():Void;
 	@:native("helix_present") static function present():Void;
 	@:native("helix_dispose_resource") static function disposeResource(kind:Int, handle:Int):Int;
+	@:native("helix_gpu_bytes") static function gpuBytes(kind:Int):Float;
 	@:native("helix_read_width") static function readWidth(target:cpp.UInt32):Int;
 	@:native("helix_read_height") static function readHeight(target:cpp.UInt32):Int;
 	@:native("helix_read_pixels") static function readPixels(target:cpp.UInt32, out:cpp.RawPointer<cpp.UInt8>):Int;

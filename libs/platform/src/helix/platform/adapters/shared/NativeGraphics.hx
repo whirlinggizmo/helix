@@ -109,6 +109,16 @@ abstract class NativeGraphics implements IGraphics {
 			shadingLanguage: GraphicsDeviceBridge.deviceInfo(4).toString()
 		};
 
+	public var textureBytes(get, never):Float;
+
+	function get_textureBytes():Float
+		return GraphicsDeviceBridge.gpuBytes(1);
+
+	public var bufferBytes(get, never):Float;
+
+	function get_bufferBytes():Float
+		return GraphicsDeviceBridge.gpuBytes(0);
+
 	public function createBuffer(capacityBytes:Int):Int
 		return valid(GraphicsHandle.BUFFER, GraphicsDeviceBridge.buffer(capacityBytes));
 

@@ -30,11 +30,39 @@ class CountingGraphics implements IGraphics {
 	/** How many data textures were made. */
 	public var dataTextureCreations = 0;
 
-	function made(live:Map<Int, Bool>):Int {
+	// The bytes each texture and buffer live holds: its levels', a render target's at 8 a texel, a buffer's.
+	final bytes = new Map<Int, Float>();
+
+	function made(live:Map<Int, Bool>, held = 0.):Int {
 		var h = next++;
 		live.set(h, true);
+		bytes.set(h, held);
 		return h;
 	}
+
+	static function levelBytes(levels:Array<Bytes>):Float {
+		var total = 0.;
+		for (level in levels)
+			total += level.length;
+		return total;
+	}
+
+	function sum(live:Map<Int, Bool>):Float {
+		var total = 0.;
+		for (h in live.keys())
+			total += bytes.get(h);
+		return total;
+	}
+
+	public var textureBytes(get, never):Float;
+
+	function get_textureBytes():Float
+		return sum(textures);
+
+	public var bufferBytes(get, never):Float;
+
+	function get_bufferBytes():Float
+		return sum(buffers);
 
 	function gone(live:Map<Int, Bool>, h:Int):Void
 		if (!live.remove(h))
@@ -75,12 +103,12 @@ class CountingGraphics implements IGraphics {
 	public function createTexture(width:Int, height:Int, levels:Array<Bytes>, format:TextureFormat = Rgba8):Int {
 		textureCreations++;
 		lastLevels = levels;
-		return made(textures);
+		return made(textures, levelBytes(levels));
 	}
 
 	public function createCubeTexture(size:Int, levels:Array<Bytes>, format:TextureFormat):Int {
 		textureCreations++;
-		return made(textures);
+		return made(textures, levelBytes(levels));
 	}
 
 	public function createDataTexture(width:Int, height:Int):Int {
@@ -95,7 +123,7 @@ class CountingGraphics implements IGraphics {
 
 	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int {
 		targetCreations++;
-		return made(textures);
+		return made(textures, width * height * 8.);
 	}
 
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
@@ -112,12 +140,12 @@ class CountingGraphics implements IGraphics {
 
 	public function createBuffer(capacityBytes:Int):Int {
 		bufferCreations++;
-		return made(buffers);
+		return made(buffers, capacityBytes);
 	}
 
 	public function createStaticBuffer(data:Bytes, bytes:Int, index:Bool):Int {
 		bufferCreations++;
-		return made(buffers);
+		return made(buffers, bytes);
 	}
 
 	public function updateBuffer(handle:Int, data:Bytes, usedBytes:Int):Void {}

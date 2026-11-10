@@ -24,6 +24,8 @@ int helix_begin(int width,int height,uint32_t color);int helix_viewport(int x,in
 int helix_draw(uint32_t pipeline,const uint32_t *buffers,const int *offsets,int buffer_count,uint32_t indices,int first,int count,int first_instance,int instance_count,
  const uint32_t *textures,const int *samplings,int texture_count,const void *uniforms,int uniform_bytes);
 void helix_end(void);void helix_present(void);int helix_dispose_resource(int kind,uint32_t handle);
+/* The bytes the buffers (kind 0) or textures (1) alive hold on the GPU, as made, without the GPU's own padding. */
+double helix_gpu_bytes(int kind);
 int helix_scissor(int x,int y,int w,int h,int on);int helix_read_width(uint32_t target);int helix_read_height(uint32_t target);int helix_read_pixels(uint32_t target,unsigned char *out);
 #ifdef __cplusplus
 }

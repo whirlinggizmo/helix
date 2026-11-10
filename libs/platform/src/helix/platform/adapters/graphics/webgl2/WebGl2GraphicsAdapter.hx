@@ -32,7 +32,9 @@ private typedef Target = {
 	height:Int,
 	// What made it: whether it has depth, and the samples asked for, so a restore makes it again.
 	hasDepth:Bool,
-	asked:Int
+	asked:Int,
+	// The samples it has.
+	samples:Int
 }
 
 /** A program's uniform block: its binding point, which is its index in a draw's uniforms, its size, and whether the linked program kept
@@ -107,11 +109,16 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// Pipelines, by handle: their description.
 	var pipelines:Map<Int, PipelineDesc> = [];
 	// Cube textures' handles.
-	var cubes:Map<Int, Bool> = [];
+	var cubes:Map<Int, Int> = [];
 	// Data textures, by handle: their size.
 	var dataTextures:Map<Int, {width:Int, height:Int}> = [];
 	// createTexture's textures, by handle: their size and format.
-	var plainTextures:Map<Int, {width:Int, height:Int, format:TextureFormat}> = [];
+	var plainTextures:Map<Int, {
+		width:Int,
+		height:Int,
+		format:TextureFormat,
+		levels:Int
+	}> = [];
 	var active = false;
 	// In a target pass: drawn flipped, as GL's framebuffers' origin is the bottom left, so a target is stored top row first like any texture.
 	var flipped = false;
@@ -354,7 +361,12 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
 		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = tex;
-		plainTextures[id] = {width: width, height: height, format: format};
+		plainTextures[id] = {
+			width: width,
+			height: height,
+			format: format,
+			levels: levels.length
+		};
 		return id;
 	}
 
@@ -373,7 +385,12 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
 		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = tex;
-		plainTextures[id] = {width: image.width, height: image.height, format: Rgba8};
+		plainTextures[id] = {
+			width: image.width,
+			height: image.height,
+			format: Rgba8,
+			levels: 1
+		};
 		return id;
 	}
 
@@ -437,9 +454,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var tex = gl.createTexture();
 		bindToChange(WebGL2RenderingContext.TEXTURE_CUBE_MAP, tex);
 		gl.pixelStorei(WebGL2RenderingContext.UNPACK_ALIGNMENT, 1);
-		var s = size;
+		var s = size, held = 0;
 		for (i in 0...levels.length) {
 			var face = format.levelBytes(s, s);
+			held += face * 6;
 			if (levels[i].length != face * 6) {
 				gl.deleteTexture(tex);
 				throw "Invalid cube texture";
@@ -451,7 +469,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_CUBE_MAP, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, levels.length - 1);
 		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = tex;
-		cubes[id] = true;
+		cubes[id] = held;
 		return id;
 	}
 
@@ -746,6 +764,42 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return known;
 	}
 
+	public var textureBytes(get, never):Float;
+
+	// Counted from what each texture alive was made as.
+	function get_textureBytes():Float {
+		var total = 0.;
+		for (p in plainTextures) {
+			var w = p.width, h = p.height;
+			for (_ in 0...p.levels) {
+				total += p.format.levelBytes(w, h);
+				w = w > 1 ? w >> 1 : 1;
+				h = h > 1 ? h >> 1 : 1;
+			}
+		}
+		for (bytes in cubes)
+			total += bytes;
+		for (d in dataTextures)
+			total += d.width * d.height * 16.;
+		// The texture sampled, the samples drawn into when multisampled, and the depth, 4 bytes a sample.
+		for (t in targets) {
+			var area:Float = t.width * t.height, texel = t.half ? 8 : 4;
+			total += area * texel + (t.samples > 1 ? area * texel * t.samples : 0) + (t.hasDepth ? area * 4 * t.samples : 0);
+		}
+		for (m in shadowMaps)
+			total += m.size * m.size * 4. * m.framebuffers.length;
+		return total;
+	}
+
+	public var bufferBytes(get, never):Float;
+
+	function get_bufferBytes():Float {
+		var total = 0.;
+		for (b in buffers)
+			total += b.capacity;
+		return total;
+	}
+
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int {
 		if (!canRender(format))
 			return 1;
@@ -843,7 +897,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				width: width,
 				height: height,
 				hasDepth: depth,
-				asked: msaaSampleCount
+				asked: msaaSampleCount,
+				samples: count
 			}
 		};
 	}

@@ -107,6 +107,20 @@ interface IGraphics {
 		otherwise has the browser's own, such as "WebKit WebGL". */
 	var device(get, never):GraphicsDevice;
 
+	/** Gets the bytes the textures alive hold on the GPU, for a program to show: each texture's levels (a cube's six faces), a data
+		texture's texels at 16 bytes, a render target's texels, its samples when multisampled and its depth at 4 bytes a sample, and a
+		shadow map's layers at 4 bytes a texel. The screen's own aren't counted, nor what the GPU pads.
+
+		Natively a data texture written more than once a frame counts each copy it keeps. In a page, a lost context's textures count until
+		`GraphicsRestored`, and then only those remade. */
+	var textureBytes(get, never):Float;
+
+	/** Gets the bytes the buffers alive hold on the GPU, for a program to show: each static buffer's bytes and each stream buffer's
+		capacity, or natively the space the adapter writes stream buffers in (with SDL_GPU, one buffer for them all; with GL, each one's and
+		the copies a buffer written more than once a frame keeps). What the GPU pads isn't counted. In a page, a lost context's buffers count
+		until `GraphicsRestored`, and then only those remade. */
+	var bufferBytes(get, never):Float;
+
 	/** Returns the largest number of multisampling samples a render target of a format can be drawn with here, at most 8.
 
 		It is 1, 2, 4 or 8: 1 where this GPU cannot multisample the format, or cannot draw into it at all (`canRender`).

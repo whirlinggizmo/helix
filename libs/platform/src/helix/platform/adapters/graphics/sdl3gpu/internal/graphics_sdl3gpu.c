@@ -75,7 +75,7 @@ static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*fl
    variant drawing into it), or a shadow map (a depth array). */
 enum{PLAIN,DATA,TARGET,SHADOW};
 static struct{uint32_t generation;int live,kind,width,height,layers,variant,format,cleared,sample_count;SDL_GPUTexture *texture,*samples,*depth;
- SDL_GPUTexture *versions[MAX_RENAMES];int current,bound[MAX_RENAMES];}textures[SLOTS];
+ SDL_GPUTexture *versions[MAX_RENAMES];int current,bound[MAX_RENAMES];double bytes;}textures[SLOTS];
 
 /* Samplers by Sampling value (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v, bits 5-6 the mipmap filter, bits
    7-9 the anisotropy's power of two), made when first used, and the comparison sampler shadow maps are read through. */
@@ -285,7 +285,7 @@ static uint32_t sampled(int w,int h,int faces,const void *data,int bytes,int lev
   lw=lw>1?lw/2:1;lh=lh>1?lh/2:1;
  }
  if(!upload_now(data,total,list,count)){SDL_ReleaseGPUTexture(device,texture);return 0;}
- textures[slot].texture=texture;textures[slot].layers=faces;textures[slot].format=format;
+ textures[slot].texture=texture;textures[slot].layers=faces;textures[slot].format=format;textures[slot].bytes=(double)total;
  return take_texture(slot,PLAIN,w,h);
 }
 uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int format){return sampled(w,h,1,data,bytes,levels,format);}
@@ -301,7 +301,7 @@ uint32_t helix_data_texture(int w,int h){
  SDL_GPUTexture *texture=data_version(w,h);
  if(!texture)return 0;
  memset(textures[slot].versions,0,sizeof textures[slot].versions);memset(textures[slot].bound,0,sizeof textures[slot].bound);
- textures[slot].versions[0]=textures[slot].texture=texture;textures[slot].current=0;
+ textures[slot].versions[0]=textures[slot].texture=texture;textures[slot].current=0;textures[slot].bytes=(double)w*h*16;
  return take_texture(slot,DATA,w,h);
 }
 static int texture_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&textures[s].live&&(handle>>16)==(textures[s].generation&GENERATION_MASK);}
@@ -314,7 +314,10 @@ static int update_data(int slot,const void *data,int bytes){
  if(textures[slot].bound[v]){
   for(v=0;v<MAX_RENAMES&&textures[slot].bound[v];v++){}
   if(v==MAX_RENAMES)return 0;
-  if(!textures[slot].versions[v]&&!(textures[slot].versions[v]=data_version(textures[slot].width,textures[slot].height)))return 0;
+  if(!textures[slot].versions[v]){
+   if(!(textures[slot].versions[v]=data_version(textures[slot].width,textures[slot].height)))return 0;
+   textures[slot].bytes+=(double)size;
+  }
   textures[slot].current=v;
  }
  const Upload u={.bytes=(Uint32)size,.texture=textures[slot].versions[v],.width=(Uint32)textures[slot].width,.height=(Uint32)textures[slot].height,.cycle=true};
@@ -614,6 +617,9 @@ uint32_t helix_target(int w,int h,int format,int depth,int asked){
  }
  textures[slot].texture=color;textures[slot].samples=drawn;textures[slot].depth=depth_target;textures[slot].layers=1;textures[slot].sample_count=samples;
  textures[slot].variant=(format==4?1:0)|(depth?0:2)|((power_of(samples)^power_of(window_samples))<<2);
+ /* The texture sampled, the texture of its samples when multisampled, and its depth, 4 bytes a sample. */
+ const double texel=format==4?8:4,area=(double)w*h;
+ textures[slot].bytes=area*texel+(samples>1?area*texel*samples:0)+(depth?area*4*samples:0);
  return take_texture(slot,TARGET,w,h);
 }
 /* A shadow map: a depth array of layers layers, each size x size, sampled through the handle. Always an array, so its programs read it as one. */
@@ -626,7 +632,7 @@ uint32_t helix_shadow_map(int size,int layers){
  if(!comparison)comparison=SDL_CreateGPUSampler(device,&(SDL_GPUSamplerCreateInfo){.min_filter=SDL_GPU_FILTER_LINEAR,.mag_filter=SDL_GPU_FILTER_LINEAR,
   .address_mode_u=SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,.address_mode_v=SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,.address_mode_w=SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
   .compare_op=SDL_GPU_COMPAREOP_LESS_OR_EQUAL,.enable_compare=true});
- textures[slot].texture=texture;textures[slot].layers=layers;
+ textures[slot].texture=texture;textures[slot].layers=layers;textures[slot].bytes=(double)size*size*4*layers;
  return take_texture(slot,SHADOW,size,size);
 }
 
@@ -965,6 +971,15 @@ void helix_present(void){
   SDL_BlitGPUTexture(present,&(SDL_GPUBlitInfo){.source={.texture=screen,.w=(Uint32)screen_width,.h=(Uint32)screen_height},
    .destination={.texture=swapchain,.w=w,.h=h},.load_op=SDL_GPU_LOADOP_DONT_CARE,.filter=SDL_GPU_FILTER_LINEAR});
  SDL_SubmitGPUCommandBuffer(present);
+}
+/* The bytes the buffers (kind 0) or textures (1) alive hold on the GPU: the static buffers' and the arena the stream buffers are written
+   in; each texture's levels, a data texture's versions, a render target's samples and depth, a shadow map's layers. */
+double helix_gpu_bytes(int kind){
+ double total=kind==0?arena_size:0;
+ for(int i=0;i<SLOTS;i++)
+  if(kind==0&&buffers[i].live&&!buffers[i].stream)total+=buffers[i].capacity;
+  else if(kind==1&&textures[i].live)total+=textures[i].bytes;
+ return total;
 }
 /* Disposes a buffer (0), texture (1), pipeline (2) or program (3, its pipelines first). SDL_GPU frees each once the GPU is done with it. */
 int helix_dispose_resource(int kind,uint32_t handle){

@@ -49,6 +49,16 @@ class RecordingGraphics implements IGraphics {
 		return 4;
 
 	/** Gets 4. */
+	public var textureBytes(get, never):Float;
+
+	function get_textureBytes():Float
+		return 0;
+
+	public var bufferBytes(get, never):Float;
+
+	function get_bufferBytes():Float
+		return 0;
+
 	public var maxMsaaSampleCount(get, never):Int;
 
 	function get_maxMsaaSampleCount():Int
