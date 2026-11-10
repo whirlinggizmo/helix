@@ -15,6 +15,8 @@
 ## Differences from raylib
 
 - Files load with the `...Async` calls beside raylib's, in `Raylib` and `Raygui`.
+- Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the `Sys` calls that wait or leave the program, don't compile in a
+  program. Each names the raylib call to use.
 - Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
   (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.

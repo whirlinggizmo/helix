@@ -858,3 +858,13 @@ Why things are the way they are, numbered, in order.
     name both calls, the saved one first ("For a saved file, one SaveFileText wrote, see ..."). A blind trial tests whether agents reach
     them from the refusal. Rejected: a flag on the plain calls, unreadable at the call site after two callbacks; a list of the program's
     files made at build time, which makes a program declare its files.
+
+66. **Haxe's file calls are refused in a program's own code, on every target.** `sys.io.File`, `sys.FileSystem` and `sys.io.Process`
+    don't compile in a program's classes, each refusal naming the raylib call to use, as `LoadFileText`'s does (`sys.io.File.getContent`
+    names `LoadSavedFileTextAsync` and `LoadFileTextAsync`, `saveContent` names `SaveFileTextAsync`). helix's libraries and Haxe's
+    standard library keep them natively. For JS the `sys` package is allowed, so a program naming it gets the refusal rather than Haxe's
+    error naming the package and the target; the rest of the package is refused there as before. Why: two of six entrants in the
+    2026-11-10 trials saved with `sys.io.File` natively and `localStorage` in the page, outside the saves, without calling raylib's save
+    calls, so `SaveFileText`'s refusal never reached them. Natively the calls write beside the program, not where the saves are kept.
+    `helix.py test` builds a program calling them for JS and natively and checks each refusal (`FileCalls`). Rejected: a brief telling
+    agents to use raylib's file calls, which a developer never reads; a warning, which lets a save outside the saves build.

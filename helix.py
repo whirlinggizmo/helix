@@ -79,6 +79,23 @@ def named(product):
     """The defines naming a test program, which every program sets: the company and the product."""
     return ['-D','helix-company=helix','-D',f'helix-product={product}']
 
+# What FileCalls (engines/raylib/tests/refused) must be refused with, each the start of a refusal's message.
+REFUSED_FILE_CALLS=('sys.io.File.getContent: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(',
+    'sys.io.File.saveContent: A file is written later, or is refused. See SaveFileTextAsync(','sys.io.File.getBytes: Synchronous loading',
+    'sys.io.File.saveBytes: A file is written later','sys.FileSystem.exists: Synchronous file access is not supported. For a saved file',
+    'sys.FileSystem.readDirectory: Synchronous file access','sys.io.Process: Not supported.')
+
+def refused(base):
+    """FileCalls refused for JS and natively (typed alone), each call's refusal in the compiler's errors; and AsyncTests typed
+    natively, with the libraries' own sys.io.File calls in it (the native saves), which aren't refused."""
+    for target in (['-js','build/tests/FileCalls.js'],['-cpp','build/tests/FileCalls-cpp']):
+        done=subprocess.run(['haxe',*base,*named('FileCalls'),'-cp','engines/raylib/tests/refused','-main','FileCalls',*target,'--no-output'],
+            cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
+        missing=[m for m in REFUSED_FILE_CALLS if m not in done.stderr]
+        if done.returncode==0 or missing:sys.exit(f'FileCalls ({target[0]}): built, or refusals missing: {missing}\n{done.stderr}')
+    run(['haxe',*base,*named('AsyncTests'),'-main','AsyncTests','-cpp','build/tests/AsyncTests-typed','--no-output'])
+    print(f'FileCalls: {len(REFUSED_FILE_CALLS)} refusals (JS and native)',flush=True)
+
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
     base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
@@ -86,6 +103,7 @@ def raylib_tests(native):
     def path(name,folder):return 'null' if name is None else json.dumps(f'{folder}/{name}')
     run(['haxe',*base,*[a for vs,fs,out in TEST_SHADERS for a in ('--macro',f'helix.raylib.Raylib.CompileShaderFile({path(vs,"engines/raylib/tests/shaders")}, {path(fs,"engines/raylib/tests/shaders")}, {path(out,"build/tests")})')]])
     extra=[a for _,_,out in TEST_SHADERS for a in ('-resource',f'build/tests/{out}@{out}')]
+    refused(base)
     for main in RAYLIB_TESTS:
         run(['haxe',*base,*extra,*named(main),'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])
         value=result(['node',f'build/tests/{main}.js'])
