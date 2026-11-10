@@ -1332,20 +1332,22 @@ class RCore {
 
 	// ---- Files ----
 
-	/** Doesn't compile on any target, since the answer comes later. See `FileExistsAsync` for asking whether a file exists.
+	/** Doesn't compile on any target, since the answer comes later. See `SavedFileExistsAsync` for asking whether a saved file exists,
+		and `FileExistsAsync` for any other file.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)")
+	@:unsupported("FileExists: Synchronous file access is not supported. For a saved file, one SaveFileText or SaveFileData wrote, see SavedFileExistsAsync(fileName:String, answer:Bool->Void). For any other file, see FileExistsAsync(fileName:String, answer:Bool->Void).")
 	static function FileExists(fileName:String):Bool {
 		throw "FileExists is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since the file is read later. See `LoadFileTextAsync` for reading a text file.
+	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileTextAsync` for reading a saved text file, and
+		`LoadFileTextAsync` for any other.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)")
+	@:unsupported("LoadFileText: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void). For any other file, see LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void).")
 	static function LoadFileText(fileName:String):Null<String> {
 		throw "LoadFileText is unimplemented";
 	}
@@ -1410,11 +1412,12 @@ class RCore {
 		});
 	}
 
-	/** Doesn't compile on any target, since the file is read later. See `LoadFileDataAsync` for reading a file's bytes.
+	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileDataAsync` for reading a saved file's bytes, and
+		`LoadFileDataAsync` for any other file's.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)")
+	@:unsupported("LoadFileData: Synchronous loading is not supported. For a saved file, one SaveFileData wrote, see LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void). For any other file, see LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void).")
 	static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
 		throw "LoadFileData is unimplemented";
 	}

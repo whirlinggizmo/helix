@@ -2709,6 +2709,28 @@ class Raylib {
 	public static inline function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void
 		RFilesAsync.LoadFileTextAsync(fileName, loaded, failed);
 
+	/** Asynchronously reads a saved file's bytes: one `SaveFileData` or `SaveFileText` wrote. See `LoadFileDataAsync` for any other file.
+
+		Reads the program's `SetLoadFileDataCallback` first when it has one. A file that wasn't saved fails, at a later frame.
+
+		@param fileName  The file.
+		@param loaded  Receives its bytes.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void
+		RFilesAsync.LoadSavedFileDataAsync(fileName, loaded, failed);
+
+	/** Asynchronously reads a saved text file: one `SaveFileText` or `SaveFileData` wrote. See `LoadFileTextAsync` for any other file.
+
+		Reads the program's `SetLoadFileTextCallback` first when it has one. A file that wasn't saved fails, at a later frame.
+
+		The text ends at the file's first NUL byte, and a byte that isn't UTF-8 is read as U+FFFD, as `LoadFileTextAsync` reads it.
+
+		@param fileName  The file.
+		@param loaded  Receives its text.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	public static inline function LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void
+		RFilesAsync.LoadSavedFileTextAsync(fileName, loaded, failed);
+
 	/** Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
 
 		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as
@@ -2752,6 +2774,16 @@ class Raylib {
 		@param answer  Receives true when it exists. */
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
 		RFilesAsync.FileExistsAsync(fileName, answer);
+
+	/** Asynchronously answers whether a saved file exists: one `SaveFileText` or `SaveFileData` wrote. See `FileExistsAsync` for any
+		other file.
+
+		The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param answer  Receives true when it was saved. */
+	public static inline function SavedFileExistsAsync(fileName:String, answer:Bool->Void):Void
+		RFilesAsync.SavedFileExistsAsync(fileName, answer);
 
 	/** Asynchronously answers whether a directory exists, replacing raylib's `DirectoryExists`. See
 		`FileExistsAsync` for a file.
@@ -6833,14 +6865,14 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
-	/** Doesn't compile on any target, since the answer comes later. See `FileExistsAsync` for asking whether a file exists. */
+	/** Doesn't compile on any target, since the answer comes later. See `SavedFileExistsAsync` for asking whether a saved file exists, and `FileExistsAsync` for any other file. */
 	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.platform.macros.Build.unsupported("FileExists: Synchronous file access is not supported. See FileExistsAsync(fileName:String, answer:Bool->Void)",
+		return helix.platform.macros.Build.unsupported("FileExists: Synchronous file access is not supported. For a saved file, one SaveFileText or SaveFileData wrote, see SavedFileExistsAsync(fileName:String, answer:Bool->Void). For any other file, see FileExistsAsync(fileName:String, answer:Bool->Void).",
 			macro(false : Bool));
 
-	/** Doesn't compile on any target, since the file is read later. See `LoadFileTextAsync` for reading a text file. */
+	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileTextAsync` for reading a saved text file, and `LoadFileTextAsync` for any other. */
 	public static macro function LoadFileText(fileName:ExprOf<String>):ExprOf<Null<String>>
-		return helix.platform.macros.Build.unsupported("LoadFileText: Synchronous loading is not supported. See LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)",
+		return helix.platform.macros.Build.unsupported("LoadFileText: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void). For any other file, see LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void).",
 			macro(null : Null<String>));
 
 	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file. */
@@ -6848,9 +6880,9 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
-	/** Doesn't compile on any target, since the file is read later. See `LoadFileDataAsync` for reading a file's bytes. */
+	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileDataAsync` for reading a saved file's bytes, and `LoadFileDataAsync` for any other file's. */
 	public static macro function LoadFileData(fileName:ExprOf<String>):ExprOf<Null<haxe.io.Bytes>>
-		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. See LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void)",
+		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. For a saved file, one SaveFileData wrote, see LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void). For any other file, see LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void).",
 			macro(null : Null<haxe.io.Bytes>));
 
 	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes. */

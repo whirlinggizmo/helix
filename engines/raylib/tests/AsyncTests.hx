@@ -144,6 +144,43 @@ class AsyncTests {
 		pump(() -> bytes != null);
 		check(bytes.toString() == "abc", "and read back");
 
+		// The saved files alone, read with no request for the program's files: those are counted as they are read.
+		var shipped = new CountingFileSystem();
+		shipped.files.set("levels/1.txt", Bytes.ofString("level one"));
+		Runtime.polled.push(shipped);
+		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(shipped)]);
+		Runtime.polled.push(Runtime.assets);
+		function savedText(fileName:String):String
+			return answer((d, f) -> LoadSavedFileTextAsync(fileName, text -> {
+				read = text;
+				d();
+			}, f));
+		function savedData(fileName:String):String
+			return answer((d, f) -> LoadSavedFileDataAsync(fileName, b -> {
+				bytes = b;
+				d();
+			}, f));
+		check(savedText("notes.txt") == "done" && read == "hello", "LoadSavedFileTextAsync reads what SaveFileTextAsync wrote");
+		check(savedData("bytes.bin") == "done" && bytes.toString() == "abc", "LoadSavedFileDataAsync reads what SaveFileDataAsync wrote");
+		check(savedText("bytes.bin") == "done" && read == "abc" && savedData("notes.txt") == "done" && bytes.toString() == "hello",
+			"each reads what the other kind of save wrote, as one file");
+		check(savedText("best.txt") == "failed: best.txt: no file was saved with that name"
+			&& savedData("best.bin") == "failed: best.bin: no file was saved with that name"
+			&& shipped.reads == 0,
+			"a file never saved fails, with no read of the program's files");
+		check(savedText("levels/1.txt") == "failed: levels/1.txt: no file was saved with that name" && shipped.reads == 0,
+			"one of the program's files isn't a saved file");
+		read = null;
+		LoadFileTextAsync("levels/1.txt", text -> read = text, e -> throw e);
+		pump(() -> read != null);
+		check(read == "level one" && shipped.reads == 1, "LoadFileTextAsync reads it from the program's files");
+		function saved(fileName:String):String
+			return answer((d, f) -> SavedFileExistsAsync(fileName, yes -> yes ? d() : f("no")));
+		var readsBefore = shipped.reads;
+		check(saved("notes.txt") == "done" && saved("bytes.bin") == "done", "SavedFileExistsAsync: true for a saved file");
+		check(saved("best.txt") == "failed: no" && saved("levels/2.txt") == "failed: no" && shipped.reads == readsBefore,
+			"SavedFileExistsAsync: false for a file never saved, or one of the program's, with no read of the program's files");
+
 		// Listings: the files the program wrote, in their directories.
 		check(answer((d, f) -> SaveFileTextAsync("saves/a.txt", "a", d, f)) == "done"
 			&& answer((d, f) -> SaveFileDataAsync("saves/b.dat", Bytes.ofString("b"), 1, d, f)) == "done"
@@ -273,4 +310,15 @@ class FakeClipboard implements IClipboard {
 	}
 
 	public function dispose():Void {}
+}
+
+/** Counts the reads of a file system in memory. */
+class CountingFileSystem extends FakeFileSystem {
+	/** Gets how many files were asked for. */
+	public var reads(default, null) = 0;
+
+	override public function read(path:String, maxBytes:Int, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void->Void {
+		reads++;
+		return super.read(path, maxBytes, loaded, missing, failed);
+	}
 }

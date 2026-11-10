@@ -740,10 +740,10 @@ static macro function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.
 - `SetWindowMonitor`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor.
 - `EnableCursor`: Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse.
 - `DisableCursor`: Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse.
-- `FileExists`: Doesn't compile on any target, since the answer comes later. See `FileExistsAsync` for asking whether a file exists.
-- `LoadFileText`: Doesn't compile on any target, since the file is read later. See `LoadFileTextAsync` for reading a text file.
+- `FileExists`: Doesn't compile on any target, since the answer comes later. See `SavedFileExistsAsync` for asking whether a saved file exists, and `FileExistsAsync` for any other file.
+- `LoadFileText`: Doesn't compile on any target, since the file is read later. See `LoadSavedFileTextAsync` for reading a saved text file, and `LoadFileTextAsync` for any other.
 - `SaveFileText`: Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file.
-- `LoadFileData`: Doesn't compile on any target, since the file is read later. See `LoadFileDataAsync` for reading a file's bytes.
+- `LoadFileData`: Doesn't compile on any target, since the file is read later. See `LoadSavedFileDataAsync` for reading a saved file's bytes, and `LoadFileDataAsync` for any other file's.
 - `SaveFileData`: Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes.
 - `ExportDataAsCode`: Doesn't compile on any target, since a file is kept later, once written. See `ExportDataAsCodeAsync` for writing bytes as code.
 - `DirectoryExists`: Doesn't compile on any target, since the answer comes later. See `DirectoryExistsAsync` for asking whether a directory exists.

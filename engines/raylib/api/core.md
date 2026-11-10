@@ -1007,9 +1007,12 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 ```haxe
 static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
 static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
+static function LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
+static function LoadSavedFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
 static function SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:() -> Void, ?failed:String -> Void):Void
 static function SaveFileTextAsync(fileName:String, text:String, ?done:() -> Void, ?failed:String -> Void):Void
 static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
+static function SavedFileExistsAsync(fileName:String, answer:Bool -> Void):Void
 static function DirectoryExistsAsync(dirPath:String, answer:Bool -> Void):Void
 static function IsPathFileAsync(path:String, answer:Bool -> Void):Void
 static function GetFileLengthAsync(fileName:String, answer:Int -> Void):Void
@@ -1037,6 +1040,20 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   The text ends at the file's first NUL byte, as raylib's C string does.
 
   A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
+- `LoadSavedFileDataAsync`: Asynchronously reads a saved file's bytes: one `SaveFileData` or `SaveFileText` wrote. See `LoadFileDataAsync` for any other file.
+  - `fileName`: The file.
+  - `loaded`: Receives its bytes.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  Reads the program's `SetLoadFileDataCallback` first when it has one. A file that wasn't saved fails, at a later frame.
+- `LoadSavedFileTextAsync`: Asynchronously reads a saved text file: one `SaveFileText` or `SaveFileData` wrote. See `LoadFileTextAsync` for any other file.
+  - `fileName`: The file.
+  - `loaded`: Receives its text.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  Reads the program's `SetLoadFileTextCallback` first when it has one. A file that wasn't saved fails, at a later frame.
+
+  The text ends at the file's first NUL byte, and a byte that isn't UTF-8 is read as U+FFFD, as `LoadFileTextAsync` reads it.
 - `SaveFileDataAsync`: Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
   - `fileName`: The file.
   - `data`: The bytes.
@@ -1067,6 +1084,11 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
 
   Finding one of the program's files reads it, so a load of it after answers at once.
+- `SavedFileExistsAsync`: Asynchronously answers whether a saved file exists: one `SaveFileText` or `SaveFileData` wrote. See `FileExistsAsync` for any other file.
+  - `fileName`: The file.
+  - `answer`: Receives true when it was saved.
+
+  The answer comes at a later frame, never during the call.
 - `DirectoryExistsAsync`: Asynchronously answers whether a directory exists, replacing raylib's `DirectoryExists`. See `FileExistsAsync` for a file.
   - `dirPath`: The directory.
   - `answer`: Receives true when it exists.

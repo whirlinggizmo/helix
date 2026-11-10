@@ -99,6 +99,61 @@ class RFilesAsync {
 		return helix.formats.text.Utf8Text.decodeReplacing(bytes, 0, end);
 	}
 
+	/** Asynchronously reads a saved file's bytes: one `SaveFileData` or `SaveFileText` wrote. See `LoadFileDataAsync` for any other file.
+
+		Reads the program's `SetLoadFileDataCallback` first when it has one. A file that wasn't saved fails, at a later frame.
+
+		@param fileName  The file.
+		@param loaded  Receives its bytes.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	static function LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		var given = CallbackFiles.load == null ? null : CallbackFiles.load(path);
+		if (given != null) {
+			Runtime.later(() -> loaded(given));
+			return;
+		}
+		Runtime.withSaves(saves -> {
+			var bytes = savedBytes(saves, path);
+			Runtime.later(() -> bytes != null ? loaded(bytes) : refuse("LoadSavedFileDataAsync", notSaved(saves, path), failed));
+		});
+	}
+
+	/** Asynchronously reads a saved text file: one `SaveFileText` or `SaveFileData` wrote. See `LoadFileTextAsync` for any other file.
+
+		Reads the program's `SetLoadFileTextCallback` first when it has one. A file that wasn't saved fails, at a later frame.
+
+		The text ends at the file's first NUL byte, and a byte that isn't UTF-8 is read as U+FFFD, as `LoadFileTextAsync` reads it.
+
+		@param fileName  The file.
+		@param loaded  Receives its text.
+		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
+	static function LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void {
+		var path = normalize(fileName);
+		var given = RCore.loadText == null ? null : RCore.loadText(path);
+		if (given != null) {
+			Runtime.later(() -> loaded(given));
+			return;
+		}
+		Runtime.withSaves(saves -> {
+			var bytes = savedBytes(saves, path);
+			Runtime.later(() -> bytes != null ? loaded(fileText(bytes)) : refuse("LoadSavedFileTextAsync", notSaved(saves, path), failed));
+		});
+	}
+
+	// A saved file's bytes, as SaveFileData or SaveFileText kept them (bytes first, as the two write one file natively), or null.
+	static function savedBytes(saves:helix.services.saves.Saves, path:String):Null<haxe.io.Bytes> {
+		if (saves.hasKey(SAVED_DATA + path))
+			return haxe.crypto.Base64.decode(saves.getString(SAVED_DATA + path, ""));
+		if (saves.hasKey(SAVED + path))
+			return haxe.io.Bytes.ofString(saves.getString(SAVED + path, ""));
+		return null;
+	}
+
+	// Why a saved file couldn't be read.
+	static function notSaved(saves:helix.services.saves.Saves, path:String):String
+		return saves.loaded ? '$path: no file was saved with that name' : '$path: the saves can\'t be read';
+
 	/** Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
 
 		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as
@@ -150,6 +205,21 @@ class RFilesAsync {
 				Runtime.later(() -> answer(true));
 			else
 				Runtime.fetch(path, error -> answer(error == null));
+		});
+	}
+
+	/** Asynchronously answers whether a saved file exists: one `SaveFileText` or `SaveFileData` wrote. See `FileExistsAsync` for any
+		other file.
+
+		The answer comes at a later frame, never during the call.
+
+		@param fileName  The file.
+		@param answer  Receives true when it was saved. */
+	static function SavedFileExistsAsync(fileName:String, answer:Bool->Void):Void {
+		var path = normalize(fileName);
+		Runtime.withSaves(saves -> {
+			var saved = saves.hasKey(SAVED + path) || saves.hasKey(SAVED_DATA + path);
+			Runtime.later(() -> answer(saved));
 		});
 	}
 

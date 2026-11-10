@@ -850,3 +850,11 @@ Why things are the way they are, numbered, in order.
     move when its executable is renamed. Rejected: the page's path as a page's default
     product, which still differs between targets and moves with the page. The check is `ProgramName`'s, typed where an adapter reads a
     name, so a build that makes no system or SDL3 adapter (a library's tests) needs neither.
+65. **A saved file has calls of its own: `LoadSavedFileTextAsync`, `LoadSavedFileDataAsync` and `SavedFileExistsAsync`.** Each reads
+    only what `SaveFileText` or `SaveFileData` wrote, and never the program's own files. `LoadFileTextAsync` reads the saves and then the
+    program's files, as raylib's one directory holds both, so a save not yet written was asked for as one of the program's files: in a
+    page a request to the server, which the browser logs as a 404, on every first run. One entrant of the 2026-11-10 trial saw it and
+    kept its save in the page's `localStorage`, a branch on the target. The refusals of `LoadFileText`, `LoadFileData` and `FileExists`
+    name both calls, the saved one first ("For a saved file, one SaveFileText wrote, see ..."). A blind trial tests whether agents reach
+    them from the refusal. Rejected: a flag on the plain calls, unreadable at the call site after two callbacks; a list of the program's
+    files made at build time, which makes a program declare its files.
