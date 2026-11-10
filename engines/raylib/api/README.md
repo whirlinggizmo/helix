@@ -4,7 +4,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 ## Packages
 
-- [`helix.raylib.extras`](extras.md): Device, Lighting, Models, VirtualGamepad
+- [`helix.raylib.extras`](extras.md): Debug, Device, GuiSkins, Lighting, Models, Sprites, VirtualGamepad
 
 ## Shader includes
 
@@ -255,6 +255,68 @@ var glyphs:Array<GlyphInfo>
 - `recs`: Gets or sets each glyph's rectangle on the texture.
 - `glyphs`: Gets or sets each glyph's character, offsets, advance and image.
 
+## FrameStatsStyle
+
+*class* in [`engines/raylib/src/helix/raylib/FrameStatsStyle.hx`](../src/helix/raylib/FrameStatsStyle.hx), `import helix.raylib.FrameStatsStyle;`
+
+Represents how `DrawFrameStatsEx` (`helix.raylib.extras.Debug`) draws the frame's cost: which stats it shows, and their look.
+
+Every field has a default, so a style sets only what it changes: `{fontSize: 24, triangles: true}`.
+
+Each stat shown is a line of its own.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{?fps:Bool, ?frameTime:Bool, ?drawCalls:Bool, ?triangles:Bool, ?stateChanges:Bool, ?gpuTextures:Bool, ?gpuBuffers:Bool, ?memory:Bool, ?targetFps:Int, ?onTargetColor:Color, ?belowTargetColor:Color, ?farBelowTargetColor:Color, ?font:Null<Font>, ?fontSize:Int, ?spacing:Float, ?padding:Int, ?backgroundColor:Color}
+```
+
+```haxe
+var fps:Bool = true
+var frameTime:Bool = true
+var drawCalls:Bool = true
+var triangles:Bool = false
+var stateChanges:Bool = false
+var gpuTextures:Bool = false
+var gpuBuffers:Bool = false
+var memory:Bool = false
+var targetFps:Int = 0
+var onTargetColor:Color = GREEN
+var belowTargetColor:Color = YELLOW
+var farBelowTargetColor:Color = RED
+var font:Null<Font> = null
+var fontSize:Null<Int> = null
+var spacing:Float = 1
+var padding:Int = 4
+var backgroundColor:Color = BLANK
+```
+
+- `fps`: Gets or sets a value indicating whether the frames a second show. Defaults to true.
+- `frameTime`: Gets or sets a value indicating whether the frame time shows: its mean and its slowest 5% (p95) over the last half second, in milliseconds. Defaults to true.
+- `drawCalls`: Gets or sets a value indicating whether the last frame's draw calls show: how many draws it sent the GPU. Defaults to true.
+- `triangles`: Gets or sets a value indicating whether the last frame's triangles drawn show. Defaults to false.
+- `stateChanges`: Gets or sets a value indicating whether the last frame's state changes show: how often its draws switched shader, render state or textures. Defaults to false.
+- `gpuTextures`: Gets or sets a value indicating whether the megabytes of textures helix-raylib holds on the GPU show. Defaults to false.
+  Counts textures, cubemaps, render textures with their samples and depth, and the skinning palettes, as the graphics reports them, without the GPU's own padding. The screen's own aren't counted.
+- `gpuBuffers`: Gets or sets a value indicating whether the megabytes of buffers helix-raylib holds on the GPU show. Defaults to false.
+  Counts meshes' vertices and indices, the frame's batch and its quad indices, and a frame's instances, as the graphics reports them.
+- `memory`: Gets or sets a value indicating whether the megabytes of memory the program holds show, as `ISystem.getMemoryBytes` reports them. Defaults to false.
+  Natively, the process's resident memory.
+
+  In a page, the script heap where the browser reports it, and nothing where it doesn't.
+- `targetFps`: Gets or sets the frame rate that sets the stats' color, in frames a second. Defaults to 0, for the target `SetTargetFPS` set, or the monitor's refresh rate when none is set.
+- `onTargetColor`: Gets or sets the text's color when the frame rate is at or above the target. Defaults to `GREEN`.
+- `belowTargetColor`: Gets or sets the text's color when the frame rate is below the target. Defaults to `YELLOW`.
+- `farBelowTargetColor`: Gets or sets the text's color when the frame rate is below half the target. Defaults to `RED`.
+- `font`: Gets or sets the font. Defaults to null, for raylib's default font.
+- `fontSize`: Gets or sets the text's height, in pixels. Defaults to null, which scales the text to the window.
+  Null draws at a 36th of the screen's height (20 at 720 lines, as `DrawFPS` draws), so the stats read alike at any window size.
+
+  A size provided is used unchanged. One under 1 is refused.
+- `spacing`: Gets or sets the space between letters, in pixels at the font's size, as `DrawTextEx`'s. Defaults to 1.
+- `padding`: Gets or sets the space around the text inside its background, in pixels. Defaults to 4.
+- `backgroundColor`: Gets or sets the background's color behind the text and its padding. Defaults to `BLANK`, for none.
+
 ## GlyphInfo
 
 *class* in [`engines/raylib/src/helix/raylib/GlyphInfo.hx`](../src/helix/raylib/GlyphInfo.hx), `import helix.raylib.GlyphInfo;`
@@ -276,6 +338,36 @@ var image:Image
 - `offsetY`: Character offset Y when drawing.
 - `advanceX`: Character advance position X.
 - `image`: Character image data.
+
+## GuiSkin
+
+*class* in [`engines/raylib/src/helix/raylib/GuiSkin.hx`](../src/helix/raylib/GuiSkin.hx), `import helix.raylib.GuiSkin;`
+
+Represents a skin: how one part of raygui's controls is drawn from a texture, a nine-patch for each state, in place of its style's flat colors.
+
+Made by `GuiSkinFromTexture` and set by `GuiSetSkin`, both in `helix.raylib.extras.GuiSkins`.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{texture:Texture2D, normal:NPatchInfo, focused:Null<NPatchInfo>, pressed:Null<NPatchInfo>, disabled:Null<NPatchInfo>, tint:Color}
+```
+
+```haxe
+var texture:Texture2D
+var normal:NPatchInfo
+var focused:Null<NPatchInfo>
+var pressed:Null<NPatchInfo>
+var disabled:Null<NPatchInfo>
+var tint:Color
+```
+
+- `texture`: Gets or sets the texture holding the patches, often one sheet for every skin.
+- `normal`: Gets or sets the patch drawn in `STATE_NORMAL`.
+- `focused`: Gets or sets the patch drawn in `STATE_FOCUSED`, with the pointer over the control, or null to draw `normal`.
+- `pressed`: Gets or sets the patch drawn in `STATE_PRESSED`, or null to draw `focused`, or `normal` when that is null too.
+- `disabled`: Gets or sets the patch drawn in `STATE_DISABLED`, or null to draw `normal`.
+- `tint`: Gets or sets the tint multiplying the patches, `WHITE` to draw them unchanged.
 
 ## GuiStyleProp
 

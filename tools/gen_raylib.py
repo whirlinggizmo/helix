@@ -9,8 +9,9 @@ the raylib module it serves, so a program's import of raylib's header brings the
 file calls (RFilesAsync) and the compiled shaders (RCompiledShaders) after RCore, RTexturesAsync after RTextures, RTextAsync after
 RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAsync after RGui.
 What a program opts into that raylib has no call for is in the package helix.raylib.extras, a module and a section of its own each
-(extras.Lighting from RLighting, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, a model's posed bounds and
-merge in extras.Models from RModelsPosed and RModelsMerged). The
+(extras.Lighting from RLighting, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.GuiSkins from
+RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, a model's posed bounds and merge in extras.Models from RModelsPosed
+and RModelsMerged). The
 sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
 (docs/CONVENTIONS.md). Each file's generated part has two halves:
 
@@ -87,6 +88,9 @@ TARGETS = {
     'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders rlights' lights light")], None, 'Lighting'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
     'extras/Device.hx': ([('RDevice', "device: the safe area, the device, the window's abilities, orientation and tilt")], None, 'Device'),
+    'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
+    'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),
+    'extras/Sprites.hx': ([('RSprites', "sprites: many copies of one part of a texture, each placed by a matrix, in one call")], None, 'Sprites'),
 }
 # The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.
 EXTRAS = 'helix.raylib.extras'

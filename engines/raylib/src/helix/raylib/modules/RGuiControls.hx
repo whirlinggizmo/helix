@@ -110,7 +110,7 @@ class RGuiControls {
 			panel.height -= STATUSBAR_HEIGHT - 1;
 			GuiStatusBar(statusBar, text);
 		}
-		drawRectangle(panel, PANEL_BORDER_WIDTH, styleColor(DEFAULT, state == STATE_DISABLED ? BORDER_COLOR_DISABLED : LINE_COLOR),
+		box(DEFAULT, 0, state, panel, PANEL_BORDER_WIDTH, styleColor(DEFAULT, state == STATE_DISABLED ? BORDER_COLOR_DISABLED : LINE_COLOR),
 			styleColor(DEFAULT, state == STATE_DISABLED ? BASE_COLOR_DISABLED : BACKGROUND_COLOR));
 		return 0;
 	}
@@ -324,7 +324,7 @@ class RGuiControls {
 					result = 1;
 			}
 		}
-		drawRectangle(bounds, GuiGetStyle(BUTTON, BORDER_WIDTH), styleColor(BUTTON, BORDER + state * 3), styleColor(BUTTON, BASE + state * 3));
+		box(BUTTON, 0, state, bounds, GuiGetStyle(BUTTON, BORDER_WIDTH), styleColor(BUTTON, BORDER + state * 3), styleColor(BUTTON, BASE + state * 3));
 		drawText(text, textBounds(BUTTON, bounds), GuiGetStyle(BUTTON, TEXT_ALIGNMENT), styleColor(BUTTON, TEXT + state * 3));
 		if (state == STATE_FOCUSED)
 			tooltip(bounds);
@@ -381,11 +381,11 @@ class RGuiControls {
 		}
 		if (state == STATE_NORMAL) {
 			var on = active[0];
-			drawRectangle(bounds, GuiGetStyle(TOGGLE, BORDER_WIDTH), styleColor(TOGGLE, on ? BORDER_COLOR_PRESSED : BORDER + state * 3),
-				styleColor(TOGGLE, on ? BASE_COLOR_PRESSED : BASE + state * 3));
+			box(TOGGLE, 0, on ? STATE_PRESSED : state, bounds, GuiGetStyle(TOGGLE, BORDER_WIDTH),
+				styleColor(TOGGLE, on ? BORDER_COLOR_PRESSED : BORDER + state * 3), styleColor(TOGGLE, on ? BASE_COLOR_PRESSED : BASE + state * 3));
 			drawText(text, textBounds(TOGGLE, bounds), GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), styleColor(TOGGLE, on ? TEXT_COLOR_PRESSED : TEXT + state * 3));
 		} else {
-			drawRectangle(bounds, GuiGetStyle(TOGGLE, BORDER_WIDTH), styleColor(TOGGLE, BORDER + state * 3), styleColor(TOGGLE, BASE + state * 3));
+			box(TOGGLE, 0, state, bounds, GuiGetStyle(TOGGLE, BORDER_WIDTH), styleColor(TOGGLE, BORDER + state * 3), styleColor(TOGGLE, BASE + state * 3));
 			drawText(text, textBounds(TOGGLE, bounds), GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), styleColor(TOGGLE, TEXT + state * 3));
 		}
 		if (state == STATE_FOCUSED)
@@ -466,13 +466,13 @@ class RGuiControls {
 		if (active[0] >= itemCount)
 			active[0] = 0;
 		slider.x = f32(bounds.x + border + (active[0] + 1) * padding + f32(active[0] * slider.width));
-		drawRectangle(bounds, border, styleColor(TOGGLE, BORDER + state * 3), styleColor(TOGGLE, BASE_COLOR_NORMAL));
+		box(TOGGLE, 0, state, bounds, border, styleColor(TOGGLE, BORDER + state * 3), styleColor(TOGGLE, BASE_COLOR_NORMAL));
 		if (state == STATE_NORMAL)
-			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
+			box(TOGGLE, 1, state, slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
 		else if (state == STATE_FOCUSED)
-			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_FOCUSED));
+			box(TOGGLE, 1, state, slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_FOCUSED));
 		else if (state == STATE_PRESSED)
-			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
+			box(TOGGLE, 1, state, slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
 		if (text != null) {
 			var textWidth = stringWidth(text),
 				size = GuiGetStyle(DEFAULT, TEXT_SIZE);
@@ -517,10 +517,10 @@ class RGuiControls {
 			}
 		}
 		var border = GuiGetStyle(CHECKBOX, BORDER_WIDTH);
-		drawRectangle(bounds, border, styleColor(CHECKBOX, BORDER + state * 3), BLANK);
+		box(CHECKBOX, 0, state, bounds, border, styleColor(CHECKBOX, BORDER + state * 3), BLANK);
 		if (checked[0]) {
 			var inset = border + GuiGetStyle(CHECKBOX, CHECK_PADDING);
-			drawRectangle(new Rectangle(bounds.x + inset, bounds.y + inset, bounds.width - 2 * inset, bounds.height - 2 * inset), 0, BLANK,
+			box(CHECKBOX, 1, state, new Rectangle(bounds.x + inset, bounds.y + inset, bounds.width - 2 * inset, bounds.height - 2 * inset), 0, BLANK,
 				styleColor(CHECKBOX, TEXT + state * 3));
 		}
 		drawText(text, label, GuiGetStyle(CHECKBOX, TEXT_ALIGNMENT) == TEXT_ALIGN_RIGHT ? TEXT_ALIGN_LEFT : TEXT_ALIGN_RIGHT,
@@ -560,7 +560,7 @@ class RGuiControls {
 				state = IsMouseButtonDown(MOUSE_BUTTON_LEFT) ? STATE_PRESSED : STATE_FOCUSED;
 			}
 		}
-		drawRectangle(b, GuiGetStyle(COMBOBOX, BORDER_WIDTH), styleColor(COMBOBOX, BORDER + state * 3), styleColor(COMBOBOX, BASE + state * 3));
+		box(COMBOBOX, 0, state, b, GuiGetStyle(COMBOBOX, BORDER_WIDTH), styleColor(COMBOBOX, BORDER + state * 3), styleColor(COMBOBOX, BASE + state * 3));
 		drawText(items[active[0]], textBounds(COMBOBOX, b), GuiGetStyle(COMBOBOX, TEXT_ALIGNMENT), styleColor(COMBOBOX, TEXT + state * 3));
 		var tempBorderWidth = GuiGetStyle(BUTTON, BORDER_WIDTH),
 			tempTextAlign = GuiGetStyle(BUTTON, TEXT_ALIGNMENT);
@@ -632,7 +632,8 @@ class RGuiControls {
 		}
 		if (editMode)
 			GuiPanel(boundsOpen, null);
-		drawRectangle(bounds, GuiGetStyle(DROPDOWNBOX, BORDER_WIDTH), styleColor(DROPDOWNBOX, BORDER + state * 3), styleColor(DROPDOWNBOX, BASE + state * 3));
+		box(DROPDOWNBOX, 0, state, bounds, GuiGetStyle(DROPDOWNBOX, BORDER_WIDTH), styleColor(DROPDOWNBOX, BORDER + state * 3),
+			styleColor(DROPDOWNBOX, BASE + state * 3));
 		drawText(items[itemSelected], textBounds(DROPDOWNBOX, bounds), GuiGetStyle(DROPDOWNBOX, TEXT_ALIGNMENT), styleColor(DROPDOWNBOX, TEXT + state * 3));
 		if (editMode) {
 			for (i in 0...itemCount) {
@@ -641,12 +642,12 @@ class RGuiControls {
 				else
 					itemBounds.y -= bounds.height + spacing;
 				if (i == itemSelected) {
-					drawRectangle(itemBounds, GuiGetStyle(DROPDOWNBOX, BORDER_WIDTH), styleColor(DROPDOWNBOX, BORDER_COLOR_PRESSED),
+					box(DROPDOWNBOX, 3, STATE_PRESSED, itemBounds, GuiGetStyle(DROPDOWNBOX, BORDER_WIDTH), styleColor(DROPDOWNBOX, BORDER_COLOR_PRESSED),
 						styleColor(DROPDOWNBOX, BASE_COLOR_PRESSED));
 					drawText(items[i], textBounds(DROPDOWNBOX, itemBounds), GuiGetStyle(DROPDOWNBOX, TEXT_ALIGNMENT),
 						styleColor(DROPDOWNBOX, TEXT_COLOR_PRESSED));
 				} else if (i == itemFocused) {
-					drawRectangle(itemBounds, GuiGetStyle(DROPDOWNBOX, BORDER_WIDTH), styleColor(DROPDOWNBOX, BORDER_COLOR_FOCUSED),
+					box(DROPDOWNBOX, 3, STATE_FOCUSED, itemBounds, GuiGetStyle(DROPDOWNBOX, BORDER_WIDTH), styleColor(DROPDOWNBOX, BORDER_COLOR_FOCUSED),
 						styleColor(DROPDOWNBOX, BASE_COLOR_FOCUSED));
 					drawText(items[i], textBounds(DROPDOWNBOX, itemBounds), GuiGetStyle(DROPDOWNBOX, TEXT_ALIGNMENT),
 						styleColor(DROPDOWNBOX, TEXT_COLOR_FOCUSED));
@@ -857,11 +858,11 @@ class RGuiControls {
 		text[0] = RText.decoded(t, 0, end);
 		var border = GuiGetStyle(TEXTBOX, BORDER_WIDTH);
 		if (state == STATE_PRESSED)
-			drawRectangle(bounds, border, styleColor(TEXTBOX, BORDER + state * 3), styleColor(TEXTBOX, BASE_COLOR_PRESSED));
+			box(TEXTBOX, 0, state, bounds, border, styleColor(TEXTBOX, BORDER + state * 3), styleColor(TEXTBOX, BASE_COLOR_PRESSED));
 		else if (state == STATE_DISABLED)
-			drawRectangle(bounds, border, styleColor(TEXTBOX, BORDER + state * 3), styleColor(TEXTBOX, BASE_COLOR_DISABLED));
+			box(TEXTBOX, 0, state, bounds, border, styleColor(TEXTBOX, BORDER + state * 3), styleColor(TEXTBOX, BASE_COLOR_DISABLED));
 		else
-			drawRectangle(bounds, border, styleColor(TEXTBOX, BORDER + state * 3), BLANK);
+			box(TEXTBOX, 0, state, bounds, border, styleColor(TEXTBOX, BORDER + state * 3), BLANK);
 		drawTextBytes(t, textIndexOffset, bounds2, GuiGetStyle(TEXTBOX, TEXT_ALIGNMENT), styleColor(TEXTBOX, TEXT + state * 3));
 		if (editMode && GuiGetStyle(TEXTBOX, TEXT_READONLY) == 0) {
 			drawRectangle(cursor, 0, BLANK, styleColor(TEXTBOX, BORDER_COLOR_PRESSED));
@@ -1087,7 +1088,9 @@ class RGuiControls {
 		if (state != STATE_DISABLED)
 			progress.width = f32(f32(value[0] / (maxValue - minValue)) * bounds.width) - (value[0] >= maxValue ? 2 * border : 0.);
 		if (state == STATE_DISABLED)
-			drawRectangle(bounds, border, styleColor(PROGRESSBAR, BORDER + state * 3), BLANK);
+			box(PROGRESSBAR, 0, state, bounds, border, styleColor(PROGRESSBAR, BORDER + state * 3), BLANK);
+		else if (drawSkin(PROGRESSBAR, 0, state, bounds))
+			box(PROGRESSBAR, 1, state, progress, 0, BLANK, styleColor(PROGRESSBAR, BASE_COLOR_PRESSED));
 		else {
 			var focused = styleColor(PROGRESSBAR, BORDER_COLOR_FOCUSED),
 				normal = styleColor(PROGRESSBAR, BORDER_COLOR_NORMAL);
@@ -1105,7 +1108,7 @@ class RGuiControls {
 				drawRectangle(new Rectangle(bounds.x + reached + 1, bounds.y + bounds.height - 1, bounds.width - reached - 1, border), 0, BLANK, normal);
 				drawRectangle(new Rectangle(bounds.x + bounds.width - 1, bounds.y + 1, border, bounds.height - 2), 0, BLANK, normal);
 			}
-			drawRectangle(progress, 0, BLANK, styleColor(PROGRESSBAR, BASE_COLOR_PRESSED));
+			box(PROGRESSBAR, 1, state, progress, 0, BLANK, styleColor(PROGRESSBAR, BASE_COLOR_PRESSED));
 		}
 		sideTexts(PROGRESSBAR, bounds, textLeft, textRight, styleColor(PROGRESSBAR, TEXT + state * 3));
 		return 0;
@@ -1118,7 +1121,8 @@ class RGuiControls {
 		@return  0. */
 	static function GuiStatusBar(bounds:Rectangle, text:String):Int {
 		var state = guiState;
-		drawRectangle(bounds, GuiGetStyle(STATUSBAR, BORDER_WIDTH), styleColor(STATUSBAR, BORDER + state * 3), styleColor(STATUSBAR, BASE + state * 3));
+		box(STATUSBAR, 0, state, bounds, GuiGetStyle(STATUSBAR, BORDER_WIDTH), styleColor(STATUSBAR, BORDER + state * 3),
+			styleColor(STATUSBAR, BASE + state * 3));
 		drawText(text, textBounds(STATUSBAR, bounds), GuiGetStyle(STATUSBAR, TEXT_ALIGNMENT), styleColor(STATUSBAR, TEXT + state * 3));
 		return 0;
 	}
@@ -1257,7 +1261,7 @@ class RGuiControls {
 			itemBounds.y = bounds.y + itemsSpacing + defaultBorder;
 		}
 		var border = GuiGetStyle(LISTVIEW, BORDER_WIDTH);
-		drawRectangle(bounds, border, styleColor(LISTVIEW, BORDER + state * 3), styleColor(DEFAULT, BACKGROUND_COLOR));
+		box(LISTVIEW, 0, state, bounds, border, styleColor(LISTVIEW, BORDER + state * 3), styleColor(DEFAULT, BACKGROUND_COLOR));
 		var alignment = GuiGetStyle(LISTVIEW, TEXT_ALIGNMENT);
 		if (text != null)
 			for (i in 0...visibleItems) {
@@ -1265,13 +1269,14 @@ class RGuiControls {
 				drawRectangle(itemBounds, GuiGetStyle(LISTVIEW, LIST_ITEMS_BORDER_WIDTH), styleColor(LISTVIEW, BORDER_COLOR_NORMAL), BLANK);
 				if (state == STATE_DISABLED) {
 					if (startIndex + i == itemSelected)
-						drawRectangle(itemBounds, border, styleColor(LISTVIEW, BORDER_COLOR_DISABLED), styleColor(LISTVIEW, BASE_COLOR_DISABLED));
+						box(LISTVIEW, 3, STATE_DISABLED, itemBounds, border, styleColor(LISTVIEW, BORDER_COLOR_DISABLED),
+							styleColor(LISTVIEW, BASE_COLOR_DISABLED));
 					drawText(item, textBounds(DEFAULT, itemBounds), alignment, styleColor(LISTVIEW, TEXT_COLOR_DISABLED));
 				} else if (startIndex + i == itemSelected && active != null) {
-					drawRectangle(itemBounds, border, styleColor(LISTVIEW, BORDER_COLOR_PRESSED), styleColor(LISTVIEW, BASE_COLOR_PRESSED));
+					box(LISTVIEW, 3, STATE_PRESSED, itemBounds, border, styleColor(LISTVIEW, BORDER_COLOR_PRESSED), styleColor(LISTVIEW, BASE_COLOR_PRESSED));
 					drawText(item, textBounds(DEFAULT, itemBounds), alignment, styleColor(LISTVIEW, TEXT_COLOR_PRESSED));
 				} else if (startIndex + i == itemFocused) {
-					drawRectangle(itemBounds, border, styleColor(LISTVIEW, BORDER_COLOR_FOCUSED), styleColor(LISTVIEW, BASE_COLOR_FOCUSED));
+					box(LISTVIEW, 3, STATE_FOCUSED, itemBounds, border, styleColor(LISTVIEW, BORDER_COLOR_FOCUSED), styleColor(LISTVIEW, BASE_COLOR_FOCUSED));
 					drawText(item, textBounds(DEFAULT, itemBounds), alignment, styleColor(LISTVIEW, TEXT_COLOR_FOCUSED));
 				} else
 					drawText(item, textBounds(DEFAULT, itemBounds), alignment, styleColor(LISTVIEW, TEXT_COLOR_NORMAL));
@@ -1737,7 +1742,7 @@ class RGuiControls {
 		else if (state == STATE_DISABLED)
 			baseColor = styleColor(VALUEBOX, BASE_COLOR_DISABLED);
 		var border = GuiGetStyle(VALUEBOX, BORDER_WIDTH);
-		drawRectangle(bounds, border, styleColor(VALUEBOX, BORDER + state * 3), baseColor);
+		box(VALUEBOX, 0, state, bounds, border, styleColor(VALUEBOX, BORDER + state * 3), baseColor);
 		drawText(textValue, textBounds(VALUEBOX, bounds), TEXT_ALIGN_CENTER, styleColor(VALUEBOX, TEXT + state * 3));
 		if (editMode)
 			drawRectangle(new Rectangle(bounds.x + idiv(stringWidth(textValue), 2) + bounds.width / 2 + 1, bounds.y + 2 * border, 4,
@@ -1812,14 +1817,16 @@ class RGuiControls {
 			if (slider.width > bounds.width)
 				slider.width = bounds.width - 2 * border;
 		}
-		drawRectangle(bounds, border, styleColor(SLIDER, BORDER + state * 3),
+		box(SLIDER, 0, state, bounds, border, styleColor(SLIDER, BORDER + state * 3),
 			styleColor(SLIDER, state != STATE_DISABLED ? BASE_COLOR_NORMAL : BASE_COLOR_DISABLED));
+		// A slider's handle, or a slider bar's bar.
+		var part = sliderWidth > 0 ? 2 : 1;
 		if (state == STATE_NORMAL)
-			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
+			box(SLIDER, part, state, slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
 		else if (state == STATE_FOCUSED)
-			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, TEXT_COLOR_FOCUSED));
+			box(SLIDER, part, state, slider, 0, BLANK, styleColor(SLIDER, TEXT_COLOR_FOCUSED));
 		else if (state == STATE_PRESSED)
-			drawRectangle(slider, 0, BLANK, styleColor(SLIDER, TEXT_COLOR_PRESSED));
+			box(SLIDER, part, state, slider, 0, BLANK, styleColor(SLIDER, TEXT_COLOR_PRESSED));
 		sideTexts(SLIDER, bounds, textLeft, textRight, styleColor(SLIDER, TEXT + state * 3));
 		return result;
 	}
@@ -1920,9 +1927,12 @@ class RGuiControls {
 			if (value < minValue)
 				value = minValue;
 		}
-		drawRectangle(bounds, border, styleColor(LISTVIEW, BORDER + state * 3), styleColor(DEFAULT, BORDER_COLOR_DISABLED));
-		drawRectangle(scrollbar, 0, BLANK, styleColor(BUTTON, BASE_COLOR_NORMAL));
-		drawRectangle(slider, 0, BLANK, styleColor(SLIDER, BORDER + state * 3));
+		// A skin's box is the bar and its track together.
+		if (!drawSkin(SCROLLBAR, 0, state, bounds)) {
+			drawRectangle(bounds, border, styleColor(LISTVIEW, BORDER + state * 3), styleColor(DEFAULT, BORDER_COLOR_DISABLED));
+			drawRectangle(scrollbar, 0, BLANK, styleColor(BUTTON, BASE_COLOR_NORMAL));
+		}
+		box(SCROLLBAR, 2, state, slider, 0, BLANK, styleColor(SLIDER, BORDER + state * 3));
 		if (GuiGetStyle(SCROLLBAR, ARROWS_VISIBLE) != 0) {
 			var side = isVertical ? bounds.width : bounds.height;
 			drawText(isVertical ? "#121#" : "#118#", new Rectangle(arrowUpLeft.x, arrowUpLeft.y, side, side), TEXT_ALIGN_CENTER,

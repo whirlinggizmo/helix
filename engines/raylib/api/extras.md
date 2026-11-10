@@ -2,6 +2,83 @@
 
 [Back to the library](README.md)
 
+## Debug
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Debug.hx`](../src/helix/raylib/extras/Debug.hx), `import helix.raylib.extras.Debug;`
+
+Provides drawing for looking at what a program does: a model's skeleton as posed, its posed bounds, and the frame's cost. helix-raylib's own. raylib's DrawModelWires, DrawBoundingBox, DrawGrid and DrawFPS draw the rest. Imported apart: `import helix.raylib.extras.Debug.*;`.
+
+### debug: a model's skeleton and bounds as posed, and the frame's cost
+
+```haxe
+static function DrawModelSkeleton(model:Model, position:Vector3, scale:Float, color:Color):Void
+static function DrawModelBoundingBoxPosed(model:Model, position:Vector3, scale:Float, color:Color):Void
+static function DrawFrameStats(posX:Int, posY:Int, fontSize:Int):Void
+static function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void
+static function MeasureFrameStats(style:FrameStatsStyle):Vector2
+```
+
+- `DrawModelSkeleton`: Draws a model's skeleton in the pose it has at the call, placed as DrawModel places the model. See `DrawModelBoundingBoxPosed` for drawing its bounds.
+  - `model`: The model.
+  - `position`: Where the model is drawn, as DrawModel's.
+  - `scale`: Its scale, as DrawModel's.
+  - `color`: The lines' color.
+
+  Each bone is a line to its parent, and each joint a small cross.
+
+  A model never posed draws its bind pose. A model without bones draws nothing.
+
+  Draws in 3D mode (BeginMode3D) with depth, as DrawLine3D draws, so the model's surface hides the bones inside it.
+
+  A model drawn as several copies, each posed apart, is posed and drawn copy by copy:
+
+  ```haxe
+  for (i in 0...copies) {
+  UpdateModelAnimation(model, anim, frame + i * 10);
+  var at = new Vector3(i * 2, 0, 0);
+  DrawModel(model, at, 1, WHITE);
+  DrawModelSkeleton(model, at, 1, YELLOW);
+  DrawModelBoundingBoxPosed(model, at, 1, RED);
+  }
+  ```
+- `DrawModelBoundingBoxPosed`: Draws a model's bounds in the pose it has at the call, placed as DrawModel places the model. See `DrawModelSkeleton` for drawing its bones.
+  - `model`: The model.
+  - `position`: Where the model is drawn, as DrawModel's.
+  - `scale`: Its scale, as DrawModel's.
+  - `color`: The box's color.
+
+  The box is GetModelBoundingBoxPosed's (helix.raylib.extras.Models).
+
+  Draws in 3D mode, as DrawBoundingBox does.
+- `DrawFrameStats`: Draws the frame's cost at a point on the screen in FrameStatsStyle's default look at a size, as DrawFPS draws the rate. See `DrawFrameStatsEx` for choosing the stats and their look.
+  - `posX`: The text's left, in pixels.
+  - `posY`: The text's top, in pixels.
+  - `fontSize`: The text's height, in pixels, as DrawText's; DrawFPS draws at 20.
+
+  Draws a line each for: - the frames a second - the frame time's mean and its slowest 5% (p95) over the last half second, in milliseconds - the last frame's draw calls
+
+  The text's color is judged against SetTargetFPS's target, or the monitor's refresh rate without one.
+
+  The same as `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
+- `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen in a style's stats, font, size, spacing, colors and background. See `DrawFrameStats` for drawing the default look at a size.
+  - `position`: The text's top left, in pixels (its background's, padding around the text).
+  - `style`: What to show and how; each field left out takes its default.
+
+  Each stat is a line, so the text's height follows the stats shown. `MeasureFrameStats` returns the size.
+
+  Each number is right-aligned in a slot of a fixed width, so the stats stay in place as the numbers change.
+
+  ```haxe
+  DrawFrameStatsEx(new Vector2(10, 10), {fontSize: 24, backgroundColor: Fade(BLACK, 0.5), triangles: true});
+  ```
+- `MeasureFrameStats`: Returns the size DrawFrameStatsEx draws a style's stats in, for placing them (at a corner, say).
+  - `style`: What to show and how.
+  - returns: The width and height, in pixels.
+
+  The size includes the padding.
+
+  Sized for the widest values, so it is the same from frame to frame.
+
 ## Device
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Device.hx`](../src/helix/raylib/extras/Device.hx), `import helix.raylib.extras.Device;`
@@ -125,6 +202,89 @@ static function CalibrateTilt():Void
   - returns: True while the tilt steers.
 - `CalibrateTilt`: Takes level again: the tilt reads 0 until the device is held steady for half a second, and how the device is held then becomes level (`IsTiltCalibrating`). A game's "Level" button is this call. See `GetTilt` for reading the tilt from level.
 
+## GuiSkins
+
+*class* in [`engines/raylib/src/helix/raylib/extras/GuiSkins.hx`](../src/helix/raylib/extras/GuiSkins.hx), `import helix.raylib.extras.GuiSkins;`
+
+Provides skins for raygui's controls, helix-raylib's own: a part of a control drawn from a texture, stretched as a nine-patch so its corners keep their shape, in place of its style's flat colors. The controls keep raygui's signatures, so a skinned button is still `GuiButton(bounds, text)`, and its text is still drawn in the style's text colors and font. Imported apart: `import helix.raylib.extras.GuiSkins.*;`. The skin's type, `GuiSkin`, is `helix.raylib`'s, with raylib's.
+
+```haxe
+// button.png: a cell of 190 x 49 for each state, top down (normal, focused, pressed, disabled), borders of 14.
+LoadTextureAsync("assets/button.png", sheet -> GuiSetSkin(BUTTON, GUI_SKIN_BASE, GuiSkinFromSheet(sheet, 190, 49, 14, 14, 14, 14)));
+...
+if (GuiButton(new Rectangle(20, 20, 190, 49), "Play") != 0) ...
+```
+
+The parts each control draws:
+
+| control | `GUI_SKIN_BASE` | `GUI_SKIN_FILL` | `GUI_SKIN_HANDLE` | `GUI_SKIN_ITEM` | |---|---|---|---|---| | `DEFAULT` | `GuiPanel`'s, `GuiWindowBox`'s and `GuiScrollPanel`'s body | | | | | `BUTTON` | `GuiButton`, and `GuiSpinner`'s arrows | | | | | `TOGGLE` | a toggle, each of a toggle group's, a toggle slider's box | a toggle slider's selection | | | | `SLIDER` | the box | `GuiSliderBar`'s bar | `GuiSlider`'s handle | | | `PROGRESSBAR` | the box | the progress | | | | `CHECKBOX` | the box | the check | | | | `COMBOBOX`, `TEXTBOX`, `VALUEBOX`, `STATUSBAR` | the box | | | | | `DROPDOWNBOX` | the box | | | an open list's focused and chosen items | | `LISTVIEW` | the box | | | the focused and active items | | `SCROLLBAR` | the bar and its track | | the thumb | |
+
+A control draws its state's patch: `STATE_FOCUSED` with the pointer over it, `STATE_PRESSED` held down (and a toggle on), `STATE_DISABLED` between `GuiDisable` and `GuiEnable` or under `GuiSetState(STATE_DISABLED)`. A program that sets no skin links none of this.
+
+```haxe
+static inline var GUI_SKIN_BASE:Int
+static inline var GUI_SKIN_FILL:Int
+static inline var GUI_SKIN_HANDLE:Int
+static inline var GUI_SKIN_ITEM:Int
+```
+
+- `GUI_SKIN_BASE`: A control's box: its border and background. Every control has one.
+- `GUI_SKIN_FILL`: The part a control fills to show its value: a slider's or progress bar's bar, a check box's check.
+- `GUI_SKIN_HANDLE`: The part a control is dragged by: a slider's handle, a scroll bar's thumb.
+- `GUI_SKIN_ITEM`: One item of a list: a list view's row, a drop-down box's choice, a toggle group's toggle.
+
+### gui skins: raygui's controls drawn from textures
+
+```haxe
+static function GuiSkinFromTexture(texture:Texture2D, normal:NPatchInfo, ?focused:NPatchInfo, ?pressed:NPatchInfo, ?disabled:NPatchInfo, ?tint:Color):GuiSkin
+static function GuiSkinFromSheet(texture:Texture2D, cellWidth:Int, cellHeight:Int, left:Int, top:Int, right:Int, bottom:Int):GuiSkin
+static function GuiSetSkin(control:Int, part:Int, skin:Null<GuiSkin>):Void
+static function GuiGetSkin(control:Int, part:Int):Null<GuiSkin>
+static function GuiClearSkins():Void
+```
+
+- `GuiSkinFromTexture`: Returns a skin cut from a texture by one patch for each state. See `GuiSkinFromSheet` for cutting the patches from a sheet of equal cells.
+  - `texture`: The texture the patches are cut from.
+  - `normal`: The patch drawn in `STATE_NORMAL`.
+  - `focused`: Optional. The patch drawn in `STATE_FOCUSED`; `normal` when omitted.
+  - `pressed`: Optional. The patch drawn in `STATE_PRESSED`; `focused` when omitted, or `normal` without it.
+  - `disabled`: Optional. The patch drawn in `STATE_DISABLED`; `normal` when omitted.
+  - `tint`: Optional. The color the patches are multiplied by; `WHITE` when omitted.
+  - returns: The skin.
+- `GuiSkinFromSheet`: Returns a skin cut from a sheet of a control's states, one cell of one size each. See `GuiSkinFromTexture` for cutting a patch per state from one texture.
+  - `texture`: The sheet.
+  - `cellWidth`: A cell's width, in texels.
+  - `cellHeight`: A cell's height, in texels.
+  - `left`: The left border's width, in texels, kept unstretched.
+  - `top`: The top border's height.
+  - `right`: The right border's width.
+  - `bottom`: The bottom border's height.
+  - returns: The skin.
+
+  The cells are in raygui's order of states: normal, focused, pressed, disabled.
+
+  They run from the top down, or from the left across when the sheet is less than two cells high.
+
+  A sheet of fewer than four cells leaves the rest to their fallbacks (`GuiSkin`).
+
+  Each cell is cut as a nine-patch by the same borders.
+- `GuiSetSkin`: Sets the skin a part of a control is drawn with, in place of its style's border and base colors. See `GuiGetSkin` for reading the skin set, and `GuiClearSkins` for removing every one.
+  - `control`: The control: `DEFAULT`, `BUTTON`, `SLIDER` and the rest of raygui's.
+  - `part`: `GUI_SKIN_BASE`, `GUI_SKIN_FILL`, `GUI_SKIN_HANDLE` or `GUI_SKIN_ITEM`.
+  - `skin`: The skin, or null to draw the part flat in its style's colors again.
+
+  A skin set on `DEFAULT` is set on every control too, as `GuiSetStyle` sets `DEFAULT`'s base properties. Set `DEFAULT`'s first and each control's own after.
+
+  The skin is read as each control draws. A skin set before one call and put back after it changes that call's control alone.
+
+  `GuiPanel`, `GuiWindowBox` and `GuiScrollPanel` draw their body with `DEFAULT`'s own `GUI_SKIN_BASE`.
+- `GuiGetSkin`: Returns the skin a part of a control is drawn with, to put back after a change. See `GuiSetSkin` for setting it.
+  - `control`: The control.
+  - `part`: The part.
+  - returns: The skin, or null when the part is drawn flat.
+- `GuiClearSkins`: Removes every skin, so every control is drawn flat in its style's colors again. See `GuiSetSkin` with null for removing one.
+  Loading a style leaves the skins unchanged.
+
 ## Lighting
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Lighting.hx`](../src/helix/raylib/extras/Lighting.hx), `import helix.raylib.extras.Lighting;`
@@ -224,6 +384,39 @@ static function LoadModelFromModels(models:Array<Model>, ?skeleton:Model):Null<M
   Without `skeleton`, the new model has no bones and the identity transform. Each provided model's transform is multiplied into the model's vertices, and a provided model with bones is merged at its bind pose.
 
   The merged meshes are uploaded. Refused, with the reason logged, for an empty list, for a provided model with bones whose transform differs from the transform of `skeleton`, and for a `skeleton` of more than 256 bones.
+
+## Sprites
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Sprites.hx`](../src/helix/raylib/extras/Sprites.hx), `import helix.raylib.extras.Sprites;`
+
+Provides helix-raylib's instanced texture draw, `DrawTextureInstanced`: many copies of one part of a texture, each placed by a matrix, in one call, as three.js's InstancedMesh, Godot's MultiMesh and Unity's instancing draw many of one thing (docs/DECISIONS.md 47). Imported apart: `import helix.raylib.extras.Sprites.*;`.
+
+```haxe
+var copies = [for (i in 0...100) MatrixMultiply(MatrixRotateZ(i * 0.1), MatrixTranslate(i * 8, 100, 0))];
+DrawTextureInstanced(texture, new Rectangle(0, 0, 32, 32), copies, WHITE);
+```
+
+### sprites: many copies of one part of a texture, each placed by a matrix, in one call
+
+```haxe
+static function DrawTextureInstanced(texture:Texture2D, source:Rectangle, transforms:Array<Matrix>, tint:Color):Void
+```
+
+- `DrawTextureInstanced`: Draws one part of a texture many times in one call, each copy placed by its own matrix. See `DrawTexturePro` for drawing a single copy.
+  - `texture`: The texture.
+  - `source`: The part of it, in pixels.
+  - `transforms`: Each copy's matrix.
+  - `tint`: The tint, every copy's.
+
+  Each copy is what `DrawTexturePro` draws, in the batch's order, so the copies join the frame's sprite run and cost what the same draws would.
+
+  A copy is the part, `source.width` by `source.height` pixels with its top left at the origin, taken through its matrix as `Vector2Transform` applies one. The fields read are `m0`, `m4` and `m12` across, and `m1`, `m5` and `m13` down.
+
+  `MatrixTranslate` places a copy, `MatrixRotateZ` turns it about its top left and `MatrixScale` sizes it. Their products do all three.
+
+  A negative `source.width` or `source.height` flips the part.
+
+  Nothing is drawn when the texture's id, width or height is 0.
 
 ## VirtualGamepad
 

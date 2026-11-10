@@ -833,3 +833,13 @@ Why things are the way they are, numbered, in order.
     answers each on every target, linked only by a program that calls one, with the virtual gamepad's tilt stick. Its run options
     stay gone, as `Sys.args()` reads the command line on every target. `IsPlatformWeb` is known as the program builds, the same answer
     as `#if js`. The `emscripten_run_script` refusals name the Device call that answers what a C program asks the page.
+63. **`extras.GuiSkins`, `extras.Debug` and `extras.Sprites` are back, opt-in.** This revises 61's "still out", as 62 did for
+    `extras.Device`: raygui's controls drawn from images, a model's skeleton and posed bounds and the frame's cost drawn, and many
+    copies of a sprite in one call, each linked only by a program that calls it. The frame stats' GPU memory is the platform's:
+    `IGraphics.textureBytes` and `bufferBytes`, which each adapter adds up from what it made when asked. A count in helix-raylib
+    instead needed a hook every program checks as its window opens (15 to 18 B gzip a rung); the platform's costs every program on
+    every ladder about 30 B, what each adapter records as it makes a texture or render target, and was taken as the honest count, the
+    adapter knowing its samples, depth and spares. One exception to "nothing until called": raygui's boxes are drawn through `RGui.box`,
+    passing each control, part and state, so `GuiSetSkin` can replace `RGui.drawSkin`. A raygui program that sets no skin pays about
+    212 B gzip for those 31 calls (a probe of 14 controls). Inlining `box` cost 363 B, and one packed key in place of the control and
+    part made no difference. The size ladder's rungs 1 to 10 use no raygui and pay nothing.
