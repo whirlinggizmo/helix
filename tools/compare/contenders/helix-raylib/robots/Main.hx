@@ -6,23 +6,15 @@ import helix.raylib.Raylib.*;
 // at start, to measure whether that collector setting changes the frame time or the collector's share of it.
 class Main {
 	static function emit(line:String):Void {
-		#if js
-		js.Browser.console.log(line);
-		#else
 		Sys.println(line);
-		#end
 	}
 
-	// A run option as compare.py passes it: in a page the URL's query (?count=N), natively the command line (--count=N).
+	// A run option as compare.py passes it, --count=N on the command line (a page's URL query, ?count=N, is its command line).
 	static function option(name:String):Null<String> {
-		#if js
-		return new js.html.URLSearchParams(js.Browser.location.search).get(name);
-		#else
 		for (arg in Sys.args())
 			if (StringTools.startsWith(arg, '--$name='))
 				return arg.substr(name.length + 3);
 		return null;
-		#end
 	}
 
 	static function main():Void {
@@ -35,7 +27,7 @@ class Main {
 		if (gcMin != null)
 			cpp.vm.Gc.setMinimumWorkingMemory(Std.parseInt(gcMin) * 1024 * 1024);
 		#end
-		var chunk = copt == null ? count : Std.parseInt(copt); // characters a BeginDrawing/EndDrawing pair holds; a whole measured frame is count of them
+		var chunk = copt == null ? count : Std.parseInt(copt); // robots a raylib frame draws; a measured frame is count of them
 		InitWindow(1280, 720, "skin helix");
 		var cols = Math.ceil(Math.sqrt(count));
 		var w = cols * 4.0;
@@ -49,39 +41,41 @@ class Main {
 		var deltas:Array<Float> = [];
 		var upds = 0.0;
 		var done = false;
+		// The robots drawn so far in the measured frame, chunk of them a raylib frame, and their animation updates' time.
+		var i = 0;
+		var u = 0.0;
 		while (!done && !WindowShouldClose()) {
+			BeginDrawing();
 			if (models.length < 1 || anims == null) {
-				BeginDrawing();
 				ClearBackground(RAYWHITE);
 				EndDrawing();
 				continue;
 			}
-			var now = GetTime() * 1000;
-			if (frame >= 120)
-				deltas.push(now - last);
-			last = now;
-			var anim = anims[0];
-			var u = 0.0;
-			var i = 0;
-			while (i < count) {
-				BeginDrawing();
-				if (i == 0)
-					ClearBackground(RAYWHITE);
-				BeginMode3D(camera);
-				var stop = i + chunk < count ? i + chunk : count;
-				while (i < stop) {
-					var t0 = GetTime();
-					UpdateModelAnimation(models[0], anim, (frame + 1 + i * 5) % anim.frameCount);
-					u += GetTime() - t0;
-					DrawModel(models[0], new Vector3(((i % cols) - (cols - 1) / 2.0) * 4.0, 0, (Std.int(i / cols) - (cols - 1) / 2.0) * 4.0), 1, WHITE);
-					i++;
-				}
-				EndMode3D();
-				EndDrawing();
+			if (i == 0) {
+				var now = GetTime() * 1000;
+				if (frame >= 120)
+					deltas.push(now - last);
+				last = now;
+				ClearBackground(RAYWHITE);
 			}
-			u *= 1000;
+			var anim = anims[0];
+			BeginMode3D(camera);
+			var stop = i + chunk < count ? i + chunk : count;
+			while (i < stop) {
+				var t0 = GetTime();
+				UpdateModelAnimation(models[0], anim, (frame + 1 + i * 5) % anim.frameCount);
+				u += GetTime() - t0;
+				DrawModel(models[0], new Vector3(((i % cols) - (cols - 1) / 2.0) * 4.0, 0, (Std.int(i / cols) - (cols - 1) / 2.0) * 4.0), 1, WHITE);
+				i++;
+			}
+			EndMode3D();
+			EndDrawing();
+			if (i < count)
+				continue;
+			i = 0;
 			if (frame >= 120)
-				upds += u;
+				upds += u * 1000;
+			u = 0;
 			frame++;
 			if (frame >= 720) {
 				var sorted = deltas.copy();
