@@ -9,7 +9,7 @@ import haxe.macro.Expr;
 import helix.raylib.modules.RTextAsync;
 #end
 
-/** Provides the async versions of raylib 5.5's font loads and writes (rtext), helix-raylib's own, as a page can't wait for a file and
+/** Provides the async versions of raylib 5.5's font loads and writes (rtext), helix-raylib's own, as a file is read later and
 	glyphs are rasterized off the main thread: `LoadFontAsync` for `LoadFont`, `LoadFontExAsync` for `LoadFontEx` and the rest. raylib's
 	own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Text.*;`.
 

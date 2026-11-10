@@ -41,7 +41,7 @@ class RWindowAsync {
 	/** Asynchronously asks for fullscreen, or for the window back at the size and place it had. See
 		`ToggleBorderlessWindowedAsync` for the borderless window, replacing raylib's `ToggleFullscreen`.
 
-		In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the next, or refuses.
+		It may wait for the next key press, click or tap, or be refused.
 
 		Called while borderless, it only switches to fullscreen.
 
@@ -56,9 +56,9 @@ class RWindowAsync {
 	/** Asynchronously asks for the window to fill the screen without borders, or back to the window. See
 		`ToggleFullscreenAsync` for fullscreen, replacing raylib's `ToggleBorderlessWindowed`.
 
-		The screen goes fullscreen. Natively a fullscreen window is borderless and the size of the desktop.
+		The window fills the screen without borders.
 
-		In a page it waits for a key press, click or tap, as `ToggleFullscreenAsync` does.
+		It may wait for the next key press, click or tap, as `ToggleFullscreenAsync` may.
 
 		Called while fullscreen, it only switches to borderless.
 
@@ -90,7 +90,7 @@ class RWindowAsync {
 
 		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
-		Refused while the window is fullscreen or maximized, and in a page, whose canvas follows the page.
+		Refused while the window is fullscreen or maximized, and where the system doesn't allow it.
 
 		A size under 1 pixel is refused.
 
@@ -105,7 +105,7 @@ class RWindowAsync {
 
 	/** Asynchronously asks for the window's place on the desktop, replacing raylib's `SetWindowPosition`. See `SetWindowMonitorAsync` for moving it to another monitor.
 
-		Refused in a page, under Wayland, and while the window is fullscreen or maximized.
+		Refused while the window is fullscreen or maximized, and where the system doesn't allow it, as Wayland doesn't.
 
 		@param x  The left edge, in pixels.
 		@param y  The top edge, in pixels.
@@ -129,7 +129,7 @@ class RWindowAsync {
 
 	/** Asynchronously asks for the window maximized, replacing raylib's `MaximizeWindow`. See `RestoreWindowAsync` for bringing it back.
 
-		Refused in a page, which can't maximize its window.
+		Refused where the system can't maximize the window.
 
 		@param done  Optional. Called once the window is maximized, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
@@ -139,7 +139,7 @@ class RWindowAsync {
 
 	/** Asynchronously asks for the window minimized, replacing raylib's `MinimizeWindow`. See `RestoreWindowAsync` for bringing it back.
 
-		Refused in a page, which can't minimize its window.
+		Refused where the system can't minimize the window.
 
 		@param done  Optional. Called once the window is minimized, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
@@ -165,8 +165,6 @@ class RWindowAsync {
 
 		A window manager may only flash it.
 
-		In a page the canvas takes the keyboard.
-
 		@param done  Optional. Called once the window has the keyboard or the window manager keeps it elsewhere, at a later poll.
 		@param failed  Optional. Receives why it hasn't; when omitted, it is logged. */
 	static function SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void):Void {
@@ -174,8 +172,6 @@ class RWindowAsync {
 	}
 
 	/** Asynchronously asks for the window's opacity, replacing raylib's `SetWindowOpacity`.
-
-		In a page the canvas fades.
 
 		A desktop without a compositor refuses it.
 
@@ -188,7 +184,7 @@ class RWindowAsync {
 
 	/** Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
 
-		Refused in a page, whose canvas follows the page.
+		Refused where the system doesn't allow it.
 
 		A size under 0 pixels is refused.
 
@@ -203,7 +199,7 @@ class RWindowAsync {
 
 	/** Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
 
-		Refused in a page, whose canvas follows the page.
+		Refused where the system doesn't allow it.
 
 		A size under 0 pixels is refused.
 
@@ -223,7 +219,7 @@ class RWindowAsync {
 
 		`IsCursorHidden` is true from the call.
 
-		In a page the browser locks it only soon after a click or key press. Without one, it locks at the next. Escape lets it go.
+		The lock may wait for the next click or key press, or be refused.
 
 		@param done  Optional. Called once the mouse is locked, or once it is refused, at a later poll.
 		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
@@ -250,7 +246,7 @@ class RWindowAsync {
 
 	/** Asynchronously puts text on the system's clipboard, replacing raylib's `SetClipboardText`. See `GetClipboardTextAsync` for reading it.
 
-		A page writes it only while it has the keyboard, soon after a press.
+		It may be refused unless it comes soon after a key press.
 
 		@param text  The text.
 		@param done  Optional. Called once the text is on the clipboard, or once it is refused, at a later poll.
@@ -265,7 +261,7 @@ class RWindowAsync {
 
 	/** Asynchronously reads the clipboard's text, replacing raylib's `GetClipboardText`. See `GetClipboardImageAsync` for reading an image.
 
-		A page reads it only with permission, which the browser may ask for.
+		It may need permission, which the system may ask for.
 
 		@param read  Receives the text at a later poll; "" when the clipboard holds none.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
@@ -275,7 +271,7 @@ class RWindowAsync {
 
 	/** Asynchronously reads the clipboard's image, replacing raylib's `GetClipboardImage`. See `GetClipboardTextAsync` for reading text.
 
-		A page reads it only with permission, which the browser may ask for.
+		It may need permission, which the system may ask for.
 
 		@param loaded  Receives the image once it is decoded, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged. */
@@ -290,9 +286,7 @@ class RWindowAsync {
 
 		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
-		In a page it is downloaded under the name's file name, as raylib's web build does.
-
-		Natively it is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
+		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
 		kept. An absolute one is where it is.
 
 		A directory that isn't there isn't made, and the screenshot is refused.

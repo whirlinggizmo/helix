@@ -10,7 +10,7 @@ import helix.raylib.modules.RModelsAsync;
 #end
 
 /** Provides the async versions of raylib 5.5's model, material and animation loads and mesh writes (rmodels), helix-raylib's own, as a
-	page can't wait for a file: `LoadModelAsync` for `LoadModel`, `LoadModelAnimationsAsync` for `LoadModelAnimations` and the rest.
+	file is read later: `LoadModelAsync` for `LoadModel`, `LoadModelAnimationsAsync` for `LoadModelAnimations` and the rest.
 	raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart:
 	`import helix.raylib.extras.Models.*;`.
 

@@ -9,8 +9,8 @@ import haxe.macro.Expr;
 import helix.raylib.modules.RAudioAsync;
 #end
 
-/** Provides the async versions of raylib 5.5's sound, wave and music loads and wave writes (raudio), helix-raylib's own, as a page can't
-	wait for a file and most formats are decoded off the main thread: `LoadSoundAsync` for `LoadSound`, `LoadMusicStreamAsync` for
+/** Provides the async versions of raylib 5.5's sound, wave and music loads and wave writes (raudio), helix-raylib's own, as a
+	file is read later and most formats are decoded off the main thread: `LoadSoundAsync` for `LoadSound`, `LoadMusicStreamAsync` for
 	`LoadMusicStream` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart:
 	`import helix.raylib.extras.Audio.*;`.
 
@@ -41,8 +41,7 @@ class Audio {
 
 		A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
 
-		Never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services'
-		`Audio.stream`).
+		Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
 		@param loaded  Receives the music, ready to play, once enough of the file has arrived to start.
@@ -110,9 +109,9 @@ class Audio {
 		by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's
 		position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first
 		Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit
-		float samples as that dr_mp3 makes them. Natively an MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them; in a
-		page the decoders are the browser's, so the samples differ in their last bits, and the frames Chromium leaves off an Ogg stream's
-		end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's
+		float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the
+		platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves
+		off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's
 		default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer
 		comes at a later frame.
 

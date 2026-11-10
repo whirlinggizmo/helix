@@ -7,7 +7,7 @@ package helix.raylib.extras;
 import helix.raylib.modules.RFilesAsync;
 #end
 
-/** Provides the async versions of raylib 5.5's file calls (rcore), helix-raylib's own, as a page can't wait for a file: `LoadFileTextAsync`
+/** Provides the async versions of raylib 5.5's file calls (rcore), helix-raylib's own, as a file is read later: `LoadFileTextAsync`
 	for `LoadFileText`, `SaveFileTextAsync` for `SaveFileText`, `FileExistsAsync` for `FileExists` and the rest. raylib's own call doesn't
 	compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Files.*;`.
 
@@ -44,10 +44,6 @@ class Files {
 
 		A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
 
-		In a page, reading a file that hasn't been saved yet asks the server for it and logs a 404 in the browser's console before
-		`failed` answers. A
-		program reading a save on its first run sees one.
-
 		@param fileName  The file.
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
@@ -73,7 +69,7 @@ class Files {
 
 		Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
-		Otherwise it is kept across runs, natively and in a page, and answered once the write has finished.
+		Otherwise it is kept across runs, and answered once the write has finished.
 
 		`LoadFileTextAsync` reads it back.
 
@@ -137,9 +133,7 @@ class Files {
 		The size is:
 		- for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size
 		- for a dropped file, its own
-		- for a file of the program's, natively its size on disk
-
-		In a page, a file of the program's is read from the server to be measured, so a load of it after answers at once.
+		- for a file of the program's, its size
 
 		@param fileName  The file.
 		@param answer  Receives its size in bytes; 0 when there is no file, as raylib's. */
@@ -151,10 +145,10 @@ class Files {
 		The answer comes at a later frame, never during the call.
 
 		The time is:
-		- for a file of the program's, natively its time on disk
+		- for a file of the program's, its time on disk
 		- for a file `SaveFileText` or `SaveFileData` wrote, when it was saved
-		- for a dropped file, the time the browser keeps for it
-		- 0 for a page's own file and one the program's load callback gives, which have no time kept
+		- for a dropped file, the time kept for it
+		- 0 for a file whose time isn't kept, such as one the program's load callback gives
 
 		@param fileName  The file.
 		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */

@@ -2,7 +2,7 @@
 
 [Back to the library](README.md)
 
-A shader of the program's own is raylib's GLSL (`#version 330`, or `100` for the web), compiled ahead of time by `CompileShaderFile`. It may include these.
+A shader of the program's own is raylib's GLSL (`#version 330`, or `100`), compiled ahead of time by `CompileShaderFile`. It may include these.
 
 ## `<helix/raylib/shaders/skinning.glsl>`
 

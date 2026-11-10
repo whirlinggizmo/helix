@@ -18,7 +18,7 @@
 - Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
   (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
-- In a page, a lost GPU context is recovered automatically. Render textures are cleared.
+- A lost GPU context is recovered automatically. Render textures are cleared.
 - Not supported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.
 
 See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) for everything else.

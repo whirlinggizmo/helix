@@ -6,7 +6,7 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Audio.hx`](../src/helix/raylib/extras/Audio.hx), `import helix.raylib.extras.Audio;`
 
-Provides the async versions of raylib 5.5's sound, wave and music loads and wave writes (raudio), helix-raylib's own, as a page can't wait for a file and most formats are decoded off the main thread: `LoadSoundAsync` for `LoadSound`, `LoadMusicStreamAsync` for `LoadMusicStream` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Audio.*;`.
+Provides the async versions of raylib 5.5's sound, wave and music loads and wave writes (raudio), helix-raylib's own, as a file is read later and most formats are decoded off the main thread: `LoadSoundAsync` for `LoadSound`, `LoadMusicStreamAsync` for `LoadMusicStream` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Audio.*;`.
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
@@ -36,7 +36,7 @@ static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Vo
 
   A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
 
-  Never loaded whole. Natively it is read from its file, and in a page from the download as it arrives (helix-services' `Audio.stream`).
+  Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
 - `ExportWaveAsync`: Asynchronously writes a wave to a sound file, replacing raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
   - `wave`: The wave.
   - `fileName`: The file; its extension chooses the format.
@@ -82,7 +82,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `loaded`: Receives the wave, its samples its own.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. Natively an MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them; in a page the decoders are the browser's, so the samples differ in their last bits, and the frames Chromium leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
+  A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
 
   The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
 
@@ -90,7 +90,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Files.hx`](../src/helix/raylib/extras/Files.hx), `import helix.raylib.extras.Files;`
 
-Provides the async versions of raylib 5.5's file calls (rcore), helix-raylib's own, as a page can't wait for a file: `LoadFileTextAsync` for `LoadFileText`, `SaveFileTextAsync` for `SaveFileText`, `FileExistsAsync` for `FileExists` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Files.*;`.
+Provides the async versions of raylib 5.5's file calls (rcore), helix-raylib's own, as a file is read later: `LoadFileTextAsync` for `LoadFileText`, `SaveFileTextAsync` for `SaveFileText`, `FileExistsAsync` for `FileExists` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Files.*;`.
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
@@ -129,8 +129,6 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   The text ends at the file's first NUL byte, as raylib's C string does.
 
   A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
-
-  In a page, reading a file that hasn't been saved yet asks the server for it and logs a 404 in the browser's console before `failed` answers. A program reading a save on its first run sees one.
 - `SaveFileDataAsync`: Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
   - `fileName`: The file.
   - `data`: The bytes.
@@ -149,7 +147,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
-  Otherwise it is kept across runs, natively and in a page, and answered once the write has finished.
+  Otherwise it is kept across runs, and answered once the write has finished.
 
   `LoadFileTextAsync` reads it back.
 - `FileExistsAsync`: Asynchronously answers whether a file exists, replacing raylib's `FileExists`. See `DirectoryExistsAsync` for a directory.
@@ -185,16 +183,14 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The answer comes at a later frame, never during the call.
 
-  The size is: - for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size - for a dropped file, its own - for a file of the program's, natively its size on disk
-
-  In a page, a file of the program's is read from the server to be measured, so a load of it after answers at once.
+  The size is: - for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size - for a dropped file, its own - for a file of the program's, its size
 - `GetFileModTimeAsync`: Asynchronously answers when a file was last written, replacing raylib's `GetFileModTime`.
   - `fileName`: The file.
   - `answer`: Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
 
   The answer comes at a later frame, never during the call.
 
-  The time is: - for a file of the program's, natively its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - for a dropped file, the time the browser keeps for it - 0 for a page's own file and one the program's load callback gives, which have no time kept
+  The time is: - for a file of the program's, its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - for a dropped file, the time kept for it - 0 for a file whose time isn't kept, such as one the program's load callback gives
 - `LoadDirectoryFilesAsync`: Asynchronously lists a directory's files and subdirectories, replacing raylib's `LoadDirectoryFiles`. See `LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
   - `dirPath`: The directory.
   - `loaded`: Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
@@ -259,7 +255,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Gui.hx`](../src/helix/raylib/extras/Gui.hx), `import helix.raylib.extras.Gui;`
 
-Provides the async versions of raygui's style and icon loads, helix-raylib's own, as a page can't wait for a file: `GuiLoadStyleAsync` for `GuiLoadStyle` and `GuiLoadIconsAsync` for `GuiLoadIcons`. raygui's own call doesn't compile and names the one here (docs/DECISIONS.md 38). Imported apart: `import helix.raylib.extras.Gui.*;`.
+Provides the async versions of raygui's style and icon loads, helix-raylib's own, as a file is read later: `GuiLoadStyleAsync` for `GuiLoadStyle` and `GuiLoadIconsAsync` for `GuiLoadIcons`. raygui's own call doesn't compile and names the one here (docs/DECISIONS.md 38). Imported apart: `import helix.raylib.extras.Gui.*;`.
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
@@ -298,7 +294,7 @@ static function GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Ar
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Models.hx`](../src/helix/raylib/extras/Models.hx), `import helix.raylib.extras.Models;`
 
-Provides the async versions of raylib 5.5's model, material and animation loads and mesh writes (rmodels), helix-raylib's own, as a page can't wait for a file: `LoadModelAsync` for `LoadModel`, `LoadModelAnimationsAsync` for `LoadModelAnimations` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Models.*;`.
+Provides the async versions of raylib 5.5's model, material and animation loads and mesh writes (rmodels), helix-raylib's own, as a file is read later: `LoadModelAsync` for `LoadModel`, `LoadModelAnimationsAsync` for `LoadModelAnimations` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Models.*;`.
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
@@ -416,7 +412,7 @@ static macro function CompileShaderFile(vsFileName:Null<String>, fsFileName:Null
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Text.hx`](../src/helix/raylib/extras/Text.hx), `import helix.raylib.extras.Text;`
 
-Provides the async versions of raylib 5.5's font loads and writes (rtext), helix-raylib's own, as a page can't wait for a file and glyphs are rasterized off the main thread: `LoadFontAsync` for `LoadFont`, `LoadFontExAsync` for `LoadFontEx` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Text.*;`.
+Provides the async versions of raylib 5.5's font loads and writes (rtext), helix-raylib's own, as a file is read later and glyphs are rasterized off the main thread: `LoadFontAsync` for `LoadFont`, `LoadFontExAsync` for `LoadFontEx` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Text.*;`.
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
@@ -493,7 +489,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Textures.hx`](../src/helix/raylib/extras/Textures.hx), `import helix.raylib.extras.Textures;`
 
-Provides the async versions of raylib 5.5's image and texture loads and writes (rtextures), helix-raylib's own, as a page can't wait for a file or the GPU: `LoadTextureAsync` for `LoadTexture`, `LoadImageAsync` for `LoadImage`, `ExportImageAsync` for `ExportImage` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Textures.*;`.
+Provides the async versions of raylib 5.5's image and texture loads and writes (rtextures), helix-raylib's own, as a file or the GPU answers later: `LoadTextureAsync` for `LoadTexture`, `LoadImageAsync` for `LoadImage`, `ExportImageAsync` for `ExportImage` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Textures.*;`.
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
@@ -573,7 +569,7 @@ static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loa
 static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 ```
 
-- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as a page can't wait for a file. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it, and nothing after it is read; one with no frames, or broken before its first frame ends, fails to load.
+- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as the file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it, and nothing after it is read; one with no frames, or broken before its first frame ends, fails to load.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the image, its pixels its own.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
@@ -585,7 +581,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `dataSize`: How many of them.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
-- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as a page can't wait for a file. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
+- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the file is read later. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
@@ -610,7 +606,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Window.hx`](../src/helix/raylib/extras/Window.hx), `import helix.raylib.extras.Window;`
 
-Provides the async versions of raylib 5.5's window, cursor, clipboard and screenshot calls (rcore), helix-raylib's own, so a page needn't wait for them: `SetWindowSizeAsync` for `SetWindowSize`, `ToggleFullscreenAsync` for `ToggleFullscreen`, `GetClipboardTextAsync` for `GetClipboardText` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Window.*;`.
+Provides the async versions of raylib 5.5's window, cursor, clipboard and screenshot calls (rcore), helix-raylib's own, as each answers later: `SetWindowSizeAsync` for `SetWindowSize`, `ToggleFullscreenAsync` for `ToggleFullscreen`, `GetClipboardTextAsync` for `GetClipboardText` and the rest. raylib's own call doesn't compile and names the one here (docs/DECISIONS.md 24, 38). Imported apart: `import helix.raylib.extras.Window.*;`.
 
 Each answers at a later poll, never during the call: `done` or `loaded` once it is done, `failed` with the reason when it is refused, logged as raylib's warning would be when `failed` is omitted.
 
@@ -641,7 +637,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
 
-  In a page the browser grants it only soon after a key press, click or tap. Without one, it waits for the next, or refuses.
+  It may wait for the next key press, click or tap, or be refused.
 
   Called while borderless, it only switches to fullscreen.
 
@@ -650,9 +646,9 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
 
-  The screen goes fullscreen. Natively a fullscreen window is borderless and the size of the desktop.
+  The window fills the screen without borders.
 
-  In a page it waits for a key press, click or tap, as `ToggleFullscreenAsync` does.
+  It may wait for the next key press, click or tap, as `ToggleFullscreenAsync` may.
 
   Called while fullscreen, it only switches to borderless.
 
@@ -665,7 +661,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 
   The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
-  Refused while the window is fullscreen or maximized, and in a page, whose canvas follows the page.
+  Refused while the window is fullscreen or maximized, and where the system doesn't allow it.
 
   A size under 1 pixel is refused.
 - `SetWindowPositionAsync`: Asynchronously asks for the window's place on the desktop, replacing raylib's `SetWindowPosition`. See `SetWindowMonitorAsync` for moving it to another monitor.
@@ -674,7 +670,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `done`: Optional. Called once the window has moved, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it didn't move; when omitted, it is logged.
 
-  Refused in a page, under Wayland, and while the window is fullscreen or maximized.
+  Refused while the window is fullscreen or maximized, and where the system doesn't allow it, as Wayland doesn't.
 - `SetWindowMonitorAsync`: Asynchronously asks for the window on another monitor, replacing raylib's `SetWindowMonitor`. See `SetWindowPositionAsync` for placing it on the desktop.
   - `monitor`: The monitor, 0 to `GetMonitorCount() - 1`.
   - `done`: Optional. Called once the window is on the monitor, or once it is refused, at a later poll.
@@ -685,12 +681,12 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `done`: Optional. Called once the window is maximized, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  Refused in a page, which can't maximize its window.
+  Refused where the system can't maximize the window.
 - `MinimizeWindowAsync`: Asynchronously asks for the window minimized, replacing raylib's `MinimizeWindow`. See `RestoreWindowAsync` for bringing it back.
   - `done`: Optional. Called once the window is minimized, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  Refused in a page, which can't minimize its window.
+  Refused where the system can't minimize the window.
 - `RestoreWindowAsync`: Asynchronously asks for the window back to its size from minimized or maximized, replacing raylib's `RestoreWindow`. See `MaximizeWindowAsync` and `MinimizeWindowAsync` for changing it.
   - `done`: Optional. Called once the window is restored, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
@@ -701,14 +697,10 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
 
   A window manager may only flash it.
-
-  In a page the canvas takes the keyboard.
 - `SetWindowOpacityAsync`: Asynchronously asks for the window's opacity, replacing raylib's `SetWindowOpacity`.
   - `opacity`: From 0 (clear) to 1 (opaque).
   - `done`: Optional. Called once the window has the opacity, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
-
-  In a page the canvas fades.
 
   A desktop without a compositor refuses it.
 - `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
@@ -717,7 +709,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
 
-  Refused in a page, whose canvas follows the page.
+  Refused where the system doesn't allow it.
 
   A size under 0 pixels is refused.
 - `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
@@ -726,7 +718,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
 
-  Refused in a page, whose canvas follows the page.
+  Refused where the system doesn't allow it.
 
   A size under 0 pixels is refused.
 - `DisableCursorAsync`: Asynchronously locks the mouse to the window and hides the cursor, for looking around, replacing raylib's `DisableCursor`. See `EnableCursorAsync` for letting it go.
@@ -737,7 +729,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 
   `IsCursorHidden` is true from the call.
 
-  In a page the browser locks it only soon after a click or key press. Without one, it locks at the next. Escape lets it go.
+  The lock may wait for the next click or key press, or be refused.
 - `EnableCursorAsync`: Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor, replacing raylib's `EnableCursor`.
   - `done`: Optional. Called once the mouse is let go, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
@@ -748,17 +740,17 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `done`: Optional. Called once the text is on the clipboard, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it isn't; when omitted, it is logged.
 
-  A page writes it only while it has the keyboard, soon after a press.
+  It may be refused unless it comes soon after a key press.
 - `GetClipboardTextAsync`: Asynchronously reads the clipboard's text, replacing raylib's `GetClipboardText`. See `GetClipboardImageAsync` for reading an image.
   - `read`: Receives the text at a later poll; "" when the clipboard holds none.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  A page reads it only with permission, which the browser may ask for.
+  It may need permission, which the system may ask for.
 - `GetClipboardImageAsync`: Asynchronously reads the clipboard's image, replacing raylib's `GetClipboardImage`. See `GetClipboardTextAsync` for reading text.
   - `loaded`: Receives the image once it is decoded, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
 
-  A page reads it only with permission, which the browser may ask for.
+  It may need permission, which the system may ask for.
 - `TakeScreenshotAsync`: Asynchronously takes a screenshot of the next frame and saves it as a file, replacing raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for the screen as an `Image`.
   - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
   - `done`: Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.
@@ -766,9 +758,7 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
 
   The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
-  In a page it is downloaded under the name's file name, as raylib's web build does.
-
-  Natively it is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories kept. An absolute one is where it is.
+  It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories kept. An absolute one is where it is.
 
   A directory that isn't there isn't made, and the screenshot is refused.
 

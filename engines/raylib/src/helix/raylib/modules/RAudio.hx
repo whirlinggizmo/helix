@@ -30,7 +30,7 @@ class RAudio {
 
 	/** Opens the audio output, with helix-services' `Audio` over it.
 
-		In a page, no sound plays until a first key press, click or tap.
+		Sound may wait to play until a first key press, click or tap.
 
 		Does nothing when the output is already open. */
 	static function InitAudioDevice():Void {
@@ -112,8 +112,6 @@ class RAudio {
 	// ---- Waves ----
 
 	/** Doesn't compile on any target, as raylib's wave load waits for the file. See `LoadWaveAsync` for loading a wave file.
-
-		A page can't wait for a file.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -355,8 +353,6 @@ class RAudio {
 	// ---- Sounds ----
 
 	/** Doesn't compile on any target, as raylib's sound load waits for the file. See `LoadSoundAsync` for loading a sound file.
-
-		A page can't wait for a file.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -701,8 +697,6 @@ class RAudio {
 
 	/** Doesn't compile on any target, as raylib's music load knows at once whether the file opened. See `LoadMusicStreamAsync` for opening a music file.
 
-		A page can't wait to find out.
-
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) in helix.raylib.extras.Audio (import helix.raylib.extras.Audio.*;)")
@@ -713,8 +707,6 @@ class RAudio {
 	/** Returns music opened from a file's bytes, to be played as it is read.
 
 		`InitAudioDevice` must come first.
-
-		In a page the bytes are read from a Blob's URL. Natively they are read from a copy written to the program's cache directory, deleted when the music is unloaded.
 
 		A FLAC file (".flac" or ".FLAC") is refused, as raylib 5.5's default build leaves FLAC out. The music is invalid, and "STREAM: Data format not supported" is logged.
 
@@ -848,7 +840,7 @@ class RAudio {
 
 		Music not playing starts there when next played.
 
-		In a page, a server's file moves only as far as its server's range requests reach.
+		Music streamed from a server moves only as far as the server's range requests reach.
 
 		@param music  The music.
 		@param position  The position, in seconds from its start, clamped to 0 or more. */
@@ -893,7 +885,7 @@ class RAudio {
 
 	/** Returns music's length (helix-services' `Sound.duration`).
 
-		Known once the music opens from a file, natively or in a page. Natively, a server's file's length is known once its start and its last 64 KiB have arrived.
+		Known once the music opens from a file. A server's file's length is known once its start and its last 64 KiB have arrived.
 
 		@param music  The music.
 		@return  The length, in seconds, or 0 while it isn't known. */
@@ -1101,12 +1093,12 @@ class RAudio {
 		}
 	}
 
-	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where a page can't run Haxe.
+	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run.
 
 		@param stream  The stream.
 		@param processor  The processor.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where a page can't run Haxe")
+	@:unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where Haxe can't run")
 	static function AttachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "AttachAudioStreamProcessor is unimplemented";
 	}
@@ -1116,16 +1108,16 @@ class RAudio {
 		@param stream  The stream.
 		@param processor  The processor.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where a page can't run Haxe")
+	@:unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where Haxe can't run")
 	static function DetachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "DetachAudioStreamProcessor is unimplemented";
 	}
 
-	/** Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where a page can't run Haxe.
+	/** Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run.
 
 		@param processor  The processor.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where a page can't run Haxe")
+	@:unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where Haxe can't run")
 	static function AttachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "AttachAudioMixedProcessor is unimplemented";
 	}
@@ -1134,7 +1126,7 @@ class RAudio {
 
 		@param processor  The processor.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where a page can't run Haxe")
+	@:unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where Haxe can't run")
 	static function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "DetachAudioMixedProcessor is unimplemented";
 	}

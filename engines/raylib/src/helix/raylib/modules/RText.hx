@@ -607,7 +607,7 @@ class RText {
 		return font;
 	}
 
-	/** Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontAsync` for loading a font.
+	/** Doesn't compile on any target, since raylib's waits for the file. See `LoadFontAsync` for loading a font.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -616,7 +616,7 @@ class RText {
 		throw "LoadFont is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontExAsync` for loading a font
+	/** Doesn't compile on any target, since raylib's waits for the file. See `LoadFontExAsync` for loading a font
 		at a size.
 
 		@param fileName  The file.

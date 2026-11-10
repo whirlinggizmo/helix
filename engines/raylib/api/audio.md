@@ -63,7 +63,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 ```
 
 - `InitAudioDevice`: Opens the audio output, with helix-services' `Audio` over it.
-  In a page, no sound plays until a first key press, click or tap.
+  Sound may wait to play until a first key press, click or tap.
 
   Does nothing when the output is already open.
 - `CloseAudioDevice`: Closes the audio output, stopping and unloading every sound.
@@ -181,8 +181,6 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 
   `InitAudioDevice` must come first.
 
-  In a page the bytes are read from a Blob's URL. Natively they are read from a copy written to the program's cache directory, deleted when the music is unloaded.
-
   A FLAC file (".flac" or ".FLAC") is refused, as raylib 5.5's default build leaves FLAC out. The music is invalid, and "STREAM: Data format not supported" is logged.
 - `IsMusicValid`: Returns whether music is open, or still opening.
   - `music`: The music.
@@ -212,7 +210,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
 
   Music not playing starts there when next played.
 
-  In a page, a server's file moves only as far as its server's range requests reach.
+  Music streamed from a server moves only as far as the server's range requests reach.
 - `SetMusicVolume`: Sets music's volume.
   - `music`: The music.
   - `volume`: 0 (silent) to 1.
@@ -228,7 +226,7 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
   - `music`: The music.
   - returns: The length, in seconds, or 0 while it isn't known.
 
-  Known once the music opens from a file, natively or in a page. Natively, a server's file's length is known once its start and its last 64 KiB have arrived.
+  Known once the music opens from a file. A server's file's length is known once its start and its last 64 KiB have arrived.
 - `GetMusicTimePlayed`: Returns how far music has played, back to 0 at each loop, as raylib's does.
   - `music`: The music.
   - returns: The position, in seconds from its start.

@@ -720,66 +720,66 @@ static macro function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.
 - `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
 - `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
 - `MAX_MATERIAL_MAPS`: The number of a material's maps.
-- `SetWindowSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size. Refused in a page, whose canvas follows the page.
-- `MaximizeWindow`: Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window maximized. Refused in a page.
-- `MinimizeWindow`: Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window minimized. Refused in a page.
+- `SetWindowSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size.
+- `MaximizeWindow`: Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window maximized.
+- `MinimizeWindow`: Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window minimized.
 - `RestoreWindow`: Doesn't compile on any target, since the window changes later or is refused. See `RestoreWindowAsync` for asking for the window restored.
 - `SetWindowFocused`: Doesn't compile on any target, since the window gets the keyboard later or not at all. See `SetWindowFocusedAsync` for asking for the keyboard.
 - `SetWindowOpacity`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowOpacityAsync` for asking for an opacity. Refused by a desktop without a compositor.
-- `SetWindowMinSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest size the window may take. Refused in a page.
-- `SetWindowMaxSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest size the window may take. Refused in a page.
-- `SetClipboardText`: Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard. A page writes the clipboard only while it has the keyboard, soon after a press.
-- `GetClipboardText`: Doesn't compile on any target, since a page's clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
+- `SetWindowMinSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest size the window may take.
+- `SetWindowMaxSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest size the window may take.
+- `SetClipboardText`: Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard.
+- `GetClipboardText`: Doesn't compile on any target, since the clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
 - `GetClipboardImage`: Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the clipboard.
 - `GetWindowHandle`: Doesn't compile, since helix-raylib's window has no native handle to give.
 - `GetMonitorPhysicalWidth`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels.
 - `GetMonitorPhysicalHeight`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels.
-- `ToggleFullscreen`: Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen. A page allows fullscreen only soon after a key press, click or tap.
+- `ToggleFullscreen`: Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen.
 - `ToggleBorderlessWindowed`: Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a borderless window.
-- `SetWindowPosition`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on the desktop. Refused in a page and on Wayland.
+- `SetWindowPosition`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on the desktop. Refused where the system doesn't allow it, as Wayland doesn't.
 - `SetWindowMonitor`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor.
 - `EnableCursor`: Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse.
-- `DisableCursor`: Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse. A page locks the mouse only soon after a click or key press.
-- `FileExists`: Doesn't compile on any target, since a page can't wait for the answer. See `FileExistsAsync` for asking whether a file exists.
-- `LoadFileText`: Doesn't compile on any target, since a page can't wait for the file. See `LoadFileTextAsync` for reading a text file.
+- `DisableCursor`: Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse.
+- `FileExists`: Doesn't compile on any target, since the answer comes later. See `FileExistsAsync` for asking whether a file exists.
+- `LoadFileText`: Doesn't compile on any target, since the file is read later. See `LoadFileTextAsync` for reading a text file.
 - `SaveFileText`: Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file.
-- `LoadFileData`: Doesn't compile on any target, since a page can't wait for the file. See `LoadFileDataAsync` for reading a file's bytes.
+- `LoadFileData`: Doesn't compile on any target, since the file is read later. See `LoadFileDataAsync` for reading a file's bytes.
 - `SaveFileData`: Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes.
 - `ExportDataAsCode`: Doesn't compile on any target, since a file is kept later, once written. See `ExportDataAsCodeAsync` for writing bytes as code.
-- `DirectoryExists`: Doesn't compile on any target, since a page can't wait for the answer. See `DirectoryExistsAsync` for asking whether a directory exists.
-- `GetFileLength`: Doesn't compile on any target, since a page can't wait for the answer. See `GetFileLengthAsync` for asking a file's size.
-- `IsPathFile`: Doesn't compile on any target, since a page can't wait for the answer. See `IsPathFileAsync` for asking whether a path is a file.
-- `LoadDirectoryFiles`: Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesAsync` for listing a directory.
-- `LoadDirectoryFilesEx`: Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesExAsync` for listing a directory by extension and with its subdirectories.
-- `GetFileModTime`: Doesn't compile on any target, since a page can't wait for the answer. See `GetFileModTimeAsync` for asking when a file was last written.
+- `DirectoryExists`: Doesn't compile on any target, since the answer comes later. See `DirectoryExistsAsync` for asking whether a directory exists.
+- `GetFileLength`: Doesn't compile on any target, since the answer comes later. See `GetFileLengthAsync` for asking a file's size.
+- `IsPathFile`: Doesn't compile on any target, since the answer comes later. See `IsPathFileAsync` for asking whether a path is a file.
+- `LoadDirectoryFiles`: Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesAsync` for listing a directory.
+- `LoadDirectoryFilesEx`: Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesExAsync` for listing a directory by extension and with its subdirectories.
+- `GetFileModTime`: Doesn't compile on any target, since the answer comes later. See `GetFileModTimeAsync` for asking when a file was last written.
 - `ExportAutomationEventList`: Doesn't compile on any target, since a file is kept later, once written. See `ExportAutomationEventListAsync` for writing a list to a file.
 - `MemAlloc`: Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.
 - `MemRealloc`: Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
 - `MemFree`: Doesn't compile, since Haxe frees memory once nothing holds it.
 - `TakeScreenshot`: Doesn't compile on any target, since a screenshot is read back as the next frame ends and saved after. See `TakeScreenshotAsync` for saving a screenshot.
-- `emscripten_set_main_loop`: Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop.
-- `emscripten_set_main_loop_arg`: Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop.
+- `emscripten_set_main_loop`: Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
+- `emscripten_set_main_loop_arg`: Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
 - `emscripten_cancel_main_loop`: Doesn't compile, since a program leaves raylib's own loop instead. See `WindowShouldClose` for writing the loop.
 - `emscripten_run_script`: Doesn't compile on any target, since a program runs no script of its own.
 - `emscripten_run_script_int`: Doesn't compile on any target, since a program runs no script of its own.
 - `emscripten_run_script_string`: Doesn't compile on any target, since a program runs no script of its own.
 - `emscripten_get_now`: Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
-- `emscripten_sleep`: Doesn't compile, since a page can't wait inside a frame. See `GetTime` for timing a later frame.
+- `emscripten_sleep`: Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame.
 - `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.
 - `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
-- `LoadTexture`: Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file. A page can't wait for a file.
-- `LoadImage`: Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file. A page can't wait for a file.
-- `LoadImageRaw`: Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync` for loading raw pixels from a file. A page can't wait for a file.
+- `LoadTexture`: Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file.
+- `LoadImage`: Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file.
+- `LoadImageRaw`: Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync` for loading raw pixels from a file.
 - `LoadImageFromMemory`: Names raylib's decode of an image file's bytes, which returns the image, and doesn't compile on any target. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. Images are decoded asynchronously.
-- `LoadImageAnim`: Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See `LoadImageAnimAsync` for loading an animated image's frames from a file. A page can't wait for a file.
+- `LoadImageAnim`: Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See `LoadImageAnimAsync` for loading an animated image's frames from a file.
 - `LoadImageAnimFromMemory`: Names raylib's decode of an animated image file's bytes, which returns its frames, and doesn't compile on any target. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. Images are decoded asynchronously.
 - `LoadImageFromTexture`: Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. A texture is read back asynchronously.
 - `LoadImageFromScreen`: Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for reading the screen into an image. The screen is read back asynchronously, as a frame ends.
 - `ExportImage`: Names raylib's image export, done when it returns, and doesn't compile on any target. See `ExportImageAsync` for writing an image to a file. A file is written later, or is refused.
 - `ExportImageAsCode`: Names raylib's export of an image as code, done when it returns, and doesn't compile on any target. See `ExportImageAsCodeAsync` for writing an image as a C header. A file is written later, or is refused.
 - `ExportFontAsCode`: Doesn't compile on any target, since the file is written after the call would return. See `ExportFontAsCodeAsync` for writing a font as code.
-- `LoadFont`: Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontAsync` for loading a font.
-- `LoadFontEx`: Doesn't compile on any target, since raylib's waits for the file and a page can't wait. See `LoadFontExAsync` for loading a font at a size.
+- `LoadFont`: Doesn't compile on any target, since raylib's waits for the file. See `LoadFontAsync` for loading a font.
+- `LoadFontEx`: Doesn't compile on any target, since raylib's waits for the file. See `LoadFontExAsync` for loading a font at a size.
 - `LoadFontFromMemory`: Doesn't compile on any target, since raylib's rasterizes the glyphs before returning and here they are rasterized off the main thread. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
 - `LoadFontData`: Doesn't compile on any target, since raylib's returns the glyphs rasterized and here they are rasterized off the main thread. See `LoadFontDataAsync` for rasterizing glyphs.
 - `TextCopy`: Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text.
@@ -789,15 +789,15 @@ static macro function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.
 - `ExportMesh`: Refuses to compile on any target, as raylib's mesh export is done when it returns and a file here is written later. See `ExportMeshAsync` for writing a mesh's file.
 - `ExportMeshAsCode`: Refuses to compile on any target, as raylib's export of a mesh as code is done when it returns and a file here is written later. See `ExportMeshAsCodeAsync` for writing a mesh as code.
 - `LoadModelAnimations`: Refuses to compile on any target, as raylib's animation load waits for the file. See `LoadModelAnimationsAsync` for loading a file's animations.
-- `LoadWave`: Doesn't compile on any target, as raylib's wave load waits for the file. See `LoadWaveAsync` for loading a wave file. A page can't wait for a file.
+- `LoadWave`: Doesn't compile on any target, as raylib's wave load waits for the file. See `LoadWaveAsync` for loading a wave file.
 - `LoadWaveFromMemory`: Doesn't compile on any target, as raylib's wave load from a file's bytes answers at once. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. A file other than WAV or QOA is decoded off the main thread.
 - `ExportWave`: Doesn't compile on any target, as raylib's wave export is done when it returns. See `ExportWaveAsync` for writing a wave to a sound file. A file is kept later, once written.
 - `ExportWaveAsCode`: Doesn't compile on any target, as raylib's export of a wave as code is done when it returns. See `ExportWaveAsCodeAsync` for writing a wave as a C header. A file is kept later, once written.
-- `LoadSound`: Doesn't compile on any target, as raylib's sound load waits for the file. See `LoadSoundAsync` for loading a sound file. A page can't wait for a file.
-- `LoadMusicStream`: Doesn't compile on any target, as raylib's music load knows at once whether the file opened. See `LoadMusicStreamAsync` for opening a music file. A page can't wait to find out.
-- `AttachAudioStreamProcessor`: Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where a page can't run Haxe.
+- `LoadSound`: Doesn't compile on any target, as raylib's sound load waits for the file. See `LoadSoundAsync` for loading a sound file.
+- `LoadMusicStream`: Doesn't compile on any target, as raylib's music load knows at once whether the file opened. See `LoadMusicStreamAsync` for opening a music file.
+- `AttachAudioStreamProcessor`: Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run.
 - `DetachAudioStreamProcessor`: Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`).
-- `AttachAudioMixedProcessor`: Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where a page can't run Haxe.
+- `AttachAudioMixedProcessor`: Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run.
 - `DetachAudioMixedProcessor`: Doesn't compile on any target, as no mix processor can be attached (`AttachAudioMixedProcessor`).
 
 ## Pixel formats (PixelFormat)
@@ -1006,6 +1006,6 @@ static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
-- `LoadAutomationEventList`: Returns an empty automation events list to record into, its capacity raylib's 16384, as raylib's `LoadAutomationEventList(NULL)`. Given a file instead, a call doesn't compile: a page can't wait for a file, so `LoadAutomationEventListAsync` reads one.
+- `LoadAutomationEventList`: Returns an empty automation events list to record into, its capacity raylib's 16384, as raylib's `LoadAutomationEventList(NULL)`. Given a file instead, a call doesn't compile, as the file is read later: `LoadAutomationEventListAsync` reads one.
   - `fileName`: Null (or 0, as raylib's examples write it).
   - returns: The list.

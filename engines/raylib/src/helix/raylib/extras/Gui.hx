@@ -9,7 +9,7 @@ import haxe.macro.Expr;
 import helix.raylib.modules.RGuiAsync;
 #end
 
-/** Provides the async versions of raygui's style and icon loads, helix-raylib's own, as a page can't wait for a file:
+/** Provides the async versions of raygui's style and icon loads, helix-raylib's own, as a file is read later:
 	`GuiLoadStyleAsync` for `GuiLoadStyle` and `GuiLoadIconsAsync` for `GuiLoadIcons`. raygui's own call doesn't compile and names the
 	one here (docs/DECISIONS.md 38). Imported apart: `import helix.raylib.extras.Gui.*;`.
 

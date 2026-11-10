@@ -35,8 +35,6 @@ class RTextures {
 	/** Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a
 		texture from a file.
 
-		A page can't wait for a file.
-
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
@@ -459,7 +457,7 @@ class RTextures {
 
 		What is drawn into the render texture stays from frame to frame.
 
-		After a lost GPU context in a page, the render texture is cleared and stays empty until drawn into again.
+		After a lost GPU context, the render texture is cleared and stays empty until drawn into again.
 
 		@param width  Its width, in pixels.
 		@param height  Its height.
@@ -574,8 +572,6 @@ class RTextures {
 	/** Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image
 		from a file.
 
-		A page can't wait for a file.
-
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) in helix.raylib.extras.Textures (import helix.raylib.extras.Textures.*;)")
@@ -585,8 +581,6 @@ class RTextures {
 
 	/** Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync`
 		for loading raw pixels from a file.
-
-		A page can't wait for a file.
 
 		@param fileName  The file.
 		@param width  The width, in pixels.
@@ -615,8 +609,6 @@ class RTextures {
 
 	/** Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See
 		`LoadImageAnimAsync` for loading an animated image's frames from a file.
-
-		A page can't wait for a file.
 
 		@param fileName  The file.
 		@param frames  Would be set to how many frames.
@@ -2578,8 +2570,6 @@ class RTextures {
 
 		A compressed format gives no texture, with a warning.
 
-		In a page a copy of the pixels stays in memory, so the texture survives a lost GPU context.
-
 		@param image  The image.
 		@return  The texture. */
 	static function LoadTextureFromImage(image:Image):Texture2D {
@@ -2643,8 +2633,6 @@ class RTextures {
 		nothing.
 
 		`UnloadTexture` lets go of the cubemap, which is counted as any texture is.
-
-		In a page a copy of the pixels stays in memory, so the cubemap survives a lost GPU context.
 
 		@param image  The image.
 		@param layout  The layout (`CUBEMAP_LAYOUT_*`).

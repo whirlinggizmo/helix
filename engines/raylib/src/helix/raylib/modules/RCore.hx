@@ -34,8 +34,6 @@ class RCore {
 
 	/** Opens the window and its graphics.
 
-		In a page the canvas fills the page, and width and height are ignored.
-
 		Seeds `GetRandomValue` from the time, unless `SetRandomSeed` was called first.
 
 		@param width  The window's width, in pixels.
@@ -57,11 +55,6 @@ class RCore {
 	/** Returns whether the window should close, after the exit key is pressed or the window is asked to close.
 
 		The exit key is Escape unless `SetExitKey` changed it.
-
-		Always false in a page, where the loop that reads it runs once a frame.
-
-		In a page, the program's loop must be a `while` or `do`-`while` in the main class, a statement of a function's own block. A call in
-		a loop that never lets the page draw throws.
 
 		@return  True once the window should close. */
 	static function WindowShouldClose():Bool {
@@ -95,8 +88,6 @@ class RCore {
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size.
 
-		Refused in a page, whose canvas follows the page.
-
 		@param width  The width, in pixels.
 		@param height  The height, in pixels. */
 	@:unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -106,8 +97,6 @@ class RCore {
 
 	/** Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowedAsync`).
 
-		In a page, whether the canvas is fullscreen.
-
 		@return  True while it is. */
 	static function IsWindowFullscreen():Bool {
 		return Runtime.screen.fullscreen && !Runtime.borderless;
@@ -115,14 +104,12 @@ class RCore {
 
 	/** Returns whether the window is hidden (`FLAG_WINDOW_HIDDEN`).
 
-		In a page, whether the canvas is hidden.
-
 		@return  True while it is. */
 	static function IsWindowHidden():Bool {
 		return !Runtime.window.visible;
 	}
 
-	/** Returns whether the window is minimized, or in a page whether its tab is in the background.
+	/** Returns whether the window is minimized.
 
 		@return  True while it is. */
 	static function IsWindowMinimized():Bool {
@@ -131,26 +118,20 @@ class RCore {
 
 	/** Returns whether the window is maximized.
 
-		Always false in a page.
-
 		@return  True while it is. */
 	static function IsWindowMaximized():Bool {
 		return Runtime.window.maximized;
 	}
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window
-		maximized.
-
-		Refused in a page. */
+		maximized. */
 	@:unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function MaximizeWindow():Void {
 		throw "MaximizeWindow is unimplemented";
 	}
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window
-		minimized.
-
-		Refused in a page. */
+		minimized. */
 	@:unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function MinimizeWindow():Void {
 		throw "MinimizeWindow is unimplemented";
@@ -170,7 +151,7 @@ class RCore {
 		throw "SetWindowFocused is unimplemented";
 	}
 
-	/** Sets the window's icon, in a page the page's icon. See `SetWindowIcons` for giving several sizes.
+	/** Sets the window's icon. See `SetWindowIcons` for giving several sizes.
 
 		The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
 
@@ -221,8 +202,6 @@ class RCore {
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest
 		size the window may take.
 
-		Refused in a page.
-
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
 	@:unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -232,8 +211,6 @@ class RCore {
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest
 		size the window may take.
-
-		Refused in a page.
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
@@ -245,18 +222,16 @@ class RCore {
 	/** Returns how many times a second a monitor shows a new picture.
 
 		@param monitor  The monitor.
-		@return  The refresh rate in hertz, or 0 in a page, which can't tell. */
+		@return  The refresh rate in hertz, or 0 when it isn't known. */
 	static function GetMonitorRefreshRate(monitor:Int):Int {
 		return Math.round(Runtime.window.getMonitorRefreshRate(monitor));
 	}
 
-	/** Opens a URL in the system's browser, in a page a new tab.
+	/** Opens a URL in the system's browser.
 
 		Opens only http, https and mailto URLs.
 
 		A URL with `'` or `"` logs a warning and doesn't open.
-
-		In a page, a URL opens at the next key press, click or tap when none came just before.
 
 		A URL that fails to open logs a warning.
 
@@ -271,15 +246,13 @@ class RCore {
 	/** Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the
 		clipboard.
 
-		A page writes the clipboard only while it has the keyboard, soon after a press.
-
 		@param text  The text. */
 	@:unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function SetClipboardText(text:String):Void {
 		throw "SetClipboardText is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since a page's clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
+	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
 
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
@@ -329,9 +302,7 @@ class RCore {
 		return Runtime.window.focused;
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen.
-
-		A page allows fullscreen only soon after a key press, click or tap. */
+	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen. */
 	@:unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function ToggleFullscreen():Void {
 		throw "ToggleFullscreen is unimplemented";
@@ -347,7 +318,7 @@ class RCore {
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on
 		the desktop.
 
-		Refused in a page and on Wayland.
+		Refused where the system doesn't allow it, as Wayland doesn't.
 
 		@param x  The left edge, in pixels.
 		@param y  The top edge, in pixels. */
@@ -374,18 +345,12 @@ class RCore {
 
 	/** Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.
 
-		Natively, the display's scale whatever the flags.
-
-		In a page, 1 unless `FLAG_WINDOW_HIGHDPI` was set before `InitWindow`. The flag draws the canvas at the device's pixel ratio.
-
 		@return  The scale. */
 	static function GetWindowScaleDPI():Vector2 {
 		return new Vector2(Runtime.window.pixelRatio, Runtime.window.pixelRatio);
 	}
 
 	/** Returns the number of monitors.
-
-		Always 1 in a page.
 
 		@return  The count, at least 1. */
 	static function GetMonitorCount():Int {
@@ -463,8 +428,7 @@ class RCore {
 
 		`FLAG_MSAA_4X_HINT` asks for 4 samples a pixel.
 
-		`FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames natively show as soon as they are drawn. A page's frames
-		always follow the display.
+		`FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames show as soon as they are drawn.
 
 		The window is resizable whatever the flags.
 
@@ -506,11 +470,6 @@ class RCore {
 
 	/** Sets the most frames a second, for `EndDrawing` to wait out the rest of each frame.
 
-		Natively, `EndDrawing` waits.
-
-		In a page, where frames follow the display's refresh, a frame is skipped until it is time. A rate above the display's changes nothing
-		there.
-
 		@param fps  The frames a second, or 0 for no limit. */
 	static function SetTargetFPS(fps:Int):Void {
 		Runtime.time.targetDelta = fps < 1 ? 0 : 1 / fps;
@@ -532,8 +491,6 @@ class RCore {
 
 	/** Stops the program for a time, drawing nothing and reading no input until it ends.
 
-		Spins in a page, so the page doesn't respond meanwhile.
-
 		@param seconds  How long. */
 	static function WaitTime(seconds:Float):Void {
 		Runtime.sleep(seconds);
@@ -546,7 +503,7 @@ class RCore {
 		return Runtime.system.getTime() - start;
 	}
 
-	/** Sets the key that closes the window natively, or `KEY_NULL` for none.
+	/** Sets the key that closes the window, or `KEY_NULL` for none.
 
 		Escape until set.
 
@@ -561,7 +518,7 @@ class RCore {
 		Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
 	}
 
-	/** Ends a frame's drawing and shows it, then natively waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
+	/** Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
 
 		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
 		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
@@ -573,9 +530,7 @@ class RCore {
 
 		Does nothing without the define, as `EndDrawing` has shown the frame already.
 
-		A frame not shown by the next `EndDrawing` is shown then.
-
-		In a page, the browser shows the frame when the loop's body returns, wherever the call is. */
+		A frame not shown by the next `EndDrawing` is shown then. */
 	static function SwapScreenBuffer():Void {
 		if (Runtime.frame != null)
 			Runtime.frame.present();
@@ -587,22 +542,20 @@ class RCore {
 
 		A second read starts a new frame of input, so a key pressed before it reads as held.
 
-		With `EnableEventWaiting`, waits natively for an event first. */
+		With `EnableEventWaiting`, waits for an event first. */
 	static function PollInputEvents():Void {
 		if (Runtime.events != null)
 			Runtime.poll();
 	}
 
-	/** Makes each frame natively wait for an event before the next is read. See `DisableEventWaiting` for going back to reading the events
+	/** Makes each frame wait for an event before the next is read. See `DisableEventWaiting` for going back to reading the events
 		there are.
 
 		An event is a key, a mouse button, the mouse moving or the window changing, from a device the program reads.
 
 		The program draws nothing while waiting, and uses little time.
 
-		The platform and helix-raylib's async loads are still served, so a load answers while waiting and is drawn after the next event.
-
-		Changes nothing in a page, where the browser runs each frame. */
+		The platform and helix-raylib's async loads are still served, so a load answers while waiting and is drawn after the next event. */
 	static function EnableEventWaiting():Void {
 		Runtime.eventWaiting = true;
 	}
@@ -917,7 +870,7 @@ class RCore {
 
 		`GetMouseDelta` this frame includes the move.
 
-		In a page, and natively where the system refuses as Wayland does, the cursor stays. The position reads the place given until the
+		Where the system refuses, as Wayland does, the cursor stays. The position reads the place given until the
 		mouse moves, and a warning says why, once a run for each reason.
 
 		@param x  The place across, in the screen's pixels.
@@ -1008,9 +961,7 @@ class RCore {
 		throw "EnableCursor is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse.
-
-		A page locks the mouse only soon after a click or key press. */
+	/** Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse. */
 	@:unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import helix.raylib.extras.Window.*;)")
 	static function DisableCursor():Void {
 		throw "DisableCursor is unimplemented";
@@ -1195,8 +1146,7 @@ class RCore {
 
 		An empty slot is passed over.
 
-		A gamepad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a
-		run.
+		A gamepad that can't shake stays still and logs a warning, once a run.
 
 		@param gamepad  The gamepad, 0 to 3.
 		@param leftMotor  The heavy motor's strength, 0 to 1.
@@ -1217,7 +1167,7 @@ class RCore {
 	/** Adds mappings for gamepads the system doesn't know, in SDL's controller database format.
 
 		@param mappings  The mappings, one a line.
-		@return  How many were added or updated, or 0 in a page, whose browser maps gamepads itself. */
+		@return  How many were added or updated, or 0 where the system maps gamepads itself. */
 	static function SetGamepadMappings(mappings:String):Int {
 		Runtime.gamepads();
 		return Runtime.gamepadsAdapter.addMappings(mappings);
@@ -1321,12 +1271,7 @@ class RCore {
 
 	/** Returns the last button held, polling the buttons as raylib does.
 
-		The poll runs over gamepads 0 to 3, each's buttons in the browser's order in a page, else GLFW's.
-
-		In a page, the second triggers are among the buttons and the middle button never is.
-
-		Natively, the middle button is among them, and the left and right second triggers count as held while their axis
-		(`GetGamepadAxisMovement`) is over 0.1.
+		The poll runs over gamepads 0 to 3, each's buttons in the platform's order.
 
 		@return  The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held. */
 	static function GetGamepadButtonPressed():Int {
@@ -1380,7 +1325,7 @@ class RCore {
 
 	// ---- Files ----
 
-	/** Doesn't compile on any target, since a page can't wait for the answer. See `FileExistsAsync` for asking whether a file exists.
+	/** Doesn't compile on any target, since the answer comes later. See `FileExistsAsync` for asking whether a file exists.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1389,7 +1334,7 @@ class RCore {
 		throw "FileExists is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since a page can't wait for the file. See `LoadFileTextAsync` for reading a text file.
+	/** Doesn't compile on any target, since the file is read later. See `LoadFileTextAsync` for reading a text file.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1458,7 +1403,7 @@ class RCore {
 		});
 	}
 
-	/** Doesn't compile on any target, since a page can't wait for the file. See `LoadFileDataAsync` for reading a file's bytes.
+	/** Doesn't compile on any target, since the file is read later. See `LoadFileDataAsync` for reading a file's bytes.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1528,10 +1473,10 @@ class RCore {
 
 	// ---- Directories ----
 
-	/** Returns the working directory, natively the process's and in a page ".", the page's own. See `GetApplicationDirectory` for finding
+	/** Returns the working directory. See `GetApplicationDirectory` for finding
 		the program's files.
 
-		Natively, `TakeScreenshotAsync` writes to it.
+		`TakeScreenshotAsync` writes to it.
 
 		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
 
@@ -1546,10 +1491,6 @@ class RCore {
 
 	/** Returns the directory the program's files are read from.
 
-		Natively, `-D helix-raylib-native-root` from the executable's directory, `../web` unless set.
-
-		In a page, "./", the page's own directory.
-
 		A load given a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads
 		"resources/a.png".
 
@@ -1562,13 +1503,11 @@ class RCore {
 		#end
 	}
 
-	/** Changes the working directory, natively the process's.
+	/** Changes the working directory.
 
 		`TakeScreenshotAsync` writes to the new directory from then on.
 
 		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
-
-		In a page, only "." or "./" succeeds, changing nothing.
 
 		A failure logs a warning.
 
@@ -1725,7 +1664,7 @@ class RCore {
 
 	// ---- Directories and dropped files ----
 
-	/** Doesn't compile on any target, since a page can't wait for the answer. See `DirectoryExistsAsync` for asking whether a directory
+	/** Doesn't compile on any target, since the answer comes later. See `DirectoryExistsAsync` for asking whether a directory
 		exists.
 
 		@param dirPath  The directory.
@@ -1735,7 +1674,7 @@ class RCore {
 		throw "DirectoryExists is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since a page can't wait for the answer. See `GetFileLengthAsync` for asking a file's size.
+	/** Doesn't compile on any target, since the answer comes later. See `GetFileLengthAsync` for asking a file's size.
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
@@ -1777,7 +1716,7 @@ class RCore {
 		#end
 	}
 
-	/** Doesn't compile on any target, since a page can't wait for the answer. See `IsPathFileAsync` for asking whether a path is a file.
+	/** Doesn't compile on any target, since the answer comes later. See `IsPathFileAsync` for asking whether a path is a file.
 
 		@param path  The path.
 		@return  Never returns: a call doesn't compile. */
@@ -1786,7 +1725,7 @@ class RCore {
 		throw "IsPathFile is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesAsync` for listing a directory.
+	/** Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesAsync` for listing a directory.
 
 		@param dirPath  The directory.
 		@return  Never returns: a call doesn't compile. */
@@ -1795,7 +1734,7 @@ class RCore {
 		throw "LoadDirectoryFiles is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since a page can't wait for the listing. See `LoadDirectoryFilesExAsync` for listing a directory by
+	/** Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesExAsync` for listing a directory by
 		extension and with its subdirectories.
 
 		@param basePath  The directory.
@@ -1814,14 +1753,14 @@ class RCore {
 		@param files  The listing. */
 	static function UnloadDirectoryFiles(files:FilePathList):Void {}
 
-	/** Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. See `LoadDroppedFiles` for
+	/** Returns whether files were dropped on the window. See `LoadDroppedFiles` for
 		reading their paths.
 
 		Stays true until `UnloadDroppedFiles`.
 
 		A new drop's files replace the last one's.
 
-		A dropped file counts once its bytes are read, natively in the frame after the drop and in a page a frame or so after.
+		A dropped file counts once its bytes are read, a frame or so after the drop.
 
 		@return  True while dropped files are held. */
 	static function IsFileDropped():Bool {
@@ -1855,7 +1794,7 @@ class RCore {
 		Runtime.dropped = [];
 	}
 
-	/** Doesn't compile on any target, since a page can't wait for the answer. See `GetFileModTimeAsync` for asking when a file was last
+	/** Doesn't compile on any target, since the answer comes later. See `GetFileModTimeAsync` for asking when a file was last
 		written.
 
 		@param fileName  The file.
@@ -2136,7 +2075,7 @@ class RCore {
 		Every load raylib makes of a file (textures, models, sounds, music, data) asks the callback first. A null answer reads the file as
 		it would be read without the callback.
 
-		In a page, a texture's or model's images still decode only asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones
+		A texture's or model's images decode asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones
 		the callback gives.
 
 		@param callback  Returns a file's bytes or null, or is null for none. */
@@ -2343,29 +2282,29 @@ class RCore {
 
 	// ---- emscripten's calls, which raylib's web programs make: each refuses, saying what to write instead ----
 
-	/** Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop.
+	/** Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param fps  The frames a second, or 0 for the display's.
 		@param simulateInfiniteLoop  Whether the call never returns. */
-	@:unsupported("emscripten_set_main_loop: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, runs once a frame in a page. Write that loop in main, the frame's code in its body.")
+	@:unsupported("emscripten_set_main_loop: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, already runs once a frame. Write that loop in main, the frame's code in its body.")
 	static function emscripten_set_main_loop(func:Void->Void, fps:Int, simulateInfiniteLoop:Bool):Void {
 		throw "emscripten_set_main_loop is unsupported";
 	}
 
-	/** Doesn't compile, since raylib's own loop runs once a frame in a page. See `WindowShouldClose` for writing the loop.
+	/** Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param arg  What the function is given.
 		@param fps  The frames a second, or 0 for the display's.
 		@param simulateInfiniteLoop  Whether the call never returns. */
-	@:unsupported("emscripten_set_main_loop_arg: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, runs once a frame in a page. Write that loop in main, the frame's code in its body, reading the argument from a variable.")
+	@:unsupported("emscripten_set_main_loop_arg: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, already runs once a frame. Write that loop in main, the frame's code in its body, reading the argument from a variable.")
 	static function emscripten_set_main_loop_arg(func:Dynamic->Void, arg:Dynamic, fps:Int, simulateInfiniteLoop:Bool):Void {
 		throw "emscripten_set_main_loop_arg is unsupported";
 	}
 
 	/** Doesn't compile, since a program leaves raylib's own loop instead. See `WindowShouldClose` for writing the loop. */
-	@:unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break, and a page stops running it; the code after the loop runs then.")
+	@:unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break; the code after the loop runs then.")
 	static function emscripten_cancel_main_loop():Void {
 		throw "emscripten_cancel_main_loop is unsupported";
 	}
@@ -2404,10 +2343,10 @@ class RCore {
 		throw "emscripten_get_now is unsupported";
 	}
 
-	/** Doesn't compile, since a page can't wait inside a frame. See `GetTime` for timing a later frame.
+	/** Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame.
 
 		@param ms  The milliseconds. */
-	@:unsupported("emscripten_sleep: Not supported: a page can't wait inside a frame. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().")
+	@:unsupported("emscripten_sleep: Not supported: a frame can't wait. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().")
 	static function emscripten_sleep(ms:Int):Void {
 		throw "emscripten_sleep is unsupported";
 	}

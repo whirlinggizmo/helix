@@ -460,7 +460,7 @@ def includes_page():
     """helix-raylib's shader includes, as their opening comments describe them: the prose as paragraphs, an indented example as GLSL,
     and the first paragraph without the include's own name before its colon."""
     lines=['# helix-raylib\'s shader includes','','[Back to the library](README.md)','',
-           'A shader of the program\'s own is raylib\'s GLSL (`#version 330`, or `100` for the web), compiled ahead of time by '
+           'A shader of the program\'s own is raylib\'s GLSL (`#version 330`, or `100`), compiled ahead of time by '
            '`CompileShaderFile`. It may include these.','']
     for name in INCLUDES:
         text=(ROOT/'engines/raylib/src/helix/raylib/shaders'/name).read_text(encoding='utf-8')

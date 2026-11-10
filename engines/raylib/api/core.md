@@ -178,18 +178,12 @@ static function EndScissorMode():Void
   - `height`: The window's height, in pixels.
   - `title`: The window's title.
 
-  In a page the canvas fills the page, and width and height are ignored.
-
   Seeds `GetRandomValue` from the time, unless `SetRandomSeed` was called first.
 - `CloseWindow`: Closes the window, after keeping what `SaveFileTextAsync` wrote.
 - `WindowShouldClose`: Returns whether the window should close, after the exit key is pressed or the window is asked to close.
   - returns: True once the window should close.
 
   The exit key is Escape unless `SetExitKey` changed it.
-
-  Always false in a page, where the loop that reads it runs once a frame.
-
-  In a page, the program's loop must be a `while` or `do`-`while` in the main class, a statement of a function's own block. A call in a loop that never lets the page draw throws.
 - `IsWindowReady`: Returns whether the window is open.
   - returns: True after `InitWindow`.
 - `IsWindowResized`: Returns whether the window changed size since the last frame.
@@ -198,19 +192,13 @@ static function EndScissorMode():Void
   - `title`: The title.
 - `IsWindowFullscreen`: Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowedAsync`).
   - returns: True while it is.
-
-  In a page, whether the canvas is fullscreen.
 - `IsWindowHidden`: Returns whether the window is hidden (`FLAG_WINDOW_HIDDEN`).
   - returns: True while it is.
-
-  In a page, whether the canvas is hidden.
-- `IsWindowMinimized`: Returns whether the window is minimized, or in a page whether its tab is in the background.
+- `IsWindowMinimized`: Returns whether the window is minimized.
   - returns: True while it is.
 - `IsWindowMaximized`: Returns whether the window is maximized.
   - returns: True while it is.
-
-  Always false in a page.
-- `SetWindowIcon`: Sets the window's icon, in a page the page's icon. See `SetWindowIcons` for giving several sizes.
+- `SetWindowIcon`: Sets the window's icon. See `SetWindowIcons` for giving several sizes.
   - `image`: The icon.
 
   The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
@@ -223,15 +211,13 @@ static function EndScissorMode():Void
   Each image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. One in another format logs a warning and changes nothing.
 - `GetMonitorRefreshRate`: Returns how many times a second a monitor shows a new picture.
   - `monitor`: The monitor.
-  - returns: The refresh rate in hertz, or 0 in a page, which can't tell.
-- `OpenURL`: Opens a URL in the system's browser, in a page a new tab.
+  - returns: The refresh rate in hertz, or 0 when it isn't known.
+- `OpenURL`: Opens a URL in the system's browser.
   - `url`: The URL.
 
   Opens only http, https and mailto URLs.
 
   A URL with `'` or `"` logs a warning and doesn't open.
-
-  In a page, a URL opens at the next key press, click or tap when none came just before.
 
   A URL that fails to open logs a warning.
 - `IsWindowFocused`: Returns whether the window has the keyboard.
@@ -240,14 +226,8 @@ static function EndScissorMode():Void
   - returns: Its left and top edges, in pixels.
 - `GetWindowScaleDPI`: Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.
   - returns: The scale.
-
-  Natively, the display's scale whatever the flags.
-
-  In a page, 1 unless `FLAG_WINDOW_HIGHDPI` was set before `InitWindow`. The flag draws the canvas at the device's pixel ratio.
 - `GetMonitorCount`: Returns the number of monitors.
   - returns: The count, at least 1.
-
-  Always 1 in a page.
 - `GetCurrentMonitor`: Returns the monitor holding the window.
   - returns: Its index.
 - `GetMonitorPosition`: Returns a monitor's top-left corner on the desktop.
@@ -275,7 +255,7 @@ static function EndScissorMode():Void
 
   `FLAG_MSAA_4X_HINT` asks for 4 samples a pixel.
 
-  `FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames natively show as soon as they are drawn. A page's frames always follow the display.
+  `FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames show as soon as they are drawn.
 
   The window is resizable whatever the flags.
 - `SetWindowState`: Sets flags on the open window (`FLAG_*`).
@@ -291,47 +271,37 @@ static function EndScissorMode():Void
   `FLAG_FULLSCREEN_MODE` and `FLAG_BORDERLESS_WINDOWED_MODE` read what the window is now, as `IsWindowFullscreen` does.
 - `SetTargetFPS`: Sets the most frames a second, for `EndDrawing` to wait out the rest of each frame.
   - `fps`: The frames a second, or 0 for no limit.
-
-  Natively, `EndDrawing` waits.
-
-  In a page, where frames follow the display's refresh, a frame is skipped until it is time. A rate above the display's changes nothing there.
 - `GetFPS`: Returns the frames a second, averaged over the last half second or so.
   - returns: The frames a second.
 - `GetFrameTime`: Returns the seconds the last frame took.
   - returns: The seconds.
 - `WaitTime`: Stops the program for a time, drawing nothing and reading no input until it ends.
   - `seconds`: How long.
-
-  Spins in a page, so the page doesn't respond meanwhile.
 - `GetTime`: Returns the seconds since `InitWindow`.
   - returns: The seconds.
-- `SetExitKey`: Sets the key that closes the window natively, or `KEY_NULL` for none.
+- `SetExitKey`: Sets the key that closes the window, or `KEY_NULL` for none.
   - `key`: The key.
 
   Escape until set.
 - `BeginDrawing`: Begins a frame's drawing.
-- `EndDrawing`: Ends a frame's drawing and shows it, then natively waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
+- `EndDrawing`: Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
   Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input.
 - `SwapScreenBuffer`: Shows the frame `EndDrawing` ended, for a program built with `-D helix-raylib-custom-frame-control`.
   Does nothing without the define, as `EndDrawing` has shown the frame already.
 
   A frame not shown by the next `EndDrawing` is shown then.
-
-  In a page, the browser shows the frame when the loop's body returns, wherever the call is.
 - `PollInputEvents`: Reads the input that came since the last read: each key's, button's and finger's state, and the window's events.
   `EndDrawing` reads the input already, unless the program is built with `-D helix-raylib-custom-frame-control`.
 
   A second read starts a new frame of input, so a key pressed before it reads as held.
 
-  With `EnableEventWaiting`, waits natively for an event first.
-- `EnableEventWaiting`: Makes each frame natively wait for an event before the next is read. See `DisableEventWaiting` for going back to reading the events there are.
+  With `EnableEventWaiting`, waits for an event first.
+- `EnableEventWaiting`: Makes each frame wait for an event before the next is read. See `DisableEventWaiting` for going back to reading the events there are.
   An event is a key, a mouse button, the mouse moving or the window changing, from a device the program reads.
 
   The program draws nothing while waiting, and uses little time.
 
   The platform and helix-raylib's async loads are still served, so a load answers while waiting and is drawn after the next event.
-
-  Changes nothing in a page, where the browser runs each frame.
 - `DisableEventWaiting`: Makes each frame read the events there are and go on, the default until `EnableEventWaiting`.
 - `ClearBackground`: Clears the frame to a color, dropping what was drawn before it.
   - `color`: The color.
@@ -421,7 +391,7 @@ static function EndScissorMode():Void
 
   `GetMouseDelta` this frame includes the move.
 
-  In a page, and natively where the system refuses as Wayland does, the cursor stays. The position reads the place given until the mouse moves, and a warning says why, once a run for each reason.
+  Where the system refuses, as Wayland does, the cursor stays. The position reads the place given until the mouse moves, and a warning says why, once a run for each reason.
 - `SetMouseOffset`: Sets what `GetMousePosition` adds to the mouse's position, before its scale.
   - `offsetX`: Added across.
   - `offsetY`: Added down.
@@ -487,10 +457,10 @@ static function EndScissorMode():Void
 
   An empty slot is passed over.
 
-  A gamepad that can't shake, one without motors or any in a browser without vibration (Firefox), stays still and logs a warning, once a run.
+  A gamepad that can't shake stays still and logs a warning, once a run.
 - `SetGamepadMappings`: Adds mappings for gamepads the system doesn't know, in SDL's controller database format.
   - `mappings`: The mappings, one a line.
-  - returns: How many were added or updated, or 0 in a page, whose browser maps gamepads itself.
+  - returns: How many were added or updated, or 0 where the system maps gamepads itself.
 - `IsGamepadAvailable`: Returns whether a gamepad is connected.
   - `gamepad`: The gamepad, 0 to 3.
   - returns: True while one is connected there.
@@ -516,11 +486,7 @@ static function EndScissorMode():Void
 - `GetGamepadButtonPressed`: Returns the last button held, polling the buttons as raylib does.
   - returns: The button (`GAMEPAD_BUTTON_*`), or `GAMEPAD_BUTTON_UNKNOWN` when none is held.
 
-  The poll runs over gamepads 0 to 3, each's buttons in the browser's order in a page, else GLFW's.
-
-  In a page, the second triggers are among the buttons and the middle button never is.
-
-  Natively, the middle button is among them, and the left and right second triggers count as held while their axis (`GetGamepadAxisMovement`) is over 0.1.
+  The poll runs over gamepads 0 to 3, each's buttons in the platform's order.
 - `GetGamepadAxisCount`: Returns the number of axes a gamepad has.
   - `gamepad`: The gamepad, 0 to 3.
   - returns: 6 while one is connected, else 0.
@@ -540,29 +506,23 @@ static function EndScissorMode():Void
   - `data`: The bytes.
 
   Has nothing to free.
-- `GetWorkingDirectory`: Returns the working directory, natively the process's and in a page ".", the page's own. See `GetApplicationDirectory` for finding the program's files.
+- `GetWorkingDirectory`: Returns the working directory. See `GetApplicationDirectory` for finding the program's files.
   - returns: The directory, without a slash at its end.
 
-  Natively, `TakeScreenshotAsync` writes to it.
+  `TakeScreenshotAsync` writes to it.
 
   helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
 - `GetApplicationDirectory`: Returns the directory the program's files are read from.
   - returns: The directory, with a slash at its end.
 
-  Natively, `-D helix-raylib-native-root` from the executable's directory, `../web` unless set.
-
-  In a page, "./", the page's own directory.
-
   A load given a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
-- `ChangeDirectory`: Changes the working directory, natively the process's.
+- `ChangeDirectory`: Changes the working directory.
   - `dir`: The directory.
   - returns: True when the working directory is it now.
 
   `TakeScreenshotAsync` writes to the new directory from then on.
 
   helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
-
-  In a page, only "." or "./" succeeds, changing nothing.
 
   A failure logs a warning.
 - `IsFileExtension`: Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
@@ -606,14 +566,14 @@ static function EndScissorMode():Void
   - `files`: The listing.
 
   Has nothing to free, and the list is unchanged.
-- `IsFileDropped`: Returns whether files were dropped on the window, natively from the desktop and in a page on the canvas. See `LoadDroppedFiles` for reading their paths.
+- `IsFileDropped`: Returns whether files were dropped on the window. See `LoadDroppedFiles` for reading their paths.
   - returns: True while dropped files are held.
 
   Stays true until `UnloadDroppedFiles`.
 
   A new drop's files replace the last one's.
 
-  A dropped file counts once its bytes are read, natively in the frame after the drop and in a page a frame or so after.
+  A dropped file counts once its bytes are read, a frame or so after the drop.
 - `LoadDroppedFiles`: Returns the paths of the files last dropped.
   - returns: The paths, `count` of them, with `capacity` 0.
 
@@ -672,7 +632,7 @@ static function EndScissorMode():Void
 
   Every load raylib makes of a file (textures, models, sounds, music, data) asks the callback first. A null answer reads the file as it would be read without the callback.
 
-  In a page, a texture's or model's images still decode only asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones the callback gives.
+  A texture's or model's images decode asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones the callback gives.
 - `SetSaveFileDataCallback`: Writes files through the program from now on (`SaveFileDataAsync`).
   - `callback`: Writes a file's bytes, returning whether it did, or is null for none.
 - `SetLoadFileTextCallback`: Reads text files through the program from now on (`LoadFileTextAsync`).

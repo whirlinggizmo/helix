@@ -219,7 +219,7 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
 
   What is drawn into the render texture stays from frame to frame.
 
-  After a lost GPU context in a page, the render texture is cleared and stays empty until drawn into again.
+  After a lost GPU context, the render texture is cleared and stays empty until drawn into again.
 - `IsRenderTextureValid`: Returns whether a render texture was made.
   - `target`: The render texture.
   - returns: True when it was.
@@ -681,8 +681,6 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   The texture's format is the image's, so a grayscale image's texture has `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`.
 
   A compressed format gives no texture, with a warning.
-
-  In a page a copy of the pixels stays in memory, so the texture survives a lost GPU context.
 - `LoadTextureCubemap`: Makes a cubemap of an image, its six faces laid out by a layout.
   - `image`: The image.
   - `layout`: The layout (`CUBEMAP_LAYOUT_*`).
@@ -707,8 +705,6 @@ static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?of
   The cubemap is a `Texture2D`'s record. A material's `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` or `MATERIAL_MAP_PREFILTER` binds it to a shader's `samplerCube` (`DrawMesh`), as `SetShaderValueTexture` does. Drawn as a 2D texture, the cubemap draws nothing.
 
   `UnloadTexture` lets go of the cubemap, which is counted as any texture is.
-
-  In a page a copy of the pixels stays in memory, so the cubemap survives a lost GPU context.
 - `UpdateTexture`: Replaces a texture's pixels on the GPU.
   - `texture`: The texture.
   - `pixels`: The pixels: their bytes (`haxe.io.Bytes`), or an array of `Color` (R8G8B8A8's bytes, as raylib's `Color *` is).
