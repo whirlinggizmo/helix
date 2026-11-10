@@ -5,7 +5,7 @@ import helix.raylib.extras.Models.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 
-/** Checks `extras.Models.LoadModelFromModels` on graphics that count what is live: meshes whose materials differ only in diffuse color
+/** Checks `LoadModelFromModels` on graphics that count what is live: meshes whose materials differ only in diffuse color
 	merged into one with the colors in the vertices, other materials kept apart, the provided models unchanged, normals given to a mesh
 	without, a merge without a skeleton baking the transforms and having no bones, and one with a skeleton taking its bones, renumbering
 	each model's by name, following the nearest ancestor, rebinding a model bound elsewhere, placing a model without bones, and being

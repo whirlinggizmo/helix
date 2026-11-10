@@ -232,7 +232,7 @@ Code is written to be read, by people and agents, not packed.
             `<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
 
             ```hxml
-            --macro helix.raylib.extras.Shaders.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
+            --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
             ```
 
             @param compiledShaderFileName  The compiled shader's file.

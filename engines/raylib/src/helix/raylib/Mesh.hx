@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Mesh`: vertices, and its triangles' indices when it has them.
 
-	`Raylib.UploadMesh` sends a mesh to the GPU. `extras.Models.LoadModelAsync` and the `GenMesh*` functions upload theirs themselves.
+	`Raylib.UploadMesh` sends a mesh to the GPU. `LoadModelAsync` and the `GenMesh*` functions upload theirs themselves.
 
 	The program holds a reference until `UnloadMesh`, and each model using it holds one too. Its GPU buffers are freed when the last held
 	reference is released. */

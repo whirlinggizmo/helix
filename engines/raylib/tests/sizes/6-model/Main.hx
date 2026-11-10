@@ -1,7 +1,5 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a glTF model loaded with LoadModelAsync and drawn beside the cube.
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Textures.*;
-import helix.raylib.extras.Models.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.Texture2D;

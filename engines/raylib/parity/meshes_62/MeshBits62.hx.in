@@ -1,6 +1,5 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Models.*;
 import Parity.*;
 
 // helix-raylib's GenMeshTangents and ExportMesh, raylib 6.2's, printed by Parity as ref.c.in prints raylib's.

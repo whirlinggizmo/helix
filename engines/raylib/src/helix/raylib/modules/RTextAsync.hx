@@ -33,12 +33,12 @@ import helix.raylib.modules.RAudioAsync.*;
 /** Provides the async versions of rtext's font loads and writes. Each replaces a raylib call that waits for a file, the glyphs or a
 	write.
 
-	`helix.raylib.extras.Text` forwards to each (`tools/gen_raylib.py`). */
+	`helix.raylib.Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RTextAsync {
 	#if !macro
-	// LoadFontAsync's call where its file's name isn't known as the program builds (extras.Text.LoadFontAsync): a GIF image's glyphs or the
+	// LoadFontAsync's call where its file's name isn't known as the program builds (Raylib.LoadFontAsync): a GIF image's glyphs or the
 	// other readers, picked by its extension as it runs, so the GIF reader is in the program.
 	static function loadFont(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))

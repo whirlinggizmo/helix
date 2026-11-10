@@ -76,6 +76,7 @@ static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision
 static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
 static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
 static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
+static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
 ```
 
 - `DrawLine3D`: Draws a line in 3D.
@@ -568,3 +569,62 @@ static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3,
   - `p3`: The next.
   - `p4`: The last.
   - returns: The hit.
+- `LoadModelAsync`: Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material library and its textures), answering when it is ready: helix-raylib's own, in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the model.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or `o` line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces before any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a normal, or naming one the file doesn't have, given (0, 1, 0), one without texture coordinates (0, 0), the others' v turned (1 - v), and one naming a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib counts the start of each group in the file's `f` lines against the triangles it has made, so a polygon, or a face of 1 or 2 corners, before a group moves the group's first mesh; helix-raylib does too. An empty file fails to load, as one raylib can't read. Where raylib's reading is broken, helix-raylib reads the file as the format has it, and a file that breaks the format fails to load (docs/DECISIONS.md 28). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
+
+
+```haxe
+static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation> -> Void, ?failed:String -> Void):Void
+static function LoadMaterialsAsync(fileName:String, loaded:Array<Material> -> Void, ?failed:String -> Void):Void
+static function ExportMeshAsync(mesh:Mesh, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+```
+
+- `LoadModelAnimationsAsync`: Asynchronously loads a glTF or GLB file's animations, replacing raylib's `LoadModelAnimations`.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the animations, as many as the file has; their count is its length.
+  - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
+
+  A file without skins gives none. Only the file's first skin is read.
+
+  IQM and M3D animations are refused, as is any file but glTF and GLB.
+
+  Each animation is sampled 60 times a second, as raylib 6.2 samples it, with (int)(duration * 60) + 1 frames.
+
+  Each frame's pose is its bones' transforms in the model.
+- `LoadMaterialsAsync`: Asynchronously loads an .mtl file's materials with the textures they name, replacing raylib's `LoadMaterials`. See `LoadModelAsync` for loading an OBJ file with the materials its `mtllib` names.
+  - `fileName`: The file, as the program names it: an .mtl file.
+  - `loaded`: Receives the materials, in the file's order; their count is its length.
+  - `failed`: Optional. Receives why they couldn't be loaded (the file isn't an .mtl file, can't be found or can't be read); when omitted, it is logged.
+
+  The program holds each material until `UnloadMaterial`.
+
+  Each starts as raylib's default material, and reads these fields as raylib's `ProcessMaterialsOBJ` does:
+
+  - `map_Kd`, the diffuse texture, or with none MTL's `Kd`, the diffuse color (alpha 255). - `map_Ks` and MTL's `Ks`, the specular texture and color. - `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is MTL's `Ns`, the specular exponent. - MTL's `Ke`, the emission color. - `disp`, the height map's texture.
+
+  A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular exponent is 1.
+
+  A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
+
+  A file that breaks the format fails.
+- `ExportMeshAsync`: Asynchronously writes a mesh as an OBJ file through `SaveFileTextAsync`, replacing raylib's `ExportMesh`. See `ExportMeshAsCodeAsync` for writing a C header.
+  - `mesh`: The mesh, with positions, texture coordinates and normals.
+  - `fileName`: The file; only ".obj" is written.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't, such as another extension; when omitted, it is logged.
+
+  Positions and texture coordinates are written to 6 places, normals to 4, and each face as a triangle, as raylib's `ExportMesh` writes them.
+- `ExportMeshAsCodeAsync`: Asynchronously writes a mesh as a C header through `SaveFileTextAsync`, replacing raylib's `ExportMeshAsCode`. See `ExportMeshAsync` for writing an OBJ file.
+  - `mesh`: The mesh.
+  - `fileName`: The file; its name, upper case, names the defines and the arrays.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The mesh\'s counts are written as defines, and each array it has as 20 values a line, floats to 3 places, as raylib's `ExportMeshAsCode` writes them.

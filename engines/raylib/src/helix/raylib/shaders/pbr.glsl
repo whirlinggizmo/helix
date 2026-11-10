@@ -15,7 +15,7 @@
 //
 // vec3 helixToneMap(vec3 color) tone maps a linear color, as helixPbr does.
 //
-// LoadPbrShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
+// LoadPbrShader (helix.raylib.extras.Lighting) is built on it. A fragment stage of the program's own lights with it like this:
 //
 //     #version 330
 //     #include <helix/raylib/shaders/pbr.glsl>

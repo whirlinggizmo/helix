@@ -1,7 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raygui.*;
-import helix.raylib.extras.Window.*;
 import helix.raylib.internal.Runtime;
 
 // ref.c's raygui controls over nine frames of played input, drawn by helix-raylib; the ninth frame saved as helix.png. Frame 0 turns the

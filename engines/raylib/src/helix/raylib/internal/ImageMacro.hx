@@ -10,7 +10,7 @@ using StringTools;
 	reader. */
 @:noCompletion
 class ImageMacro {
-	/** Returns the call loading an image file by the reader its file needs (`extras.Textures.LoadImageAsync`).
+	/** Returns the call loading an image file by the reader its file needs (`LoadImageAsync`).
 
 		@param fileName  The file's name.
 		@param loaded  Receives the image.
@@ -20,7 +20,7 @@ class ImageMacro {
 		return byName("RTexturesAsync", fileName, ["loadImage", "loadGifImage", "loadPlainImage"], [fileName, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call decoding an image file's bytes by the reader its type needs (`extras.Textures.LoadImageFromMemoryAsync`).
+	/** Returns the call decoding an image file's bytes by the reader its type needs (`LoadImageFromMemoryAsync`).
 
 		@param fileType  The file's extension.
 		@param fileData  The file's bytes.
@@ -33,7 +33,7 @@ class ImageMacro {
 			[fileType, fileData, dataSize, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call loading an image file as a texture by the reader its file needs (`extras.Textures.LoadTextureAsync`).
+	/** Returns the call loading an image file as a texture by the reader its file needs (`LoadTextureAsync`).
 
 		@param fileName  The file's name.
 		@param loaded  Receives the texture.
@@ -43,7 +43,7 @@ class ImageMacro {
 		return byName("RTexturesAsync", fileName, ["loadTextureFile", "loadGifTexture", "loadPlainTexture"], [fileName, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call loading a font file by the reader its file needs (`extras.Text.LoadFontAsync`).
+	/** Returns the call loading a font file by the reader its file needs (`LoadFontAsync`).
 
 		@param fileName  The file's name.
 		@param loaded  Receives the font.
@@ -53,7 +53,7 @@ class ImageMacro {
 		return byName("RTextAsync", fileName, ["loadFont", "loadGifFont", "loadPlainFont"], [fileName, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call loading an animated image by the reader its file needs (`extras.Textures.LoadImageAnimAsync`).
+	/** Returns the call loading an animated image by the reader its file needs (`LoadImageAnimAsync`).
 
 		@param fileName  The file's name.
 		@param frames  Receives the frame count.
@@ -64,7 +64,7 @@ class ImageMacro {
 		return byName("RTexturesAsync", fileName, ["loadImageAnim", "loadGifAnim", "loadStillAnim"], [fileName, frames, loaded, orNull(failed)]);
 	}
 
-	/** Returns the call decoding an animated image's bytes by the reader its type needs (`extras.Textures.LoadImageAnimFromMemoryAsync`).
+	/** Returns the call decoding an animated image's bytes by the reader its type needs (`LoadImageAnimFromMemoryAsync`).
 
 		@param fileType  The file's extension.
 		@param fileData  The file's bytes.

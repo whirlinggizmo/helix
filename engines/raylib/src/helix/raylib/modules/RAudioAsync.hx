@@ -33,7 +33,7 @@ import helix.raylib.modules.RModelsAsync.*;
 /** Provides helix-raylib's async sound, wave and music loads and wave writes. They replace raylib's calls that wait for a file, a
 	decode or a write.
 
-	`helix.raylib.extras.Audio` forwards to each (`tools/gen_raylib.py`). */
+	`helix.raylib.Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RAudioAsync {
@@ -61,7 +61,7 @@ class RAudioAsync {
 			entry.answers.push(error -> error == null ? loaded(sound) : refuse("LoadSoundAsync", error, failed));
 	}
 
-	// LoadWaveAsync's call (extras.Audio.LoadWaveAsync): the file fetched, then read by read, the reader its extension names (WaveMacro).
+	// LoadWaveAsync's call (Raylib.LoadWaveAsync): the file fetched, then read by read, the reader its extension names (WaveMacro).
 	static function loadWave(fileName:String, read:WaveReader, loaded:Wave->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName);
 		Runtime.fetch(path, error -> {
@@ -75,7 +75,7 @@ class RAudioAsync {
 		});
 	}
 
-	// LoadWaveFromMemoryAsync's call (extras.Audio.LoadWaveFromMemoryAsync): the bytes read by read, the reader fileType names (WaveMacro).
+	// LoadWaveFromMemoryAsync's call (Raylib.LoadWaveFromMemoryAsync): the bytes read by read, the reader fileType names (WaveMacro).
 	static function loadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, read:WaveReader, loaded:Wave->Void, ?failed:String->Void):Void {
 		var data = fileData == null ? haxe.io.Bytes.alloc(0) : dataSize < fileData.length ? fileData.sub(0, Std.int(Math.max(0, dataSize))) : fileData;
 		read(fileType == null ? "" : fileType, data, wave -> loadedWave(wave, loaded), message -> refuse("LoadWaveFromMemoryAsync", message, failed));

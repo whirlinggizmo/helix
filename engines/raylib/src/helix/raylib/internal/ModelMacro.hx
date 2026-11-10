@@ -5,7 +5,7 @@ import haxe.macro.Expr;
 
 using StringTools;
 
-/** Chooses a model's reader as the program builds (`extras.Models.LoadModelAsync`), so a program carries only the readers it names. */
+/** Chooses a model's reader as the program builds (`LoadModelAsync`), so a program carries only the readers it names. */
 @:noCompletion
 class ModelMacro {
 	/** Returns the call loading a model by the reader its file needs: when its name is known as the program builds (`ShaderMacro.known`),

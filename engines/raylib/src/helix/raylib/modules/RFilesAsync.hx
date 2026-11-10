@@ -32,7 +32,7 @@ import helix.raylib.modules.RAudioAsync.*;
 
 /** Provides the async versions of rcore's file calls, which replace raylib's calls that wait for a file or a write.
 
-	Each is helix-raylib's own, written here. `helix.raylib.extras.Files` forwards to each (`tools/gen_raylib.py`). */
+	Each is helix-raylib's own, written here. `helix.raylib.Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RFilesAsync {

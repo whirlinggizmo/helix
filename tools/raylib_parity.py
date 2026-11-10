@@ -149,7 +149,7 @@ def compiled_shaders(manifest):
     output or null for raylib's default stage) into the file LoadCompiledShaderAsync loads, as a program's build does."""
     def quoted(path):return 'null' if path is None else json.dumps(path)
     return [a for vs, fs, out in manifest.get('shaders', [])
-            for a in ('--macro', f'helix.raylib.extras.Shaders.CompileShaderFile({quoted(vs)}, {quoted(fs)}, {quoted(out)})')]
+            for a in ('--macro', f'helix.raylib.Raylib.CompileShaderFile({quoted(vs)}, {quoted(fs)}, {quoted(out)})')]
 
 
 class Failure(Exception):

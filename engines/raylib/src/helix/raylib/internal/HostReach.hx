@@ -10,13 +10,12 @@ import sys.FileSystem;
 using StringTools;
 #end
 
-/** Warns, as the program builds, where the program's own code reaches the page for something `helix.raylib.extras` or `Raylib` answers
+/** Warns, as the program builds, where the program's own code reaches the page for something `Raylib` answers
 	on every target: the page's storage (`SaveFileTextAsync`, `LoadFileTextAsync`) and its fullscreen (`IsWindowFullscreen`,
 	`ToggleFullscreenAsync`), when the program is built with
 	`-D helix-raylib-host-warnings`: off by default, as a person reads the README and may reach the host on purpose, and on for an agent
 	writing raylib from memory (a trial). Each warning reads as a refusal does ("js.html.Element.requestFullscreen: Works only in a
-	browser. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Window (import
-	helix.raylib.extras.Window.*;)."). Each site warns once for each call, and libraries' code isn't looked at. Read from the
+	browser. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)."). Each site warns once for each call, and libraries' code isn't looked at. Read from the
 	compiler's typed code, after typing: the fields reached, and the text of a `js.Syntax.code` call. Run by the library's
 	`extraParams.hxml`. */
 @:noCompletion
@@ -25,9 +24,6 @@ class HostReach {
 	static inline final SAVE = "SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void) and LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)";
 	static inline final IS_FULLSCREEN = "IsWindowFullscreen()";
 	static inline final FULLSCREEN = "ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)";
-
-	/** The module of `helix.raylib.extras` holding each call, which a warning names with its import; a call of `Raylib`'s needs none. */
-	static final MODULES:Map<String, String> = [SAVE => "Files", FULLSCREEN => "Window"];
 
 	/** What a warning naming a call adds, after the call. */
 	static final NOTES:Map<String, String> = [
@@ -129,10 +125,8 @@ class HostReach {
 	static function warn(reached:String, call:String, pos:Position):Void {
 		if (!own(pos))
 			return;
-		var module = MODULES.get(call);
-		var where = module == null ? "" : ' in helix.raylib.extras.$module (import helix.raylib.extras.$module.*;)';
 		var note = NOTES.exists(call) ? " " + NOTES.get(call) : "";
-		Context.warning('$reached: Works only in a browser. See $call$where.$note', pos);
+		Context.warning('$reached: Works only in a browser. See $call.$note', pos);
 	}
 
 	static function path(c:ClassType):String

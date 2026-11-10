@@ -4,17 +4,17 @@
 
 | Type | What |
 |---|---|
-| `helix.raylib.Raylib` | raylib's functions, constants and colors |
+| `helix.raylib.Raylib` | raylib's functions, constants and colors, and beside each call that waits for a file or the window the `...Async` call that replaces it |
 | `helix.raylib.Raymath` | raymath |
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
 | `helix.raylib.Rlights` | rlights, from raylib's lighting examples |
-| `helix.raylib.extras` | the calls a refused raylib call names in its place: async loads and writes, window requests, compiled shaders; and what a program opts into that raylib has no call for: lit and PBR shaders, a virtual gamepad, a model's bounds as posed, models merged into one |
+| `helix.raylib.extras` | what a program opts into that raylib has no call for: lit and PBR shaders, a virtual gamepad, a model's bounds as posed, models merged into one |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
 ## Differences from raylib
 
-- Files load with the `...Async` calls in `helix.raylib.extras`.
+- Files load with the `...Async` calls beside raylib's, in `Raylib` and `Raygui`.
 - Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
   (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
@@ -47,7 +47,7 @@ Defines, set in the build's hxml:
 - `-D helix-raylib-custom-frame-control`: raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`. `EndDrawing` only draws. The program calls
   `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.
 - `-D helix-raylib-host-warnings`: warns at build time where the program reaches the page or host directly for something
-  `helix.raylib.extras` provides. Off by default.
+  `Raylib` provides. Off by default.
 
 ## Examples
 

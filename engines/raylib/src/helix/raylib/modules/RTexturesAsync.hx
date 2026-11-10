@@ -33,12 +33,12 @@ import helix.raylib.modules.RAudioAsync.*;
 /** Holds the async versions of rtextures' image and texture loads and writes, replacing raylib's calls that wait for a file, the
 	GPU or a write.
 
-	`helix.raylib.extras.Textures` forwards to each (`tools/gen_raylib.py`). */
+	`helix.raylib.Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RTexturesAsync {
 	#if !macro
-	// LoadImageAsync's call where its file's name isn't known as the program builds (extras.Textures.LoadImageAsync): a GIF file's first frame
+	// LoadImageAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAsync): a GIF file's first frame
 	// or the other decodes, picked by its extension as it runs, so both are in the program.
 	static function loadImage(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))
@@ -127,7 +127,7 @@ class RTexturesAsync {
 		}, error -> refuse("LoadImageRawAsync", error, failed));
 	}
 
-	// LoadImageFromMemoryAsync's call where its type isn't known as the program builds (extras.Textures.LoadImageFromMemoryAsync): raylib's two
+	// LoadImageFromMemoryAsync's call where its type isn't known as the program builds (Raylib.LoadImageFromMemoryAsync): raylib's two
 	// spellings of ".gif" read as GIF, any other type decoded as the rest are, so both are in the program.
 	static function decodeImage(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void):Void {
 		if (fileType == ".gif" || fileType == ".GIF")
@@ -161,7 +161,7 @@ class RTexturesAsync {
 		Runtime.later(() -> decoded("LoadImageFromMemoryAsync", fileType == null ? "" : fileType.toLowerCase(), data, loaded, failed));
 	}
 
-	// LoadImageAnimAsync's call where its file's name isn't known as the program builds (extras.Textures.LoadImageAnimAsync): the GIF reader or
+	// LoadImageAnimAsync's call where its file's name isn't known as the program builds (Raylib.LoadImageAnimAsync): the GIF reader or
 	// the image load picked by its extension as it runs, so both are in the program.
 	static function loadImageAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))
@@ -306,7 +306,7 @@ class RTexturesAsync {
 		return rgba(pixels, width, height);
 	}
 
-	// LoadTextureAsync's call where its file's name isn't known as the program builds (extras.Textures.LoadTextureAsync): a GIF file's first
+	// LoadTextureAsync's call where its file's name isn't known as the program builds (Raylib.LoadTextureAsync): a GIF file's first
 	// frame or the platform's decode, picked by its extension as it runs, so both are in the program.
 	static function loadTextureFile(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
 		if (isGif(fileName))

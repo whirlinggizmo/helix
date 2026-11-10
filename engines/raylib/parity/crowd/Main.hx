@@ -1,8 +1,5 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Window.*;
-import helix.raylib.extras.Models.*;
-import helix.raylib.extras.Shaders.*;
 
 // scene.c's crowd, drawn by helix-raylib: one greenman posed and drawn 240 times in a frame, the last row through raylib's example
 // skinning shader and the one before, and a model never posed, through a shader of its own including

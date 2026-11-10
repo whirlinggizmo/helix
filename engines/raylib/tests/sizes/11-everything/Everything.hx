@@ -26,14 +26,7 @@ class Everything {
 		"helix.raylib.Rlgl",
 		"helix.raylib.Raygui",
 		"helix.raylib.Rlights",
-		"helix.raylib.extras.Window",
-		"helix.raylib.extras.Files",
-		"helix.raylib.extras.Textures",
-		"helix.raylib.extras.Text",
 		"helix.raylib.extras.Models",
-		"helix.raylib.extras.Audio",
-		"helix.raylib.extras.Gui",
-		"helix.raylib.extras.Shaders",
 		"helix.raylib.extras.Lighting",
 		"helix.raylib.extras.VirtualGamepad"
 	];

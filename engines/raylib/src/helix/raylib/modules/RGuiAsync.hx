@@ -14,7 +14,7 @@ import helix.raylib.modules.RGui.*;
 
 /** Provides the async versions of raygui's style and icon loads. They take the place of raygui's calls that wait for a file.
 
-	`helix.raylib.extras.Gui` forwards to each (`tools/gen_raylib.py`). */
+	`helix.raylib.Raygui` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RGuiAsync {

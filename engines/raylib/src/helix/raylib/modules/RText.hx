@@ -309,7 +309,7 @@ class RText {
 		@param font  The font.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportFontAsCode: A file is written later, or is refused. See ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)")
+	@:unsupported("ExportFontAsCode: A file is written later, or is refused. See ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportFontAsCode(font:Font, fileName:String):Bool {
 		throw "ExportFontAsCode is unimplemented";
 	}
@@ -611,7 +611,7 @@ class RText {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)")
+	@:unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)")
 	static function LoadFont(fileName:String):Font {
 		throw "LoadFont is unimplemented";
 	}
@@ -624,7 +624,7 @@ class RText {
 		@param codepoints  The characters.
 		@param codepointCount  How many of them.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)")
+	@:unsupported("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
 	static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
 		throw "LoadFontEx is unimplemented";
 	}
@@ -639,7 +639,7 @@ class RText {
 		@param codepoints  The characters.
 		@param codepointCount  How many of them.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)")
+	@:unsupported("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
 	static function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
 		throw "LoadFontFromMemory is unimplemented";
 	}
@@ -654,7 +654,7 @@ class RText {
 		@param codepointCount  How many of them.
 		@param type  The glyphs' kind (`FONT_*`).
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void) in helix.raylib.extras.Text (import helix.raylib.extras.Text.*;)")
+	@:unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)")
 	static function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):Array<GlyphInfo> {
 		throw "LoadFontData is unimplemented";
 	}

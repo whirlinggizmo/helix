@@ -9,7 +9,7 @@ import helix.raylib.internal.Answers.*;
 
 /** Provides the loads of shaders compiled ahead of time by `CompileShaderFile`: from a file, or from the compiled data in memory.
 
-	`helix.raylib.extras.Shaders` forwards to each (`tools/gen_raylib.py`). */
+	`helix.raylib.Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RCompiledShaders {
@@ -21,7 +21,7 @@ class RCompiledShaders {
 		`<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
 
 		```hxml
-		--macro helix.raylib.extras.Shaders.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
+		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
 		```
 
 		@param compiledShaderFileName  The compiled shader's file.

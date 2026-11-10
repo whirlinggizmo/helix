@@ -1,5 +1,5 @@
 {
- "commit": "081a24f 2026-11-10",
+ "commit": "bbbd923 2026-11-10",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -1136,8 +1136,8 @@
    "11-everything": {
     "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui, Rlights and helix.raylib.extras a program can call, and every file reader",
     "raw": 1713107,
-    "gzip": 305072,
-    "brotli": 237459,
+    "gzip": 305044,
+    "brotli": 237508,
     "packages": {
      "formats": 131880,
      "raylib/RTextures": 111799,

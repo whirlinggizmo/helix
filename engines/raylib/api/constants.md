@@ -1003,9 +1003,19 @@ static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
 
 
 ```haxe
+static macro function CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String):Void
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
+- `CompileShaderFile`: Compiles a shader's two stages, raylib's GLSL, into a file `LoadCompiledShaderAsync` loads on every target. Run as a `--macro` of the program's build, or of an hxml of its own, one line a shader:
+  - `vsFileName`: The vertex stage's file, or null for raylib's default.
+  - `fsFileName`: The fragment stage's file, or null for raylib's default.
+  - `compiledShaderFileName`: The file to write.
+
+  ```hxml
+  -lib helix-raylib
+  --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
+  ```
 - `LoadAutomationEventList`: Returns an empty automation events list to record into, its capacity raylib's 16384, as raylib's `LoadAutomationEventList(NULL)`. Given a file instead, a call doesn't compile, as the file is read later: `LoadAutomationEventListAsync` reads one.
   - `fileName`: Null (or 0, as raylib's examples write it).
   - returns: The list.

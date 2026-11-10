@@ -2,9 +2,6 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.Rlights.*;
-import helix.raylib.extras.Window.*;
-import helix.raylib.extras.Models.*;
-import helix.raylib.extras.Shaders.*;
 
 // scene.c drawn by helix-raylib: its lighting shader is raylib's example's lighting.vs and lighting.fs, compiled ahead of time into
 // lighting.shader, and its second a program's own (own.vs, over <helix/raylib/shaders/skinning.glsl>, with lighting.fs, compiled into

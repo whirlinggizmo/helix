@@ -36,7 +36,7 @@ class Texture2D {
 	@:allow(helix.raylib)
 	var spent = false;
 
-	/** Creates a texture's record. See `extras.Textures.LoadTextureAsync` for loading a texture.
+	/** Creates a texture's record. See `LoadTextureAsync` for loading a texture.
 
 		@param id  The handle.
 		@param width  The width, in pixels.

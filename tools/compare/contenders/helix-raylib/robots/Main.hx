@@ -1,6 +1,5 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Models.*;
 
 // raylib's models_animation, many at once: N robots each posed by UpdateModelAnimation at its own frame, drawn with DrawModel, for
 // tools/compare/compare.py. count=N run option. Natively, gc-min=MB sets hxcpp's minimum working memory (cpp.vm.Gc.setMinimumWorkingMemory)

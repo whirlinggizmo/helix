@@ -5,7 +5,7 @@ import helix.raylib.Raylib.LOG_INFO;
 import helix.raylib.modules.RCore;
 
 /** Answers helix-raylib's async calls: a refusal to the program's `failed` or logged, a request asked of the platform, and an export's
-	file written. The sections of `helix.raylib.extras` share it. */
+	file written. The async sections share it. */
 @:noCompletion
 class Answers {
 	/** Writes an export's text as `SaveFileTextAsync` writes it, logging raylib's line once it is written, as raylib's export does.

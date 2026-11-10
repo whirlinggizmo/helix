@@ -927,6 +927,38 @@ static function GuiDrawIcon(iconId:Int, posX:Int, posY:Int, pixelSize:Int, color
 
   Fades the icon by the alpha set with `GuiSetAlpha`.
 
+## raygui: the style and icon loads in place of raygui's that wait for a file
+
+
+```haxe
+static function GuiLoadStyleAsync(fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String> -> Void, ?failed:String -> Void):Void
+```
+
+- `GuiLoadStyleAsync`: Asynchronously loads a style file (.rgs) over the current style, replacing raygui's `GuiLoadStyle`.
+  - `fileName`: The style file.
+  - `done`: Optional. Called once the style is loaded, at a later poll.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  The default style is loaded first if it isn't yet.
+
+  A text file's first line starts with '#'. It reads: - each `p <control> <property> 0x<value>` line, which sets that property. - the `f <size> <charmap> <font>` line, which loads the font at its size with the charmap file's characters. Both files are beside the style file.
+
+  A font that can't be loaded, or an `f` line naming none, leaves raylib's default font at size 10. A file that can't be read leaves the default style, loaded first.
+
+  A text file's last line is read only when a line break ends it, as in raygui.
+
+  A binary file sets its properties, and its font when it holds one.
+- `GuiLoadIconsAsync`: Asynchronously loads an icon file (.rgi) over raygui's icons, replacing raygui's `GuiLoadIcons`.
+  - `fileName`: The icon file.
+  - `loadIconsName`: Whether the icons' names are read.
+  - `loaded`: Receives the icons' names, in order, or null when they weren't read or the file isn't an icon file.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  The file's icons replace raygui's from the first, as raygui reads them.
+
+  A file that isn't an icon file changes nothing.
+
 ## raygui: its controls
 
 
@@ -1243,5 +1275,5 @@ static macro function GuiLoadStyle(fileName:String):Void
 static macro function GuiLoadIcons(fileName:String, loadIconsName:Bool):Array<String>
 ```
 
-- `GuiLoadStyle`: Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` in `helix.raylib.extras.Gui` for loading a style file.
-- `GuiLoadIcons`: Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` in `helix.raylib.extras.Gui` for loading an icon file.
+- `GuiLoadStyle`: Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` for loading a style file.
+- `GuiLoadIcons`: Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` for loading an icon file.

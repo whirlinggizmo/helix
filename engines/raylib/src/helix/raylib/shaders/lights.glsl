@@ -14,7 +14,7 @@
 //
 // The stage declares its inputs, textures, uniforms and output itself, as the example does.
 //
-// LoadLightingShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
+// LoadLightingShader (helix.raylib.extras.Lighting) is built on it. A fragment stage of the program's own lights with it like this:
 //
 //     #version 330
 //     #include <helix/raylib/shaders/lights.glsl>

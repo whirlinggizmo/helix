@@ -28,7 +28,7 @@ class Font {
 	@:allow(helix.raylib)
 	var atlasTexture = 0;
 
-	/** Creates a font, its fields zero or empty. See `extras.Text.LoadFontExAsync` and the other loads for loading a font, and
+	/** Creates a font, its fields zero or empty. See `LoadFontExAsync` and the other loads for loading a font, and
 		`Raylib.GetFontDefault` for getting raylib's default font. */
 	public function new() {}
 }

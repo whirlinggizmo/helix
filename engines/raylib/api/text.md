@@ -47,6 +47,7 @@ static function GetCodepoint(text:String, codepointSize:Array<Int>):Int
 static function GetCodepointNext(text:String, codepointSize:Array<Int>):Int
 static function GetCodepointPrevious(text:String, codepointSize:Array<Int>):Int
 static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
+static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 ```
 
 - `DrawText`: Draws text in raylib's default font. See `DrawTextEx` for drawing text in another font.
@@ -337,3 +338,64 @@ static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
   - `codepoint`: The character's code.
   - `utf8Size`: Receives its length in UTF-8 bytes, at its index 0; 0 for a code past 0x10FFFF.
   - returns: The text; empty for a code past 0x10FFFF.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program builds as `LoadImageAsync`'s is.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+
+```haxe
+static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
+static function LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
+static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo> -> Void, ?failed:String -> Void):Void
+static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+```
+
+- `LoadFontExAsync`: Asynchronously loads a TrueType or OpenType font file at a size, replacing raylib's `LoadFontEx`. See `LoadFontFromMemoryAsync` for making a font from bytes already loaded.
+  - `fileName`: The file, as the program names it.
+  - `fontSize`: The glyphs' size: the height of a line, in pixels.
+  - `codepoints`: The characters, or null for those from the space on.
+  - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+  - `loaded`: Receives the font once its glyphs are ready.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The font holds only the characters the file has. `glyphCount` may be fewer than asked for, and a character it lacks draws as its '?'.
+
+  Each Unicode space the file has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
+- `LoadFontFromMemoryAsync`: Asynchronously makes a font from a TrueType or OpenType file's bytes, replacing raylib's `LoadFontFromMemory`. See `LoadFontExAsync` for loading a file by its name. The glyphs are rasterized off the main thread.
+  - `fileType`: The file's extension, ".ttf" or ".otf". Any other is refused.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `fontSize`: The glyphs' size: the height of a line, in pixels.
+  - `codepoints`: The characters, or null for those from the space on.
+  - `codepointCount`: How many characters; 0 for 95.
+  - `loaded`: Receives the font once its glyphs are ready.
+  - `failed`: Optional. Receives why it couldn't be made; when omitted, it is logged.
+
+  The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
+- `LoadFontDataAsync`: Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See `LoadFontFromMemoryAsync` for a font ready to draw, replacing raylib's `LoadFontData`.
+  - `fileData`: The font file's bytes.
+  - `dataSize`: How many of them.
+  - `fontSize`: The glyphs' size: the height of a line, in pixels.
+  - `codepoints`: The characters, or null for those from the space on.
+  - `codepointCount`: How many characters; 0 for 95.
+  - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances. Any other is taken as `FONT_DEFAULT`.
+  - `loaded`: Receives the glyphs once they are ready.
+  - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
+
+  Each glyph's image is 8-bit grayscale, for `GenImageFontAtlas`.
+
+  Under `FONT_SDF` the images hold signed distances, with 4 texels of padding, 128 on the outline and 64 for each texel.
+- `ExportFontAsCodeAsync`: Asynchronously writes a font as a C header, the text raylib 5.5's `ExportFontAsCode` writes. The file is written through `SaveFileTextAsync`, replacing raylib's `ExportFontAsCode`.
+  - `font`: The font.
+  - `fileName`: The file.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The header holds the texture's pixels, each glyph's rectangle, character, offsets and advance, and a function loading the font. The file's name, in Pascal case, names them.
+
+  The pixels are in the texture's format (gray and alpha for the default font and a TrueType font's), compressed as `CompressData` compresses them, 20 bytes a line.
+
+  The pixels are those the font's texture was made from, or the texture's own while it hasn't been drawn.
+
+  A texture made otherwise and already on the GPU (a render texture's) is written as an empty image, as raylib writes a texture it can't read back.

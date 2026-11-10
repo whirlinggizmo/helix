@@ -33,7 +33,7 @@ import helix.raylib.modules.RAudioAsync.*;
 /** Holds the async versions of rcore's window, cursor, clipboard and screenshot calls, which replace raylib's calls that wait for the
 	window.
 
-	`helix.raylib.extras.Window` forwards to each (`tools/gen_raylib.py`). */
+	`helix.raylib.Raylib` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RWindowAsync {

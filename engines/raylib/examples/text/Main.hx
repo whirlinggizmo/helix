@@ -1,5 +1,4 @@
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Text.*;
 import helix.raylib.Font;
 import helix.raylib.Vector2;
 

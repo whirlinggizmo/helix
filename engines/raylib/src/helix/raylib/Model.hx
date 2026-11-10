@@ -60,7 +60,7 @@ class Model {
 	@:allow(helix.raylib)
 	var path = "";
 
-	/** Creates a model holding the meshes and materials. See `extras.Models.LoadModelAsync` for loading a model, and
+	/** Creates a model holding the meshes and materials. See `LoadModelAsync` for loading a model, and
 		`Raylib.LoadModelFromMesh` for making one of a mesh.
 
 		@param meshes  The meshes.

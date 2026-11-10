@@ -38,7 +38,7 @@ import helix.raylib.modules.RAudioAsync.*;
 @:allow(helix.raylib)
 class RModelsAsync {
 	#if !macro
-	// LoadModelAsync's call where its file's name isn't known as the program builds (extras.Models.LoadModelAsync): the reader picked by its
+	// LoadModelAsync's call where its file's name isn't known as the program builds (Raylib.LoadModelAsync): the reader picked by its
 	// extension as it runs, so both readers are in the program. A format helix-raylib doesn't read is refused.
 	static function loadModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
 		var path = normalize(fileName), lower = path.toLowerCase();

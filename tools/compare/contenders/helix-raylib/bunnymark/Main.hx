@@ -1,5 +1,4 @@
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Textures.*;
 import helix.raylib.Vector2;
 import helix.raylib.Color;
 import helix.raylib.Texture2D;

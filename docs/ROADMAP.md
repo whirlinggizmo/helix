@@ -37,7 +37,7 @@ speed where docs/speed.md records them.
 - **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next:
   reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
-  the `...Async` loads, now in `helix.raylib.extras` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
+  the `...Async` loads, now beside raylib's calls in `Raylib` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
   as Haxe has none (`js.lib.Promise` is the browser's alone). Every raylib 5.5 function is in; what refuses to compile
@@ -81,7 +81,7 @@ speed where docs/speed.md records them.
   the WebGL2 adapter, and helix-raylib's own; the same pass trims those.
 - **raygui on helix-raylib (done, DECISIONS 41):** `helix.raylib.Raygui`, raygui 4.5-dev as raylib 5.5 ships it, every control, its
   style, icons and tooltips, held to raygui's C by the `raygui`, `raygui_input` and `raygui_values` suites. `.rgs` styles and `.rgi`
-  icons load through `GuiLoadStyleAsync` and `GuiLoadIconsAsync` in `extras.Gui`. Left: rGuiLayout's `.rgl` layouts, and its code
+  icons load through `GuiLoadStyleAsync` and `GuiLoadIconsAsync` in `Raygui`. Left: rGuiLayout's `.rgl` layouts, and its code
   export through a Haxe code template for helix-raylib, if its custom templates allow one (to be checked). raygui styles only
   colors, borders, text and its icons. rlights is `helix.raylib.Rlights` the same way. raylib's other companion headers agents know,
   easings (`reasings.h`) and physics (`physac.h`), are each a module of their own the same way when wanted.

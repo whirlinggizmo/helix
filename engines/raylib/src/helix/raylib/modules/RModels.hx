@@ -685,7 +685,7 @@ class RModels {
 
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)")
+	@:unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
 	static function LoadModel(fileName:String):Model {
 		throw "LoadModel is unimplemented";
 	}
@@ -696,7 +696,7 @@ class RModels {
 		@param fileName  The file.
 		@param materialCount  Receives how many.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)")
+	@:unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void)")
 	static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material> {
 		throw "LoadMaterials is unimplemented";
 	}
@@ -1492,7 +1492,7 @@ class RModels {
 		@param mesh  The mesh.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportMesh: A file is written later, or is refused. See ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)")
+	@:unsupported("ExportMesh: A file is written later, or is refused. See ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportMesh(mesh:Mesh, fileName:String):Bool {
 		throw "ExportMesh is unimplemented";
 	}
@@ -1536,7 +1536,7 @@ class RModels {
 		@param mesh  The mesh.
 		@param fileName  The file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportMeshAsCode: A file is written later, or is refused. See ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)")
+	@:unsupported("ExportMeshAsCode: A file is written later, or is refused. See ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool {
 		throw "ExportMeshAsCode is unimplemented";
 	}
@@ -1596,7 +1596,7 @@ class RModels {
 		@param fileName  The file.
 		@param animCount  Would be set to how many.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void) in helix.raylib.extras.Models (import helix.raylib.extras.Models.*;)")
+	@:unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void)")
 	static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation> {
 		throw "LoadModelAnimations is unimplemented";
 	}

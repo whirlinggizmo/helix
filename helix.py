@@ -80,7 +80,7 @@ def raylib_tests(native):
     base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
     base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','--macro','helix.raylib.internal.SysCalls.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
     def path(name,folder):return 'null' if name is None else json.dumps(f'{folder}/{name}')
-    run(['haxe',*base,*[a for vs,fs,out in TEST_SHADERS for a in ('--macro',f'helix.raylib.extras.Shaders.CompileShaderFile({path(vs,"engines/raylib/tests/shaders")}, {path(fs,"engines/raylib/tests/shaders")}, {path(out,"build/tests")})')]])
+    run(['haxe',*base,*[a for vs,fs,out in TEST_SHADERS for a in ('--macro',f'helix.raylib.Raylib.CompileShaderFile({path(vs,"engines/raylib/tests/shaders")}, {path(fs,"engines/raylib/tests/shaders")}, {path(out,"build/tests")})')]])
     extra=[a for _,_,out in TEST_SHADERS for a in ('-resource',f'build/tests/{out}@{out}')]
     for main in RAYLIB_TESTS:
         run(['haxe',*base,*extra,'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])

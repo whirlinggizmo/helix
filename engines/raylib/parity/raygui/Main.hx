@@ -1,7 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raygui.*;
-import helix.raylib.extras.Window.*;
 
 // ref.c's raygui controls in each state, drawn by helix-raylib; its third frame saved as helix.png. The mouse is played off the window
 // each frame, so only the state set with GuiSetState shows.

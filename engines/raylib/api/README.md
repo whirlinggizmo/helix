@@ -4,7 +4,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 ## Packages
 
-- [`helix.raylib.extras`](extras.md): Audio, Files, Gui, Lighting, Models, Shaders, Text, Textures, VirtualGamepad, Window
+- [`helix.raylib.extras`](extras.md): Lighting, Models, VirtualGamepad
 
 ## Shader includes
 
@@ -247,7 +247,7 @@ var recs:Array<Rectangle>
 var glyphs:Array<GlyphInfo>
 ```
 
-- `new`: Creates a font, its fields zero or empty. See `extras.Text.LoadFontExAsync` and the other loads for loading a font, and `Raylib.GetFontDefault` for getting raylib's default font.
+- `new`: Creates a font, its fields zero or empty. See `LoadFontExAsync` and the other loads for loading a font, and `Raylib.GetFontDefault` for getting raylib's default font.
 - `baseSize`: Gets or sets the size the font was made at, its glyphs' height in pixels.
 - `glyphCount`: Gets or sets how many glyphs it has.
 - `glyphPadding`: Gets or sets the padding around each glyph on its texture, in pixels.
@@ -391,7 +391,7 @@ var params:Array<Float>
 var unlit:Bool
 ```
 
-- `new`: Creates a material. See `Raylib.LoadMaterialDefault` for making raylib's default material, and `extras.Models.LoadModelAsync` for loading a model's materials.
+- `new`: Creates a material. See `Raylib.LoadMaterialDefault` for making raylib's default material, and `LoadModelAsync` for loading a model's materials.
   - `shader`: The shader.
   - `maps`: The maps.
   - `params`: The values.
@@ -497,7 +497,7 @@ function copy(?out:Matrix):Matrix
 
 Represents raylib's `Mesh`: vertices, and its triangles' indices when it has them.
 
-`Raylib.UploadMesh` sends a mesh to the GPU. `extras.Models.LoadModelAsync` and the `GenMesh*` functions upload theirs themselves.
+`Raylib.UploadMesh` sends a mesh to the GPU. `LoadModelAsync` and the `GenMesh*` functions upload theirs themselves.
 
 The program holds a reference until `UnloadMesh`, and each model using it holds one too. Its GPU buffers are freed when the last held reference is released.
 
@@ -574,7 +574,7 @@ var bones:Null<Array<BoneInfo>>
 var bindPose:Null<Array<Transform>>
 ```
 
-- `new`: Creates a model holding the meshes and materials. See `extras.Models.LoadModelAsync` for loading a model, and `Raylib.LoadModelFromMesh` for making one of a mesh.
+- `new`: Creates a model holding the meshes and materials. See `LoadModelAsync` for loading a model, and `Raylib.LoadModelFromMesh` for making one of a mesh.
   - `meshes`: The meshes.
   - `materials`: The materials.
   - `meshMaterial`: Each mesh's material.
@@ -598,7 +598,7 @@ var bindPose:Null<Array<Transform>>
 
 Represents raylib's `ModelAnimation`: a skeleton's poses, frame by frame.
 
-`extras.Models.LoadModelAnimationsAsync` makes them at 60 frames a second.
+`LoadModelAnimationsAsync` makes them at 60 frames a second.
 
 `Raylib.UpdateModelAnimation` poses a model by one.
 
@@ -775,6 +775,8 @@ Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them.
 
 A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
+A raylib call that waits for a file or the window doesn't compile, and names the call beside it that answers at a later frame: `LoadModelAsync` for `LoadModel`, `ToggleFullscreenAsync` for `ToggleFullscreen`.
+
 Its members are on their own pages:
 
 - [constants.md](constants.md): Raylib's constants
@@ -906,7 +908,7 @@ Its members are on their own page: [rlights.md](rlights.md).
 
 Represents raylib's `Shader`: a program and the locations of what it declares.
 
-Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData` (`helix.raylib.extras.Shaders`), or by helix-raylib's own, such as `LoadPbrShader` (`helix.raylib.extras.Lighting`).
+Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData`, or by helix-raylib's own, such as `LoadPbrShader` (`helix.raylib.extras.Lighting`).
 
 ```haxe
 var id(default, null):Int
@@ -1324,5 +1326,5 @@ var data:Null<haxe.io.Bytes>
 Set in a build's hxml, as `-D helix-raylib-native-root=../assets`. `haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.
 
 - `helix-raylib-native-root=<directory>`: Where a native program finds its files, relative to its own directory. Defaults to ../web.
-- `helix-raylib-host-warnings`: Warns where the program's own code reaches the page (localStorage, the page's fullscreen) for what helix.raylib.extras or Raylib answers on every target, naming the call. Off by default.
+- `helix-raylib-host-warnings`: Warns where the program's own code reaches the page (localStorage, the page's fullscreen) for what Raylib answers on every target, naming the call. Off by default.
 - `helix-raylib-custom-frame-control`: raylib's SUPPORT_CUSTOM_FRAME_CONTROL: EndDrawing only draws, and the program calls SwapScreenBuffer, WaitTime and PollInputEvents itself.

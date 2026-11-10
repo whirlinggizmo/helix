@@ -49,7 +49,7 @@ float helixLightStrength(int i, vec3 fragPosition) returns light i's strength at
 
 The stage declares its inputs, textures, uniforms and output itself, as the example does.
 
-LoadLightingShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
+LoadLightingShader (helix.raylib.extras.Lighting) is built on it. A fragment stage of the program's own lights with it like this:
 
 ```glsl
 #version 330
@@ -82,7 +82,7 @@ A point light dims with distance as in lights.glsl.
 
 vec3 helixToneMap(vec3 color) tone maps a linear color, as helixPbr does.
 
-LoadPbrShader (helix.raylib.extras.Lights) is built on it. A fragment stage of the program's own lights with it like this:
+LoadPbrShader (helix.raylib.extras.Lighting) is built on it. A fragment stage of the program's own lights with it like this:
 
 ```glsl
 #version 330

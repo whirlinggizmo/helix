@@ -1,7 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raygui.*;
-import helix.raylib.extras.Gui.*;
 import helix.raylib.internal.Automation;
 import helix.raylib.internal.Runtime;
 import Parity.*;

@@ -1,7 +1,6 @@
 import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Shaders.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Program;
 import helix.raylib.internal.Runtime;

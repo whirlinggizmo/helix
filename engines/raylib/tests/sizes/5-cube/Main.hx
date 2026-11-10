@@ -1,6 +1,5 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one 3D: a cube made with GenMeshCube and LoadModelFromMesh, drawn with a camera.
 import helix.raylib.Raylib.*;
-import helix.raylib.extras.Textures.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Texture2D;
 import helix.raylib.Vector2;

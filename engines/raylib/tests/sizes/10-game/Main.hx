@@ -1,13 +1,6 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a game: what a real game uses, its file formats one of each.
 import helix.raylib.Raylib.*;
 import helix.raylib.Rlights.*;
-import helix.raylib.extras.Window.*;
-import helix.raylib.extras.Files.*;
-import helix.raylib.extras.Textures.*;
-import helix.raylib.extras.Text.*;
-import helix.raylib.extras.Models.*;
-import helix.raylib.extras.Audio.*;
-import helix.raylib.extras.Shaders.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.BoundingBox;
 import helix.raylib.Camera2D;

@@ -60,6 +60,8 @@ static function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void
 static function SetAudioStreamPan(stream:AudioStream, pan:Float):Void
 static function SetAudioStreamBufferSizeDefault(size:Int):Void
 static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
+static macro function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:String -> Void):Void
+static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave -> Void, ?failed:String -> Void):Void
 ```
 
 - `InitAudioDevice`: Opens the audio output, with helix-services' `Audio` over it.
@@ -294,3 +296,70 @@ static function SetAudioStreamCallback(stream:AudioStream, callback:Null<(buffer
   A frame long enough to empty both buffers is heard as a gap.
 
   Ignored for a stream that isn't open.
+- `LoadWaveAsync`: Loads a sound file's samples, answering when they are read: helix-raylib's own, in place of raylib's `LoadWave`. The formats are `LoadWaveFromMemoryAsync`'s, by the file's extension.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only Ogg files carries no WAV or QOA reader; a name known only as the program runs brings every reader, the one its extension names chosen then.
+- `LoadWaveFromMemoryAsync`: Reads a sound file's samples from its bytes, answering when they are read: helix-raylib's own, in place of raylib's `LoadWaveFromMemory`, as files other than WAV and QOA are decoded off the main thread. Each is read as raylib 5.5 reads it.
+  - `fileType`: The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
+
+  The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
+
+
+```haxe
+static function LoadSoundAsync(fileName:String, loaded:Sound -> Void, ?failed:String -> Void):Void
+static function LoadMusicStreamAsync(fileName:String, loaded:Music -> Void, ?failed:String -> Void):Void
+static function ExportWaveAsync(wave:Wave, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+```
+
+- `LoadSoundAsync`: Asynchronously loads and decodes a sound file, ready to play at once, replacing raylib's `LoadSound`. See `LoadMusicStreamAsync` for playing a file as it is read.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the sound.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  `InitAudioDevice` must come first.
+
+  A file loaded again shares its first load's decoded sound.
+- `LoadMusicStreamAsync`: Asynchronously opens a music file to be played as it is read, replacing raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
+  - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
+  - `loaded`: Receives the music, ready to play, once enough of the file has arrived to start.
+  - `failed`: Optional. Receives why it couldn't be opened; when omitted, it is logged.
+
+  `InitAudioDevice` must come first.
+
+  A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
+
+  Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
+- `ExportWaveAsync`: Asynchronously writes a wave to a sound file, replacing raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
+  - `wave`: The wave.
+  - `fileName`: The file; its extension chooses the format.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't, such as a wave with no samples or another extension; when omitted, it is logged.
+
+  The extension chooses the format:
+
+  - ".wav": 8, 16 and 24-bit samples as integers, 32-bit as floats, as raylib's dr_wav writes them. - ".raw": the samples unchanged.
+
+  A ".qoa" file is refused, though raylib writes one.
+
+  The file is written and kept by `SaveFileDataAsync`.
+- `ExportWaveAsCodeAsync`: Asynchronously writes a wave as a C header, replacing raylib's `ExportWaveAsCode`. See `ExportWaveAsync` for writing a sound file.
+  - `wave`: The wave.
+  - `fileName`: The file; its name, upper case, names the defines and the array.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The header holds:
+
+  - the frame count, sample rate, sample size and channel count, as defines. - the samples, as an array of floats with 4 places for 32-bit samples, else of bytes, 20 a line.
+
+  The file is written by `SaveFileTextAsync`.

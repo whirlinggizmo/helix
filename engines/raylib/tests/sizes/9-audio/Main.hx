@@ -1,10 +1,6 @@
 // helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one audio: a sound loaded with LoadSoundAsync and played once it is loaded.
 import helix.raylib.Raylib.*;
 import helix.raylib.Rlights.*;
-import helix.raylib.extras.Shaders.*;
-import helix.raylib.extras.Textures.*;
-import helix.raylib.extras.Models.*;
-import helix.raylib.extras.Audio.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.ModelAnimation;

@@ -148,11 +148,11 @@ class RGui {
 		return at >= 0 && at < guiStyle.length ? guiStyle[at] : 0;
 	}
 
-	/** Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` in `helix.raylib.extras.Gui` for loading
+	/** Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` for loading
 		a style file.
 
 		@param fileName  The style file (.rgs). */
-	@:unsupported("GuiLoadStyle: Synchronous loading is not supported. See GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) in helix.raylib.extras.Gui (import helix.raylib.extras.Gui.*;)")
+	@:unsupported("GuiLoadStyle: Synchronous loading is not supported. See GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)")
 	static function GuiLoadStyle(fileName:String):Void {
 		throw "GuiLoadStyle is unimplemented";
 	}
@@ -297,13 +297,13 @@ class RGui {
 		return icons();
 	}
 
-	/** Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` in `helix.raylib.extras.Gui` for loading
+	/** Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` for loading
 		an icon file.
 
 		@param fileName  The icon file (.rgi).
 		@param loadIconsName  Whether the icons' names are read.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GuiLoadIcons: Synchronous loading is not supported. See GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void) in helix.raylib.extras.Gui (import helix.raylib.extras.Gui.*;)")
+	@:unsupported("GuiLoadIcons: Synchronous loading is not supported. See GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void)")
 	static function GuiLoadIcons(fileName:String, loadIconsName:Bool):Array<String> {
 		throw "GuiLoadIcons is unimplemented";
 	}

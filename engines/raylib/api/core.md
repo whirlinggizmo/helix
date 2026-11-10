@@ -844,3 +844,334 @@ static function EndScissorMode():Void
   - `width`: The width.
   - `height`: The height.
 - `EndScissorMode`: Draws everywhere again.
+
+
+```haxe
+static function ToggleFullscreenAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function ToggleBorderlessWindowedAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function SetWindowSizeAsync(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Void
+static function SetWindowPositionAsync(x:Int, y:Int, ?done:() -> Void, ?failed:String -> Void):Void
+static function SetWindowMonitorAsync(monitor:Int, ?done:() -> Void, ?failed:String -> Void):Void
+static function MaximizeWindowAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function MinimizeWindowAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function RestoreWindowAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function SetWindowFocusedAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function SetWindowOpacityAsync(opacity:Float, ?done:() -> Void, ?failed:String -> Void):Void
+static function SetWindowMinSizeAsync(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Void
+static function SetWindowMaxSizeAsync(width:Int, height:Int, ?done:() -> Void, ?failed:String -> Void):Void
+static function DisableCursorAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function EnableCursorAsync(?done:() -> Void, ?failed:String -> Void):Void
+static function SetClipboardTextAsync(text:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function GetClipboardTextAsync(read:String -> Void, ?failed:String -> Void):Void
+static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> Void):Void
+static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+```
+
+- `ToggleFullscreenAsync`: Asynchronously asks for fullscreen, or for the window back at the size and place it had. See `ToggleBorderlessWindowedAsync` for the borderless window, replacing raylib's `ToggleFullscreen`.
+  - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
+
+  It may wait for the next key press, click or tap, or be refused.
+
+  Called while borderless, it only switches to fullscreen.
+
+  `IsWindowFullscreen` reports the new state once the window has changed, not when the call returns.
+- `ToggleBorderlessWindowedAsync`: Asynchronously asks for the window to fill the screen without borders, or back to the window. See `ToggleFullscreenAsync` for fullscreen, replacing raylib's `ToggleBorderlessWindowed`.
+  - `done`: Optional. Called once the window has changed, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
+
+  The window fills the screen without borders.
+
+  It may wait for the next key press, click or tap, as `ToggleFullscreenAsync` may.
+
+  Called while fullscreen, it only switches to borderless.
+
+  As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
+- `SetWindowSizeAsync`: Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting how small or large it can be.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `done`: Optional. Called once the window has a size from the request, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't resized; when omitted, it is logged.
+
+  The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+
+  Refused while the window is fullscreen or maximized, and where the system doesn't allow it.
+
+  A size under 1 pixel is refused.
+- `SetWindowPositionAsync`: Asynchronously asks for the window's place on the desktop, replacing raylib's `SetWindowPosition`. See `SetWindowMonitorAsync` for moving it to another monitor.
+  - `x`: The left edge, in pixels.
+  - `y`: The top edge, in pixels.
+  - `done`: Optional. Called once the window has moved, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it didn't move; when omitted, it is logged.
+
+  Refused while the window is fullscreen or maximized, and where the system doesn't allow it, as Wayland doesn't.
+- `SetWindowMonitorAsync`: Asynchronously asks for the window on another monitor, replacing raylib's `SetWindowMonitor`. See `SetWindowPositionAsync` for placing it on the desktop.
+  - `monitor`: The monitor, 0 to `GetMonitorCount() - 1`.
+  - `done`: Optional. Called once the window is on the monitor, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it isn't, such as a monitor that isn't there; when omitted, it is logged.
+
+  Where the window can't be moved, a monitor other than its own is refused.
+- `MaximizeWindowAsync`: Asynchronously asks for the window maximized, replacing raylib's `MaximizeWindow`. See `RestoreWindowAsync` for bringing it back.
+  - `done`: Optional. Called once the window is maximized, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  Refused where the system can't maximize the window.
+- `MinimizeWindowAsync`: Asynchronously asks for the window minimized, replacing raylib's `MinimizeWindow`. See `RestoreWindowAsync` for bringing it back.
+  - `done`: Optional. Called once the window is minimized, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  Refused where the system can't minimize the window.
+- `RestoreWindowAsync`: Asynchronously asks for the window back to its size from minimized or maximized, replacing raylib's `RestoreWindow`. See `MaximizeWindowAsync` and `MinimizeWindowAsync` for changing it.
+  - `done`: Optional. Called once the window is restored, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  A minimized window is restored from minimized, any other from maximized.
+- `SetWindowFocusedAsync`: Asynchronously asks for the window brought to the front with the keyboard, replacing raylib's `SetWindowFocused`.
+  - `done`: Optional. Called once the window has the keyboard or the window manager keeps it elsewhere, at a later poll.
+  - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
+
+  A window manager may only flash it.
+- `SetWindowOpacityAsync`: Asynchronously asks for the window's opacity, replacing raylib's `SetWindowOpacity`.
+  - `opacity`: From 0 (clear) to 1 (opaque).
+  - `done`: Optional. Called once the window has the opacity, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
+
+  A desktop without a compositor refuses it.
+- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
+  - `width`: The width, in the screen's pixels.
+  - `height`: The height.
+  - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
+
+  Refused where the system doesn't allow it.
+
+  A size under 0 pixels is refused.
+- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
+  - `width`: The width, in the screen's pixels.
+  - `height`: The height.
+  - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
+
+  Refused where the system doesn't allow it.
+
+  A size under 0 pixels is refused.
+- `DisableCursorAsync`: Asynchronously locks the mouse to the window and hides the cursor, for looking around, replacing raylib's `DisableCursor`. See `EnableCursorAsync` for letting it go.
+  - `done`: Optional. Called once the mouse is locked, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  `GetMouseDelta` keeps coming while the position goes on past the window's edges.
+
+  `IsCursorHidden` is true from the call.
+
+  The lock may wait for the next click or key press, or be refused.
+- `EnableCursorAsync`: Asynchronously lets go of the mouse that `DisableCursorAsync` locked and shows the cursor, replacing raylib's `EnableCursor`.
+  - `done`: Optional. Called once the mouse is let go, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  `IsCursorHidden` is false from the call.
+- `SetClipboardTextAsync`: Asynchronously puts text on the system's clipboard, replacing raylib's `SetClipboardText`. See `GetClipboardTextAsync` for reading it.
+  - `text`: The text.
+  - `done`: Optional. Called once the text is on the clipboard, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it isn't; when omitted, it is logged.
+
+  It may be refused unless it comes soon after a key press.
+- `GetClipboardTextAsync`: Asynchronously reads the clipboard's text, replacing raylib's `GetClipboardText`. See `GetClipboardImageAsync` for reading an image.
+  - `read`: Receives the text at a later poll; "" when the clipboard holds none.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  It may need permission, which the system may ask for.
+- `GetClipboardImageAsync`: Asynchronously reads the clipboard's image, replacing raylib's `GetClipboardImage`. See `GetClipboardTextAsync` for reading text.
+  - `loaded`: Receives the image once it is decoded, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
+  - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
+
+  It may need permission, which the system may ask for.
+- `TakeScreenshotAsync`: Asynchronously takes a screenshot of the next frame and saves it as a file, replacing raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for the screen as an `Image`.
+  - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
+  - `done`: Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
+
+  It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories kept. An absolute one is where it is.
+
+  A directory that isn't there isn't made, and the screenshot is refused.
+
+  Taken as the next frame ends, not from the frame drawn last as raylib's is.
+
+  The image\'s alpha is opaque, as raylib's is.
+
+  Refused before `InitWindow`.
+
+
+```haxe
+static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes -> Void, ?failed:String -> Void):Void
+static function LoadFileTextAsync(fileName:String, loaded:String -> Void, ?failed:String -> Void):Void
+static function SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:() -> Void, ?failed:String -> Void):Void
+static function SaveFileTextAsync(fileName:String, text:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function FileExistsAsync(fileName:String, answer:Bool -> Void):Void
+static function DirectoryExistsAsync(dirPath:String, answer:Bool -> Void):Void
+static function IsPathFileAsync(path:String, answer:Bool -> Void):Void
+static function GetFileLengthAsync(fileName:String, answer:Int -> Void):Void
+static function GetFileModTimeAsync(fileName:String, answer:Int -> Void):Void
+static function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList -> Void):Void
+static function LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList -> Void):Void
+static function ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function LoadAutomationEventListAsync(fileName:String, loaded:AutomationEventList -> Void, ?failed:String -> Void):Void
+static function ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+```
+
+- `LoadFileDataAsync`: Asynchronously reads a file's bytes, replacing raylib's `LoadFileData`. See `LoadFileTextAsync` for reading a text file.
+  - `fileName`: The file.
+  - `loaded`: Receives its bytes.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  Reads the first of these that has the file: - the program's `SetLoadFileDataCallback` - what `SaveFileData` wrote - the program's files
+- `LoadFileTextAsync`: Asynchronously reads a text file, replacing raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
+  - `fileName`: The file.
+  - `loaded`: Receives its text.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  Reads the first of these that has the file: - the program's `SetLoadFileTextCallback` - what `SaveFileText` wrote - the program's files
+
+  The text ends at the file's first NUL byte, as raylib's C string does.
+
+  A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
+- `SaveFileDataAsync`: Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
+  - `fileName`: The file.
+  - `data`: The bytes.
+  - `dataSize`: How many of them.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as `SaveFileTextAsync`'s are.
+
+  `LoadFileDataAsync` reads them back.
+- `SaveFileTextAsync`: Asynchronously writes a text file, replacing raylib's `SaveFileText`. See `SaveFileDataAsync` for writing bytes.
+  - `fileName`: The file.
+  - `text`: Its text.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
+
+  Otherwise it is kept across runs, and answered once the write has finished.
+
+  `LoadFileTextAsync` reads it back.
+- `FileExistsAsync`: Asynchronously answers whether a file exists, replacing raylib's `FileExists`. See `DirectoryExistsAsync` for a directory.
+  - `fileName`: The file.
+  - `answer`: Receives true when it exists.
+
+  The answer comes at a later frame, never during the call.
+
+  A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
+
+  Finding one of the program's files reads it, so a load of it after answers at once.
+- `DirectoryExistsAsync`: Asynchronously answers whether a directory exists, replacing raylib's `DirectoryExists`. See `FileExistsAsync` for a file.
+  - `dirPath`: The directory.
+  - `answer`: Receives true when it exists.
+
+  The answer comes at a later frame, never during the call.
+
+  A directory exists when a file `SaveFileText` or `SaveFileData` wrote is in it. The root ("", "." or "./") always exists.
+
+  `helix-raylib-dropped` and the directories under it hold the dropped files.
+
+  The program's own files aren't in directories: a program names each one it loads.
+- `IsPathFileAsync`: Asynchronously answers whether a path is a file, not a directory, replacing raylib's `IsPathFile`. See `DirectoryExistsAsync` for a directory.
+  - `path`: The path.
+  - `answer`: Receives true for a file; false for a directory or nothing there.
+
+  The answer comes at a later frame, never during the call.
+
+  These are files, as `FileExistsAsync` finds them: - a file `SaveFileText` or `SaveFileData` wrote - a dropped file - a file the program has
+- `GetFileLengthAsync`: Asynchronously answers a file's size, replacing raylib's `GetFileLength`.
+  - `fileName`: The file.
+  - `answer`: Receives its size in bytes; 0 when there is no file, as raylib's.
+
+  The answer comes at a later frame, never during the call.
+
+  The size is: - for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size - for a dropped file, its own - for a file of the program's, its size
+- `GetFileModTimeAsync`: Asynchronously answers when a file was last written, replacing raylib's `GetFileModTime`.
+  - `fileName`: The file.
+  - `answer`: Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
+
+  The answer comes at a later frame, never during the call.
+
+  The time is: - for a file of the program's, its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - for a dropped file, the time kept for it - 0 for a file whose time isn't kept, such as one the program's load callback gives
+- `LoadDirectoryFilesAsync`: Asynchronously lists a directory's files and subdirectories, replacing raylib's `LoadDirectoryFiles`. See `LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
+  - `dirPath`: The directory.
+  - `loaded`: Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
+
+  The answer comes at a later frame, never during the call.
+
+  Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"). A subdirectory's has no slash at its end.
+
+  The paths are sorted by name.
+
+  The files listed are those `SaveFileText` and `SaveFileData` wrote, and the dropped files, in `DirectoryExistsAsync`'s directories. The program's own files aren't listed: a program names each one it loads.
+- `LoadDirectoryFilesExAsync`: Asynchronously lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, replacing raylib's `LoadDirectoryFilesEx`. See `LoadDirectoryFilesAsync` for listing one directory's every file and subdirectory.
+  - `basePath`: The directory.
+  - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
+  - `scanSubdirs`: Whether the subdirectories' files are listed too.
+  - `loaded`: Receives the list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
+
+  The answer comes at a later frame, never during the call.
+
+  The paths are `LoadDirectoryFilesAsync`'s, a subdirectory's files right after it.
+
+  A filter is `IsFileExtension`'s list. "DIR" in it keeps the subdirectories.
+
+  A null filter keeps every file, and without `scanSubdirs` every subdirectory too.
+
+  At most 8192 paths are listed (raylib's `MAX_FILEPATH_CAPACITY`), with a warning when there are more.
+- `ExportDataAsCodeAsync`: Asynchronously writes bytes as a C header, the text raylib's `ExportDataAsCode` writes. See `SaveFileDataAsync` for the bytes as they are.
+  - `data`: The bytes.
+  - `dataSize`: How many of them.
+  - `fileName`: The file; its name, upper case, names the define and the array, with `_` for `.`, `-`, `?`, `!` and `+`.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The header is raylib's, byte for byte: - the bytes' count, as a define - the bytes, as an array in hexadecimal, 20 a line
+
+  Written through `SaveFileTextAsync`.
+- `LoadAutomationEventListAsync`: Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
+  - `fileName`: The file, as `ExportAutomationEventList` writes it.
+  - `loaded`: Receives the list, its capacity 16384.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  The file is read as `LoadFileTextAsync` reads it.
+
+  Reads these lines, as raylib's does: - a line starting `c`, the count - a line starting `e`, an event: its frame, type and four parameters
+
+  Other lines are skipped. So is a last line with no newline at its end, as raylib's reading skips it. A line is read 255 characters at most, as raylib's `fgets` reads it.
+
+  A count that isn't the number of events read warns, and the count becomes the events read.
+- `ExportAutomationEventListAsync`: Asynchronously writes a list's events as text, the text raylib's `ExportAutomationEventList` writes. See `LoadAutomationEventListAsync` for reading it back.
+  - `list`: The list.
+  - `fileName`: The file.
+  - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
+  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  The text is raylib's, byte for byte: - a header of comments - `c` and the count - a line for each event: `e`, its frame, type and four parameters, and its type's name
+
+  Written through `SaveFileTextAsync`.
+
+
+```haxe
+static function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader -> Void, ?failed:String -> Void):Void
+static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Shader
+```
+
+- `LoadCompiledShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
+  - `compiledShaderFileName`: The compiled shader's file.
+  - `loaded`: Receives the shader.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as `<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
+
+  ```hxml
+  --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
+  ```
+- `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for loading one from a file.
+  - `compiledShaderData`: The compiled shader, as `CompileShaderFile` writes it.
+  - returns: The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning.
