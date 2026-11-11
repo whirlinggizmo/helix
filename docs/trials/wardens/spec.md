@@ -105,5 +105,4 @@ engine and no function.
 ## Run options
 - **`enemies=N`:** starts with N enemies alive at once and the cap held there, for measuring.
 - **`seed=N`:** spawns from seed N, so two runs with the same seed play the same enemies.
-- **`quit_after_frame=N`:** quits after frame N, printing the frames' mean time.
 - **Where they come from:** the command line, as `--enemies=200`.

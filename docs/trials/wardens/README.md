@@ -46,7 +46,7 @@ The engine names, build commands and runner are filled in per engine. Nothing el
 | Code | lines written, split by a reviewer into engine-substitute code (what an engine could have given: animation blending, attachments, UI widgets, nine-slice drawing, pooling, a particle system, a skinning shader) and game logic |
 | Spec met | a reviewer's reading of the code against the spec's items (met, wrong, missing, can't tell), and a play pass on both targets driven by input scripts, as the drift-field trial graded |
 | Bugs | what the play pass finds, by severity |
-| Frame time | `enemies=50`, `100` and `200`, `seed=1`, `quit_after_frame=1200`: the mean and p95, natively (GL and SDL_GPU) and in a page, on the real display; the page again with Chromium's CPU throttled 4x, as a phone |
+| Frame time | `score_frames.py --desktop --page`, the library under the game timing it: `enemies=50`, `100` and `200`, `seed=1`, frames 121 to 1200, the mean and p95, natively and in a page, on the real display. Natively it runs on GL. SDL_GPU, and the page with Chromium's CPU throttled 4x as a phone, aren't in the scorer yet |
 | Shaders | the shaders each entrant wrote (the ground effects, the hit flash), and how its animated enemies are skinned: on the GPU (and by what: the engine's own, a shader of its pieces, one written whole) or on the CPU |
 | Size | the page's files fetched, raw, gzip and brotli; the native binary stripped |
 | Startup | to the title's first frame, natively and in a page |
