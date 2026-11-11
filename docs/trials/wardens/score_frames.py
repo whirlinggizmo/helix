@@ -3,7 +3,7 @@
 run at each load for a fixed run of frames, the library printing the stats it recorded.
 
     python3 score_frames.py <entrant directory>... --helix <checkout> [--enemies 50,100,200] [--seed 1] [--frames 120,1200]
-                            [--args=OPTIONS] [--native | --page] [--headless | --headed]
+                            [--native | --page] [--headless | --headed] [-- OPTIONS...]
 
 Each entrant is copied to <entrant>.frames (the entrant's own directory left as it was) and built there, in the entrants' sandbox
 (run_entrant.py), as a build runs an entrant's code (its macros, its CMakeLists.txt):
@@ -16,8 +16,8 @@ Each entrant is copied to <entrant>.frames (the entrant's own directory left as 
   environment. raylib C's draws aren't counted, and it has no page.
 
 --frames W,N records frames W + 1 to N, each from one EndDrawing to the next, and the program closes after frame N. Each run is given
---enemies=<n> and --seed=<seed> (the spec's run options), and --args' options after them: an entrant's own, as one that starts on
-its title takes to start playing (--args=--play, attached, as the value starts with -), which a page is given as its query (?play, ?name=value). The stats go to <entrant>.frames/frames.txt, a line a run, and a table of the
+--enemies=<n> and --seed=<seed> (the spec's run options), and the options after -- after them: an entrant's own, as one that starts
+on its title takes to start playing (-- --play), which a page is given as its query (?play, ?name=value). The stats go to <entrant>.frames/frames.txt, a line a run, and a table of the
 mean and p95 is printed.
 
 --native or --page times that kind alone, both by default. --headless, the default, runs them off screen: natively on a private display,
@@ -108,7 +108,7 @@ def score(entrant, helix, args, display):
             if not helix_arm:
                 env['RAYLIB_FRAME_STATS'] = args.frames
             for enemies in args.enemies.split(','):
-                options = [f'--enemies={enemies}', f'--seed={args.seed}'] + args.args.split() + ([f'--frame_stats={args.frames}'] if helix_arm else [])
+                options = [f'--enemies={enemies}', f'--seed={args.seed}'] + args.args + ([f'--frame_stats={args.frames}'] if helix_arm else [])
                 ran = in_sandbox(copy, helix, env, [program] + options, 1800, args.headed)
                 found.append(('native', enemies, stats_of(ran.stdout), ran))
     if page_too and not helix_arm:
@@ -117,7 +117,7 @@ def score(entrant, helix, args, display):
         page = score_page.build(entrant, helix, ['-D helix-raylib-frame-stats'], '.frames-page')
         if page is not None:
             for enemies in args.enemies.split(','):
-                extra = ''.join('&' + option.lstrip('-') for option in args.args.split())
+                extra = ''.join('&' + option.lstrip('-') for option in args.args)
                 query = f'?enemies={enemies}&seed={args.seed}{extra}&frame_stats={args.frames}'
                 # The frames timed, at 5 a second at the least, then a minute to load.
                 wait = int(args.frames.split(',')[1]) // 5 + 60
@@ -147,9 +147,11 @@ def main():
     parser.add_argument('--enemies', default='50,100,200')
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--frames', default='120,1200')
-    parser.add_argument('--args', default='', help="an entrant's own options, after the spec's (as --args=--play)")
     cli.runs(parser)
-    args = parser.parse_args()
+    argv = sys.argv[1:]
+    own = argv.index('--') if '--' in argv else len(argv)
+    args = parser.parse_args(argv[:own])
+    args.args = argv[own + 1:]
     helix = args.helix.resolve()
     sys.path.insert(0, str(helix / 'tools'))
     from private_display import private_display
