@@ -3,7 +3,7 @@
 run at each load for a fixed run of frames, the library printing the stats it recorded.
 
     python3 score_frames.py <entrant directory>... --helix <checkout> [--enemies 50,100,200] [--seed 1] [--frames 120,1200]
-                            [--args "OPTIONS"] [--native | --page] [--headless | --headed]
+                            [--args=OPTIONS] [--native | --page] [--headless | --headed]
 
 Each entrant is copied to <entrant>.frames (the entrant's own directory left as it was) and built there, in the entrants' sandbox
 (run_entrant.py), as a build runs an entrant's code (its macros, its CMakeLists.txt):
@@ -17,7 +17,7 @@ Each entrant is copied to <entrant>.frames (the entrant's own directory left as 
 
 --frames W,N records frames W + 1 to N, each from one EndDrawing to the next, and the program closes after frame N. Each run is given
 --enemies=<n> and --seed=<seed> (the spec's run options), and --args' options after them: an entrant's own, as one that starts on
-its title takes to start playing (--args "--play"), which a page is given as its query (?play, ?name=value). The stats go to <entrant>.frames/frames.txt, a line a run, and a table of the
+its title takes to start playing (--args=--play, attached, as the value starts with -), which a page is given as its query (?play, ?name=value). The stats go to <entrant>.frames/frames.txt, a line a run, and a table of the
 mean and p95 is printed.
 
 --native or --page times that kind alone, both by default. --headless, the default, runs them off screen: natively on a private display,
@@ -140,7 +140,7 @@ def main():
     parser.add_argument('--enemies', default='50,100,200')
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--frames', default='120,1200')
-    parser.add_argument('--args', default='', help="an entrant's own options, after the spec's (as --play)")
+    parser.add_argument('--args', default='', help="an entrant's own options, after the spec's (as --args=--play)")
     cli.runs(parser)
     args = parser.parse_args()
     helix = args.helix.resolve()
