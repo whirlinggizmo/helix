@@ -26,10 +26,20 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Working
 
-How work runs (prerequisites, the checks and when each runs, windows and sound, worktrees and unattended work, publishing) is
-[CONTRIBUTING.md](CONTRIBUTING.md). The four rules that matter most, kept here too:
+The prerequisites, the checks and when each runs, windows and sound, and the tools are in [CONTRIBUTING.md](CONTRIBUTING.md). Two of
+its rules matter most, kept here too:
 
 - **Never open native windows on the user's desktop.** Use `tools/private_display.py`, and `SDL_AUDIO_DRIVER=dummy` so checks make no sound.
 - **Report what ran,** on which target. Measure before claiming something is faster or smaller.
-- **Ask before pushing,** opening a pull request, creating repositories or publishing packages.
-- **Watch, don't wait:** an agent's or a task's progress is checked as it runs, and its report is a claim to check.
+
+How an agent works here:
+
+- **Ask before pushing,** opening a pull request, creating repositories or publishing packages. Commits carry no attribution lines.
+- **One worktree an agent,** beside the checkout, with its own copy of `build/haxelib`. Main's index is then nobody else's. In a shared
+  checkout, a commit names its paths (`git commit -- <paths>`), since a plain commit takes whatever another has staged.
+- **Watch, don't wait.** Nothing gates all work on one background task. Its log is read early, a watcher reports its steps, and the
+  person following along gets a status line every ten minutes, each starting with the Eastern time.
+- **Check the homework.** An agent's report is a claim: read its diff, run the checks it names, and when a task went to two agents,
+  compare their branches.
+- **A departure from raylib gets a trial before it's pushed:** a change adding or moving a refusal, an extra or a build step in
+  helix-raylib. How a trial runs is [docs/trials/README.md](docs/trials/README.md).

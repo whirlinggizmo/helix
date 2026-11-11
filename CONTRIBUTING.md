@@ -1,7 +1,7 @@
 # Contributing
 
-How work on this repository runs: what to install, how to check a change, the tools, and how unattended work is kept honest. The
-rules for the code itself are in [docs/CONVENTIONS.md](docs/CONVENTIONS.md). The agents' entry point is [AGENTS.md](AGENTS.md).
+How work on this repository runs: what to install, how to check a change, and the tools. The rules for the code itself are in
+[docs/CONVENTIONS.md](docs/CONVENTIONS.md). The agents' entry point is [AGENTS.md](AGENTS.md).
 
 ## Prerequisites
 
@@ -46,9 +46,6 @@ Fast ones with each step, the full ones at a milestone:
   comments also runs `python3 tools/gen_apidoc.py` first, since the committed reference must match them.
 - A change touching helix-raylib's `Runtime`, `Frame` or what the native adapters are built over also gets one native parity suite,
   `python3 tools/raylib_parity.py shapes2d`. The unit suite and a page run open no native window, so a native-only fault passes them.
-- A change adding or moving a departure from raylib (a refusal, an extra, a build step) gets a trial before it's pushed. Sonnet
-  entrants build [the jam's game](docs/trials/jam-survivors/spec.md) from the reference alone, and each guess they make at the change
-  is answered in its doc.
 - At the end of a feature: the native builds, `tools/platform_checks.py`, `tools/services_checks.py`, `tools/render_checks.py` and
   `tools/raylib_parity.py`.
 
@@ -72,26 +69,13 @@ A check reports what ran, on which target. Nothing is called faster or smaller u
 ## Windows, sound and the machine
 
 - A native check that opens a window runs on a private display (`tools/private_display.py`), never on the desktop: a new window takes
-  the keyboard focus. `--desktop` runs on the real display, for timing, when the person says the machine is free.
+  the keyboard focus. `--desktop` runs on the real display, for timing.
 - `SDL_AUDIO_DRIVER=dummy` keeps native checks silent. The browser checks run Chromium with `--mute-audio`.
 - A native program that may open a URL runs without `DBUS_SESSION_BUS_ADDRESS`, or it opens the desktop's browser.
 - Each checkout's builds take its own `build/.lock`. A tool that takes the lock itself (`tools/compare/compare.py`) is never run under
   it.
 - A timing run needs a quiet machine: no other builds, a load average under 2, and the reference contender in the same run as the
   control. A run whose control moved is discarded.
-
-## Unattended work
-
-- One worktree an agent, beside the checkout, with its own copy of `build/haxelib`. Main's index is then nobody else's. In a shared
-  checkout, a commit names its paths (`git commit -- <paths>`), since a plain commit takes whatever another has staged.
-- Watch, don't wait. Nothing gates all work on one background task. Its log is read early, a watcher reports its steps, and the person
-  following along gets a status line every ten minutes, each starting with the Eastern time.
-- Check the homework. An agent's report is a claim: read its diff, run the checks it names, and when a task went to two agents,
-  compare their branches.
-
-## Publishing
-
-Ask before pushing, opening a pull request, creating a repository or publishing a package. Commits carry no attribution lines.
 
 ## Builds
 

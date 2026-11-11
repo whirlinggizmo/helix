@@ -44,7 +44,7 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 ## Documents
 
 - [GOALS.md](GOALS.md): what the libraries are for.
-- [CONTRIBUTING.md](CONTRIBUTING.md): prerequisites, the checks, the tools and how work runs.
+- [CONTRIBUTING.md](CONTRIBUTING.md): prerequisites, the checks and the tools.
 - [docs/PLAN.md](docs/PLAN.md): the layers, what makes a library, and how the next one is built.
 - [docs/PLATFORM.md](docs/PLATFORM.md): each platform interface, what it means and what each adapter does.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): interfaces, adapters and the adapter rule.
