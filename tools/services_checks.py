@@ -45,14 +45,16 @@ def example(name, browser):
     def page_run(printed, screenshot):
         found = check_pixels(screenshot, expected)
         if not found:
-            print(f'{name}: the page ran {FRAMES} frames, {len(expected["points"])} points checked', flush=True)
+            ran = 'a second' if LIBRARY == 'raylib' else f'{FRAMES} frames'
+            print(f'{name}: the page ran {ran}, {len(expected["points"])} points checked', flush=True)
         return found
 
     home = ROOT / 'build/results' / LIBRARY / name
     home.mkdir(parents=True, exist_ok=True)
     dirs = {'XDG_DATA_HOME': str(home / 'data'), 'XDG_CACHE_HOME': str(home / 'cache'), 'APPDATA': str(home / 'data'),
             'LOCALAPPDATA': str(home / 'cache')}
-    return run(name, directory, 'Main', browser, native_run, page_run, frames, dirs)
+    # helix-raylib's CloseWindow clears a page's canvas, so its pages run on until the screenshot.
+    return run(name, directory, 'Main', browser, native_run, page_run, frames, dirs, page_quits=LIBRARY != 'raylib')
 
 
 def main():

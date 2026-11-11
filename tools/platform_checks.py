@@ -92,13 +92,15 @@ def build(directory, hxml, env):
 
 
 def run(name, directory, main, browser, native_run, page_run, native_frames=FRAMES, native_extra=None, query='', expected_errors=(), site=None,
-        native_args=None):
+        native_args=None, page_quits=True):
     """Builds and runs one program both ways, in directory with its main class main, the page in browser: native_run(label, completed) and
     page_run(printed, screenshot) say what's wrong with each run, as a list of problems. native_frames is how many frames a native run
     lasts, which a private display doesn't pace; native_extra what a native run's environment adds; native_args(label) the arguments a
     native run adds; query what the page's query adds
     (tools/page_check.cjs reads safeArea from it); expected_errors the console errors the page is meant to cause (each named by a part of it);
-    site the URL the page is opened at, or None to have tools/page_check.cjs serve its web directory. The problems found."""
+    site the URL the page is opened at, or None to have tools/page_check.cjs serve its web directory; page_quits whether the page is
+    given quit_after_frame, which a program clearing its canvas as it quits (helix-raylib's CloseWindow) isn't, as the screenshot is
+    taken after a second of frames. The problems found."""
     import pins
     from native_build import env as native_env
     env = pins.use_haxelib()
@@ -128,7 +130,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     out.mkdir(parents=True, exist_ok=True)
     screenshot = out / 'web.png'
     browser_env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES')}
-    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, site or str(directory / 'web'), f'?quit_after_frame={FRAMES}{query}', str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
+    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, site or str(directory / 'web'), f'?quit_after_frame={FRAMES}{query}' if page_quits else '?' + query.lstrip('&'), str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
     if ran.returncode:
         problems.append(f'browser run failed\n{ran.stdout}{ran.stderr}')
     else:
