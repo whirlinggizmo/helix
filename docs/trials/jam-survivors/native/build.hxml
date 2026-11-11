@@ -1,0 +1,6 @@
+-lib helix-raylib
+-cp .
+-main Main
+-dce full
+-cpp native
+-D helix-raylib-native-root=..

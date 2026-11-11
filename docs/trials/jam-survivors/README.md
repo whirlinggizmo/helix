@@ -10,6 +10,9 @@ up to 200 animated enemies, a level-up choice drawn as skinned UI, sound, saves 
 session, and it leans on what an engine is for (models, animation, attachments, UI, many things on screen) more than on game logic,
 which would be the same on either side.
 
+The blind trials of helix-raylib ([../README.md](../README.md)) build the same game natively, from raylib's own headers: their brief
+and `build.hxml` are in `native/`, and `run_entrant.py` starts an entrant. The rest of this page is the jam's.
+
 ## Entrants
 
 Three on each engine, all Sonnet, each a fresh `claude -p` from a scratch directory outside any git repository, against one commit

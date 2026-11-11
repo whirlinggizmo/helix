@@ -26,4 +26,9 @@ and [jam-survivors](jam-survivors) holds the game the engine trials build.
   unchanged. Its notes are read against the change being tried.
 - **Watching.** Each entrant's log is read every ten minutes while it runs. A harness fault stops the run early.
 
-The harness (the template directory and the script that starts an entrant) is kept outside the repository, beside the entrants.
+The harness is [jam-survivors](jam-survivors): the entrant's brief and `build.hxml` (`native/`), and `run_entrant.py`, which makes an
+entrant's directory from them, the spec, the assets and raylib 5.5's release, and starts it against a checkout of helix:
+
+```console
+python3 docs/trials/jam-survivors/run_entrant.py ~/trials/n1 --helix ../helix-blind-a
+```
