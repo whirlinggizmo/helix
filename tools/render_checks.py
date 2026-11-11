@@ -69,14 +69,16 @@ def main():
     platform_checks.NATIVE, platform_checks.PAGE = cli.targets(a)
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['pixels']
     failed = False
-    for name in names:
-        if name == 'pixels':
-            found = tests('pixels', PIXELS, 'PixelTests', 'WebGL2', a.browser)
-        else:
-            found = example(name, a.browser)
-        for problem in found:
-            failed = True
-            print(f'{name}: {problem}', flush=True)
+    import screen_power
+    with screen_power.kept_on(a.headed):
+        for name in names:
+            if name == 'pixels':
+                found = tests('pixels', PIXELS, 'PixelTests', 'WebGL2', a.browser)
+            else:
+                found = example(name, a.browser)
+            for problem in found:
+                failed = True
+                print(f'{name}: {problem}', flush=True)
     print(f'render checks: {"FAILED" if failed else "ok"} ({", ".join(names)})')
     return 1 if failed else 0
 

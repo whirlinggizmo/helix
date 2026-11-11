@@ -741,7 +741,9 @@ def main():
         shown = f'{result["mean_ms"]:.2f} ms' if result and 'mean_ms' in result else f'held {result["ramp_max"]}' if result and 'ramp_max' in result else 'FAILED'
         print(f'  {row["where"]:14} {row["contender"]:13} {row["variant"]:16} {row["program"]:10} {row["mode"]:13} run {row["run"]}: {shown}', flush=True)
 
-    measure(programs, built, page, native, a.backend, a.runs, a.headed, a.browser, record)
+    import screen_power
+    with screen_power.kept_on(a.headed):
+        measure(programs, built, page, native, a.backend, a.runs, a.headed, a.browser, record)
     say(f'{len(rows)} runs in {runs_file.relative_to(ROOT)}')
     entries = summarize(rows, time.strftime('%Y-%m-%d'), built)
     for e in entries:

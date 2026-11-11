@@ -70,10 +70,12 @@ def main():
     HEADED = a.headed
     names = a.names or sorted(p.stem for p in TESTS.glob('*.hx'))
     failed = False
-    for name in names:
-        for problem in run(name, a.browser):
-            failed = True
-            print(f'{name}: {problem}', flush=True)
+    import screen_power
+    with screen_power.kept_on(a.headed):
+        for name in names:
+            for problem in run(name, a.browser):
+                failed = True
+                print(f'{name}: {problem}', flush=True)
     print(f'raylib page checks: {"FAILED" if failed else "ok"} ({", ".join(names)})')
     return 1 if failed else 0
 

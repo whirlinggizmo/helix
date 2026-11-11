@@ -346,11 +346,13 @@ def main():
     NATIVE, PAGE = cli.targets(a)
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics', 'audio', 'window', 'http']
     failed = False
-    for name in names:
-        check = {'graphics': graphics, 'audio': audio, 'window': window, 'http': http}.get(name, lambda browser: example(name, browser))
-        for problem in check(a.browser):
-            failed = True
-            print(f'{name}: {problem}', flush=True)
+    import screen_power
+    with screen_power.kept_on(a.headed):
+        for name in names:
+            check = {'graphics': graphics, 'audio': audio, 'window': window, 'http': http}.get(name, lambda browser: example(name, browser))
+            for problem in check(a.browser):
+                failed = True
+                print(f'{name}: {problem}', flush=True)
     print(f'platform checks: {"FAILED" if failed else "ok"} ({", ".join(names)})')
     return 1 if failed else 0
 

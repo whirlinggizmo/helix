@@ -144,9 +144,11 @@ def main():
     sys.path.insert(0, str(helix / 'tools'))
     from private_display import private_display
     if args.headed:
+        import screen_power
         display = {'DISPLAY': os.environ['DISPLAY'], 'SDL_VIDEO_DRIVER': os.environ.get('SDL_VIDEO_DRIVER', 'x11')}
-        for entrant in args.entrants:
-            score(entrant.resolve(), helix, args, display)
+        with screen_power.kept_on(True):
+            for entrant in args.entrants:
+                score(entrant.resolve(), helix, args, display)
     else:
         with private_display() as display:
             for entrant in args.entrants:
