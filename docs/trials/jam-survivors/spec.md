@@ -5,8 +5,9 @@ engine and no function.
 
 ## Window and screens
 - **Window:** 1280 x 720, resizable. The view keeps the arena framed when the window is resized, and the HUD keeps to the window's edges.
-- **Title:** "Wardens", the best time survived saved from an earlier run ("Best: 3:12"), and two buttons: Play and Quit (Quit only
-  where quitting means anything; in a page it isn't shown). The warden stands in the middle, playing her idle animation, turning slowly.
+- **Title:** "Wardens", the best time survived saved from an earlier run ("Best: 3:12"), and two buttons: Play and Quit. Play also goes
+  fullscreen, and Quit ends the game. The warden stands in the
+  middle, playing her idle animation, turning slowly.
 - **Pause:** Escape or P pauses play. A panel shows Resume, Restart and Title buttons, and a slider for the volume, 0 to 100%,
   saved with the best time.
 - **Game over:** "Time survived: 2:47", "Level 7", "Enemies defeated: 214", a new best called out, and Restart and Title buttons.
@@ -22,9 +23,16 @@ engine and no function.
 - **Model:** built from the modular character's parts in `assets/characters/`: a head, a body, legs and feet, each a separate model
   on one shared skeleton, animated together by `assets/characters/Animations.glb`. She starts in the Adventurer outfit (the four
   `Adventurer_*.glb` parts). The clips are named with the armature's prefix (`CharacterArmature|Run`); `Sword.glb` and `Gun.glb`
-  are skinned to the same skeleton, modelled in the right hand of the bind pose.
+  each hold the same skeleton, with the weapon a rigid mesh under the right hand's `Middle1.R` bone, placed in the hand of the bind
+  pose.
 - **Moving:** WASD, the arrow keys or a gamepad's left stick, at 5 meters a second whatever the frame rate, no faster on a diagonal. She
   faces where she moves. Walls stop her.
+- **Touch:** once the screen has been touched, a finger landing anywhere on the play area (not on a button) holds a stick centered where it landed.
+  Its drag from there moves her, full speed at 80 pixels and none within 10, in any direction. While held, a ring is drawn where it
+  landed with a knob under the finger. Lifting the finger stops her.
+- **Touch buttons:** once the screen has been touched, a pause button at the top right pauses, as Escape does, and once she holds both weapons a
+  button at the bottom right switches them, as Q does. A finger on either button doesn't move her. The menus' buttons, the slider and
+  the cards are tapped.
 - **Animations:**
   - `Idle` standing.
   - `Run` moving.
@@ -33,7 +41,7 @@ engine and no function.
   - `Death` at the end.
   - Changes between them blend over 0.2 seconds.
 - **Materials:** the parts' glTF materials drawn as authored, their metallic and roughness values honoured, not every surface alike.
-- **Weapons:** held in her right hand, on the `Wrist.R` bone, following the hand through every animation. She starts with the
+- **Weapons:** held in her right hand, following the hand through every animation. She starts with the
   sword (`Sword.glb`).
   - **The sword** strikes on its own every 0.8 seconds, hitting every enemy within 2 meters in front of her (a 120 degree arc) for 10
     damage.
@@ -96,6 +104,6 @@ engine and no function.
 
 ## Run options
 - **`enemies=N`:** starts with N enemies alive at once and the cap held there, for measuring.
-- **`seed=N`:** spawns from seed N, so two runs with the same seed play the same enemies, on the page and natively.
+- **`seed=N`:** spawns from seed N, so two runs with the same seed play the same enemies.
 - **`quit_after_frame=N`:** quits after frame N, printing the frames' mean time.
-- **Where they come from:** a page reads them from its URL (`?enemies=200`), a native build from its command line (`--enemies=200`).
+- **Where they come from:** the command line, as `--enemies=200`.
