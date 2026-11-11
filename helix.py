@@ -79,22 +79,26 @@ def named(product):
     """The defines naming a test program, which every program sets: the company and the product."""
     return ['-D','helix-company=helix','-D',f'helix-product={product}']
 
-# What FileCalls (engines/raylib/tests/refused) must be refused with, each the start of a refusal's message.
-REFUSED_FILE_CALLS=('sys.io.File.getContent: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(',
+# What each program in engines/raylib/tests/refused must be refused with, each the start of a refusal's message or a compiler error.
+REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(',
     'sys.io.File.saveContent: A file is written later, or is refused. See SaveFileTextAsync(','sys.io.File.getBytes: Synchronous loading',
     'sys.io.File.saveBytes: A file is written later','sys.FileSystem.exists: Synchronous file access is not supported. For a saved file',
-    'sys.FileSystem.readDirectory: Synchronous file access','sys.io.Process: Not supported.')
+    'sys.FileSystem.readDirectory: Synchronous file access','sys.io.Process: Not supported.'),
+    'ShaderCalls':('LoadShader: Shaders are compiled as the program builds. Compile the two files with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String)',
+    'LoadShaderFromMemory: Shaders are compiled as the program builds. Write the two stages to files and compile them with CompileShaderFile(vsFileName:Null<String>',
+    'ShaderCalls.hx:11:','CompileShaderFile: Compiles and saves the given shader to compiledShaderFileName. This file is loaded during runtime via LoadCompiledShaderAsync(')}
 
 def refused(base):
-    """FileCalls refused for JS and natively (typed alone), each call's refusal in the compiler's errors; and AsyncTests typed
-    natively, with the libraries' own sys.io.File calls in it (the native saves), which aren't refused."""
-    for target in (['-js','build/tests/FileCalls.js'],['-cpp','build/tests/FileCalls-cpp']):
-        done=subprocess.run(['haxe',*base,*named('FileCalls'),'-cp','engines/raylib/tests/refused','-main','FileCalls',*target,'--no-output'],
-            cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
-        missing=[m for m in REFUSED_FILE_CALLS if m not in done.stderr]
-        if done.returncode==0 or missing:sys.exit(f'FileCalls ({target[0]}): built, or refusals missing: {missing}\n{done.stderr}')
+    """Each program in engines/raylib/tests/refused refused for JS and natively (typed alone), each of its refusals in the compiler's
+    errors; and AsyncTests typed natively, with the libraries' own sys.io.File calls in it (the native saves), which aren't refused."""
+    for main,messages in REFUSED.items():
+        for target in (['-js',f'build/tests/{main}.js'],['-cpp',f'build/tests/{main}-cpp']):
+            done=subprocess.run(['haxe',*base,*named(main),'-cp','engines/raylib/tests/refused','-main',main,*target,'--no-output'],
+                cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
+            missing=[m for m in messages if m not in done.stderr]
+            if done.returncode==0 or missing:sys.exit(f'{main} ({target[0]}): built, or refusals missing: {missing}\n{done.stderr}')
+        print(f'{main}: {len(messages)} refusals (JS and native)',flush=True)
     run(['haxe',*base,*named('AsyncTests'),'-main','AsyncTests','-cpp','build/tests/AsyncTests-typed','--no-output'])
-    print(f'FileCalls: {len(REFUSED_FILE_CALLS)} refusals (JS and native)',flush=True)
 
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""

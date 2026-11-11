@@ -868,3 +868,13 @@ Why things are the way they are, numbered, in order.
     calls, so `SaveFileText`'s refusal never reached them. Natively the calls write beside the program, not where the saves are kept.
     `helix.py test` builds a program calling them for JS and natively and checks each refusal (`FileCalls`). Rejected: a brief telling
     agents to use raylib's file calls, which a developer never reads; a warning, which lets a save outside the saves build.
+
+67. **`CompileShaderFile` only writes its file, and the shader refusals name its parameters.** It is a macro that writes the compiled
+    shader to `compiledShaderFileName` and returns `Void`, and a call whose result is wanted as a value (passed to `LoadCompiledShaderFromData`, say) is refused at the program's line, naming
+    `LoadCompiledShaderAsync` for the file it writes. `LoadShader`'s and `LoadShaderFromMemory`'s refusals give
+    `CompileShaderFile(vsFileName, fsFileName, compiledShaderFileName)` with its types, as every other refusal gives the call it names.
+    Why: in the 2026-11-10 trials the refusals named `CompileShaderFile` bare, and all three helix-raylib entrants of the evening run
+    guessed its arguments from raylib's `LoadShader(vs, fs)`, two calling it with one and two arguments to have the compiler print its
+    parameters. Two entrants across two runs passed its result, `null`, to `LoadCompiledShaderFromData`, which built and segfaulted at
+    run time. `helix.py test` builds a program doing both for JS and natively and checks each refusal (`ShaderCalls`). Rejected: a
+    sentence in the doc saying it returns nothing, which an entrant reading only the refusal never sees.

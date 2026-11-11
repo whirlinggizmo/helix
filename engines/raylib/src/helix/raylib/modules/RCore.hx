@@ -3044,7 +3044,7 @@ class RCore {
 		@param vsFileName  The vertex stage's file.
 		@param fsFileName  The fragment stage's file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShader: Shaders are compiled ahead of time. See CompileShaderFile and LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)")
+	@:unsupported("LoadShader: Shaders are compiled as the program builds. Compile the two files with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String), in the build's hxml or the program's code, then load the file it writes with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)")
 	static function LoadShader(vsFileName:String, fsFileName:String):Shader {
 		throw "LoadShader is unimplemented";
 	}
@@ -3055,7 +3055,7 @@ class RCore {
 		@param vsCode  The vertex stage's text.
 		@param fsCode  The fragment stage's text.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShaderFromMemory: Shaders are compiled ahead of time. See CompileShaderFile and LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes)")
+	@:unsupported("LoadShaderFromMemory: Shaders are compiled as the program builds. Write the two stages to files and compile them with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String), in the build's hxml or the program's code, then load the file it writes with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or its bytes with LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes)")
 	static function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader {
 		throw "LoadShaderFromMemory is unimplemented";
 	}
