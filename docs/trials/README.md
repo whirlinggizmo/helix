@@ -49,12 +49,11 @@ the game's folder, names its runs.
 The harness is [wardens](wardens): each engine's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
 control's `CMakeLists.txt`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
 release, and starts it against a checkout of helix; `score_page.py` builds and runs each helix-raylib entrant's program in a page;
-`score_frames.py` times each entrant's program, natively (on a private display, or with `--desktop` on this machine's) and with
-`--page` in a page:
+`score_frames.py` times each entrant's program natively and in a page (headless, or with `--headed` on this machine's display and GPU):
 
 ```console
 python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.001 --helix ../helix-blind-a
 python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/raylib-c-blind.001 --helix ../helix-blind-a --engine c
 python3 docs/trials/wardens/score_page.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.00* --helix ../helix-blind-a
-python3 docs/trials/wardens/score_frames.py /home/rknopf/projects/local/helix/trials/wardens/*-blind.00? --helix ../helix-blind-a --page
+python3 docs/trials/wardens/score_frames.py /home/rknopf/projects/local/helix/trials/wardens/*-blind.00? --helix ../helix-blind-a --headed
 ```

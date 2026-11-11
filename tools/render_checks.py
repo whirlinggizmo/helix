@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Checks helix-render on the platform's real adapters: its examples (libs/render/examples/<name>) and its pixel tests (libs/render/tests/pixels),
 each built from its own hxml files, run natively on a private display (Linux) on each native build it has (GL, and SDL_GPU from
-build-native-gpu.hxml) and in a headless Chromium (WebGL2), as tools/platform_checks.py runs the platform's. An example's page is checked
+build-native-gpu.hxml) and in Chromium (WebGL2), headless by default, as tools/platform_checks.py runs the platform's. An example's page is checked
 against its check.json (points and the colors expected there, each within a tolerance per channel), and so is each native run's last
 frame, which the example saves (`--screenshot`, libs/render/examples/Screenshot.hx);
 the pixel tests draw each stage-1 area through the renderer, read their pixels back and check them themselves, on each backend. Exits 1
 on any failure.
 
-    python3 tools/render_checks.py --browser BROWSER [--desktop] [NAME ...]
+    python3 tools/render_checks.py --browser BROWSER [--native | --page] [--headless | --headed] [NAME ...]
 
 BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples' and "pixels"; they default to all of
-them. --desktop runs the native programs on this machine's own desktop, as platform_checks' does."""
+them. --native, --page, --headless and --headed are platform_checks': the kinds run, and the display they run on."""
 import json
 import sys
 from pathlib import Path
@@ -62,10 +62,11 @@ def main():
     import cli
     parser = cli.parser(__doc__)
     parser.add_argument('--browser', required=True)
-    parser.add_argument('--desktop', action='store_true', help="run natively on this machine's own desktop, not a private display")
+    cli.runs(parser)
     parser.add_argument('names', nargs='*')
     a = parser.parse_args()
-    platform_checks.DESKTOP = a.desktop
+    platform_checks.HEADED = a.headed
+    platform_checks.NATIVE, platform_checks.PAGE = cli.targets(a)
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['pixels']
     failed = False
     for name in names:

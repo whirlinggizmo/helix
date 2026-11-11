@@ -68,8 +68,10 @@ A check reports what ran, on which target. Nothing is called faster or smaller u
 
 ## Windows, sound and the machine
 
-- A native check that opens a window runs on a private display (`tools/private_display.py`), never on the desktop: a new window takes
-  the keyboard focus. `--desktop` runs on the real display, for timing.
+- A check runs headless by default: a native program on a private display (`tools/private_display.py`), a page in headless Chromium,
+  never on the desktop, as a new window takes the keyboard focus. Every tool that runs programs takes the same options: `--native` or
+  `--page` for one kind (both by default), and `--headed` for the real display, for timing or watching (`--headless`, the default, says
+  so).
 - `SDL_AUDIO_DRIVER=dummy` keeps native checks silent. The browser checks run Chromium with `--mute-audio`.
 - A native program that may open a URL runs without `DBUS_SESSION_BUS_ADDRESS`, or it opens the desktop's browser.
 - Each checkout's builds take its own `build/.lock`. A tool that takes the lock itself (`tools/compare/compare.py`) is never run under

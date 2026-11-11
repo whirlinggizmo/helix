@@ -1,13 +1,15 @@
 // The Node tools' command lines (docs/CONVENTIONS.md, "Every tool answers --help"), as tools/cli.py is the Python ones': --help prints the
-// tool's leading comment and its usage; an option it doesn't take (a word starting with -) is refused, and so are too few arguments
-// (exit 2). Imported by the tools, not run.
+// tool's leading comment and its usage; an option it doesn't take (a word starting with - it doesn't declare) is refused, and so are too
+// few arguments (exit 2). Imported by the tools, not run.
 const fs = require('fs');
 const path = require('path');
 
-// The arguments of the tool at file, named by names (a last name ending in ... takes the rest), each one given, as an array.
-function args(file, names) {
-	const given = process.argv.slice(2), rest = names.length > 0 && names[names.length - 1].endsWith('...');
-	const usage = `usage: node ${path.relative(process.cwd(), file)} ${names.map(n => n.toUpperCase()).join(' ')}`;
+// The arguments of the tool at file, named by names (a last name ending in ... takes the rest), each one given, as an array, and the
+// flags among options (as --headed) it was given, as the array's flags, a Set.
+function args(file, names, options = []) {
+	const all = process.argv.slice(2), rest = names.length > 0 && names[names.length - 1].endsWith('...');
+	const given = all.filter(a => !options.includes(a));
+	const usage = `usage: node ${path.relative(process.cwd(), file)} ${options.map(o => `[${o}] `).join('')}${names.map(n => n.toUpperCase()).join(' ')}`;
 	if (given.includes('--help') || given.includes('-h')) {
 		const help = fs.readFileSync(file, 'utf8').split('\n').filter((l, i, all) => all.slice(0, i + 1).every(x => x.startsWith('//')))
 			.map(l => l.replace(/^\/\/ ?/, '')).join('\n');
@@ -19,7 +21,7 @@ function args(file, names) {
 		console.error(`${usage}\n${path.basename(file)}: ${option !== undefined ? `unknown option ${option}` : 'expected ' + names.join(', ')}`);
 		process.exit(2);
 	}
-	return given;
+	return Object.assign(given, {flags: new Set(all.filter(a => options.includes(a)))});
 }
 
 module.exports = {args};

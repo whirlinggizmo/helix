@@ -1,11 +1,13 @@
-// One page run for tools/compare/compare.py: serves DIRECTORY on 127.0.0.1 (a port the system picks), opens index.html?QUERY in a headless
+// One page run for tools/compare/compare.py: serves DIRECTORY on 127.0.0.1 (a port the system picks), opens index.html?QUERY in
 // Chromium on the GPU with its frame rate cap lifted, waits up to TIMEOUT seconds for the program's JSON line on the console, and prints
 // {result, files, renderer, errors} as JSON: result the program's line (null when none came), files the paths the page fetched with their
 // sizes (for the size column), renderer the WebGL renderer's name and the frames a second requestAnimationFrame runs at.
 // BROWSER is a Chromium to run, or "" for Playwright's own (build/tools, or the one HELIX_PLAYWRIGHT names). BACKEND is what ANGLE draws
-// over: vulkan or gl. WIDTH and HEIGHT are the viewport's, in pixels.
-const [browserPath, directory, query, timeout, backend, width, height] = require('../cli.cjs').args(__filename,
-	['browser', 'directory', 'query', 'timeout', 'backend', 'width', 'height']);
+// over: vulkan or gl. WIDTH and HEIGHT are the viewport's, in pixels. --headed opens the browser's window on the display; --headless, the
+// default, runs it off screen.
+const given = require('../cli.cjs').args(__filename, ['browser', 'directory', 'query', 'timeout', 'backend', 'width', 'height'],
+	['--headed', '--headless']);
+const [browserPath, directory, query, timeout, backend, width, height] = given;
 const path = require('path'), http = require('http'), fs = require('fs');
 const {chromium} = require(process.env.HELIX_PLAYWRIGHT || path.join(__dirname, '../../build/tools/node_modules/playwright'));
 const TYPES = {'.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm', '.png': 'image/png', '.json': 'application/json',
@@ -34,7 +36,7 @@ function serve() {
 
 (async () => {
 	const server = await serve();
-	const browser = await chromium.launch({executablePath: browserPath || undefined, headless: true,
+	const browser = await chromium.launch({executablePath: browserPath || undefined, headless: !given.flags.has('--headed'),
 		args: ['--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required', `--use-angle=${backend}`, '--disable-gpu-vsync',
 			'--disable-frame-rate-limit']});
 	const errors = [];

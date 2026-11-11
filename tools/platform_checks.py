@@ -2,15 +2,16 @@
 """Checks helix-platform on the GPU, its audio and its window with the library alone: its examples (libs/platform/examples/<name>), its graphics
 tests (libs/platform/tests/graphics), its audio tests (libs/platform/tests/audio, natively on SDL3's dummy audio driver, which mixes in time, and in a
 page Chromium lets start audio without a gesture, muted), its window tests (libs/platform/tests/window, each request's answer listed: the window's, the mouse's lock, the clipboard's) and its HTTP tests (libs/platform/tests/http, against a server started here that ends bodies early). Each is built from its own hxml files, as a reader builds it, and run natively on a private display (Linux),
-each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), and in a headless Chromium. An example runs 60 frames and
+each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), and in Chromium, headless by default. An example runs 60 frames and
 the page's screenshot is checked against what it says it draws (its check.json: points and the colors expected there, each within a
 tolerance per channel); the graphics and audio tests check their own results, and say how it went. Exits 1 on any failure.
 
-    python3 tools/platform_checks.py --browser BROWSER [--desktop] [NAME ...]
+    python3 tools/platform_checks.py --browser BROWSER [--native | --page] [--headless | --headed] [NAME ...]
 
 BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples', "graphics", "audio", "window" and "http"; they default
-to all of them. --desktop runs the native programs on this machine's own desktop instead of a private display, for a machine kept for checks
-(Windows over tools/remote_windows.py --desktop): never on a desktop someone is using."""
+to all of them. --native or --page runs that kind alone (both by default). --headed runs them on this machine's own display, the native
+programs' windows and the browser's, instead of a private display and headless Chromium, for a machine kept for checks (Windows over
+tools/remote_windows.py --headed): never on a display someone is using. --headless, the default, says so."""
 import json
 import os
 import struct
@@ -27,9 +28,13 @@ AUDIO = ROOT / 'libs/platform/tests/audio'
 WINDOW = ROOT / 'libs/platform/tests/window'
 HTTP = ROOT / 'libs/platform/tests/http'
 FRAMES = 60
-# Run natively on this machine's own desktop rather than a private display (--desktop): for a machine kept for checks, such as Windows
-# over tools/remote_windows.py --desktop. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
-DESKTOP = False
+# Run on this machine's own display rather than a private display and headless Chromium (--headed): for a machine kept for checks, such
+# as Windows over tools/remote_windows.py --headed. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
+HEADED = False
+
+# The kinds of program run (--native, --page): both by default.
+NATIVE = True
+PAGE = True
 PACED_FRAMES = 600
 sys.path.insert(0, str(ROOT / 'tools'))
 
@@ -106,7 +111,9 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     env = pins.use_haxelib()
     build(directory, 'build-web.hxml', env)
     problems = []
-    if sys.platform.startswith('linux') or DESKTOP:
+    if not NATIVE:
+        pass
+    elif sys.platform.startswith('linux') or HEADED:
         import sdl3 as finder
         from native_build import place_runtimes
         from private_display import private_display
@@ -114,23 +121,25 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
         found = finder.find()
         native = native_env(found)
         env.update({k: native[k] for k in ('HELIX_PLATFORM', 'HXCPP_CONFIG', 'HELIX_SDL3_LIBRARY')})
-        frames = min(native_frames, PACED_FRAMES) if DESKTOP else native_frames
+        frames = min(native_frames, PACED_FRAMES) if HEADED else native_frames
         for hxml, output, label in (('build-native.hxml', 'native', 'GL'), ('build-native-gpu.hxml', 'native-gpu', 'SDL_GPU')):
             if not (directory / hxml).is_file():
                 continue
             build(directory, hxml, env)
             place_runtimes(directory / output, found)
             program = directory / output / (main + '.exe' if sys.platform == 'win32' else main)
-            with (nullcontext(dict(os.environ)) if DESKTOP else private_display()) as display:
+            with (nullcontext(dict(os.environ)) if HEADED else private_display()) as display:
                 ran = subprocess.run([str(program), f'--quit_after_frame={frames}'] + (native_args(label) if native_args else []), cwd=directory, env=dict(display, **(native_extra or {}), SDL_AUDIO_DRIVER='dummy'), capture_output=True, text=True, encoding='utf-8', timeout=300)
             problems += [f'native {label}: {p}' for p in native_run(label, ran)]
     else:
-        print(f'{name}: native runs skipped here (a private display needs Linux; --desktop runs them on this machine\'s own)', flush=True)
+        print(f'{name}: native runs skipped here (a private display needs Linux; --headed runs them on this machine\'s own)', flush=True)
+    if not PAGE:
+        return problems
     out = ROOT / 'build/results/platform' / name
     out.mkdir(parents=True, exist_ok=True)
     screenshot = out / 'web.png'
     browser_env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES')}
-    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', browser, site or str(directory / 'web'), f'?quit_after_frame={FRAMES}{query}' if page_quits else '?' + query.lstrip('&'), str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
+    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', '--headed' if HEADED else '--headless', browser, site or str(directory / 'web'), f'?quit_after_frame={FRAMES}{query}' if page_quits else '?' + query.lstrip('&'), str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
     if ran.returncode:
         problems.append(f'browser run failed\n{ran.stdout}{ran.stderr}')
     else:
@@ -329,11 +338,12 @@ def main():
     import cli
     parser = cli.parser(__doc__)
     parser.add_argument('--browser', required=True)
-    parser.add_argument('--desktop', action='store_true', help="run natively on this machine's own desktop, not a private display")
+    cli.runs(parser)
     parser.add_argument('names', nargs='*')
     a = parser.parse_args()
-    global DESKTOP
-    DESKTOP = a.desktop
+    global HEADED, NATIVE, PAGE
+    HEADED = a.headed
+    NATIVE, PAGE = cli.targets(a)
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['graphics', 'audio', 'window', 'http']
     failed = False
     for name in names:

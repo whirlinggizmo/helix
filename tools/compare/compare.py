@@ -3,7 +3,7 @@
 tools/compare/contenders/<name>/: raylib's textures_bunnymark (bunnies of one texture bouncing in an 800 x 450 window) and its
 models_animation many at once (the robots: a grid of robot.glb, each posed at its own frame, in 1280 x 720). The numbers are docs/speed.md's.
 
-    python3 tools/compare/compare.py [--native] [--page] [--backend vulkan|gl] [--runs 3] [--desktop] [--browser PATH] [--write]
+    python3 tools/compare/compare.py [--native | --page] [--headless | --headed] [--backend vulkan|gl] [--runs 3] [--browser PATH] [--write]
                                      [bunnymark] [robots] [CONTENDER ...]
 
 The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the bunnymark alone) and helix-legacy, all when
@@ -12,9 +12,10 @@ texture, the robot). A contender whose toolchain this machine lacks is skipped w
 (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64),
 three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix-legacy needs helix-legacy's checkout (HELIX_LEGACY, or ../helix-legacy beside this one). The versions are dependencies.json's compare entry.
 
---page runs the pages (in headless Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native
-the native programs (on a private display with software GL, whose times aren't representative, or with --desktop in windows on $DISPLAY,
-one at a time, with vsync off); neither flag runs both. Every program spawns from the same seed. Each count draws 120 frames to warm up and
+--page runs the pages (in Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native the
+native programs (one at a time, with vsync off); neither flag runs both. --headless, the default, runs them off screen (the native programs
+on a private display with software GL, whose times aren't representative; the pages in headless Chromium); --headed runs them in windows on
+$DISPLAY, the native programs' and the browser's. Every program spawns from the same seed. Each count draws 120 frames to warm up and
 times 600: the mean and the 95th percentile frame time, the median over --runs of each. ramp starts at 1000 and adds 1000 every 60 frames
 while those averaged 59 frames a second or better: the most held. The bunnymark's counts are 10k, 50k, 100k, 150k and 200k and ramp, the
 robots' 50, 200 and 400. Every run is a JSON line in build/compare/runs/<stamp>.jsonl.
@@ -457,13 +458,13 @@ def found_line(output):
         return None
 
 
-def run_page(browser, directory, query, backend, size, mode):
-    """One page run; its result (None when none came) and what the runner reported."""
+def run_page(browser, directory, query, backend, size, mode, headed):
+    """One page run, in the browser's window on the display when headed; its result (None when none came) and what the runner reported."""
     seconds = PAGE_SECONDS['ramp' if mode.startswith('ramp') else 'count']
     env = dict(os.environ)
     env.pop('DBUS_SESSION_BUS_ADDRESS', None)
     try:
-        done = subprocess.run(['node', str(HERE / 'page.cjs'), browser, str(directory), query, str(seconds), backend, str(size[0]), str(size[1])],
+        done = subprocess.run(['node', str(HERE / 'page.cjs'), '--headed' if headed else '--headless', browser, str(directory), query, str(seconds), backend, str(size[0]), str(size[1])],
                               capture_output=True, text=True, encoding='utf-8', env=env, timeout=seconds + 120)
     except subprocess.TimeoutExpired:
         return None, {'errors': ['the page runner timed out']}
@@ -491,13 +492,13 @@ def modes_of(program):
     return [f'count={n}' for n in counts] + (['ramp=1'] if program == 'bunnymark' else [])
 
 
-def measure(programs, contenders, page, native, backend, runs, desktop, browser, record):
+def measure(programs, contenders, page, native, backend, runs, headed, browser, record):
     """Every run, round-robin so a drift in the machine's state spreads over every program, each recorded."""
     if page:
         for run_index in range(1, runs + 1):
             for contender, variant, program, directory, query, size in pages(programs, contenders):
                 for mode in modes_of(program):
-                    result, printed = run_page(browser, directory, query(mode), backend, size, mode)
+                    result, printed = run_page(browser, directory, query(mode), backend, size, mode, headed)
                     record({'where': f'page-{backend}', 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
                             'result': result, 'files': printed.get('files'), 'renderer': printed.get('renderer'), 'errors': printed.get('errors')})
     if native:
@@ -508,12 +509,12 @@ def measure(programs, contenders, page, native, backend, runs, desktop, browser,
                         result, tail = run_native(command(mode), directory, display, mode)
                         record({'where': where, 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
                                 'result': result, 'tail': None if result else tail})
-        if desktop:
+        if headed:
             say('native runs in windows on $DISPLAY=' + os.environ['DISPLAY'])
             every(dict(os.environ))
         else:
             from private_display import private_display
-            say('native runs on a private display (software GL): these times are not representative; --desktop runs them on the real one')
+            say('native runs on a private display (software GL): these times are not representative; --headed runs them on the real one')
             with private_display() as display:
                 every(display)
 
@@ -703,11 +704,9 @@ def write_page_tables(store):
 
 def main():
     parser = cli.parser(__doc__)
-    parser.add_argument('--native', action='store_true', help='run the native programs')
-    parser.add_argument('--page', action='store_true', help='run the pages')
+    cli.runs(parser)
     parser.add_argument('--backend', choices=['vulkan', 'gl'], default='vulkan', help="what ANGLE draws the pages over (default vulkan)")
     parser.add_argument('--runs', type=int, default=3, help='runs of each program and count (default 3)')
-    parser.add_argument('--desktop', action='store_true', help='native runs in windows on $DISPLAY, not on a private display')
     parser.add_argument('--browser', default='', help="a Chromium to run the pages in (default Playwright's own)")
     parser.add_argument('--write', action='store_true', help="update docs/speed.json and docs/speed.md's tables with the run")
     parser.add_argument('names', nargs='*', metavar='NAME', help='programs (bunnymark, robots) and contenders (helix-raylib, raylib-c, godot, three, helix-legacy)')
@@ -721,9 +720,9 @@ def main():
         return 2
     programs = [n for n in PROGRAMS if n in a.names] or PROGRAMS
     contenders = [n for n in CONTENDERS if n in a.names] or CONTENDERS
-    page, native = a.page or not a.native, a.native or not a.page
-    if a.desktop and not os.environ.get('DISPLAY'):
-        print('compare: --desktop needs $DISPLAY')
+    native, page = cli.targets(a)
+    if a.headed and not os.environ.get('DISPLAY'):
+        print('compare: --headed needs $DISPLAY')
         return 1
     built = build(programs, contenders, page, native)
     stamp = time.strftime('%Y-%m-%d-%H%M%S')
@@ -739,7 +738,7 @@ def main():
         shown = f'{result["mean_ms"]:.2f} ms' if result and 'mean_ms' in result else f'held {result["ramp_max"]}' if result and 'ramp_max' in result else 'FAILED'
         print(f'  {row["where"]:14} {row["contender"]:13} {row["variant"]:16} {row["program"]:10} {row["mode"]:13} run {row["run"]}: {shown}', flush=True)
 
-    measure(programs, built, page, native, a.backend, a.runs, a.desktop, a.browser, record)
+    measure(programs, built, page, native, a.backend, a.runs, a.headed, a.browser, record)
     say(f'{len(rows)} runs in {runs_file.relative_to(ROOT)}')
     entries = summarize(rows, time.strftime('%Y-%m-%d'), built)
     for e in entries:

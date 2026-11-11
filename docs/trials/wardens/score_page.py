@@ -39,12 +39,12 @@ def build(entrant, helix, defines=(), suffix='.page'):
     return page
 
 
-def run(page, query, shot):
-    """Runs a built page with a query, saving its screenshot; what page_check printed ({errors, result}), or None when the run failed
-    (its output printed)."""
+def run(page, query, shot, headed=False):
+    """Runs a built page with a query, saving its screenshot, in headless Chromium or with headed in its window on the display; what
+    page_check printed ({errors, result}), or None when the run failed (its output printed)."""
     env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES', 'DBUS_SESSION_BUS_ADDRESS')}
     env['HELIX_PLAYWRIGHT'] = str(ROOT / 'build/tools/node_modules/playwright')
-    ran = subprocess.run(['node', str(ROOT / 'tools/page_check.cjs'), '', str(page), query, str(shot)], cwd=ROOT, env=env,
+    ran = subprocess.run(['node', str(ROOT / 'tools/page_check.cjs'), '--headed' if headed else '--headless', '', str(page), query, str(shot)], cwd=ROOT, env=env,
                          capture_output=True, text=True, timeout=300)
     try:
         return json.loads(ran.stdout)

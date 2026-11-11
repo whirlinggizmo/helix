@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build and check this checkout on a Windows machine over ssh, as it is, committed or not, and leave nothing behind there.
 
-    python3 tools/remote_windows.py HOST [--then "TOOL ARGS"]... [--env NAME=VALUE]... [--desktop] [--keep]
+    python3 tools/remote_windows.py HOST [--then "TOOL ARGS"]... [--env NAME=VALUE]... [--headed] [--keep]
 
 Packs the working tree (tracked files and new ones git doesn't ignore) with the node tools (build/tools/node_modules, plain JavaScript).
 It copies the archive with scp into a scratch directory in the remote user's profile and runs each --then there as `python TOOL ARGS` in
@@ -10,8 +10,8 @@ it). The scratch directory and the archive are deleted afterwards, also when a s
 
 --env sets a variable for every step (SDL_GPU_DRIVER=vulkan, say).
 
---desktop runs the steps in the session logged in at the machine's screen, not the ssh session, which has no desktop: windows open there,
-on its GPU. A scheduled task that runs only interactively starts them, and its output is printed when they end. Someone must be logged in.
+--headed runs the steps in the session logged in at the machine's screen, not the ssh session, which has no display: windows open there,
+on its GPU, for steps given --headed themselves. A scheduled task that runs only interactively starts them, and its output is printed when they end. Someone must be logged in.
 
 HOST is an ssh destination whose shell is cmd.exe, with Python 3.12 or later first on its PATH, Haxe 4.3.7 and Visual Studio's C++ tools
 (hxcpp finds them itself). The pinned hxcpp is installed into the copy's build/haxelib, as on Linux. Exits 0 when every step passed.
@@ -98,7 +98,7 @@ def main():
     parser.add_argument('host')
     parser.add_argument('--then', action='append', metavar='TOOL', help='a tool and its arguments, run there as python TOOL; repeatable')
     parser.add_argument('--env', action='append', default=[], metavar='NAME=VALUE', help='a variable set for every step; repeatable')
-    parser.add_argument('--desktop', action='store_true', help='run the steps in the logged-in desktop session, where windows can open')
+    parser.add_argument('--headed', action='store_true', help="run the steps in the session logged in at the machine's screen, where windows can open")
     parser.add_argument('--keep', action='store_true', help='leave the scratch directory there, to look into it')
     args = parser.parse_args()
     steps = args.then or DEFAULT
@@ -109,11 +109,11 @@ def main():
         with tarfile.open(local_archive, 'w:gz') as tar:
             for name in working_tree():
                 tar.add(ROOT / name, arcname=name)
-            if args.desktop:
+            if args.headed:
                 inner = Path(scratch) / 'desktop.bat'
                 inner.write_bytes(desktop(steps, args.env).encode())
                 tar.add(inner, arcname='desktop.bat')
-        local_bat.write_bytes(script(tag, archive, steps, args.env, args.keep, args.desktop).encode())
+        local_bat.write_bytes(script(tag, archive, steps, args.env, args.keep, args.headed).encode())
         print(f'remote_windows: {len(steps)} step(s) on {args.host}', flush=True)
         if subprocess.run(['scp', '-q', str(local_archive), str(local_bat), f'{args.host}:']).returncode != 0:
             print('remote_windows: copying to the host failed')

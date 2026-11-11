@@ -1,12 +1,14 @@
-// Serves a directory (SITE), or takes a page already served (SITE an http or https URL), opens its page in a headless Chromium with the query given, waits for the page's frames to settle and saves a
+// Serves a directory (SITE), or takes a page already served (SITE an http or https URL), opens its page in Chromium (headless, or with --headed in its window) with the query given, waits for the page's frames to settle and saves a
 // screenshot of the 800 x 600 viewport, printing {errors, result} as JSON: the page's errors and console errors, and what a test page
 // leaves in window.helixResult (null for a page that has none). A page that sets window.helixResult to null is waited on, up to 30
 // seconds, until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
 // BROWSER is a Chromium to run, or "" for Playwright's own (the repository's, build/tools, or the one HELIX_PLAYWRIGHT names). The page
 // runs on the GPU (Vulkan on Linux, Metal on macOS); where the page says it can't draw it runs again on SwiftShader. Audio is muted, and
 // allowed to start without a gesture so a test page can check it. A query naming safeArea=TOP,RIGHT,BOTTOM,LEFT (CSS pixels) has Chromium
-// report those as the page's env(safe-area-inset-*), as a phone with a notch would.
-const [browserPath,site,query,output]=require('./cli.cjs').args(__filename,['browser','site','query','output']);
+// report those as the page's env(safe-area-inset-*), as a phone with a notch would. --headed opens the browser's window on the display,
+// paced by it, for a page timed or seen as a person would see it; --headless, the default, runs it off screen.
+const given=require('./cli.cjs').args(__filename,['browser','site','query','output'],['--headed','--headless']);
+const [browserPath,site,query,output]=given;
 const path=require('path');
 const {chromium}=require(process.env.HELIX_PLAYWRIGHT||path.join(__dirname,'../build/tools/node_modules/playwright'));
 const GPU=process.platform==='linux'?['--use-angle=vulkan']:process.platform==='darwin'?['--use-angle=metal']:[];
@@ -25,7 +27,7 @@ function serve(directory){
 }
 
 async function run(address,args){
- const browser=await chromium.launch({executablePath:browserPath||undefined,headless:true,args:['--no-sandbox','--mute-audio','--autoplay-policy=no-user-gesture-required',...args]});const errors=[];
+ const browser=await chromium.launch({executablePath:browserPath||undefined,headless:!given.flags.has('--headed'),args:['--no-sandbox','--mute-audio','--autoplay-policy=no-user-gesture-required',...args]});const errors=[];
  try{const page=await browser.newPage({viewport:{width:800,height:600}});
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
   const safeArea=new URLSearchParams(query).get('safeArea');

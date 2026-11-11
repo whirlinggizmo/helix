@@ -25,8 +25,9 @@ one JSON line with `"contender"`, `mean_ms` and `p95_ms`. A `ramp=1` run starts 
 averaged 59 frames a second or better, and prints the largest count that held as `ramp_max`. Each cell in the tables is the median over
 the runs (three by default), the runs taken round-robin over every program and count so a drift in the machine spreads over all of them.
 
-Pages run in headless Chromium with its frame rate cap lifted, on ANGLE over Vulkan or over GL. Native programs run in windows with
-vsync off, on a private display with software GL (not representative, and the tool says so) or with `--desktop` on the real one.
+Pages run in Chromium with its frame rate cap lifted, on ANGLE over Vulkan or over GL. Native programs run in windows with vsync off.
+By default both run headless: the pages in headless Chromium, the native programs on a private display with software GL (not
+representative, and the tool says so). `--headed` runs both on the real display.
 
 ## Sizes
 
