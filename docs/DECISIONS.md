@@ -915,3 +915,14 @@ Why things are the way they are, numbered, in order.
     out of the output, so a call builds and fails at run time; `helix-raylib-portable`, which promises more than `sys` (`#if js`
     branches, the page reached directly, which `helix-raylib-host-warnings` warns of); names for the mechanism (`shadow-sys`) or with
     no object (`compat-sys`).
+
+71. **A glTF material's roughness and metalness are the file's, with or without its image.** helix-raylib's glTF load sets
+    `maps[MATERIAL_MAP_ROUGHNESS].value` and `maps[MATERIAL_MAP_METALNESS].value` from the material's `roughnessFactor` and
+    `metallicFactor` (1 each when the file leaves them out) whenever it has a `pbrMetallicRoughness` block. raylib 5.5 and 6.2 set them
+    only when the material also has a metallic-roughness image, and leave 0 otherwise, where glTF applies the factors either way. It is
+    the one place helix-raylib's behavior departs from raylib's to correct it, not to fix a crash: the values are read, not invented, and
+    a program that wanted raylib's 0 sets it. The materials_62 parity suite bars the difference on its "factors" material alone, and
+    its harness checks the file's values. Why: every Wardens model sets the factors with no image, so every helix-raylib entrant got 0;
+    two of 2026-11-11's read the glTF's JSON themselves for 0.69, and one hard-coded it. Rejected: adding a metallic-roughness image to
+    the trial's models, which hides the bug from the trial and leaves it for every user's models; leaving raylib's 0 until raylib
+    changes, as no raylib release does yet.

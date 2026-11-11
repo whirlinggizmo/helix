@@ -408,9 +408,9 @@ class Models {
 
 	// raylib 6.2's LoadGLTF's materials part: the default material, and only when the material has a pbrMetallicRoughness block, the
 	// base color image and factor; the metallic-roughness image split into two grayscale textures, roughness from its green, metalness
-	// from its blue (raylib 5.5 put the image whole in the roughness map), and the roughness and metalness factors as those maps' values,
-	// set only when the material has that image; the normal, occlusion and emissive images; the emissive factor, alpha 255, only when it
-	// has an emissive image. A factor's byte is raylib's (unsigned char)(f*255), in floats. An image that couldn't be decoded leaves its
+	// from its blue (raylib 5.5 put the image whole in the roughness map); the roughness and metalness factors as those maps' values,
+	// which raylib sets only when the material has that image and helix-raylib always (DECISIONS 71); the normal, occlusion and emissive
+	// images; the emissive factor, alpha 255, only when it has an emissive image. A factor's byte is raylib's (unsigned char)(f*255), in floats. An image that couldn't be decoded leaves its
 	// map as it was. Each texture is kept by its image's file, or the model's path and the image's index (and the split's name), so the
 	// loads of a file share it while any holds it; the first load takes the image decoded for the GPU from the model, and a texture made
 	// after it is gone decodes the image's file again (Textures.fromEncoded).
@@ -451,9 +451,10 @@ class Models {
 				give(maps[Raylib.MATERIAL_MAP_ROUGHNESS], rough, image, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE, p, d -> split(d, 1));
 				give(maps[Raylib.MATERIAL_MAP_METALNESS], metal, image, Raylib.PIXELFORMAT_UNCOMPRESSED_GRAYSCALE, p, d -> split(d, 2));
 			}
-			maps[Raylib.MATERIAL_MAP_ROUGHNESS].value = Pixels.f32(m.roughness);
-			maps[Raylib.MATERIAL_MAP_METALNESS].value = Pixels.f32(m.metallic);
 		}
+		// Unlike raylib, with or without the image: glTF applies the factors either way (DECISIONS 71).
+		maps[Raylib.MATERIAL_MAP_ROUGHNESS].value = Pixels.f32(m.roughness);
+		maps[Raylib.MATERIAL_MAP_METALNESS].value = Pixels.f32(m.metallic);
 		function set(map:Int, index:Int):Void {
 			var image = index >= 0 ? read.images[index] : null;
 			if (image == null)

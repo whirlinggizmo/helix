@@ -1,7 +1,7 @@
 {
   "oracle": "6.2",
-  "covers": "rmodels.c's glTF materials as 6.2's LoadGLTF reads them, on a model made for it (makematerials.py): each material's twelve maps, their colors, values and textures (size, mipmaps, format and pixels), the base color factor's bytes, the metallic-roughness image split into grayscale roughness and metalness maps and those factors only with it, the normal, occlusion and emissive textures and the emissive color only with its texture, nothing read without a pbrMetallicRoughness block",
-  "notes": "The model's textures are RGBA PNGs and the metallic-roughness image an RGB one: helix-raylib's textures of a file's images say PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 whatever the file's channels, where raylib's say the file's. The images are decoded by shared/PngDecoder.hx, as Node has no decoder; raylib's by stb_image.",
+  "covers": "rmodels.c's glTF materials as 6.2's LoadGLTF reads them, on a model made for it (makematerials.py): each material's twelve maps, their colors, values and textures (size, mipmaps, format and pixels), the base color factor's bytes, the metallic-roughness image split into grayscale roughness and metalness maps, those factors (raylib's only with it, helix-raylib's always: DECISIONS 71), the normal, occlusion and emissive textures and the emissive color only with its texture, nothing read without a pbrMetallicRoughness block",
+  "notes": "The model's textures are RGBA PNGs and the metallic-roughness image an RGB one: helix-raylib's textures of a file's images say PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 whatever the file's channels, where raylib's say the file's. The images are decoded by shared/PngDecoder.hx, as Node has no decoder; raylib's by stb_image. Material 2 (\"factors\") has factors and no metallic-roughness image: raylib's roughness and metalness values are 0, helix-raylib's the file's 0.15 and 0.45 (DECISIONS 71), so its value section's bar is 0.45; its colors and textures match exactly.",
   "kind": "values",
   "main": "MaterialBits",
   "reference": "ref.c",
@@ -11,5 +11,13 @@
   "assets": {
     "web/materials.gltf": "makematerials.py"
   },
-  "tolerance": 1e-06
+  "tolerance": 1e-06,
+  "sections": {
+    "headers": [
+      "material"
+    ]
+  },
+  "bars": {
+    "material 2 value": 0.45
+  }
 }

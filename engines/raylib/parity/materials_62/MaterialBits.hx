@@ -63,12 +63,17 @@ class MaterialBits {
 		line('model ${model.meshCount} ${model.materialCount}');
 		for (i in 0...model.meshCount)
 			line('meshmaterial $i ${model.meshMaterial[i]}');
+		// "factors", with no metallic-roughness image: the file's factors, where raylib's are 0 (DECISIONS 71, the manifest's bar).
+		var factors = model.materials[2].maps;
+		if (Math.abs(factors[MATERIAL_MAP_ROUGHNESS].value - 0.15) > 1e-6 || Math.abs(factors[MATERIAL_MAP_METALNESS].value - 0.45) > 1e-6)
+			throw 'factors: roughness ${factors[MATERIAL_MAP_ROUGHNESS].value} and metalness ${factors[MATERIAL_MAP_METALNESS].value}, not the file\'s 0.15 and 0.45';
 		var shader = LoadMaterialDefault().shader;
 		for (i => m in model.materials) {
 			line('material $i default ${m.shader.id == shader.id ? 1 : 0}');
 			for (k => map in m.maps) {
 				var c = map.color;
-				line('map $i $k color ${c.r} ${c.g} ${c.b} ${c.a} value ${map.value}');
+				line('map $i $k color ${c.r} ${c.g} ${c.b} ${c.a}');
+				line('value $i $k ${map.value}');
 				texture('texture $i $k', map.texture);
 			}
 		}

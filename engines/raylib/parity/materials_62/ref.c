@@ -31,7 +31,8 @@ int main(void) {
         printf("material %d default %d\n", i, m->shader.id == rlGetShaderIdDefault());
         for (int k = 0; k < MAX_MATERIAL_MAPS; k++) {
             MaterialMap *map = &m->maps[k];
-            printf("map %d %d color %d %d %d %d value %.9g\n", i, k, map->color.r, map->color.g, map->color.b, map->color.a, map->value);
+            printf("map %d %d color %d %d %d %d\n", i, k, map->color.r, map->color.g, map->color.b, map->color.a);
+            printf("value %d %d %.9g\n", i, k, map->value);
             sprintf(key, "texture %d %d", i, k);
             texture(key, map->texture);
         }
