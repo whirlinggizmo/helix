@@ -16,14 +16,14 @@ and [wardens](wardens) holds Wardens, the game the engine trials build.
 Each entrant runs in a directory of its own outside any git repository, as it would read the repository's commit messages, under
 `/home/rknopf/projects/local/helix/trials`:
 
-- **A game's (a blind trial).** `<game>/<arm>-blind.<NNN>`, as `wardens/helix-raylib-blind.001` and `wardens/raylib-c-blind.001`.
-- **An API's (a library trial).** `<api>/<arm>-docs.<NNN>`, as `frame-stats-recording/helix-raylib-docs.001`: the API tried, and
+- **A game's (a blind trial).** `<game>/<engine>-blind.<NNN>`, as `wardens/helix-raylib-blind.001` and `wardens/raylib-c-blind.001`.
+- **An API's (a library trial).** `<api>/<engine>-docs.<NNN>`, as `frame-stats-recording/helix-raylib-docs.001`: the API tried, and
   "docs" as its entrants learn it from doc comments alone.
 
-`<arm>` is what the entrant writes against (helix-raylib, raylib-c). `<NNN>` counts that arm's runs of the game or API across trials.
-Beside them, `.home/<run>` holds each run's saves and cache, and each score's copy of a run is kept beside it, named for the score
-(`<run>.page`, `<run>.frames`), the run's own directory left as the entrant left it. A trial's record here, `<date>-<api>` or the
-game's folder, names its runs.
+`<engine>` is what the entrant writes against (helix-raylib, raylib-c). `<NNN>` counts that engine's runs of the game or API across
+trials. Beside them, `.home/<run>` holds each run's saves and cache, and each score's copy of a run is kept beside it, named for the
+score (`<run>.page`, `<run>.frames`), the run's own directory left as the entrant left it. A trial's record here, `<date>-<api>` or
+the game's folder, names its runs.
 
 ## A blind trial
 
@@ -46,7 +46,7 @@ game's folder, names its runs.
   link time) and run at each load for a fixed run of frames (`score_frames.py`). Its notes are read against the change being tried.
 - **Watching.** Each entrant's log is read every ten minutes while it runs. A harness fault stops the run early.
 
-The harness is [wardens](wardens): each arm's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
+The harness is [wardens](wardens): each engine's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
 control's `CMakeLists.txt`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
 release, and starts it against a checkout of helix; `score_page.py` builds and runs each helix-raylib entrant's program in a page;
 `score_frames.py` times each entrant's program, natively (on a private display, or with `--desktop` on this machine's) and with
