@@ -15,7 +15,7 @@ and [wardens](wardens) holds Wardens, the game the engine trials build.
 
 - **Entrants.** Three on helix-raylib, on Sonnet, and the control: three writing the same game in C on raylib 5.5 itself, briefed
   alike but for the language and the build. Each is a fresh `claude -p` started in its own directory outside any git repository,
-  `/home/rknopf/projects/helix/trials/<game>/<arm>-blind.<NNN>` (as `wardens/helix-raylib-blind.001`). None is a subagent of a
+  `/home/rknopf/projects/local/helix/trials/<game>/<arm>-blind.<NNN>` (as `wardens/helix-raylib-blind.001`). None is a subagent of a
   session working on helix, as that session's commit messages would reach it.
 - **What each is given.** A brief, the game's spec ([Wardens](wardens/spec.md)), raylib 5.5's own headers and C examples, and
   the game's assets. Nothing of helix's docs or sources. Where helix-raylib differs from raylib, the compiler says so.
@@ -33,6 +33,6 @@ control's `Makefile`), and `run_entrant.py`, which makes an entrant's directory 
 release, and starts it against a checkout of helix:
 
 ```console
-python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/helix/trials/wardens/helix-raylib-blind.001 --helix ../helix-blind-a
-python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/helix/trials/wardens/raylib-c-blind.001 --helix ../helix-blind-a --engine c
+python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.001 --helix ../helix-blind-a
+python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/raylib-c-blind.001 --helix ../helix-blind-a --engine c
 ```
