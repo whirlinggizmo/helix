@@ -16,7 +16,13 @@ as the entrant would see its commit messages.
 being tried, its build/haxelib made. The entrant's environment carries hxcpp's and the platform's settings from it and its haxelib,
 no sound (SDL_AUDIO_DRIVER=dummy for SDL; for raylib C's miniaudio, no PulseAudio server and an ALSA whose one device is null), no
 session D-Bus (SDL_OpenURL would reach the desktop's browser), and data and cache directories of its own beside the entrant
-(.home/<name>), so entrants running at once keep their saves apart. The JSON result (usage, cost, turns, duration) goes to result.json, stderr to stderr.log, the start and
+(.home/<name>), so entrants running at once keep their saves apart.
+
+The entrant runs in a bubblewrap sandbox, as the brief's "write only here" and "read nothing else" are only asked of it: an empty home
+with the Claude Code binary, the toolchains, the shared shader tools and the checkout read-only, and only ~/.claude (its session),
+the checkout's build/ (its haxelib and hxcpp's cache), its directory and its .home writable; ~/.claude.json copied in. Everything
+else in the home is hidden (the other checkouts and entrants, keys), and so are /dev's devices (gamepads among them), the user's
+/run sockets (PulseAudio, D-Bus) and /tmp, which is its own but for the X server's socket. The JSON result (usage, cost, turns, duration) goes to result.json, stderr to stderr.log, the start and
 end to run.log.
 
 --command runs a shell command in the entrant's environment in place of claude, to check the harness."""
@@ -83,6 +89,19 @@ def environment(entrant, helix, display):
         tools.symlink_to(Path(os.environ.get('XDG_CACHE_HOME', Path.home() / '.cache')) / 'helix/tools')
     return env
 
+def sandbox(entrant, helix, claude_json):
+    """bubblewrap's arguments for the entrant's sandbox; claude_json is ~/.claude.json open for reading, copied into its home."""
+    home = Path.home()
+    args = ['bwrap', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp', '--ro-bind', '/tmp/.X11-unix',
+            '/tmp/.X11-unix', '--tmpfs', f'/run/user/{os.getuid()}', '--tmpfs', str(home)]
+    for path in (home / '.local/bin', home / '.local/share/claude', home / 'toolchains', home / '.cache/helix/tools', helix):
+        if path.exists():
+            args += ['--ro-bind', str(path), str(path)]
+    for path in (home / '.claude', helix / 'build', entrant, entrant.parent / '.home' / entrant.name):
+        args += ['--bind', str(path), str(path)]
+    return args + ['--file', str(claude_json.fileno()), str(home / '.claude.json'), '--unshare-pid', '--die-with-parent',
+                   '--chdir', str(entrant), '--']
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('entrant', type=Path)
@@ -108,18 +127,22 @@ def main():
 
     with private_display() as display:
         env = environment(entrant, helix, display)
-        if args.command:
-            sys.exit(subprocess.run(['bash', '-c', args.command], cwd=entrant, env=env).returncode)
-        log(entrant, 'start')
-        brief = (entrant / 'brief.md').read_text(encoding='utf-8')
-        command = ['claude', '-p', brief, '--model', args.model, '--output-format', 'json',
-                   '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep']
-        with open(entrant / 'result.json', 'w') as out, open(entrant / 'stderr.log', 'w') as err:
-            try:
-                code = subprocess.run(command, cwd=entrant, env=env, stdout=out, stderr=err, timeout=args.hours * 3600).returncode
-            except subprocess.TimeoutExpired:
-                code = 'timeout'
-        log(entrant, f'end exit {code}')
+        with open(Path.home() / '.claude.json', 'rb') as claude_json:
+            wrap = sandbox(entrant, helix, claude_json)
+            fds = (claude_json.fileno(),)
+            if args.command:
+                sys.exit(subprocess.run(wrap + ['bash', '-c', args.command], env=env, pass_fds=fds).returncode)
+            log(entrant, 'start')
+            brief = (entrant / 'brief.md').read_text(encoding='utf-8')
+            command = ['claude', '-p', brief, '--model', args.model, '--output-format', 'json',
+                       '--allowedTools', 'Bash,Read,Write,Edit,Glob,Grep']
+            with open(entrant / 'result.json', 'w') as out, open(entrant / 'stderr.log', 'w') as err:
+                try:
+                    code = subprocess.run(wrap + command, env=env, stdout=out, stderr=err, pass_fds=fds,
+                                          timeout=args.hours * 3600).returncode
+                except subprocess.TimeoutExpired:
+                    code = 'timeout'
+            log(entrant, f'end exit {code}')
 
 if __name__ == '__main__':
     main()

@@ -22,17 +22,21 @@ and [wardens](wardens) holds Wardens, the game the engine trials build.
 - **How it builds.** Natively, with `haxe build.hxml`, against one commit of helix (a worktree with its own haxelib, so nothing changes
   under the entrant). It runs `./native/Main` on a private display, with no sound and no session D-Bus, and its saves and cache in
   directories of its own. It sees its game through raylib's screenshots. Its brief says nothing of pages.
+- **Its walls.** It runs in a sandbox (bubblewrap) that lets it write only to its directory, its saves and its session, and hides the
+  rest of the home (other checkouts, other entrants), the machine's devices and /tmp. The brief's "write only here" and "read nothing
+  else" are kept by the sandbox, not by the entrant.
 - **What it hands back.** The program, and `NOTES.md`: each compile error it hit and what it changed, each place raylib had no call for
   what the spec asks, and each guess.
 - **Scoring.** Each program is built for the page as it stands and run there, its whole directory served, to see whether it works
-  unchanged. Its notes are read against the change being tried.
+  unchanged (`score_page.py`, in a copy of its directory). Its notes are read against the change being tried.
 - **Watching.** Each entrant's log is read every ten minutes while it runs. A harness fault stops the run early.
 
 The harness is [wardens](wardens): each arm's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
 control's `Makefile`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
-release, and starts it against a checkout of helix:
+release, and starts it against a checkout of helix; `score_page.py` builds and runs each helix-raylib entrant's program in a page:
 
 ```console
 python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.001 --helix ../helix-blind-a
 python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/raylib-c-blind.001 --helix ../helix-blind-a --engine c
+python3 docs/trials/wardens/score_page.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.00* --helix ../helix-blind-a
 ```
