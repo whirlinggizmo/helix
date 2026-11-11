@@ -40,13 +40,13 @@ def build(entrant, helix, defines=(), suffix='.page'):
     return page
 
 
-def run(page, query, shot, headed=False):
+def run(page, query, shot, headed=False, wait=30):
     """Runs a built page with a query, saving its screenshot, in headless Chromium or with headed in its window on the display; what
-    page_check printed ({errors, result}), or None when the run failed (its output printed)."""
+    page_check printed ({errors, result}), or None when the run failed (its output printed). wait is how long a result is waited for."""
     env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES', 'DBUS_SESSION_BUS_ADDRESS')}
     env['HELIX_PLAYWRIGHT'] = str(ROOT / 'build/tools/node_modules/playwright')
-    ran = subprocess.run(['node', str(ROOT / 'tools/page_check.cjs'), '--headed' if headed else '--headless', '', str(page), query, str(shot)], cwd=ROOT, env=env,
-                         capture_output=True, text=True, timeout=300)
+    ran = subprocess.run(['node', str(ROOT / 'tools/page_check.cjs'), '--headed' if headed else '--headless', f'--wait={wait}', '', str(page), query, str(shot)], cwd=ROOT, env=env,
+                         capture_output=True, text=True, timeout=wait + 300)
     try:
         return json.loads(ran.stdout)
     except ValueError:

@@ -1,14 +1,15 @@
 // Serves a directory (SITE), or takes a page already served (SITE an http or https URL), opens its page in Chromium (headless, or with --headed in its window) with the query given, waits for the page's frames to settle and saves a
 // screenshot of the 800 x 600 viewport, printing {errors, result} as JSON: the page's errors and console errors, and what a test page
 // leaves in window.helixResult (null for a page that has none). A page that sets window.helixResult to null is waited on, up to 30
-// seconds, until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
+// seconds (--wait=SECONDS for longer, as a page timing many frames needs), until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
 // BROWSER is a Chromium to run, or "" for Playwright's own (the repository's, build/tools, or the one HELIX_PLAYWRIGHT names). The page
 // runs on the GPU (Vulkan on Linux, Metal on macOS); where the page says it can't draw it runs again on SwiftShader. Audio is muted, and
 // allowed to start without a gesture so a test page can check it. A query naming safeArea=TOP,RIGHT,BOTTOM,LEFT (CSS pixels) has Chromium
 // report those as the page's env(safe-area-inset-*), as a phone with a notch would. --headed opens the browser's window on the display,
 // paced by it, for a page timed or seen as a person would see it, on ANGLE over GL on Linux, as a visible window over Vulkan loses its
 // WebGL context at startup there (docs/speed.md); --headless, the default, runs it off screen.
-const given=require('./cli.cjs').args(__filename,['browser','site','query','output'],['--headed','--headless']);
+const given=require('./cli.cjs').args(__filename,['browser','site','query','output'],['--headed','--headless','--wait=']);
+const WAIT=Number(given.values.get('--wait')||30);
 const [browserPath,site,query,output]=given;
 const path=require('path');
 const {chromium}=require(process.env.HELIX_PLAYWRIGHT||path.join(__dirname,'../build/tools/node_modules/playwright'));
@@ -41,7 +42,7 @@ async function run(address,args){
   const webgl=await page.evaluate(()=>!!document.createElement('canvas').getContext('webgl2'));
   if(!webgl)return {unavailable:true};
   if(await page.evaluate(()=>window.helixResult===null))
-   await page.waitForFunction(()=>window.helixResult!==null,null,{timeout:30000}).catch(()=>errors.push('no result after 30 seconds'));
+   await page.waitForFunction(()=>window.helixResult!==null,null,{timeout:WAIT*1000}).catch(()=>errors.push(`no result after ${WAIT} seconds`));
   const result=await page.evaluate(()=>window.helixResult===undefined?null:window.helixResult);
   await page.screenshot({path:output});return {errors,result};}
  finally{await browser.close();}

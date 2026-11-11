@@ -4,12 +4,15 @@
 const fs = require('fs');
 const path = require('path');
 
-// The arguments of the tool at file, named by names (a last name ending in ... takes the rest), each one given, as an array, and the
-// flags among options (as --headed) it was given, as the array's flags, a Set.
+// The arguments of the tool at file, named by names (a last name ending in ... takes the rest), each one given, as an array; the flags
+// among options (as --headed) it was given, as the array's flags, a Set; and its options taking a value (declared ending in =, as
+// --wait=, given as --wait=30), as the array's values, a Map from the option's name (--wait) to its value.
 function args(file, names, options = []) {
 	const all = process.argv.slice(2), rest = names.length > 0 && names[names.length - 1].endsWith('...');
-	const given = all.filter(a => !options.includes(a));
-	const usage = `usage: node ${path.relative(process.cwd(), file)} ${options.map(o => `[${o}] `).join('')}${names.map(n => n.toUpperCase()).join(' ')}`;
+	const valued = options.filter(o => o.endsWith('='));
+	const isOption = a => options.includes(a) || valued.some(o => a.startsWith(o));
+	const given = all.filter(a => !isOption(a));
+	const usage = `usage: node ${path.relative(process.cwd(), file)} ${options.map(o => `[${o.endsWith('=') ? o + 'N' : o}] `).join('')}${names.map(n => n.toUpperCase()).join(' ')}`;
 	if (given.includes('--help') || given.includes('-h')) {
 		const help = fs.readFileSync(file, 'utf8').split('\n').filter((l, i, all) => all.slice(0, i + 1).every(x => x.startsWith('//')))
 			.map(l => l.replace(/^\/\/ ?/, '')).join('\n');
@@ -21,7 +24,8 @@ function args(file, names, options = []) {
 		console.error(`${usage}\n${path.basename(file)}: ${option !== undefined ? `unknown option ${option}` : 'expected ' + names.join(', ')}`);
 		process.exit(2);
 	}
-	return Object.assign(given, {flags: new Set(all.filter(a => options.includes(a)))});
+	const values = new Map(all.filter(a => valued.some(o => a.startsWith(o))).map(a => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
+	return Object.assign(given, {flags: new Set(all.filter(a => options.includes(a))), values});
 }
 
 module.exports = {args};

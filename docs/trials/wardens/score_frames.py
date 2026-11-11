@@ -77,6 +77,7 @@ def score(entrant, helix, args, display):
     env = run_entrant.environment(copy, helix, display)
     helix_arm = (copy / 'build.hxml').is_file()
     found = []
+    printed_errors = {}
     if not native:
         pass
     elif helix_arm:
@@ -118,12 +119,18 @@ def score(entrant, helix, args, display):
             for enemies in args.enemies.split(','):
                 extra = ''.join('&' + option.lstrip('-') for option in args.args.split())
                 query = f'?enemies={enemies}&seed={args.seed}{extra}&frame_stats={args.frames}'
-                printed = score_page.run(page, query, page / f'frames-{enemies}.png', headed=args.headed)
+                # The frames timed, at 5 a second at the least, then a minute to load.
+                wait = int(args.frames.split(',')[1]) // 5 + 60
+                printed = score_page.run(page, query, page / f'frames-{enemies}.png', headed=args.headed, wait=wait)
                 found.append(('page', enemies, printed and printed.get('result'), None))
+                if printed and printed.get('errors'):
+                    printed_errors[('page', enemies)] = '; '.join(printed['errors'])[:300]
     lines = []
     for target, enemies, stats, ran in found:
         if stats is None:
             detail = f' (exit {ran.returncode})\n{ran.stdout[-1500:]}{ran.stderr[-1500:]}' if ran is not None else ''
+            if ran is None and printed_errors.get((target, enemies)):
+                detail = f' ({printed_errors[(target, enemies)]})'
             print(f'  {target} enemies={enemies}: no stats{detail}', flush=True)
             continue
         print(f'  {target} enemies={enemies}: {stats["frames"]} frames, mean {stats["meanFrameTime"] * 1000:.2f} ms, '
