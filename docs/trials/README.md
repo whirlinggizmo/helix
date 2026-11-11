@@ -11,12 +11,24 @@ and [wardens](wardens) holds Wardens, the game the engine trials build.
   blind trial. Each guess an entrant makes at the change is answered where the entrant met it: in the refusal's message, or in the
   doc of the call it reached for.
 
+## Runs
+
+Each entrant runs in a directory of its own outside any git repository, as it would read the repository's commit messages, under
+`/home/rknopf/projects/local/helix/trials`:
+
+- **A game's (a blind trial).** `<game>/<arm>-blind.<NNN>`, as `wardens/helix-raylib-blind.001` and `wardens/raylib-c-blind.001`.
+- **An API's (a library trial).** `<api>/<arm>-docs.<NNN>`, as `frame-stats-recording/helix-raylib-docs.001`: the API tried, and
+  "docs" as its entrants learn it from doc comments alone.
+
+`<arm>` is what the entrant writes against (helix-raylib, raylib-c). `<NNN>` counts that arm's runs of the game or API across trials.
+Beside them, `.home/<run>` holds each run's saves and cache. A trial's record here, `<date>-<api>` or the game's folder, names its
+runs.
+
 ## A blind trial
 
 - **Entrants.** Three on helix-raylib, on Sonnet, and the control: three writing the same game in C on raylib 5.5 itself, briefed
-  alike but for the language and the build. Each is a fresh `claude -p` started in its own directory outside any git repository,
-  `/home/rknopf/projects/local/helix/trials/<game>/<arm>-blind.<NNN>` (as `wardens/helix-raylib-blind.001`). None is a subagent of a
-  session working on helix, as that session's commit messages would reach it.
+  alike but for the language and the build. Each is a fresh `claude -p` started in a run directory of its own (see Runs). None is a
+  subagent of a session working on helix, as that session's commit messages would reach it.
 - **What each is given.** A brief, the game's spec ([Wardens](wardens/spec.md)), raylib 5.5's own headers and C examples, and
   the game's assets. Nothing of helix's docs or sources. Where helix-raylib differs from raylib, the compiler says so.
 - **How it builds.** Natively, with `haxe build.hxml`, against one commit of helix (a worktree with its own haxelib, so nothing changes
