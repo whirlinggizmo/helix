@@ -80,6 +80,8 @@ def named(product):
     return ['-D','helix-company=helix','-D',f'helix-product={product}']
 
 # What each program in engines/raylib/tests/refused must be refused with, each the start of a refusal's message or a compiler error.
+# The refused programs calling Haxe's own Sys and sys package, refused only with -D helix-raylib-portable-sys.
+PORTABLE_SYS={'FileCalls'}
 REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(',
     'sys.io.File.saveContent: A file is written later, or is refused. See SaveFileTextAsync(','sys.io.File.getBytes: Synchronous loading',
     'sys.io.File.saveBytes: A file is written later','sys.FileSystem.exists: Synchronous file access is not supported. For a saved file',
@@ -89,17 +91,19 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not suppor
     'ShaderCalls.hx:11:','CompileShaderFile: Compiles and saves the given shader to compiledShaderFileName. This file is loaded during runtime via LoadCompiledShaderAsync(')}
 
 def refused(base):
-    """Each program in engines/raylib/tests/refused refused for JS and natively with -D helix-raylib-portable-sys (typed alone), each of
-    its refusals in the compiler's errors; FileCalls typed natively without the define, Haxe's own calls; PageSys for JS without it,
+    """Each program in engines/raylib/tests/refused refused for JS and natively (typed alone), each of its refusals in the compiler's
+    errors, those of PORTABLE_SYS (Haxe's own calls) with -D helix-raylib-portable-sys and the rest (raylib's calls) without it; FileCalls typed natively without the define, Haxe's own calls; PageSys for JS without it,
     Haxe's error for its Sys call; and AsyncTests typed natively
     with it, with the libraries' own sys.io.File calls in it (the native saves), which aren't refused."""
     for main,messages in REFUSED.items():
-        for target in (['-js',f'build/tests/{main}.js','-D','helix-raylib-portable-sys'],['-cpp',f'build/tests/{main}-cpp','-D','helix-raylib-portable-sys']):
+        # Haxe's own calls are refused only with the define; helix-raylib's raylib calls are refused with or without it.
+        define=['-D','helix-raylib-portable-sys'] if main in PORTABLE_SYS else []
+        for target in (['-js',f'build/tests/{main}.js',*define],['-cpp',f'build/tests/{main}-cpp',*define]):
             done=subprocess.run(['haxe',*base,*named(main),'-cp','engines/raylib/tests/refused','-main',main,*target,'--no-output'],
                 cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
             missing=[m for m in messages if m not in done.stderr]
             if done.returncode==0 or missing:sys.exit(f'{main} ({target[0]}): built, or refusals missing: {missing}\n{done.stderr}')
-        print(f'{main}: {len(messages)} refusals (JS and native)',flush=True)
+        print(f'{main}: {len(messages)} refusals (JS and native{", -D helix-raylib-portable-sys" if define else ", no define"})',flush=True)
     run(['haxe',*base,*named('FileCalls'),'-cp','engines/raylib/tests/refused','-main','FileCalls','-cpp','build/tests/FileCalls-cpp','--no-output'])
     print('FileCalls: Haxe\'s own natively without the define',flush=True)
     # Without the define a page has no Sys of the library's, so Sys is Haxe's error for JS.
