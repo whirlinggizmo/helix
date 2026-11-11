@@ -5,8 +5,9 @@
 
 The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
 (docs/examples), with the engine's own files:
-- helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path), native/build.hxml, and raylib 5.5's
-  headers in docs/include.
+- helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path), native/build.hxml with the company and
+  product every program defines (helix-trials, and the directory's name, so each entrant's saves are its own), and raylib 5.5's headers
+  in docs/include.
 - c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/CMakeLists.txt, raylib 5.5's headers in include/ and its desktop
   library as lib/libraylib.a.
 raylib's files are copied from the release tools/raylib_parity.py fetches and builds. A directory inside a git repository is refused,
@@ -54,6 +55,9 @@ def make(entrant, engine):
     (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
     for name in ('build.hxml',) if engine == 'helix' else ('CMakeLists.txt',):
         shutil.copy(own / name, entrant / name)
+    if engine == 'helix':
+        with open(entrant / 'build.hxml', 'a', encoding='utf-8') as f:
+            f.write(f'-D helix-company=helix-trials\n-D helix-product={entrant.name}\n')
     shutil.copy(HERE / 'spec.md', entrant / 'spec.md')
     shutil.copytree(HERE / 'assets', entrant / 'assets')
     include = entrant / ('docs/include' if engine == 'helix' else 'include')
