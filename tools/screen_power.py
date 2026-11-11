@@ -1,10 +1,15 @@
 """Keeps this machine's screen on while a headed run uses it (--headed): a blanked or powered-off monitor has no vertical blank to pace
 frames by and a browser may throttle a page it can't show, so a frame time taken then is wrong, and a locked session hides the windows.
 
-On Linux under X11, for the run: X's screen saver and power management off (xset) and the monitor woken; XFCE's power manager, when it
-runs, in its presentation mode, as it applies its own blanking over xset's; GNOME's idle delay 0, when a GNOME daemon runs. Each setting
-is put back as it was afterwards, also when the run fails. A locked session refuses the run, as its windows would be behind the lock.
-Elsewhere, or for a run that isn't headed, it does nothing. Imported by the tools, not run. Standard library only."""
+For the run, on each system the tools run headed on:
+- Linux under X11: X's screen saver and power management off (xset) and the monitor woken; XFCE's power manager, when it runs, in its
+  presentation mode, as it applies its own blanking over xset's; GNOME's idle delay 0, when a GNOME daemon runs. Each setting is put back
+  as it was afterwards, also when the run fails.
+- Windows: the process asks for the display and the system to stay on (SetThreadExecutionState), which Windows lets go of as the run
+  ends, so no setting changes.
+- macOS: caffeinate keeps the display and the system awake while the process lives, and is stopped as the run ends.
+A locked session refuses the run, as its windows would be behind the lock (logind's LockedHint, Windows' LogonUI). For a run that isn't
+headed it does nothing. Imported by the tools, not run. Standard library only."""
 from contextlib import contextmanager
 import os
 import re
@@ -28,7 +33,9 @@ def _running(*names):
 
 
 def locked():
-    """Whether this user's graphical session is locked (logind's LockedHint)."""
+    """Whether this user's graphical session is locked: logind's LockedHint, or Windows' lock screen (LogonUI) running."""
+    if sys.platform == 'win32':
+        return 'LogonUI.exe' in (_run('tasklist', '/fi', 'imagename eq LogonUI.exe', '/nh') or '')
     sessions = _run('loginctl', 'list-sessions', '--no-legend') or ''
     for line in sessions.splitlines():
         parts = line.split()
@@ -42,11 +49,20 @@ def locked():
 @contextmanager
 def kept_on(headed):
     """Keeps the screen on for the run within, when headed; puts each setting back after it."""
-    if not headed or not sys.platform.startswith('linux') or not os.environ.get('DISPLAY'):
+    if not headed:
         yield
         return
     if locked():
         sys.exit('screen_power: the session is locked, so a headed run\'s windows would be behind the lock: unlock it, or run headless')
+    if sys.platform == 'win32':
+        yield from _windows()
+        return
+    if sys.platform == 'darwin':
+        yield from _mac()
+        return
+    if not os.environ.get('DISPLAY'):
+        yield
+        return
     query = _run('xset', 'q') or ''
     saver = re.search(r'prefer blanking:\s+(\w+).*?timeout:\s+(\d+)\s+cycle:\s+(\d+)', query, re.S)
     dpms = re.search(r'Standby:\s+(\d+)\s+Suspend:\s+(\d+)\s+Off:\s+(\d+)\s+DPMS is (\w+)', query, re.S)
@@ -78,6 +94,31 @@ def kept_on(headed):
                 _run('xfconf-query', '-c', 'xfce4-power-manager', '-p', '/xfce4-power-manager/presentation-mode', '-s', presentation.strip())
         if gnome and idle is not None:
             _run('gsettings', 'set', 'org.gnome.desktop.session', 'idle-delay', idle.split()[-1])
+
+
+
+def _windows():
+    """Keeps Windows' display and system on while the run lasts, and lets go after it."""
+    import ctypes
+    continuous, system, display = 0x80000000, 0x00000001, 0x00000002
+    ctypes.windll.kernel32.SetThreadExecutionState(continuous | system | display)
+    try:
+        yield
+    finally:
+        ctypes.windll.kernel32.SetThreadExecutionState(continuous)
+
+
+def _mac():
+    """Keeps a Mac's display and system awake while the run lasts (caffeinate), and stops it after."""
+    try:
+        awake = subprocess.Popen(['caffeinate', '-d', '-i', '-w', str(os.getpid())])
+    except OSError:
+        awake = None
+    try:
+        yield
+    finally:
+        if awake is not None:
+            awake.terminate()
 
 
 if __name__ == '__main__':

@@ -115,9 +115,10 @@ built and where it is (`tools/variants.py` holds the lists).
 - **A tool that runs programs takes the same two choices** (`cli.runs`): what runs, `--native` or `--page` (each alone, both by
   default), and where, `--headless` (the default: a private display, headless Chromium) or `--headed` (this machine's display), so CI
   and unattended runs need neither. A Node tool opening a page takes `--headed` and `--headless`. `raylib_parity.py` is the exception:
-  its runs are compared against raylib's C off screen. A headed run keeps the screen on while it runs (`tools/screen_power.py`): X's
-  blanking and power management off, XFCE's power manager in presentation mode, GNOME's idle delay 0, each put back after it, and a
-  locked session refused, as a blanked monitor has no vertical blank to pace frames by and a browser throttles a page it can't show.
+  its runs are compared against raylib's C off screen. A headed run keeps the screen on while it runs (`tools/screen_power.py`): on
+  Linux X's blanking and power management off, XFCE's power manager in presentation mode and GNOME's idle delay 0, each put back after
+  it; on Windows the process's request to keep the display on; on macOS caffeinate. A locked session refuses it, as a blanked monitor
+  has no vertical blank to pace frames by and a browser throttles a page it can't show.
 - **What a program runs is Haxe,** on a library's class path under `helix.<library>.tools` (`helix.platform.tools.ShaderCompiler`), run
   in the compiler or its interpreter, so a program needs no Python, and nothing of the tools is compiled into a program. A library's
   examples build from hxml files beside them. Python and Node are the repository's own checks, never in a user's path.
@@ -140,7 +141,7 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/pages.py` | The GitHub Pages site in `build/site`: the API reference's HTML at `api/`. The pages workflow deploys it |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by section (`--check`) |
 | `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
-| `tools/screen_power.py` | Keeps this machine's screen on while a headed run uses it, its settings put back after (a module) |
+| `tools/screen_power.py` | Keeps the screen on while a headed run uses it, on Linux, Windows and macOS, its settings put back after (a module) |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in Chromium (headless, or `--headed`): its errors, its result and a screenshot (run by `platform_checks.py` and `raylib_page_checks.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
