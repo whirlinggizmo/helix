@@ -6971,12 +6971,12 @@ class Raylib {
 
 	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`. */
 	public static macro function LoadShader(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShader: Shaders are compiled as the program builds. Compile the two files with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String), in the build's hxml or the program's code, then load the file it writes with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)",
+		return helix.platform.macros.Build.unsupported("LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
 	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory. */
 	public static macro function LoadShaderFromMemory(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Shaders are compiled as the program builds. Write the two stages to files and compile them with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String), in the build's hxml or the program's code, then load the file it writes with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or its bytes with LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes)",
+		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
 	/** Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file. */
@@ -7308,18 +7308,15 @@ class Raylib {
 		return helix.raylib.internal.WaveMacro.fromMemory(fileType, fileData, dataSize, loaded, failed);
 	}
 
-	// ---- Shaders, compiled as the program builds ----
+	// ---- Shaders, precompiled ----
 
-	/** Compiles a shader's two stages, raylib's GLSL, into a file `LoadCompiledShaderAsync` loads during runtime. It is run as part of
-		the program's build step and generates the compiled shader `compiledShaderFileName`. Run as a `--macro` of the program's build, or
-		of an hxml of its own, one line a shader:
+	/** A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShaderAsync`
+		to load. Typically called from the build's hxml, one line a shader:
 
 		```hxml
 		-lib helix-raylib
 		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
 		```
-
-		A call in the program's code compiles the shader as that code is built.
 
 		@param vsFileName  The vertex stage's file, or null for raylib's default.
 		@param fsFileName  The fragment stage's file, or null for raylib's default.
@@ -7328,7 +7325,7 @@ class Raylib {
 		// Its result wanted as a value (passed to LoadCompiledShaderFromData, say) is refused here, at the program's line.
 		var expected = haxe.macro.Context.getExpectedType();
 		if (expected != null && haxe.macro.TypeTools.toString(expected) != "Void")
-			haxe.macro.Context.error("CompileShaderFile: Compiles and saves the given shader to compiledShaderFileName. This file is loaded during runtime via LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)",
+			haxe.macro.Context.error("CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)",
 				haxe.macro.Context.currentPos());
 		helix.raylib.internal.ShaderMacro.compileFile(vsFileName, fsFileName, compiledShaderFileName);
 		return macro {};

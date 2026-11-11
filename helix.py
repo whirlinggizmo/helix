@@ -86,9 +86,9 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not suppor
     'sys.io.File.saveContent: A file is written later, or is refused. See SaveFileTextAsync(','sys.io.File.getBytes: Synchronous loading',
     'sys.io.File.saveBytes: A file is written later','sys.FileSystem.exists: Synchronous file access is not supported. For a saved file',
     'sys.FileSystem.readDirectory: Synchronous file access','sys.io.Process: Not supported.'),
-    'ShaderCalls':('LoadShader: Shaders are compiled as the program builds. Compile the two files with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String)',
-    'LoadShaderFromMemory: Shaders are compiled as the program builds. Write the two stages to files and compile them with CompileShaderFile(vsFileName:Null<String>',
-    'ShaderCalls.hx:11:','CompileShaderFile: Compiles and saves the given shader to compiledShaderFileName. This file is loaded during runtime via LoadCompiledShaderAsync('),
+    'ShaderCalls':('LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro',
+    'LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(','or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes',
+    'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync('),
     'GuessedCalls':('GuessedCalls.hx:10: characters 20-51 : LoadModelAnimations: Synchronous loading','GuessedCalls.hx:11: characters 17-55 : LoadModelAnimations: Synchronous',
     'GuessedCalls.hx:12: characters 19-44 : LoadMaterials: Synchronous','GuessedCalls.hx:13: characters 15-55 : LoadFileData: Synchronous',
     'GuessedCalls.hx:14: characters 16-33 : LoadImageAnim: Synchronous','GuessedCalls.hx:15: characters 3-24 : SetWindowSize: The window changes later')}
