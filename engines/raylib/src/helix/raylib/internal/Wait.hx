@@ -741,21 +741,21 @@ class Wait {
 			}
 			switch x.expr {
 				case ECall(_, _):
+					// A call can be typed more than once at its place (a loop over `0...n`), each one awaited here.
+					var isVoid:Null<Bool> = null;
 					for (site in sites)
 						if (place(site.pos) == place(x.pos)) {
 							site.used = true;
-							return site.isVoid ? macro @:pos(x.pos) js.Syntax.code("(await {0})",
-								untyped $inner) : macro @:pos(x.pos) helix.raylib.internal.Await.value($inner);
+							isVoid = site.isVoid;
 						}
-					var p = Context.getPosInfos(x.pos);
-					for (i in 0...awaits.length) {
-						var at = Context.getPosInfos(awaits[i].pos);
-						if (at.min == p.min && at.max == p.max && at.file == p.file) {
+					for (i in 0...awaits.length)
+						if (place(awaits[i].pos) == place(x.pos)) {
 							used[i] = true;
-							return awaits[i].isVoid ? macro @:pos(x.pos) js.Syntax.code("(await {0})",
-								untyped $inner) : macro @:pos(x.pos) helix.raylib.internal.Await.value($inner);
+							isVoid = awaits[i].isVoid;
 						}
-					}
+					if (isVoid != null)
+						return isVoid ? macro @:pos(x.pos) js.Syntax.code("(await {0})",
+							untyped $inner) : macro @:pos(x.pos) helix.raylib.internal.Await.value($inner);
 				case _:
 			}
 			return inner;

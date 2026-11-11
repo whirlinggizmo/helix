@@ -6,7 +6,7 @@ import helix.services.screen.Screen;
 import helix.services.time.Time;
 
 /** Checks the calls a page waits for (helix-raylib's Wait), written as raylib's programs write them: a loop calling `EndDrawing()` in a
-	function of its own, one frame an iteration, with `continue` and `break`, and a `do`-`while`; a frame ended in a function the loop
+	function of its own, one frame an iteration, with `continue` and `break`, a `do`-`while`, and loops over a range and an array; a frame ended in a function the loop
 	calls; a load in a function returning its value, used as a statement, a value, an argument and in a string; functions calling each
 	other; a method of an object, and one overriding it that calls it; a `throw` after a wait caught by the caller; and a function reaching no wait, which returns its value at
 	once, as do functions calling each other that reach none. In a page the frames come from the test's own timer and a function that waits returns at its first wait; natively each call
@@ -113,6 +113,11 @@ class WaitShapes {
 		before = Runtime.frames;
 		var within = nested(4);
 		WaitTests.check(within == "4 one 2 3 3" && Runtime.frames - before == 7, 'functions declared in a function wait when called by their names: $within');
+
+		before = Runtime.frames;
+		var steps = ranged(2);
+		WaitTests.check(steps == 2 && Runtime.frames - before == 6,
+			'loops over a range and an array wait in each iteration: $steps, ${Runtime.frames - before} frames');
 
 		before = Runtime.frames;
 		WaitTests.check(caught() == "caught after a frame", 'a throw after a wait is caught by the caller: ${caught()}');
@@ -225,6 +230,21 @@ class WaitShapes {
 		}
 		while (twice() < frames) {}
 		return '$ended ${read("a.txt")} ${next(1)} ${read("a.txt").length} ${down(2) + 1}';
+	}
+
+	static function ranged(frames:Int):Int {
+		var ended = 0;
+		function step():Void {
+			frame();
+			ended++;
+		}
+		for (_ in 0...frames)
+			frame();
+		for (_ in 0...frames)
+			step();
+		for (_ in [0, 1])
+			frame();
+		return ended;
 	}
 
 	static function failing():Void {
