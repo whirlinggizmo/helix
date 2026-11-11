@@ -1,0 +1,7 @@
+{
+  "what": "raylib's white background below the cubes, and the recording of frames 30 to 50 printed: the 19 frames whose EndDrawing came after the start's.",
+  "printed": ["frames 19, "],
+  "points": [
+    {"x": 790, "y": 440, "color": [245, 245, 245], "tolerance": 3}
+  ]
+}

@@ -12,7 +12,7 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 #end
 
-/** Provides the drawing that shows what a program does: a model's skeleton and bounds as posed, and the frame's cost.
+/** Provides the drawing that shows what a program does: a model's skeleton and bounds as posed, and the frame's cost, drawn or read.
 
 	Each member is written here. `helix.raylib.extras.Debug` forwards to it (`tools/gen_raylib.py`). */
 @:noCompletion
@@ -30,6 +30,19 @@ class RDebug {
 
 	static final times = [for (_ in 0...RING) 0.];
 
+	// Each frame's draws, triangles and state changes, beside its time in the ring, made once the stats are read (`keep`): `kept` frames
+	// at most, the frames since.
+	static var drawsRing:Null<Array<Int>> = null;
+
+	static var trianglesRing:Null<Array<Int>> = null;
+
+	static var changesRing:Null<Array<Int>> = null;
+
+	static var kept = 0;
+
+	// What else each frame recorded keeps, set once the stats are read or recorded, so a program drawing them alone links none of it.
+	static var keeping:Null<Float->Void> = null;
+
 	static final slowest = [for (_ in 0...TOP) 0.];
 
 	static var head = 0;
@@ -44,8 +57,32 @@ class RDebug {
 
 	static var changes = 0;
 
-	// The frame whose drawing records each frame's time, once a program draws the stats (a frame made again is hooked again).
+	// The frame whose drawing records each frame's time, once a program draws or reads the stats (a frame made again is hooked again).
 	static var hooked:Null<Frame> = null;
+
+	// The system's time at the last frame's drawing, from which the next frame's time is taken; negative before the first.
+	static var last = -1.;
+
+	// A recording's frames, its latest RECORDED at most, in a ring made at the first StartFrameStatsRecording: each frame's time, draws,
+	// triangles and state changes.
+	static inline final RECORDED = 65536;
+
+	static var recordedTimes:Null<Array<Float>> = null;
+
+	static var recordedDraws:Null<Array<Int>> = null;
+
+	static var recordedTriangles:Null<Array<Int>> = null;
+
+	static var recordedChanges:Null<Array<Int>> = null;
+
+	static var recordedHead = 0;
+
+	static var recordedCount = 0;
+
+	// Whether a recording runs, and whether its first frame is still to start (at the next frame's drawing).
+	static var recording = false;
+
+	static var recordingStarts = false;
 
 	/** Draws a model's skeleton in the pose it has at the call, placed as DrawModel places the model. See `DrawModelBoundingBoxPosed` for drawing its bounds.
 
@@ -199,6 +236,100 @@ class RDebug {
 		return measure(style, lines, style.font != null ? style.font : GetFontDefault(), size);
 	}
 
+	/** Returns the stats of the last half second's frames, the half second DrawFrameStats shows the frame time over.
+		See `StartFrameStatsRecording` for recording the frames of the program's choosing.
+
+		A frame is counted as its EndDrawing returns, and its time runs from the EndDrawing before it.
+
+		The frames are counted from the first call of GetFrameStats or StartFrameStatsRecording. So the first call returns all zero, and
+		the next ones cover the frames drawn since, up to the last half second.
+
+		Recording the frames doesn't change the last half second's stats.
+
+		@return  The frames' time, rate, draws and the memory held. */
+	static function GetFrameStats():FrameStats {
+		hook();
+		keepCounts();
+		window(kept);
+		var draws = 0., tris = 0., switched = 0.;
+		for (j in 0...used) {
+			var at = (head - 1 - j + RING * 2) % RING;
+			draws += drawsRing[at];
+			tris += trianglesRing[at];
+			switched += changesRing[at];
+		}
+		return statsOf(used, mean * used, p95, slowestOfWindow, draws, tris, switched);
+	}
+
+	/** Starts recording the frames' stats, until `StopFrameStatsRecording`. See `GetFrameStats` for the last half second's.
+
+		The first frame recorded starts at the next EndDrawing, and each frame from there is recorded as its EndDrawing returns.
+
+		A second call starts again, dropping the frames recorded.
+
+		A recording keeps its latest 65536 frames. */
+	static function StartFrameStatsRecording():Void {
+		hook();
+		keepCounts();
+		if (recordedTimes == null) {
+			recordedTimes = [for (_ in 0...RECORDED) 0.];
+			recordedDraws = [for (_ in 0...RECORDED) 0];
+			recordedTriangles = [for (_ in 0...RECORDED) 0];
+			recordedChanges = [for (_ in 0...RECORDED) 0];
+		}
+		recordedHead = 0;
+		recordedCount = 0;
+		recording = true;
+		recordingStarts = true;
+	}
+
+	/** Stops recording the frames' stats and returns the stats of the frames recorded since `StartFrameStatsRecording`: those whose
+		EndDrawing returned before this call.
+
+		The GPU's and the program's memory are as they are at this call.
+
+		@return  The frames' time, rate, draws and the memory held. All zero without a StartFrameStatsRecording, or before a frame is
+			recorded. */
+	static function StopFrameStatsRecording():FrameStats {
+		if (!recording)
+			return statsOf(0, 0, 0, 0, 0, 0, 0);
+		recording = false;
+		var n = recordedCount;
+		var start = (recordedHead - n + RECORDED) % RECORDED;
+		var sorted = [for (j in 0...n) recordedTimes[(start + j) % RECORDED]];
+		var sum = 0., draws = 0., tris = 0., switched = 0.;
+		for (j in 0...n) {
+			var at = (start + j) % RECORDED;
+			sum += recordedTimes[at];
+			draws += recordedDraws[at];
+			tris += recordedTriangles[at];
+			switched += recordedChanges[at];
+		}
+		sorted.sort((a, b) -> a < b ? 1 : a > b ? -1 : 0);
+		// The p95 is the least of the slowest twentieth, rounded up.
+		var k = Std.int(Math.ceil(n / 20));
+		return statsOf(n, sum, k == 0 ? 0 : sorted[k - 1], n == 0 ? 0 : sorted[0], draws, tris, switched);
+	}
+
+	// Frame stats from n frames' total time, p95, slowest and total counts, with the GPU's and the program's memory now.
+	static function statsOf(n:Int, sum:Float, p95:Float, slowest:Float, draws:Float, tris:Float, switched:Float):FrameStats {
+		if (n == 0)
+			return {};
+		return {
+			frames: n,
+			fps: sum > 0 ? n / sum : 0,
+			meanFrameTime: sum / n,
+			p95FrameTime: p95,
+			slowestFrameTime: slowest,
+			drawCalls: draws / n,
+			triangles: tris / n,
+			stateChanges: switched / n,
+			gpuTextureBytes: Runtime.graphics.textureBytes,
+			gpuBufferBytes: Runtime.graphics.bufferBytes,
+			memoryBytes: Runtime.system.getMemoryBytes()
+		};
+	}
+
 	// The text's height: the style's, or a 36th of the screen's; a size under 1 is refused.
 	static function fontSizeOf(style:FrameStatsStyle):Int {
 		var size = style.fontSize;
@@ -248,9 +379,15 @@ class RDebug {
 		if (hooked == frame)
 			return;
 		hooked = frame;
+		last = -1;
 		frame.drawing.push(() -> {
-			record(GetFrameTime());
 			tally(frame);
+			var now = Runtime.system.getTime();
+			if (last >= 0)
+				record(now - last);
+			// A recording's first frame starts here.
+			recordingStarts = false;
+			last = now;
 		});
 	}
 
@@ -289,12 +426,43 @@ class RDebug {
 		changes = switched;
 	}
 
-	// Adds a frame's time to the ring, over the oldest.
+	// Adds a frame's time to the ring over the oldest, and what `keeping` keeps of it.
 	static function record(seconds:Float):Void {
+		if (keeping != null)
+			keeping(seconds);
 		times[head] = seconds;
 		head = (head + 1) % RING;
 		if (count < RING)
 			count++;
+	}
+
+	// Makes the count rings and keeps each frame's counts, and its time in a recording running, from now on.
+	static function keepCounts():Void {
+		if (keeping != null)
+			return;
+		drawsRing = [for (_ in 0...RING) 0];
+		trianglesRing = [for (_ in 0...RING) 0];
+		changesRing = [for (_ in 0...RING) 0];
+		keeping = keep;
+	}
+
+	// Keeps a frame's counts, tally's, beside its time in the ring (at head, before record moves it), and adds the frame to a recording
+	// running.
+	static function keep(seconds:Float):Void {
+		drawsRing[head] = draws;
+		trianglesRing[head] = triangles;
+		changesRing[head] = changes;
+		if (kept < RING)
+			kept++;
+		if (!recording || recordingStarts)
+			return;
+		recordedTimes[recordedHead] = seconds;
+		recordedDraws[recordedHead] = draws;
+		recordedTriangles[recordedHead] = triangles;
+		recordedChanges[recordedHead] = changes;
+		recordedHead = (recordedHead + 1) % RECORDED;
+		if (recordedCount < RECORDED)
+			recordedCount++;
 	}
 
 	// The frames' times of the last half second: how many, their mean and their p95 (the slowest 5%'s least), in seconds.
@@ -304,9 +472,12 @@ class RDebug {
 
 	static var p95 = 0.;
 
-	static function window():Void {
+	static var slowestOfWindow = 0.;
+
+	static function window(?frames:Int):Void {
+		var most = frames == null || frames > count ? count : frames;
 		var sum = 0., n = 0;
-		while (n < count && sum < WINDOW) {
+		while (n < most && sum < WINDOW) {
 			sum += times[(head - 1 - n + RING * 2) % RING];
 			n++;
 		}
@@ -327,6 +498,7 @@ class RDebug {
 			slowest[at] = t;
 		}
 		p95 = k == 0 ? 0 : slowest[k - 1];
+		slowestOfWindow = held == 0 ? 0 : slowest[0];
 	}
 
 	// A number of seconds as milliseconds with 2 decimals, up to 999.99.

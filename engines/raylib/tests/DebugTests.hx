@@ -13,7 +13,9 @@ import helix.services.time.Time;
 	two-bone model's bones are, posed and unposed, scaled and moved as DrawModel places it; the posed box drawn at its corners; the
 	stats' size following the style's fields, the font size scaling with the screen's height and a size under 1 refused; what is drawn
 	matching what is measured; the frame time's mean and p95 over a half second of a ring that wraps; the draws, triangles and state
-	changes of a frame with known draws; and the colors against a target, a given one, SetTargetFPS's and the monitor's. */
+	changes of a frame with known draws; the colors against a target, a given one, SetTargetFPS's and the monitor's; and the stats read,
+	over the last half second and over a recording, which starts at the EndDrawing after its start, starts again at a second start and
+	keeps its latest 65536 frames. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)
@@ -341,6 +343,65 @@ class DebugTests {
 		check(d.sprite && f.spriteData.get(at) == BLUE.r && f.spriteData.get(at + 3) == BLUE.a && f.spriteData.get(at + 2) == BLUE.b,
 			"the text is drawn in that color");
 		f.draw(64, 64, true);
+
+		// The stats read: frames an eighth of a second apart, so the last half second is four of them, each a rectangle (a draw of two
+		// triangles).
+		var frameOf = (seconds:Float, rectangles:Int) -> {
+			for (k in 0...rectangles)
+				DrawRectangle(k * 5, 0, 4, 4, WHITE);
+			system.now += seconds;
+			Runtime.frame.draw(64, 64, true);
+		};
+		var stats = GetFrameStats();
+		check(stats.frames == 0 && stats.meanFrameTime == 0 && stats.gpuTextureBytes == 0, 'all zero at the first call: $stats');
+		for (_ in 0...8)
+			frameOf(.125, 1);
+		stats = GetFrameStats();
+		check(stats.frames == 4 && near(stats.meanFrameTime, .125) && near(stats.fps, 8), 'the last half second is 4 frames of 0.125 s: $stats');
+		check(near(stats.drawCalls, 1) && near(stats.triangles, 2) && near(stats.stateChanges, 0), 'a draw of two triangles a frame: $stats');
+		check(stats.gpuTextureBytes == Runtime.graphics.textureBytes && stats.memoryBytes == system.getMemoryBytes(),
+			"the memory held as the graphics and the system count it");
+
+		// A recording: its first frame starts at the EndDrawing after the call, so the frame ending there isn't recorded.
+		check(StopFrameStatsRecording().frames == 0, "nothing recorded without a start");
+		StartFrameStatsRecording();
+		frameOf(.5, 1);
+		frameOf(.1, 1);
+		frameOf(.2, 2);
+		frameOf(.3, 3);
+		stats = GetFrameStats();
+		check(stats.frames == 2 && near(stats.slowestFrameTime, .3), 'the last half second goes on while recording, 0.3 and 0.2 s: $stats');
+		stats = StopFrameStatsRecording();
+		check(stats.frames == 3 && near(stats.meanFrameTime, .2) && near(stats.fps, 5), 'three frames of 0.1, 0.2 and 0.3 s: $stats');
+		check(near(stats.p95FrameTime, .3) && near(stats.slowestFrameTime, .3), 'the p95 of three is the slowest: $stats');
+		check(near(stats.drawCalls, 1) && near(stats.triangles, 4), 'one draw a frame, and 2, 4 and 6 triangles: $stats');
+		frameOf(.1, 1);
+		check(StopFrameStatsRecording().frames == 0, "a second stop returns nothing");
+
+		// A second start drops the frames recorded.
+		StartFrameStatsRecording();
+		frameOf(.1, 1);
+		frameOf(.1, 1);
+		StartFrameStatsRecording();
+		frameOf(.1, 1);
+		frameOf(.4, 1);
+		stats = StopFrameStatsRecording();
+		check(stats.frames == 1 && near(stats.meanFrameTime, .4), 'only the frame after the second start: $stats');
+
+		// The p95 of 40 frames is the second slowest, and a recording keeps its latest 65536 frames.
+		StartFrameStatsRecording();
+		RDebug.recordingStarts = false;
+		for (k in 0...40)
+			RDebug.record(k == 0 ? .9 : k == 1 ? .8 : .01);
+		stats = StopFrameStatsRecording();
+		check(stats.frames == 40 && near(stats.p95FrameTime, .8) && near(stats.slowestFrameTime, .9), 'the p95 of 40: $stats');
+		StartFrameStatsRecording();
+		RDebug.recordingStarts = false;
+		RDebug.record(5);
+		for (_ in 0...RDebug.RECORDED)
+			RDebug.record(.01);
+		stats = StopFrameStatsRecording();
+		check(stats.frames == 65536 && near(stats.slowestFrameTime, .01), 'the latest 65536, the oldest dropped: ${stats.frames}');
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

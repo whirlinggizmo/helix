@@ -16,6 +16,9 @@ static function DrawModelBoundingBoxPosed(model:Model, position:Vector3, scale:F
 static function DrawFrameStats(posX:Int, posY:Int, fontSize:Int):Void
 static function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void
 static function MeasureFrameStats(style:FrameStatsStyle):Vector2
+static function GetFrameStats():FrameStats
+static function StartFrameStatsRecording():Void
+static function StopFrameStatsRecording():FrameStats
 ```
 
 - `DrawModelSkeleton`: Draws a model's skeleton in the pose it has at the call, placed as DrawModel places the model. See `DrawModelBoundingBoxPosed` for drawing its bounds.
@@ -78,6 +81,24 @@ static function MeasureFrameStats(style:FrameStatsStyle):Vector2
   The size includes the padding.
 
   Sized for the widest values, so it is the same from frame to frame.
+- `GetFrameStats`: Returns the stats of the last half second's frames, the half second DrawFrameStats shows the frame time over. See `StartFrameStatsRecording` for recording the frames of the program's choosing.
+  - returns: The frames' time, rate, draws and the memory held.
+
+  A frame is counted as its EndDrawing returns, and its time runs from the EndDrawing before it.
+
+  The frames are counted from the first call of GetFrameStats or StartFrameStatsRecording. So the first call returns all zero, and the next ones cover the frames drawn since, up to the last half second.
+
+  Recording the frames doesn't change the last half second's stats.
+- `StartFrameStatsRecording`: Starts recording the frames' stats, until `StopFrameStatsRecording`. See `GetFrameStats` for the last half second's.
+  The first frame recorded starts at the next EndDrawing, and each frame from there is recorded as its EndDrawing returns.
+
+  A second call starts again, dropping the frames recorded.
+
+  A recording keeps its latest 65536 frames.
+- `StopFrameStatsRecording`: Stops recording the frames' stats and returns the stats of the frames recorded since `StartFrameStatsRecording`: those whose EndDrawing returned before this call.
+  - returns: The frames' time, rate, draws and the memory held. All zero without a StartFrameStatsRecording, or before a frame is recorded.
+
+  The GPU's and the program's memory are as they are at this call.
 
 ## Device
 

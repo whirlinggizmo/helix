@@ -878,3 +878,15 @@ Why things are the way they are, numbered, in order.
     parameters. Two entrants across two runs passed its result, `null`, to `LoadCompiledShaderFromData`, which built and segfaulted at
     run time. `helix.py test` builds a program doing both for JS and natively and checks each refusal (`ShaderCalls`). Rejected: a
     sentence in the doc saying it returns nothing, which an entrant reading only the refusal never sees.
+
+68. **A program reads the frame stats, over the last half second or a recording.** `extras.Debug` adds `GetFrameStats`, the last half
+    second's, and `StartFrameStatsRecording` and `StopFrameStatsRecording`, a recording's, each returning a `FrameStats`: the frames,
+    their rate, the mean, p95 and slowest frame times in seconds, the mean draw calls, triangles and state changes a frame, and the
+    bytes held on the GPU and by the program. A frame runs from one `EndDrawing` to the next, and a recording's first frame starts at
+    the `EndDrawing` after its start. `Start` and `Stop` follow raylib's `StartAutomationEventRecording` and
+    `StopAutomationEventRecording`, as recording spans frames where `Begin` and `End` bracket one. Why: the frame stats were drawn
+    only, so a game logging its frame time, or a scorer timing a trial's entrants alike, wrote its own timer. The Wardens spec asked
+    each entrant for one, and each placed it differently. Other engines read them too (Unity's FrameTimingManager, Godot's
+    Performance monitors). Tried first from their doc comments by two Sonnet agents (docs/trials/2026-11-10-frame-stats-recording).
+    Rejected: times in milliseconds, which `GetFrameTime` doesn't use; an `IsFrameStatsRecording`, which raylib's own recordings
+    don't have.

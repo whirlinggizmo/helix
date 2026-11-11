@@ -36,8 +36,7 @@ import helix.raylib.Raylib.*;
 		Counts meshes' vertices and indices, the frame's batch and its quad indices, and a frame's instances, as the graphics reports them. */
 	public var gpuBuffers:Bool = false;
 
-	/** Gets or sets a value indicating whether the megabytes of memory the program holds show, as `ISystem.getMemoryBytes` reports them.
-		Defaults to false.
+	/** Gets or sets a value indicating whether the megabytes of memory the program holds show. Defaults to false.
 
 		Natively, the process's resident memory.
 
