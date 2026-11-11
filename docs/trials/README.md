@@ -45,8 +45,9 @@ the game's folder, names its runs.
   with the frame stats' hook (helix-raylib's `-D helix-raylib-frame-stats`; for raylib C, stock raylib 5.5 with `EndDrawing` wrapped at
   link time) and run at each load for a fixed run of frames (`score_frames.py`). Its notes are read against the change being tried.
 - **Watching.** Each entrant is watched as AGENTS.md's "Watch, don't wait" says, with `tools/watch_job.py` on its `run_entrant.py`
-  process and its `stderr.log`, its deadline the brief's budget (`--hours`): a status line every ten minutes, and a stall or the
-  deadline reported at once. A harness fault stops the run early.
+  process and its session's transcript (`~/.claude/projects/<its directory, dashed>/*.jsonl`, which grows each turn, where `claude -p`
+  writes its result and `stderr.log` only at the end), its deadline the brief's budget (`--hours`): a status line every ten minutes,
+  and a stall or the deadline reported at once. A harness fault stops the run early.
 
 The harness is [wardens](wardens): each engine's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
 control's `CMakeLists.txt`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
