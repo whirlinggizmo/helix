@@ -22,7 +22,7 @@ class Defines {
 		},
 		{
 			define: "helix-raylib-portable-sys",
-			doc: "Natively, refuses what a page can't answer, as a build for the page does: Haxe's file calls (sys.io.File, sys.FileSystem), sys.io.Process and the Sys calls a page has no answer for, each refusal naming the raylib call to use. So a program that builds natively builds for the page. Off by default, when a native program has Haxe's own."
+			doc: "Gives a page a Sys (the program's options from the URL's query, the console and the clock) and refuses on every target what a page can't answer: Haxe's file calls (sys.io.File, sys.FileSystem), sys.io.Process and the Sys calls a page has no answer for, each refusal naming the raylib call to use. So a program that builds natively builds for the page. Off by default, when a build is Haxe's as shipped."
 		},
 		{
 			define: "helix-raylib-frame-stats",

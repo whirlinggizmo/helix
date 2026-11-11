@@ -758,9 +758,11 @@ class Runtime {
 				+ '"slowestFrameTime":${s.slowestFrameTime},"drawCalls":${s.drawCalls},"triangles":${s.triangles},'
 				+ '"stateChanges":${s.stateChanges},"gpuTextureBytes":${s.gpuTextureBytes},"gpuBufferBytes":${s.gpuBufferBytes},'
 				+ '"memoryBytes":${s.memoryBytes}}';
-			Sys.println("frame_stats " + json);
 			#if js
+			js.Syntax.code("console.log({0})", "frame_stats " + json);
 			js.Syntax.code("window.helixResult = JSON.parse({0})", json);
+			#else
+			Sys.println("frame_stats " + json);
 			#end
 			shouldClose = true;
 		}

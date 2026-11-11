@@ -90,10 +90,11 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not suppor
 
 def refused(base):
     """Each program in engines/raylib/tests/refused refused for JS and natively with -D helix-raylib-portable-sys (typed alone), each of
-    its refusals in the compiler's errors; FileCalls typed natively without the define, Haxe's own calls; and AsyncTests typed natively
+    its refusals in the compiler's errors; FileCalls typed natively without the define, Haxe's own calls; PageSys for JS without it,
+    Haxe's error for its Sys call; and AsyncTests typed natively
     with it, with the libraries' own sys.io.File calls in it (the native saves), which aren't refused."""
     for main,messages in REFUSED.items():
-        for target in (['-js',f'build/tests/{main}.js'],['-cpp',f'build/tests/{main}-cpp','-D','helix-raylib-portable-sys']):
+        for target in (['-js',f'build/tests/{main}.js','-D','helix-raylib-portable-sys'],['-cpp',f'build/tests/{main}-cpp','-D','helix-raylib-portable-sys']):
             done=subprocess.run(['haxe',*base,*named(main),'-cp','engines/raylib/tests/refused','-main',main,*target,'--no-output'],
                 cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
             missing=[m for m in messages if m not in done.stderr]
@@ -101,6 +102,11 @@ def refused(base):
         print(f'{main}: {len(messages)} refusals (JS and native)',flush=True)
     run(['haxe',*base,*named('FileCalls'),'-cp','engines/raylib/tests/refused','-main','FileCalls','-cpp','build/tests/FileCalls-cpp','--no-output'])
     print('FileCalls: Haxe\'s own natively without the define',flush=True)
+    # Without the define a page has no Sys of the library's, so Sys is Haxe's error for JS.
+    done=subprocess.run(['haxe',*base,*named('PageSys'),'-cp','engines/raylib/tests/refused','-main','PageSys','-js','build/tests/PageSys.js','--no-output'],
+        cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
+    if done.returncode==0 or 'requires a system platform' not in done.stderr:sys.exit(f'PageSys (-js): built, or not Haxe\'s error\n{done.stderr}')
+    print('PageSys: no Sys in a page without the define',flush=True)
     run(['haxe',*base,*named('AsyncTests'),'-main','AsyncTests','-cpp','build/tests/AsyncTests-typed','--no-output','-D','helix-raylib-portable-sys'])
 
 def raylib_tests(native):
@@ -112,12 +118,12 @@ def raylib_tests(native):
     extra=[a for _,_,out in TEST_SHADERS for a in ('-resource',f'build/tests/{out}@{out}')]
     refused(base)
     for main in RAYLIB_TESTS:
-        run(['haxe',*base,*extra,*named(main),'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6'])
+        run(['haxe',*base,*extra,*named(main),'-main',main,'-js',f'build/tests/{main}.js','-D','js-es=6','-D','helix-raylib-portable-sys'])
         value=result(['node',f'build/tests/{main}.js'])
         if native:
             import native_build,sdl3
             found=sdl3.find()
-            run(['haxe',*base,*extra,*named(main),'-main',main,'-cpp',f'build/tests/{main}-cpp','-D','analyzer-optimize','-D',native_build.ARCH],env=native_build.env(found))
+            run(['haxe',*base,*extra,*named(main),'-main',main,'-cpp',f'build/tests/{main}-cpp','-D','analyzer-optimize','-D',native_build.ARCH,'-D','helix-raylib-portable-sys'],env=native_build.env(found))
             # helix-raylib links SDL3 (its runtime's adapters): on Windows its DLL goes beside the program, or the program doesn't start.
             native_build.place_runtimes(ROOT/'build/tests'/f'{main}-cpp',found)
             result([str(ROOT/'build/tests'/f'{main}-cpp'/(f'{main}.exe' if sys.platform=='win32' else main))])

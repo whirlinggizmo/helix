@@ -901,13 +901,17 @@ Why things are the way they are, numbered, in order.
     on stock 5.5 either. Rejected: `Future`, as Python's `__future__`, which reads as an async value in Haxe and JS beside the `...Async`
     calls; an extra, as extras hold what raylib has no call for.
 
-70. **Natively, a program has Haxe's own `sys` unless it asks to be held to the page's.** `-D helix-raylib-portable-sys` turns on
-    natively what a build for the page always has: Haxe's file calls (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the `Sys`
-    calls a page can't answer don't compile, each refusal naming the raylib call to use (66). Without it a native program has Haxe's
-    own, as Haxe and raylib give a developer, who can save beside the program or run a tool. For JS nothing changes, as Haxe has none
-    of them there. The Wardens trial's `build.hxml` sets the define, as a project template meant for every target would. Why: 66
-    refused them in every program through the library's `extraParams.hxml`, with no way out, so a level editor or a build tool that
-    wants native files couldn't have them, where no other Haxe library or raylib itself takes the standard library away. Rejected: the
-    refusals by default with a define to leave them (a developer expects Haxe's `sys` to work natively); `helix-raylib-portable`, which
-    promises more than `sys` (`#if js` branches, the page reached directly, which `helix-raylib-host-warnings` warns of); names for the
-    mechanism (`shadow-sys`) or with no object (`compat-sys`).
+70. **A build is Haxe's as shipped unless it asks for the portable `Sys`.** `-D helix-raylib-portable-sys` gives a page a `Sys`, the
+    library's `_std/Sys.js.hx` (the program's options from the URL's query, the console and the clock), put on the class path for JS
+    by `SysCalls` as Haxe's own `std/js/_std` is, and holds the program to what a page can answer on every target: Haxe's file calls
+    (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the `Sys` calls a page can't answer don't compile, each refusal naming the
+    raylib call to use (66). Without it a native program has Haxe's own `sys`, as Haxe and raylib give a developer, who can save beside
+    the program or run a tool, and in a page `Sys` is refused as Haxe refuses it. The Wardens trial's `build.hxml`, the tests, the page
+    checks, the compare contenders and the frame stats example set the define, and the library's own code doesn't use `Sys` in a page.
+    Why: 66 refused them in every program and added the shadow to every page through the library's `extraParams.hxml`, with no way
+    out, so a level editor or a build tool that wants native files couldn't have them, where no other Haxe library or raylib itself
+    takes the standard library away, and the library installed a `Sys` no program asked for. Rejected: the refusals by default with a
+    define to leave them (a developer expects Haxe's `sys` to work natively); `Compiler.exclude`, which types the class and leaves it
+    out of the output, so a call builds and fails at run time; `helix-raylib-portable`, which promises more than `sys` (`#if js`
+    branches, the page reached directly, which `helix-raylib-host-warnings` warns of); names for the mechanism (`shadow-sys`) or with
+    no object (`compat-sys`).

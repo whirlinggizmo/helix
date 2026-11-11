@@ -156,7 +156,7 @@ def build_helix_raylib(programs, page, native):
     for program in programs:
         home = OUT / 'helix-raylib' / program
         common = ['-lib', 'helix-raylib', '-cp', CONTENDERS_DIR / 'helix-raylib' / program, '-main', 'Main', '-D', 'helix-company=helix',
-                  '-D', f'helix-product=compare-{program}', '-dce', 'full', '-D', 'analyzer-optimize']
+                  '-D', f'helix-product=compare-{program}', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'helix-raylib-portable-sys']
         if page:
             say(f'building helix-raylib {program} page')
             web = home / 'web'

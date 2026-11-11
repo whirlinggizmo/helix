@@ -16,8 +16,8 @@
 ## Differences from raylib
 
 - Files load with the `...Async` calls beside raylib's, in `Raylib` and `Raygui`.
-- Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the `Sys` calls that wait or leave the program, don't compile in a
-  page's program, nor natively with `-D helix-raylib-portable-sys`. Each names the raylib call to use.
+- With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
+  `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
 - Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
   (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
@@ -54,9 +54,10 @@ Defines, set in the build's hxml:
 - `-D helix-raylib-native-root=<directory>`: where a native program finds its files, relative to itself. Default `../web`.
 - `-D helix-raylib-custom-frame-control`: raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`. `EndDrawing` only draws. The program calls
   `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.
-- `-D helix-raylib-portable-sys`: natively, refuses what a page can't answer, as a build for the page does: Haxe's file calls
-  (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the `Sys` calls a page has no answer for. Each refusal names the raylib call to
-  use, so a program that builds natively builds for the page. Off by default, when a native program has Haxe's own.
+- `-D helix-raylib-portable-sys`: gives a page a `Sys` (the program's options from the URL's query, the console and the clock) and
+  refuses on every target what a page can't answer: Haxe's file calls (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the `Sys`
+  calls a page has no answer for. Each refusal names the raylib call to use, so a program that builds natively builds for the page. Off
+  by default, when a build is Haxe's as shipped.
 - `-D helix-raylib-host-warnings`: warns at build time where the program reaches the page or host directly for something
   `Raylib` provides. Off by default.
 - `-D helix-raylib-frame-stats`: for timing a program without changing it. With the `frame_stats` option (`--frame_stats=120,1200`

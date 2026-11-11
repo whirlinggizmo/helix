@@ -1,6 +1,7 @@
 /** Haxe's `Sys` in a page: the program's options, the console and the clock, so a program that reads them natively reads them here.
-	Haxe has no `Sys` in a page, and takes this file in place of its own when compiling for JS; natively `Sys` is Haxe's own. The calls
-	that can't be answered here (`sleep`, `command`, `exit` and the rest) don't compile on any target, each naming itself. */
+	Haxe has no `Sys` in a page. With `-D helix-raylib-portable-sys` this file is on the class path for JS (`SysCalls`), and natively
+	`Sys` is Haxe's own. The calls that can't be answered here (`sleep`, `command`, `exit` and the rest) don't compile on any target with
+	the define, each naming itself. */
 class Sys {
 	static var line = "";
 

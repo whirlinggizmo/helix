@@ -5,6 +5,7 @@
 -D helix-product=raylib-frame-stats
 -cp .
 -main Main
+-D helix-raylib-portable-sys
 -dce full
 -D HXCPP_COMPILE_THREADS=4
 -cpp native
