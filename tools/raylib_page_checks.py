@@ -22,7 +22,8 @@ OUT = ROOT / 'build/results/raylib-page'
 HEADED = False
 sys.path.insert(0, str(ROOT / 'tools'))
 # The page each test runs in: its canvas, filling a white page, and the test's script.
-PAGE = ('<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#fff}canvas{display:block;width:100%;'
+# The page's icon is none (data:), as the examples' is: a visible browser asks for /favicon.ico, whose 404 is a console error.
+PAGE = ('<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><style>html,body{margin:0;height:100%;background:#fff}canvas{display:block;width:100%;'
         'height:100%}</style><canvas id="canvas"></canvas><script src="app.js"></script>\n')
 
 

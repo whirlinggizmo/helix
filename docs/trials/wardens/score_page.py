@@ -16,7 +16,8 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-PAGE = ('<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#000}canvas{display:block;width:100%;'
+# The page's icon is none (data:), as the examples' is: a visible browser asks for /favicon.ico, whose 404 is a console error.
+PAGE = ('<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><style>html,body{margin:0;height:100%;background:#000}canvas{display:block;width:100%;'
         'height:100%}</style><canvas id="canvas"></canvas><script src="app.js"></script>\n')
 
 def build(entrant, helix, defines=(), suffix='.page'):
