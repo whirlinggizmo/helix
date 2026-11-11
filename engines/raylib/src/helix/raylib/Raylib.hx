@@ -5965,26 +5965,6 @@ class Raylib {
 	public static inline function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
 		RModels.UpdateModelAnimation(model, anim, frame);
 
-	/** Poses a model by two animations mixed by a blend, raylib 6.2's own call.
-
-		Takes each animation at its frame as `UpdateModelAnimation` takes one, then mixes the two by the blend.
-
-		Moves the bones and the vertices on the GPU or the CPU as `UpdateModelAnimation` does.
-
-		Wraps a frame to its animation's frames before taking its fraction, as raylib's does, so a frame past the last holds the frame it
-		wrapped to.
-
-		Does nothing for a blend outside 0 to 1.
-
-		@param model  The model.
-		@param animA  The first animation.
-		@param frameA  Its frame, fractional.
-		@param animB  The second animation.
-		@param frameB  Its frame, fractional.
-		@param blend  How much of the second: 0 the first alone, 1 the second alone. */
-	public static inline function UpdateModelAnimationEx(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, blend:Float):Void
-		RModels.UpdateModelAnimationEx(model, animA, frameA, animB, frameB, blend);
-
 	/** Frees an animation's frames, letting go of its poses and bones and setting its counts to 0.
 
 		@param anim  The animation. */

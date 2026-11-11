@@ -25,6 +25,7 @@ class Everything {
 		"helix.raylib.Raymath",
 		"helix.raylib.Rlgl",
 		"helix.raylib.Raygui",
+		"helix.raylib.Raylib6",
 		"helix.raylib.Rlights",
 		"helix.raylib.extras.Models",
 		"helix.raylib.extras.Lighting",

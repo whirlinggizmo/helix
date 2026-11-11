@@ -37,7 +37,7 @@ speed where docs/speed.md records them.
 - **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next:
   reloading and placeholders under raylib's own names (the assets,
   resources and objects below). Then a trial of how agents take to
-  the `...Async` loads, now beside raylib's calls in `Raylib` (one task a blended animation: whether agents reach for 6.2's `UpdateModelAnimationEx`, DECISIONS 24), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
+  the `...Async` loads, now beside raylib's calls in `Raylib` (one task a blended animation: whether agents reach for raylib 6.0's `UpdateModelAnimationEx` in `Raylib6`, DECISIONS 24 and 69), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
   (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
   against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
   as Haxe has none (`js.lib.Promise` is the browser's alone). Every raylib 5.5 function is in; what refuses to compile
@@ -62,7 +62,7 @@ speed where docs/speed.md records them.
 - **A masked animation blend, in helix-geometry (DECISIONS 47):** a pose blended from two
   clips bone by bone, each bone taking the second clip by a weight of its own: a set the program names (a bone and its children,
   `Spine` up for the upper body), or the bones the clip has tracks for, so a clip authored for the legs alone moves the legs alone.
-  Godot's and Unity's animation trees blend by bone masks; raylib 6.2's `UpdateModelAnimationEx` blends the whole body by one value,
+  Godot's and Unity's animation trees blend by bone masks; raylib 6.0's `UpdateModelAnimationEx` blends the whole body by one value,
   so an attack clip replaces the run on the legs too and the character slides (the jam's warden does), and a clip with no track for a
   bone fills it with the rest pose at load, so partial clips dilute each other through a single blend. helix-geometry's `Animation3D`
   holds a clip's tracks per bone and `Skeleton3D` its rest pose, so the blend and the mask from a clip's tracks are theirs, for an

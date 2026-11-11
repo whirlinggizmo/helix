@@ -57,7 +57,6 @@ static function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
 static function GenMeshTangents(mesh:Mesh):Void
 static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
 static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
-static function UpdateModelAnimationEx(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, blend:Float):Void
 static function UnloadModelAnimation(anim:ModelAnimation):Void
 static function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
 static function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
@@ -452,21 +451,6 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   `animVertices` and `animNormals` hold the moved positions and normals, worked out on the CPU when first read. Each normal is moved by its bones' matrices inverted and transposed, not normalized.
 
   Leaves a mesh whose shader moves it as raylib leaves it.
-- `UpdateModelAnimationEx`: Poses a model by two animations mixed by a blend, raylib 6.2's own call.
-  - `model`: The model.
-  - `animA`: The first animation.
-  - `frameA`: Its frame, fractional.
-  - `animB`: The second animation.
-  - `frameB`: Its frame, fractional.
-  - `blend`: How much of the second: 0 the first alone, 1 the second alone.
-
-  Takes each animation at its frame as `UpdateModelAnimation` takes one, then mixes the two by the blend.
-
-  Moves the bones and the vertices on the GPU or the CPU as `UpdateModelAnimation` does.
-
-  Wraps a frame to its animation's frames before taking its fraction, as raylib's does, so a frame past the last holds the frame it wrapped to.
-
-  Does nothing for a blend outside 0 to 1.
 - `UnloadModelAnimation`: Frees an animation's frames, letting go of its poses and bones and setting its counts to 0.
   - `anim`: The animation.
 - `UnloadModelAnimations`: Frees animations' frames, each as `UnloadModelAnimation` frees one.

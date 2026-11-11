@@ -890,3 +890,13 @@ Why things are the way they are, numbered, in order.
     Performance monitors). Tried first from their doc comments by two Sonnet agents (docs/trials/2026-11-10-frame-stats-recording).
     Rejected: times in milliseconds, which `GetFrameTime` doesn't use; an `IsFrameStatsRecording`, which raylib's own recordings
     don't have.
+
+69. **raylib 6's calls are in `Raylib6`, apart from 5.5's.** `helix.raylib.Raylib6` holds the calls raylib 6.0 adds that helix-raylib
+    has ahead of its move past 5.5, each in raylib 6.0's name, signature and behavior, imported apart (`import helix.raylib.Raylib6.*;`).
+    `UpdateModelAnimationEx` moves there from `Raylib`: it first shipped in raylib 6.0 (2026-04-23; no 6.1 was tagged), and 6.0's and
+    6.2's raylib.h give it the signature it has, `(model, animA, frameA, animB, frameB, blend)`. When `Raylib` becomes raylib 6's, its
+    calls move into `Raylib` and the class goes, every caller with it. Why: `Raylib` is raylib 5.5's API and its redirects (60), and
+    the one later call in it broke that. A developer finds `Raylib6` in the README and the API pages. Agents writing raylib 5.5 don't,
+    and nothing sends them: a 5.5 program's own blend is correct, so there is nothing to refuse, and the raylib C entrants have no blend
+    on stock 5.5 either. Rejected: `Future`, as Python's `__future__`, which reads as an async value in Haxe and JS beside the `...Async`
+    calls; an extra, as extras hold what raylib has no call for.

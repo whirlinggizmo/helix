@@ -928,6 +928,21 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 `SetWindowSize`, `MaximizeWindow`, `MinimizeWindow`, `RestoreWindow`, `SetWindowFocused`, `SetWindowOpacity`, `SetWindowMinSize`, `SetWindowMaxSize`, `SetClipboardText`, `GetClipboardText`, `GetClipboardImage`, `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `ToggleFullscreen`, `ToggleBorderlessWindowed`, `SetWindowPosition`, `SetWindowMonitor`, `EnableCursor`, `DisableCursor`, `FileExists`, `LoadFileText`, `SaveFileText`, `LoadFileData`, `SaveFileData`, `ExportDataAsCode`, `DirectoryExists`, `GetFileLength`, `IsPathFile`, `LoadDirectoryFiles`, `LoadDirectoryFilesEx`, `GetFileModTime`, `ExportAutomationEventList`, `MemAlloc`, `MemRealloc`, `MemFree`, `TakeScreenshot`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadShader`, `LoadShaderFromMemory`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `ExportImage`, `ExportImageAsCode`, `ExportFontAsCode`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `ExportMesh`, `ExportMeshAsCode`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `ExportWave`, `ExportWaveAsCode`, `LoadSound`, `LoadMusicStream`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
+## Raylib6
+
+*class* in [`engines/raylib/src/helix/raylib/Raylib6.hx`](../src/helix/raylib/Raylib6.hx), `import helix.raylib.Raylib6;`
+
+Provides the calls raylib 6.0 adds to raylib 5.5's, which helix-raylib's `Raylib` is, each with raylib 6.0's name, signature and behavior. Imported apart from `Raylib`:
+
+```haxe
+import helix.raylib.Raylib.*;
+import helix.raylib.Raylib6.*;
+```
+
+When helix-raylib's `Raylib` becomes raylib 6's, these move into it and this class goes.
+
+Its members are on their own page: [raylib6.md](raylib6.md).
+
 ## Raymath
 
 *class* in [`engines/raylib/src/helix/raylib/Raymath.hx`](../src/helix/raylib/Raymath.hx), `import helix.raylib.Raymath;`
