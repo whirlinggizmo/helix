@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """Runs one entrant of the native blind trial (../README.md): claude -p in its own directory, on a private display, with no sound.
 
-    python3 run_entrant.py <entrant directory> --helix <checkout> [--model sonnet] [--hours 3] [--command CMD]
+    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c] [--model sonnet] [--hours 3] [--command CMD]
 
-The entrant directory is made, and must not be there yet unless --command is given: native/brief.md as brief.md (its {DIR} the
-directory's path), native/build.hxml, spec.md, assets/, and raylib 5.5's headers (docs/include) and C examples (docs/examples), copied
-from the release tools/raylib_parity.py fetches. Keep it outside any git repository, so the entrant sees no commit messages.
+The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
+(docs/examples), with the engine's own files:
+- helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path), native/build.hxml, and raylib 5.5's
+  headers in docs/include.
+- c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/Makefile, raylib 5.5's headers in include/ and its desktop
+  library as lib/libraylib.a.
+raylib's files are copied from the release tools/raylib_parity.py fetches and builds. Keep the directory outside any git repository, so
+the entrant sees no commit messages.
 
---helix names the checkout the entrant builds against: a worktree at the commit being tried, its build/haxelib made. The entrant's
-environment carries hxcpp's and the platform's settings from it, its haxelib, SDL_AUDIO_DRIVER=dummy, no session D-Bus (SDL_OpenURL
-would reach the desktop's browser), and data and cache directories of its own beside the entrant (.home/<name>), so entrants running
-at once keep their saves apart. The JSON result (usage, cost, turns, duration) goes to result.json, stderr to stderr.log, the start and
+--helix names the checkout of helix the tools come from and, for helix-raylib, the entrant builds against: a worktree at the commit
+being tried, its build/haxelib made. The entrant's environment carries hxcpp's and the platform's settings from it and its haxelib,
+no sound (SDL_AUDIO_DRIVER=dummy for SDL; for raylib C's miniaudio, no PulseAudio server and an ALSA whose one device is null), no
+session D-Bus (SDL_OpenURL would reach the desktop's browser), and data and cache directories of its own beside the entrant
+(.home/<name>), so entrants running at once keep their saves apart. The JSON result (usage, cost, turns, duration) goes to result.json, stderr to stderr.log, the start and
 end to run.log.
 
 --command runs a shell command in the entrant's environment in place of claude, to check the harness."""
@@ -32,20 +38,25 @@ def log(entrant, line):
     with open(entrant / 'run.log', 'a', encoding='utf-8') as f:
         f.write(datetime.now().astimezone().isoformat(timespec='seconds') + ' ' + line + '\n')
 
-def make(entrant, helix):
+def make(entrant, engine):
     """Makes the entrant's directory from the trial's files and raylib 5.5's."""
     import raylib_parity
     raylib = raylib_parity.raylib('5.5')
     entrant.mkdir(parents=True)
-    brief = (HERE / 'native/brief.md').read_text(encoding='utf-8')
+    own = HERE / ('native' if engine == 'helix' else 'native-c')
+    brief = (own / 'brief.md').read_text(encoding='utf-8')
     (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
-    shutil.copy(HERE / 'native/build.hxml', entrant / 'build.hxml')
+    for name in ('build.hxml',) if engine == 'helix' else ('Makefile',):
+        shutil.copy(own / name, entrant / name)
     shutil.copy(HERE / 'spec.md', entrant / 'spec.md')
     shutil.copytree(HERE / 'assets', entrant / 'assets')
-    include = entrant / 'docs/include'
+    include = entrant / ('docs/include' if engine == 'helix' else 'include')
     include.mkdir(parents=True)
     for header in ('src/raylib.h', 'src/raymath.h', 'src/rlgl.h', 'examples/shapes/raygui.h', 'examples/shaders/rlights.h'):
         shutil.copy(raylib / header, include)
+    if engine == 'c':
+        (entrant / 'lib').mkdir()
+        shutil.copy(raylib / 'src/libraylib.a', entrant / 'lib')
     shutil.copytree(raylib / 'examples', entrant / 'docs/examples')
 
 def environment(entrant, helix, display):
@@ -61,6 +72,10 @@ def environment(entrant, helix, display):
     env.update(HAXELIB_PATH=str(helix / 'build/haxelib'), HXCPP_COMPILE_THREADS='4', SDL_AUDIO_DRIVER='dummy',
                XDG_DATA_HOME=str(home / 'data'), XDG_CACHE_HOME=str(home / 'cache'))
     (home / 'data').mkdir(parents=True, exist_ok=True)
+    # raylib C plays through miniaudio, which SDL's dummy driver doesn't reach: it finds no PulseAudio server, and ALSA's default is null.
+    alsa = home / 'alsa.conf'
+    alsa.write_text('pcm.!default { type null }\n', encoding='utf-8')
+    env.update(PULSE_SERVER='unix:/nonexistent', ALSA_CONFIG_PATH=str(alsa))
     # The shader tools the platform fetches into the cache are shared, so an entrant's first build doesn't fetch them again.
     tools = home / 'cache/helix/tools'
     if not tools.exists():
@@ -72,6 +87,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('entrant', type=Path)
     parser.add_argument('--helix', type=Path, required=True)
+    parser.add_argument('--engine', choices=('helix', 'c'), default='helix')
     parser.add_argument('--model', default='sonnet')
     parser.add_argument('--hours', type=float, default=3)
     parser.add_argument('--command')
@@ -83,7 +99,7 @@ def main():
     sys.path.insert(0, str(helix / 'tools'))
     from private_display import private_display
     if not entrant.exists():
-        make(entrant, helix)
+        make(entrant, args.engine)
     elif not args.command:
         sys.exit(f'run_entrant: {entrant} is there already; an entrant starts from a directory of its own')
 

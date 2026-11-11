@@ -1,7 +1,7 @@
 # Trials
 
 A trial gives part of helix to fresh agents who know nothing of it, and reads where they guess. Each folder here is one trial's record,
-and [jam-survivors](jam-survivors) holds the game the engine trials build.
+and [wardens](wardens) holds Wardens, the game the engine trials build.
 
 ## When
 
@@ -13,9 +13,10 @@ and [jam-survivors](jam-survivors) holds the game the engine trials build.
 
 ## A blind trial
 
-- **Entrants.** Three, on Sonnet. Each is a fresh `claude -p` started in its own directory outside any git repository. None is a
+- **Entrants.** Three on helix-raylib, on Sonnet, and the control: three writing the same game in C on raylib 5.5 itself, briefed
+  alike but for the language and the build. Each is a fresh `claude -p` started in its own directory outside any git repository. None is a
   subagent of a session working on helix, as that session's commit messages would reach it.
-- **What each is given.** A brief, the game's spec ([Wardens](jam-survivors/spec.md)), raylib 5.5's own headers and C examples, and
+- **What each is given.** A brief, the game's spec ([Wardens](wardens/spec.md)), raylib 5.5's own headers and C examples, and
   the game's assets. Nothing of helix's docs or sources. Where helix-raylib differs from raylib, the compiler says so.
 - **How it builds.** Natively, with `haxe build.hxml`, against one commit of helix (a worktree with its own haxelib, so nothing changes
   under the entrant). It runs `./native/Main` on a private display, with no sound and no session D-Bus, and its saves and cache in
@@ -26,9 +27,11 @@ and [jam-survivors](jam-survivors) holds the game the engine trials build.
   unchanged. Its notes are read against the change being tried.
 - **Watching.** Each entrant's log is read every ten minutes while it runs. A harness fault stops the run early.
 
-The harness is [jam-survivors](jam-survivors): the entrant's brief and `build.hxml` (`native/`), and `run_entrant.py`, which makes an
-entrant's directory from them, the spec, the assets and raylib 5.5's release, and starts it against a checkout of helix:
+The harness is [wardens](wardens): each arm's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
+control's `Makefile`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
+release, and starts it against a checkout of helix:
 
 ```console
-python3 docs/trials/jam-survivors/run_entrant.py ~/trials/n1 --helix ../helix-blind-a
+python3 docs/trials/wardens/run_entrant.py ~/trials/n1 --helix ../helix-blind-a
+python3 docs/trials/wardens/run_entrant.py ~/trials/c1 --helix ../helix-blind-a --engine c
 ```
