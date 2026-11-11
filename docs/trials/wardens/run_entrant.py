@@ -9,8 +9,8 @@ The entrant directory is made, and must not be there yet unless --command is giv
   headers in docs/include.
 - c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/Makefile, raylib 5.5's headers in include/ and its desktop
   library as lib/libraylib.a.
-raylib's files are copied from the release tools/raylib_parity.py fetches and builds. Keep the directory outside any git repository, so
-the entrant sees no commit messages.
+raylib's files are copied from the release tools/raylib_parity.py fetches and builds. A directory inside a git repository is refused,
+as the entrant would see its commit messages.
 
 --helix names the checkout of helix the tools come from and, for helix-raylib, the entrant builds against: a worktree at the commit
 being tried, its build/haxelib made. The entrant's environment carries hxcpp's and the platform's settings from it and its haxelib,
@@ -98,6 +98,9 @@ def main():
         sys.exit(f'run_entrant: {helix} has no build/haxelib; make it first (python3 helix.py test does)')
     sys.path.insert(0, str(helix / 'tools'))
     from private_display import private_display
+    probe = entrant if entrant.exists() else entrant.parent
+    if subprocess.run(['git', '-C', str(probe), 'rev-parse'], capture_output=True).returncode == 0:
+        sys.exit(f'run_entrant: {entrant} is inside a git repository, whose commit messages the entrant would read')
     if not entrant.exists():
         make(entrant, args.engine)
     elif not args.command:
