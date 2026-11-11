@@ -39,8 +39,11 @@ How an agent works here:
 - **Ask before pushing,** opening a pull request, creating repositories or publishing packages. Commits carry no attribution lines.
 - **One worktree an agent,** beside the checkout, with its own copy of `build/haxelib`. Main's index is then nobody else's. In a shared
   checkout, a commit names its paths (`git commit -- <paths>`), since a plain commit takes whatever another has staged.
-- **Watch, don't wait.** Nothing gates all work on one background task. Its log is read early, a watcher reports its steps, and the
-  person following along gets a status line every ten minutes, each starting with the Eastern time.
+- **Watch, don't wait.** Nothing gates all work on one background task. Its log is read early, and it's watched with
+  `tools/watch_job.py` on its process id (never a pattern, which matches the watcher's own shell): once under the session's watcher, re-armed
+  as it expires, for a status line every ten minutes with the Eastern time, and once as a background command with `--exit-on-trouble`
+  and a deadline, whose exit wakes the session even when the watcher lapsed. A stall or a missed deadline is looked into at once: the job
+  stopped if it's stuck, and the work that doesn't need it carried on.
 - **Check the homework.** An agent's report is a claim: read its diff, run the checks it names, and when a task went to two agents,
   compare their branches.
 - **A departure from raylib gets a trial before it's pushed:** a change adding or moving a refusal, an extra or a build step in

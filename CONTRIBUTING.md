@@ -141,6 +141,7 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/pages.py` | The GitHub Pages site in `build/site`: the API reference's HTML at `api/`. The pages workflow deploys it |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by section (`--check`) |
 | `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
+| `tools/watch_job.py` | A background job's status every ten minutes, with the Eastern time, and a line when it ends, stalls or runs past its deadline (`--exit-on-trouble` exits then) |
 | `tools/screen_power.py` | Keeps the screen on while a headed run uses it, on Linux, Windows and macOS, its settings put back after (a module) |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
 | `tools/page_check.cjs` | A page in Chromium (headless, or `--headed`): its errors, its result and a screenshot (run by `platform_checks.py` and `raylib_page_checks.py`) |
