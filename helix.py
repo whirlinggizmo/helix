@@ -70,7 +70,7 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
 # helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/raylib_parity.py).
-RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','SpritesTests')
+RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','SpritesTests','WaitTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.
 TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader'),('own_lights.vs','own_lights.fs','own_lights.shader')]
@@ -82,16 +82,27 @@ def named(product):
 # What each program in engines/raylib/tests/refused must be refused with, each the start of a refusal's message or a compiler error.
 # The refused programs calling Haxe's own Sys and sys package, refused only with -D helix-raylib-portable-sys.
 PORTABLE_SYS={'FileCalls'}
-REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(',
-    'sys.io.File.saveContent: A file is written later, or is refused. See SaveFileTextAsync(','sys.io.File.getBytes: Synchronous loading',
-    'sys.io.File.saveBytes: A file is written later','sys.FileSystem.exists: Synchronous file access is not supported. For a saved file',
-    'sys.FileSystem.readDirectory: Synchronous file access','sys.io.Process: Not supported.'),
+REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String):Null<String> instead.',
+    'sys.io.File.saveContent: Use SaveFileText(fileName:String, text:String):Bool instead.','sys.io.File.getBytes: Use LoadFileData(',
+    'sys.io.File.saveBytes: Use SaveFileData(','sys.FileSystem.exists: Use FileExists(fileName:String):Bool instead.',
+    'sys.FileSystem.readDirectory: Use LoadDirectoryFiles(','sys.io.Process: Not supported.'),
     'ShaderCalls':('LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro',
     'LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(','or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes',
     'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync('),
-    'GuessedCalls':('GuessedCalls.hx:10: characters 20-51 : LoadModelAnimations: Synchronous loading','GuessedCalls.hx:11: characters 17-55 : LoadModelAnimations: Synchronous',
-    'GuessedCalls.hx:12: characters 19-44 : LoadMaterials: Synchronous','GuessedCalls.hx:13: characters 15-55 : LoadFileData: Synchronous',
-    'GuessedCalls.hx:14: characters 16-33 : LoadImageAnim: Synchronous','GuessedCalls.hx:15: characters 3-24 : SetWindowSize: The window changes later')}
+    'GuessedCalls':('GuessedCalls.hx:9: characters 3-19 : TakeScreenshot: A screenshot is saved later','GuessedCalls.hx:10: characters 3-29 : TakeScreenshot: A screenshot',
+    'GuessedCalls.hx:11: characters 16-42 : LoadImageFromTexture: A texture is read back','GuessedCalls.hx:12: characters 14-37 : GetClipboardText: Synchronous clipboard',
+    'GuessedCalls.hx:13: characters 3-25 : ToggleFullscreen: The window changes later','GuessedCalls.hx:14: characters 3-24 : SetWindowSize: The window changes later'),
+    'WaitCalls':("WaitCalls.hx:10: characters 21-45 : LoadFileText: not in a constructor or a variable's initial value",
+    "WaitCalls.hx:39: characters 11-32 : LoadModel: not in a constructor or a variable's initial value",
+    'WaitCalls.hx:19: characters 19-31 : EndDrawing: call it from a function of a class, not from a function used as a value',
+    'WaitCalls.hx:20: characters 31-48 : LoadTexture: in a function used as a value, see LoadTextureAsync(',
+    'WaitCalls.hx:21: characters 44-74 : SaveFileText: in a function used as a value, see SaveFileTextAsync(',
+    'WaitCalls.hx:22: characters 21-28 : frame() waits (it reaches EndDrawing() or a load): call it from a function of a class, not from a function used as a value',
+    "WaitCalls.hx:23: characters 15-20 : frame waits (it reaches EndDrawing() or a load): call it, don't use it as a value",
+    'WaitCalls.hx:42: lines 42-45 : show waits (it reaches EndDrawing() or a load): not in a function WaitShown declares',
+    "WaitCalls.hx:61: lines 61-63 : update waits (it reaches EndDrawing() or a load): not in an override of a function that doesn't",
+    'WaitCalls.hx:75: characters 22-33 : tick() waits (it reaches EndDrawing() or a load): call it from a function of a class, not from a function used as a value',
+    'WaitCalls.hx:84: characters 4-16 : EndDrawing: call it from a function of a class, not from a function used as a value')}
 
 def refused(base):
     """Each program in engines/raylib/tests/refused refused for JS and natively (typed alone), each of its refusals in the compiler's

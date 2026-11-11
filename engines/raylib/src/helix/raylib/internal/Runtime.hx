@@ -120,8 +120,7 @@ class Runtime {
 	/** Asks for a function to be called at the next frame: the page's `requestAnimationFrame`, or a test's own. */
 	static var requestFrame:(Float->Void) -> Void = f -> js.Browser.window.requestAnimationFrame(f);
 
-	/** Counts the calls of `WindowShouldClose` since the last frame began: a loop no frame breaks is a loop the program's own loop
-		rewrite didn't reach, which would hang the page. */
+	/** Counts the calls of `WindowShouldClose` since the last frame began: a loop calling it that ends no frame would hang the page. */
 	public static var unframed = 0;
 	#end
 
@@ -430,38 +429,6 @@ class Runtime {
 		kept.load(() -> ready(kept), _ -> ready(kept));
 	}
 
-	/** Runs the program's loop body once a frame, in a page, then what follows the loop when it stops.
-
-		@param body  The loop's body.
-		@param after  What follows the loop. */
-	public static function run(body:Void->Void, after:Void->Void):Void {
-		#if js
-		var frame:Float->Void = null;
-		frame = _ -> {
-			// A frame the target rate has no room for is skipped, with a millisecond's slack for the display's jitter.
-			var now = system.getTime();
-			var frameTarget = time.targetDelta;
-			if (frameTarget > 0 && now < frameDue - .001) {
-				requestFrame(frame);
-				return;
-			}
-			// The next is due a target after this one was: from now when it came early or far behind, so neither adds up.
-			frameDue = (now < frameDue || now - frameDue > frameTarget ? now : frameDue) + frameTarget;
-			unframed = 0;
-			body();
-			if (shouldClose)
-				after();
-			else
-				requestFrame(frame);
-		};
-		requestFrame(frame);
-		#else
-		while (!helix.raylib.Raylib.WindowShouldClose())
-			body();
-		after();
-		#end
-	}
-
 	/** Opens the window, with the graphics and the events.
 
 		@param width  The window's width, natively.
@@ -753,12 +720,14 @@ class Runtime {
 		return new js.lib.Promise((resolve, _) -> {
 			var frame:Float->Void = null;
 			frame = _ -> {
+				// A frame the target rate has no room for is skipped, with a millisecond's slack for the display's jitter.
 				var now = system.getTime();
 				var frameTarget = time.targetDelta;
 				if (frameTarget > 0 && now < frameDue - .001) {
 					requestFrame(frame);
 					return;
 				}
+				// The next is due a target after this one was: from now when it came early or far behind, so neither adds up.
 				frameDue = (now < frameDue || now - frameDue > frameTarget ? now : frameDue) + frameTarget;
 				unframed = 0;
 				resolve(null);
@@ -785,12 +754,29 @@ class Runtime {
 					return;
 				pollAnswers();
 				if (!done)
-					js.Browser.window.setTimeout(pump, 0);
+					haxe.Timer.delay(pump, 0);
 			};
-			js.Browser.window.setTimeout(pump, 0);
+			haxe.Timer.delay(pump, 0);
 		});
 	}
+
+	/** In a page, the wait a call without a value makes (a write): asks, and answers when the asked says it is done.
+
+		@param ask  Asks, given what to call once it is done.
+		@return  A promise of its end. */
+	@:helix.raylib.waits
+	public static function finished(ask:(Void->Void)->Void):js.lib.Promise<Dynamic> {
+		return answered((answer:Dynamic->Void) -> ask(() -> answer(null)));
+	}
 	#else
+
+	/** Natively, the wait a call without a value makes (a write): asks, and returns once the asked says it is done.
+
+		@param ask  Asks, given what to call once it is done. */
+	@:helix.raylib.waits
+	public static function finished(ask:(Void->Void)->Void):Void {
+		answered((answer:Dynamic->Void) -> ask(() -> answer(null)));
+	}
 
 	/** Natively, the wait a load makes: asks, and returns the answer, polling the services until it comes.
 

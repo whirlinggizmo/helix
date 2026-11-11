@@ -4,6 +4,7 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix3D;
+import helix.raylib.internal.Answers;
 import helix.raylib.internal.AudioStreams;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.FrameConverter;
@@ -111,28 +112,6 @@ class RAudio {
 
 	// ---- Waves ----
 
-	/** Doesn't compile on any target, as raylib's wave load waits for the file. See `LoadWaveAsync` for loading a wave file.
-
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)")
-	static function LoadWave(fileName:String):Wave {
-		throw "LoadWave is unimplemented";
-	}
-
-	/** Doesn't compile on any target, as raylib's wave load from a file's bytes answers at once. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
-
-		A file other than WAV or QOA is decoded off the main thread.
-
-		@param fileType  The file's extension.
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)")
-	static function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave {
-		throw "LoadWaveFromMemory is unimplemented";
-	}
-
 	/** Returns whether a wave holds samples.
 
 		@param wave  The wave.
@@ -148,16 +127,15 @@ class RAudio {
 		wave.data = null;
 	}
 
-	/** Doesn't compile on any target, as raylib's wave export is done when it returns. See `ExportWaveAsync` for writing a wave to a sound file.
-
-		A file is kept later, once written.
+	/** Writes a wave to a sound file, as `ExportWaveAsync` writes it, and returns once it is written. See `ExportWaveAsCode` for
+		writing a C header.
 
 		@param wave  The wave.
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportWave(wave:Wave, fileName:String):Bool {
-		throw "ExportWave is unimplemented";
+		@param fileName  The file; its extension chooses the format.
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportWave(wave:Wave, fileName:String, answer:Bool->Void):Void {
+		RAudioAsync.ExportWaveAsync(wave, fileName, answer.bind(true), Answers.failing("ExportWave", answer, false));
 	}
 
 	// ExportWaveAsync's file: a WAV file or the raw samples, by the name's extension; null for another, or a wave with no samples.
@@ -172,16 +150,15 @@ class RAudio {
 		return null;
 	}
 
-	/** Doesn't compile on any target, as raylib's export of a wave as code is done when it returns. See `ExportWaveAsCodeAsync` for writing a wave as a C header.
-
-		A file is kept later, once written.
+	/** Writes a wave as a C header, as `ExportWaveAsCodeAsync` writes it, and returns once it is written. See `ExportWave` for writing
+		a sound file.
 
 		@param wave  The wave.
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportWaveAsCode(wave:Wave, fileName:String):Bool {
-		throw "ExportWaveAsCode is unimplemented";
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportWaveAsCode(wave:Wave, fileName:String, answer:Bool->Void):Void {
+		RAudioAsync.ExportWaveAsCodeAsync(wave, fileName, answer.bind(true), Answers.failing("ExportWaveAsCode", answer, false));
 	}
 
 	// ExportWaveAsCodeAsync's text, as raylib's writes it.
@@ -352,13 +329,16 @@ class RAudio {
 
 	// ---- Sounds ----
 
-	/** Doesn't compile on any target, as raylib's sound load waits for the file. See `LoadSoundAsync` for loading a sound file.
+	/** Loads a sound file, as `LoadSoundAsync` loads it, and returns the sound once it is decoded, ready to play at once. See
+		`LoadMusicStream` for playing a file as it is read.
 
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)")
-	static function LoadSound(fileName:String):Sound {
-		throw "LoadSound is unimplemented";
+		`InitAudioDevice` must come first.
+
+		@param fileName  The file, as the program names it.
+		@return  The sound, or one that isn't valid (`IsSoundValid`) when it couldn't be loaded. Why it couldn't is logged. */
+	@:waits
+	static function LoadSound(fileName:String, answer:Sound->Void):Void {
+		RAudioAsync.LoadSoundAsync(fileName, answer, Answers.failing("LoadSound", answer, new Sound()));
 	}
 
 	/** Returns a sound made from a wave, ready to play at once.
@@ -695,13 +675,15 @@ class RAudio {
 
 	// ---- Music ----
 
-	/** Doesn't compile on any target, as raylib's music load knows at once whether the file opened. See `LoadMusicStreamAsync` for opening a music file.
+	/** Opens a music file, as `LoadMusicStreamAsync` opens it, and returns the music once enough of the file has arrived to start.
 
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void)")
-	static function LoadMusicStream(fileName:String):Music {
-		throw "LoadMusicStream is unimplemented";
+		`InitAudioDevice` must come first.
+
+		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
+		@return  The music, or one that isn't valid (`IsMusicValid`) when it couldn't be opened. Why it couldn't is logged. */
+	@:waits
+	static function LoadMusicStream(fileName:String, answer:Music->Void):Void {
+		RAudioAsync.LoadMusicStreamAsync(fileName, answer, Answers.failing("LoadMusicStream", answer, new Music()));
 	}
 
 	/** Returns music opened from a file's bytes, to be played as it is read.

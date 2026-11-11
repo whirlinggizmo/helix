@@ -4,7 +4,7 @@
 
 | Type | What |
 |---|---|
-| `helix.raylib.Raylib` | raylib's functions, constants and colors, and beside each call that waits for a file or the window the `...Async` call that replaces it |
+| `helix.raylib.Raylib` | raylib's functions, constants and colors, and beside each call that waits for a file or the window the `...Async` call that answers at a later frame |
 | `helix.raylib.Raymath` | raymath |
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
@@ -19,7 +19,10 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 ## Differences from raylib
 
-- Files load with the `...Async` calls beside raylib's, in `Raylib` and `Raygui`.
+- A call that waits for a file (`LoadTexture`, `LoadFileText`) doesn't compile in a function used as a value, in a constructor or in
+  a variable's initial value. It names the `...Async` call beside it, in `Raylib` and `Raygui`, which answers at a later frame.
+- A call that changes the window, or reads the screen, a texture or the clipboard back (`ToggleFullscreen`, `TakeScreenshot`),
+  doesn't compile. It names its `...Async` call.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
   `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
 - Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
@@ -29,6 +32,22 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 - Not supported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.
 
 See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) for everything else.
+
+## Calls that wait
+
+A page can't stop for a file or for the next frame. In a page, each function of the program that calls `EndDrawing` or a load is
+built as an async function, and each call of it is awaited. The same goes for a function calling one that does. The program writes
+nothing for this. Natively the same calls block.
+
+A function declared in a function waits the same way when it is only ever called by its name.
+
+What can't wait doesn't compile, on every target:
+
+- a function used as a value (a callback, a function kept in a variable and passed on);
+- a constructor, and a variable's initial value;
+- a function an interface declares, and an override of a function that doesn't wait.
+
+In a page, a function that waits gives the page's own JavaScript calling it a promise.
 
 ## Using it
 

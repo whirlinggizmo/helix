@@ -170,6 +170,19 @@ static function BeginBlendMode(mode:Int):Void
 static function EndBlendMode():Void
 static function BeginScissorMode(x:Int, y:Int, width:Int, height:Int):Void
 static function EndScissorMode():Void
+static macro function FileExists(fileName:String):Bool
+static macro function LoadFileText(fileName:String):Null<String>
+static macro function SaveFileText(fileName:String, text:String):Bool
+static macro function LoadFileData(fileName:String):Null<haxe.io.Bytes>
+static macro function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
+static macro function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool
+static macro function DirectoryExists(dirPath:String):Bool
+static macro function GetFileLength(fileName:String):Int
+static macro function IsPathFile(path:String):Bool
+static macro function LoadDirectoryFiles(dirPath:String):FilePathList
+static macro function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool):FilePathList
+static macro function GetFileModTime(fileName:String):Int
+static macro function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool
 static macro function EndDrawing():Void
 ```
 
@@ -501,11 +514,11 @@ static macro function EndDrawing():Void
   A stick runs from -1 to 1, down and right positive.
 
   A trigger runs from -1 released to 1 pulled.
-- `UnloadFileText`: Frees text `LoadFileTextAsync` gave.
+- `UnloadFileText`: Frees text `LoadFileText` or `LoadFileTextAsync` gave.
   - `text`: The text.
 
   Has nothing to free.
-- `UnloadFileData`: Frees bytes `LoadFileDataAsync` gave.
+- `UnloadFileData`: Frees bytes `LoadFileData` or `LoadFileDataAsync` gave.
   - `data`: The bytes.
 
   Has nothing to free.
@@ -843,6 +856,57 @@ static macro function EndDrawing():Void
   - `width`: The width.
   - `height`: The height.
 - `EndScissorMode`: Draws everywhere again.
+- `FileExists`: Returns whether a file exists, as `FileExistsAsync` answers it. See `DirectoryExists` for a directory.
+  - `fileName`: The file.
+  - returns: True when it exists.
+- `LoadFileText`: Reads a text file, as `LoadFileTextAsync` reads it, and returns its text. See `LoadFileData` for reading a file's bytes.
+  - `fileName`: The file.
+  - returns: Its text, or null when it couldn't be read. Why it couldn't is logged.
+- `SaveFileText`: Writes a text file, as `SaveFileTextAsync` writes it, and returns once it is written. See `SaveFileData` for writing bytes.
+  - `fileName`: The file.
+  - `text`: Its text.
+  - returns: Whether it was written. Why it wasn't is logged.
+
+  `LoadFileText` reads it back.
+- `LoadFileData`: Reads a file's bytes, as `LoadFileDataAsync` reads them, and returns them. See `LoadFileText` for reading a text file.
+  - `fileName`: The file.
+  - returns: Its bytes, or null when it couldn't be read. Why it couldn't is logged.
+- `SaveFileData`: Writes a file's bytes, as `SaveFileDataAsync` writes them, and returns once they are written. See `SaveFileText` for writing text.
+  - `fileName`: The file.
+  - `data`: The bytes.
+  - `dataSize`: How many of them.
+  - returns: Whether they were written. Why they weren't is logged.
+
+  `LoadFileData` reads them back.
+- `ExportDataAsCode`: Writes bytes as a C header, as `ExportDataAsCodeAsync` writes it, and returns once it is written.
+  - `data`: The bytes.
+  - `dataSize`: How many of them.
+  - `fileName`: The file; its name, upper case, names the define and the array.
+  - returns: Whether it was written. Why it wasn't is logged.
+- `DirectoryExists`: Returns whether a directory exists, as `DirectoryExistsAsync` answers it. See `FileExists` for a file.
+  - `dirPath`: The directory.
+  - returns: True when it exists.
+- `GetFileLength`: Returns a file's size, as `GetFileLengthAsync` answers it.
+  - `fileName`: The file.
+  - returns: Its size in bytes; 0 when there is no file, as raylib's.
+- `IsPathFile`: Returns whether a path is a file, not a directory, as `IsPathFileAsync` answers it. See `DirectoryExists` for a directory.
+  - `path`: The path.
+  - returns: True for a file; false for a directory or nothing there.
+- `LoadDirectoryFiles`: Lists a directory's files and subdirectories, as `LoadDirectoryFilesAsync` lists them. See `LoadDirectoryFilesEx` for a filter by extension and the subdirectories' files.
+  - `dirPath`: The directory.
+  - returns: The list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
+- `LoadDirectoryFilesEx`: Lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, as `LoadDirectoryFilesExAsync` lists them. See `LoadDirectoryFiles` for listing one directory's every file and subdirectory.
+  - `basePath`: The directory.
+  - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
+  - `scanSubdirs`: Whether the subdirectories' files are listed too.
+  - returns: The list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
+- `GetFileModTime`: Returns when a file was last written, as `GetFileModTimeAsync` answers it.
+  - `fileName`: The file.
+  - returns: The time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
+- `ExportAutomationEventList`: Writes a list's events as text, as `ExportAutomationEventListAsync` writes it, and returns once it is written. See `LoadAutomationEventList` for reading it back.
+  - `list`: The list.
+  - `fileName`: The file.
+  - returns: Whether it was written. Why it wasn't is logged.
 - `EndDrawing`: Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input. In a page the wait is for the browser's next frame.
   Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input.
 

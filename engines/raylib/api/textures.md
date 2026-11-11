@@ -111,10 +111,9 @@ static function SetTextureWrap(texture:Texture2D, wrap:Int):Void
 static function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
 static function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, ?offset:Int = 0):Color
 static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?offset:Int = 0):Void
-static macro function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
-static macro function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
-static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
-static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image
+static macro function ExportImage(image:Image, fileName:String):Bool
+static macro function ExportImageAsCode(image:Image, fileName:String):Bool
 ```
 
 - `UnloadTexture`: Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
@@ -758,34 +757,21 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
 
   Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
-- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as the file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it, and nothing after it is read; one with no frames, or broken before its first frame ends, fails to load.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the image, its pixels its own.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-
-  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
-- `LoadImageFromMemoryAsync`: Decodes an image file's bytes, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImageFromMemory`, as images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s, a GIF file's when the type is ".gif" or ".GIF". The reader is chosen as the program builds when the type is a constant, as `LoadImageAsync`'s is by the name.
-  - `fileType`: The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
-  - `fileData`: The file's bytes.
-  - `dataSize`: How many of them.
-  - `loaded`: Receives the image.
-  - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
-- `LoadImageAnimAsync`: Loads an animated image's frames, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnim`. The frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's (`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their delays and loop count aren't kept.
-  - `fileName`: The file, as the program names it.
-  - `frames`: Receives the frame count, in its first element.
-  - `loaded`: Receives the frames.
-  - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
-
-  A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some frames gives the frames before the break, as raylib's does; one with no frames, or broken before its first frame ends, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
-
-  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
-- `LoadImageAnimFromMemoryAsync`: Decodes an animated image file's bytes, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF"; any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when the type is a constant, as `LoadImageAnimAsync`'s is by the name.
-  - `fileType`: The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
-  - `fileData`: The file's bytes.
-  - `dataSize`: How many of them.
-  - `frames`: Receives the frame count, in its first element.
-  - `loaded`: Receives the frames.
-  - `failed`: Optional. Receives why they couldn't be decoded; when omitted, it is logged.
+- `LoadImageRaw`: Loads an image's raw pixels from a file, as `LoadImageRawAsync` loads them, and returns the image once they are read. See `LoadImage` for an encoded image file.
+  - `fileName`: The file.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `format`: The pixel format (`PIXELFORMAT_*`).
+  - `headerSize`: The bytes before the pixels.
+  - returns: The image, or one that isn't valid (`IsImageValid`) when it couldn't be loaded. Why it couldn't is logged.
+- `ExportImage`: Writes an image to a PNG, QOI or raw file, as `ExportImageAsync` writes it, and returns once it is written. See `ExportImageAsCode` for writing a C header.
+  - `image`: The image.
+  - `fileName`: The file; its extension chooses the format.
+  - returns: Whether it was written. Why it wasn't is logged.
+- `ExportImageAsCode`: Writes an image as a C header, as `ExportImageAsCodeAsync` writes it, and returns once it is written. See `ExportImage` for writing a PNG, QOI or raw file.
+  - `image`: The image.
+  - `fileName`: The file; its name, upper case, names the defines and the array.
+  - returns: Whether it was written. Why it wasn't is logged.
 
 
 ```haxe

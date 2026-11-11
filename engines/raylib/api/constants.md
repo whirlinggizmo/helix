@@ -654,19 +654,6 @@ static macro function SetWindowPosition(...args):Void
 static macro function SetWindowMonitor(...args):Void
 static macro function EnableCursor(...args):Void
 static macro function DisableCursor(...args):Void
-static macro function FileExists(...args):Bool
-static macro function LoadFileText(...args):Null<String>
-static macro function SaveFileText(...args):Bool
-static macro function LoadFileData(...args):Null<haxe.io.Bytes>
-static macro function SaveFileData(...args):Bool
-static macro function ExportDataAsCode(...args):Bool
-static macro function DirectoryExists(...args):Bool
-static macro function GetFileLength(...args):Int
-static macro function IsPathFile(...args):Bool
-static macro function LoadDirectoryFiles(...args):FilePathList
-static macro function LoadDirectoryFilesEx(...args):FilePathList
-static macro function GetFileModTime(...args):Int
-static macro function ExportAutomationEventList(...args):Bool
 static macro function MemAlloc(...args):Dynamic
 static macro function MemRealloc(...args):Dynamic
 static macro function MemFree(...args):Void
@@ -681,33 +668,10 @@ static macro function emscripten_get_now(...args):Float
 static macro function emscripten_sleep(...args):Void
 static macro function LoadShader(...args):Shader
 static macro function LoadShaderFromMemory(...args):Shader
-static macro function LoadImage(...args):Image
-static macro function LoadImageRaw(...args):Image
-static macro function LoadImageFromMemory(...args):Image
-static macro function LoadImageAnim(...args):Image
-static macro function LoadImageAnimFromMemory(...args):Image
 static macro function LoadImageFromTexture(...args):Image
 static macro function LoadImageFromScreen(...args):Image
-static macro function ExportImage(...args):Bool
-static macro function ExportImageAsCode(...args):Bool
-static macro function ExportFontAsCode(...args):Bool
-static macro function LoadFont(...args):Font
-static macro function LoadFontEx(...args):Font
-static macro function LoadFontFromMemory(...args):Font
-static macro function LoadFontData(...args):Array<GlyphInfo>
 static macro function TextCopy(...args):Int
 static macro function TextAppend(...args):Void
-static macro function LoadModel(...args):Model
-static macro function LoadMaterials(...args):Array<Material>
-static macro function ExportMesh(...args):Bool
-static macro function ExportMeshAsCode(...args):Bool
-static macro function LoadModelAnimations(...args):Array<ModelAnimation>
-static macro function LoadWave(...args):Wave
-static macro function LoadWaveFromMemory(...args):Wave
-static macro function ExportWave(...args):Bool
-static macro function ExportWaveAsCode(...args):Bool
-static macro function LoadSound(...args):Sound
-static macro function LoadMusicStream(...args):Music
 static macro function AttachAudioStreamProcessor(...args):Void
 static macro function DetachAudioStreamProcessor(...args):Void
 static macro function AttachAudioMixedProcessor(...args):Void
@@ -739,19 +703,6 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `SetWindowMonitor`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor.
 - `EnableCursor`: Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse.
 - `DisableCursor`: Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse.
-- `FileExists`: Doesn't compile on any target, since the answer comes later. See `SavedFileExistsAsync` for asking whether a saved file exists, and `FileExistsAsync` for any other file.
-- `LoadFileText`: Doesn't compile on any target, since the file is read later. See `LoadSavedFileTextAsync` for reading a saved text file, and `LoadFileTextAsync` for any other.
-- `SaveFileText`: Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file.
-- `LoadFileData`: Doesn't compile on any target, since the file is read later. See `LoadSavedFileDataAsync` for reading a saved file's bytes, and `LoadFileDataAsync` for any other file's.
-- `SaveFileData`: Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes.
-- `ExportDataAsCode`: Doesn't compile on any target, since a file is kept later, once written. See `ExportDataAsCodeAsync` for writing bytes as code.
-- `DirectoryExists`: Doesn't compile on any target, since the answer comes later. See `DirectoryExistsAsync` for asking whether a directory exists.
-- `GetFileLength`: Doesn't compile on any target, since the answer comes later. See `GetFileLengthAsync` for asking a file's size.
-- `IsPathFile`: Doesn't compile on any target, since the answer comes later. See `IsPathFileAsync` for asking whether a path is a file.
-- `LoadDirectoryFiles`: Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesAsync` for listing a directory.
-- `LoadDirectoryFilesEx`: Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesExAsync` for listing a directory by extension and with its subdirectories.
-- `GetFileModTime`: Doesn't compile on any target, since the answer comes later. See `GetFileModTimeAsync` for asking when a file was last written.
-- `ExportAutomationEventList`: Doesn't compile on any target, since a file is kept later, once written. See `ExportAutomationEventListAsync` for writing a list to a file.
 - `MemAlloc`: Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.
 - `MemRealloc`: Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
 - `MemFree`: Doesn't compile, since Haxe frees memory once nothing holds it.
@@ -766,33 +717,10 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `emscripten_sleep`: Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame.
 - `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.
 - `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
-- `LoadImage`: Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file.
-- `LoadImageRaw`: Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync` for loading raw pixels from a file.
-- `LoadImageFromMemory`: Names raylib's decode of an image file's bytes, which returns the image, and doesn't compile on any target. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. Images are decoded asynchronously.
-- `LoadImageAnim`: Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See `LoadImageAnimAsync` for loading an animated image's frames from a file.
-- `LoadImageAnimFromMemory`: Names raylib's decode of an animated image file's bytes, which returns its frames, and doesn't compile on any target. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. Images are decoded asynchronously.
 - `LoadImageFromTexture`: Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. A texture is read back asynchronously.
 - `LoadImageFromScreen`: Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for reading the screen into an image. The screen is read back asynchronously, as a frame ends.
-- `ExportImage`: Names raylib's image export, done when it returns, and doesn't compile on any target. See `ExportImageAsync` for writing an image to a file. A file is written later, or is refused.
-- `ExportImageAsCode`: Names raylib's export of an image as code, done when it returns, and doesn't compile on any target. See `ExportImageAsCodeAsync` for writing an image as a C header. A file is written later, or is refused.
-- `ExportFontAsCode`: Doesn't compile on any target, since the file is written after the call would return. See `ExportFontAsCodeAsync` for writing a font as code.
-- `LoadFont`: Doesn't compile on any target, since raylib's waits for the file. See `LoadFontAsync` for loading a font.
-- `LoadFontEx`: Doesn't compile on any target, since raylib's waits for the file. See `LoadFontExAsync` for loading a font at a size.
-- `LoadFontFromMemory`: Doesn't compile on any target, since raylib's rasterizes the glyphs before returning and here they are rasterized off the main thread. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
-- `LoadFontData`: Doesn't compile on any target, since raylib's returns the glyphs rasterized and here they are rasterized off the main thread. See `LoadFontDataAsync` for rasterizing glyphs.
 - `TextCopy`: Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text.
 - `TextAppend`: Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining `text += append` appends the text.
-- `LoadModel`: Refuses to compile on any target, as raylib's model load waits for the file. See `LoadModelAsync` for loading a model.
-- `LoadMaterials`: Refuses to compile on any target, as raylib's material load waits for the file. See `LoadMaterialsAsync` for loading a file's materials.
-- `ExportMesh`: Refuses to compile on any target, as raylib's mesh export is done when it returns and a file here is written later. See `ExportMeshAsync` for writing a mesh's file.
-- `ExportMeshAsCode`: Refuses to compile on any target, as raylib's export of a mesh as code is done when it returns and a file here is written later. See `ExportMeshAsCodeAsync` for writing a mesh as code.
-- `LoadModelAnimations`: Refuses to compile on any target, as raylib's animation load waits for the file. See `LoadModelAnimationsAsync` for loading a file's animations.
-- `LoadWave`: Doesn't compile on any target, as raylib's wave load waits for the file. See `LoadWaveAsync` for loading a wave file.
-- `LoadWaveFromMemory`: Doesn't compile on any target, as raylib's wave load from a file's bytes answers at once. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. A file other than WAV or QOA is decoded off the main thread.
-- `ExportWave`: Doesn't compile on any target, as raylib's wave export is done when it returns. See `ExportWaveAsync` for writing a wave to a sound file. A file is kept later, once written.
-- `ExportWaveAsCode`: Doesn't compile on any target, as raylib's export of a wave as code is done when it returns. See `ExportWaveAsCodeAsync` for writing a wave as a C header. A file is kept later, once written.
-- `LoadSound`: Doesn't compile on any target, as raylib's sound load waits for the file. See `LoadSoundAsync` for loading a sound file.
-- `LoadMusicStream`: Doesn't compile on any target, as raylib's music load knows at once whether the file opened. See `LoadMusicStreamAsync` for opening a music file.
 - `AttachAudioStreamProcessor`: Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run.
 - `DetachAudioStreamProcessor`: Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`).
 - `AttachAudioMixedProcessor`: Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run.
@@ -1001,19 +929,123 @@ static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
 
 
 ```haxe
+static macro function LoadImage(fileName:String):Image
+static macro function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image
+static macro function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadTexture(fileName:String):Texture2D
 static macro function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
+static macro function LoadImageAnim(fileName:String, frames:Array<Int>):Image
+static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image
+static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
+static macro function LoadFont(fileName:String):Font
+static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
+static macro function LoadModel(fileName:String):Model
+static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
+static macro function LoadWave(fileName:String):Wave
+static macro function LoadWaveAsync(fileName:String, loaded:Wave -> Void, ?failed:String -> Void):Void
+static macro function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave
+static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave -> Void, ?failed:String -> Void):Void
 static macro function CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String):Void
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
-- `LoadTexture`: Loads an image file as a texture, and returns it once it is ready. The file is read as `LoadTextureAsync` reads it.
+- `LoadImage`: Loads an image file, as `LoadImageAsync` loads it, and returns the image once it is decoded.
   - `fileName`: The file, as the program names it.
-  - returns: The texture, or one with id 0 when the file can't be loaded, which is logged.
+  - returns: The image, or one that isn't valid (`IsImageValid`) when it couldn't be loaded. Why it couldn't is logged.
+- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as the file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, as `LoadImageAnimAsync` gives it, and nothing after it is read; one with no frames, or broken before its first frame ends, fails to load.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the image, its pixels its own.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
+- `LoadImageFromMemory`: Decodes an image file's bytes, as `LoadImageFromMemoryAsync` decodes them, and returns the image once it is decoded.
+  - `fileType`: The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - returns: The image, or one that isn't valid (`IsImageValid`) when it couldn't be decoded. Why it couldn't is logged.
+- `LoadImageFromMemoryAsync`: Decodes an image file's bytes, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImageFromMemory`, as images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s, a GIF file's when the type is ".gif" or ".GIF". The reader is chosen as the program builds when the type is a constant, as `LoadImageAsync`'s is by the name.
+  - `fileType`: The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `loaded`: Receives the image.
+  - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
+- `LoadTexture`: Loads an image file as a texture, as `LoadTextureAsync` loads it, and returns the texture once it is ready.
+  - `fileName`: The file, as the program names it.
+  - returns: The texture, or one that isn't valid (`IsTextureValid`) when it couldn't be loaded. Why it couldn't is logged.
 - `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the file is read later. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadImageAnim`: Loads an animated image's frames, as `LoadImageAnimAsync` loads them, and returns them once they are decoded.
+  - `fileName`: The file, as the program names it.
+  - `frames`: Receives the frame count, in its first element.
+  - returns: The frames, one image, or one that isn't valid (`IsImageValid`) when they couldn't be loaded. Why they couldn't is logged.
+- `LoadImageAnimAsync`: Loads an animated image's frames, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnim`. The frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's (`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their delays and loop count aren't kept.
+  - `fileName`: The file, as the program names it.
+  - `frames`: Receives the frame count, in its first element.
+  - `loaded`: Receives the frames.
+  - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
+
+  A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some frames gives the frames before the break, as raylib's does; one with no frames, or broken before its first frame ends, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
+- `LoadImageAnimFromMemory`: Decodes an animated image file's bytes, as `LoadImageAnimFromMemoryAsync` decodes them, and returns the frames once they are decoded.
+  - `fileType`: The file's extension: ".gif", or one `LoadImageFromMemory` takes.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `frames`: Receives the frame count, in its first element.
+  - returns: The frames, one image, or one that isn't valid (`IsImageValid`) when they couldn't be decoded. Why they couldn't is logged.
+- `LoadImageAnimFromMemoryAsync`: Decodes an animated image file's bytes, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF"; any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when the type is a constant, as `LoadImageAnimAsync`'s is by the name.
+  - `fileType`: The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `frames`: Receives the frame count, in its first element.
+  - `loaded`: Receives the frames.
+  - `failed`: Optional. Receives why they couldn't be decoded; when omitted, it is logged.
+- `LoadFont`: Loads a font file, as `LoadFontAsync` loads it, and returns the font once its glyphs are ready.
+  - `fileName`: The file, as the program names it.
+  - returns: The font, or the default font (`GetFontDefault`) when it couldn't be loaded. Why it couldn't is logged.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program builds as `LoadImageAsync`'s is.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+- `LoadModel`: Loads a model from a glTF, GLB or OBJ file, as `LoadModelAsync` loads it, and returns the model once it and the files it points to are read.
+  - `fileName`: The file, as the program names it.
+  - returns: The model, or one that isn't valid (`IsModelValid`) when it couldn't be loaded. Why it couldn't is logged.
+- `LoadModelAsync`: Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material library and its textures), answering when it is ready: helix-raylib's own, in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the model.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or `o` line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces before any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a normal, or naming one the file doesn't have, given (0, 1, 0), one without texture coordinates (0, 0), the others' v turned (1 - v), and one naming a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib counts the start of each group in the file's `f` lines against the triangles it has made, so a polygon, or a face of 1 or 2 corners, before a group moves the group's first mesh; helix-raylib does too. An empty file fails to load, as one raylib can't read. Where raylib's reading is broken, helix-raylib reads the file as the format has it, and a file that breaks the format fails to load (docs/DECISIONS.md 28). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
+- `LoadWave`: Loads a sound file's samples, as `LoadWaveAsync` loads them, and returns the wave once they are read.
+  - `fileName`: The file, as the program names it.
+  - returns: The wave, or one that isn't valid (`IsWaveValid`) when it couldn't be loaded. Why it couldn't is logged.
+- `LoadWaveAsync`: Loads a sound file's samples, answering when they are read: helix-raylib's own, in place of raylib's `LoadWave`. The formats are `LoadWaveFromMemoryAsync`'s, by the file's extension.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only Ogg files carries no WAV or QOA reader; a name known only as the program runs brings every reader, the one its extension names chosen then.
+- `LoadWaveFromMemory`: Reads a sound file's samples from its bytes, as `LoadWaveFromMemoryAsync` reads them, and returns the wave once they are read.
+  - `fileType`: The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - returns: The wave, or one that isn't valid (`IsWaveValid`) when it couldn't be read. Why it couldn't is logged.
+- `LoadWaveFromMemoryAsync`: Reads a sound file's samples from its bytes, answering when they are read: helix-raylib's own, in place of raylib's `LoadWaveFromMemory`, as files other than WAV and QOA are decoded off the main thread. Each is read as raylib 5.5 reads it.
+  - `fileType`: The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
+  - `fileData`: The file's bytes.
+  - `dataSize`: How many of them.
+  - `loaded`: Receives the wave, its samples its own.
+  - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
+
+  A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
+
+  The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
 - `CompileShaderFile`: A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShaderAsync` to load. Typically called from the build's hxml, one line a shader:
   - `vsFileName`: The vertex stage's file, or null for raylib's default.
   - `fsFileName`: The fragment stage's file, or null for raylib's default.
@@ -1023,6 +1055,6 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
   -lib helix-raylib
   --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
   ```
-- `LoadAutomationEventList`: Returns an empty automation events list to record into, its capacity raylib's 16384, as raylib's `LoadAutomationEventList(NULL)`. Given a file instead, a call doesn't compile, as the file is read later: `LoadAutomationEventListAsync` reads one.
-  - `fileName`: Null (or 0, as raylib's examples write it).
-  - returns: The list.
+- `LoadAutomationEventList`: Loads an automation events list from a file, as `LoadAutomationEventListAsync` loads it, and returns the list once it is read. Given null, returns an empty list to record into, its capacity raylib's 16384.
+  - `fileName`: The file, as `ExportAutomationEventList` writes it, or null (or 0, as raylib's examples write it).
+  - returns: The list, or an empty one when the file couldn't be read. Why it couldn't is logged.

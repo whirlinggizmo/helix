@@ -27,7 +27,7 @@ class ModelMacro {
 		}
 		if (failed == null)
 			failed = macro null;
-		return macro @:privateAccess $p{["helix", "raylib", "modules", "RModelsAsync", reader]}($fileName, $loaded, $failed);
+		return Wait.placed(macro @:privateAccess $p{["helix", "raylib", "modules", "RModelsAsync", reader]}($fileName, $loaded, $failed));
 	}
 }
 #end

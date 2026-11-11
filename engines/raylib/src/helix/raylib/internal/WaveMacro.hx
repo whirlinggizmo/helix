@@ -19,7 +19,7 @@ class WaveMacro {
 		var read = reader(name == null ? null : extension(name));
 		if (failed == null)
 			failed = macro null;
-		return macro @:privateAccess helix.raylib.modules.RAudioAsync.loadWave($fileName, $read, $loaded, $failed);
+		return Wait.placed(macro @:privateAccess helix.raylib.modules.RAudioAsync.loadWave($fileName, $read, $loaded, $failed));
 	}
 
 	/** Returns the call reading a wave from a file's bytes, by the reader its type names when the type is known as the program builds,
@@ -35,7 +35,7 @@ class WaveMacro {
 		var read = reader(ShaderMacro.known(fileType));
 		if (failed == null)
 			failed = macro null;
-		return macro @:privateAccess helix.raylib.modules.RAudioAsync.loadWaveFromMemory($fileType, $fileData, $dataSize, $read, $loaded, $failed);
+		return Wait.placed(macro @:privateAccess helix.raylib.modules.RAudioAsync.loadWaveFromMemory($fileType, $fileData, $dataSize, $read, $loaded, $failed));
 	}
 
 	// A file name's extension as raylib's GetFileExtension gives it: from its last dot, none when the dot leads the name.
@@ -55,7 +55,7 @@ class WaveMacro {
 			case ".qoa" | ".QOA": "readQoa";
 			case _: "readUnsupported";
 		}
-		return macro @:privateAccess $p{["helix", "raylib", "modules", "RAudioAsync", name]};
+		return Wait.placed(macro @:privateAccess $p{["helix", "raylib", "modules", "RAudioAsync", name]});
 	}
 }
 #end

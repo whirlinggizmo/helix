@@ -4,6 +4,7 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix3D;
+import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -303,15 +304,14 @@ class RText {
 		UnloadTexture(font.texture);
 	}
 
-	/** Doesn't compile on any target, since the file is written after the call would return. See `ExportFontAsCodeAsync` for writing a
-		font as code.
+	/** Writes a font as a C header, as `ExportFontAsCodeAsync` writes it, and returns once it is written.
 
 		@param font  The font.
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportFontAsCode: A file is written later, or is refused. See ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportFontAsCode(font:Font, fileName:String):Bool {
-		throw "ExportFontAsCode is unimplemented";
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportFontAsCode(font:Font, fileName:String, answer:Bool->Void):Void {
+		RTextAsync.ExportFontAsCodeAsync(font, fileName, answer.bind(true), Answers.failing("ExportFontAsCode", answer, false));
 	}
 
 	// ExportFontAsCodeAsync's text, the text raylib 5.5's writes.
@@ -607,56 +607,50 @@ class RText {
 		return font;
 	}
 
-	/** Doesn't compile on any target, since raylib's waits for the file. See `LoadFontAsync` for loading a font.
+	/** Loads a TrueType or OpenType font file at a size, as `LoadFontExAsync` loads it, and returns the font once its glyphs are ready.
+		See `LoadFontFromMemory` for making a font from bytes already loaded.
 
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)")
-	static function LoadFont(fileName:String):Font {
-		throw "LoadFont is unimplemented";
+		@param fileName  The file, as the program names it.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+		@return  The font, or the default font (`GetFontDefault`) when it couldn't be loaded. Why it couldn't is logged. */
+	@:waits
+	static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, answer:Font->Void):Void {
+		RTextAsync.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, answer, Answers.failing("LoadFontEx", answer, GetFontDefault()));
 	}
 
-	/** Doesn't compile on any target, since raylib's waits for the file. See `LoadFontExAsync` for loading a font
-		at a size.
+	/** Makes a font from a TrueType or OpenType file's bytes, as `LoadFontFromMemoryAsync` makes it, and returns the font once its glyphs
+		are ready. See `LoadFontEx` for loading a file by its name.
 
-		@param fileName  The file.
-		@param fontSize  The size.
-		@param codepoints  The characters.
-		@param codepointCount  How many of them.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
-	static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
-		throw "LoadFontEx is unimplemented";
-	}
-
-	/** Doesn't compile on any target, since raylib's rasterizes the glyphs before returning and here they are rasterized off the main
-		thread. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
-
-		@param fileType  The file's extension.
+		@param fileType  The file's extension, ".ttf" or ".otf".
 		@param fileData  The file's bytes.
-		@param dataSize  How many.
-		@param fontSize  The size.
-		@param codepoints  The characters.
-		@param codepointCount  How many of them.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)")
-	static function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
-		throw "LoadFontFromMemory is unimplemented";
+		@param dataSize  How many of them.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95.
+		@return  The font, or the default font (`GetFontDefault`) when it couldn't be made. Why it couldn't is logged. */
+	@:waits
+	static function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int,
+			answer:Font->Void):Void {
+		RTextAsync.LoadFontFromMemoryAsync(fileType, fileData, dataSize, fontSize, codepoints, codepointCount, answer,
+			Answers.failing("LoadFontFromMemory", answer, GetFontDefault()));
 	}
 
-	/** Doesn't compile on any target, since raylib's returns the glyphs rasterized and here they are rasterized off the main thread. See
-		`LoadFontDataAsync` for rasterizing glyphs.
+	/** Rasterizes a TrueType or OpenType font's glyphs, as `LoadFontDataAsync` rasterizes them, and returns them once they are ready. See
+		`LoadFontFromMemory` for a font ready to draw.
 
 		@param fileData  The font file's bytes.
-		@param dataSize  How many.
-		@param fontSize  The size.
-		@param codepoints  The characters.
-		@param codepointCount  How many of them.
-		@param type  The glyphs' kind (`FONT_*`).
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)")
-	static function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):Array<GlyphInfo> {
-		throw "LoadFontData is unimplemented";
+		@param dataSize  How many of them.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95.
+		@param type  The glyphs' kind (`FONT_DEFAULT`, `FONT_BITMAP` or `FONT_SDF`).
+		@return  The glyphs, each with its own image, or none when the font couldn't be read. Why it couldn't is logged. */
+	@:waits
+	static function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,
+			answer:Array<GlyphInfo>->Void):Void {
+		RTextAsync.LoadFontDataAsync(fileData, dataSize, fontSize, codepoints, codepointCount, type, answer, Answers.failing("LoadFontData", answer, []));
 	}
 
 	// raylib's LoadFontData, from the fonts service's glyphs (FONT_BITMAP's made hard-edged there): a glyph the font lacks is empty, a

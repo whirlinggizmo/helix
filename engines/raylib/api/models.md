@@ -75,7 +75,10 @@ static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision
 static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
 static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
 static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
-static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
+static macro function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material>
+static macro function ExportMesh(mesh:Mesh, fileName:String):Bool
+static macro function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
+static macro function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
 ```
 
 - `DrawLine3D`: Draws a line in 3D.
@@ -553,14 +556,22 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `p3`: The next.
   - `p4`: The last.
   - returns: The hit.
-- `LoadModelAsync`: Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material library and its textures), answering when it is ready: helix-raylib's own, in place of raylib's `LoadModel`. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
+- `LoadMaterials`: Loads an .mtl file's materials, as `LoadMaterialsAsync` loads them, and returns them once they and their textures are read.
+  - `fileName`: The file, as the program names it: an .mtl file.
+  - `materialCount`: Receives how many, in its first element.
+  - returns: The materials, in the file's order, or none when they couldn't be loaded. Why they couldn't is logged.
+- `ExportMesh`: Writes a mesh as an OBJ file, as `ExportMeshAsync` writes it, and returns once it is written. See `ExportMeshAsCode` for writing a C header.
+  - `mesh`: The mesh, with positions, texture coordinates and normals.
+  - `fileName`: The file; only ".obj" is written.
+  - returns: Whether it was written. Why it wasn't is logged.
+- `ExportMeshAsCode`: Writes a mesh as a C header, as `ExportMeshAsCodeAsync` writes it, and returns once it is written. See `ExportMesh` for writing an OBJ file.
+  - `mesh`: The mesh.
+  - `fileName`: The file; its name, upper case, names the defines and the arrays.
+  - returns: Whether it was written. Why it wasn't is logged.
+- `LoadModelAnimations`: Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` loads them, and returns them once they are read.
   - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the model.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
-
-  An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or `o` line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces before any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a normal, or naming one the file doesn't have, given (0, 1, 0), one without texture coordinates (0, 0), the others' v turned (1 - v), and one naming a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file gives; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line; with no library, or one that can't be read (logged), the model has raylib's default material alone. raylib counts the start of each group in the file's `f` lines against the triangles it has made, so a polygon, or a face of 1 or 2 corners, before a group moves the group's first mesh; helix-raylib does too. An empty file fails to load, as one raylib can't read. Where raylib's reading is broken, helix-raylib reads the file as the format has it, and a file that breaks the format fails to load (docs/DECISIONS.md 28). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
-
-  The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
+  - `animCount`: Receives how many, in its first element.
+  - returns: The animations, as many as the file has, or none when they couldn't be loaded. Why they couldn't is logged.
 
 
 ```haxe

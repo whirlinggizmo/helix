@@ -19,5 +19,12 @@ class Await {
 	public static extern inline function promised<T>(promise:js.lib.Promise<T>):T {
 		return js.Syntax.code("(await {0})", promise);
 	}
+
+	/** Waits for a promise that has no value, in an async function.
+
+		@param promise  The promise. */
+	public static extern inline function finished(promise:js.lib.Promise<Dynamic>):Void {
+		js.Syntax.code("(await {0})", promise);
+	}
 }
 #end

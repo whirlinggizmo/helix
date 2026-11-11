@@ -7,6 +7,7 @@ import helix.math.Matrix3D;
 import helix.math.Quaternion3D;
 import helix.math.Trig;
 import helix.math.Vector3D;
+import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.DroppedFiles;
 import helix.raylib.internal.Models;
@@ -62,7 +63,7 @@ class RCore {
 	static function WindowShouldClose():Bool {
 		#if js
 		if (++Runtime.unframed > 100000)
-			throw "WindowShouldClose: called in a loop that isn't the program's loop; the program's loop is a `while` or `do`-`while` in the main class calling WindowShouldClose() or EndDrawing(), a statement of a function's own block";
+			throw "WindowShouldClose: called 100000 times since the last EndDrawing(). Call EndDrawing() once a frame in the loop.";
 		#end
 		return Runtime.shouldClose;
 	}
@@ -1332,41 +1333,41 @@ class RCore {
 
 	// ---- Files ----
 
-	/** Doesn't compile on any target, since the answer comes later. See `SavedFileExistsAsync` for asking whether a saved file exists,
-		and `FileExistsAsync` for any other file.
+	/** Returns whether a file exists, as `FileExistsAsync` answers it. See `DirectoryExists` for a directory.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("FileExists: Synchronous file access is not supported. For a saved file, one SaveFileText or SaveFileData wrote, see SavedFileExistsAsync(fileName:String, answer:Bool->Void). For any other file, see FileExistsAsync(fileName:String, answer:Bool->Void).")
-	static function FileExists(fileName:String):Bool {
-		throw "FileExists is unimplemented";
+		@return  True when it exists. */
+	@:waits
+	static function FileExists(fileName:String, answer:Bool->Void):Void {
+		RFilesAsync.FileExistsAsync(fileName, answer);
 	}
 
-	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileTextAsync` for reading a saved text file, and
-		`LoadFileTextAsync` for any other.
+	/** Reads a text file, as `LoadFileTextAsync` reads it, and returns its text. See `LoadFileData` for reading a file's bytes.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFileText: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void). For any other file, see LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void).")
-	static function LoadFileText(fileName:String):Null<String> {
-		throw "LoadFileText is unimplemented";
+		@return  Its text, or null when it couldn't be read. Why it couldn't is logged. */
+	@:waits
+	static function LoadFileText(fileName:String, answer:Null<String>->Void):Void {
+		RFilesAsync.LoadFileTextAsync(fileName, answer, Answers.failing("LoadFileText", answer, null));
 	}
 
-	/** Frees text `LoadFileTextAsync` gave.
+	/** Frees text `LoadFileText` or `LoadFileTextAsync` gave.
 
 		Has nothing to free.
 
 		@param text  The text. */
 	static function UnloadFileText(text:Null<String>):Void {}
 
-	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file.
+	/** Writes a text file, as `SaveFileTextAsync` writes it, and returns once it is written. See `SaveFileData` for writing bytes.
+
+		`LoadFileText` reads it back.
 
 		@param fileName  The file.
 		@param text  Its text.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void)")
-	static function SaveFileText(fileName:String, text:String):Bool {
-		throw "SaveFileText is unimplemented";
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function SaveFileText(fileName:String, text:String, answer:Bool->Void):Void {
+		RFilesAsync.SaveFileTextAsync(fileName, text, answer.bind(true), Answers.failing("SaveFileText", answer, false));
 	}
 
 	// Writes a text file as SaveFileTextAsync does: through the program's SetSaveFileTextCallback when it has one, answered at a later
@@ -1412,43 +1413,45 @@ class RCore {
 		});
 	}
 
-	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileDataAsync` for reading a saved file's bytes, and
-		`LoadFileDataAsync` for any other file's.
+	/** Reads a file's bytes, as `LoadFileDataAsync` reads them, and returns them. See `LoadFileText` for reading a text file.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFileData: Synchronous loading is not supported. For a saved file, one SaveFileData wrote, see LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void). For any other file, see LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void).")
-	static function LoadFileData(fileName:String):Null<haxe.io.Bytes> {
-		throw "LoadFileData is unimplemented";
+		@return  Its bytes, or null when it couldn't be read. Why it couldn't is logged. */
+	@:waits
+	static function LoadFileData(fileName:String, answer:Null<haxe.io.Bytes>->Void):Void {
+		RFilesAsync.LoadFileDataAsync(fileName, answer, Answers.failing("LoadFileData", answer, null));
 	}
 
-	/** Frees bytes `LoadFileDataAsync` gave.
+	/** Frees bytes `LoadFileData` or `LoadFileDataAsync` gave.
 
 		Has nothing to free.
 
 		@param data  The bytes. */
 	static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}
 
-	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes.
+	/** Writes a file's bytes, as `SaveFileDataAsync` writes them, and returns once they are written. See `SaveFileText` for writing
+		text.
+
+		`LoadFileData` reads them back.
 
 		@param fileName  The file.
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("SaveFileData: A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void)")
-	static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool {
-		throw "SaveFileData is unimplemented";
+		@return  Whether they were written. Why they weren't is logged. */
+	@:waits
+	static function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int, answer:Bool->Void):Void {
+		RFilesAsync.SaveFileDataAsync(fileName, data, dataSize, answer.bind(true), Answers.failing("SaveFileData", answer, false));
 	}
 
-	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportDataAsCodeAsync` for writing bytes as code.
+	/** Writes bytes as a C header, as `ExportDataAsCodeAsync` writes it, and returns once it is written.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportDataAsCode: A file is written later, or is refused. See ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool {
-		throw "ExportDataAsCode is unimplemented";
+		@param fileName  The file; its name, upper case, names the define and the array.
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String, answer:Bool->Void):Void {
+		RFilesAsync.ExportDataAsCodeAsync(data, dataSize, fileName, answer.bind(true), Answers.failing("ExportDataAsCode", answer, false));
 	}
 
 	// ExportDataAsCodeAsync's text, as raylib's writes it, byte for byte.
@@ -1674,23 +1677,22 @@ class RCore {
 
 	// ---- Directories and dropped files ----
 
-	/** Doesn't compile on any target, since the answer comes later. See `DirectoryExistsAsync` for asking whether a directory
-		exists.
+	/** Returns whether a directory exists, as `DirectoryExistsAsync` answers it. See `FileExists` for a file.
 
 		@param dirPath  The directory.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)")
-	static function DirectoryExists(dirPath:String):Bool {
-		throw "DirectoryExists is unimplemented";
+		@return  True when it exists. */
+	@:waits
+	static function DirectoryExists(dirPath:String, answer:Bool->Void):Void {
+		RFilesAsync.DirectoryExistsAsync(dirPath, answer);
 	}
 
-	/** Doesn't compile on any target, since the answer comes later. See `GetFileLengthAsync` for asking a file's size.
+	/** Returns a file's size, as `GetFileLengthAsync` answers it.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)")
-	static function GetFileLength(fileName:String):Int {
-		throw "GetFileLength is unimplemented";
+		@return  Its size in bytes; 0 when there is no file, as raylib's. */
+	@:waits
+	static function GetFileLength(fileName:String, answer:Int->Void):Void {
+		RFilesAsync.GetFileLengthAsync(fileName, answer);
 	}
 
 	/** Makes a directory, succeeding for any path that could name one.
@@ -1726,34 +1728,35 @@ class RCore {
 		#end
 	}
 
-	/** Doesn't compile on any target, since the answer comes later. See `IsPathFileAsync` for asking whether a path is a file.
+	/** Returns whether a path is a file, not a directory, as `IsPathFileAsync` answers it. See `DirectoryExists` for a directory.
 
 		@param path  The path.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)")
-	static function IsPathFile(path:String):Bool {
-		throw "IsPathFile is unimplemented";
+		@return  True for a file; false for a directory or nothing there. */
+	@:waits
+	static function IsPathFile(path:String, answer:Bool->Void):Void {
+		RFilesAsync.IsPathFileAsync(path, answer);
 	}
 
-	/** Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesAsync` for listing a directory.
+	/** Lists a directory's files and subdirectories, as `LoadDirectoryFilesAsync` lists them. See `LoadDirectoryFilesEx` for a filter
+		by extension and the subdirectories' files.
 
 		@param dirPath  The directory.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)")
-	static function LoadDirectoryFiles(dirPath:String):FilePathList {
-		throw "LoadDirectoryFiles is unimplemented";
+		@return  The list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's. */
+	@:waits
+	static function LoadDirectoryFiles(dirPath:String, answer:FilePathList->Void):Void {
+		RFilesAsync.LoadDirectoryFilesAsync(dirPath, answer);
 	}
 
-	/** Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesExAsync` for listing a directory by
-		extension and with its subdirectories.
+	/** Lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, as `LoadDirectoryFilesExAsync`
+		lists them. See `LoadDirectoryFiles` for listing one directory's every file and subdirectory.
 
 		@param basePath  The directory.
-		@param filter  The extensions kept.
-		@param scanSubdirs  Whether subdirectories are listed too.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)")
-	static function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool):FilePathList {
-		throw "LoadDirectoryFilesEx is unimplemented";
+		@param filter  The extensions kept, such as ".png;.jpg;DIR", or null for every file.
+		@param scanSubdirs  Whether the subdirectories' files are listed too.
+		@return  The list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning. */
+	@:waits
+	static function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool, answer:FilePathList->Void):Void {
+		RFilesAsync.LoadDirectoryFilesExAsync(basePath, filter, scanSubdirs, answer);
 	}
 
 	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave.
@@ -1804,14 +1807,13 @@ class RCore {
 		Runtime.dropped = [];
 	}
 
-	/** Doesn't compile on any target, since the answer comes later. See `GetFileModTimeAsync` for asking when a file was last
-		written.
+	/** Returns when a file was last written, as `GetFileModTimeAsync` answers it.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)")
-	static function GetFileModTime(fileName:String):Int {
-		throw "GetFileModTime is unimplemented";
+		@return  The time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
+	@:waits
+	static function GetFileModTime(fileName:String, answer:Int->Void):Void {
+		RFilesAsync.GetFileModTimeAsync(fileName, answer);
 	}
 
 	// ---- Encoding and hashes ----
@@ -2117,6 +2119,15 @@ class RCore {
 	// ---- Automation events ----
 	// raylib's LoadAutomationEventList(NULL): an empty list to record into, its capacity raylib's. Raylib.LoadAutomationEventList, a
 	// macro, calls it; a file is read by LoadAutomationEventListAsync.
+	// raylib's LoadAutomationEventList given a file, in answer form (Raylib.LoadAutomationEventList waits for it): a file that can't be
+	// read is logged, and answers an empty list.
+	static function loadAutomationEventList(fileName:String, answer:AutomationEventList->Void):Void {
+		RFilesAsync.LoadAutomationEventListAsync(fileName, answer, error -> {
+			Answers.refuse("LoadAutomationEventList", error, null);
+			answer(newAutomationEventList());
+		});
+	}
+
 	static function newAutomationEventList():AutomationEventList {
 		var list = new AutomationEventList();
 		list.capacity = Automation.CAPACITY;
@@ -2131,15 +2142,15 @@ class RCore {
 		@param list  The list. */
 	static function UnloadAutomationEventList(list:AutomationEventList):Void {}
 
-	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportAutomationEventListAsync` for writing a list to
-		a file.
+	/** Writes a list's events as text, as `ExportAutomationEventListAsync` writes it, and returns once it is written. See
+		`LoadAutomationEventList` for reading it back.
 
 		@param list  The list.
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportAutomationEventList: A file is written later, or is refused. See ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool {
-		throw "ExportAutomationEventList is unimplemented";
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportAutomationEventList(list:AutomationEventList, fileName:String, answer:Bool->Void):Void {
+		RFilesAsync.ExportAutomationEventListAsync(list, fileName, answer.bind(true), Answers.failing("ExportAutomationEventList", answer, false));
 	}
 
 	// ExportAutomationEventListAsync's text, as raylib's writes it, byte for byte.

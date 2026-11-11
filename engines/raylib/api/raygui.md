@@ -850,6 +850,8 @@ static function GuiIconText(iconId:Int, text:String):String
 static function GuiSetIconScale(scale:Int):Void
 static function GuiGetIcons():Array<Int>
 static function GuiDrawIcon(iconId:Int, posX:Int, posY:Int, pixelSize:Int, color:Color):Void
+static macro function GuiLoadStyle(fileName:String):Void
+static macro function GuiLoadIcons(fileName:String, loadIconsName:Bool):Null<Array<String>>
 ```
 
 - `GuiEnable`: Enables the controls again after `GuiDisable`.
@@ -926,6 +928,14 @@ static function GuiDrawIcon(iconId:Int, posX:Int, posY:Int, pixelSize:Int, color
   - `color`: The color.
 
   Fades the icon by the alpha set with `GuiSetAlpha`.
+- `GuiLoadStyle`: Loads a style file (.rgs) over the current style, as `GuiLoadStyleAsync` loads it, and returns once it is loaded.
+  - `fileName`: The style file.
+
+  A file that can't be read leaves the default style. Why it couldn't is logged.
+- `GuiLoadIcons`: Loads an icon file (.rgi) over raygui's icons, as `GuiLoadIconsAsync` loads it, and returns once it is loaded.
+  - `fileName`: The icon file.
+  - `loadIconsName`: Whether the icons' names are read.
+  - returns: The icons' names, in order, or null when they weren't read, the file isn't an icon file or it couldn't be read. Why it couldn't is logged.
 
 ## raygui: the style and icon loads in place of raygui's that wait for a file
 
@@ -1269,11 +1279,3 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - `text`: Not drawn.
   - `colorHsv`: The color, hue in degrees (x), saturation (y) and value (z) 0 to 1; saturation and value change in place.
   - returns: 0.
-
-```haxe
-static macro function GuiLoadStyle(...args):Void
-static macro function GuiLoadIcons(...args):Array<String>
-```
-
-- `GuiLoadStyle`: Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` for loading a style file.
-- `GuiLoadIcons`: Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` for loading an icon file.

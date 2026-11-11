@@ -42,11 +42,11 @@ class SysCalls {
 		"stderr" => "Write with Sys.println or TraceLog."
 	];
 
-	static inline final LOAD_TEXT = "Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void). For any other file, see LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void).";
-	static inline final LOAD_DATA = "Synchronous loading is not supported. For a saved file, one SaveFileData wrote, see LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void). For any other file, see LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void).";
-	static inline final SAVE_TEXT = "A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void).";
-	static inline final SAVE_DATA = "A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void).";
-	static inline final SAVE_OVER = "A file can't be removed or renamed. Save over it with SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void) or SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void).";
+	static inline final LOAD_TEXT = "Use LoadFileText(fileName:String):Null<String> instead.";
+	static inline final LOAD_DATA = "Use LoadFileData(fileName:String):Null<haxe.io.Bytes> instead.";
+	static inline final SAVE_TEXT = "Use SaveFileText(fileName:String, text:String):Bool instead.";
+	static inline final SAVE_DATA = "Use SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool instead.";
+	static inline final SAVE_OVER = "A file can't be removed or renamed. Save over it with SaveFileText(fileName:String, text:String):Bool or SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool.";
 
 	// Each refused sys.io.File call, with what to do instead.
 	static final FILE = [
@@ -58,20 +58,18 @@ class SysCalls {
 		"write" => SAVE_DATA,
 		"update" => SAVE_DATA,
 		"append" =>
-		"A file is written whole. Load it with LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void), add to it, and save it with SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void).",
+		"A file is written whole. Load it with LoadFileData(fileName:String):Null<haxe.io.Bytes>, add to it, and save it with SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool.",
 		"copy" =>
-		"Load the file with LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void) and save the copy with SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void)."
+		"Load the file with LoadFileData(fileName:String):Null<haxe.io.Bytes> and save the copy with SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool."
 	];
 
 	// Each refused sys.FileSystem call, with what to do instead.
 	static final FILE_SYSTEM = [
-		"exists" =>
-		"Synchronous file access is not supported. For a saved file, one SaveFileText or SaveFileData wrote, see SavedFileExistsAsync(fileName:String, answer:Bool->Void). For any other file, see FileExistsAsync(fileName:String, answer:Bool->Void).",
-		"isDirectory" => "Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void).",
-		"readDirectory" => "Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void).",
+		"exists" => "Use FileExists(fileName:String):Bool instead.",
+		"isDirectory" => "Use DirectoryExists(dirPath:String):Bool instead.",
+		"readDirectory" => "Use LoadDirectoryFiles(dirPath:String):FilePathList instead.",
 		"createDirectory" => "Directories are made by raylib. See MakeDirectory(dirPath:String):Int.",
-		"stat" =>
-		"Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void) and GetFileModTimeAsync(fileName:String, answer:Int->Void).",
+		"stat" => "Use GetFileLength(fileName:String):Int and GetFileModTime(fileName:String):Int instead.",
 		"fullPath" => "Files are named relative to the program.",
 		"absolutePath" => "Files are named relative to the program.",
 		"deleteFile" => SAVE_OVER,

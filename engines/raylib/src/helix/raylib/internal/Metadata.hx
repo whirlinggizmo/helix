@@ -23,6 +23,11 @@ class Metadata {
 			params: ["message"],
 			targets: [ClassField]
 		}, "helix-raylib");
+		Compiler.registerCustomMetadata({
+			metadata: ":waits",
+			doc: "On a section's function: a call of raylib's that waits for a file or an answer, written with an `answer` parameter after raylib's own. tools/gen_raylib.py declares it in the facade as a macro with raylib's parameters and result, whose call waits for the answer (helix.raylib.internal.Wait.section).",
+			targets: [ClassField]
+		}, "helix-raylib");
 	}
 	#end
 }

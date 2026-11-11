@@ -68,6 +68,32 @@ class Answers {
 		return () -> if (done != null) done();
 	}
 
+	/** Returns the `failed` of a call that waits for its answer: why it failed is logged, and the call's answer is `empty`, as raylib's
+		call returns its empty value.
+
+		@param name  The call, named when it is logged.
+		@param answer  The call's answer.
+		@param empty  The value of a call that failed.
+		@return  The function receiving why it failed. */
+	public static function failing<T>(name:String, answer:T->Void, empty:T):String->Void {
+		return error -> {
+			refuse(name, error, null);
+			answer(empty);
+		};
+	}
+
+	/** Returns the `failed` of a call that waits and has no value: why it failed is logged, and the call ends.
+
+		@param name  The call, named when it is logged.
+		@param answer  Ends the call.
+		@return  The function receiving why it failed. */
+	public static function ended(name:String, answer:Void->Void):String->Void {
+		return error -> {
+			refuse(name, error, null);
+			answer();
+		};
+	}
+
 	/** Answers a load, a request or a write that failed: to the program's `failed`, or logged. Every error names the file, as the services'
 		do.
 

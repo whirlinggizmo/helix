@@ -20,6 +20,8 @@ sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler des
     (engines/raylib/vendor/raylib/raylib_api.json, raymath_api.json and rlgl_api.json, raylib's own description of its API, rlgl's and
     raymath's made by raylib's parser, and engines/raylib/vendor/raygui/raygui_api.json, made from raygui.h by raylib's parser);
   - its functions: every function of its sections as an inline forward with its doc comment, under a heading naming its module and file;
+    then each function a section marks `@:waits` and writes with an answer parameter after raylib's own, as a macro with raylib's
+    parameters and result whose call waits in the function calling it (helix.raylib.internal.Wait);
     then each function a program can't call, as a macro taking any arguments (so a call guessing them reports the refusal, not a
     mismatch) whose call reports its message where it is (helix.platform.macros.Build), so the build stops there and the call still has
     raylib's result type. A section's function marked
@@ -105,6 +107,8 @@ SECTIONS = [s for sections, _, _ in TARGETS.values() for s in sections]
 FUNCTION = re.compile(r'(?:rlgl|rl)?[A-Z]\w*|emscripten_\w+')
 # The section metas that make a function a refusal, and the helper (helix.platform.macros.Build) each calls.
 REFUSALS = {':unsupported': 'unsupported', ':unimplemented': 'unimplemented'}
+# The section meta of a call of raylib's that waits for a file or an answer, written with an answer parameter after raylib's own.
+WAITS = ':waits'
 # A refusal's message naming what to use instead: "See Name(its parameters)".
 INSTEAD = re.compile(r'See (\w+)\((.*?)\)')
 # C's number types as Haxe's.
@@ -207,6 +211,18 @@ def body(line):
     return [head + ',', '\t\t\tmacro' + tail]
 
 
+def waiting(section, f, instead):
+    """A function a section writes with an answer parameter (`@:waits`), as a macro with raylib's parameters and result: a call waits
+    for the section's answer (helix.raylib.internal.Wait.section). instead is the parameters of its async, which the call's refusal in a
+    function used as a value names, or None when it has none."""
+    message = (f'{f.name}: in a function used as a value, see {f.name}Async({instead})' if instead is not None
+               else f'{f.name}: call it from a function of a class, not from a function used as a value')
+    params = ', '.join(f'{p[0]}:ExprOf<{p[1]}>' for p in f.params)
+    line = (f'\t\treturn helix.raylib.internal.Wait.section("{message}", macro helix.raylib.modules.{section}.{f.name}, '
+            f'[{", ".join(p[0] for p in f.params)}], {"true" if f.result == "Void" else "false"});')
+    return [f'\t/** {f.doc} */', *wrapped(f'\tpublic static macro function {f.name}({params}):ExprOf<{f.result}>'), *body(line), '']
+
+
 def stub(f, header, callbacks):
     """A function of raylib's helix-raylib doesn't have, with raylib's result type: a call to it doesn't compile."""
     name = f['name']
@@ -259,11 +275,23 @@ class Function:
         doc = node.find('haxe_doc')
         self.doc = doc.text if doc is not None else ''
         self.refusal = None
+        self.waits = False
         meta = node.find('meta')
         for m in meta if meta is not None else []:
             if m.get('n') in REFUSALS:
                 # The meta's argument as written, a string literal: the message is inside its quotes.
                 self.refusal = (REFUSALS[m.get('n')], m.find('e').text[1:-1])
+            if m.get('n') == WAITS:
+                self.waits = True
+        if self.waits:
+            # Its last parameter takes the answer: raylib's call has the parameters before it, and the answer's type as its result.
+            answer = list(kids[-2])
+            if kids[-2].tag != 'f' or len(answer) > 2 or type_text(answer[-1]) != 'Void' or self.result != 'Void':
+                raise SystemExit(f'gen_raylib: {self.name} is marked @:waits, so its last parameter is answer:T->Void or '
+                                 'answer:Void->Void, and it returns nothing')
+            self.params.pop()
+            self.result = type_text(answer[0]) if len(answer) == 2 else 'Void'
+            self.full_result = type_text(answer[0], True) if len(answer) == 2 else 'Void'
 
     def signature(self):
         """Its parameters as a section writes them."""
@@ -328,10 +356,11 @@ def described(texts):
     return sections, own, macros, initialized
 
 
-def generated(file_sections, functions, api, header, written, by_hand=()):
+def generated(file_sections, functions, api, header, written, by_hand=(), signatures=None):
     """A file's generated part, between and including its markers: its header's constants not written by hand, then forwards to its
-    sections' functions, then the functions a program can't call: the sections' marked `@:unsupported` or `@:unimplemented`, and the
-    header's no section writes."""
+    sections' functions, then the functions that wait (the sections' marked `@:waits`), then the functions a program can't call: the
+    sections' marked `@:unsupported` or `@:unimplemented`, and the header's no section writes. signatures gives each function's
+    parameters as written, by its name."""
     if api is None:
         # A header without an API description (rlights.h) has its functions alone, as helix-raylib's own modules do.
         whose = f"{header}'s" if header.endswith('.h') or header.startswith('raylib ') else "helix-raylib's own"
@@ -361,12 +390,16 @@ def generated(file_sections, functions, api, header, written, by_hand=()):
             about = sentence(d['description']) or f"{header}'s `{d['name']}`."
             out += [f"\t/** {about} */", f"\tpublic static inline final {d['name']} = {d['value']};", '']
     out += [MIDDLE, '\t#if !macro']
-    unsupported, unimplemented = [], []
+    waits, unsupported, unimplemented = [], [], []
     for name, title in file_sections:
         out += ['', f'\t// ---- {title} (raylib/{name}.hx) ----', '']
         for f in functions[name]:
             # A waiting call (EndDrawing) is a macro function written by hand in the file, over its section's function.
             if f.name in by_hand:
+                continue
+            if f.waits:
+                # Declared here as a macro, so the wait is in the program's function calling it.
+                waits.extend(waiting(name, f, (signatures or {}).get(f.name + 'Async')))
                 continue
             if f.refusal:
                 # Declared here as a macro, so the build stops at the program's call, with the section's message.
@@ -380,6 +413,8 @@ def generated(file_sections, functions, api, header, written, by_hand=()):
             out += [f'\t/** {f.doc} */', *wrapped(f'\tpublic static inline function {f.name}({f.signature()}):{f.result}'),
                     f'\t\t{call if f.result == "Void" else "return " + call};', '']
     out += ['\t#end', '']
+    if waits:
+        out += [f"\t// ---- {header}'s functions that wait for a file or an answer: each a macro, its wait in the function calling it ----", ''] + waits
     if unsupported:
         out += [f"\t// ---- {header}'s functions helix-raylib won't have: each refuses to compile, saying why and what to use ----", ''] + unsupported
     missing = [f for f in api['functions'] if f['name'] not in written]
@@ -479,6 +514,7 @@ def main():
     every = {f.name: f for fs in functions.values() for f in fs}
     written = {name: f.signature() for name, f in every.items()}
     written.update(macros)
+    signatures = dict(written)
     stale = [f'{m.group(1)}({m.group(2)})' for f in every.values() if f.refusal for m in [INSTEAD.search(f.refusal[1])]
              if m and written.get(m.group(1)) != m.group(2)]
     if stale:
@@ -511,7 +547,7 @@ def main():
         after = rest.split(END, 1)[1]
         # Written: in a section, or by hand in the file itself (its constants and macro functions).
         written = set(every) | set(own[name])
-        files[RAY / name] = before + generated(target_sections, functions, api, header, written, own[name]) + after
+        files[RAY / name] = before + generated(target_sections, functions, api, header, written, own[name], signatures) + after
         lines = files[RAY / name].count('\n')
         if class_path(name).startswith(EXTRAS + '.') and lines > MODULE_LINES:
             print(f'gen_raylib: {name} would be {lines} lines, over {MODULE_LINES}: split it into modules of their own, each a raylib '

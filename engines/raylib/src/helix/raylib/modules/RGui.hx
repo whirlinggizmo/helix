@@ -8,6 +8,7 @@ import helix.raylib.modules.RShapes.*;
 import helix.raylib.modules.RTextures.*;
 import helix.raylib.modules.RText.*;
 import helix.raylib.Raygui.*;
+import helix.raylib.internal.Answers;
 import helix.raylib.internal.GuiIcons;
 import helix.raylib.modules.RGuiControls.*;
 #end
@@ -148,13 +149,14 @@ class RGui {
 		return at >= 0 && at < guiStyle.length ? guiStyle[at] : 0;
 	}
 
-	/** Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` for loading
-		a style file.
+	/** Loads a style file (.rgs) over the current style, as `GuiLoadStyleAsync` loads it, and returns once it is loaded.
 
-		@param fileName  The style file (.rgs). */
-	@:unsupported("GuiLoadStyle: Synchronous loading is not supported. See GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function GuiLoadStyle(fileName:String):Void {
-		throw "GuiLoadStyle is unimplemented";
+		A file that can't be read leaves the default style. Why it couldn't is logged.
+
+		@param fileName  The style file. */
+	@:waits
+	static function GuiLoadStyle(fileName:String, answer:Void->Void):Void {
+		RGuiAsync.GuiLoadStyleAsync(fileName, answer, Answers.ended("GuiLoadStyle", answer));
 	}
 
 	/** Loads raygui's default style, its light theme, over every control's colors, borders, text and sizes.
@@ -297,15 +299,15 @@ class RGui {
 		return icons();
 	}
 
-	/** Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` for loading
-		an icon file.
+	/** Loads an icon file (.rgi) over raygui's icons, as `GuiLoadIconsAsync` loads it, and returns once it is loaded.
 
-		@param fileName  The icon file (.rgi).
+		@param fileName  The icon file.
 		@param loadIconsName  Whether the icons' names are read.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GuiLoadIcons: Synchronous loading is not supported. See GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void)")
-	static function GuiLoadIcons(fileName:String, loadIconsName:Bool):Array<String> {
-		throw "GuiLoadIcons is unimplemented";
+		@return  The icons' names, in order, or null when they weren't read, the file isn't an icon file or it couldn't be read. Why it
+			couldn't is logged. */
+	@:waits
+	static function GuiLoadIcons(fileName:String, loadIconsName:Bool, answer:Null<Array<String>>->Void):Void {
+		RGuiAsync.GuiLoadIconsAsync(fileName, loadIconsName, answer, Answers.failing("GuiLoadIcons", answer, null));
 	}
 
 	/** Draws an icon, each of its pixels a square.

@@ -8,8 +8,9 @@ import haxe.macro.Type;
 	the compiler's types of them, so the size ladder's last rung links all of helix-raylib. Each argument is `Everything.value` and each result
 	goes to `Everything.result`, both of no type, so nothing a call is given or returns is known as the program builds and nothing is
 	folded away. The functions that refuse to compile (a section's `@:unsupported` or `@:unimplemented`) are left out; the macro functions
-	that choose a reader by a constant file name (DECISIONS 29) are called by hand in `Main`, once for each reader, and named in
-	`BY_HAND`, so a macro function added to helix-raylib and not called fails the build here. A build step (`BUILD_STEPS`) is left out.
+	that wait (`LoadSound`) are called as the others are; those that choose a reader by a constant file name (DECISIONS 29) are called by
+	hand in `Main`, once for each reader, and named in `BY_HAND`, so any other macro function added to helix-raylib and not called fails
+	the build here. A build step (`BUILD_STEPS`) is left out.
 	It runs as a `--macro`, not in a program. */
 class Everything {
 	/** What every generated call is given: unknown as the program builds. */
@@ -78,7 +79,6 @@ class Everything {
 		"LoadImageAsync",
 		"LoadImageFromMemoryAsync",
 		"LoadTextureAsync",
-		"LoadTexture",
 		"EndDrawing",
 		"LoadFontAsync",
 		"LoadImageAnimAsync",
@@ -114,8 +114,10 @@ class Everything {
 						switch f.kind {
 							case FMethod(MethMacro):
 								if (refused.exists(f.name)) refusedCount++; else if (BY_HAND.contains(f.name)) byHand++; else
-									if (!BUILD_STEPS.contains(f.name))
-										Context.error('Everything: $facade.${f.name} is a macro function Main doesn\'t call by hand', Context.currentPos());
+									if (!BUILD_STEPS.contains(f.name)) {
+									calls.push(waitingCall(facade, f));
+									called++;
+								}
 							case FMethod(_):
 								calls.push(call(facade, f));
 								called++;
@@ -146,6 +148,18 @@ class Everything {
 				isVoid(ret) ? e : macro Everything.result = $e;
 			case _:
 				Context.error('Everything: $facade.${f.name} is not a function', Context.currentPos());
+		}
+	}
+
+	// A call to a facade's macro function that waits: one whose arguments and result have the types of their values (`ExprOf`).
+	static function waitingCall(facade:String, f:ClassField):Expr {
+		function isExpr(t:Type):Bool
+			return StringTools.contains(haxe.macro.TypeTools.toString(t), "haxe.macro.Expr");
+		return switch f.type {
+			case TFun(args, ret) if (!isExpr(ret) && !Lambda.exists(args, a -> isExpr(a.t))):
+				call(facade, f);
+			case _:
+				Context.error('Everything: $facade.${f.name} is a macro function Main doesn\'t call by hand', Context.currentPos());
 		}
 	}
 

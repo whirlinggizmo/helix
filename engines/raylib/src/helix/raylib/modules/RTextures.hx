@@ -4,6 +4,7 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix3D;
+import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
@@ -31,7 +32,6 @@ class RTextures {
 
 	#if !macro
 	// ---- Textures ----
-
 	// The texture of an image file `LoadTextureAsync` brought in. A file loaded again shares its first load's texture, and the image goes
 	// to the GPU when first drawn.
 
@@ -559,68 +559,18 @@ class RTextures {
 
 	// ---- Images: loading and exporting ----
 
-	/** Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image
-		from a file.
-
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)")
-	static function LoadImage(fileName:String):Image {
-		throw "LoadImage is unimplemented";
-	}
-
-	/** Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync`
-		for loading raw pixels from a file.
+	/** Loads an image's raw pixels from a file, as `LoadImageRawAsync` loads them, and returns the image once they are read. See
+		`LoadImage` for an encoded image file.
 
 		@param fileName  The file.
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
 		@param format  The pixel format (`PIXELFORMAT_*`).
 		@param headerSize  The bytes before the pixels.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void)")
-	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image {
-		throw "LoadImageRaw is unimplemented";
-	}
-
-	/** Names raylib's decode of an image file's bytes, which returns the image, and doesn't compile on any target. See
-		`LoadImageFromMemoryAsync` for decoding an image file's bytes.
-
-		Images are decoded asynchronously.
-
-		@param fileType  The file's extension, ".png".
-		@param fileData  The file's bytes.
-		@param dataSize  How many.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)")
-	static function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image {
-		throw "LoadImageFromMemory is unimplemented";
-	}
-
-	/** Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See
-		`LoadImageAnimAsync` for loading an animated image's frames from a file.
-
-		@param fileName  The file.
-		@param frames  Would be set to how many frames.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageAnim: Synchronous loading is not supported. See LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)")
-	static function LoadImageAnim(fileName:String, frames:Array<Int>):Image {
-		throw "LoadImageAnim is unimplemented";
-	}
-
-	/** Names raylib's decode of an animated image file's bytes, which returns its frames, and doesn't compile on any target. See
-		`LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
-
-		Images are decoded asynchronously.
-
-		@param fileType  The file's extension, ".gif".
-		@param fileData  The file's bytes.
-		@param dataSize  How many.
-		@param frames  Would be set to how many frames.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageAnimFromMemory: Images are decoded asynchronously. See LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)")
-	static function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image {
-		throw "LoadImageAnimFromMemory is unimplemented";
+		@return  The image, or one that isn't valid (`IsImageValid`) when it couldn't be loaded. Why it couldn't is logged. */
+	@:waits
+	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, answer:Image->Void):Void {
+		RTexturesAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, answer, Answers.failing("LoadImageRaw", answer, new Image()));
 	}
 
 	/** Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See
@@ -661,17 +611,15 @@ class RTextures {
 		image.data = null;
 	}
 
-	/** Names raylib's image export, done when it returns, and doesn't compile on any target. See `ExportImageAsync` for writing an image to
-		a file.
-
-		A file is written later, or is refused.
+	/** Writes an image to a PNG, QOI or raw file, as `ExportImageAsync` writes it, and returns once it is written. See
+		`ExportImageAsCode` for writing a C header.
 
 		@param image  The image.
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportImage: A file is written later, or is refused. See ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportImage(image:Image, fileName:String):Bool {
-		throw "ExportImage is unimplemented";
+		@param fileName  The file; its extension chooses the format.
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportImage(image:Image, fileName:String, answer:Bool->Void):Void {
+		RTexturesAsync.ExportImageAsync(image, fileName, answer.bind(true), Answers.failing("ExportImage", answer, false));
 	}
 
 	/** Returns an image encoded as a PNG file in memory.
@@ -698,17 +646,15 @@ class RTextures {
 		return file;
 	}
 
-	/** Names raylib's export of an image as code, done when it returns, and doesn't compile on any target. See `ExportImageAsCodeAsync` for
-		writing an image as a C header.
-
-		A file is written later, or is refused.
+	/** Writes an image as a C header, as `ExportImageAsCodeAsync` writes it, and returns once it is written. See `ExportImage` for
+		writing a PNG, QOI or raw file.
 
 		@param image  The image.
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportImageAsCode: A file is written later, or is refused. See ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportImageAsCode(image:Image, fileName:String):Bool {
-		throw "ExportImageAsCode is unimplemented";
+		@param fileName  The file; its name, upper case, names the defines and the array.
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportImageAsCode(image:Image, fileName:String, answer:Bool->Void):Void {
+		RTexturesAsync.ExportImageAsCodeAsync(image, fileName, answer.bind(true), Answers.failing("ExportImageAsCode", answer, false));
 	}
 
 	// ExportImageAsCodeAsync's text, as raylib's writes it.

@@ -5,6 +5,7 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix3D;
 import helix.math.Trig;
+import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Animations;
 import helix.raylib.internal.Models;
@@ -681,24 +682,18 @@ class RModels {
 
 	// ---- Models and meshes ----
 
-	/** Refuses to compile on any target, as raylib's model load waits for the file. See `LoadModelAsync` for loading a model.
+	/** Loads an .mtl file's materials, as `LoadMaterialsAsync` loads them, and returns them once they and their textures are read.
 
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)")
-	static function LoadModel(fileName:String):Model {
-		throw "LoadModel is unimplemented";
-	}
-
-	/** Refuses to compile on any target, as raylib's material load waits for the file. See `LoadMaterialsAsync` for loading a
-		file's materials.
-
-		@param fileName  The file.
-		@param materialCount  Receives how many.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void)")
-	static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material> {
-		throw "LoadMaterials is unimplemented";
+		@param fileName  The file, as the program names it: an .mtl file.
+		@param materialCount  Receives how many, in its first element.
+		@return  The materials, in the file's order, or none when they couldn't be loaded. Why they couldn't is logged. */
+	@:waits
+	static function LoadMaterials(fileName:String, materialCount:Array<Int>, answer:Array<Material>->Void):Void {
+		function counted(materials:Array<Material>):Void {
+			materialCount[0] = materials.length;
+			answer(materials);
+		}
+		RModelsAsync.LoadMaterialsAsync(fileName, counted, Answers.failing("LoadMaterials", counted, []));
 	}
 
 	// The model of a glTF, GLB or OBJ file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
@@ -1486,15 +1481,15 @@ class RModels {
 		Runtime.log(LOG_INFO, "MESH: Tangents data computed and uploaded for provided mesh");
 	}
 
-	/** Refuses to compile on any target, as raylib's mesh export is done when it returns and a file here is written later. See
-		`ExportMeshAsync` for writing a mesh's file.
+	/** Writes a mesh as an OBJ file, as `ExportMeshAsync` writes it, and returns once it is written. See `ExportMeshAsCode` for writing
+		a C header.
 
-		@param mesh  The mesh.
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportMesh: A file is written later, or is refused. See ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportMesh(mesh:Mesh, fileName:String):Bool {
-		throw "ExportMesh is unimplemented";
+		@param mesh  The mesh, with positions, texture coordinates and normals.
+		@param fileName  The file; only ".obj" is written.
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportMesh(mesh:Mesh, fileName:String, answer:Bool->Void):Void {
+		RModelsAsync.ExportMeshAsync(mesh, fileName, answer.bind(true), Answers.failing("ExportMesh", answer, false));
 	}
 
 	// ExportMeshAsync's OBJ file, as raylib's writes it.
@@ -1530,15 +1525,15 @@ class RModels {
 		return text.toString();
 	}
 
-	/** Refuses to compile on any target, as raylib's export of a mesh as code is done when it returns and a file here is written
-		later. See `ExportMeshAsCodeAsync` for writing a mesh as code.
+	/** Writes a mesh as a C header, as `ExportMeshAsCodeAsync` writes it, and returns once it is written. See `ExportMesh` for writing
+		an OBJ file.
 
 		@param mesh  The mesh.
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("ExportMeshAsCode: A file is written later, or is refused. See ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)")
-	static function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool {
-		throw "ExportMeshAsCode is unimplemented";
+		@param fileName  The file; its name, upper case, names the defines and the arrays.
+		@return  Whether it was written. Why it wasn't is logged. */
+	@:waits
+	static function ExportMeshAsCode(mesh:Mesh, fileName:String, answer:Bool->Void):Void {
+		RModelsAsync.ExportMeshAsCodeAsync(mesh, fileName, answer.bind(true), Answers.failing("ExportMeshAsCode", answer, false));
 	}
 
 	// ExportMeshAsCodeAsync's text, as raylib's writes it.
@@ -1590,15 +1585,18 @@ class RModels {
 	// As raylib 6.2 has them (raylib.h's 5.5 names and signatures, its frame a float as 6.2's): its glTF animations read, its frames mixed,
 	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader is given them as it draws.
 
-	/** Refuses to compile on any target, as raylib's animation load waits for the file. See `LoadModelAnimationsAsync` for
-		loading a file's animations.
+	/** Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` loads them, and returns them once they are read.
 
-		@param fileName  The file.
-		@param animCount  Would be set to how many.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void)")
-	static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation> {
-		throw "LoadModelAnimations is unimplemented";
+		@param fileName  The file, as the program names it.
+		@param animCount  Receives how many, in its first element.
+		@return  The animations, as many as the file has, or none when they couldn't be loaded. Why they couldn't is logged. */
+	@:waits
+	static function LoadModelAnimations(fileName:String, animCount:Array<Int>, answer:Array<ModelAnimation>->Void):Void {
+		function counted(animations:Array<ModelAnimation>):Void {
+			animCount[0] = animations.length;
+			answer(animations);
+		}
+		RModelsAsync.LoadModelAnimationsAsync(fileName, counted, Answers.failing("LoadModelAnimations", counted, []));
 	}
 
 	/** Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See

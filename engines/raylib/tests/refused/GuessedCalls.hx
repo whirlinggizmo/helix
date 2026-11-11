@@ -5,13 +5,12 @@ import helix.raylib.Raylib.*;
 	types. */
 class GuessedCalls {
 	static function main():Void {
-		var count = [0];
 		InitWindow(320, 200, "refused");
-		var animations = LoadModelAnimations("hero.glb");
-		var counted = LoadModelAnimations("hero.glb", count);
-		var materials = LoadMaterials("hero.mtl");
-		var bytes = LoadFileData("best.dat", count, "extra");
-		var frames = LoadImageAnim(42);
+		TakeScreenshot();
+		TakeScreenshot("shot.png");
+		var pixels = LoadImageFromTexture(1, 2);
+		var text = GetClipboardText("all");
+		ToggleFullscreen(true);
 		SetWindowSize("wide");
 		CloseWindow();
 	}
