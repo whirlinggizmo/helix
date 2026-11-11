@@ -21,8 +21,9 @@ Each entrant runs in a directory of its own outside any git repository, as it wo
   "docs" as its entrants learn it from doc comments alone.
 
 `<arm>` is what the entrant writes against (helix-raylib, raylib-c). `<NNN>` counts that arm's runs of the game or API across trials.
-Beside them, `.home/<run>` holds each run's saves and cache. A trial's record here, `<date>-<api>` or the game's folder, names its
-runs.
+Beside them, `.home/<run>` holds each run's saves and cache, and each score's copy of a run is kept beside it, named for the score
+(`<run>.page`, `<run>.frames`), the run's own directory left as the entrant left it. A trial's record here, `<date>-<api>` or the
+game's folder, names its runs.
 
 ## A blind trial
 
@@ -40,15 +41,20 @@ runs.
 - **What it hands back.** The program, and `NOTES.md`: each compile error it hit and what it changed, each place raylib had no call for
   what the spec asks, and each guess.
 - **Scoring.** Each program is built for the page as it stands and run there, its whole directory served, to see whether it works
-  unchanged (`score_page.py`, in a copy of its directory). Its notes are read against the change being tried.
+  unchanged (`score_page.py`). Its frame time is taken by the library under it, not by the entrant: the program is built as it stands
+  with the frame stats' hook (helix-raylib's `-D helix-raylib-frame-stats`; for raylib C, stock raylib 5.5 with `EndDrawing` wrapped at
+  link time) and run at each load for a fixed run of frames (`score_frames.py`). Its notes are read against the change being tried.
 - **Watching.** Each entrant's log is read every ten minutes while it runs. A harness fault stops the run early.
 
 The harness is [wardens](wardens): each arm's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
 control's `Makefile`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
-release, and starts it against a checkout of helix; `score_page.py` builds and runs each helix-raylib entrant's program in a page:
+release, and starts it against a checkout of helix; `score_page.py` builds and runs each helix-raylib entrant's program in a page;
+`score_frames.py` times each entrant's program, natively (on a private display, or with `--desktop` on this machine's) and with
+`--page` in a page:
 
 ```console
 python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.001 --helix ../helix-blind-a
 python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/trials/wardens/raylib-c-blind.001 --helix ../helix-blind-a --engine c
 python3 docs/trials/wardens/score_page.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.00* --helix ../helix-blind-a
+python3 docs/trials/wardens/score_frames.py /home/rknopf/projects/local/helix/trials/wardens/*-blind.00? --helix ../helix-blind-a --page
 ```

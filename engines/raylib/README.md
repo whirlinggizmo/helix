@@ -55,11 +55,15 @@ Defines, set in the build's hxml:
   `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.
 - `-D helix-raylib-host-warnings`: warns at build time where the program reaches the page or host directly for something
   `Raylib` provides. Off by default.
+- `-D helix-raylib-frame-stats`: for timing a program without changing it. With the `frame_stats` option (`--frame_stats=120,1200`
+  natively, `?frame_stats=120,1200` in a page), records frames 121 to 1200 (`StartFrameStatsRecording`), prints the stats as
+  `frame_stats` and a JSON object, and closes the window. In a page the object is also `window.helixResult`. Off by default.
 
 ## Examples
 
 - `basic`: raylib's basic window, with a circle at the mouse.
 - `model`: a glTF model on a grid, the camera turning about it.
+- `frame_stats`: the frame stats read (`helix.raylib.extras.Debug`), the last half second's and a recording's.
 - `text`: a TrueType font loaded and drawn beside the default font.
 - `images`: an image made on the CPU, a circle and text drawn into it, drawn as a texture.
 

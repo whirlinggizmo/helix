@@ -170,6 +170,18 @@ class Runtime {
 		var frames = system.getOption("quit_after_frame");
 		if (frames != null)
 			framesLeft = Std.parseInt(frames);
+		#if helix_raylib_frame_stats
+		var measured = system.getOption("frame_stats");
+		if (measured != null) {
+			var at = measured.split(",");
+			statsFrom = Std.parseInt(at[0]);
+			statsTo = Std.parseInt(at[1]);
+			#if js
+			// tools/page_check.cjs waits on a null result until it holds one.
+			js.Syntax.code("window.helixResult = null");
+			#end
+		}
+		#end
 		main();
 	}
 
@@ -711,10 +723,49 @@ class Runtime {
 		frames++;
 		if (framesLeft > 0 && --framesLeft == 0)
 			shouldClose = true;
+		#if helix_raylib_frame_stats
+		measureFrames();
+		#end
 		#if !helix_raylib_custom_frame_control
 		poll();
 		#end
 	}
+
+	#if helix_raylib_frame_stats
+	/** The frames `-D helix-raylib-frame-stats` records, from the `frame_stats` option (`--frame_stats=120,1200`): recording starts as
+		frame `statsFrom` ends, and stops as frame `statsTo` ends, printing the stats as one line and closing the window; 0 when not
+		given. */
+	public static var statsFrom = 0;
+
+	public static var statsTo = 0;
+
+	// Starts and stops the recording at its frames: the stats printed as `frame_stats` and a JSON object, and in a page also left in
+	// window.helixResult.
+	static function measureFrames():Void {
+		if (statsTo <= 0)
+			return;
+		// The frames before take their times, so the first one recorded has its start.
+		if (frames < statsFrom)
+			@:privateAccess helix.raylib.modules.RDebug.hook();
+		else if (frames == statsFrom) {
+			// Frame statsFrom's EndDrawing has just counted, so the recording's first frame starts there: frames statsFrom + 1 to
+			// statsTo are recorded.
+			helix.raylib.modules.RDebug.StartFrameStatsRecording();
+			@:privateAccess helix.raylib.modules.RDebug.recordingStarts = false;
+		} else if (frames == statsTo) {
+			var s = helix.raylib.modules.RDebug.StopFrameStatsRecording();
+			var json = '{"frames":${s.frames},"fps":${s.fps},"meanFrameTime":${s.meanFrameTime},"p95FrameTime":${s.p95FrameTime},'
+				+ '"slowestFrameTime":${s.slowestFrameTime},"drawCalls":${s.drawCalls},"triangles":${s.triangles},'
+				+ '"stateChanges":${s.stateChanges},"gpuTextureBytes":${s.gpuTextureBytes},"gpuBufferBytes":${s.gpuBufferBytes},'
+				+ '"memoryBytes":${s.memoryBytes}}';
+			Sys.println("frame_stats " + json);
+			#if js
+			js.Syntax.code("window.helixResult = JSON.parse({0})", json);
+			#end
+			shouldClose = true;
+		}
+	}
+	#end
 
 	/** What runs as each frame ends, before it is drawn (`endingFrame`): automation's recording of the frame's input, a virtual gamepad
 		drawn over the frame; null while nothing does. */
