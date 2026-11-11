@@ -26,5 +26,5 @@ units, so a game scales them (a barrel is 2 high, so 0.5 makes a meter-high one)
 and z, except `wall_half.glb`, which runs from x = 0 to 2. Their license text is `models/LICENSE.txt`. They are optional.
 
 ## characters/
-Not kept here. It is copied in at the run from
-`/home/rknopf/projects/github/whirlinggizmo/helix/examples/assets/models/modular-women/` (Quaternius, Ultimate Modular Women, CC0).
+Quaternius's Ultimate Modular Women (CC0): each of the ten outfits' head, body, legs and feet (`<Outfit>_Head.glb` and so on),
+`Animations.glb`, `Sword.glb` and `Gun.glb`.
