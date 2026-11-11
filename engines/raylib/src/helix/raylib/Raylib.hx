@@ -1360,13 +1360,6 @@ class Raylib {
 	public static inline function BeginDrawing():Void
 		RCore.BeginDrawing();
 
-	/** Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
-
-		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
-		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
-	public static inline function EndDrawing():Void
-		RCore.EndDrawing();
-
 	/** Shows the frame `EndDrawing` ended, for a program built with `-D helix-raylib-custom-frame-control`.
 
 		Does nothing without the define, as `EndDrawing` has shown the frame already.
@@ -6979,11 +6972,6 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
-	/** Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file. */
-	public static macro function LoadTexture(args:Array<Expr>):ExprOf<Texture2D>
-		return helix.platform.macros.Build.unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
-			macro(null : helix.raylib.Texture2D));
-
 	/** Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file. */
 	public static macro function LoadImage(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)",
@@ -7167,6 +7155,23 @@ class Raylib {
 	public static macro function LoadImageFromMemoryAsync(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
 			loaded:ExprOf<Image->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
 		return helix.raylib.internal.ImageMacro.loadFromMemory(fileType, fileData, dataSize, loaded, failed);
+	}
+
+	/** Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input. In
+		a page the wait is for the browser's next frame.
+
+		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
+		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
+	public static macro function EndDrawing():ExprOf<Void> {
+		return helix.raylib.internal.Wait.frame("EndDrawing: call it from a function of a class, not from a function used as a value");
+	}
+
+	/** Loads an image file as a texture, and returns it once it is ready. The file is read as `LoadTextureAsync` reads it.
+
+		@param fileName  The file, as the program names it.
+		@return  The texture, or one with id 0 when the file can't be loaded, which is logged. */
+	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D> {
+		return helix.raylib.internal.ImageMacro.loadTextureNow(fileName);
 	}
 
 	/** Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the

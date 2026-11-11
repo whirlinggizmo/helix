@@ -1,6 +1,6 @@
---macro helix.raylib.internal.Loop.install()
 --macro helix.raylib.internal.Metadata.register()
 --macro helix.raylib.internal.Defines.register()
 --macro helix.raylib.internal.HostReach.register()
 --macro helix.raylib.internal.TypeHints.register()
 --macro helix.raylib.internal.SysCalls.register()
+--macro helix.raylib.internal.Wait.install()

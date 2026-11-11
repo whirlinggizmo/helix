@@ -681,7 +681,6 @@ static macro function emscripten_get_now(...args):Float
 static macro function emscripten_sleep(...args):Void
 static macro function LoadShader(...args):Shader
 static macro function LoadShaderFromMemory(...args):Shader
-static macro function LoadTexture(...args):Texture2D
 static macro function LoadImage(...args):Image
 static macro function LoadImageRaw(...args):Image
 static macro function LoadImageFromMemory(...args):Image
@@ -767,7 +766,6 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `emscripten_sleep`: Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame.
 - `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.
 - `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
-- `LoadTexture`: Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file.
 - `LoadImage`: Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file.
 - `LoadImageRaw`: Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync` for loading raw pixels from a file.
 - `LoadImageFromMemory`: Names raylib's decode of an image file's bytes, which returns the image, and doesn't compile on any target. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. Images are decoded asynchronously.
@@ -1003,10 +1001,19 @@ static inline var NPATCH_THREE_PATCH_HORIZONTAL:Int
 
 
 ```haxe
+static macro function LoadTexture(fileName:String):Texture2D
+static macro function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
 static macro function CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String):Void
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
+- `LoadTexture`: Loads an image file as a texture, and returns it once it is ready. The file is read as `LoadTextureAsync` reads it.
+  - `fileName`: The file, as the program names it.
+  - returns: The texture, or one with id 0 when the file can't be loaded, which is logged.
+- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the file is read later. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
+  - `fileName`: The file, as the program names it.
+  - `loaded`: Receives the texture.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 - `CompileShaderFile`: A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShaderAsync` to load. Typically called from the build's hxml, one line a shader:
   - `vsFileName`: The vertex stage's file, or null for raylib's default.
   - `fsFileName`: The fragment stage's file, or null for raylib's default.

@@ -42,7 +42,6 @@ static function WaitTime(seconds:Float):Void
 static function GetTime():Float
 static function SetExitKey(key:Int):Void
 static function BeginDrawing():Void
-static function EndDrawing():Void
 static function SwapScreenBuffer():Void
 static function PollInputEvents():Void
 static function EnableEventWaiting():Void
@@ -171,6 +170,7 @@ static function BeginBlendMode(mode:Int):Void
 static function EndBlendMode():Void
 static function BeginScissorMode(x:Int, y:Int, width:Int, height:Int):Void
 static function EndScissorMode():Void
+static macro function EndDrawing():Void
 ```
 
 - `InitWindow`: Opens the window and its graphics.
@@ -285,8 +285,6 @@ static function EndScissorMode():Void
 
   Escape until set.
 - `BeginDrawing`: Begins a frame's drawing.
-- `EndDrawing`: Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
-  Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input.
 - `SwapScreenBuffer`: Shows the frame `EndDrawing` ended, for a program built with `-D helix-raylib-custom-frame-control`.
   Does nothing without the define, as `EndDrawing` has shown the frame already.
 
@@ -845,6 +843,8 @@ static function EndScissorMode():Void
   - `width`: The width.
   - `height`: The height.
 - `EndScissorMode`: Draws everywhere again.
+- `EndDrawing`: Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input. In a page the wait is for the browser's next frame.
+  Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input.
 
 
 ```haxe

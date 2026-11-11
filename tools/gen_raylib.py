@@ -328,7 +328,7 @@ def described(texts):
     return sections, own, macros, initialized
 
 
-def generated(file_sections, functions, api, header, written):
+def generated(file_sections, functions, api, header, written, by_hand=()):
     """A file's generated part, between and including its markers: its header's constants not written by hand, then forwards to its
     sections' functions, then the functions a program can't call: the sections' marked `@:unsupported` or `@:unimplemented`, and the
     header's no section writes."""
@@ -365,6 +365,9 @@ def generated(file_sections, functions, api, header, written):
     for name, title in file_sections:
         out += ['', f'\t// ---- {title} (raylib/{name}.hx) ----', '']
         for f in functions[name]:
+            # A waiting call (EndDrawing) is a macro function written by hand in the file, over its section's function.
+            if f.name in by_hand:
+                continue
             if f.refusal:
                 # Declared here as a macro, so the build stops at the program's call, with the section's message.
                 kind, message = f.refusal
@@ -508,7 +511,7 @@ def main():
         after = rest.split(END, 1)[1]
         # Written: in a section, or by hand in the file itself (its constants and macro functions).
         written = set(every) | set(own[name])
-        files[RAY / name] = before + generated(target_sections, functions, api, header, written) + after
+        files[RAY / name] = before + generated(target_sections, functions, api, header, written, own[name]) + after
         lines = files[RAY / name].count('\n')
         if class_path(name).startswith(EXTRAS + '.') and lines > MODULE_LINES:
             print(f'gen_raylib: {name} would be {lines} lines, over {MODULE_LINES}: split it into modules of their own, each a raylib '

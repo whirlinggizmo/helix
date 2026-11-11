@@ -708,18 +708,30 @@ class Runtime {
 
 	/** Draws the frame, shows it, waits out the rest of the frame natively, as raylib does, and reads the next frame's input. With
 		`-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, it only draws the frame: `SwapScreenBuffer` shows it
-		and `PollInputEvents` reads the input. The input recorded for automation is recorded first, as raylib's is. */
+		and `PollInputEvents` reads the input. The input recorded for automation is recorded first, as raylib's is. In a page the wait
+		is the program's own, between `showFrame` and `countFrame` (`frameWait`). */
+	@:helix.raylib.waits
 	public static function endFrame():Void {
+		showFrame();
+		#if (!js && !helix_raylib_custom_frame_control)
+		wait();
+		#end
+		countFrame();
+	}
+
+	/** Draws the frame and shows it, the first part of `endFrame`. */
+	public static function showFrame():Void {
 		if (ending != null)
 			ending();
 		#if helix_raylib_custom_frame_control
 		frame.draw(window.framebufferWidth, window.framebufferHeight, false);
 		#else
 		frame.draw(window.framebufferWidth, window.framebufferHeight, true);
-		#if !js
-		wait();
 		#end
-		#end
+	}
+
+	/** Counts the frame shown and reads the next frame's input, the last part of `endFrame`. */
+	public static function countFrame():Void {
 		frames++;
 		if (framesLeft > 0 && --framesLeft == 0)
 			shouldClose = true;
@@ -730,6 +742,76 @@ class Runtime {
 		poll();
 		#end
 	}
+
+	#if js
+	/** In a page, the wait `EndDrawing` makes: answers at the browser's next frame, or the first one the time's target
+		(`SetTargetFPS`) allows.
+
+		@return  A promise of the frame. */
+	@:helix.raylib.waits
+	public static function frameWait():js.lib.Promise<Dynamic> {
+		return new js.lib.Promise((resolve, _) -> {
+			var frame:Float->Void = null;
+			frame = _ -> {
+				var now = system.getTime();
+				var frameTarget = time.targetDelta;
+				if (frameTarget > 0 && now < frameDue - .001) {
+					requestFrame(frame);
+					return;
+				}
+				frameDue = (now < frameDue || now - frameDue > frameTarget ? now : frameDue) + frameTarget;
+				unframed = 0;
+				resolve(null);
+			};
+			requestFrame(frame);
+		});
+	}
+
+	/** In a page, the wait a load makes: asks, and answers when the asked does, polling the services meanwhile.
+
+		@param ask  Asks, given what to call with the answer.
+		@return  A promise of the answer. */
+	@:helix.raylib.waits
+	public static function answered<T>(ask:(T->Void)->Void):js.lib.Promise<T> {
+		return new js.lib.Promise((resolve, _) -> {
+			var done = false;
+			ask(value -> {
+				done = true;
+				resolve(value);
+			});
+			var pump:Void->Void = null;
+			pump = () -> {
+				if (done)
+					return;
+				pollAnswers();
+				if (!done)
+					js.Browser.window.setTimeout(pump, 0);
+			};
+			js.Browser.window.setTimeout(pump, 0);
+		});
+	}
+	#else
+
+	/** Natively, the wait a load makes: asks, and returns the answer, polling the services until it comes.
+
+		@param ask  Asks, given what to call with the answer.
+		@return  The answer. */
+	@:helix.raylib.waits
+	public static function answered<T>(ask:(T->Void)->Void):T {
+		var done = false;
+		var answer:Null<T> = null;
+		ask(value -> {
+			answer = value;
+			done = true;
+		});
+		while (!done) {
+			pollAnswers();
+			if (!done)
+				Sys.sleep(.0005);
+		}
+		return answer;
+	}
+	#end
 
 	#if helix_raylib_frame_stats
 	/** The frames `-D helix-raylib-frame-stats` records, from the `frame_stats` option (`--frame_stats=120,1200`): recording starts as
@@ -826,13 +908,7 @@ class Runtime {
 
 	// Polls the platform and the services, then reads the frame's events.
 	static function pollEvents():Void {
-		pollAll();
-		if (waiting.length > 0) {
-			var now = waiting;
-			waiting = [];
-			for (f in now)
-				f();
-		}
+		pollAnswers();
 		events.poll();
 		keysPressed.resize(0);
 		charsPressed.resize(0);
@@ -861,6 +937,17 @@ class Runtime {
 		if (exitKey != 0 && keyboardService.isKeyPressed(cast exitKey))
 			shouldClose = true;
 		#end
+	}
+
+	// Polls the platform and the services, then gives the answers that were ready.
+	static function pollAnswers():Void {
+		pollAll();
+		if (waiting.length > 0) {
+			var now = waiting;
+			waiting = [];
+			for (f in now)
+				f();
+		}
 	}
 
 	static function pollAll():Void {

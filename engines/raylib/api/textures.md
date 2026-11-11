@@ -113,7 +113,6 @@ static function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, ?offset:Int = 0)
 static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?offset:Int = 0):Void
 static macro function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image -> Void, ?failed:String -> Void):Void
-static macro function LoadTextureAsync(fileName:String, loaded:Texture2D -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 ```
@@ -771,10 +770,6 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `dataSize`: How many of them.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
-- `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the file is read later. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
-  - `fileName`: The file, as the program names it.
-  - `loaded`: Receives the texture.
-  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 - `LoadImageAnimAsync`: Loads an animated image's frames, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnim`. The frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's (`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their delays and loop count aren't kept.
   - `fileName`: The file, as the program names it.
   - `frames`: Receives the frame count, in its first element.

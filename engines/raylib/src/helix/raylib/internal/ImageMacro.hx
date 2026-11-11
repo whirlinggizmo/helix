@@ -43,6 +43,28 @@ class ImageMacro {
 		return byName("RTexturesAsync", fileName, ["loadTextureFile", "loadGifTexture", "loadPlainTexture"], [fileName, loaded, orNull(failed)]);
 	}
 
+	/** Returns the call loading an image file as a texture and waiting for it (`LoadTexture`), by the reader its file needs. A file
+		that can't be loaded is logged, and the texture is raylib's empty one.
+
+		@param fileName  The file's name.
+		@return  The call, whose value is the texture. */
+	public static function loadTextureNow(fileName:Expr):Expr {
+		var load = byName("RTexturesAsync", fileName, ["loadTextureFile", "loadGifTexture", "loadPlainTexture"], [
+			macro __fileName,
+			macro __loaded,
+			macro __error -> {
+				helix.raylib.internal.Answers.refuse("LoadTexture", __error, null);
+				__loaded(new helix.raylib.Texture2D());
+			}
+		]);
+		var wait = Wait.answer("LoadTexture: in a function used as a value, see LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
+			macro __loaded -> $load);
+		return macro {
+			var __fileName = $fileName;
+			$wait;
+		};
+	}
+
 	/** Returns the call loading a font file by the reader its file needs (`LoadFontAsync`).
 
 		@param fileName  The file's name.

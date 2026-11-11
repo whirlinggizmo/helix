@@ -32,16 +32,6 @@ class RTextures {
 	#if !macro
 	// ---- Textures ----
 
-	/** Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a
-		texture from a file.
-
-		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)")
-	static function LoadTexture(fileName:String):Texture2D {
-		throw "LoadTexture is unimplemented";
-	}
-
 	// The texture of an image file `LoadTextureAsync` brought in. A file loaded again shares its first load's texture, and the image goes
 	// to the GPU when first drawn.
 

@@ -35,6 +35,8 @@ class Main {
 			LoadImageFromMemoryAsync(".gif", Everything.value, 0, loaded -> Everything.result = loaded);
 			LoadTextureAsync("a.png", loaded -> Everything.result = loaded);
 			LoadTextureAsync("a.gif", loaded -> Everything.result = loaded);
+			Everything.result = LoadTexture("a.png");
+			Everything.result = LoadTexture("a.gif");
 			LoadFontAsync("a.ttf", loaded -> Everything.result = loaded);
 			LoadFontAsync("a.fnt", loaded -> Everything.result = loaded);
 			LoadFontAsync("a.png", loaded -> Everything.result = loaded);

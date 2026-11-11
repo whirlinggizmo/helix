@@ -78,6 +78,8 @@ class Everything {
 		"LoadImageAsync",
 		"LoadImageFromMemoryAsync",
 		"LoadTextureAsync",
+		"LoadTexture",
+		"EndDrawing",
 		"LoadFontAsync",
 		"LoadImageAnimAsync",
 		"LoadImageAnimFromMemoryAsync",
