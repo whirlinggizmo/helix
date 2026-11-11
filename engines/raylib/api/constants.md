@@ -634,85 +634,85 @@ static inline var MATERIAL_MAP_SPECULAR:Int
 static inline var SHADER_LOC_MAP_DIFFUSE:Int
 static inline var SHADER_LOC_MAP_SPECULAR:Int
 static inline var MAX_MATERIAL_MAPS:Int
-static macro function SetWindowSize(width:Int, height:Int):Void
-static macro function MaximizeWindow():Void
-static macro function MinimizeWindow():Void
-static macro function RestoreWindow():Void
-static macro function SetWindowFocused():Void
-static macro function SetWindowOpacity(opacity:Float):Void
-static macro function SetWindowMinSize(width:Int, height:Int):Void
-static macro function SetWindowMaxSize(width:Int, height:Int):Void
-static macro function SetClipboardText(text:String):Void
-static macro function GetClipboardText():String
-static macro function GetClipboardImage():Image
-static macro function GetWindowHandle():Dynamic
-static macro function GetMonitorPhysicalWidth(monitor:Int):Int
-static macro function GetMonitorPhysicalHeight(monitor:Int):Int
-static macro function ToggleFullscreen():Void
-static macro function ToggleBorderlessWindowed():Void
-static macro function SetWindowPosition(x:Int, y:Int):Void
-static macro function SetWindowMonitor(monitor:Int):Void
-static macro function EnableCursor():Void
-static macro function DisableCursor():Void
-static macro function FileExists(fileName:String):Bool
-static macro function LoadFileText(fileName:String):Null<String>
-static macro function SaveFileText(fileName:String, text:String):Bool
-static macro function LoadFileData(fileName:String):Null<haxe.io.Bytes>
-static macro function SaveFileData(fileName:String, data:haxe.io.Bytes, dataSize:Int):Bool
-static macro function ExportDataAsCode(data:haxe.io.Bytes, dataSize:Int, fileName:String):Bool
-static macro function DirectoryExists(dirPath:String):Bool
-static macro function GetFileLength(fileName:String):Int
-static macro function IsPathFile(path:String):Bool
-static macro function LoadDirectoryFiles(dirPath:String):FilePathList
-static macro function LoadDirectoryFilesEx(basePath:String, filter:String, scanSubdirs:Bool):FilePathList
-static macro function GetFileModTime(fileName:String):Int
-static macro function ExportAutomationEventList(list:AutomationEventList, fileName:String):Bool
-static macro function MemAlloc(size:Int):Dynamic
-static macro function MemRealloc(ptr:Dynamic, size:Int):Dynamic
-static macro function MemFree(ptr:Dynamic):Void
-static macro function TakeScreenshot(fileName:String):Void
-static macro function emscripten_set_main_loop(func:Void -> Void, fps:Int, simulateInfiniteLoop:Bool):Void
-static macro function emscripten_set_main_loop_arg(func:Dynamic -> Void, arg:Dynamic, fps:Int, simulateInfiniteLoop:Bool):Void
-static macro function emscripten_cancel_main_loop():Void
-static macro function emscripten_run_script(script:String):Void
-static macro function emscripten_run_script_int(script:String):Int
-static macro function emscripten_run_script_string(script:String):String
-static macro function emscripten_get_now():Float
-static macro function emscripten_sleep(ms:Int):Void
-static macro function LoadShader(vsFileName:String, fsFileName:String):Shader
-static macro function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader
-static macro function LoadTexture(fileName:String):Texture2D
-static macro function LoadImage(fileName:String):Image
-static macro function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image
-static macro function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image
-static macro function LoadImageAnim(fileName:String, frames:Array<Int>):Image
-static macro function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image
-static macro function LoadImageFromTexture(texture:Texture2D):Image
-static macro function LoadImageFromScreen():Image
-static macro function ExportImage(image:Image, fileName:String):Bool
-static macro function ExportImageAsCode(image:Image, fileName:String):Bool
-static macro function ExportFontAsCode(font:Font, fileName:String):Bool
-static macro function LoadFont(fileName:String):Font
-static macro function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
-static macro function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
-static macro function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):Array<GlyphInfo>
-static macro function TextCopy(dst:String, src:String):Int
-static macro function TextAppend(text:String, append:String, position:Array<Int>):Void
-static macro function LoadModel(fileName:String):Model
-static macro function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material>
-static macro function ExportMesh(mesh:Mesh, fileName:String):Bool
-static macro function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
-static macro function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
-static macro function LoadWave(fileName:String):Wave
-static macro function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave
-static macro function ExportWave(wave:Wave, fileName:String):Bool
-static macro function ExportWaveAsCode(wave:Wave, fileName:String):Bool
-static macro function LoadSound(fileName:String):Sound
-static macro function LoadMusicStream(fileName:String):Music
-static macro function AttachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
-static macro function DetachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
-static macro function AttachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
-static macro function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void
+static macro function SetWindowSize(...args):Void
+static macro function MaximizeWindow(...args):Void
+static macro function MinimizeWindow(...args):Void
+static macro function RestoreWindow(...args):Void
+static macro function SetWindowFocused(...args):Void
+static macro function SetWindowOpacity(...args):Void
+static macro function SetWindowMinSize(...args):Void
+static macro function SetWindowMaxSize(...args):Void
+static macro function SetClipboardText(...args):Void
+static macro function GetClipboardText(...args):String
+static macro function GetClipboardImage(...args):Image
+static macro function GetWindowHandle(...args):Dynamic
+static macro function GetMonitorPhysicalWidth(...args):Int
+static macro function GetMonitorPhysicalHeight(...args):Int
+static macro function ToggleFullscreen(...args):Void
+static macro function ToggleBorderlessWindowed(...args):Void
+static macro function SetWindowPosition(...args):Void
+static macro function SetWindowMonitor(...args):Void
+static macro function EnableCursor(...args):Void
+static macro function DisableCursor(...args):Void
+static macro function FileExists(...args):Bool
+static macro function LoadFileText(...args):Null<String>
+static macro function SaveFileText(...args):Bool
+static macro function LoadFileData(...args):Null<haxe.io.Bytes>
+static macro function SaveFileData(...args):Bool
+static macro function ExportDataAsCode(...args):Bool
+static macro function DirectoryExists(...args):Bool
+static macro function GetFileLength(...args):Int
+static macro function IsPathFile(...args):Bool
+static macro function LoadDirectoryFiles(...args):FilePathList
+static macro function LoadDirectoryFilesEx(...args):FilePathList
+static macro function GetFileModTime(...args):Int
+static macro function ExportAutomationEventList(...args):Bool
+static macro function MemAlloc(...args):Dynamic
+static macro function MemRealloc(...args):Dynamic
+static macro function MemFree(...args):Void
+static macro function TakeScreenshot(...args):Void
+static macro function emscripten_set_main_loop(...args):Void
+static macro function emscripten_set_main_loop_arg(...args):Void
+static macro function emscripten_cancel_main_loop(...args):Void
+static macro function emscripten_run_script(...args):Void
+static macro function emscripten_run_script_int(...args):Int
+static macro function emscripten_run_script_string(...args):String
+static macro function emscripten_get_now(...args):Float
+static macro function emscripten_sleep(...args):Void
+static macro function LoadShader(...args):Shader
+static macro function LoadShaderFromMemory(...args):Shader
+static macro function LoadTexture(...args):Texture2D
+static macro function LoadImage(...args):Image
+static macro function LoadImageRaw(...args):Image
+static macro function LoadImageFromMemory(...args):Image
+static macro function LoadImageAnim(...args):Image
+static macro function LoadImageAnimFromMemory(...args):Image
+static macro function LoadImageFromTexture(...args):Image
+static macro function LoadImageFromScreen(...args):Image
+static macro function ExportImage(...args):Bool
+static macro function ExportImageAsCode(...args):Bool
+static macro function ExportFontAsCode(...args):Bool
+static macro function LoadFont(...args):Font
+static macro function LoadFontEx(...args):Font
+static macro function LoadFontFromMemory(...args):Font
+static macro function LoadFontData(...args):Array<GlyphInfo>
+static macro function TextCopy(...args):Int
+static macro function TextAppend(...args):Void
+static macro function LoadModel(...args):Model
+static macro function LoadMaterials(...args):Array<Material>
+static macro function ExportMesh(...args):Bool
+static macro function ExportMeshAsCode(...args):Bool
+static macro function LoadModelAnimations(...args):Array<ModelAnimation>
+static macro function LoadWave(...args):Wave
+static macro function LoadWaveFromMemory(...args):Wave
+static macro function ExportWave(...args):Bool
+static macro function ExportWaveAsCode(...args):Bool
+static macro function LoadSound(...args):Sound
+static macro function LoadMusicStream(...args):Music
+static macro function AttachAudioStreamProcessor(...args):Void
+static macro function DetachAudioStreamProcessor(...args):Void
+static macro function AttachAudioMixedProcessor(...args):Void
+static macro function DetachAudioMixedProcessor(...args):Void
 ```
 
 - `MATERIAL_MAP_DIFFUSE`: The diffuse map, the same as `MATERIAL_MAP_ALBEDO`.

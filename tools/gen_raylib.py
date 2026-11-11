@@ -20,8 +20,9 @@ sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler des
     (engines/raylib/vendor/raylib/raylib_api.json, raymath_api.json and rlgl_api.json, raylib's own description of its API, rlgl's and
     raymath's made by raylib's parser, and engines/raylib/vendor/raygui/raygui_api.json, made from raygui.h by raylib's parser);
   - its functions: every function of its sections as an inline forward with its doc comment, under a heading naming its module and file;
-    then each function a program can't call, as a macro with raylib's signature whose call reports its message where it is
-    (helix.platform.macros.Build), so the build stops there and the call still has raylib's type. A section's function marked
+    then each function a program can't call, as a macro taking any arguments (so a call guessing them reports the refusal, not a
+    mismatch) whose call reports its message where it is (helix.platform.macros.Build), so the build stops there and the call still has
+    raylib's result type. A section's function marked
     `@:unsupported("...")` is one helix-raylib won't have (Build.unsupported), one marked `@:unimplemented("...")` one it doesn't have yet
     (Build.unimplemented), and one of the header's that no section writes is declared `@:unimplemented` with "Not implemented".
 
@@ -115,8 +116,6 @@ OPAQUE.update({f'{name}{pointer}': 'Dynamic' for name in ('rlVertexBuffer', 'rlD
                for pointer in ('', ' *')})
 # A struct raylib's parser reads from inside a comment: raygui.h's GuiTextStyle, commented out as not used.
 COMMENTED = {'GuiTextStyle'}
-# A parameter name Haxe reserves, and the name helix-raylib gives it.
-KEYWORDS = {'dynamic': 'isDynamic'}
 
 
 def class_path(name):
@@ -190,13 +189,13 @@ def qualified(haxe):
     return re.sub(r'\b([A-Z]\w*)\b', lambda m: f'helix.raylib.{m.group(1)}' if m.group(1) in names else m.group(1), haxe)
 
 
-def refusal(name, params, result, message, doc, kind='unimplemented', full=None):
+def refusal(name, result, message, doc, kind='unimplemented', full=None):
     """A function helix-raylib declares but doesn't have, as a macro: a call reports message where it is, through Build's kind (unimplemented
-    or unsupported), and has raylib's result type; full is the result with its types' packages, else qualified from result."""
-    rest = {n for n, t in params if re.match(r'(haxe\.extern\.)?Rest<', t)}
-    signature = ', '.join(f'{n}:Array<Expr>' if n in rest else f'{n}:ExprOf<{t}>' for n, t in params)
+    or unsupported), and has raylib's result type; full is the result with its types' packages, else qualified from result. It takes any
+    arguments, so a call with too few, too many or the wrong types reports message and not the mismatch; params, raylib's, are in its
+    section's doc comment, and a header's own in the header."""
     becomes = {'Void': '{}', 'Int': '(0 : Int)', 'Float': '(0.0 : Float)', 'Bool': '(false : Bool)'}.get(result, f'(null : {full or qualified(result)})')
-    return [f'\t/** {doc} */', *wrapped(f'\tpublic static macro function {name}({signature}):ExprOf<{result}>'),
+    return [f'\t/** {doc} */', *wrapped(f'\tpublic static macro function {name}(args:Array<Expr>):ExprOf<{result}>'),
             *body(f'\t\treturn helix.platform.macros.Build.{kind}("{message}", macro{becomes if becomes.startswith("(") else " " + becomes});'), '']
 
 
@@ -209,18 +208,10 @@ def body(line):
 
 
 def stub(f, header, callbacks):
-    """A function of raylib's helix-raylib doesn't have, with raylib's signature: a call to it doesn't compile."""
-    params, given = [], f.get('params', [])
-    for i, p in enumerate(given):
-        if p['type'] == '...':
-            params.append(('args', 'haxe.extern.Rest<Dynamic>'))
-            continue
-        following = given[i + 1]['name'].lower() if i + 1 < len(given) else ''
-        many = 'parameter' if p['name'].endswith('s') or 'count' in following or following == 'instances' else False
-        params.append((KEYWORDS.get(p['name'], p['name']), haxe_type(p['type'], callbacks, many)))
+    """A function of raylib's helix-raylib doesn't have, with raylib's result type: a call to it doesn't compile."""
     name = f['name']
     doc = f"raylib's `{name}` ({header}): not in helix-raylib yet, so a call to it doesn't compile. {sentence(f.get('description', ''))}".strip()
-    return refusal(name, params, haxe_type(f['returnType'], callbacks, True), f'{name}: Not implemented', doc)
+    return refusal(name, haxe_type(f['returnType'], callbacks, True), f'{name}: Not implemented', doc)
 
 
 def type_text(node, full=False):
@@ -379,7 +370,7 @@ def generated(file_sections, functions, api, header, written):
                 kind, message = f.refusal
                 doc = ' '.join(f.doc.split('@param')[0].split('@return')[0].split())
                 (unsupported if kind == 'unsupported' else unimplemented).extend(
-                    refusal(f.name, [(p[0], p[1]) for p in f.params], f.result, message, doc, kind, f.full_result))
+                    refusal(f.name, f.result, message, doc, kind, f.full_result))
                 continue
             # A rest parameter is spread into the call, as its values, not passed as one.
             call = f'{name}.{f.name}({", ".join("..." + p[0] if p[3].startswith("haxe.extern.Rest") else p[0] for p in f.params)})'

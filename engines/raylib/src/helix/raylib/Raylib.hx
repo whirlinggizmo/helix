@@ -6746,400 +6746,392 @@ class Raylib {
 	// ---- raylib.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size. */
-	public static macro function SetWindowSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+	public static macro function SetWindowSize(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window maximized. */
-	public static macro function MaximizeWindow():ExprOf<Void>
+	public static macro function MaximizeWindow(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window minimized. */
-	public static macro function MinimizeWindow():ExprOf<Void>
+	public static macro function MinimizeWindow(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `RestoreWindowAsync` for asking for the window restored. */
-	public static macro function RestoreWindow():ExprOf<Void>
+	public static macro function RestoreWindow(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window gets the keyboard later or not at all. See `SetWindowFocusedAsync` for asking for the keyboard. */
-	public static macro function SetWindowFocused():ExprOf<Void>
+	public static macro function SetWindowFocused(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowOpacityAsync` for asking for an opacity. Refused by a desktop without a compositor. */
-	public static macro function SetWindowOpacity(opacity:ExprOf<Float>):ExprOf<Void>
+	public static macro function SetWindowOpacity(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest size the window may take. */
-	public static macro function SetWindowMinSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+	public static macro function SetWindowMinSize(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest size the window may take. */
-	public static macro function SetWindowMaxSize(width:ExprOf<Int>, height:ExprOf<Int>):ExprOf<Void>
+	public static macro function SetWindowMaxSize(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard. */
-	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>
+	public static macro function SetClipboardText(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard. */
-	public static macro function GetClipboardText():ExprOf<String>
+	public static macro function GetClipboardText(args:Array<Expr>):ExprOf<String>
 		return helix.platform.macros.Build.unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)",
 			macro(null : String));
 
 	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the clipboard. */
-	public static macro function GetClipboardImage():ExprOf<Image>
+	public static macro function GetClipboardImage(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Doesn't compile, since helix-raylib's window has no native handle to give. */
-	public static macro function GetWindowHandle():ExprOf<Dynamic>
+	public static macro function GetWindowHandle(args:Array<Expr>):ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.",
 			macro(null : Dynamic));
 
 	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels. */
-	public static macro function GetMonitorPhysicalWidth(monitor:ExprOf<Int>):ExprOf<Int>
+	public static macro function GetMonitorPhysicalWidth(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-raylib's platform.",
 			macro(0 : Int));
 
 	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels. */
-	public static macro function GetMonitorPhysicalHeight(monitor:ExprOf<Int>):ExprOf<Int>
+	public static macro function GetMonitorPhysicalHeight(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-raylib's platform.",
 			macro(0 : Int));
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen. */
-	public static macro function ToggleFullscreen():ExprOf<Void>
+	public static macro function ToggleFullscreen(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a borderless window. */
-	public static macro function ToggleBorderlessWindowed():ExprOf<Void>
+	public static macro function ToggleBorderlessWindowed(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on the desktop. Refused where the system doesn't allow it, as Wayland doesn't. */
-	public static macro function SetWindowPosition(x:ExprOf<Int>, y:ExprOf<Int>):ExprOf<Void>
+	public static macro function SetWindowPosition(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor. */
-	public static macro function SetWindowMonitor(monitor:ExprOf<Int>):ExprOf<Void>
+	public static macro function SetWindowMonitor(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse. */
-	public static macro function EnableCursor():ExprOf<Void>
+	public static macro function EnableCursor(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse. */
-	public static macro function DisableCursor():ExprOf<Void>
+	public static macro function DisableCursor(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile on any target, since the answer comes later. See `SavedFileExistsAsync` for asking whether a saved file exists, and `FileExistsAsync` for any other file. */
-	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function FileExists(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("FileExists: Synchronous file access is not supported. For a saved file, one SaveFileText or SaveFileData wrote, see SavedFileExistsAsync(fileName:String, answer:Bool->Void). For any other file, see FileExistsAsync(fileName:String, answer:Bool->Void).",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileTextAsync` for reading a saved text file, and `LoadFileTextAsync` for any other. */
-	public static macro function LoadFileText(fileName:ExprOf<String>):ExprOf<Null<String>>
+	public static macro function LoadFileText(args:Array<Expr>):ExprOf<Null<String>>
 		return helix.platform.macros.Build.unsupported("LoadFileText: Synchronous loading is not supported. For a saved file, one SaveFileText wrote, see LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void). For any other file, see LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void).",
 			macro(null : Null<String>));
 
 	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileTextAsync` for writing a text file. */
-	public static macro function SaveFileText(fileName:ExprOf<String>, text:ExprOf<String>):ExprOf<Bool>
+	public static macro function SaveFileText(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("SaveFileText: A file is written later, or is refused. See SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since the file is read later. See `LoadSavedFileDataAsync` for reading a saved file's bytes, and `LoadFileDataAsync` for any other file's. */
-	public static macro function LoadFileData(fileName:ExprOf<String>):ExprOf<Null<haxe.io.Bytes>>
+	public static macro function LoadFileData(args:Array<Expr>):ExprOf<Null<haxe.io.Bytes>>
 		return helix.platform.macros.Build.unsupported("LoadFileData: Synchronous loading is not supported. For a saved file, one SaveFileData wrote, see LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void). For any other file, see LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void).",
 			macro(null : Null<haxe.io.Bytes>));
 
 	/** Doesn't compile on any target, since a file is kept later, once written. See `SaveFileDataAsync` for writing a file's bytes. */
-	public static macro function SaveFileData(fileName:ExprOf<String>, data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Bool>
+	public static macro function SaveFileData(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("SaveFileData: A file is written later, or is refused. See SaveFileDataAsync(fileName:String, data:haxe.io.Bytes, dataSize:Int, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportDataAsCodeAsync` for writing bytes as code. */
-	public static macro function ExportDataAsCode(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportDataAsCode(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportDataAsCode: A file is written later, or is refused. See ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since the answer comes later. See `DirectoryExistsAsync` for asking whether a directory exists. */
-	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
+	public static macro function DirectoryExists(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("DirectoryExists: Synchronous file access is not supported. See DirectoryExistsAsync(dirPath:String, answer:Bool->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since the answer comes later. See `GetFileLengthAsync` for asking a file's size. */
-	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
+	public static macro function GetFileLength(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetFileLength: Synchronous file access is not supported. See GetFileLengthAsync(fileName:String, answer:Int->Void)",
 			macro(0 : Int));
 
 	/** Doesn't compile on any target, since the answer comes later. See `IsPathFileAsync` for asking whether a path is a file. */
-	public static macro function IsPathFile(path:ExprOf<String>):ExprOf<Bool>
+	public static macro function IsPathFile(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("IsPathFile: Synchronous file access is not supported. See IsPathFileAsync(path:String, answer:Bool->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesAsync` for listing a directory. */
-	public static macro function LoadDirectoryFiles(dirPath:ExprOf<String>):ExprOf<FilePathList>
+	public static macro function LoadDirectoryFiles(args:Array<Expr>):ExprOf<FilePathList>
 		return helix.platform.macros.Build.unsupported("LoadDirectoryFiles: Synchronous file access is not supported. See LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void)",
 			macro(null : helix.raylib.FilePathList));
 
 	/** Doesn't compile on any target, since the listing comes later. See `LoadDirectoryFilesExAsync` for listing a directory by extension and with its subdirectories. */
-	public static macro function LoadDirectoryFilesEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<FilePathList>
+	public static macro function LoadDirectoryFilesEx(args:Array<Expr>):ExprOf<FilePathList>
 		return helix.platform.macros.Build.unsupported("LoadDirectoryFilesEx: Synchronous file access is not supported. See LoadDirectoryFilesExAsync(basePath:String, filter:String, scanSubdirs:Bool, loaded:FilePathList->Void)",
 			macro(null : helix.raylib.FilePathList));
 
 	/** Doesn't compile on any target, since the answer comes later. See `GetFileModTimeAsync` for asking when a file was last written. */
-	public static macro function GetFileModTime(fileName:ExprOf<String>):ExprOf<Int>
+	public static macro function GetFileModTime(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetFileModTime: Synchronous file access is not supported. See GetFileModTimeAsync(fileName:String, answer:Int->Void)",
 			macro(0 : Int));
 
 	/** Doesn't compile on any target, since a file is kept later, once written. See `ExportAutomationEventListAsync` for writing a list to a file. */
-	public static macro function ExportAutomationEventList(list:ExprOf<AutomationEventList>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportAutomationEventList(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportAutomationEventList: A file is written later, or is refused. See ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes. */
-	public static macro function MemAlloc(size:ExprOf<Int>):ExprOf<Dynamic>
+	public static macro function MemAlloc(args:Array<Expr>):ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)",
 			macro(null : Dynamic));
 
 	/** Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes. */
-	public static macro function MemRealloc(ptr:ExprOf<Dynamic>, size:ExprOf<Int>):ExprOf<Dynamic>
+	public static macro function MemRealloc(args:Array<Expr>):ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit",
 			macro(null : Dynamic));
 
 	/** Doesn't compile, since Haxe frees memory once nothing holds it. */
-	public static macro function MemFree(ptr:ExprOf<Dynamic>):ExprOf<Void>
+	public static macro function MemFree(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.", macro {});
 
 	/** Doesn't compile on any target, since a screenshot is read back as the next frame ends and saved after. See `TakeScreenshotAsync` for saving a screenshot. */
-	public static macro function TakeScreenshot(fileName:ExprOf<String>):ExprOf<Void>
+	public static macro function TakeScreenshot(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop. */
-	public static macro function emscripten_set_main_loop(func:ExprOf<Void->Void>, fps:ExprOf<Int>, simulateInfiniteLoop:ExprOf<Bool>):ExprOf<Void>
+	public static macro function emscripten_set_main_loop(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, already runs once a frame. Write that loop in main, the frame's code in its body.",
 			macro {});
 
 	/** Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop. */
-	public static macro function emscripten_set_main_loop_arg(func:ExprOf<Dynamic->Void>, arg:ExprOf<Dynamic>, fps:ExprOf<Int>,
-			simulateInfiniteLoop:ExprOf<Bool>):ExprOf<Void>
+	public static macro function emscripten_set_main_loop_arg(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop_arg: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, already runs once a frame. Write that loop in main, the frame's code in its body, reading the argument from a variable.",
 			macro {});
 
 	/** Doesn't compile, since a program leaves raylib's own loop instead. See `WindowShouldClose` for writing the loop. */
-	public static macro function emscripten_cancel_main_loop():ExprOf<Void>
+	public static macro function emscripten_cancel_main_loop(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break; the code after the loop runs then.",
 			macro {});
 
 	/** Doesn't compile on any target, since a program runs no script of its own. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up. */
-	public static macro function emscripten_run_script(script:ExprOf<String>):ExprOf<Void>
+	public static macro function emscripten_run_script(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_run_script: Not supported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
 			macro {});
 
 	/** Doesn't compile on any target, since a program runs no script of its own. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held. */
-	public static macro function emscripten_run_script_int(script:ExprOf<String>):ExprOf<Int>
+	public static macro function emscripten_run_script_int(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Not supported. See IsTouchAvailable() and IsFinePointerAvailable() for the device's touch and pointer, and GetScreenOrientation() for how the screen is held in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
 			macro(0 : Int));
 
 	/** Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system. */
-	public static macro function emscripten_run_script_string(script:ExprOf<String>):ExprOf<String>
+	public static macro function emscripten_run_script_string(args:Array<Expr>):ExprOf<String>
 		return helix.platform.macros.Build.unsupported("emscripten_run_script_string: Not supported. See GetPlatformOS() for the system's name in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
 			macro(null : String));
 
 	/** Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`. */
-	public static macro function emscripten_get_now():ExprOf<Float>
+	public static macro function emscripten_get_now(args:Array<Expr>):ExprOf<Float>
 		return helix.platform.macros.Build.unsupported("emscripten_get_now: Not supported. See GetTime(), the seconds since InitWindow (emscripten's milliseconds are GetTime() * 1000).",
 			macro(0.0 : Float));
 
 	/** Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame. */
-	public static macro function emscripten_sleep(ms:ExprOf<Int>):ExprOf<Void>
+	public static macro function emscripten_sleep(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_sleep: Not supported: a frame can't wait. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().",
 			macro {});
 
 	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`. */
-	public static macro function LoadShader(vsFileName:ExprOf<String>, fsFileName:ExprOf<String>):ExprOf<Shader>
+	public static macro function LoadShader(args:Array<Expr>):ExprOf<Shader>
 		return helix.platform.macros.Build.unsupported("LoadShader: Shaders are compiled as the program builds. Compile the two files with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String), in the build's hxml or the program's code, then load the file it writes with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Shader));
 
 	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory. */
-	public static macro function LoadShaderFromMemory(vsCode:ExprOf<String>, fsCode:ExprOf<String>):ExprOf<Shader>
+	public static macro function LoadShaderFromMemory(args:Array<Expr>):ExprOf<Shader>
 		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Shaders are compiled as the program builds. Write the two stages to files and compile them with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String), in the build's hxml or the program's code, then load the file it writes with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or its bytes with LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes)",
 			macro(null : helix.raylib.Shader));
 
 	/** Names raylib's texture load, which waits for the file, and doesn't compile on any target. See `LoadTextureAsync` for loading a texture from a file. */
-	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D>
+	public static macro function LoadTexture(args:Array<Expr>):ExprOf<Texture2D>
 		return helix.platform.macros.Build.unsupported("LoadTexture: Synchronous loading is not supported. See LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Texture2D));
 
 	/** Names raylib's image load, which waits for the file, and doesn't compile on any target. See `LoadImageAsync` for loading an image from a file. */
-	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image>
+	public static macro function LoadImage(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImage: Synchronous loading is not supported. See LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's load of an image's raw pixels, which waits for the file, and doesn't compile on any target. See `LoadImageRawAsync` for loading raw pixels from a file. */
-	public static macro function LoadImageRaw(fileName:ExprOf<String>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
-			headerSize:ExprOf<Int>):ExprOf<Image>
+	public static macro function LoadImageRaw(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageRaw: Synchronous loading is not supported. See LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's decode of an image file's bytes, which returns the image, and doesn't compile on any target. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. Images are decoded asynchronously. */
-	public static macro function LoadImageFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Image>
+	public static macro function LoadImageFromMemory(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Images are decoded asynchronously. See LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's load of an animated image's frames, which waits for the file, and doesn't compile on any target. See `LoadImageAnimAsync` for loading an animated image's frames from a file. */
-	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image>
+	public static macro function LoadImageAnim(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageAnim: Synchronous loading is not supported. See LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's decode of an animated image file's bytes, which returns its frames, and doesn't compile on any target. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. Images are decoded asynchronously. */
-	public static macro function LoadImageAnimFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
-			frames:ExprOf<Array<Int>>):ExprOf<Image>
+	public static macro function LoadImageAnimFromMemory(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageAnimFromMemory: Images are decoded asynchronously. See LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. A texture is read back asynchronously. */
-	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
+	public static macro function LoadImageFromTexture(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for reading the screen into an image. The screen is read back asynchronously, as a frame ends. */
-	public static macro function LoadImageFromScreen():ExprOf<Image>
+	public static macro function LoadImageFromScreen(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's image export, done when it returns, and doesn't compile on any target. See `ExportImageAsync` for writing an image to a file. A file is written later, or is refused. */
-	public static macro function ExportImage(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportImage(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportImage: A file is written later, or is refused. See ExportImageAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Names raylib's export of an image as code, done when it returns, and doesn't compile on any target. See `ExportImageAsCodeAsync` for writing an image as a C header. A file is written later, or is refused. */
-	public static macro function ExportImageAsCode(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportImageAsCode(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportImageAsCode: A file is written later, or is refused. See ExportImageAsCodeAsync(image:Image, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since the file is written after the call would return. See `ExportFontAsCodeAsync` for writing a font as code. */
-	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportFontAsCode(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportFontAsCode: A file is written later, or is refused. See ExportFontAsCodeAsync(font:Font, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, since raylib's waits for the file. See `LoadFontAsync` for loading a font. */
-	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font>
+	public static macro function LoadFont(args:Array<Expr>):ExprOf<Font>
 		return helix.platform.macros.Build.unsupported("LoadFont: Synchronous loading is not supported. See LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Font));
 
 	/** Doesn't compile on any target, since raylib's waits for the file. See `LoadFontExAsync` for loading a font at a size. */
-	public static macro function LoadFontEx(fileName:ExprOf<String>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
-			codepointCount:ExprOf<Int>):ExprOf<Font>
+	public static macro function LoadFontEx(args:Array<Expr>):ExprOf<Font>
 		return helix.platform.macros.Build.unsupported("LoadFontEx: Synchronous loading is not supported. See LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Font));
 
 	/** Doesn't compile on any target, since raylib's rasterizes the glyphs before returning and here they are rasterized off the main thread. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes. */
-	public static macro function LoadFontFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>,
-			codepoints:ExprOf<Array<Int>>, codepointCount:ExprOf<Int>):ExprOf<Font>
+	public static macro function LoadFontFromMemory(args:Array<Expr>):ExprOf<Font>
 		return helix.platform.macros.Build.unsupported("LoadFontFromMemory: Fonts are rasterized asynchronously. See LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Font));
 
 	/** Doesn't compile on any target, since raylib's returns the glyphs rasterized and here they are rasterized off the main thread. See `LoadFontDataAsync` for rasterizing glyphs. */
-	public static macro function LoadFontData(fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
-			codepointCount:ExprOf<Int>, type:ExprOf<Int>):ExprOf<Array<GlyphInfo>>
+	public static macro function LoadFontData(args:Array<Expr>):ExprOf<Array<GlyphInfo>>
 		return helix.platform.macros.Build.unsupported("LoadFontData: Fonts are rasterized asynchronously. See LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void)",
 			macro(null : Array<helix.raylib.GlyphInfo>));
 
 	/** Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text. */
-	public static macro function TextCopy(dst:ExprOf<String>, src:ExprOf<String>):ExprOf<Int>
+	public static macro function TextCopy(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src", macro(0 : Int));
 
 	/** Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining `text += append` appends the text. */
-	public static macro function TextAppend(text:ExprOf<String>, append:ExprOf<String>, position:ExprOf<Array<Int>>):ExprOf<Void>
+	public static macro function TextAppend(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("TextAppend: A String can't be written into. Join the text instead: text += append", macro {});
 
 	/** Refuses to compile on any target, as raylib's model load waits for the file. See `LoadModelAsync` for loading a model. */
-	public static macro function LoadModel(fileName:ExprOf<String>):ExprOf<Model>
+	public static macro function LoadModel(args:Array<Expr>):ExprOf<Model>
 		return helix.platform.macros.Build.unsupported("LoadModel: Synchronous loading is not supported. See LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Model));
 
 	/** Refuses to compile on any target, as raylib's material load waits for the file. See `LoadMaterialsAsync` for loading a file's materials. */
-	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
+	public static macro function LoadMaterials(args:Array<Expr>):ExprOf<Array<Material>>
 		return helix.platform.macros.Build.unsupported("LoadMaterials: Synchronous loading is not supported. See LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void)",
 			macro(null : Array<helix.raylib.Material>));
 
 	/** Refuses to compile on any target, as raylib's mesh export is done when it returns and a file here is written later. See `ExportMeshAsync` for writing a mesh's file. */
-	public static macro function ExportMesh(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportMesh(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportMesh: A file is written later, or is refused. See ExportMeshAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Refuses to compile on any target, as raylib's export of a mesh as code is done when it returns and a file here is written later. See `ExportMeshAsCodeAsync` for writing a mesh as code. */
-	public static macro function ExportMeshAsCode(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportMeshAsCode(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportMeshAsCode: A file is written later, or is refused. See ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Refuses to compile on any target, as raylib's animation load waits for the file. See `LoadModelAnimationsAsync` for loading a file's animations. */
-	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
+	public static macro function LoadModelAnimations(args:Array<Expr>):ExprOf<Array<ModelAnimation>>
 		return helix.platform.macros.Build.unsupported("LoadModelAnimations: Synchronous loading is not supported. See LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void)",
 			macro(null : Array<helix.raylib.ModelAnimation>));
 
 	/** Doesn't compile on any target, as raylib's wave load waits for the file. See `LoadWaveAsync` for loading a wave file. */
-	public static macro function LoadWave(fileName:ExprOf<String>):ExprOf<Wave>
+	public static macro function LoadWave(args:Array<Expr>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWave: Synchronous loading is not supported. See LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Wave));
 
 	/** Doesn't compile on any target, as raylib's wave load from a file's bytes answers at once. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. A file other than WAV or QOA is decoded off the main thread. */
-	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave>
+	public static macro function LoadWaveFromMemory(args:Array<Expr>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Decoding is asynchronous. See LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Wave));
 
 	/** Doesn't compile on any target, as raylib's wave export is done when it returns. See `ExportWaveAsync` for writing a wave to a sound file. A file is kept later, once written. */
-	public static macro function ExportWave(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportWave(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportWave: A file is written later, or is refused. See ExportWaveAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, as raylib's export of a wave as code is done when it returns. See `ExportWaveAsCodeAsync` for writing a wave as a C header. A file is kept later, once written. */
-	public static macro function ExportWaveAsCode(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
+	public static macro function ExportWaveAsCode(args:Array<Expr>):ExprOf<Bool>
 		return helix.platform.macros.Build.unsupported("ExportWaveAsCode: A file is written later, or is refused. See ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro(false : Bool));
 
 	/** Doesn't compile on any target, as raylib's sound load waits for the file. See `LoadSoundAsync` for loading a sound file. */
-	public static macro function LoadSound(fileName:ExprOf<String>):ExprOf<Sound>
+	public static macro function LoadSound(args:Array<Expr>):ExprOf<Sound>
 		return helix.platform.macros.Build.unsupported("LoadSound: Synchronous loading is not supported. See LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Sound));
 
 	/** Doesn't compile on any target, as raylib's music load knows at once whether the file opened. See `LoadMusicStreamAsync` for opening a music file. */
-	public static macro function LoadMusicStream(fileName:ExprOf<String>):ExprOf<Music>
+	public static macro function LoadMusicStream(args:Array<Expr>):ExprOf<Music>
 		return helix.platform.macros.Build.unsupported("LoadMusicStream: Synchronous loading is not supported. See LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void)",
 			macro(null : helix.raylib.Music));
 
 	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run. */
-	public static macro function AttachAudioStreamProcessor(stream:ExprOf<AudioStream>,
-			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+	public static macro function AttachAudioStreamProcessor(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where Haxe can't run", macro {});
 
 	/** Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`). */
-	public static macro function DetachAudioStreamProcessor(stream:ExprOf<AudioStream>,
-			processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+	public static macro function DetachAudioStreamProcessor(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where Haxe can't run",
 			macro {});
 
 	/** Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run. */
-	public static macro function AttachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+	public static macro function AttachAudioMixedProcessor(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where Haxe can't run", macro {});
 
 	/** Doesn't compile on any target, as no mix processor can be attached (`AttachAudioMixedProcessor`). */
-	public static macro function DetachAudioMixedProcessor(processor:ExprOf<Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>>):ExprOf<Void>
+	public static macro function DetachAudioMixedProcessor(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where Haxe can't run",
 			macro {});
 

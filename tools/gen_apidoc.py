@@ -211,7 +211,8 @@ def macro_signatures():
     """Every macro function's signature, {(class, name): signature}, as declared: the description gives a macro function no line and types
     its arguments as Dynamic, so the classes with a static of no line are compiled once more with tools/haxe/Fields.hx's build macro,
     which reads their fields as the compiler parsed them. Its ExprOf<T> arguments are shown as the T the program passes and its result
-    as the T the program gets, a bare Expr, which gives the program nothing, as Void."""
+    as the T the program gets, a bare Expr, which gives the program nothing, as Void; a last Array<Expr>, which takes any arguments,
+    as ...name."""
     root=ET.parse(OUT/'xml/js.xml').getroot()
     classes=sorted(c.get('path') for c in root if c.tag=='class' and c.get('interface')!='1' and (c.get('path') or '').startswith('helix.')
                    and any(f.get('static')=='1' and f.get('set')=='method' and f.get('line') is None for f in c))
@@ -223,7 +224,9 @@ def macro_signatures():
     out={}
     for f in json.loads(fields.read_text(encoding='utf-8')):
         if not f['isMacro']:continue
-        args=', '.join(('?' if a['optional'] and not a['value'] else '')+a['name']+':'+shown(a['type'])+(f' = {a["value"]}' if a['value'] else '') for a in f['args'])
+        # A last Array<Expr> takes any arguments, a macro's rest, shown as ...name.
+        rest=f['args'] and re.fullmatch(r'Array<(haxe\.macro\.)?Expr>',f['args'][-1]['type'] or '')
+        args=', '.join(('...'+a['name'] if rest and i==len(f['args'])-1 else ('?' if a['optional'] and not a['value'] else '')+a['name']+':'+shown(a['type'])+(f' = {a["value"]}' if a['value'] else '')) for i,a in enumerate(f['args']))
         result='Void' if f['result'] in ('Expr','haxe.macro.Expr',None) else shown(f['result'])
         out[(f['owner'],f['name'])]=f'{"static " if f["isStatic"] else ""}macro function {f["name"]}({args}):{result}'
     return out

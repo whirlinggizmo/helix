@@ -88,7 +88,10 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not suppor
     'sys.FileSystem.readDirectory: Synchronous file access','sys.io.Process: Not supported.'),
     'ShaderCalls':('LoadShader: Shaders are compiled as the program builds. Compile the two files with CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String)',
     'LoadShaderFromMemory: Shaders are compiled as the program builds. Write the two stages to files and compile them with CompileShaderFile(vsFileName:Null<String>',
-    'ShaderCalls.hx:11:','CompileShaderFile: Compiles and saves the given shader to compiledShaderFileName. This file is loaded during runtime via LoadCompiledShaderAsync(')}
+    'ShaderCalls.hx:11:','CompileShaderFile: Compiles and saves the given shader to compiledShaderFileName. This file is loaded during runtime via LoadCompiledShaderAsync('),
+    'GuessedCalls':('GuessedCalls.hx:10: characters 20-51 : LoadModelAnimations: Synchronous loading','GuessedCalls.hx:11: characters 17-55 : LoadModelAnimations: Synchronous',
+    'GuessedCalls.hx:12: characters 19-44 : LoadMaterials: Synchronous','GuessedCalls.hx:13: characters 15-55 : LoadFileData: Synchronous',
+    'GuessedCalls.hx:14: characters 16-33 : LoadImageAnim: Synchronous','GuessedCalls.hx:15: characters 3-24 : SetWindowSize: The window changes later')}
 
 def refused(base):
     """Each program in engines/raylib/tests/refused refused for JS and natively (typed alone), each of its refusals in the compiler's

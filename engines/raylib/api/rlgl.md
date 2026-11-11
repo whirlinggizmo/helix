@@ -842,93 +842,93 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `left`: Eye 1's, drawn in the right half.
 
 ```haxe
-static macro function rlEnableVertexArray(vaoId:Int):Bool
-static macro function rlDisableVertexArray():Void
-static macro function rlEnableVertexBuffer(id:Int):Void
-static macro function rlDisableVertexBuffer():Void
-static macro function rlEnableVertexBufferElement(id:Int):Void
-static macro function rlDisableVertexBufferElement():Void
-static macro function rlEnableVertexAttribute(index:Int):Void
-static macro function rlDisableVertexAttribute(index:Int):Void
-static macro function rlEnableStatePointer(vertexAttribType:Int, buffer:Dynamic):Void
-static macro function rlDisableStatePointer(vertexAttribType:Int):Void
-static macro function rlActiveTextureSlot(slot:Int):Void
-static macro function rlEnableTexture(id:Int):Void
-static macro function rlDisableTexture():Void
-static macro function rlEnableTextureCubemap(id:Int):Void
-static macro function rlDisableTextureCubemap():Void
-static macro function rlTextureParameters(id:Int, param:Int, value:Int):Void
-static macro function rlCubemapParameters(id:Int, param:Int, value:Int):Void
-static macro function rlEnableShader(id:Int):Void
-static macro function rlDisableShader():Void
-static macro function rlEnableFramebuffer(id:Int):Void
-static macro function rlDisableFramebuffer():Void
-static macro function rlGetActiveFramebuffer():Int
-static macro function rlActiveDrawBuffers(count:Int):Void
-static macro function rlBlitFramebuffer(srcX:Int, srcY:Int, srcWidth:Int, srcHeight:Int, dstX:Int, dstY:Int, dstWidth:Int, dstHeight:Int, bufferMask:Int):Void
-static macro function rlBindFramebuffer(target:Int, framebuffer:Int):Void
-static macro function rlCheckErrors():Void
-static macro function rlglInit(width:Int, height:Int):Void
-static macro function rlglClose():Void
-static macro function rlLoadExtensions(loader:Dynamic):Void
-static macro function rlGetVersion():Int
-static macro function rlGetTextureIdDefault():Int
-static macro function rlGetShaderIdDefault():Int
-static macro function rlGetShaderLocsDefault():Array<Int>
-static macro function rlLoadRenderBatch(numBuffers:Int, bufferElements:Int):Dynamic
-static macro function rlUnloadRenderBatch(batch:Dynamic):Void
-static macro function rlDrawRenderBatch(batch:Dynamic):Void
-static macro function rlSetRenderBatchActive(batch:Dynamic):Void
-static macro function rlLoadVertexArray():Int
-static macro function rlLoadVertexBuffer(buffer:Dynamic, size:Int, isDynamic:Bool):Int
-static macro function rlLoadVertexBufferElement(buffer:Dynamic, size:Int, isDynamic:Bool):Int
-static macro function rlUpdateVertexBuffer(bufferId:Int, data:Dynamic, dataSize:Int, offset:Int):Void
-static macro function rlUpdateVertexBufferElements(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
-static macro function rlUnloadVertexArray(vaoId:Int):Void
-static macro function rlUnloadVertexBuffer(vboId:Int):Void
-static macro function rlSetVertexAttribute(index:Int, compSize:Int, type:Int, normalized:Bool, stride:Int, offset:Int):Void
-static macro function rlSetVertexAttributeDivisor(index:Int, divisor:Int):Void
-static macro function rlSetVertexAttributeDefault(locIndex:Int, value:Dynamic, attribType:Int, count:Int):Void
-static macro function rlDrawVertexArray(offset:Int, count:Int):Void
-static macro function rlDrawVertexArrayElements(offset:Int, count:Int, buffer:Dynamic):Void
-static macro function rlDrawVertexArrayInstanced(offset:Int, count:Int, instances:Int):Void
-static macro function rlDrawVertexArrayElementsInstanced(offset:Int, count:Int, buffer:Dynamic, instances:Int):Void
-static macro function rlLoadTexture(data:Dynamic, width:Int, height:Int, format:Int, mipmapCount:Int):Int
-static macro function rlLoadTextureDepth(width:Int, height:Int, useRenderBuffer:Bool):Int
-static macro function rlLoadTextureCubemap(data:Dynamic, size:Int, format:Int, mipmapCount:Int):Int
-static macro function rlUpdateTexture(id:Int, offsetX:Int, offsetY:Int, width:Int, height:Int, format:Int, data:Dynamic):Void
-static macro function rlGetGlTextureFormats(format:Int, glInternalFormat:Array<Int>, glFormat:Array<Int>, glType:Array<Int>):Void
-static macro function rlUnloadTexture(id:Int):Void
-static macro function rlGenTextureMipmaps(id:Int, width:Int, height:Int, format:Int, mipmaps:Array<Int>):Void
-static macro function rlReadTexturePixels(id:Int, width:Int, height:Int, format:Int):Dynamic
-static macro function rlReadScreenPixels(width:Int, height:Int):haxe.io.Bytes
-static macro function rlLoadFramebuffer():Int
-static macro function rlFramebufferAttach(fboId:Int, texId:Int, attachType:Int, texType:Int, mipLevel:Int):Void
-static macro function rlFramebufferComplete(id:Int):Bool
-static macro function rlUnloadFramebuffer(id:Int):Void
-static macro function rlLoadShaderCode(vsCode:String, fsCode:String):Int
-static macro function rlCompileShader(shaderCode:String, type:Int):Int
-static macro function rlLoadShaderProgram(vShaderId:Int, fShaderId:Int):Int
-static macro function rlUnloadShaderProgram(id:Int):Void
-static macro function rlGetLocationUniform(shaderId:Int, uniformName:String):Int
-static macro function rlGetLocationAttrib(shaderId:Int, attribName:String):Int
-static macro function rlSetUniform(locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void
-static macro function rlSetUniformMatrix(locIndex:Int, mat:Matrix):Void
-static macro function rlSetUniformMatrices(locIndex:Int, mat:Array<Matrix>, count:Int):Void
-static macro function rlSetUniformSampler(locIndex:Int, textureId:Int):Void
-static macro function rlSetShader(id:Int, locs:Array<Int>):Void
-static macro function rlLoadComputeShaderProgram(shaderId:Int):Int
-static macro function rlComputeShaderDispatch(groupX:Int, groupY:Int, groupZ:Int):Void
-static macro function rlLoadShaderBuffer(size:Int, data:Dynamic, usageHint:Int):Int
-static macro function rlUnloadShaderBuffer(ssboId:Int):Void
-static macro function rlUpdateShaderBuffer(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void
-static macro function rlBindShaderBuffer(id:Int, index:Int):Void
-static macro function rlReadShaderBuffer(id:Int, dest:Dynamic, count:Int, offset:Int):Void
-static macro function rlCopyShaderBuffer(destId:Int, srcId:Int, destOffset:Int, srcOffset:Int, count:Int):Void
-static macro function rlGetShaderBufferSize(id:Int):Int
-static macro function rlBindImageTexture(id:Int, index:Int, format:Int, readonly:Bool):Void
-static macro function rlLoadDrawCube():Void
-static macro function rlLoadDrawQuad():Void
+static macro function rlEnableVertexArray(...args):Bool
+static macro function rlDisableVertexArray(...args):Void
+static macro function rlEnableVertexBuffer(...args):Void
+static macro function rlDisableVertexBuffer(...args):Void
+static macro function rlEnableVertexBufferElement(...args):Void
+static macro function rlDisableVertexBufferElement(...args):Void
+static macro function rlEnableVertexAttribute(...args):Void
+static macro function rlDisableVertexAttribute(...args):Void
+static macro function rlEnableStatePointer(...args):Void
+static macro function rlDisableStatePointer(...args):Void
+static macro function rlActiveTextureSlot(...args):Void
+static macro function rlEnableTexture(...args):Void
+static macro function rlDisableTexture(...args):Void
+static macro function rlEnableTextureCubemap(...args):Void
+static macro function rlDisableTextureCubemap(...args):Void
+static macro function rlTextureParameters(...args):Void
+static macro function rlCubemapParameters(...args):Void
+static macro function rlEnableShader(...args):Void
+static macro function rlDisableShader(...args):Void
+static macro function rlEnableFramebuffer(...args):Void
+static macro function rlDisableFramebuffer(...args):Void
+static macro function rlGetActiveFramebuffer(...args):Int
+static macro function rlActiveDrawBuffers(...args):Void
+static macro function rlBlitFramebuffer(...args):Void
+static macro function rlBindFramebuffer(...args):Void
+static macro function rlCheckErrors(...args):Void
+static macro function rlglInit(...args):Void
+static macro function rlglClose(...args):Void
+static macro function rlLoadExtensions(...args):Void
+static macro function rlGetVersion(...args):Int
+static macro function rlGetTextureIdDefault(...args):Int
+static macro function rlGetShaderIdDefault(...args):Int
+static macro function rlGetShaderLocsDefault(...args):Array<Int>
+static macro function rlLoadRenderBatch(...args):Dynamic
+static macro function rlUnloadRenderBatch(...args):Void
+static macro function rlDrawRenderBatch(...args):Void
+static macro function rlSetRenderBatchActive(...args):Void
+static macro function rlLoadVertexArray(...args):Int
+static macro function rlLoadVertexBuffer(...args):Int
+static macro function rlLoadVertexBufferElement(...args):Int
+static macro function rlUpdateVertexBuffer(...args):Void
+static macro function rlUpdateVertexBufferElements(...args):Void
+static macro function rlUnloadVertexArray(...args):Void
+static macro function rlUnloadVertexBuffer(...args):Void
+static macro function rlSetVertexAttribute(...args):Void
+static macro function rlSetVertexAttributeDivisor(...args):Void
+static macro function rlSetVertexAttributeDefault(...args):Void
+static macro function rlDrawVertexArray(...args):Void
+static macro function rlDrawVertexArrayElements(...args):Void
+static macro function rlDrawVertexArrayInstanced(...args):Void
+static macro function rlDrawVertexArrayElementsInstanced(...args):Void
+static macro function rlLoadTexture(...args):Int
+static macro function rlLoadTextureDepth(...args):Int
+static macro function rlLoadTextureCubemap(...args):Int
+static macro function rlUpdateTexture(...args):Void
+static macro function rlGetGlTextureFormats(...args):Void
+static macro function rlUnloadTexture(...args):Void
+static macro function rlGenTextureMipmaps(...args):Void
+static macro function rlReadTexturePixels(...args):Dynamic
+static macro function rlReadScreenPixels(...args):haxe.io.Bytes
+static macro function rlLoadFramebuffer(...args):Int
+static macro function rlFramebufferAttach(...args):Void
+static macro function rlFramebufferComplete(...args):Bool
+static macro function rlUnloadFramebuffer(...args):Void
+static macro function rlLoadShaderCode(...args):Int
+static macro function rlCompileShader(...args):Int
+static macro function rlLoadShaderProgram(...args):Int
+static macro function rlUnloadShaderProgram(...args):Void
+static macro function rlGetLocationUniform(...args):Int
+static macro function rlGetLocationAttrib(...args):Int
+static macro function rlSetUniform(...args):Void
+static macro function rlSetUniformMatrix(...args):Void
+static macro function rlSetUniformMatrices(...args):Void
+static macro function rlSetUniformSampler(...args):Void
+static macro function rlSetShader(...args):Void
+static macro function rlLoadComputeShaderProgram(...args):Int
+static macro function rlComputeShaderDispatch(...args):Void
+static macro function rlLoadShaderBuffer(...args):Int
+static macro function rlUnloadShaderBuffer(...args):Void
+static macro function rlUpdateShaderBuffer(...args):Void
+static macro function rlBindShaderBuffer(...args):Void
+static macro function rlReadShaderBuffer(...args):Void
+static macro function rlCopyShaderBuffer(...args):Void
+static macro function rlGetShaderBufferSize(...args):Int
+static macro function rlBindImageTexture(...args):Void
+static macro function rlLoadDrawCube(...args):Void
+static macro function rlLoadDrawQuad(...args):Void
 ```
 
 - `rlEnableVertexArray`: Refuses to compile on every target, replacing rlgl's `rlEnableVertexArray` (enabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.

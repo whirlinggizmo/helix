@@ -1727,12 +1727,12 @@ class Raygui {
 	// ---- raygui.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
 
 	/** Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` for loading a style file. */
-	public static macro function GuiLoadStyle(fileName:ExprOf<String>):ExprOf<Void>
+	public static macro function GuiLoadStyle(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("GuiLoadStyle: Synchronous loading is not supported. See GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro {});
 
 	/** Stands for raygui's icon file load, which doesn't compile. See `GuiLoadIconsAsync` for loading an icon file. */
-	public static macro function GuiLoadIcons(fileName:ExprOf<String>, loadIconsName:ExprOf<Bool>):ExprOf<Array<String>>
+	public static macro function GuiLoadIcons(args:Array<Expr>):ExprOf<Array<String>>
 		return helix.platform.macros.Build.unsupported("GuiLoadIcons: Synchronous loading is not supported. See GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void)",
 			macro(null : Array<String>));
 

@@ -1271,8 +1271,8 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - returns: 0.
 
 ```haxe
-static macro function GuiLoadStyle(fileName:String):Void
-static macro function GuiLoadIcons(fileName:String, loadIconsName:Bool):Array<String>
+static macro function GuiLoadStyle(...args):Void
+static macro function GuiLoadIcons(...args):Array<String>
 ```
 
 - `GuiLoadStyle`: Stands for raygui's style file load, which doesn't compile. See `GuiLoadStyleAsync` for loading a style file.
