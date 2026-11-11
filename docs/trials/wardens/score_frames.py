@@ -6,12 +6,13 @@ run at each load for a fixed run of frames, the library printing the stats it re
                             [--desktop]
 
 Each entrant is copied to <entrant>.frames (the entrant's own directory left as it was) and built there, in the entrants' sandbox
-(run_entrant.py), as a build runs an entrant's code (its macros, its Makefile):
+(run_entrant.py), as a build runs an entrant's code (its macros, its CMakeLists.txt):
 - helix-raylib (a build.hxml): from its own build.hxml with -D helix-raylib-frame-stats, against --helix's haxelib, run with
   --frame_stats=<frames>. With --page, also built for JS as score_page.py builds it (in <entrant>.frames-page) and run in headless Chromium with
   ?frame_stats=<frames>, its stats read from window.helixResult.
-- raylib C (a Makefile): with its Makefile, against its own copy of stock raylib 5.5, the compiler given frame_stats_wrap.c's object
-  and the link's wraps of EndDrawing and WindowShouldClose, so raylib is as shipped. Run with RAYLIB_FRAME_STATS=<frames> in its
+- raylib C (a CMakeLists.txt): with its CMakeLists.txt, in build-frames/, against its own copy of stock raylib 5.5, the link given
+  frame_stats_wrap.c's object and GNU ld's wraps of EndDrawing and WindowShouldClose (CMAKE_PROJECT_INCLUDE), so raylib is as
+  shipped (Linux). Run with RAYLIB_FRAME_STATS=<frames> in its
   environment. raylib C's draws aren't counted.
 
 --frames W,N records frames W + 1 to N, each from one EndDrawing to the next, and the program closes after frame N. Each run is given
@@ -36,7 +37,7 @@ import score_page
 
 # The C file linked with the entrant's code, and the link's options that send its EndDrawing and WindowShouldClose through it.
 WRAP = Path(__file__).resolve().parent / 'frame_stats_wrap.c'
-WRAPPED = '-Wl,--wrap=EndDrawing -Wl,--wrap=WindowShouldClose'
+WRAPPED = 'LINKER:--wrap=EndDrawing LINKER:--wrap=WindowShouldClose'
 
 
 def stats_of(output):
@@ -69,13 +70,19 @@ def score(entrant, helix, args, display):
         built = in_sandbox(copy, helix, env, ['haxe', 'frames.hxml'], 1800)
         program = './native/Main'
     else:
-        # The hook built apart and handed to the compiler with the wrap, so the entrant's Makefile, whatever it compiles, links it.
+        # The hook built apart and handed to the link with the wraps, so the entrant's CMakeLists.txt, whatever it compiles, links it.
         hook = copy / 'frame_stats_wrap.o'
         made = subprocess.run(['cc', '-O2', '-c', str(WRAP), '-o', str(hook)], capture_output=True, text=True)
         if made.returncode:
             sys.exit(f'score_frames: {WRAP.name} failed to build\n{made.stderr}')
         (copy / 'native/wardens').unlink(missing_ok=True)
-        built = in_sandbox(copy, helix, env, ['make', f'CC=cc {WRAPPED} {hook}'], 1800)
+        # Read after the entrant's project(), so CMake's check of the compiler links without them, and before its targets, which take
+        # them: the object ahead of raylib's library, whose EndDrawing it calls.
+        hooked = copy / 'frame_stats_wrap.cmake'
+        hooked.write_text(f'add_link_options({WRAPPED})\nlink_libraries("{hook}")\n', encoding='utf-8')
+        configured = in_sandbox(copy, helix, env, ['cmake', '-B', 'build-frames', '-DCMAKE_BUILD_TYPE=Release',
+                                                   f'-DCMAKE_PROJECT_INCLUDE={hooked}'], 600)
+        built = configured if configured.returncode else in_sandbox(copy, helix, env, ['cmake', '--build', 'build-frames'], 1800)
         program = './native/wardens'
     print(f'{entrant.name}: native build {"failed" if built.returncode else "ok"}', flush=True)
     if built.returncode:

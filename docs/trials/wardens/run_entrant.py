@@ -7,7 +7,7 @@ The entrant directory is made, and must not be there yet unless --command is giv
 (docs/examples), with the engine's own files:
 - helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path), native/build.hxml, and raylib 5.5's
   headers in docs/include.
-- c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/Makefile, raylib 5.5's headers in include/ and its desktop
+- c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/CMakeLists.txt, raylib 5.5's headers in include/ and its desktop
   library as lib/libraylib.a.
 raylib's files are copied from the release tools/raylib_parity.py fetches and builds. A directory inside a git repository is refused,
 as the entrant would see its commit messages.
@@ -52,7 +52,7 @@ def make(entrant, engine):
     own = HERE / ('native' if engine == 'helix' else 'native-c')
     brief = (own / 'brief.md').read_text(encoding='utf-8')
     (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
-    for name in ('build.hxml',) if engine == 'helix' else ('Makefile',):
+    for name in ('build.hxml',) if engine == 'helix' else ('CMakeLists.txt',):
         shutil.copy(own / name, entrant / name)
     shutil.copy(HERE / 'spec.md', entrant / 'spec.md')
     shutil.copytree(HERE / 'assets', entrant / 'assets')

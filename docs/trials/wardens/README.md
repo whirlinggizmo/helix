@@ -11,7 +11,7 @@ session, and it leans on what an engine is for (models, animation, attachments, 
 which would be the same on either side.
 
 The blind trials of helix-raylib ([../README.md](../README.md)) build the same game natively, from raylib's own headers: helix-raylib's
-brief and `build.hxml` are in `native/`, the C control's brief and `Makefile` in `native-c/`, and `run_entrant.py` starts an entrant. The rest of this page is the jam's.
+brief and `build.hxml` are in `native/`, the C control's brief and `CMakeLists.txt` in `native-c/`, and `run_entrant.py` starts an entrant. The rest of this page is the jam's.
 
 ## Entrants
 

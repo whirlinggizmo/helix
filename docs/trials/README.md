@@ -47,7 +47,7 @@ game's folder, names its runs.
 - **Watching.** Each entrant's log is read every ten minutes while it runs. A harness fault stops the run early.
 
 The harness is [wardens](wardens): each arm's brief and build file (`native/` for helix-raylib's `build.hxml`, `native-c/` for the
-control's `Makefile`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
+control's `CMakeLists.txt`), and `run_entrant.py`, which makes an entrant's directory from them, the spec, the assets and raylib 5.5's
 release, and starts it against a checkout of helix; `score_page.py` builds and runs each helix-raylib entrant's program in a page;
 `score_frames.py` times each entrant's program, natively (on a private display, or with `--desktop` on this machine's) and with
 `--page` in a page:
