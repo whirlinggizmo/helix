@@ -13,6 +13,10 @@
 | `helix.raylib.extras` | what a program opts into that raylib has no call for: lit and PBR shaders, a virtual gamepad, a model's bounds as posed, models merged into one, the device (safe area, touch, orientation, tilt), raygui skins from images, debug drawing and frame stats, many copies of a sprite in one call |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
+Each raylib header is a class, imported as C includes the header: `import helix.raylib.Raylib.*;` brings `raylib.h`'s functions,
+constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.h`'s, and so on for `Raymath`, `Raygui`, `Raylib6` and
+`Rlights`. `import helix.raylib.*;` brings the structs.
+
 ## Differences from raylib
 
 - Files load with the `...Async` calls beside raylib's, in `Raylib` and `Raygui`.

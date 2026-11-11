@@ -19,7 +19,7 @@ megabytes correctly.
 | What `GetFrameStats` returns before half a second has passed | the docs say it covers the frames drawn so far, all zero before the first |
 | `memoryBytes` named `ISystem.getMemoryBytes`, which a raylib program can't see | the field says what it reads: natively the process's resident memory, in a page the script heap where the browser reports it, 0 where it doesn't |
 | A recording left open when B cancels a run (helix-raylib-docs.001): every frame's time kept, growing | a recording keeps its latest 65536 frames, and the docs say so |
-| rlgl's calls unknown in `helix.raylib.Raylib.*`: helix-raylib-docs.001 guessed `import helix.raylib.Rlgl.*;`, helix-raylib-docs.002 drew models instead | outside the frame stats: the compiler's "Unknown identifier" for an rlgl call could name its import, as it does for raylib's types |
+| rlgl's calls unknown in `helix.raylib.Raylib.*`: helix-raylib-docs.001 guessed `import helix.raylib.Rlgl.*;`, helix-raylib-docs.002 drew models instead | outside the frame stats, and the trial's own: its brief named `Raylib` and the types' imports alone, where the Wardens brief names each header's class (`rlgl.h` is `Rlgl`). The compiler can't add a hint, as an unknown identifier reaches no macro. helix-raylib's README now says each header is a class and how each is imported |
 | Times in milliseconds, memory in megabytes, an `IsFrameStatsRecording`, a `RecordFrameStats(seconds)`, a formatter (suggested) | not taken: seconds are GetFrameTime's, bytes are what the graphics and the system count, and raylib's own recordings have no query |
 
 Decided with the user before the trial: the stats a program can read, not only draw; `Start` and `Stop` named for raylib's
