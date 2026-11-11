@@ -6,12 +6,13 @@
 // runs on the GPU (Vulkan on Linux, Metal on macOS); where the page says it can't draw it runs again on SwiftShader. Audio is muted, and
 // allowed to start without a gesture so a test page can check it. A query naming safeArea=TOP,RIGHT,BOTTOM,LEFT (CSS pixels) has Chromium
 // report those as the page's env(safe-area-inset-*), as a phone with a notch would. --headed opens the browser's window on the display,
-// paced by it, for a page timed or seen as a person would see it; --headless, the default, runs it off screen.
+// paced by it, for a page timed or seen as a person would see it, on ANGLE over GL on Linux, as a visible window over Vulkan loses its
+// WebGL context at startup there (docs/speed.md); --headless, the default, runs it off screen.
 const given=require('./cli.cjs').args(__filename,['browser','site','query','output'],['--headed','--headless']);
 const [browserPath,site,query,output]=given;
 const path=require('path');
 const {chromium}=require(process.env.HELIX_PLAYWRIGHT||path.join(__dirname,'../build/tools/node_modules/playwright'));
-const GPU=process.platform==='linux'?['--use-angle=vulkan']:process.platform==='darwin'?['--use-angle=metal']:[];
+const GPU=process.platform==='linux'?[given.flags.has('--headed')?'--use-angle=gl':'--use-angle=vulkan']:process.platform==='darwin'?['--use-angle=metal']:[];
 const SOFTWARE=['--use-angle=swiftshader','--enable-unsafe-swiftshader'];
 
 function serve(directory){

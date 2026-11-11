@@ -724,6 +724,9 @@ def main():
     if a.headed and not os.environ.get('DISPLAY'):
         print('compare: --headed needs $DISPLAY')
         return 1
+    if a.headed and page and a.backend == 'vulkan':
+        print('compare: --headed pages need --backend gl: over Vulkan a visible window loses its WebGL context at startup (docs/speed.md)')
+        return 2
     built = build(programs, contenders, page, native)
     stamp = time.strftime('%Y-%m-%d-%H%M%S')
     runs_file = OUT / 'runs' / f'{stamp}.jsonl'

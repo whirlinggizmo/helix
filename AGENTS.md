@@ -29,7 +29,9 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
 The prerequisites, the checks and when each runs, windows and sound, and the tools are in [CONTRIBUTING.md](CONTRIBUTING.md). Two of
 its rules matter most, kept here too:
 
-- **Never open native windows on the user's desktop.** Use `tools/private_display.py`, and `SDL_AUDIO_DRIVER=dummy` so checks make no sound.
+- **Never open windows on the user's desktop unasked.** The tools run headless by default (a private display, headless Chromium), and
+  `SDL_AUDIO_DRIVER=dummy` keeps checks silent. A check that needs the real display (`--headed`: timing, watching) runs once the user
+  approves it. Ask for it rather than skip it.
 - **Report what ran,** on which target. Measure before claiming something is faster or smaller.
 
 How an agent works here:
