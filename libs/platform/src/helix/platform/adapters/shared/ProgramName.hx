@@ -19,11 +19,11 @@ class ProgramName {
 		return macro $v{name("helix-product")};
 
 	#if macro
-	// A define's value, failing the build when it's unset.
+	// A define's value, failing the build when it isn't defined.
 	static function name(define:String):String {
 		var value = Context.definedValue(define);
 		if (value == null)
-			Context.fatalError('$define isn\'t set. Every program names its company and product with two defines, as '
+			Context.fatalError('$define isn\'t defined. Every program names its company and product with two defines, as '
 				+ '-D helix-company=<company> -D helix-product=<product> (in an hxml, or on the haxe command line). They name where the '
 				+ 'program\'s saves and cache are kept (natively <company>/<product> in the user\'s data and cache directories, in a page '
 				+ 'the browser\'s databases "<company>/<product>/data" and "/cache"), so two programs keep apart, and natively the name '
