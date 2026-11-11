@@ -1,0 +1,22 @@
+// The depth mask scene Main.hx.in draws, drawn by raylib, its third frame saved as ref.png; cases.py's list is put into it.
+#include "raylib.h"
+#include "rlgl.h"
+#define V3(x, y, z) ((Vector3){ (float)(x), (float)(y), (float)(z) })
+int main(void) {
+    SetTraceLogLevel(LOG_WARNING);
+    InitWindow(640, 360, "depth_mask");
+    Camera camera = { { 6, 6, 9 }, { 0, 0.5f, 0 }, { 0, 1, 0 }, 45, CAMERA_PERSPECTIVE };
+    Model cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+    for (int frame = 0; frame < 3; frame++) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        BeginMode3D(camera);
+        @CASES@
+        EndMode3D();
+        rlDrawRenderBatchActive();
+        if (frame == 2) ExportImage(LoadImageFromScreen(), "ref.png");
+        EndDrawing();
+    }
+    CloseWindow();
+    return 0;
+}

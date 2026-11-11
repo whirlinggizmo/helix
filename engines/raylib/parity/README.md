@@ -67,6 +67,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `scene3d_62` | 6.2 | pixels | the spheres, capsules and billboards, and a mesh given tangents, in that scene |
 | `render` | 5.5 | pixels | rlgl's blend modes, custom factors and color mask, a render texture's alpha under them; texture updates, read back and mipmaps under raylib's filters; render textures kept across passes and frames; `DrawMeshInstanced` |
 | `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |
+| `depth_mask` | 5.5 | pixels | the depth mask off and on around translucent decals and additive sparks, frame after frame, the ground hiding a cube below it |
 | `points` | 5.5 | pixels | rlgl's point mode: `DrawModelPoints` and `DrawModelPointsEx` (a cloud, indexed meshes), point mode with culling, the batch as points |
 | `skinning` | 6.2 | pixels | greenman skinned by the default shader (on the GPU, raylib's CPU skinning its oracle), by raylib's skinning shader, and blended |
 | `crowd` | 6.2 | pixels | one greenman posed and drawn 240 times in a frame, each in its own pose, by the default shader and by raylib's skinning shader |
