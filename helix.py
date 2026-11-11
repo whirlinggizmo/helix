@@ -89,16 +89,19 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Synchronous loading is not suppor
     'ShaderCalls.hx:11:','CompileShaderFile: Compiles and saves the given shader to compiledShaderFileName. This file is loaded during runtime via LoadCompiledShaderAsync(')}
 
 def refused(base):
-    """Each program in engines/raylib/tests/refused refused for JS and natively (typed alone), each of its refusals in the compiler's
-    errors; and AsyncTests typed natively, with the libraries' own sys.io.File calls in it (the native saves), which aren't refused."""
+    """Each program in engines/raylib/tests/refused refused for JS and natively with -D helix-raylib-portable-sys (typed alone), each of
+    its refusals in the compiler's errors; FileCalls typed natively without the define, Haxe's own calls; and AsyncTests typed natively
+    with it, with the libraries' own sys.io.File calls in it (the native saves), which aren't refused."""
     for main,messages in REFUSED.items():
-        for target in (['-js',f'build/tests/{main}.js'],['-cpp',f'build/tests/{main}-cpp']):
+        for target in (['-js',f'build/tests/{main}.js'],['-cpp',f'build/tests/{main}-cpp','-D','helix-raylib-portable-sys']):
             done=subprocess.run(['haxe',*base,*named(main),'-cp','engines/raylib/tests/refused','-main',main,*target,'--no-output'],
                 cwd=ROOT,capture_output=True,text=True,encoding='utf-8')
             missing=[m for m in messages if m not in done.stderr]
             if done.returncode==0 or missing:sys.exit(f'{main} ({target[0]}): built, or refusals missing: {missing}\n{done.stderr}')
         print(f'{main}: {len(messages)} refusals (JS and native)',flush=True)
-    run(['haxe',*base,*named('AsyncTests'),'-main','AsyncTests','-cpp','build/tests/AsyncTests-typed','--no-output'])
+    run(['haxe',*base,*named('FileCalls'),'-cp','engines/raylib/tests/refused','-main','FileCalls','-cpp','build/tests/FileCalls-cpp','--no-output'])
+    print('FileCalls: Haxe\'s own natively without the define',flush=True)
+    run(['haxe',*base,*named('AsyncTests'),'-main','AsyncTests','-cpp','build/tests/AsyncTests-typed','--no-output','-D','helix-raylib-portable-sys'])
 
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""

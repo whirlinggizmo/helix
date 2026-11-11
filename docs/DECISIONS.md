@@ -900,3 +900,14 @@ Why things are the way they are, numbered, in order.
     and nothing sends them: a 5.5 program's own blend is correct, so there is nothing to refuse, and the raylib C entrants have no blend
     on stock 5.5 either. Rejected: `Future`, as Python's `__future__`, which reads as an async value in Haxe and JS beside the `...Async`
     calls; an extra, as extras hold what raylib has no call for.
+
+70. **Natively, a program has Haxe's own `sys` unless it asks to be held to the page's.** `-D helix-raylib-portable-sys` turns on
+    natively what a build for the page always has: Haxe's file calls (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the `Sys`
+    calls a page can't answer don't compile, each refusal naming the raylib call to use (66). Without it a native program has Haxe's
+    own, as Haxe and raylib give a developer, who can save beside the program or run a tool. For JS nothing changes, as Haxe has none
+    of them there. The Wardens trial's `build.hxml` sets the define, as a project template meant for every target would. Why: 66
+    refused them in every program through the library's `extraParams.hxml`, with no way out, so a level editor or a build tool that
+    wants native files couldn't have them, where no other Haxe library or raylib itself takes the standard library away. Rejected: the
+    refusals by default with a define to leave them (a developer expects Haxe's `sys` to work natively); `helix-raylib-portable`, which
+    promises more than `sys` (`#if js` branches, the page reached directly, which `helix-raylib-host-warnings` warns of); names for the
+    mechanism (`shadow-sys`) or with no object (`compat-sys`).

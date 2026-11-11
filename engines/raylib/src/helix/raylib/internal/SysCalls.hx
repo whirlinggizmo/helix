@@ -5,15 +5,18 @@ import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Type;
 
-/** Refuses on every target the `Sys` calls a page can't answer, and Haxe's file calls (`sys.io.File`, `sys.FileSystem`) and
-	`sys.io.Process`, so a program that builds natively builds for the page. Each refusal names the raylib call to use. A page's `Sys` is
-	the library's `Sys.js.hx`, which Haxe takes in place of its own when compiling for JS. For JS the `sys` package is allowed, so a
-	program naming it gets the refusal; any other part of it is refused there too. Run by the library's `extraParams.hxml`. */
+/** Refuses the `Sys` calls a page can't answer, and Haxe's file calls (`sys.io.File`, `sys.FileSystem`) and `sys.io.Process`: for JS
+	always, as Haxe has none of them there, and natively with `-D helix-raylib-portable-sys`, so a program that builds natively builds
+	for the page. Without the define a native program has Haxe's own. Each refusal names the raylib call to use. A page's `Sys` is the
+	library's `Sys.js.hx`, which Haxe takes in place of its own when compiling for JS. For JS the `sys` package is allowed, so a program
+	naming it gets the refusal; any other part of it is refused there too. Run by the library's `extraParams.hxml`. */
 class SysCalls {
-	/** Adds the refusals to every build. */
+	/** Adds the refusals to a build for JS, and to a native one with `-D helix-raylib-portable-sys`. */
 	public static function register():Void {
 		if (Context.defined("js"))
 			Compiler.allowPackage("sys");
+		else if (!Context.defined("helix-raylib-portable-sys"))
+			return;
 		Context.onAfterTyping(refuse);
 	}
 

@@ -4,3 +4,4 @@
 -dce full
 -cpp native
 -D helix-raylib-native-root=..
+-D helix-raylib-portable-sys
