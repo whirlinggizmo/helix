@@ -81,11 +81,13 @@ def named(product):
 
 # What each program in engines/raylib/tests/refused must be refused with, each the start of a refusal's message or a compiler error.
 # The refused programs calling Haxe's own Sys and sys package, refused only with -D helix-raylib-portable-sys.
-PORTABLE_SYS={'FileCalls'}
+PORTABLE_SYS={'FileCalls','SingleCalls'}
 REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String):Null<String> instead.',
     'sys.io.File.saveContent: Use SaveFileText(fileName:String, text:String):Bool instead.','sys.io.File.getBytes: Use LoadFileData(',
     'sys.io.File.saveBytes: Use SaveFileData(','sys.FileSystem.exists: Use FileExists(fileName:String):Bool instead.',
     'sys.FileSystem.readDirectory: Use LoadDirectoryFiles(','sys.io.Process: Not supported.'),
+    'SingleCalls':('SingleCalls.hx:6: characters 2-48 : Single: Not supported. Use Float instead.','SingleCalls.hx:8: lines 8-10 : Single: Not supported. Use Float instead.',
+    'SingleCalls.hx:13: characters 3-27 : Single: Not supported. Use Float instead.'),
     'ShaderCalls':('LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro',
     'LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(','or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes',
     'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync('),

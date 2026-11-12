@@ -6,9 +6,9 @@ import haxe.macro.Context;
 import haxe.macro.Type;
 
 /** With `-D helix-raylib-portable-sys`, gives a page a `Sys` and holds a program to what a page can answer: the `Sys` calls a page has
-	no answer for, Haxe's file calls (`sys.io.File`, `sys.FileSystem`) and `sys.io.Process` are refused on every target, each refusal
-	naming the raylib call to use, so a program that builds natively builds for the page. A page's `Sys` is the library's
-	`_std/Sys.js.hx` (the program's options from the URL's query, the console and the clock), put on the class path for JS, where Haxe
+	no answer for, Haxe's file calls (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the type `Single` are refused on every target, each refusal
+	naming what to use, so a program that builds natively builds for the page. A page's `Sys` is the library's
+	`_std/Sys.js.hx` (the program's options from the URL's query, the console and the clock), and its `Single`, put on the class path for JS, where Haxe
 	has none. For JS the `sys` package is allowed, so a program naming it gets the refusal; any other part of it is refused there too.
 	Without the define a build is Haxe's as shipped. Run by the library's `extraParams.hxml`. */
 class SysCalls {
@@ -77,6 +77,8 @@ class SysCalls {
 		"rename" => SAVE_OVER
 	];
 
+	static inline final SINGLE = "Single: Not supported. Use Float instead.";
+
 	// Refuses a refused call in the program's classes; the libraries' own (package helix, Haxe's standard library) are left alone.
 	static function refuse(types:Array<ModuleType>):Void {
 		var js = Context.defined("js");
@@ -86,12 +88,15 @@ class SysCalls {
 					var c = ref.get();
 					if (c.isExtern || c.name == "Sys" || (c.pack.length > 0 && LIBRARY_PACKAGES.indexOf(c.pack[0]) >= 0))
 						continue;
-					for (field in c.statics.get().concat(c.fields.get()).concat(c.constructor == null ? [] : [c.constructor.get()]))
+					for (field in c.statics.get().concat(c.fields.get()).concat(c.constructor == null ? [] : [c.constructor.get()])) {
+						if (single(field.type))
+							refuseSingle(field.pos);
 						switch field.expr() {
 							case null:
 							case body:
 								search(body, js);
 						}
+					}
 				case _:
 			}
 	}
@@ -116,8 +121,37 @@ class SysCalls {
 				Context.reportError('${path(c.get())}: Not supported.', e.pos);
 			case TTypeExpr(TClassDecl(c)) if (js && c.get().pack[0] == "sys"):
 				Context.reportError('${path(c.get())}: Not supported.', e.pos);
+			case TVar(v, init) if (single(v.t)):
+				refuseSingle(e.pos);
+				if (init != null)
+					search(init, js);
+			case TFunction(f) if (Lambda.exists(f.args, a -> single(a.v.t)) || single(f.t)):
+				refuseSingle(e.pos);
+				search(f.expr, js);
 			case _:
 				haxe.macro.TypedExprTools.iter(e, search.bind(_, js));
+		}
+	}
+
+	static final singles:Map<String, Bool> = [];
+
+	// Refuses Single where it is named, once for each place: a method's type and its function are at the same place.
+	static function refuseSingle(pos:haxe.macro.Expr.Position):Void {
+		var key = Std.string(pos);
+		if (singles.exists(key))
+			return;
+		singles.set(key, true);
+		Context.reportError(SINGLE, pos);
+	}
+
+	// Whether a type is or holds Haxe's Single, which a page doesn't have.
+	static function single(t:Type):Bool {
+		return switch t {
+			case TAbstract(_.get() => {name: "Single", pack: []}, _) | TType(_.get() => {name: "Single", pack: []}, _): true;
+			case TAbstract(_, params) | TInst(_, params) | TType(_, params) | TEnum(_, params): Lambda.exists(params, single);
+			case TFun(args, ret): Lambda.exists(args, a -> single(a.t)) || single(ret);
+			case TLazy(f): single(f());
+			case _: false;
 		}
 	}
 
