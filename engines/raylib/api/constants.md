@@ -634,23 +634,12 @@ static inline var MATERIAL_MAP_SPECULAR:Int
 static inline var SHADER_LOC_MAP_DIFFUSE:Int
 static inline var SHADER_LOC_MAP_SPECULAR:Int
 static inline var MAX_MATERIAL_MAPS:Int
-static macro function SetWindowSize(...args):Void
-static macro function MaximizeWindow(...args):Void
-static macro function MinimizeWindow(...args):Void
-static macro function RestoreWindow(...args):Void
-static macro function SetWindowFocused(...args):Void
-static macro function SetWindowOpacity(...args):Void
-static macro function SetWindowMinSize(...args):Void
-static macro function SetWindowMaxSize(...args):Void
 static macro function SetClipboardText(...args):Void
 static macro function GetClipboardText(...args):String
 static macro function GetClipboardImage(...args):Image
 static macro function GetWindowHandle(...args):Dynamic
 static macro function GetMonitorPhysicalWidth(...args):Int
 static macro function GetMonitorPhysicalHeight(...args):Int
-static macro function ToggleBorderlessWindowed(...args):Void
-static macro function SetWindowPosition(...args):Void
-static macro function SetWindowMonitor(...args):Void
 static macro function EnableCursor(...args):Void
 static macro function DisableCursor(...args):Void
 static macro function MemAlloc(...args):Dynamic
@@ -682,23 +671,12 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
 - `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
 - `MAX_MATERIAL_MAPS`: The number of a material's maps.
-- `SetWindowSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size.
-- `MaximizeWindow`: Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window maximized.
-- `MinimizeWindow`: Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window minimized.
-- `RestoreWindow`: Doesn't compile on any target, since the window changes later or is refused. See `RestoreWindowAsync` for asking for the window restored.
-- `SetWindowFocused`: Doesn't compile on any target, since the window gets the keyboard later or not at all. See `SetWindowFocusedAsync` for asking for the keyboard.
-- `SetWindowOpacity`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowOpacityAsync` for asking for an opacity. Refused by a desktop without a compositor.
-- `SetWindowMinSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest size the window may take.
-- `SetWindowMaxSize`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest size the window may take.
 - `SetClipboardText`: Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard.
 - `GetClipboardText`: Doesn't compile on any target, since the clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
 - `GetClipboardImage`: Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the clipboard.
 - `GetWindowHandle`: Doesn't compile, since helix-raylib's window has no native handle to give.
 - `GetMonitorPhysicalWidth`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels.
 - `GetMonitorPhysicalHeight`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels.
-- `ToggleBorderlessWindowed`: Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a borderless window.
-- `SetWindowPosition`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on the desktop. Refused where the system doesn't allow it, as Wayland doesn't.
-- `SetWindowMonitor`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor.
 - `EnableCursor`: Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse.
 - `DisableCursor`: Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse.
 - `MemAlloc`: Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.

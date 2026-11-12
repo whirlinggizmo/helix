@@ -86,9 +86,9 @@ class Main {
 			if (music != null)
 				UpdateMusicStream(music);
 			if (IsKeyPressed(KEY_F))
-				ToggleFullscreenAsync();
+				ToggleFullscreen();
 			if (IsKeyPressed(KEY_R))
-				SetWindowSizeAsync(1280, 720);
+				SetWindowSize(1280, 720);
 			// Input: the keyboard, a gamepad's stick, the mouse and touch all move the player.
 			var move = new Vector3(0, 0, 0);
 			if (IsKeyDown(KEY_RIGHT))

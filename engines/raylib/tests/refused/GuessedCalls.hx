@@ -10,8 +10,8 @@ class GuessedCalls {
 		TakeScreenshot("shot.png");
 		var pixels = LoadImageFromTexture(1, 2);
 		var text = GetClipboardText("all");
-		ToggleBorderlessWindowed(true);
-		SetWindowSize("wide");
+		DisableCursor(true);
+		SetClipboardText(1, 2);
 		CloseWindow();
 	}
 }

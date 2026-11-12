@@ -97,7 +97,7 @@ class Runtime {
 	/** The screen: the window's resizes and its fullscreen, made with the window. */
 	public static var screen:Null<helix.services.screen.Screen> = null;
 
-	/** Whether the screen's fullscreen was asked for as a borderless window (`ToggleBorderlessWindowedAsync`), which raylib tells apart
+	/** Whether the screen's fullscreen was asked for as a borderless window (`ToggleBorderlessWindowed`), which raylib tells apart
 		from fullscreen: true only while the screen is fullscreen. */
 	public static var borderless(get, set):Bool;
 

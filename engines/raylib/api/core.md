@@ -10,16 +10,27 @@ static function WindowShouldClose():Bool
 static function IsWindowReady():Bool
 static function IsWindowResized():Bool
 static function SetWindowTitle(title:String):Void
+static function SetWindowSize(width:Int, height:Int):Void
 static function IsWindowFullscreen():Bool
 static function IsWindowHidden():Bool
 static function IsWindowMinimized():Bool
 static function IsWindowMaximized():Bool
+static function MaximizeWindow():Void
+static function MinimizeWindow():Void
+static function RestoreWindow():Void
+static function SetWindowFocused():Void
 static function SetWindowIcon(image:Image):Void
 static function SetWindowIcons(images:Array<Image>, count:Int):Void
+static function SetWindowOpacity(opacity:Float):Void
+static function SetWindowMinSize(width:Int, height:Int):Void
+static function SetWindowMaxSize(width:Int, height:Int):Void
 static function GetMonitorRefreshRate(monitor:Int):Int
 static function OpenURL(url:String):Void
 static function IsWindowFocused():Bool
 static function ToggleFullscreen():Void
+static function ToggleBorderlessWindowed():Void
+static function SetWindowPosition(x:Int, y:Int):Void
+static function SetWindowMonitor(monitor:Int):Void
 static function GetWindowPosition():Vector2
 static function GetWindowScaleDPI():Vector2
 static function GetMonitorCount():Int
@@ -205,7 +216,14 @@ static macro function EndDrawing():Void
   - returns: True for the frame after a resize.
 - `SetWindowTitle`: Sets the window's title.
   - `title`: The title.
-- `IsWindowFullscreen`: Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowedAsync`).
+- `SetWindowSize`: Asks for the window's size, and returns at once. See `SetWindowMinSize` and `SetWindowMaxSize` for limiting how small or large it can be.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+
+  The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+
+  Refused while the window is fullscreen or maximized, where the system doesn't allow it, and under 1 pixel. A refusal is logged.
+- `IsWindowFullscreen`: Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowed`).
   - returns: True while it is.
 - `IsWindowHidden`: Returns whether the window is hidden (`FLAG_WINDOW_HIDDEN`).
   - returns: True while it is.
@@ -213,6 +231,14 @@ static macro function EndDrawing():Void
   - returns: True while it is.
 - `IsWindowMaximized`: Returns whether the window is maximized.
   - returns: True while it is.
+- `MaximizeWindow`: Asks for the window maximized, and returns at once. See `RestoreWindow` for bringing it back.
+  `IsWindowMaximized` reports it once the window is. Refused where the system can't maximize the window. A refusal is logged.
+- `MinimizeWindow`: Asks for the window minimized, and returns at once. See `RestoreWindow` for bringing it back.
+  `IsWindowMinimized` reports it once the window is. Refused where the system can't minimize the window. A refusal is logged.
+- `RestoreWindow`: Asks for the window back to its size from minimized or maximized, and returns at once. See `MaximizeWindow` and `MinimizeWindow` for changing it.
+  A minimized window is restored from minimized, any other from maximized. A refusal is logged.
+- `SetWindowFocused`: Asks for the window brought to the front with the keyboard, and returns at once.
+  `IsWindowFocused` reports it once the window has the keyboard. A window manager may only flash it. A refusal is logged.
 - `SetWindowIcon`: Sets the window's icon. See `SetWindowIcons` for giving several sizes.
   - `image`: The icon.
 
@@ -224,6 +250,20 @@ static macro function EndDrawing():Void
   - `count`: How many of them.
 
   Each image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. One in another format logs a warning and changes nothing.
+- `SetWindowOpacity`: Asks for the window's opacity, and returns at once.
+  - `opacity`: From 0 (clear) to 1 (opaque).
+
+  A desktop without a compositor refuses it. A refusal is logged.
+- `SetWindowMinSize`: Asks for the smallest size the window may take, and returns at once. See `SetWindowMaxSize` for setting the largest.
+  - `width`: The width, in the screen's pixels.
+  - `height`: The height.
+
+  Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
+- `SetWindowMaxSize`: Asks for the largest size the window may take, and returns at once. See `SetWindowMinSize` for setting the smallest.
+  - `width`: The width, in the screen's pixels.
+  - `height`: The height.
+
+  Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
 - `GetMonitorRefreshRate`: Returns how many times a second a monitor shows a new picture.
   - `monitor`: The monitor.
   - returns: The refresh rate in hertz, or 0 when it isn't known.
@@ -241,6 +281,19 @@ static macro function EndDrawing():Void
   In a page, the browser grants fullscreen only after a key press, click or tap: asked for outside one, it waits for the next. A refusal is logged.
 
   `IsWindowFullscreen` reports the new state once the window has changed, not when the call returns.
+- `ToggleBorderlessWindowed`: Asks for the window to fill the screen without borders, or back to the window, and returns at once. See `ToggleFullscreen` for fullscreen.
+  Called while fullscreen, it only switches to borderless. In a page, the browser grants it only after a key press, click or tap: asked for outside one, it waits for the next. A refusal is logged.
+
+  As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false.
+- `SetWindowPosition`: Asks for the window's place on the desktop, and returns at once. See `SetWindowMonitor` for moving it to another monitor.
+  - `x`: The left edge, in pixels.
+  - `y`: The top edge, in pixels.
+
+  `GetWindowPosition` reports it once the window has moved. Refused while the window is fullscreen or maximized, and where the system doesn't allow it, as Wayland doesn't. A refusal is logged.
+- `SetWindowMonitor`: Asks for the window on another monitor, and returns at once. See `SetWindowPosition` for placing it on the desktop.
+  - `monitor`: The monitor, 0 to `GetMonitorCount() - 1`.
+
+  `GetCurrentMonitor` reports it once the window is there. Where the window can't be moved, a monitor other than its own is refused. A refusal is logged.
 - `GetWindowPosition`: Returns the window's place on the desktop.
   - returns: Its left and top edges, in pixels.
 - `GetWindowScaleDPI`: Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.

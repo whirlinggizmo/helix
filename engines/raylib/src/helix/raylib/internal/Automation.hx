@@ -394,11 +394,11 @@ class Automation implements PlayedInput {
 			case 18:
 				Runtime.shouldClose = true;
 			case 19:
-				RWindowAsync.MaximizeWindowAsync();
+				RCore.MaximizeWindow();
 			case 20:
-				RWindowAsync.MinimizeWindowAsync();
+				RCore.MinimizeWindow();
 			case 21:
-				RWindowAsync.SetWindowSizeAsync(p[0], p[1]);
+				RCore.SetWindowSize(p[0], p[1]);
 			case 22:
 				RWindowAsync.TakeScreenshotAsync('screenshot${StringTools.lpad(Std.string(screenshots), "0", 3)}.png');
 				screenshots++;

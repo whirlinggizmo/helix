@@ -89,16 +89,21 @@ class RCore {
 		Runtime.window.title = title;
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size.
+	/** Asks for the window's size, and returns at once. See `SetWindowMinSize` and `SetWindowMaxSize` for limiting how small or large it
+		can be.
+
+		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+
+		Refused while the window is fullscreen or maximized, where the system doesn't allow it, and under 1 pixel. A refusal is logged.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels. */
-	@:unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowSize(width:Int, height:Int):Void {
-		throw "SetWindowSize is unimplemented";
+		Answers.ask("SetWindowSize", (granted, refused) -> Runtime.window.requestSize(width, height, granted, refused), '$width x $height is under 1 pixel',
+			null, null);
 	}
 
-	/** Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowedAsync`).
+	/** Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowed`).
 
 		@return  True while it is. */
 	static function IsWindowFullscreen():Bool {
@@ -126,32 +131,36 @@ class RCore {
 		return Runtime.window.maximized;
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window
-		maximized. */
-	@:unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Asks for the window maximized, and returns at once. See `RestoreWindow` for bringing it back.
+
+		`IsWindowMaximized` reports it once the window is. Refused where the system can't maximize the window. A refusal is logged. */
 	static function MaximizeWindow():Void {
-		throw "MaximizeWindow is unimplemented";
+		Answers.ask("MaximizeWindow", (granted, refused) -> Runtime.window.requestMaximized(true, granted, refused), "", null, null);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window
-		minimized. */
-	@:unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Asks for the window minimized, and returns at once. See `RestoreWindow` for bringing it back.
+
+		`IsWindowMinimized` reports it once the window is. Refused where the system can't minimize the window. A refusal is logged. */
 	static function MinimizeWindow():Void {
-		throw "MinimizeWindow is unimplemented";
+		Answers.ask("MinimizeWindow", (granted, refused) -> Runtime.window.requestMinimized(true, granted, refused), "", null, null);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `RestoreWindowAsync` for asking for the window
-		restored. */
-	@:unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Asks for the window back to its size from minimized or maximized, and returns at once. See `MaximizeWindow` and `MinimizeWindow` for
+		changing it.
+
+		A minimized window is restored from minimized, any other from maximized. A refusal is logged. */
 	static function RestoreWindow():Void {
-		throw "RestoreWindow is unimplemented";
+		var window = Runtime.window;
+		Answers.ask("RestoreWindow",
+			(granted, refused) -> window.minimized ? window.requestMinimized(false, granted, refused) : window.requestMaximized(false, granted, refused), "",
+			null, null);
 	}
 
-	/** Doesn't compile on any target, since the window gets the keyboard later or not at all. See `SetWindowFocusedAsync` for asking for the
-		keyboard. */
-	@:unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Asks for the window brought to the front with the keyboard, and returns at once.
+
+		`IsWindowFocused` reports it once the window has the keyboard. A window manager may only flash it. A refusal is logged. */
 	static function SetWindowFocused():Void {
-		throw "SetWindowFocused is unimplemented";
+		Answers.ask("SetWindowFocused", (granted, refused) -> Runtime.window.requestFocus(granted, refused), "", null, null);
 	}
 
 	/** Sets the window's icon. See `SetWindowIcons` for giving several sizes.
@@ -192,34 +201,35 @@ class RCore {
 			Runtime.window.setIcon(largest.width, largest.height, largest.data);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowOpacityAsync` for asking for an opacity.
+	/** Asks for the window's opacity, and returns at once.
 
-		Refused by a desktop without a compositor.
+		A desktop without a compositor refuses it. A refusal is logged.
 
 		@param opacity  From 0 (clear) to 1 (opaque). */
-	@:unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowOpacity(opacity:Float):Void {
-		throw "SetWindowOpacity is unimplemented";
+		Answers.ask("SetWindowOpacity", (granted, refused) -> Runtime.window.requestOpacity(opacity, granted, refused), "", null, null);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest
-		size the window may take.
+	/** Asks for the smallest size the window may take, and returns at once. See `SetWindowMaxSize` for setting the largest.
+
+		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
-	@:unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowMinSize(width:Int, height:Int):Void {
-		throw "SetWindowMinSize is unimplemented";
+		Answers.ask("SetWindowMinSize", (granted, refused) -> Runtime.window.requestMinimumSize(width, height, granted, refused),
+			'$width x $height is under 0 pixels', null, null);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest
-		size the window may take.
+	/** Asks for the largest size the window may take, and returns at once. See `SetWindowMinSize` for setting the smallest.
+
+		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
 
 		@param width  The width, in the screen's pixels.
 		@param height  The height. */
-	@:unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowMaxSize(width:Int, height:Int):Void {
-		throw "SetWindowMaxSize is unimplemented";
+		Answers.ask("SetWindowMaxSize", (granted, refused) -> Runtime.window.requestMaximumSize(width, height, granted, refused),
+			'$width x $height is under 0 pixels', null, null);
 	}
 
 	/** Returns how many times a second a monitor shows a new picture.
@@ -315,32 +325,37 @@ class RCore {
 		RWindowAsync.toggleFullscreen("ToggleFullscreen", false, null, null);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a
-		borderless window. */
-	@:unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Asks for the window to fill the screen without borders, or back to the window, and returns at once. See `ToggleFullscreen` for
+		fullscreen.
+
+		Called while fullscreen, it only switches to borderless. In a page, the browser grants it only after a key press, click or tap:
+		asked for outside one, it waits for the next. A refusal is logged.
+
+		As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false. */
 	static function ToggleBorderlessWindowed():Void {
-		throw "ToggleBorderlessWindowed is unimplemented";
+		RWindowAsync.toggleFullscreen("ToggleBorderlessWindowed", true, null, null);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on
-		the desktop.
+	/** Asks for the window's place on the desktop, and returns at once. See `SetWindowMonitor` for moving it to another monitor.
 
-		Refused where the system doesn't allow it, as Wayland doesn't.
+		`GetWindowPosition` reports it once the window has moved. Refused while the window is fullscreen or maximized, and where the system
+		doesn't allow it, as Wayland doesn't. A refusal is logged.
 
 		@param x  The left edge, in pixels.
 		@param y  The top edge, in pixels. */
-	@:unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowPosition(x:Int, y:Int):Void {
-		throw "SetWindowPosition is unimplemented";
+		Answers.ask("SetWindowPosition", (granted, refused) -> Runtime.window.requestPosition(x, y, granted, refused), "", null, null);
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another
-		monitor.
+	/** Asks for the window on another monitor, and returns at once. See `SetWindowPosition` for placing it on the desktop.
+
+		`GetCurrentMonitor` reports it once the window is there. Where the window can't be moved, a monitor other than its own is refused.
+		A refusal is logged.
 
 		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
-	@:unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void)")
 	static function SetWindowMonitor(monitor:Int):Void {
-		throw "SetWindowMonitor is unimplemented";
+		Answers.ask("SetWindowMonitor", (granted, refused) -> Runtime.window.requestMonitorIndex(monitor, granted, refused), 'there is no monitor $monitor',
+			null, null);
 	}
 
 	/** Returns the window's place on the desktop.

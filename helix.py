@@ -91,7 +91,7 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String)
     'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync('),
     'GuessedCalls':('GuessedCalls.hx:9: characters 3-19 : TakeScreenshot: A screenshot is saved later','GuessedCalls.hx:10: characters 3-29 : TakeScreenshot: A screenshot',
     'GuessedCalls.hx:11: characters 16-42 : LoadImageFromTexture: A texture is read back','GuessedCalls.hx:12: characters 14-37 : GetClipboardText: Synchronous clipboard',
-    'GuessedCalls.hx:13: characters 3-33 : ToggleBorderlessWindowed: The window changes later','GuessedCalls.hx:14: characters 3-24 : SetWindowSize: The window changes later'),
+    'GuessedCalls.hx:13: characters 3-22 : DisableCursor: The mouse is locked later','GuessedCalls.hx:14: characters 3-25 : SetClipboardText: The clipboard is written later'),
     'WaitCalls':("WaitCalls.hx:10: characters 21-45 : LoadFileText: not in a constructor or a variable's initial value",
     "WaitCalls.hx:39: characters 11-32 : LoadModel: not in a constructor or a variable's initial value",
     'WaitCalls.hx:19: characters 19-31 : EndDrawing: call it from a function of a class, not from a function used as a value',

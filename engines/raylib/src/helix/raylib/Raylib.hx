@@ -31,7 +31,7 @@ import helix.raylib.modules.RWindowAsync;
 	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
 	A raylib call that waits for a file (`LoadModel`) doesn't compile in a function used as a value, and names the call beside it that
-	answers at a later frame (`LoadModelAsync`). A call that changes the window or reads the screen back (`SetWindowSize`,
+	answers at a later frame (`LoadModelAsync`). A call that locks the cursor or reads the screen back (`DisableCursor`,
 	`TakeScreenshot`) doesn't compile, and names its `...Async` call. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
@@ -1140,7 +1140,19 @@ class Raylib {
 	public static inline function SetWindowTitle(title:String):Void
 		RCore.SetWindowTitle(title);
 
-	/** Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowedAsync`).
+	/** Asks for the window's size, and returns at once. See `SetWindowMinSize` and `SetWindowMaxSize` for limiting how small or large it
+		can be.
+
+		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+
+		Refused while the window is fullscreen or maximized, where the system doesn't allow it, and under 1 pixel. A refusal is logged.
+
+		@param width  The width, in pixels.
+		@param height  The height, in pixels. */
+	public static inline function SetWindowSize(width:Int, height:Int):Void
+		RCore.SetWindowSize(width, height);
+
+	/** Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowed`).
 
 		@return  True while it is. */
 	public static inline function IsWindowFullscreen():Bool
@@ -1164,6 +1176,31 @@ class Raylib {
 	public static inline function IsWindowMaximized():Bool
 		return RCore.IsWindowMaximized();
 
+	/** Asks for the window maximized, and returns at once. See `RestoreWindow` for bringing it back.
+
+		`IsWindowMaximized` reports it once the window is. Refused where the system can't maximize the window. A refusal is logged. */
+	public static inline function MaximizeWindow():Void
+		RCore.MaximizeWindow();
+
+	/** Asks for the window minimized, and returns at once. See `RestoreWindow` for bringing it back.
+
+		`IsWindowMinimized` reports it once the window is. Refused where the system can't minimize the window. A refusal is logged. */
+	public static inline function MinimizeWindow():Void
+		RCore.MinimizeWindow();
+
+	/** Asks for the window back to its size from minimized or maximized, and returns at once. See `MaximizeWindow` and `MinimizeWindow` for
+		changing it.
+
+		A minimized window is restored from minimized, any other from maximized. A refusal is logged. */
+	public static inline function RestoreWindow():Void
+		RCore.RestoreWindow();
+
+	/** Asks for the window brought to the front with the keyboard, and returns at once.
+
+		`IsWindowFocused` reports it once the window has the keyboard. A window manager may only flash it. A refusal is logged. */
+	public static inline function SetWindowFocused():Void
+		RCore.SetWindowFocused();
+
 	/** Sets the window's icon. See `SetWindowIcons` for giving several sizes.
 
 		The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
@@ -1182,6 +1219,32 @@ class Raylib {
 		@param count  How many of them. */
 	public static inline function SetWindowIcons(images:Array<Image>, count:Int):Void
 		RCore.SetWindowIcons(images, count);
+
+	/** Asks for the window's opacity, and returns at once.
+
+		A desktop without a compositor refuses it. A refusal is logged.
+
+		@param opacity  From 0 (clear) to 1 (opaque). */
+	public static inline function SetWindowOpacity(opacity:Float):Void
+		RCore.SetWindowOpacity(opacity);
+
+	/** Asks for the smallest size the window may take, and returns at once. See `SetWindowMaxSize` for setting the largest.
+
+		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height. */
+	public static inline function SetWindowMinSize(width:Int, height:Int):Void
+		RCore.SetWindowMinSize(width, height);
+
+	/** Asks for the largest size the window may take, and returns at once. See `SetWindowMinSize` for setting the smallest.
+
+		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
+
+		@param width  The width, in the screen's pixels.
+		@param height  The height. */
+	public static inline function SetWindowMaxSize(width:Int, height:Int):Void
+		RCore.SetWindowMaxSize(width, height);
 
 	/** Returns how many times a second a monitor shows a new picture.
 
@@ -1216,6 +1279,35 @@ class Raylib {
 		`IsWindowFullscreen` reports the new state once the window has changed, not when the call returns. */
 	public static inline function ToggleFullscreen():Void
 		RCore.ToggleFullscreen();
+
+	/** Asks for the window to fill the screen without borders, or back to the window, and returns at once. See `ToggleFullscreen` for
+		fullscreen.
+
+		Called while fullscreen, it only switches to borderless. In a page, the browser grants it only after a key press, click or tap:
+		asked for outside one, it waits for the next. A refusal is logged.
+
+		As in raylib, `IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE)` is true while it is, and `IsWindowFullscreen` false. */
+	public static inline function ToggleBorderlessWindowed():Void
+		RCore.ToggleBorderlessWindowed();
+
+	/** Asks for the window's place on the desktop, and returns at once. See `SetWindowMonitor` for moving it to another monitor.
+
+		`GetWindowPosition` reports it once the window has moved. Refused while the window is fullscreen or maximized, and where the system
+		doesn't allow it, as Wayland doesn't. A refusal is logged.
+
+		@param x  The left edge, in pixels.
+		@param y  The top edge, in pixels. */
+	public static inline function SetWindowPosition(x:Int, y:Int):Void
+		RCore.SetWindowPosition(x, y);
+
+	/** Asks for the window on another monitor, and returns at once. See `SetWindowPosition` for placing it on the desktop.
+
+		`GetCurrentMonitor` reports it once the window is there. Where the window can't be moved, a monitor other than its own is refused.
+		A refusal is logged.
+
+		@param monitor  The monitor, 0 to `GetMonitorCount() - 1`. */
+	public static inline function SetWindowMonitor(monitor:Int):Void
+		RCore.SetWindowMonitor(monitor);
 
 	/** Returns the window's place on the desktop.
 
@@ -7035,46 +7127,6 @@ class Raylib {
 
 	// ---- raylib.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowSizeAsync` for asking for a size. */
-	public static macro function SetWindowSize(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetWindowSize: The window changes later, or is refused. See SetWindowSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `MaximizeWindowAsync` for asking for the window maximized. */
-	public static macro function MaximizeWindow(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("MaximizeWindow: The window changes later, or is refused. See MaximizeWindowAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `MinimizeWindowAsync` for asking for the window minimized. */
-	public static macro function MinimizeWindow(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("MinimizeWindow: The window changes later, or is refused. See MinimizeWindowAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `RestoreWindowAsync` for asking for the window restored. */
-	public static macro function RestoreWindow(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("RestoreWindow: The window changes later, or is refused. See RestoreWindowAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window gets the keyboard later or not at all. See `SetWindowFocusedAsync` for asking for the keyboard. */
-	public static macro function SetWindowFocused(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetWindowFocused: The window changes later, or is refused. See SetWindowFocusedAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowOpacityAsync` for asking for an opacity. Refused by a desktop without a compositor. */
-	public static macro function SetWindowOpacity(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetWindowOpacity: The window changes later, or is refused. See SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMinSizeAsync` for asking for the smallest size the window may take. */
-	public static macro function SetWindowMinSize(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetWindowMinSize: The window changes later, or is refused. See SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMaxSizeAsync` for asking for the largest size the window may take. */
-	public static macro function SetWindowMaxSize(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetWindowMaxSize: The window changes later, or is refused. See SetWindowMaxSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
 	/** Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard. */
 	public static macro function SetClipboardText(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)",
@@ -7104,21 +7156,6 @@ class Raylib {
 	public static macro function GetMonitorPhysicalHeight(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-raylib's platform.",
 			macro(0 : Int));
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a borderless window. */
-	public static macro function ToggleBorderlessWindowed(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("ToggleBorderlessWindowed: The window changes later, or is refused. See ToggleBorderlessWindowedAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on the desktop. Refused where the system doesn't allow it, as Wayland doesn't. */
-	public static macro function SetWindowPosition(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetWindowPosition: The window changes later, or is refused. See SetWindowPositionAsync(x:Int, y:Int, ?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor. */
-	public static macro function SetWindowMonitor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetWindowMonitor: The window changes later, or is refused. See SetWindowMonitorAsync(monitor:Int, ?done:Void->Void, ?failed:String->Void)",
-			macro {});
 
 	/** Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse. */
 	public static macro function EnableCursor(args:Array<Expr>):ExprOf<Void>
