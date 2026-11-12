@@ -6,7 +6,7 @@ import helix.services.screen.Screen;
 import helix.services.time.Time;
 
 /** Checks the calls a page waits for (helix-raylib's Wait), written as raylib's programs write them: a loop calling `EndDrawing()` in a
-	function of its own, one frame an iteration, with `continue` and `break`, a `do`-`while`, and loops over a range and an array; the clipboard written, then read; a compiled shader loaded; `WaitTime`; a frame ended in a function the loop
+	function of its own, one frame an iteration, with `continue` and `break`, a `do`-`while`, and loops over a range and an array; the clipboard written, then read; `WaitTime`; a frame ended in a function the loop
 	calls; a load in a function returning its value, used as a statement, a value, an argument and in a string; functions calling each
 	other; a method of an object, and one overriding it that calls it; a `throw` after a wait caught by the caller; and a function reaching no wait, which returns its value at
 	once, as do functions calling each other that reach none. In a page the frames come from the test's own timer and a function that waits returns at its first wait; natively each call
@@ -48,7 +48,6 @@ class WaitTests {
 		Runtime.saves = new Saves(files);
 		Runtime.polled.push(Runtime.saves);
 		var shipped = new FakeFileSystem();
-		shipped.write("glow.shader", haxe.Resource.getBytes("glow.shader"), () -> {}, e -> throw e);
 		Runtime.polled.push(shipped);
 		Runtime.clipboardAdapter = new WaitClipboard();
 		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(shipped)]);
@@ -123,9 +122,6 @@ class WaitShapes {
 
 		var copied = copy("copied");
 		WaitTests.check(copied == "copied 0", 'the clipboard is written before it is read: $copied');
-		var glow = LoadCompiledShader("glow.shader");
-		var missing = LoadCompiledShader("none.shader");
-		WaitTests.check(glow.id != 0 && missing.id == 0, 'LoadCompiledShader returns the shader, or an empty one: ${glow.id} ${missing.id}');
 
 		var fake = Runtime.system;
 		Runtime.system = new WaitClock();

@@ -268,35 +268,6 @@ class Wait {
 		return placed(Context.defined("js") ? macro helix.raylib.internal.Await.finished($wait) : wait);
 	}
 
-	/** Returns the expansion of a waiting load the facade writes over its `...Async` macro function, which chooses the file's reader
-		as the program builds: the load asked through it, and its answer waited for. A load that fails is logged, and answers `empty`.
-
-		@param name  The call's name (`LoadImage`), its async's without "Async".
-		@param args  The call's arguments, raylib's.
-		@param empty  The value of a load that failed.
-		@return  The expansion. */
-	public static function over(name:String, args:Array<Expr>, empty:Expr):Expr {
-		var block:Array<Expr> = [];
-		var passed:Array<Expr> = [];
-		for (i in 0...args.length) {
-			var a = args[i];
-			// What is known as the program builds stays where the async's macro reads it (a file's name chooses its reader). Anything
-			// else is evaluated before the wait, outside the function asking.
-			if (a.expr.match(EConst(CInt(_) | CFloat(_))) || ShaderMacro.known(a) != null) {
-				passed.push(a);
-				continue;
-			}
-			var local = '__argument$i';
-			block.push(macro var $local = $a);
-			passed.push(macro $i{local});
-		}
-		var async = name + "Async";
-		passed.push(macro __answer);
-		passed.push(macro helix.raylib.internal.Answers.failing($v{name}, __answer, $empty));
-		block.push(answer('$name: Not supported in a function used as a value.', macro __answer -> helix.raylib.Raylib.$async($a{passed})));
-		return placed(macro $b{block});
-	}
-
 	// A function of the program's that an access names, or null.
 	static function method(access:FieldAccess):Null<{key:String, field:ClassField}> {
 		var found = switch access {

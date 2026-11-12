@@ -3089,13 +3089,13 @@ class RCore {
 
 	// ---- Shaders ----
 
-	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader
+	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader
 		compiled ahead of time by `CompileShaderFile`.
 
 		@param vsFileName  The vertex stage's file.
 		@param fsFileName  The fragment stage's file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShader: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
+	@:unsupported("LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
 	static function LoadShader(vsFileName:String, fsFileName:String):Shader {
 		throw "LoadShader is unimplemented";
 	}
@@ -3106,7 +3106,7 @@ class RCore {
 		@param vsCode  The vertex stage's text.
 		@param fsCode  The fragment stage's text.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
+	@:unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
 	static function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader {
 		throw "LoadShaderFromMemory is unimplemented";
 	}

@@ -30,9 +30,9 @@ import helix.raylib.modules.RWindowAsync;
 
 	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
-	`EndDrawing`, a load (`LoadModel`) and a clipboard call don't compile in a function used as a value, a constructor or a variable's
-	initial value. `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't compile, and each names its `...Async`
-	call. */
+	`EndDrawing`, `WaitTime`, a file call (`LoadFileText`) and a clipboard call don't compile in a function used as a value, a
+	constructor or a variable's initial value. An asset load (`LoadModel`), `TakeScreenshot`, `LoadImageFromScreen` and
+	`LoadImageFromTexture` don't compile, and each names its `...Async` call. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -3058,7 +3058,7 @@ class Raylib {
 	public static inline function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void):Void
 		RCompiledShaders.LoadCompiledShaderAsync(compiledShaderFileName, loaded, failed);
 
-	/** Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShader` for
+	/** Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for
 		loading one from a file.
 
 		@param compiledShaderData  The compiled shader, as `CompileShaderFile` writes it.
@@ -7003,36 +7003,6 @@ class Raylib {
 		return helix.raylib.internal.Wait.section("ExportAutomationEventList: Not supported in a function used as a value.",
 			macro helix.raylib.modules.RCore.ExportAutomationEventList, [list, fileName], false);
 
-	/** Loads a shader compiled ahead of time by `CompileShaderFile`, and returns it, in place of raylib's `LoadShader`. See
-		`LoadCompiledShaderFromData` for making one from compiled data in memory.
-
-		Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
-		`<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
-
-		```hxml
-		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
-		```
-
-		@param compiledShaderFileName  The compiled shader's file.
-		@return  The shader, or an empty one (id 0) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadCompiledShader(compiledShaderFileName:ExprOf<String>):ExprOf<Shader>
-		return helix.raylib.internal.Wait.section("LoadCompiledShader: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RCompiledShaders.LoadCompiledShader, [compiledShaderFileName], false);
-
-	/** Loads an image's raw pixels from a file, and returns the image once they are read. See
-		`LoadImage` for an encoded image file.
-
-		@param fileName  The file.
-		@param width  The width, in pixels.
-		@param height  The height, in pixels.
-		@param format  The pixel format (`PIXELFORMAT_*`).
-		@param headerSize  The bytes before the pixels.
-		@return  The image, or one that isn't valid (`IsImageValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadImageRaw(fileName:ExprOf<String>, width:ExprOf<Int>, height:ExprOf<Int>, format:ExprOf<Int>,
-			headerSize:ExprOf<Int>):ExprOf<Image>
-		return helix.raylib.internal.Wait.section("LoadImageRaw: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RTextures.LoadImageRaw, [fileName, width, height, format, headerSize], false);
-
 	/** Writes an image to a PNG, QOI or raw file, and returns once it is written. See
 		`ExportImageAsCode` for writing a C header.
 
@@ -7062,58 +7032,6 @@ class Raylib {
 		return helix.raylib.internal.Wait.section("ExportFontAsCode: Not supported in a function used as a value.",
 			macro helix.raylib.modules.RText.ExportFontAsCode, [font, fileName], false);
 
-	/** Loads a TrueType or OpenType font file at a size, and returns the font once its glyphs are ready.
-		See `LoadFontFromMemory` for making a font from bytes already loaded.
-
-		@param fileName  The file, as the program names it.
-		@param fontSize  The glyphs' size: the height of a line, in pixels.
-		@param codepoints  The characters, or null for those from the space on.
-		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
-		@return  The font, or the default font (`GetFontDefault`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadFontEx(fileName:ExprOf<String>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
-			codepointCount:ExprOf<Int>):ExprOf<Font>
-		return helix.raylib.internal.Wait.section("LoadFontEx: Not supported in a function used as a value.", macro helix.raylib.modules.RText.LoadFontEx,
-			[fileName, fontSize, codepoints, codepointCount], false);
-
-	/** Makes a font from a TrueType or OpenType file's bytes, and returns the font once its glyphs
-		are ready. See `LoadFontEx` for loading a file by its name.
-
-		@param fileType  The file's extension, ".ttf" or ".otf".
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@param fontSize  The glyphs' size: the height of a line, in pixels.
-		@param codepoints  The characters, or null for those from the space on.
-		@param codepointCount  How many characters; 0 for 95.
-		@return  The font, or the default font (`GetFontDefault`) when it couldn't be made. Why it couldn't is logged. */
-	public static macro function LoadFontFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>,
-			codepoints:ExprOf<Array<Int>>, codepointCount:ExprOf<Int>):ExprOf<Font>
-		return helix.raylib.internal.Wait.section("LoadFontFromMemory: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RText.LoadFontFromMemory, [fileType, fileData, dataSize, fontSize, codepoints, codepointCount], false);
-
-	/** Rasterizes a TrueType or OpenType font's glyphs, and returns them once they are ready. See
-		`LoadFontFromMemory` for a font ready to draw.
-
-		@param fileData  The font file's bytes.
-		@param dataSize  How many of them.
-		@param fontSize  The glyphs' size: the height of a line, in pixels.
-		@param codepoints  The characters, or null for those from the space on.
-		@param codepointCount  How many characters; 0 for 95.
-		@param type  The glyphs' kind (`FONT_DEFAULT`, `FONT_BITMAP` or `FONT_SDF`).
-		@return  The glyphs, each with its own image, or none when the font couldn't be read. Why it couldn't is logged. */
-	public static macro function LoadFontData(fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fontSize:ExprOf<Int>, codepoints:ExprOf<Array<Int>>,
-			codepointCount:ExprOf<Int>, type:ExprOf<Int>):ExprOf<Array<GlyphInfo>>
-		return helix.raylib.internal.Wait.section("LoadFontData: Not supported in a function used as a value.", macro helix.raylib.modules.RText.LoadFontData,
-			[fileData, dataSize, fontSize, codepoints, codepointCount, type], false);
-
-	/** Loads an .mtl file's materials, and returns them once they and their textures are read.
-
-		@param fileName  The file, as the program names it: an .mtl file.
-		@param materialCount  Receives how many, in its first element.
-		@return  The materials, in the file's order, or none when they couldn't be loaded. Why they couldn't is logged. */
-	public static macro function LoadMaterials(fileName:ExprOf<String>, materialCount:ExprOf<Array<Int>>):ExprOf<Array<Material>>
-		return helix.raylib.internal.Wait.section("LoadMaterials: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RModels.LoadMaterials, [fileName, materialCount], false);
-
 	/** Writes a mesh as an OBJ file, and returns once it is written. See `ExportMeshAsCode` for writing
 		a C header.
 
@@ -7134,15 +7052,6 @@ class Raylib {
 		return helix.raylib.internal.Wait.section("ExportMeshAsCode: Not supported in a function used as a value.",
 			macro helix.raylib.modules.RModels.ExportMeshAsCode, [mesh, fileName], false);
 
-	/** Loads a glTF or GLB file's animations, and returns them once they are read.
-
-		@param fileName  The file, as the program names it.
-		@param animCount  Receives how many, in its first element.
-		@return  The animations, as many as the file has, or none when they couldn't be loaded. Why they couldn't is logged. */
-	public static macro function LoadModelAnimations(fileName:ExprOf<String>, animCount:ExprOf<Array<Int>>):ExprOf<Array<ModelAnimation>>
-		return helix.raylib.internal.Wait.section("LoadModelAnimations: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RModels.LoadModelAnimations, [fileName, animCount], false);
-
 	/** Writes a wave to a sound file, and returns once it is written. See `ExportWaveAsCode` for
 		writing a C header.
 
@@ -7162,27 +7071,6 @@ class Raylib {
 	public static macro function ExportWaveAsCode(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.raylib.internal.Wait.section("ExportWaveAsCode: Not supported in a function used as a value.",
 			macro helix.raylib.modules.RAudio.ExportWaveAsCode, [wave, fileName], false);
-
-	/** Loads a sound file, and returns the sound once it is decoded, ready to play at once. See
-		`LoadMusicStream` for playing a file as it is read.
-
-		`InitAudioDevice` must come first.
-
-		@param fileName  The file, as the program names it.
-		@return  The sound, or one that isn't valid (`IsSoundValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadSound(fileName:ExprOf<String>):ExprOf<Sound>
-		return helix.raylib.internal.Wait.section("LoadSound: Not supported in a function used as a value.", macro helix.raylib.modules.RAudio.LoadSound,
-			[fileName], false);
-
-	/** Opens a music file, and returns the music once enough of the file has arrived to start.
-
-		`InitAudioDevice` must come first.
-
-		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
-		@return  The music, or one that isn't valid (`IsMusicValid`) when it couldn't be opened. Why it couldn't is logged. */
-	public static macro function LoadMusicStream(fileName:ExprOf<String>):ExprOf<Music>
-		return helix.raylib.internal.Wait.section("LoadMusicStream: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RAudio.LoadMusicStream, [fileName], false);
 
 	// ---- raylib.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
 
@@ -7256,15 +7144,45 @@ class Raylib {
 	public static macro function emscripten_sleep(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_sleep: Not supported. Use WaitTime(ms / 1000) instead.", macro {});
 
-	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`. */
+	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`. */
 	public static macro function LoadShader(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShader: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
+		return helix.platform.macros.Build.unsupported("LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
 	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory. */
 	public static macro function LoadShaderFromMemory(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
+		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
+
+	/** Doesn't compile. See `LoadTextureAsync` for loading a texture from a file. */
+	public static macro function LoadTexture(args:Array<Expr>):ExprOf<Texture2D>
+		return helix.platform.macros.Build.unsupported("LoadTexture: Not supported. Use LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Texture2D));
+
+	/** Doesn't compile. See `LoadImageAsync` for loading an image from a file. */
+	public static macro function LoadImage(args:Array<Expr>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImage: Not supported. Use LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Image));
+
+	/** Doesn't compile. See `LoadImageRawAsync` for loading raw pixels from a file. */
+	public static macro function LoadImageRaw(args:Array<Expr>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageRaw: Not supported. Use LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Image));
+
+	/** Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. */
+	public static macro function LoadImageFromMemory(args:Array<Expr>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Not supported. Use LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Image));
+
+	/** Doesn't compile. See `LoadImageAnimAsync` for loading an animated image's frames from a file. */
+	public static macro function LoadImageAnim(args:Array<Expr>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageAnim: Not supported. Use LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Image));
+
+	/** Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. */
+	public static macro function LoadImageAnimFromMemory(args:Array<Expr>):ExprOf<Image>
+		return helix.platform.macros.Build.unsupported("LoadImageAnimFromMemory: Not supported. Use LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Image));
 
 	/** Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. */
 	public static macro function LoadImageFromTexture(args:Array<Expr>):ExprOf<Image>
@@ -7276,6 +7194,26 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: Not supported. Use LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
 
+	/** Doesn't compile. See `LoadFontAsync` for loading a font. */
+	public static macro function LoadFont(args:Array<Expr>):ExprOf<Font>
+		return helix.platform.macros.Build.unsupported("LoadFont: Not supported. Use LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Font));
+
+	/** Doesn't compile. See `LoadFontExAsync` for loading a font at a size. */
+	public static macro function LoadFontEx(args:Array<Expr>):ExprOf<Font>
+		return helix.platform.macros.Build.unsupported("LoadFontEx: Not supported. Use LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Font));
+
+	/** Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes. */
+	public static macro function LoadFontFromMemory(args:Array<Expr>):ExprOf<Font>
+		return helix.platform.macros.Build.unsupported("LoadFontFromMemory: Not supported. Use LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Font));
+
+	/** Doesn't compile. See `LoadFontDataAsync` for rasterizing glyphs. */
+	public static macro function LoadFontData(args:Array<Expr>):ExprOf<Array<GlyphInfo>>
+		return helix.platform.macros.Build.unsupported("LoadFontData: Not supported. Use LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void) instead.",
+			macro(null : Array<helix.raylib.GlyphInfo>));
+
 	/** Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text. */
 	public static macro function TextCopy(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src", macro(0 : Int));
@@ -7283,6 +7221,41 @@ class Raylib {
 	/** Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining `text += append` appends the text. */
 	public static macro function TextAppend(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("TextAppend: A String can't be written into. Join the text instead: text += append", macro {});
+
+	/** Doesn't compile. See `LoadModelAsync` for loading a model. */
+	public static macro function LoadModel(args:Array<Expr>):ExprOf<Model>
+		return helix.platform.macros.Build.unsupported("LoadModel: Not supported. Use LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Model));
+
+	/** Doesn't compile. See `LoadMaterialsAsync` for loading a file's materials. */
+	public static macro function LoadMaterials(args:Array<Expr>):ExprOf<Array<Material>>
+		return helix.platform.macros.Build.unsupported("LoadMaterials: Not supported. Use LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void) instead.",
+			macro(null : Array<helix.raylib.Material>));
+
+	/** Doesn't compile. See `LoadModelAnimationsAsync` for loading a file's animations. */
+	public static macro function LoadModelAnimations(args:Array<Expr>):ExprOf<Array<ModelAnimation>>
+		return helix.platform.macros.Build.unsupported("LoadModelAnimations: Not supported. Use LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void) instead.",
+			macro(null : Array<helix.raylib.ModelAnimation>));
+
+	/** Doesn't compile. See `LoadWaveAsync` for loading a wave file. */
+	public static macro function LoadWave(args:Array<Expr>):ExprOf<Wave>
+		return helix.platform.macros.Build.unsupported("LoadWave: Not supported. Use LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Wave));
+
+	/** Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. */
+	public static macro function LoadWaveFromMemory(args:Array<Expr>):ExprOf<Wave>
+		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Not supported. Use LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Wave));
+
+	/** Doesn't compile. See `LoadSoundAsync` for loading a sound file. */
+	public static macro function LoadSound(args:Array<Expr>):ExprOf<Sound>
+		return helix.platform.macros.Build.unsupported("LoadSound: Not supported. Use LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Sound));
+
+	/** Doesn't compile. See `LoadMusicStreamAsync` for opening a music file. */
+	public static macro function LoadMusicStream(args:Array<Expr>):ExprOf<Music>
+		return helix.platform.macros.Build.unsupported("LoadMusicStream: Not supported. Use LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) instead.",
+			macro(null : helix.raylib.Music));
 
 	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run. */
 	public static macro function AttachAudioStreamProcessor(args:Array<Expr>):ExprOf<Void>
@@ -7305,14 +7278,6 @@ class Raylib {
 	// ---- generated by tools/gen_raylib.py: end ----
 	// ---- Image files, read by the readers the program names ----
 
-	/** Loads an image file, and returns the image once it is decoded.
-
-		@param fileName  The file, as the program names it.
-		@return  The image, or one that isn't valid (`IsImageValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadImage(fileName:ExprOf<String>):ExprOf<Image> {
-		return helix.raylib.internal.Wait.over("LoadImage", [fileName], macro new helix.raylib.Image());
-	}
-
 	/** Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as the
 		file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its
 		channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF
@@ -7328,16 +7293,6 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static macro function LoadImageAsync(fileName:ExprOf<String>, loaded:ExprOf<Image->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
 		return helix.raylib.internal.ImageMacro.load(fileName, loaded, failed);
-	}
-
-	/** Decodes an image file's bytes, and returns the image once it is decoded.
-
-		@param fileType  The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@return  The image, or one that isn't valid (`IsImageValid`) when it couldn't be decoded. Why it couldn't is logged. */
-	public static macro function LoadImageFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Image> {
-		return helix.raylib.internal.Wait.over("LoadImageFromMemory", [fileType, fileData, dataSize], macro new helix.raylib.Image());
 	}
 
 	/** Decodes an image file's bytes, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImageFromMemory`, as
@@ -7363,14 +7318,6 @@ class Raylib {
 		return helix.raylib.internal.Wait.frame("EndDrawing: Not supported in a function used as a value.");
 	}
 
-	/** Loads an image file as a texture, and returns the texture once it is ready.
-
-		@param fileName  The file, as the program names it.
-		@return  The texture, or one that isn't valid (`IsTextureValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadTexture(fileName:ExprOf<String>):ExprOf<Texture2D> {
-		return helix.raylib.internal.Wait.over("LoadTexture", [fileName], macro new helix.raylib.Texture2D());
-	}
-
 	/** Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the
 		file is read later. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as
 		the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU
@@ -7381,15 +7328,6 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static macro function LoadTextureAsync(fileName:ExprOf<String>, loaded:ExprOf<Texture2D->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
 		return helix.raylib.internal.ImageMacro.loadTexture(fileName, loaded, failed);
-	}
-
-	/** Loads an animated image's frames, and returns them once they are decoded.
-
-		@param fileName  The file, as the program names it.
-		@param frames  Receives the frame count, in its first element.
-		@return  The frames, one image, or one that isn't valid (`IsImageValid`) when they couldn't be loaded. Why they couldn't is logged. */
-	public static macro function LoadImageAnim(fileName:ExprOf<String>, frames:ExprOf<Array<Int>>):ExprOf<Image> {
-		return helix.raylib.internal.Wait.over("LoadImageAnim", [fileName, frames], macro new helix.raylib.Image());
 	}
 
 	/** Loads an animated image's frames, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnim`. The
@@ -7416,18 +7354,6 @@ class Raylib {
 		return helix.raylib.internal.ImageMacro.loadAnim(fileName, frames, loaded, failed);
 	}
 
-	/** Decodes an animated image file's bytes, and returns the frames once they are decoded.
-
-		@param fileType  The file's extension: ".gif", or one `LoadImageFromMemory` takes.
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@param frames  Receives the frame count, in its first element.
-		@return  The frames, one image, or one that isn't valid (`IsImageValid`) when they couldn't be decoded. Why they couldn't is logged. */
-	public static macro function LoadImageAnimFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>,
-			frames:ExprOf<Array<Int>>):ExprOf<Image> {
-		return helix.raylib.internal.Wait.over("LoadImageAnimFromMemory", [fileType, fileData, dataSize, frames], macro new helix.raylib.Image());
-	}
-
 	/** Decodes an animated image file's bytes, answering when they are decoded: helix-raylib's own, in place of raylib's
 		`LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF";
 		any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when
@@ -7446,14 +7372,6 @@ class Raylib {
 
 	// ---- Fonts, read by the readers the program names ----
 
-	/** Loads a font file, and returns the font once its glyphs are ready.
-
-		@param fileName  The file, as the program names it.
-		@return  The font, or the default font (`GetFontDefault`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadFont(fileName:ExprOf<String>):ExprOf<Font> {
-		return helix.raylib.internal.Wait.over("LoadFont", [fileName], macro helix.raylib.Raylib.GetFontDefault());
-	}
-
 	/** Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType
 		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
 		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the
@@ -7468,15 +7386,6 @@ class Raylib {
 	}
 
 	// ---- Models, read by the readers the program names ----
-
-	/** Loads a model from a glTF, GLB or OBJ file, and returns the model once it and the files it points
-		to are read.
-
-		@param fileName  The file, as the program names it.
-		@return  The model, or one that isn't valid (`IsModelValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadModel(fileName:ExprOf<String>):ExprOf<Model> {
-		return helix.raylib.internal.Wait.over("LoadModel", [fileName], macro new helix.raylib.Model([], [], []));
-	}
 
 	/** Loads a model from a glTF, GLB or OBJ file, with the files it points to (a glTF file's images and buffers, an OBJ file's material
 		library and its textures), answering when it is ready: helix-raylib's own, in place of raylib's `LoadModel`. A file loaded again,
@@ -7507,14 +7416,6 @@ class Raylib {
 
 	// ---- Sound files, read by the readers the program names ----
 
-	/** Loads a sound file's samples, and returns the wave once they are read.
-
-		@param fileName  The file, as the program names it.
-		@return  The wave, or one that isn't valid (`IsWaveValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	public static macro function LoadWave(fileName:ExprOf<String>):ExprOf<Wave> {
-		return helix.raylib.internal.Wait.over("LoadWave", [fileName], macro new helix.raylib.Wave());
-	}
-
 	/** Loads a sound file's samples, answering when they are read: helix-raylib's own, in place of raylib's `LoadWave`. The formats are
 		`LoadWaveFromMemoryAsync`'s, by the file's extension.
 
@@ -7527,16 +7428,6 @@ class Raylib {
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	public static macro function LoadWaveAsync(fileName:ExprOf<String>, loaded:ExprOf<Wave->Void>, ?failed:ExprOf<String->Void>):ExprOf<Void> {
 		return helix.raylib.internal.WaveMacro.load(fileName, loaded, failed);
-	}
-
-	/** Reads a sound file's samples from its bytes, and returns the wave once they are read.
-
-		@param fileType  The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
-		@param fileData  The file's bytes.
-		@param dataSize  How many of them.
-		@return  The wave, or one that isn't valid (`IsWaveValid`) when it couldn't be read. Why it couldn't is logged. */
-	public static macro function LoadWaveFromMemory(fileType:ExprOf<String>, fileData:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Wave> {
-		return helix.raylib.internal.Wait.over("LoadWaveFromMemory", [fileType, fileData, dataSize], macro new helix.raylib.Wave());
 	}
 
 	/** Reads a sound file's samples from its bytes, answering when they are read: helix-raylib's own, in place of raylib's
@@ -7568,7 +7459,7 @@ class Raylib {
 
 	// ---- Shaders, precompiled ----
 
-	/** A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShader`
+	/** A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShaderAsync`
 		to load. Typically called from the build's hxml, one line a shader:
 
 		```hxml
@@ -7583,7 +7474,7 @@ class Raylib {
 		// Its result wanted as a value (passed to LoadCompiledShaderFromData, say) is refused here, at the program's line.
 		var expected = haxe.macro.Context.getExpectedType();
 		if (expected != null && haxe.macro.TypeTools.toString(expected) != "Void")
-			haxe.macro.Context.error("CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShader(compiledShaderFileName:String):Shader",
+			haxe.macro.Context.error("CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)",
 				haxe.macro.Context.currentPos());
 		helix.raylib.internal.ShaderMacro.compileFile(vsFileName, fsFileName, compiledShaderFileName);
 		return macro {};

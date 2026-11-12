@@ -680,20 +680,25 @@ class RModels {
 		rlSetTexture(0);
 	}
 
+	/** Doesn't compile. See `LoadModelAsync` for loading a model.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadModel: Not supported. Use LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void) instead.")
+	static function LoadModel(fileName:String):Model {
+		throw "LoadModel is unimplemented";
+	}
+
 	// ---- Models and meshes ----
 
-	/** Loads an .mtl file's materials, and returns them once they and their textures are read.
+	/** Doesn't compile. See `LoadMaterialsAsync` for loading a file's materials.
 
-		@param fileName  The file, as the program names it: an .mtl file.
-		@param materialCount  Receives how many, in its first element.
-		@return  The materials, in the file's order, or none when they couldn't be loaded. Why they couldn't is logged. */
-	@:waits
-	static function LoadMaterials(fileName:String, materialCount:Array<Int>, answer:Array<Material>->Void):Void {
-		function counted(materials:Array<Material>):Void {
-			materialCount[0] = materials.length;
-			answer(materials);
-		}
-		RModelsAsync.LoadMaterialsAsync(fileName, counted, Answers.failing("LoadMaterials", counted, []));
+		@param fileName  The file.
+		@param materialCount  Receives how many.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadMaterials: Not supported. Use LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void) instead.")
+	static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material> {
+		throw "LoadMaterials is unimplemented";
 	}
 
 	// The model of a glTF, GLB or OBJ file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
@@ -1585,18 +1590,14 @@ class RModels {
 	// As raylib 6.2 has them (raylib.h's 5.5 names and signatures, its frame a float as 6.2's): its glTF animations read, its frames mixed,
 	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader is given them as it draws.
 
-	/** Loads a glTF or GLB file's animations, and returns them once they are read.
+	/** Doesn't compile. See `LoadModelAnimationsAsync` for loading a file's animations.
 
-		@param fileName  The file, as the program names it.
-		@param animCount  Receives how many, in its first element.
-		@return  The animations, as many as the file has, or none when they couldn't be loaded. Why they couldn't is logged. */
-	@:waits
-	static function LoadModelAnimations(fileName:String, animCount:Array<Int>, answer:Array<ModelAnimation>->Void):Void {
-		function counted(animations:Array<ModelAnimation>):Void {
-			animCount[0] = animations.length;
-			answer(animations);
-		}
-		RModelsAsync.LoadModelAnimationsAsync(fileName, counted, Answers.failing("LoadModelAnimations", counted, []));
+		@param fileName  The file.
+		@param animCount  Would be set to how many.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadModelAnimations: Not supported. Use LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void) instead.")
+	static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation> {
+		throw "LoadModelAnimations is unimplemented";
 	}
 
 	/** Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See

@@ -149,14 +149,12 @@ class RGui {
 		return at >= 0 && at < guiStyle.length ? guiStyle[at] : 0;
 	}
 
-	/** Loads a style file (.rgs) over the current style, and returns once it is loaded.
+	/** Doesn't compile. See `GuiLoadStyleAsync` for loading a style file.
 
-		A file that can't be read leaves the default style. Why it couldn't is logged.
-
-		@param fileName  The style file. */
-	@:waits
-	static function GuiLoadStyle(fileName:String, answer:Void->Void):Void {
-		RGuiAsync.GuiLoadStyleAsync(fileName, answer, Answers.ended("GuiLoadStyle", answer));
+		@param fileName  The style file (.rgs). */
+	@:unsupported("GuiLoadStyle: Not supported. Use GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.")
+	static function GuiLoadStyle(fileName:String):Void {
+		throw "GuiLoadStyle is unimplemented";
 	}
 
 	/** Loads raygui's default style, its light theme, over every control's colors, borders, text and sizes.
@@ -299,15 +297,14 @@ class RGui {
 		return icons();
 	}
 
-	/** Loads an icon file (.rgi) over raygui's icons, and returns once it is loaded.
+	/** Doesn't compile. See `GuiLoadIconsAsync` for loading an icon file.
 
-		@param fileName  The icon file.
+		@param fileName  The icon file (.rgi).
 		@param loadIconsName  Whether the icons' names are read.
-		@return  The icons' names, in order, or null when they weren't read, the file isn't an icon file or it couldn't be read. Why it
-			couldn't is logged. */
-	@:waits
-	static function GuiLoadIcons(fileName:String, loadIconsName:Bool, answer:Null<Array<String>>->Void):Void {
-		RGuiAsync.GuiLoadIconsAsync(fileName, loadIconsName, answer, Answers.failing("GuiLoadIcons", answer, null));
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("GuiLoadIcons: Not supported. Use GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void) instead.")
+	static function GuiLoadIcons(fileName:String, loadIconsName:Bool):Array<String> {
+		throw "GuiLoadIcons is unimplemented";
 	}
 
 	/** Draws an icon, each of its pixels a square.

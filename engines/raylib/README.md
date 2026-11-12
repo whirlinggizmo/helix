@@ -4,7 +4,7 @@
 
 | Type | What |
 |---|---|
-| `helix.raylib.Raylib` | raylib's functions, constants and colors |
+| `helix.raylib.Raylib` | raylib's functions, constants and colors, and the `...Async` calls the asset loads name |
 | `helix.raylib.Raymath` | raymath |
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
@@ -19,14 +19,15 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 ## Differences from raylib
 
-- `EndDrawing`, a load (`LoadTexture`, `LoadFileText`) and a clipboard call don't compile in a function used as a value, in a
-  constructor or in a variable's initial value (see "Calls that wait").
-- `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't compile. Each names its `...Async` call.
+- `EndDrawing`, `WaitTime`, a file call (`LoadFileText`, `SaveFileText`) and a clipboard call don't compile in a function used as
+  a value, in a constructor or in a variable's initial value (see "Calls that wait").
+- An asset load (`LoadTexture`, `LoadModel`, `LoadSound`), `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't
+  compile. Each names its `...Async` call.
 - A window or cursor request (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) returns at once, and the window changes at a
   later frame. `IsWindowFullscreen` and the other window reads report the window as it is. A refusal is logged.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
   `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
-- Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShader`) or its data
+- Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
   (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
 - A lost GPU context is recovered automatically. Render textures are cleared.
@@ -36,8 +37,8 @@ See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/i
 
 ## Calls that wait
 
-In a page, each function of the program that calls `EndDrawing`, a load or a clipboard call is built as an async function, and each
-call of it is awaited. So is a function calling one that does, and a function declared in a function and only ever called by its
+In a page, each function of the program that calls `EndDrawing`, `WaitTime`, a file call or a clipboard call is built as an async
+function, and each call of it is awaited. So is a function calling one that does, and a function declared in a function and only ever called by its
 name. The program writes nothing for this. Natively the same calls block.
 
 These can't wait, and a call there doesn't compile, on every target:

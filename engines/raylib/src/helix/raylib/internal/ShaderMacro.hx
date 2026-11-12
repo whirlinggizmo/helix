@@ -64,7 +64,7 @@ class ShaderMacro {
 		return helix.services.shaders.Shader.makeExpr(s.vertex, s.fragment, {clipScale: true, points: true}, pos);
 	}
 
-	/** Compiles a raylib shader's two stages into a file `LoadCompiledShader` loads (`CompileShaderFile`): the compiled program for
+	/** Compiles a raylib shader's two stages into a file `LoadCompiledShaderAsync` loads (`CompileShaderFile`): the compiled program for
 		every target, and each uniform's initializer. In a build with no target, which has nothing else to compile, the run ends once every
 		`--macro` has run.
 

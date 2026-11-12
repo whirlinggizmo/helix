@@ -30,6 +30,15 @@ class RTextures {
 		helix.raylib.internal.Sprites.register();
 	}
 
+	/** Doesn't compile. See `LoadTextureAsync` for loading a texture from a file.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadTexture: Not supported. Use LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) instead.")
+	static function LoadTexture(fileName:String):Texture2D {
+		throw "LoadTexture is unimplemented";
+	}
+
 	#if !macro
 	// ---- Textures ----
 	// The texture of an image file `LoadTextureAsync` brought in. A file loaded again shares its first load's texture, and the image goes
@@ -557,20 +566,61 @@ class RTextures {
 		Runtime.log(LOG_INFO, 'TEXTURE: [ID ${texture.id}] Mipmaps generated automatically, total: ${texture.mipmaps}');
 	}
 
+	/** Doesn't compile. See `LoadImageAsync` for loading an image from a file.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImage: Not supported. Use LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) instead.")
+	static function LoadImage(fileName:String):Image {
+		throw "LoadImage is unimplemented";
+	}
+
 	// ---- Images: loading and exporting ----
 
-	/** Loads an image's raw pixels from a file, and returns the image once they are read. See
-		`LoadImage` for an encoded image file.
+	/** Doesn't compile. See `LoadImageRawAsync` for loading raw pixels from a file.
 
 		@param fileName  The file.
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
 		@param format  The pixel format (`PIXELFORMAT_*`).
 		@param headerSize  The bytes before the pixels.
-		@return  The image, or one that isn't valid (`IsImageValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	@:waits
-	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, answer:Image->Void):Void {
-		RTexturesAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, answer, Answers.failing("LoadImageRaw", answer, new Image()));
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageRaw: Not supported. Use LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void) instead.")
+	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image {
+		throw "LoadImageRaw is unimplemented";
+	}
+
+	/** Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
+
+		@param fileType  The file's extension, ".png".
+		@param fileData  The file's bytes.
+		@param dataSize  How many.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageFromMemory: Not supported. Use LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) instead.")
+	static function LoadImageFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Image {
+		throw "LoadImageFromMemory is unimplemented";
+	}
+
+	/** Doesn't compile. See `LoadImageAnimAsync` for loading an animated image's frames from a file.
+
+		@param fileName  The file.
+		@param frames  Would be set to how many frames.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageAnim: Not supported. Use LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.")
+	static function LoadImageAnim(fileName:String, frames:Array<Int>):Image {
+		throw "LoadImageAnim is unimplemented";
+	}
+
+	/** Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
+
+		@param fileType  The file's extension, ".gif".
+		@param fileData  The file's bytes.
+		@param dataSize  How many.
+		@param frames  Would be set to how many frames.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadImageAnimFromMemory: Not supported. Use LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.")
+	static function LoadImageAnimFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>):Image {
+		throw "LoadImageAnimFromMemory is unimplemented";
 	}
 
 	/** Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image.

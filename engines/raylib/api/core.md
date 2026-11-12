@@ -1328,7 +1328,6 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 ```haxe
 static function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader -> Void, ?failed:String -> Void):Void
 static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Shader
-static macro function LoadCompiledShader(compiledShaderFileName:String):Shader
 ```
 
 - `LoadCompiledShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
@@ -1341,15 +1340,6 @@ static macro function LoadCompiledShader(compiledShaderFileName:String):Shader
   ```hxml
   --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
   ```
-- `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShader` for loading one from a file.
+- `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for loading one from a file.
   - `compiledShaderData`: The compiled shader, as `CompileShaderFile` writes it.
   - returns: The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning.
-- `LoadCompiledShader`: Loads a shader compiled ahead of time by `CompileShaderFile`, and returns it, in place of raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
-  - `compiledShaderFileName`: The compiled shader's file.
-  - returns: The shader, or an empty one (id 0) when it couldn't be loaded. Why it couldn't is logged.
-
-  Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as `<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
-
-  ```hxml
-  --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
-  ```

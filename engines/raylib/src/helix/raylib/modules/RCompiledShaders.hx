@@ -14,23 +14,6 @@ import helix.raylib.internal.Answers.*;
 @:allow(helix.raylib)
 class RCompiledShaders {
 	#if !macro
-	/** Loads a shader compiled ahead of time by `CompileShaderFile`, and returns it, in place of raylib's `LoadShader`. See
-		`LoadCompiledShaderFromData` for making one from compiled data in memory.
-
-		Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
-		`<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
-
-		```hxml
-		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
-		```
-
-		@param compiledShaderFileName  The compiled shader's file.
-		@return  The shader, or an empty one (id 0) when it couldn't be loaded. Why it couldn't is logged. */
-	@:waits
-	static function LoadCompiledShader(compiledShaderFileName:String, answer:Shader->Void):Void {
-		LoadCompiledShaderAsync(compiledShaderFileName, answer, failing("LoadCompiledShader", answer, new Shader(0, [for (_ in 0...32) -1], null)));
-	}
-
 	/** Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See
 		`LoadCompiledShaderFromData` for making one from compiled data in memory.
 
@@ -60,7 +43,7 @@ class RCompiledShaders {
 		});
 	}
 
-	/** Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShader` for
+	/** Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for
 		loading one from a file.
 
 		@param compiledShaderData  The compiled shader, as `CompileShaderFile` writes it.

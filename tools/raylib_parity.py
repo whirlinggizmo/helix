@@ -146,7 +146,7 @@ def build_reference(manifest, reference, source, out):
 
 def compiled_shaders(manifest):
     """The build's lines compiling each of the manifest's shaders (its shaders: [vertex, fragment, compiled], each a path in the suite's
-    output or null for raylib's default stage) into the file LoadCompiledShader loads, as a program's build does."""
+    output or null for raylib's default stage) into the file LoadCompiledShaderAsync loads, as a program's build does."""
     def quoted(path):return 'null' if path is None else json.dumps(path)
     return [a for vs, fs, out in manifest.get('shaders', [])
             for a in ('--macro', f'helix.raylib.Raylib.CompileShaderFile({quoted(vs)}, {quoted(fs)}, {quoted(out)})')]

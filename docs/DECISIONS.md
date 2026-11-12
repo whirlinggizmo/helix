@@ -927,13 +927,13 @@ Why things are the way they are, numbered, in order.
     the trial's models, which hides the bug from the trial and leaves it for every user's models; leaving raylib's 0 until raylib
     changes, as no raylib release does yet.
 
-72. **A page waits where the program calls, and the program writes nothing for it.** It replaces 21's refusals of raylib's
-    synchronous reads and 16's loop macro. `EndDrawing`, each load (`LoadTexture`, `LoadModel`, `LoadFileText`, `SaveFileText`), the
-    clipboard's calls and `LoadCompiledShader` are macros. In a page each expands to a JavaScript `await`. Natively each blocks. A
+72. **A page waits where the program calls, and the program writes nothing for it.** It replaces 16's loop macro, and 21's
+    refusals of the file calls. `EndDrawing`, `WaitTime`, the file calls (`LoadFileText`, `SaveFileText`, `FileExists`) and the
+    clipboard's calls are macros. In a page each expands to a JavaScript `await`. Natively each blocks. A
     build macro (`helix.raylib.internal.Wait`, added by the library's `extraParams.hxml`) builds each of the program's functions that
     reaches one as an async function, and awaits each call of it. A function declared in a function waits too, when it is only ever
-    called by its name. The program writes no mark and no `await`. The loop is in any function, a load returns its value, and
-    `WindowShouldClose` is raylib's.
+    called by its name. The program writes no mark and no `await`. The loop is in any function, a file call returns its value,
+    and `WindowShouldClose` is raylib's.
 
     What can't wait is refused on every target, so a program that builds natively builds for a page. That is a waiting call in a
     function used as a value, in a constructor or a variable's initial value, in a function an interface declares, or in an override
@@ -942,20 +942,24 @@ Why things are the way they are, numbered, in order.
     The window and cursor requests (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) ask and return at once, as raylib's page
     does. The window's reads report the window as it is. A wait for the cursor's lock would stop the frames until the next click.
 
-    `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` stay refused, each naming its `...Async` call. Each reads a
-    frame not drawn yet, which a call waiting for it would keep from being drawn. The other `...Async` calls stay in `Raylib`, and no
-    refusal names them.
+    The asset loads (`LoadTexture`, `LoadModel`, `LoadSound`, `LoadFont`, `GuiLoadStyle`) stay refused, each naming its `...Async`
+    call, as 21 has them. A program's loads one after another wait for each file in turn, where its `...Async` calls fetch them
+    together: helix-raylib-blind.009 with its loads rewritten as waiting calls reached its title in 796 ms against 416 ms on a local
+    server, and in 3720 ms against 801 ms at 40 ms a request (headless Chromium, six runs each). Fetching the program's files ahead
+    was rejected, as it fetches files the program may never load. `TakeScreenshot`, `LoadImageFromScreen` and
+    `LoadImageFromTexture` stay refused too, each naming its `...Async` call. Each reads a frame not drawn yet, which a call waiting
+    for it would keep from being drawn.
 
     The async is the library's own, written where the program's expressions are. A page's source map stays on the program's lines (the
     sample's 126 segments, all on `Main`'s). A function calling one whose body isn't typed yet has both bodies in a page, the one run
     chosen as the page starts.
 
-    Why: every 2026-11-11 helix-raylib entrant first met "Synchronous loading is not supported" and rebuilt its loads around callbacks
-    and a count of those pending (helix-raylib-blind.009's notes). No raylib program does that.
+    Why: 16's loop macro took the loop in `main` alone, where a raylib program also loops in a loading screen or a menu, and a file
+    call needed a callback.
 
     Measured: a page's frame in headless Chromium, 16.67 ms mean before and after (on the spike). A build of a Wardens entrant takes
     30 to 80 ms more, of 2.4 to 2.9 s, as each of the program's function bodies is typed twice. The same entrant with its loads
-    rewritten as waiting calls builds no slower.
+    rewritten as waiting calls built no slower.
 
-    Rejected: marks the program writes (`@await`, the hxasync haxelib); the loop rewrite alone, which left every load refused;
+    Rejected: marks the program writes (`@await`, the hxasync haxelib), on every function on the way to `EndDrawing`, natively too;
     Emscripten's Asyncify, which has no counterpart for Haxe's JavaScript.

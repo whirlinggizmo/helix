@@ -896,6 +896,12 @@ A value a control changes is passed in a one-element array, as raygui takes a po
 
 Its members are on their own page: [raygui.md](raygui.md).
 
+### Not supported in helix-raylib
+
+Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
+
+`GuiLoadStyle`, `GuiLoadIcons`.
+
 ## Raylib
 
 *class* in [`engines/raylib/src/helix/raylib/Raylib.hx`](../src/helix/raylib/Raylib.hx), `import helix.raylib.Raylib;`
@@ -904,7 +910,7 @@ Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them.
 
 A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
-`EndDrawing`, a load (`LoadModel`) and a clipboard call don't compile in a function used as a value, a constructor or a variable's initial value. `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't compile, and each names its `...Async` call.
+`EndDrawing`, `WaitTime`, a file call (`LoadFileText`) and a clipboard call don't compile in a function used as a value, a constructor or a variable's initial value. An asset load (`LoadModel`), `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't compile, and each names its `...Async` call.
 
 Its members are on their own pages:
 
@@ -920,7 +926,7 @@ Its members are on their own pages:
 
 Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
 
-`GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `MemAlloc`, `MemRealloc`, `MemFree`, `TakeScreenshot`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadShader`, `LoadShaderFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `TextCopy`, `TextAppend`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `MemAlloc`, `MemRealloc`, `MemFree`, `TakeScreenshot`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadShader`, `LoadShaderFromMemory`, `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageFromMemory`, `LoadImageAnim`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFont`, `LoadFontEx`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadModel`, `LoadMaterials`, `LoadModelAnimations`, `LoadWave`, `LoadWaveFromMemory`, `LoadSound`, `LoadMusicStream`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raylib6
 
@@ -1052,7 +1058,7 @@ Its members are on their own page: [rlights.md](rlights.md).
 
 Represents raylib's `Shader`: a program and the locations of what it declares.
 
-Made by `LoadCompiledShader` or `LoadCompiledShaderFromData`, or by helix-raylib's own, such as `LoadPbrShader` (`helix.raylib.extras.Lighting`).
+Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData`, or by helix-raylib's own, such as `LoadPbrShader` (`helix.raylib.extras.Lighting`).
 
 ```haxe
 var id(default, null):Int

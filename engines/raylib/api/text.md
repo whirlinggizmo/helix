@@ -48,9 +48,7 @@ static function GetCodepointNext(text:String, codepointSize:Array<Int>):Int
 static function GetCodepointPrevious(text:String, codepointSize:Array<Int>):Int
 static function CodepointToUTF8(codepoint:Int, utf8Size:Array<Int>):String
 static macro function ExportFontAsCode(font:Font, fileName:String):Bool
-static macro function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
-static macro function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
-static macro function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):Array<GlyphInfo>
+static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?failed:String -> Void):Void
 ```
 
 - `DrawText`: Draws text in raylib's default font. See `DrawTextEx` for drawing text in another font.
@@ -345,28 +343,10 @@ static macro function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSiz
   - `font`: The font.
   - `fileName`: The file.
   - returns: Whether it was written. Why it wasn't is logged.
-- `LoadFontEx`: Loads a TrueType or OpenType font file at a size, and returns the font once its glyphs are ready. See `LoadFontFromMemory` for making a font from bytes already loaded.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program builds as `LoadImageAsync`'s is.
   - `fileName`: The file, as the program names it.
-  - `fontSize`: The glyphs' size: the height of a line, in pixels.
-  - `codepoints`: The characters, or null for those from the space on.
-  - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
-  - returns: The font, or the default font (`GetFontDefault`) when it couldn't be loaded. Why it couldn't is logged.
-- `LoadFontFromMemory`: Makes a font from a TrueType or OpenType file's bytes, and returns the font once its glyphs are ready. See `LoadFontEx` for loading a file by its name.
-  - `fileType`: The file's extension, ".ttf" or ".otf".
-  - `fileData`: The file's bytes.
-  - `dataSize`: How many of them.
-  - `fontSize`: The glyphs' size: the height of a line, in pixels.
-  - `codepoints`: The characters, or null for those from the space on.
-  - `codepointCount`: How many characters; 0 for 95.
-  - returns: The font, or the default font (`GetFontDefault`) when it couldn't be made. Why it couldn't is logged.
-- `LoadFontData`: Rasterizes a TrueType or OpenType font's glyphs, and returns them once they are ready. See `LoadFontFromMemory` for a font ready to draw.
-  - `fileData`: The font file's bytes.
-  - `dataSize`: How many of them.
-  - `fontSize`: The glyphs' size: the height of a line, in pixels.
-  - `codepoints`: The characters, or null for those from the space on.
-  - `codepointCount`: How many characters; 0 for 95.
-  - `type`: The glyphs' kind (`FONT_DEFAULT`, `FONT_BITMAP` or `FONT_SDF`).
-  - returns: The glyphs, each with its own image, or none when the font couldn't be read. Why it couldn't is logged.
+  - `loaded`: Receives the font.
+  - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 
 
 ```haxe

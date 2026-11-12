@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Shader`: a program and the locations of what it declares.
 
-	Made by `LoadCompiledShader` or `LoadCompiledShaderFromData`, or by helix-raylib's own, such as
+	Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData`, or by helix-raylib's own, such as
 	`LoadPbrShader` (`helix.raylib.extras.Lighting`). */
 class Shader {
 	/** Gets the program's handle, 0 for none. */
@@ -25,7 +25,7 @@ class Shader {
 	@:allow(helix.raylib)
 	var spent = false;
 
-	/** Creates a shader's record. See `LoadCompiledShader` for making a shader.
+	/** Creates a shader's record. See `LoadCompiledShaderAsync` for making a shader.
 
 		@param id  The handle.
 		@param locs  The locations, by `SHADER_LOC_*`. */

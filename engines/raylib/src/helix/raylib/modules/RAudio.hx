@@ -110,6 +110,26 @@ class RAudio {
 		return Runtime.audioDecoder;
 	}
 
+	/** Doesn't compile. See `LoadWaveAsync` for loading a wave file.
+
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadWave: Not supported. Use LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) instead.")
+	static function LoadWave(fileName:String):Wave {
+		throw "LoadWave is unimplemented";
+	}
+
+	/** Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
+
+		@param fileType  The file's extension.
+		@param fileData  The file's bytes.
+		@param dataSize  How many of them.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadWaveFromMemory: Not supported. Use LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) instead.")
+	static function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave {
+		throw "LoadWaveFromMemory is unimplemented";
+	}
+
 	// ---- Waves ----
 
 	/** Returns whether a wave holds samples.
@@ -329,16 +349,13 @@ class RAudio {
 
 	// ---- Sounds ----
 
-	/** Loads a sound file, and returns the sound once it is decoded, ready to play at once. See
-		`LoadMusicStream` for playing a file as it is read.
+	/** Doesn't compile. See `LoadSoundAsync` for loading a sound file.
 
-		`InitAudioDevice` must come first.
-
-		@param fileName  The file, as the program names it.
-		@return  The sound, or one that isn't valid (`IsSoundValid`) when it couldn't be loaded. Why it couldn't is logged. */
-	@:waits
-	static function LoadSound(fileName:String, answer:Sound->Void):Void {
-		RAudioAsync.LoadSoundAsync(fileName, answer, Answers.failing("LoadSound", answer, new Sound()));
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadSound: Not supported. Use LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) instead.")
+	static function LoadSound(fileName:String):Sound {
+		throw "LoadSound is unimplemented";
 	}
 
 	/** Returns a sound made from a wave, ready to play at once.
@@ -675,15 +692,13 @@ class RAudio {
 
 	// ---- Music ----
 
-	/** Opens a music file, and returns the music once enough of the file has arrived to start.
+	/** Doesn't compile. See `LoadMusicStreamAsync` for opening a music file.
 
-		`InitAudioDevice` must come first.
-
-		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
-		@return  The music, or one that isn't valid (`IsMusicValid`) when it couldn't be opened. Why it couldn't is logged. */
-	@:waits
-	static function LoadMusicStream(fileName:String, answer:Music->Void):Void {
-		RAudioAsync.LoadMusicStreamAsync(fileName, answer, Answers.failing("LoadMusicStream", answer, new Music()));
+		@param fileName  The file.
+		@return  Never returns: a call doesn't compile. */
+	@:unsupported("LoadMusicStream: Not supported. Use LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) instead.")
+	static function LoadMusicStream(fileName:String):Music {
+		throw "LoadMusicStream is unimplemented";
 	}
 
 	/** Returns music opened from a file's bytes, to be played as it is read.
