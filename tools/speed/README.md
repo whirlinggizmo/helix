@@ -32,10 +32,10 @@ the tool says so, and won't write them). `--headed` runs the native programs on 
 
 ## When it runs
 
-When asked, never in CI. With no contender named a run takes helix-raylib, raylib C as the control, and each other contender whose rows
-are missing or whose pinned version changed; `--all` takes every contender and the pages over both backends. `--write` first checks the
-machine is quiet (its load, and a pinned loop's time, which a CPU held back by its firmware slows), and after the run that the control
-stayed within 20% of its last rows.
+When asked, never in CI. With no contender named a run takes helix-raylib, raylib C as the control (`--no-control` leaves it out, and
+then nothing is written), and each other contender whose rows are missing or whose pinned version changed; `--all` takes every
+contender and the pages over both backends. `--write` first checks the machine is quiet (its load, and a pinned loop's time, which a
+CPU held back by its firmware slows), and after the run that the control stayed within 20% of its last rows.
 
 ## Sizes
 

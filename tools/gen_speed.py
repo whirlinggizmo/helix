@@ -5,12 +5,12 @@ models_animation many at once (the robots: a grid of robot.glb, each posed at it
 docs/benchmarks.md's speed tables and charts (docs/benchmarks/*.svg). It runs when asked, never in CI: a run takes minutes to hours.
 
     python3 tools/gen_speed.py [--native | --page] [--headless | --headed] [--backend vulkan|gl] [--all] [--runs 3] [--browser PATH]
-                               [--write] [--unchecked] [bunnymark] [robots] [CONTENDER ...]
+                               [--write] [--unchecked] [--no-control] [bunnymark] [robots] [CONTENDER ...]
 
 The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the
-bunnymark alone) and helix-legacy. With none named, a run takes helix-raylib, raylib C as the control, and each other contender whose
-rows are missing or were measured at another version than dependencies.json's speed entry pins; --all takes every contender, and the
-pages over both backends. Each is built into build/speed/<contender>/ under build/.lock, with the assets taken from raylib's own release
+bunnymark alone) and helix-legacy. With none named, a run takes helix-raylib, raylib C as the control (not with --no-control), and each
+other contender whose rows are missing or were measured at another version than dependencies.json's speed entry pins; --all takes every
+contender, and the pages over both backends. Each is built into build/speed/<contender>/ under build/.lock, with the assets taken from raylib's own release
 (the bunny's texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page
 needs Emscripten (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or
 ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64), three needs npm (and installs three.js, esbuild and, for its desktop program,
@@ -30,7 +30,7 @@ ramp, the robots' 50, 200 and 400. Every run is a JSON line in build/speed/runs/
 leaving the others, and remakes docs/benchmarks.md's speed tables between their markers and the charts: a row measured on another date
 than the table's newest says so. Before it times anything, the machine must be quiet: a load average of QUIET_LOAD at most, and a pinned
 loop within QUIET_LOOP_SECONDS. After, the control must be within CONTROL_DRIFT of its last rows; native times are written from --headed
-runs alone. --unchecked skips the two checks. A page's size is every file it fetched but the assets (gzip and brotli too, where the
+runs alone, and with the control in the run. --unchecked skips the checks. A page's size is every file it fetched but the assets (gzip and brotli too, where the
 brotli tool is there); three's is also its page bundled and minified with esbuild, the size a three.js game ships. A native program's
 size is its binary stripped, and Electron's its files as installed with the page bundled.
 
@@ -875,11 +875,11 @@ def write_charts(store):
 # ---- Main ----
 
 
-def stale(programs, wheres, store):
-    """The contenders a run takes when none is named: helix-raylib, raylib C as the control, and each other one with a row missing here or
-    measured at another version than its pin."""
+def stale(programs, wheres, store, control):
+    """The contenders a run takes when none is named: helix-raylib, raylib C as the control unless not control, and each other one with a
+    row missing here or measured at another version than its pin."""
     versions = versions_of(CONTENDERS)
-    found = ['helix-raylib', 'raylib-c']
+    found = ['helix-raylib'] + (['raylib-c'] if control else [])
     for contender in CONTENDERS[2:]:
         rows = [r for r in store['rows'] if r['contender'] == contender and r['program'] in programs]
         for where in set(wheres) & set(WHERES[contender]):
@@ -928,6 +928,7 @@ def main():
     parser.add_argument('--runs', type=int, default=3, help='runs of each program and count (default 3)')
     parser.add_argument('--browser', default='', help="a Chromium to run the pages in (default Playwright's own)")
     parser.add_argument('--write', action='store_true', help="update docs/speed.json, docs/benchmarks.md's tables and its charts with the run")
+    parser.add_argument('--no-control', action='store_true', help='leave raylib C, the control, out of a run naming no contender')
     parser.add_argument('--unchecked', action='store_true', help="write without the quiet machine's check and the control's")
     parser.add_argument('names', nargs='*', metavar='NAME', help='programs (bunnymark, robots) and contenders (helix-raylib, raylib-c, godot, three, lime, helix-legacy)')
     a = parser.parse_args()
@@ -943,13 +944,16 @@ def main():
     backends = ['vulkan', 'gl'] if a.all else [a.backend]
     wheres = ([f'page-{b}' for b in backends] if page else []) + (['native-gl', 'native-sdlgpu', 'native-vulkan', 'native-electron'] if native else [])
     named = [n for n in CONTENDERS if n in a.names]
-    contenders = named or (CONTENDERS if a.all else stale(programs, wheres, load_store()))
+    contenders = named or (CONTENDERS if a.all else stale(programs, wheres, load_store(), not a.no_control))
     say('contenders: ' + ', '.join(contenders))
     if a.headed and not os.environ.get('DISPLAY'):
         print('gen_speed: --headed needs $DISPLAY')
         return 1
     if a.write and native and not a.headed:
         print('gen_speed: native times on the private display are software GL\'s, not written: --headed runs them on this one')
+        return 2
+    if a.write and 'raylib-c' not in contenders and not a.unchecked:
+        print('gen_speed: not written without the control, raylib C: name it, or --unchecked writes without it')
         return 2
     if a.write and not a.unchecked:
         why = unquiet()
