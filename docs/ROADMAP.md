@@ -34,17 +34,12 @@ speed where docs/speed.md records them.
   beside its helix-legacy build. Whether Gyre keeps helix-legacy's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
   transitions, the autopilot) into a three.js-style engine on the same scene is the jam's question (DECISIONS 40). Whatever of the
   scene proves engine-neutral moves down into a library of its own once a second engine wants it, as `Images` did.
-- **helix-raylib (DECISIONS 16, 19, 20, 21, 38):** raylib's API over the services, merged to `main`. Next:
-  reloading and placeholders under raylib's own names (the assets,
-  resources and objects below). Then a trial of how agents take to
-  the `...Async` loads, now beside raylib's calls in `Raylib` (one task a blended animation: whether agents reach for raylib 6.0's `UpdateModelAnimationEx` in `Raylib6`, DECISIONS 24 and 69), and only after it, faking sync loads in a page: compared as a spike, a worker-hosted page whose loads block
-  (Atomics.wait, which a worker may; cross-origin isolation, OffscreenCanvas, input and audio relayed; raylib's loop run as written)
-  against a whole-program rewrite into callbacks. A `Future` of our own over the callbacks, cross-target, may serve the managed layer,
-  as Haxe has none (`js.lib.Promise` is the browser's alone). Every raylib 5.5 function is in; what refuses to compile
-  does so on purpose (blocking loads, rlgl's GL handles, what a page can't do), naming itself. Platform changes it would like,
-  for review: a page's cache in OPFS readable at once from the main thread (a worker holding OPFS's sync handles, the page
-  spinning on a SharedArrayBuffer for the reply, as emscripten does), which needs the page cross-origin isolated (COOP and COEP), so
-  only ever an option a program chooses, never the default.
+- **helix-raylib (DECISIONS 16, 19, 20, 21, 38, 72):** raylib's API over the services, merged to `main`. Every raylib 5.5 function
+  is in. A page waits where the program calls `EndDrawing`, `WaitTime`, the file calls and the clipboard's, as a native build does
+  (DECISIONS 72). What refuses to compile does so on purpose, naming itself: the asset loads and the screen reads, each naming its
+  `...Async` call, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's own names (the assets,
+  resources and objects below). The `...Async` calls no refusal names stay in `Raylib`, and may move to the extras. A `Future` of our
+  own over the callbacks, cross-target, may serve the managed layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
 - **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 5.21 ms over Vulkan (docs/speed.md, after `DrawTexture`
   learned to write its record itself with the texture's handle an array read, from 6.73) against three.js's InstancedMesh at 3.84, both
   one instanced draw, so what is left is JavaScript a sprite, about 26 ns against 19: the record's twelve writes (about 2.5 ms of the
