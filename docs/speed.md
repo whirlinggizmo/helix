@@ -27,18 +27,18 @@ Frame time in ms:
 <!-- compare: bunnymark -->
 | program | where | 10k | 50k | 100k | 150k | 200k | most held | size |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| **helix-raylib** | page, WebGL2 | 0.31 | 1.06 | 2.18 | 3.77 | 5.21 | 516k | 51.6 KB |
-| raylib C 5.5 | page, wasm, WebGL1 | 0.68 | 3.38 | 6.45 | 10.00 | 13.63 | 254k | 117.4 KB |
+| **helix-raylib** | page, WebGL2 | 0.26 | 1.09 | 1.99 | 3.25 | 4.54 | 557k | 51.4 KB |
+| raylib C 5.5 | page, wasm, WebGL1 | 0.66 | 3.19 | 6.42 | 9.55 | 12.95 | 272k | 117.4 KB |
 | Godot 4.7.2, MultiMesh | page, wasm, WebGL2 (2026-11-04) | 10.16 | 46.27 | 91.00 | 135.61 | 183.95 | 15k | 10,125.4 KB |
 | Godot 4.7.2, a Sprite2D each | page, wasm, WebGL2 (2026-11-04) | 20.17 | 102.34 | 203.58 | 285.45 | 376.67 | 7k | 10,125.4 KB |
 | three.js 0.187.0, InstancedMesh | page, WebGL2 (2026-11-05) | 0.13 | 0.51 | 1.03 | 3.54 | 3.84 | 512k | 136.2 KB bundled (422.3 as served) |
 | three.js 0.187.0, a Sprite each | page, WebGL2 (2026-11-05) | 11.07 | 55.96 | 112.18 | 166.96 | 223.06 | 16k | 136.2 KB bundled (422.3 as served) |
 | Lime 8.3.1 | page, WebGL (2026-11-05) | 0.35 | 3.61 | 5.50 | 7.93 | 11.16 | 288k | 151.2 KB |
 | helix-legacy, a Sprite2D each | page, WebGL2 (2026-11-04) | 2.64 | 14.81 | 28.04 | 41.58 | 54.70 | 63k | 83.6 KB |
-| **helix-raylib** | native, GL (2026-11-05) | 0.48 | 1.71 | 3.35 | 4.91 | 6.79 | 452k | 8.1 MB |
-| raylib C 5.5 | native, GL (2026-11-05) | 0.72 | 3.27 | 6.50 | 9.41 | 11.71 | 273k | 0.9 MB |
+| **helix-raylib** | native, GL | 0.28 | 1.00 | 2.01 | 3.08 | 4.14 | 658k | 8.0 MB |
+| raylib C 5.5 | native, GL | 0.72 | 3.08 | 6.05 | 9.27 | 12.04 | 271k | 0.9 MB |
 | Godot 4.7.2, MultiMesh | native, GL, Compatibility (2026-11-04) | 1.45 | 7.19 | 13.92 | 21.03 | 27.81 | 111k | 73.5 MB |
-| **helix-raylib** | native, SDL_GPU (Vulkan) (2026-11-05) | 0.37 | 1.68 | 3.40 | 5.27 | 7.33 | 468k | 7.3 MB |
+| **helix-raylib** | native, SDL_GPU (Vulkan) | 0.25 | 0.98 | 1.96 | 3.34 | 4.70 | 716k | 7.2 MB |
 | Godot 4.7.2, MultiMesh | native, Vulkan, Forward+ (2026-11-04) | 1.31 | 6.12 | 11.77 | 16.99 | 23.66 | 131k | 73.5 MB |
 <!-- /compare: bunnymark -->
 
@@ -57,16 +57,16 @@ Frame time in ms:
 <!-- compare: robots -->
 | program | where | 50 | 200 | 400 | size |
 |---|---|---:|---:|---:|---:|
-| **helix-raylib** | page, WebGL2 | 1.82 | 7.48 | 14.15 | 86.1 KB |
-| raylib C 5.5, CPU skinning | page, wasm, WebGL1 | 21.50 | 86.13 | 174.20 | 193.1 KB |
-| raylib C 5.5, GPU skinning | page, wasm, WebGL1 | 2.16 | 8.17 | 16.45 | 192.8 KB |
+| **helix-raylib** | page, WebGL2 | 2.01 | 7.75 | 15.37 | 86.8 KB |
+| raylib C 5.5, CPU skinning | page, wasm, WebGL1 | 18.58 | 72.18 | 143.90 | 193.0 KB |
+| raylib C 5.5, GPU skinning | page, wasm, WebGL1 | 1.94 | 8.17 | 16.12 | 192.8 KB |
 | Godot 4.7.2 | page, wasm, WebGL2 (2026-11-04) | 13.20 | 56.44 | 163.98 | 10,125.4 KB |
-| three.js 0.187.0 | page, WebGL2 | 4.07 | 18.20 | 38.69 | 160.1 KB bundled (459.8 as served) |
-| **helix-raylib** | native, GL | 2.49 | 10.11 | 20.13 | 8.9 MB |
-| raylib C 5.5, CPU skinning | native, GL | 5.81 | 21.56 | 43.86 | 1.2 MB |
-| raylib C 5.5, GPU skinning | native, GL | 3.47 | 14.24 | 27.07 | 1.2 MB |
+| three.js 0.187.0 | page, WebGL2 (2026-11-05) | 4.07 | 18.20 | 38.69 | 160.1 KB bundled (459.8 as served) |
+| **helix-raylib** | native, GL | 1.98 | 7.06 | 14.14 | 8.8 MB |
+| raylib C 5.5, CPU skinning | native, GL | 5.35 | 22.20 | 44.67 | 1.2 MB |
+| raylib C 5.5, GPU skinning | native, GL | 3.55 | 14.25 | 29.89 | 1.2 MB |
 | Godot 4.7.2 | native, GL, Compatibility (2026-11-04) | 15.08 | 59.72 |  | 73.5 MB |
-| **helix-raylib** | native, SDL_GPU (Vulkan) | 2.56 | 10.17 | 20.87 | 8.1 MB |
+| **helix-raylib** | native, SDL_GPU (Vulkan) | 1.75 | 6.82 | 14.43 | 8.0 MB |
 <!-- /compare: robots -->
 
 ## Where they differ

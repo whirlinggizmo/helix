@@ -40,10 +40,9 @@ speed where docs/speed.md records them.
   `...Async` call, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's own names (the assets,
   resources and objects below). The `...Async` calls no refusal names stay in `Raylib`, and may move to the extras. A `Future` of our
   own over the callbacks, cross-target, may serve the managed layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
-- **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 5.21 ms over Vulkan (docs/speed.md, after `DrawTexture`
-  learned to write its record itself with the texture's handle an array read, from 6.73) against three.js's InstancedMesh at 3.84, both
-  one instanced draw, so what is left is JavaScript a sprite, about 26 ns against 19: the record's twelve writes (about 2.5 ms of the
-  5.2 for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)
+- **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/speed.md) against three.js's
+  InstancedMesh at 3.84, both one instanced draw, so what is left is JavaScript a sprite, about 23 ns against 19: the record's twelve
+  writes (about 2.5 ms for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)
   still go through `Frame.quad` out of line, since inlining it everywhere cost 640 B gzip a rung. On the phone
   the robots are script-bound the same way (36 ms of 40 at 100 robots, raylib wasm 30 whole): the draw path's cost per call is the
   mobile item as well.

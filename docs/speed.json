@@ -230,43 +230,43 @@
    "variant": "",
    "program": "bunnymark",
    "where": "page-vulkan",
-   "version": "helix-2.0 e2ce111",
-   "date": "2026-11-06",
+   "version": "helix 3c654cf",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.31,
+     "meanMs": 0.26,
      "p95Ms": 0.4,
      "runs": 3
     },
     "50000": {
-     "meanMs": 1.06,
+     "meanMs": 1.09,
      "p95Ms": 1.2,
      "runs": 3
     },
     "100000": {
-     "meanMs": 2.18,
-     "p95Ms": 2.6,
+     "meanMs": 1.99,
+     "p95Ms": 2.2,
      "runs": 3
     },
     "150000": {
-     "meanMs": 3.77,
-     "p95Ms": 4.6,
+     "meanMs": 3.25,
+     "p95Ms": 3.6,
      "runs": 3
     },
     "200000": {
-     "meanMs": 5.21,
-     "p95Ms": 6.1,
+     "meanMs": 4.54,
+     "p95Ms": 4.8,
      "runs": 3
     }
    },
-   "held": 516000,
+   "held": 557000,
    "size": {
-    "rawKB": 244.1,
-    "gzipKB": 51.6,
-    "brotliKB": 43.2
+    "rawKB": 242.1,
+    "gzipKB": 51.4,
+    "brotliKB": 43.1
    },
-   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.351 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "raylib-c",
@@ -274,42 +274,42 @@
    "program": "bunnymark",
    "where": "page-vulkan",
    "version": "raylib 5.5",
-   "date": "2026-11-06",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.68,
+     "meanMs": 0.66,
      "p95Ms": 0.8,
      "runs": 3
     },
     "50000": {
-     "meanMs": 3.38,
-     "p95Ms": 3.6,
+     "meanMs": 3.19,
+     "p95Ms": 3.3,
      "runs": 3
     },
     "100000": {
-     "meanMs": 6.45,
-     "p95Ms": 6.7,
+     "meanMs": 6.42,
+     "p95Ms": 6.8,
      "runs": 3
     },
     "150000": {
-     "meanMs": 10.0,
-     "p95Ms": 11.1,
+     "meanMs": 9.55,
+     "p95Ms": 10.1,
      "runs": 3
     },
     "200000": {
-     "meanMs": 13.63,
-     "p95Ms": 15,
+     "meanMs": 12.95,
+     "p95Ms": 13.3,
      "runs": 3
     }
    },
-   "held": 254000,
+   "held": 272000,
    "size": {
     "rawKB": 357.7,
     "gzipKB": 117.4,
     "brotliKB": 99.6
    },
-   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.351 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "godot",
@@ -581,39 +581,39 @@
    "variant": "",
    "program": "bunnymark",
    "where": "native-gl",
-   "version": "helix-2.0 4fae8a6",
-   "date": "2026-11-05",
+   "version": "helix 3c654cf",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.48,
-     "p95Ms": 0.96,
+     "meanMs": 0.28,
+     "p95Ms": 0.52,
      "runs": 3
     },
     "50000": {
-     "meanMs": 1.71,
-     "p95Ms": 1.93,
+     "meanMs": 1.0,
+     "p95Ms": 1.22,
      "runs": 3
     },
     "100000": {
-     "meanMs": 3.35,
-     "p95Ms": 3.85,
+     "meanMs": 2.01,
+     "p95Ms": 2.35,
      "runs": 3
     },
     "150000": {
-     "meanMs": 4.91,
-     "p95Ms": 5.41,
+     "meanMs": 3.08,
+     "p95Ms": 3.63,
      "runs": 3
     },
     "200000": {
-     "meanMs": 6.79,
-     "p95Ms": 8.05,
+     "meanMs": 4.14,
+     "p95Ms": 5.19,
      "runs": 3
     }
    },
-   "held": 452000,
+   "held": 658000,
    "size": {
-    "strippedMB": 8.06
+    "strippedMB": 7.98
    }
   },
   {
@@ -622,7 +622,7 @@
    "program": "bunnymark",
    "where": "native-gl",
    "version": "raylib 5.5",
-   "date": "2026-11-05",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
@@ -631,27 +631,27 @@
      "runs": 3
     },
     "50000": {
-     "meanMs": 3.27,
-     "p95Ms": 3.32,
+     "meanMs": 3.08,
+     "p95Ms": 3.08,
      "runs": 3
     },
     "100000": {
-     "meanMs": 6.5,
-     "p95Ms": 6.61,
+     "meanMs": 6.05,
+     "p95Ms": 6.1,
      "runs": 3
     },
     "150000": {
-     "meanMs": 9.41,
-     "p95Ms": 9.98,
+     "meanMs": 9.27,
+     "p95Ms": 9.1,
      "runs": 3
     },
     "200000": {
-     "meanMs": 11.71,
-     "p95Ms": 11.78,
+     "meanMs": 12.04,
+     "p95Ms": 12.15,
      "runs": 3
     }
    },
-   "held": 273000,
+   "held": 271000,
    "size": {
     "strippedMB": 0.9
    }
@@ -701,39 +701,39 @@
    "variant": "",
    "program": "bunnymark",
    "where": "native-sdlgpu",
-   "version": "helix-2.0 4fae8a6",
-   "date": "2026-11-05",
+   "version": "helix 3c654cf",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "10000": {
-     "meanMs": 0.37,
-     "p95Ms": 0.61,
+     "meanMs": 0.25,
+     "p95Ms": 0.43,
      "runs": 3
     },
     "50000": {
-     "meanMs": 1.68,
-     "p95Ms": 1.86,
+     "meanMs": 0.98,
+     "p95Ms": 1.15,
      "runs": 3
     },
     "100000": {
-     "meanMs": 3.4,
-     "p95Ms": 3.58,
+     "meanMs": 1.96,
+     "p95Ms": 2.15,
      "runs": 3
     },
     "150000": {
-     "meanMs": 5.27,
-     "p95Ms": 5.88,
+     "meanMs": 3.34,
+     "p95Ms": 3.8,
      "runs": 3
     },
     "200000": {
-     "meanMs": 7.33,
-     "p95Ms": 8.17,
+     "meanMs": 4.7,
+     "p95Ms": 5.41,
      "runs": 3
     }
    },
-   "held": 468000,
+   "held": 716000,
    "size": {
-    "strippedMB": 7.28
+    "strippedMB": 7.2
    }
   },
   {
@@ -918,33 +918,33 @@
    "variant": "",
    "program": "robots",
    "where": "page-vulkan",
-   "version": "helix-2.0 69e35a9",
-   "date": "2026-11-05",
+   "version": "helix 3c654cf",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 1.82,
-     "p95Ms": 1.9,
+     "meanMs": 2.01,
+     "p95Ms": 2.2,
      "runs": 3
     },
     "200": {
-     "meanMs": 7.48,
-     "p95Ms": 10.3,
+     "meanMs": 7.75,
+     "p95Ms": 10.8,
      "runs": 3
     },
     "400": {
-     "meanMs": 14.15,
-     "p95Ms": 17.4,
+     "meanMs": 15.37,
+     "p95Ms": 19.6,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "rawKB": 407.9,
-    "gzipKB": 86.1,
-    "brotliKB": 69.9
+    "rawKB": 410.5,
+    "gzipKB": 86.8,
+    "brotliKB": 70.5
    },
-   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.351 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "raylib-c",
@@ -952,32 +952,32 @@
    "program": "robots",
    "where": "page-vulkan",
    "version": "raylib 5.5",
-   "date": "2026-11-05",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 21.5,
-     "p95Ms": 23.1,
+     "meanMs": 18.58,
+     "p95Ms": 21.5,
      "runs": 3
     },
     "200": {
-     "meanMs": 86.13,
-     "p95Ms": 88.9,
+     "meanMs": 72.18,
+     "p95Ms": 83.2,
      "runs": 3
     },
     "400": {
-     "meanMs": 174.2,
-     "p95Ms": 179.7,
+     "meanMs": 143.9,
+     "p95Ms": 150.8,
      "runs": 3
     }
    },
    "held": null,
    "size": {
     "rawKB": 569.1,
-    "gzipKB": 193.1,
+    "gzipKB": 193.0,
     "brotliKB": 159.5
    },
-   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.351 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "raylib-c",
@@ -985,12 +985,12 @@
    "program": "robots",
    "where": "page-vulkan",
    "version": "raylib 5.5",
-   "date": "2026-11-05",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 2.16,
-     "p95Ms": 2.4,
+     "meanMs": 1.94,
+     "p95Ms": 2.2,
      "runs": 3
     },
     "200": {
@@ -999,8 +999,8 @@
      "runs": 3
     },
     "400": {
-     "meanMs": 16.45,
-     "p95Ms": 17.9,
+     "meanMs": 16.12,
+     "p95Ms": 17.7,
      "runs": 3
     }
    },
@@ -1010,7 +1010,7 @@
     "gzipKB": 192.8,
     "brotliKB": 159.3
    },
-   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.329 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
+   "renderer": "ANGLE (NVIDIA, Vulkan 1.4.351 (NVIDIA NVIDIA GeForce RTX 4080 Laptop GPU (0x000027E0)), NVIDIA)"
   },
   {
    "contender": "godot",
@@ -1087,29 +1087,29 @@
    "variant": "",
    "program": "robots",
    "where": "native-gl",
-   "version": "helix-2.0 9a9fce9",
-   "date": "2026-11-05",
+   "version": "helix 3c654cf",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 2.49,
-     "p95Ms": 4.92,
+     "meanMs": 1.98,
+     "p95Ms": 2.04,
      "runs": 3
     },
     "200": {
-     "meanMs": 10.11,
-     "p95Ms": 12.76,
+     "meanMs": 7.06,
+     "p95Ms": 7.64,
      "runs": 3
     },
     "400": {
-     "meanMs": 20.13,
-     "p95Ms": 22.95,
+     "meanMs": 14.14,
+     "p95Ms": 15.52,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "strippedMB": 8.89
+    "strippedMB": 8.81
    }
   },
   {
@@ -1118,22 +1118,22 @@
    "program": "robots",
    "where": "native-gl",
    "version": "raylib 5.5",
-   "date": "2026-11-05",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 5.81,
-     "p95Ms": 5.9,
+     "meanMs": 5.35,
+     "p95Ms": 5.41,
      "runs": 3
     },
     "200": {
-     "meanMs": 21.56,
-     "p95Ms": 22.26,
+     "meanMs": 22.2,
+     "p95Ms": 22.36,
      "runs": 3
     },
     "400": {
-     "meanMs": 43.86,
-     "p95Ms": 47.05,
+     "meanMs": 44.67,
+     "p95Ms": 46.95,
      "runs": 3
     }
    },
@@ -1148,22 +1148,22 @@
    "program": "robots",
    "where": "native-gl",
    "version": "raylib 5.5",
-   "date": "2026-11-05",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 3.47,
-     "p95Ms": 3.54,
+     "meanMs": 3.55,
+     "p95Ms": 3.55,
      "runs": 3
     },
     "200": {
-     "meanMs": 14.24,
-     "p95Ms": 14.26,
+     "meanMs": 14.25,
+     "p95Ms": 14.87,
      "runs": 3
     },
     "400": {
-     "meanMs": 27.07,
-     "p95Ms": 27.48,
+     "meanMs": 29.89,
+     "p95Ms": 29.97,
      "runs": 3
     }
    },
@@ -1202,29 +1202,29 @@
    "variant": "",
    "program": "robots",
    "where": "native-sdlgpu",
-   "version": "helix-2.0 9a9fce9",
-   "date": "2026-11-05",
+   "version": "helix 3c654cf",
+   "date": "2026-11-12",
    "machine": "coinspinner: 13th Gen Intel(R) Core(TM) i9-13900HX, NVIDIA Corporation AD104M [GeForce RTX 4080 Max-Q / Mobile] (rev a1), Linux",
    "counts": {
     "50": {
-     "meanMs": 2.56,
-     "p95Ms": 5.01,
+     "meanMs": 1.75,
+     "p95Ms": 1.91,
      "runs": 3
     },
     "200": {
-     "meanMs": 10.17,
-     "p95Ms": 12.88,
+     "meanMs": 6.82,
+     "p95Ms": 7.04,
      "runs": 3
     },
     "400": {
-     "meanMs": 20.87,
-     "p95Ms": 23.58,
+     "meanMs": 14.43,
+     "p95Ms": 16.56,
      "runs": 3
     }
    },
    "held": null,
    "size": {
-    "strippedMB": 8.1
+    "strippedMB": 8.02
    }
   }
  ]
