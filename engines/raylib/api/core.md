@@ -881,7 +881,7 @@ static macro function EndDrawing():Void
 - `SetShaderValue`: Sets a shader's uniform, for the models drawn after the call and the shapes in rlgl's batch when the batch is next drawn. See `SetShaderValueV` for setting an array's elements.
   - `shader`: The shader.
   - `locIndex`: The uniform's location.
-  - `value`: The value: a number, an array of numbers, or a `Vector2`, `Vector3`, `Vector4` or `Color`.
+  - `value`: The value: a number, an array of numbers, a `Vector2`, `Vector3`, `Vector4` or `Color`, or a `haxe.io` typed array or `haxe.io.Bytes`, read as `uniformType` says.
   - `uniformType`: Its type (`SHADER_UNIFORM_*`).
 
   Shapes drawn before the call but not yet flushed take the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and `rlDrawRenderBatchActive` flush them.
@@ -890,7 +890,7 @@ static macro function EndDrawing():Void
 - `SetShaderValueV`: Sets elements of a shader's array uniform, for the draws after the call.
   - `shader`: The shader.
   - `locIndex`: The uniform's location.
-  - `value`: The values, in order.
+  - `value`: The values, in order: an array of numbers, or a `haxe.io` typed array or `haxe.io.Bytes`, read as `uniformType` says.
   - `uniformType`: Each element's type (`SHADER_UNIFORM_*`).
   - `count`: The elements set.
 - `SetShaderValueMatrix`: Sets a shader's matrix uniform, for the draws after the call.

@@ -2096,7 +2096,9 @@ class RModels {
 	}
 
 	// The numbers of a shader value as a program writes them.
-	// A value's numbers: a Color given for a vec4 (an Int, as a Color is) its channels, 0 to 1.
+	// A value's numbers: a Color given for a vec4 (an Int, as a Color is) its channels, 0 to 1. A haxe.io typed array's or Bytes' memory
+	// is read as the uniform's type, as raylib reads it: 32-bit ints for an int, an ivec or a sampler, 32-bit floats otherwise. Any other
+	// value is logged, and gives none.
 	static function numbers(value:Dynamic, ?uniformType:Int):Array<Float> {
 		if (uniformType == SHADER_UNIFORM_VEC4 && Std.isOfType(value, Int)) {
 			var c:Color = cast value;
@@ -2112,7 +2114,27 @@ class RModels {
 			return [value.x, value.y, value.z, value.w];
 		if (Std.isOfType(value, Matrix))
 			return toMatrix3D(value).values;
-		return [(value : Float)];
+		if (Std.isOfType(value, Float))
+			return [(value : Float)];
+		var memory:Null<{bytes:haxe.io.Bytes, offset:Int, length:Int}> = if (Std.isOfType(value, haxe.io.Bytes)) {
+			{bytes: value, offset: 0, length: (value : haxe.io.Bytes).length};
+		} else {
+			#if js
+			js.lib.ArrayBuffer.isView(value) ? {bytes: haxe.io.Bytes.ofData(value.buffer), offset: value.byteOffset, length: value.byteLength} : null;
+			#else
+			Std.isOfType(value, haxe.io.ArrayBufferView.ArrayBufferViewImpl) ? {bytes: value.bytes, offset: value.byteOffset, length: value.byteLength} : null;
+			#end
+		}
+		if (memory == null) {
+			Runtime.log(LOG_WARNING,
+				"SHADER: A uniform's value isn't set: give an Array, a Vector2, Vector3 or Vector4, a Matrix, a Color, a haxe.io typed array or Bytes");
+			return [];
+		}
+		var ints = uniformType != null && uniformType >= SHADER_UNIFORM_INT && uniformType <= SHADER_UNIFORM_SAMPLER2D;
+		return [
+			for (i in 0...Std.int(memory.length / 4))
+				ints ? memory.bytes.getInt32(memory.offset + i * 4) : memory.bytes.getFloat(memory.offset + i * 4)
+		];
 	}
 
 	// raylib's Matrix, named by rows, and helix-math's, stored by columns: m0 to m3 the first column in both.

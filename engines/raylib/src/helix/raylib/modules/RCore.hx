@@ -3161,7 +3161,8 @@ class RCore {
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
-		@param value  The value: a number, an array of numbers, or a `Vector2`, `Vector3`, `Vector4` or `Color`.
+		@param value  The value: a number, an array of numbers, a `Vector2`, `Vector3`, `Vector4` or `Color`, or a `haxe.io` typed array or
+			`haxe.io.Bytes`, read as `uniformType` says.
 		@param uniformType  Its type (`SHADER_UNIFORM_*`). */
 	static function SetShaderValue(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int):Void {
 		SetShaderValueV(shader, locIndex, value, uniformType, 1);
@@ -3171,7 +3172,7 @@ class RCore {
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
-		@param value  The values, in order.
+		@param value  The values, in order: an array of numbers, or a `haxe.io` typed array or `haxe.io.Bytes`, read as `uniformType` says.
 		@param uniformType  Each element's type (`SHADER_UNIFORM_*`).
 		@param count  The elements set. */
 	static function SetShaderValueV(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void {
@@ -3180,7 +3181,7 @@ class RCore {
 		var slot = shader.program.textureSlot(locIndex);
 		if (slot >= 0) {
 			// A sampler's texture unit, as GL takes an int for it: DrawMesh binds the material's map of that index there.
-			var unit = numbers(value);
+			var unit = numbers(value, SHADER_UNIFORM_SAMPLER2D);
 			if (unit.length > 0) {
 				Runtime.frame.cut();
 				shader.program.setUnit(slot, Std.int(unit[0]));

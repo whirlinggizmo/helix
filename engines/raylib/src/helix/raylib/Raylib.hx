@@ -2489,7 +2489,8 @@ class Raylib {
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
-		@param value  The value: a number, an array of numbers, or a `Vector2`, `Vector3`, `Vector4` or `Color`.
+		@param value  The value: a number, an array of numbers, a `Vector2`, `Vector3`, `Vector4` or `Color`, or a `haxe.io` typed array or
+			`haxe.io.Bytes`, read as `uniformType` says.
 		@param uniformType  Its type (`SHADER_UNIFORM_*`). */
 	public static inline function SetShaderValue(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int):Void
 		RCore.SetShaderValue(shader, locIndex, value, uniformType);
@@ -2498,7 +2499,7 @@ class Raylib {
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
-		@param value  The values, in order.
+		@param value  The values, in order: an array of numbers, or a `haxe.io` typed array or `haxe.io.Bytes`, read as `uniformType` says.
 		@param uniformType  Each element's type (`SHADER_UNIFORM_*`).
 		@param count  The elements set. */
 	public static inline function SetShaderValueV(shader:Shader, locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void
