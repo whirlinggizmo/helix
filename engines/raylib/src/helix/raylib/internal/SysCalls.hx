@@ -28,7 +28,7 @@ class SysCalls {
 	// Each refused Sys call, with what to do instead.
 	static final REFUSED = [
 		"putEnv" => "The environment can't be changed.",
-		"sleep" => "Use WaitTime, or count frames in the program's loop.",
+		"sleep" => "Use WaitTime(seconds:Float) instead.",
 		"getCwd" => "Files are named relative to the program.",
 		"setCwd" => "Files are named relative to the program.",
 		"systemName" => "The program runs the same everywhere.",

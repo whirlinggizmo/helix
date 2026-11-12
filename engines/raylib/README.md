@@ -4,7 +4,7 @@
 
 | Type | What |
 |---|---|
-| `helix.raylib.Raylib` | raylib's functions, constants and colors, and beside each call that waits for a file or the window the `...Async` call that answers at a later frame |
+| `helix.raylib.Raylib` | raylib's functions, constants and colors |
 | `helix.raylib.Raymath` | raymath |
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
@@ -19,13 +19,11 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 ## Differences from raylib
 
-- A call that waits for a file (`LoadTexture`, `LoadFileText`) doesn't compile in a function used as a value, in a constructor or in
-  a variable's initial value. It names the `...Async` call beside it, in `Raylib` and `Raygui`, which answers at a later frame.
-- A call that reads the screen or a texture back (`TakeScreenshot`, `LoadImageFromScreen`, `LoadImageFromTexture`) doesn't
-  compile. It names its `...Async` call.
+- `EndDrawing`, a load (`LoadTexture`, `LoadFileText`) and a clipboard call don't compile in a function used as a value, in a
+  constructor or in a variable's initial value (see "Calls that wait").
+- `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't compile. Each names its `...Async` call.
 - A window or cursor request (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) returns at once, and the window changes at a
-  later frame, as in raylib's page. `IsWindowFullscreen` and the other window reads report the window as it is, and a refusal is
-  logged.
+  later frame. `IsWindowFullscreen` and the other window reads report the window as it is. A refusal is logged.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
   `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
 - Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShader`) or its data
@@ -38,13 +36,11 @@ See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/i
 
 ## Calls that wait
 
-A page can't stop for a file or for the next frame. In a page, each function of the program that calls `EndDrawing` or a load is
-built as an async function, and each call of it is awaited. The same goes for a function calling one that does. The program writes
-nothing for this. Natively the same calls block.
+In a page, each function of the program that calls `EndDrawing`, a load or a clipboard call is built as an async function, and each
+call of it is awaited. So is a function calling one that does, and a function declared in a function and only ever called by its
+name. The program writes nothing for this. Natively the same calls block.
 
-A function declared in a function waits the same way when it is only ever called by its name.
-
-What can't wait doesn't compile, on every target:
+These can't wait, and a call there doesn't compile, on every target:
 
 - a function used as a value (a callback, a function kept in a variable and passed on);
 - a constructor, and a variable's initial value;

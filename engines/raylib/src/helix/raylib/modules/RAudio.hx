@@ -127,7 +127,7 @@ class RAudio {
 		wave.data = null;
 	}
 
-	/** Writes a wave to a sound file, as `ExportWaveAsync` writes it, and returns once it is written. See `ExportWaveAsCode` for
+	/** Writes a wave to a sound file, and returns once it is written. See `ExportWaveAsCode` for
 		writing a C header.
 
 		@param wave  The wave.
@@ -150,7 +150,7 @@ class RAudio {
 		return null;
 	}
 
-	/** Writes a wave as a C header, as `ExportWaveAsCodeAsync` writes it, and returns once it is written. See `ExportWave` for writing
+	/** Writes a wave as a C header, and returns once it is written. See `ExportWave` for writing
 		a sound file.
 
 		@param wave  The wave.
@@ -329,7 +329,7 @@ class RAudio {
 
 	// ---- Sounds ----
 
-	/** Loads a sound file, as `LoadSoundAsync` loads it, and returns the sound once it is decoded, ready to play at once. See
+	/** Loads a sound file, and returns the sound once it is decoded, ready to play at once. See
 		`LoadMusicStream` for playing a file as it is read.
 
 		`InitAudioDevice` must come first.
@@ -675,7 +675,7 @@ class RAudio {
 
 	// ---- Music ----
 
-	/** Opens a music file, as `LoadMusicStreamAsync` opens it, and returns the music once enough of the file has arrived to start.
+	/** Opens a music file, and returns the music once enough of the file has arrived to start.
 
 		`InitAudioDevice` must come first.
 

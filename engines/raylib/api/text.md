@@ -341,17 +341,17 @@ static macro function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSiz
   - `codepoint`: The character's code.
   - `utf8Size`: Receives its length in UTF-8 bytes, at its index 0; 0 for a code past 0x10FFFF.
   - returns: The text; empty for a code past 0x10FFFF.
-- `ExportFontAsCode`: Writes a font as a C header, as `ExportFontAsCodeAsync` writes it, and returns once it is written.
+- `ExportFontAsCode`: Writes a font as a C header, and returns once it is written.
   - `font`: The font.
   - `fileName`: The file.
   - returns: Whether it was written. Why it wasn't is logged.
-- `LoadFontEx`: Loads a TrueType or OpenType font file at a size, as `LoadFontExAsync` loads it, and returns the font once its glyphs are ready. See `LoadFontFromMemory` for making a font from bytes already loaded.
+- `LoadFontEx`: Loads a TrueType or OpenType font file at a size, and returns the font once its glyphs are ready. See `LoadFontFromMemory` for making a font from bytes already loaded.
   - `fileName`: The file, as the program names it.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
   - `codepoints`: The characters, or null for those from the space on.
   - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
   - returns: The font, or the default font (`GetFontDefault`) when it couldn't be loaded. Why it couldn't is logged.
-- `LoadFontFromMemory`: Makes a font from a TrueType or OpenType file's bytes, as `LoadFontFromMemoryAsync` makes it, and returns the font once its glyphs are ready. See `LoadFontEx` for loading a file by its name.
+- `LoadFontFromMemory`: Makes a font from a TrueType or OpenType file's bytes, and returns the font once its glyphs are ready. See `LoadFontEx` for loading a file by its name.
   - `fileType`: The file's extension, ".ttf" or ".otf".
   - `fileData`: The file's bytes.
   - `dataSize`: How many of them.
@@ -359,7 +359,7 @@ static macro function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSiz
   - `codepoints`: The characters, or null for those from the space on.
   - `codepointCount`: How many characters; 0 for 95.
   - returns: The font, or the default font (`GetFontDefault`) when it couldn't be made. Why it couldn't is logged.
-- `LoadFontData`: Rasterizes a TrueType or OpenType font's glyphs, as `LoadFontDataAsync` rasterizes them, and returns them once they are ready. See `LoadFontFromMemory` for a font ready to draw.
+- `LoadFontData`: Rasterizes a TrueType or OpenType font's glyphs, and returns them once they are ready. See `LoadFontFromMemory` for a font ready to draw.
   - `fileData`: The font file's bytes.
   - `dataSize`: How many of them.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.

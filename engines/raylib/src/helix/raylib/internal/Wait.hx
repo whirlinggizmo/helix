@@ -272,11 +272,10 @@ class Wait {
 		as the program builds: the load asked through it, and its answer waited for. A load that fails is logged, and answers `empty`.
 
 		@param name  The call's name (`LoadImage`), its async's without "Async".
-		@param signature  The async's parameters, as the refusal in a function used as a value names them.
 		@param args  The call's arguments, raylib's.
 		@param empty  The value of a load that failed.
 		@return  The expansion. */
-	public static function over(name:String, signature:String, args:Array<Expr>, empty:Expr):Expr {
+	public static function over(name:String, args:Array<Expr>, empty:Expr):Expr {
 		var block:Array<Expr> = [];
 		var passed:Array<Expr> = [];
 		for (i in 0...args.length) {
@@ -294,7 +293,7 @@ class Wait {
 		var async = name + "Async";
 		passed.push(macro __answer);
 		passed.push(macro helix.raylib.internal.Answers.failing($v{name}, __answer, $empty));
-		block.push(answer('$name: in a function used as a value, see $async($signature)', macro __answer -> helix.raylib.Raylib.$async($a{passed})));
+		block.push(answer('$name: Not supported in a function used as a value.', macro __answer -> helix.raylib.Raylib.$async($a{passed})));
 		return placed(macro $b{block});
 	}
 
@@ -357,14 +356,14 @@ class Wait {
 		var name = c.field.name;
 		switch c.kind {
 			case Called if (constructor):
-				refuse('$name() waits (it reaches EndDrawing() or a load): not in a constructor or a variable\'s initial value', c.pos);
+				refuse('$name(): Not supported in a constructor or a variable\'s initial value.', c.pos);
 			case Called:
 			case InLambda:
-				refuse('$name() waits (it reaches EndDrawing() or a load): call it from a function of a class, not from a function used as a value', c.pos);
+				refuse('$name(): Not supported in a function used as a value.', c.pos);
 			case AsValue:
-				refuse('$name waits (it reaches EndDrawing() or a load): call it, don\'t use it as a value', c.pos);
+				refuse('$name: Not supported as a value.', c.pos);
 			case Unmatched:
-				refuse('$name waits (it reaches EndDrawing() or a load): call it by its name, as a statement or a value', c.pos);
+				refuse('$name(): Not supported here.', c.pos);
 		}
 	}
 
@@ -379,7 +378,7 @@ class Wait {
 			for (i in interfaces) {
 				var type = i.t.get();
 				if (Lambda.exists(type.fields.get(), f -> f.name == name))
-					refuse('$name waits (it reaches EndDrawing() or a load): not in a function ${type.name} declares', state.pos);
+					refuse('$name(): Not supported in interface ${type.name}.', state.pos);
 				declared(type.interfaces);
 			}
 		}
@@ -390,7 +389,7 @@ class Wait {
 			declared(type.interfaces);
 			for (f in type.fields.get())
 				if (f.name == name && reach(Std.string(f.pos), f, []) != YES)
-					refuse('$name waits (it reaches EndDrawing() or a load): not in an override of a function that doesn\'t', state.pos);
+					refuse('$name(): Not supported as an override of ${type.name}.$name.', state.pos);
 			above = type.superClass;
 		}
 	}
@@ -585,7 +584,7 @@ class Wait {
 					if (lambda)
 						refuse(refusal, t.pos);
 					else if (constructor)
-						refuse(refusal.split(":")[0] + ": not in a constructor or a variable's initial value", t.pos);
+						refuse(refusal.split(":")[0] + ": Not supported in a constructor or a variable's initial value.", t.pos);
 					else {
 						direct = true;
 						if (current >= 0)
@@ -777,7 +776,7 @@ class Wait {
 			}
 		for (site in sites)
 			if (!site.used)
-				refuse('${site.name}() waits (it reaches EndDrawing() or a load): call it by its name, as a statement or a value', site.pos);
+				refuse('${site.name}(): Not supported here.', site.pos);
 		var ret = returns.get(key);
 		var isVoid = switch ret {
 			case null: !returnsValue(e);

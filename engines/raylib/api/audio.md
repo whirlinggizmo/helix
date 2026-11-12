@@ -298,20 +298,20 @@ static macro function LoadMusicStream(fileName:String):Music
   A frame long enough to empty both buffers is heard as a gap.
 
   Ignored for a stream that isn't open.
-- `ExportWave`: Writes a wave to a sound file, as `ExportWaveAsync` writes it, and returns once it is written. See `ExportWaveAsCode` for writing a C header.
+- `ExportWave`: Writes a wave to a sound file, and returns once it is written. See `ExportWaveAsCode` for writing a C header.
   - `wave`: The wave.
   - `fileName`: The file; its extension chooses the format.
   - returns: Whether it was written. Why it wasn't is logged.
-- `ExportWaveAsCode`: Writes a wave as a C header, as `ExportWaveAsCodeAsync` writes it, and returns once it is written. See `ExportWave` for writing a sound file.
+- `ExportWaveAsCode`: Writes a wave as a C header, and returns once it is written. See `ExportWave` for writing a sound file.
   - `wave`: The wave.
   - `fileName`: The file; its name, upper case, names the defines and the array.
   - returns: Whether it was written. Why it wasn't is logged.
-- `LoadSound`: Loads a sound file, as `LoadSoundAsync` loads it, and returns the sound once it is decoded, ready to play at once. See `LoadMusicStream` for playing a file as it is read.
+- `LoadSound`: Loads a sound file, and returns the sound once it is decoded, ready to play at once. See `LoadMusicStream` for playing a file as it is read.
   - `fileName`: The file, as the program names it.
   - returns: The sound, or one that isn't valid (`IsSoundValid`) when it couldn't be loaded. Why it couldn't is logged.
 
   `InitAudioDevice` must come first.
-- `LoadMusicStream`: Opens a music file, as `LoadMusicStreamAsync` opens it, and returns the music once enough of the file has arrived to start.
+- `LoadMusicStream`: Opens a music file, and returns the music once enough of the file has arrived to start.
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
   - returns: The music, or one that isn't valid (`IsMusicValid`) when it couldn't be opened. Why it couldn't is logged.
 

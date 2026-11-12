@@ -50,7 +50,6 @@ static function IsWindowState(flag:Int):Bool
 static function SetTargetFPS(fps:Int):Void
 static function GetFPS():Int
 static function GetFrameTime():Float
-static function WaitTime(seconds:Float):Void
 static function GetTime():Float
 static function SetExitKey(key:Int):Void
 static function BeginDrawing():Void
@@ -187,6 +186,7 @@ static function EndScissorMode():Void
 static macro function SetClipboardText(text:String):Void
 static macro function GetClipboardText():String
 static macro function GetClipboardImage():Image
+static macro function WaitTime(seconds:Float):Void
 static macro function FileExists(fileName:String):Bool
 static macro function LoadFileText(fileName:String):Null<String>
 static macro function SaveFileText(fileName:String, text:String):Bool
@@ -352,8 +352,6 @@ static macro function EndDrawing():Void
   - returns: The frames a second.
 - `GetFrameTime`: Returns the seconds the last frame took.
   - returns: The seconds.
-- `WaitTime`: Stops the program for a time, drawing nothing and reading no input until it ends.
-  - `seconds`: How long.
 - `GetTime`: Returns the seconds since `InitWindow`.
   - returns: The seconds.
 - `SetExitKey`: Sets the key that closes the window, or `KEY_NULL` for none.
@@ -937,54 +935,56 @@ static macro function EndDrawing():Void
   - returns: The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when the clipboard holds none or can't be read. Why it couldn't is logged.
 
   A page may need permission, which the browser may ask the user for.
-- `FileExists`: Returns whether a file exists, as `FileExistsAsync` answers it. See `DirectoryExists` for a directory.
+- `WaitTime`: Stops the program for a time, drawing nothing and reading no input until it ends.
+  - `seconds`: How long.
+- `FileExists`: Returns whether a file exists. See `DirectoryExists` for a directory.
   - `fileName`: The file.
   - returns: True when it exists.
-- `LoadFileText`: Reads a text file, as `LoadFileTextAsync` reads it, and returns its text. See `LoadFileData` for reading a file's bytes.
+- `LoadFileText`: Reads a text file, and returns its text. See `LoadFileData` for reading a file's bytes.
   - `fileName`: The file.
   - returns: Its text, or null when it couldn't be read. Why it couldn't is logged.
-- `SaveFileText`: Writes a text file, as `SaveFileTextAsync` writes it, and returns once it is written. See `SaveFileData` for writing bytes.
+- `SaveFileText`: Writes a text file, and returns once it is written. See `SaveFileData` for writing bytes.
   - `fileName`: The file.
   - `text`: Its text.
   - returns: Whether it was written. Why it wasn't is logged.
 
   `LoadFileText` reads it back.
-- `LoadFileData`: Reads a file's bytes, as `LoadFileDataAsync` reads them, and returns them. See `LoadFileText` for reading a text file.
+- `LoadFileData`: Reads a file's bytes, and returns them. See `LoadFileText` for reading a text file.
   - `fileName`: The file.
   - returns: Its bytes, or null when it couldn't be read. Why it couldn't is logged.
-- `SaveFileData`: Writes a file's bytes, as `SaveFileDataAsync` writes them, and returns once they are written. See `SaveFileText` for writing text.
+- `SaveFileData`: Writes a file's bytes, and returns once they are written. See `SaveFileText` for writing text.
   - `fileName`: The file.
   - `data`: The bytes.
   - `dataSize`: How many of them.
   - returns: Whether they were written. Why they weren't is logged.
 
   `LoadFileData` reads them back.
-- `ExportDataAsCode`: Writes bytes as a C header, as `ExportDataAsCodeAsync` writes it, and returns once it is written.
+- `ExportDataAsCode`: Writes bytes as a C header, and returns once it is written.
   - `data`: The bytes.
   - `dataSize`: How many of them.
   - `fileName`: The file; its name, upper case, names the define and the array.
   - returns: Whether it was written. Why it wasn't is logged.
-- `DirectoryExists`: Returns whether a directory exists, as `DirectoryExistsAsync` answers it. See `FileExists` for a file.
+- `DirectoryExists`: Returns whether a directory exists. See `FileExists` for a file.
   - `dirPath`: The directory.
   - returns: True when it exists.
-- `GetFileLength`: Returns a file's size, as `GetFileLengthAsync` answers it.
+- `GetFileLength`: Returns a file's size.
   - `fileName`: The file.
   - returns: Its size in bytes; 0 when there is no file, as raylib's.
-- `IsPathFile`: Returns whether a path is a file, not a directory, as `IsPathFileAsync` answers it. See `DirectoryExists` for a directory.
+- `IsPathFile`: Returns whether a path is a file, not a directory. See `DirectoryExists` for a directory.
   - `path`: The path.
   - returns: True for a file; false for a directory or nothing there.
-- `LoadDirectoryFiles`: Lists a directory's files and subdirectories, as `LoadDirectoryFilesAsync` lists them. See `LoadDirectoryFilesEx` for a filter by extension and the subdirectories' files.
+- `LoadDirectoryFiles`: Lists a directory's files and subdirectories. See `LoadDirectoryFilesEx` for a filter by extension and the subdirectories' files.
   - `dirPath`: The directory.
   - returns: The list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
-- `LoadDirectoryFilesEx`: Lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, as `LoadDirectoryFilesExAsync` lists them. See `LoadDirectoryFiles` for listing one directory's every file and subdirectory.
+- `LoadDirectoryFilesEx`: Lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too. See `LoadDirectoryFiles` for listing one directory's every file and subdirectory.
   - `basePath`: The directory.
   - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.
   - `scanSubdirs`: Whether the subdirectories' files are listed too.
   - returns: The list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning.
-- `GetFileModTime`: Returns when a file was last written, as `GetFileModTimeAsync` answers it.
+- `GetFileModTime`: Returns when a file was last written.
   - `fileName`: The file.
   - returns: The time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
-- `ExportAutomationEventList`: Writes a list's events as text, as `ExportAutomationEventListAsync` writes it, and returns once it is written. See `LoadAutomationEventList` for reading it back.
+- `ExportAutomationEventList`: Writes a list's events as text, and returns once it is written. See `LoadAutomationEventList` for reading it back.
   - `list`: The list.
   - `fileName`: The file.
   - returns: Whether it was written. Why it wasn't is logged.
@@ -1198,7 +1198,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   Reads the program's `SetLoadFileTextCallback` first when it has one. A file that wasn't saved fails, at a later frame.
 
-  The text ends at the file's first NUL byte, and a byte that isn't UTF-8 is read as U+FFFD, as `LoadFileTextAsync` reads it.
+  The text ends at the file's first NUL byte, and a byte that isn't UTF-8 is read as U+FFFD.
 - `SaveFileDataAsync`: Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
   - `fileName`: The file.
   - `data`: The bytes.
@@ -1251,7 +1251,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The answer comes at a later frame, never during the call.
 
-  These are files, as `FileExistsAsync` finds them: - a file `SaveFileText` or `SaveFileData` wrote - a dropped file - a file the program has
+  These are files: - a file `SaveFileText` or `SaveFileData` wrote - a dropped file - a file the program has
 - `GetFileLengthAsync`: Asynchronously answers a file's size, replacing raylib's `GetFileLength`.
   - `fileName`: The file.
   - `answer`: Receives its size in bytes; 0 when there is no file, as raylib's.

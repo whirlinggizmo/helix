@@ -559,7 +559,7 @@ class RTextures {
 
 	// ---- Images: loading and exporting ----
 
-	/** Loads an image's raw pixels from a file, as `LoadImageRawAsync` loads them, and returns the image once they are read. See
+	/** Loads an image's raw pixels from a file, and returns the image once they are read. See
 		`LoadImage` for an encoded image file.
 
 		@param fileName  The file.
@@ -573,10 +573,7 @@ class RTextures {
 		RTexturesAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, answer, Answers.failing("LoadImageRaw", answer, new Image()));
 	}
 
-	/** Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See
-		`LoadImageFromTextureAsync` for reading a texture's pixels into an image.
-
-		A texture is read back asynchronously.
+	/** Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image.
 
 		@param texture  The texture.
 		@return  Never returns: a call doesn't compile. */
@@ -585,10 +582,7 @@ class RTextures {
 		throw "LoadImageFromTexture is unimplemented";
 	}
 
-	/** Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for
-		reading the screen into an image.
-
-		The screen is read back asynchronously, as a frame ends.
+	/** Doesn't compile. See `LoadImageFromScreenAsync` for reading the screen into an image.
 
 		@return  Never returns: a call doesn't compile. */
 	@:unsupported("LoadImageFromScreen: Not supported. Use LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) instead.")
@@ -611,7 +605,7 @@ class RTextures {
 		image.data = null;
 	}
 
-	/** Writes an image to a PNG, QOI or raw file, as `ExportImageAsync` writes it, and returns once it is written. See
+	/** Writes an image to a PNG, QOI or raw file, and returns once it is written. See
 		`ExportImageAsCode` for writing a C header.
 
 		@param image  The image.
@@ -646,7 +640,7 @@ class RTextures {
 		return file;
 	}
 
-	/** Writes an image as a C header, as `ExportImageAsCodeAsync` writes it, and returns once it is written. See `ExportImage` for
+	/** Writes an image as a C header, and returns once it is written. See `ExportImage` for
 		writing a PNG, QOI or raw file.
 
 		@param image  The image.

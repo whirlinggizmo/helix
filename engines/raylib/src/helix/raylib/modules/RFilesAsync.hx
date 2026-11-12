@@ -123,7 +123,7 @@ class RFilesAsync {
 
 		Reads the program's `SetLoadFileTextCallback` first when it has one. A file that wasn't saved fails, at a later frame.
 
-		The text ends at the file's first NUL byte, and a byte that isn't UTF-8 is read as U+FFFD, as `LoadFileTextAsync` reads it.
+		The text ends at the file's first NUL byte, and a byte that isn't UTF-8 is read as U+FFFD.
 
 		@param fileName  The file.
 		@param loaded  Receives its text.
@@ -245,7 +245,7 @@ class RFilesAsync {
 
 		The answer comes at a later frame, never during the call.
 
-		These are files, as `FileExistsAsync` finds them:
+		These are files:
 		- a file `SaveFileText` or `SaveFileData` wrote
 		- a dropped file
 		- a file the program has

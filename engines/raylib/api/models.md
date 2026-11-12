@@ -312,7 +312,7 @@ static macro function LoadModelAnimations(fileName:String, animCount:Array<Int>)
   - `mesh`: The mesh.
   - `isDynamic`: Whether the mesh will change. Ignored, as `UpdateMeshBuffer` can change any mesh here. raylib names it `dynamic`, a Haxe keyword.
 
-  A mesh not sent this way is sent when first drawn, as `LoadModelAsync`'s meshes and the `GenMesh*` meshes are.
+  A mesh not sent this way is sent when first drawn, as `LoadModel`'s meshes and the `GenMesh*` meshes are.
 
   An attribute the mesh has no array for reads a default in a shader:
 
@@ -556,19 +556,19 @@ static macro function LoadModelAnimations(fileName:String, animCount:Array<Int>)
   - `p3`: The next.
   - `p4`: The last.
   - returns: The hit.
-- `LoadMaterials`: Loads an .mtl file's materials, as `LoadMaterialsAsync` loads them, and returns them once they and their textures are read.
+- `LoadMaterials`: Loads an .mtl file's materials, and returns them once they and their textures are read.
   - `fileName`: The file, as the program names it: an .mtl file.
   - `materialCount`: Receives how many, in its first element.
   - returns: The materials, in the file's order, or none when they couldn't be loaded. Why they couldn't is logged.
-- `ExportMesh`: Writes a mesh as an OBJ file, as `ExportMeshAsync` writes it, and returns once it is written. See `ExportMeshAsCode` for writing a C header.
+- `ExportMesh`: Writes a mesh as an OBJ file, and returns once it is written. See `ExportMeshAsCode` for writing a C header.
   - `mesh`: The mesh, with positions, texture coordinates and normals.
   - `fileName`: The file; only ".obj" is written.
   - returns: Whether it was written. Why it wasn't is logged.
-- `ExportMeshAsCode`: Writes a mesh as a C header, as `ExportMeshAsCodeAsync` writes it, and returns once it is written. See `ExportMesh` for writing an OBJ file.
+- `ExportMeshAsCode`: Writes a mesh as a C header, and returns once it is written. See `ExportMesh` for writing an OBJ file.
   - `mesh`: The mesh.
   - `fileName`: The file; its name, upper case, names the defines and the arrays.
   - returns: Whether it was written. Why it wasn't is logged.
-- `LoadModelAnimations`: Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` loads them, and returns them once they are read.
+- `LoadModelAnimations`: Loads a glTF or GLB file's animations, and returns them once they are read.
   - `fileName`: The file, as the program names it.
   - `animCount`: Receives how many, in its first element.
   - returns: The animations, as many as the file has, or none when they couldn't be loaded. Why they couldn't is logged.

@@ -904,7 +904,7 @@ Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them.
 
 A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
-A raylib call that waits for a file (`LoadModel`) doesn't compile in a function used as a value, and names the call beside it that answers at a later frame (`LoadModelAsync`). A call that reads the screen or a texture back (`TakeScreenshot`, `LoadImageFromTexture`) doesn't compile, and names its `...Async` call.
+`EndDrawing`, a load (`LoadModel`) and a clipboard call don't compile in a function used as a value, a constructor or a variable's initial value. `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't compile, and each names its `...Async` call.
 
 Its members are on their own pages:
 

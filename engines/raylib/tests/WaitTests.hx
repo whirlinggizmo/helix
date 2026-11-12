@@ -6,7 +6,7 @@ import helix.services.screen.Screen;
 import helix.services.time.Time;
 
 /** Checks the calls a page waits for (helix-raylib's Wait), written as raylib's programs write them: a loop calling `EndDrawing()` in a
-	function of its own, one frame an iteration, with `continue` and `break`, a `do`-`while`, and loops over a range and an array; the clipboard written, then read; a compiled shader loaded; a frame ended in a function the loop
+	function of its own, one frame an iteration, with `continue` and `break`, a `do`-`while`, and loops over a range and an array; the clipboard written, then read; a compiled shader loaded; `WaitTime`; a frame ended in a function the loop
 	calls; a load in a function returning its value, used as a statement, a value, an argument and in a string; functions calling each
 	other; a method of an object, and one overriding it that calls it; a `throw` after a wait caught by the caller; and a function reaching no wait, which returns its value at
 	once, as do functions calling each other that reach none. In a page the frames come from the test's own timer and a function that waits returns at its first wait; natively each call
@@ -126,6 +126,12 @@ class WaitShapes {
 		var glow = LoadCompiledShader("glow.shader");
 		var missing = LoadCompiledShader("none.shader");
 		WaitTests.check(glow.id != 0 && missing.id == 0, 'LoadCompiledShader returns the shader, or an empty one: ${glow.id} ${missing.id}');
+
+		var fake = Runtime.system;
+		Runtime.system = new WaitClock();
+		var waited = waited(.05);
+		Runtime.system = fake;
+		WaitTests.check(waited >= .045 && waited < 1, 'WaitTime returns once the time has passed: $waited s');
 
 		before = Runtime.frames;
 		WaitTests.check(caught() == "caught after a frame", 'a throw after a wait is caught by the caller: ${caught()}');
@@ -260,6 +266,12 @@ class WaitShapes {
 		return '${GetClipboardText()} ${GetClipboardImage().width}';
 	}
 
+	static function waited(seconds:Float):Float {
+		var start = haxe.Timer.stamp();
+		WaitTime(seconds);
+		return haxe.Timer.stamp() - start;
+	}
+
 	static function failing():Void {
 		frame();
 		throw "after a frame";
@@ -341,4 +353,10 @@ class WaitClipboard implements helix.platform.IClipboard {
 	}
 
 	public function dispose():Void {}
+}
+
+/** A system whose clock is the real one, for a wait timed by it. */
+class WaitClock extends FakeSystem {
+	override public function getTime():Float
+		return haxe.Timer.stamp();
 }

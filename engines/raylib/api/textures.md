@@ -757,18 +757,18 @@ static macro function ExportImageAsCode(image:Image, fileName:String):Bool
   Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
 
   Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
-- `LoadImageRaw`: Loads an image's raw pixels from a file, as `LoadImageRawAsync` loads them, and returns the image once they are read. See `LoadImage` for an encoded image file.
+- `LoadImageRaw`: Loads an image's raw pixels from a file, and returns the image once they are read. See `LoadImage` for an encoded image file.
   - `fileName`: The file.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
   - `format`: The pixel format (`PIXELFORMAT_*`).
   - `headerSize`: The bytes before the pixels.
   - returns: The image, or one that isn't valid (`IsImageValid`) when it couldn't be loaded. Why it couldn't is logged.
-- `ExportImage`: Writes an image to a PNG, QOI or raw file, as `ExportImageAsync` writes it, and returns once it is written. See `ExportImageAsCode` for writing a C header.
+- `ExportImage`: Writes an image to a PNG, QOI or raw file, and returns once it is written. See `ExportImageAsCode` for writing a C header.
   - `image`: The image.
   - `fileName`: The file; its extension chooses the format.
   - returns: Whether it was written. Why it wasn't is logged.
-- `ExportImageAsCode`: Writes an image as a C header, as `ExportImageAsCodeAsync` writes it, and returns once it is written. See `ExportImage` for writing a PNG, QOI or raw file.
+- `ExportImageAsCode`: Writes an image as a C header, and returns once it is written. See `ExportImage` for writing a PNG, QOI or raw file.
   - `image`: The image.
   - `fileName`: The file; its name, upper case, names the defines and the array.
   - returns: Whether it was written. Why it wasn't is logged.

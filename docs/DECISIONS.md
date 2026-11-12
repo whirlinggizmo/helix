@@ -927,25 +927,35 @@ Why things are the way they are, numbered, in order.
     the trial's models, which hides the bug from the trial and leaves it for every user's models; leaving raylib's 0 until raylib
     changes, as no raylib release does yet.
 
-72. **A page waits where the program calls, and the program writes nothing for it.** DECISIONS 21 refused raylib's synchronous reads
-    on every target, and 16's build macro ran `while (!WindowShouldClose())` as a frame in a page, the loop in `main` alone. Now
-    `EndDrawing` and each raylib call that waits for a file (`LoadTexture`, `LoadModel`, `LoadSound`, `LoadFileText`, `SaveFileText`,
-    `FileExists`) are macros: in a page each expands to a JavaScript `await`, natively to a call that blocks. A build macro
-    (`helix.raylib.internal.Wait`, added to the program's classes by the library's `extraParams.hxml`) builds each function of the
-    program's that reaches one as an async function and awaits its calls, up the calls to `main`. The program writes no mark and no
-    `await`: the loop is in any function, a load returns its value, and `WindowShouldClose` is raylib's. A function declared in a
-    function waits when it is only ever called by its name. What can't wait is refused on every target, so a program that builds
-    natively builds for a page: a waiting call in a function used as a value (its refusal names the `...Async` call, which stays), in
-    a constructor or a variable's initial value, in a function an interface declares, and in an override of a function that doesn't
-    wait. The window requests (`ToggleFullscreen`, `SetWindowSize` and the rest) are raylib's: each asks and returns at once,
-    as raylib's page does, and the window's reads report the window as it is. So are the cursor's lock and release. The clipboard's
-    calls wait, as the loads do, and so does `LoadCompiledShader`, which `LoadShader`'s refusal names. `TakeScreenshot`,
-    `LoadImageFromScreen` and `LoadImageFromTexture` stay refused, each naming its `...Async` call: each reads a frame not drawn yet,
-    which a call waiting for it would stop the program from drawing. The async is the library's own, written where the program's expressions are: a page's
-    source map stays on the program's lines (the sample's 126 segments, all on `Main`'s). A function calling one whose body isn't
-    typed yet has both bodies in a page, the one run chosen as the page starts. Why: every 2026-11-11 helix-raylib entrant first met
-    "Synchronous loading is not supported" and rebuilt its loads around callbacks and a count of those pending
-    (helix-raylib-blind.009's notes), which no raylib program does. Measured on the spike: a page's frame in headless Chromium, 16.67 ms mean
-    before and after; a run on the desktop read about 0.2 ms more, not established. Rejected: marks the program writes (`@await`,
-    the hxasync haxelib, remembered for offsetting a page's source maps); the loop rewrite alone, which left every load refused; Emscripten's Asyncify, which has no
-    counterpart for Haxe's JavaScript.
+72. **A page waits where the program calls, and the program writes nothing for it.** It replaces 21's refusals of raylib's
+    synchronous reads and 16's loop macro. `EndDrawing`, each load (`LoadTexture`, `LoadModel`, `LoadFileText`, `SaveFileText`), the
+    clipboard's calls and `LoadCompiledShader` are macros. In a page each expands to a JavaScript `await`. Natively each blocks. A
+    build macro (`helix.raylib.internal.Wait`, added by the library's `extraParams.hxml`) builds each of the program's functions that
+    reaches one as an async function, and awaits each call of it. A function declared in a function waits too, when it is only ever
+    called by its name. The program writes no mark and no `await`. The loop is in any function, a load returns its value, and
+    `WindowShouldClose` is raylib's.
+
+    What can't wait is refused on every target, so a program that builds natively builds for a page. That is a waiting call in a
+    function used as a value, in a constructor or a variable's initial value, in a function an interface declares, or in an override
+    of a function that doesn't wait. Each refusal reads "Not supported in ...".
+
+    The window and cursor requests (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) ask and return at once, as raylib's page
+    does. The window's reads report the window as it is. A wait for the cursor's lock would stop the frames until the next click.
+
+    `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` stay refused, each naming its `...Async` call. Each reads a
+    frame not drawn yet, which a call waiting for it would keep from being drawn. The other `...Async` calls stay in `Raylib`, and no
+    refusal names them.
+
+    The async is the library's own, written where the program's expressions are. A page's source map stays on the program's lines (the
+    sample's 126 segments, all on `Main`'s). A function calling one whose body isn't typed yet has both bodies in a page, the one run
+    chosen as the page starts.
+
+    Why: every 2026-11-11 helix-raylib entrant first met "Synchronous loading is not supported" and rebuilt its loads around callbacks
+    and a count of those pending (helix-raylib-blind.009's notes). No raylib program does that.
+
+    Measured: a page's frame in headless Chromium, 16.67 ms mean before and after (on the spike). A build of a Wardens entrant takes
+    30 to 80 ms more, of 2.4 to 2.9 s, as each of the program's function bodies is typed twice. The same entrant with its loads
+    rewritten as waiting calls builds no slower.
+
+    Rejected: marks the program writes (`@await`, the hxasync haxelib); the loop rewrite alone, which left every load refused;
+    Emscripten's Asyncify, which has no counterpart for Haxe's JavaScript.

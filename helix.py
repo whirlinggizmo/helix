@@ -92,17 +92,17 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String)
     'GuessedCalls':('GuessedCalls.hx:9: characters 3-19 : TakeScreenshot: Not supported. Use TakeScreenshotAsync(','GuessedCalls.hx:10: characters 3-29 : TakeScreenshot: Not supported.',
     'GuessedCalls.hx:11: characters 16-42 : LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(','GuessedCalls.hx:12: characters 16-37 : LoadShader: Not supported. Use LoadCompiledShader(',
     'GuessedCalls.hx:13: characters 15-40 : GetMonitorPhysicalWidth: A monitor','GuessedCalls.hx:14: characters 3-26 : TextCopy: A String can\'t be written into'),
-    'WaitCalls':("WaitCalls.hx:10: characters 21-45 : LoadFileText: not in a constructor or a variable's initial value",
-    "WaitCalls.hx:39: characters 11-32 : LoadModel: not in a constructor or a variable's initial value",
-    'WaitCalls.hx:19: characters 19-31 : EndDrawing: call it from a function of a class, not from a function used as a value',
-    'WaitCalls.hx:20: characters 31-48 : LoadTexture: in a function used as a value, see LoadTextureAsync(',
-    'WaitCalls.hx:21: characters 44-74 : SaveFileText: in a function used as a value, see SaveFileTextAsync(',
-    'WaitCalls.hx:22: characters 21-28 : frame() waits (it reaches EndDrawing() or a load): call it from a function of a class, not from a function used as a value',
-    "WaitCalls.hx:23: characters 15-20 : frame waits (it reaches EndDrawing() or a load): call it, don't use it as a value",
-    'WaitCalls.hx:42: lines 42-45 : show waits (it reaches EndDrawing() or a load): not in a function WaitShown declares',
-    "WaitCalls.hx:61: lines 61-63 : update waits (it reaches EndDrawing() or a load): not in an override of a function that doesn't",
-    'WaitCalls.hx:75: characters 22-33 : tick() waits (it reaches EndDrawing() or a load): call it from a function of a class, not from a function used as a value',
-    'WaitCalls.hx:84: characters 4-16 : EndDrawing: call it from a function of a class, not from a function used as a value')}
+    'WaitCalls':("WaitCalls.hx:10: characters 21-45 : LoadFileText: Not supported in a constructor or a variable's initial value.",
+    "WaitCalls.hx:39: characters 11-32 : LoadModel: Not supported in a constructor or a variable's initial value.",
+    'WaitCalls.hx:19: characters 19-31 : EndDrawing: Not supported in a function used as a value.',
+    'WaitCalls.hx:20: characters 31-48 : LoadTexture: Not supported in a function used as a value.',
+    'WaitCalls.hx:21: characters 44-74 : SaveFileText: Not supported in a function used as a value.',
+    'WaitCalls.hx:22: characters 21-28 : frame(): Not supported in a function used as a value.',
+    'WaitCalls.hx:23: characters 15-20 : frame: Not supported as a value.',
+    'WaitCalls.hx:42: lines 42-45 : show(): Not supported in interface WaitShown.',
+    'WaitCalls.hx:61: lines 61-63 : update(): Not supported as an override of WaitBase.update.',
+    'WaitCalls.hx:75: characters 22-33 : tick(): Not supported in a function used as a value.',
+    'WaitCalls.hx:84: characters 4-16 : EndDrawing: Not supported in a function used as a value.')}
 
 def refused(base):
     """Each program in engines/raylib/tests/refused refused for JS and natively (typed alone), each of its refusals in the compiler's

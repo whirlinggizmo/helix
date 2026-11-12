@@ -519,8 +519,14 @@ class RCore {
 	/** Stops the program for a time, drawing nothing and reading no input until it ends.
 
 		@param seconds  How long. */
-	static function WaitTime(seconds:Float):Void {
+	@:waits
+	static function WaitTime(seconds:Float, answer:Void->Void):Void {
+		#if js
+		haxe.Timer.delay(answer, Std.int(Math.max(0, seconds) * 1000));
+		#else
 		Runtime.sleep(seconds);
+		answer();
+		#end
 	}
 
 	/** Returns the seconds since `InitWindow`.
@@ -1369,7 +1375,7 @@ class RCore {
 
 	// ---- Files ----
 
-	/** Returns whether a file exists, as `FileExistsAsync` answers it. See `DirectoryExists` for a directory.
+	/** Returns whether a file exists. See `DirectoryExists` for a directory.
 
 		@param fileName  The file.
 		@return  True when it exists. */
@@ -1378,7 +1384,7 @@ class RCore {
 		RFilesAsync.FileExistsAsync(fileName, answer);
 	}
 
-	/** Reads a text file, as `LoadFileTextAsync` reads it, and returns its text. See `LoadFileData` for reading a file's bytes.
+	/** Reads a text file, and returns its text. See `LoadFileData` for reading a file's bytes.
 
 		@param fileName  The file.
 		@return  Its text, or null when it couldn't be read. Why it couldn't is logged. */
@@ -1394,7 +1400,7 @@ class RCore {
 		@param text  The text. */
 	static function UnloadFileText(text:Null<String>):Void {}
 
-	/** Writes a text file, as `SaveFileTextAsync` writes it, and returns once it is written. See `SaveFileData` for writing bytes.
+	/** Writes a text file, and returns once it is written. See `SaveFileData` for writing bytes.
 
 		`LoadFileText` reads it back.
 
@@ -1449,7 +1455,7 @@ class RCore {
 		});
 	}
 
-	/** Reads a file's bytes, as `LoadFileDataAsync` reads them, and returns them. See `LoadFileText` for reading a text file.
+	/** Reads a file's bytes, and returns them. See `LoadFileText` for reading a text file.
 
 		@param fileName  The file.
 		@return  Its bytes, or null when it couldn't be read. Why it couldn't is logged. */
@@ -1465,7 +1471,7 @@ class RCore {
 		@param data  The bytes. */
 	static function UnloadFileData(data:Null<haxe.io.Bytes>):Void {}
 
-	/** Writes a file's bytes, as `SaveFileDataAsync` writes them, and returns once they are written. See `SaveFileText` for writing
+	/** Writes a file's bytes, and returns once they are written. See `SaveFileText` for writing
 		text.
 
 		`LoadFileData` reads them back.
@@ -1479,7 +1485,7 @@ class RCore {
 		RFilesAsync.SaveFileDataAsync(fileName, data, dataSize, answer.bind(true), Answers.failing("SaveFileData", answer, false));
 	}
 
-	/** Writes bytes as a C header, as `ExportDataAsCodeAsync` writes it, and returns once it is written.
+	/** Writes bytes as a C header, and returns once it is written.
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
@@ -1713,7 +1719,7 @@ class RCore {
 
 	// ---- Directories and dropped files ----
 
-	/** Returns whether a directory exists, as `DirectoryExistsAsync` answers it. See `FileExists` for a file.
+	/** Returns whether a directory exists. See `FileExists` for a file.
 
 		@param dirPath  The directory.
 		@return  True when it exists. */
@@ -1722,7 +1728,7 @@ class RCore {
 		RFilesAsync.DirectoryExistsAsync(dirPath, answer);
 	}
 
-	/** Returns a file's size, as `GetFileLengthAsync` answers it.
+	/** Returns a file's size.
 
 		@param fileName  The file.
 		@return  Its size in bytes; 0 when there is no file, as raylib's. */
@@ -1764,7 +1770,7 @@ class RCore {
 		#end
 	}
 
-	/** Returns whether a path is a file, not a directory, as `IsPathFileAsync` answers it. See `DirectoryExists` for a directory.
+	/** Returns whether a path is a file, not a directory. See `DirectoryExists` for a directory.
 
 		@param path  The path.
 		@return  True for a file; false for a directory or nothing there. */
@@ -1773,7 +1779,7 @@ class RCore {
 		RFilesAsync.IsPathFileAsync(path, answer);
 	}
 
-	/** Lists a directory's files and subdirectories, as `LoadDirectoryFilesAsync` lists them. See `LoadDirectoryFilesEx` for a filter
+	/** Lists a directory's files and subdirectories. See `LoadDirectoryFilesEx` for a filter
 		by extension and the subdirectories' files.
 
 		@param dirPath  The directory.
@@ -1783,8 +1789,7 @@ class RCore {
 		RFilesAsync.LoadDirectoryFilesAsync(dirPath, answer);
 	}
 
-	/** Lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, as `LoadDirectoryFilesExAsync`
-		lists them. See `LoadDirectoryFiles` for listing one directory's every file and subdirectory.
+	/** Lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too. See `LoadDirectoryFiles` for listing one directory's every file and subdirectory.
 
 		@param basePath  The directory.
 		@param filter  The extensions kept, such as ".png;.jpg;DIR", or null for every file.
@@ -1843,7 +1848,7 @@ class RCore {
 		Runtime.dropped = [];
 	}
 
-	/** Returns when a file was last written, as `GetFileModTimeAsync` answers it.
+	/** Returns when a file was last written.
 
 		@param fileName  The file.
 		@return  The time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
@@ -2178,7 +2183,7 @@ class RCore {
 		@param list  The list. */
 	static function UnloadAutomationEventList(list:AutomationEventList):Void {}
 
-	/** Writes a list's events as text, as `ExportAutomationEventListAsync` writes it, and returns once it is written. See
+	/** Writes a list's events as text, and returns once it is written. See
 		`LoadAutomationEventList` for reading it back.
 
 		@param list  The list.
@@ -2300,8 +2305,7 @@ class RCore {
 
 	// ---- Screenshots ----
 
-	/** Doesn't compile on any target, since a screenshot is read back as the next frame ends and saved after. See `TakeScreenshotAsync`
-		for saving a screenshot.
+	/** Doesn't compile. See `TakeScreenshotAsync` for saving a screenshot.
 
 		@param fileName  The file's name, or its path. */
 	@:unsupported("TakeScreenshot: Not supported. Use TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.")
@@ -2339,29 +2343,29 @@ class RCore {
 
 	// ---- emscripten's calls, which raylib's web programs make: each refuses, saying what to write instead ----
 
-	/** Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
+	/** Doesn't compile. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param fps  The frames a second, or 0 for the display's.
 		@param simulateInfiniteLoop  Whether the call never returns. */
-	@:unsupported("emscripten_set_main_loop: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, already runs once a frame. Write that loop in main, the frame's code in its body.")
+	@:unsupported("emscripten_set_main_loop: Not needed. Use while (!WindowShouldClose()) { ... } instead.")
 	static function emscripten_set_main_loop(func:Void->Void, fps:Int, simulateInfiniteLoop:Bool):Void {
 		throw "emscripten_set_main_loop is unsupported";
 	}
 
-	/** Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop.
+	/** Doesn't compile. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param arg  What the function is given.
 		@param fps  The frames a second, or 0 for the display's.
 		@param simulateInfiniteLoop  Whether the call never returns. */
-	@:unsupported("emscripten_set_main_loop_arg: Not needed: raylib's loop, while (!WindowShouldClose()) { ... }, already runs once a frame. Write that loop in main, the frame's code in its body, reading the argument from a variable.")
+	@:unsupported("emscripten_set_main_loop_arg: Not needed. Use while (!WindowShouldClose()) { ... } instead.")
 	static function emscripten_set_main_loop_arg(func:Dynamic->Void, arg:Dynamic, fps:Int, simulateInfiniteLoop:Bool):Void {
 		throw "emscripten_set_main_loop_arg is unsupported";
 	}
 
-	/** Doesn't compile, since a program leaves raylib's own loop instead. See `WindowShouldClose` for writing the loop. */
-	@:unsupported("emscripten_cancel_main_loop: Not needed: leave raylib's loop, while (!WindowShouldClose()) { ... }, with break; the code after the loop runs then.")
+	/** Doesn't compile. See `WindowShouldClose` for writing the loop. */
+	@:unsupported("emscripten_cancel_main_loop: Not needed. Use break in while (!WindowShouldClose()) { ... } instead.")
 	static function emscripten_cancel_main_loop():Void {
 		throw "emscripten_cancel_main_loop is unsupported";
 	}
@@ -2397,15 +2401,15 @@ class RCore {
 	/** Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_get_now: Not supported. See GetTime(), the seconds since InitWindow (emscripten's milliseconds are GetTime() * 1000).")
+	@:unsupported("emscripten_get_now: Not supported. Use GetTime() * 1000 instead.")
 	static function emscripten_get_now():Float {
 		throw "emscripten_get_now is unsupported";
 	}
 
-	/** Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame.
+	/** Doesn't compile. See `WaitTime` for waiting.
 
 		@param ms  The milliseconds. */
-	@:unsupported("emscripten_sleep: Not supported: a frame can't wait. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().")
+	@:unsupported("emscripten_sleep: Not supported. Use WaitTime(ms / 1000) instead.")
 	static function emscripten_sleep(ms:Int):Void {
 		throw "emscripten_sleep is unsupported";
 	}

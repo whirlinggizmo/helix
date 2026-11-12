@@ -172,8 +172,8 @@ def callback_types(api):
 
 
 def wrapped(line):
-    """A signature as the formatter lays it out: past 160 columns (a tab is 4), broken after the last comma that fits, the rest three tabs
-    in."""
+    """A signature or a call as the formatter lays it out: past 160 columns (a tab is 4), broken after the last comma that fits, the
+    rest three tabs in."""
     if len(line.expandtabs(4)) <= 160:
         return [line]
     # Broken only between parameters, never inside a parameter's type.
@@ -211,16 +211,14 @@ def body(line):
     return [head + ',', '\t\t\tmacro' + tail]
 
 
-def waiting(section, f, instead):
+def waiting(section, f):
     """A function a section writes with an answer parameter (`@:waits`), as a macro with raylib's parameters and result: a call waits
-    for the section's answer (helix.raylib.internal.Wait.section). instead is the parameters of its async, which the call's refusal in a
-    function used as a value names, or None when it has none."""
-    message = (f'{f.name}: in a function used as a value, see {f.name}Async({instead})' if instead is not None
-               else f'{f.name}: call it from a function of a class, not from a function used as a value')
+    for the section's answer (helix.raylib.internal.Wait.section)."""
+    message = f'{f.name}: Not supported in a function used as a value.'
     params = ', '.join(f'{p[0]}:ExprOf<{p[1]}>' for p in f.params)
     line = (f'\t\treturn helix.raylib.internal.Wait.section("{message}", macro helix.raylib.modules.{section}.{f.name}, '
             f'[{", ".join(p[0] for p in f.params)}], {"true" if f.result == "Void" else "false"});')
-    return [f'\t/** {f.doc} */', *wrapped(f'\tpublic static macro function {f.name}({params}):ExprOf<{f.result}>'), *body(line), '']
+    return [f'\t/** {f.doc} */', *wrapped(f'\tpublic static macro function {f.name}({params}):ExprOf<{f.result}>'), *wrapped(line), '']
 
 
 def stub(f, header, callbacks):
@@ -356,11 +354,10 @@ def described(texts):
     return sections, own, macros, initialized
 
 
-def generated(file_sections, functions, api, header, written, by_hand=(), signatures=None):
+def generated(file_sections, functions, api, header, written, by_hand=()):
     """A file's generated part, between and including its markers: its header's constants not written by hand, then forwards to its
     sections' functions, then the functions that wait (the sections' marked `@:waits`), then the functions a program can't call: the
-    sections' marked `@:unsupported` or `@:unimplemented`, and the header's no section writes. signatures gives each function's
-    parameters as written, by its name."""
+    sections' marked `@:unsupported` or `@:unimplemented`, and the header's no section writes."""
     if api is None:
         # A header without an API description (rlights.h) has its functions alone, as helix-raylib's own modules do.
         whose = f"{header}'s" if header.endswith('.h') or header.startswith('raylib ') else "helix-raylib's own"
@@ -399,7 +396,7 @@ def generated(file_sections, functions, api, header, written, by_hand=(), signat
                 continue
             if f.waits:
                 # Declared here as a macro, so the wait is in the program's function calling it.
-                waits.extend(waiting(name, f, (signatures or {}).get(f.name + 'Async')))
+                waits.extend(waiting(name, f))
                 continue
             if f.refusal:
                 # Declared here as a macro, so the build stops at the program's call, with the section's message.
@@ -514,7 +511,6 @@ def main():
     every = {f.name: f for fs in functions.values() for f in fs}
     written = {name: f.signature() for name, f in every.items()}
     written.update(macros)
-    signatures = dict(written)
     stale = [f'{m.group(1)}({m.group(2)})' for f in every.values() if f.refusal for m in [INSTEAD.search(f.refusal[1])]
              if m and written.get(m.group(1)) != m.group(2)]
     if stale:
@@ -547,7 +543,7 @@ def main():
         after = rest.split(END, 1)[1]
         # Written: in a section, or by hand in the file itself (its constants and macro functions).
         written = set(every) | set(own[name])
-        files[RAY / name] = before + generated(target_sections, functions, api, header, written, own[name], signatures) + after
+        files[RAY / name] = before + generated(target_sections, functions, api, header, written, own[name]) + after
         lines = files[RAY / name].count('\n')
         if class_path(name).startswith(EXTRAS + '.') and lines > MODULE_LINES:
             print(f'gen_raylib: {name} would be {lines} lines, over {MODULE_LINES}: split it into modules of their own, each a raylib '

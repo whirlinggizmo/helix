@@ -682,7 +682,7 @@ class RModels {
 
 	// ---- Models and meshes ----
 
-	/** Loads an .mtl file's materials, as `LoadMaterialsAsync` loads them, and returns them once they and their textures are read.
+	/** Loads an .mtl file's materials, and returns them once they and their textures are read.
 
 		@param fileName  The file, as the program names it: an .mtl file.
 		@param materialCount  Receives how many, in its first element.
@@ -921,7 +921,7 @@ class RModels {
 
 	/** Sends a mesh's vertices to the GPU, so the mesh can be drawn.
 
-		A mesh not sent this way is sent when first drawn, as `LoadModelAsync`'s meshes and the `GenMesh*` meshes are.
+		A mesh not sent this way is sent when first drawn, as `LoadModel`'s meshes and the `GenMesh*` meshes are.
 
 		An attribute the mesh has no array for reads a default in a shader:
 
@@ -1481,7 +1481,7 @@ class RModels {
 		Runtime.log(LOG_INFO, "MESH: Tangents data computed and uploaded for provided mesh");
 	}
 
-	/** Writes a mesh as an OBJ file, as `ExportMeshAsync` writes it, and returns once it is written. See `ExportMeshAsCode` for writing
+	/** Writes a mesh as an OBJ file, and returns once it is written. See `ExportMeshAsCode` for writing
 		a C header.
 
 		@param mesh  The mesh, with positions, texture coordinates and normals.
@@ -1525,7 +1525,7 @@ class RModels {
 		return text.toString();
 	}
 
-	/** Writes a mesh as a C header, as `ExportMeshAsCodeAsync` writes it, and returns once it is written. See `ExportMesh` for writing
+	/** Writes a mesh as a C header, and returns once it is written. See `ExportMesh` for writing
 		an OBJ file.
 
 		@param mesh  The mesh.
@@ -1585,7 +1585,7 @@ class RModels {
 	// As raylib 6.2 has them (raylib.h's 5.5 names and signatures, its frame a float as 6.2's): its glTF animations read, its frames mixed,
 	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader is given them as it draws.
 
-	/** Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` loads them, and returns them once they are read.
+	/** Loads a glTF or GLB file's animations, and returns them once they are read.
 
 		@param fileName  The file, as the program names it.
 		@param animCount  Receives how many, in its first element.

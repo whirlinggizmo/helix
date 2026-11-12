@@ -304,7 +304,7 @@ class RText {
 		UnloadTexture(font.texture);
 	}
 
-	/** Writes a font as a C header, as `ExportFontAsCodeAsync` writes it, and returns once it is written.
+	/** Writes a font as a C header, and returns once it is written.
 
 		@param font  The font.
 		@param fileName  The file.
@@ -607,7 +607,7 @@ class RText {
 		return font;
 	}
 
-	/** Loads a TrueType or OpenType font file at a size, as `LoadFontExAsync` loads it, and returns the font once its glyphs are ready.
+	/** Loads a TrueType or OpenType font file at a size, and returns the font once its glyphs are ready.
 		See `LoadFontFromMemory` for making a font from bytes already loaded.
 
 		@param fileName  The file, as the program names it.
@@ -620,7 +620,7 @@ class RText {
 		RTextAsync.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, answer, Answers.failing("LoadFontEx", answer, GetFontDefault()));
 	}
 
-	/** Makes a font from a TrueType or OpenType file's bytes, as `LoadFontFromMemoryAsync` makes it, and returns the font once its glyphs
+	/** Makes a font from a TrueType or OpenType file's bytes, and returns the font once its glyphs
 		are ready. See `LoadFontEx` for loading a file by its name.
 
 		@param fileType  The file's extension, ".ttf" or ".otf".
@@ -637,7 +637,7 @@ class RText {
 			Answers.failing("LoadFontFromMemory", answer, GetFontDefault()));
 	}
 
-	/** Rasterizes a TrueType or OpenType font's glyphs, as `LoadFontDataAsync` rasterizes them, and returns them once they are ready. See
+	/** Rasterizes a TrueType or OpenType font's glyphs, and returns them once they are ready. See
 		`LoadFontFromMemory` for a font ready to draw.
 
 		@param fileData  The font file's bytes.

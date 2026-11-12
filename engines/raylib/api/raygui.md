@@ -928,11 +928,11 @@ static macro function GuiLoadIcons(fileName:String, loadIconsName:Bool):Null<Arr
   - `color`: The color.
 
   Fades the icon by the alpha set with `GuiSetAlpha`.
-- `GuiLoadStyle`: Loads a style file (.rgs) over the current style, as `GuiLoadStyleAsync` loads it, and returns once it is loaded.
+- `GuiLoadStyle`: Loads a style file (.rgs) over the current style, and returns once it is loaded.
   - `fileName`: The style file.
 
   A file that can't be read leaves the default style. Why it couldn't is logged.
-- `GuiLoadIcons`: Loads an icon file (.rgi) over raygui's icons, as `GuiLoadIconsAsync` loads it, and returns once it is loaded.
+- `GuiLoadIcons`: Loads an icon file (.rgi) over raygui's icons, and returns once it is loaded.
   - `fileName`: The icon file.
   - `loadIconsName`: Whether the icons' names are read.
   - returns: The icons' names, in order, or null when they weren't read, the file isn't an icon file or it couldn't be read. Why it couldn't is logged.

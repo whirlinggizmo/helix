@@ -149,7 +149,7 @@ class RGui {
 		return at >= 0 && at < guiStyle.length ? guiStyle[at] : 0;
 	}
 
-	/** Loads a style file (.rgs) over the current style, as `GuiLoadStyleAsync` loads it, and returns once it is loaded.
+	/** Loads a style file (.rgs) over the current style, and returns once it is loaded.
 
 		A file that can't be read leaves the default style. Why it couldn't is logged.
 
@@ -299,7 +299,7 @@ class RGui {
 		return icons();
 	}
 
-	/** Loads an icon file (.rgi) over raygui's icons, as `GuiLoadIconsAsync` loads it, and returns once it is loaded.
+	/** Loads an icon file (.rgi) over raygui's icons, and returns once it is loaded.
 
 		@param fileName  The icon file.
 		@param loadIconsName  Whether the icons' names are read.
