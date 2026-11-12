@@ -15,9 +15,9 @@ using haxe.macro.ExprTools;
 	A waiting call is marked where it expands (`call`). In a page, each function of the program whose body holds one, or calls a
 	function of the program's that does, becomes an async function, and each call of it is awaited. A function declared in one becomes
 	an async function too, when it is only ever called by its name. A function calling one whose body isn't typed yet has both bodies,
-	the one run chosen as the page starts (`resolve`). A call of `super`'s function goes through a function of the class's own
-	(`forward`). Natively a waiting call blocks, and nothing is rewritten. On every target, a waiting call in a function used as a
-	value doesn't compile. */
+	the one run chosen as the page starts (`resolve`). A call of `super`'s function, and a read or a write of `super`'s property,
+	goes through a function of the class's own (`forward`). Natively a waiting call blocks, and nothing is rewritten. On every target, a
+	waiting call in a function used as a value doesn't compile. */
 @:noCompletion
 class Wait {
 	#if macro
@@ -113,7 +113,7 @@ class Wait {
 					if (Context.defined("js") && field.access.indexOf(AExtern) < 0)
 						field.access.remove(AInline);
 					var body = f.expr;
-					// An async function can't call `super`'s functions: a function of the class calls each for it.
+					// An async function can't use `super`: a function of the class calls each of its functions for it.
 					if (Context.defined("js") && parent != null && field.name != "new" && field.access.indexOf(AStatic) < 0)
 						body = forwarded(body, parent, forwards);
 					var wrapped = macro @:pos(body.pos) helix.raylib.internal.Wait.body($body, $v{key}, $v{field.name == "new"}, false);
@@ -139,32 +139,84 @@ class Wait {
 		return fields;
 	}
 
-	// A body with each call of a function of `super` made a call of a function of the class that calls it (`forwards`, by name).
+	// A body with each use of `super` made a call of a function of the class (`forwards`, by name): a call of `super`'s function
+	// calls one calling it, and a read or a write of `super`'s property one calling its accessor.
 	static function forwarded(e:Expr, parent:ClassType, forwards:Map<String, Null<Field>>):Expr {
+		function on(x:Expr):Expr
+			return forwarded(x, parent, forwards);
 		return switch e.expr {
 			case ECall({expr: EField({expr: EConst(CIdent("super"))}, name), pos: pos}, args):
-				if (!forwards.exists(name))
-					forwards.set(name, forward(name, parent, pos));
+				var by = forwarder(name, parent, forwards, pos);
 				// A name `super` doesn't have is left for the compiler to report.
-				if (forwards.get(name) == null)
+				if (by == null)
 					return e;
-				var by = SUPER + name;
-				{expr: ECall(macro @:pos(pos) this.$by, [for (a in args) forwarded(a, parent, forwards)]), pos: e.pos};
+				{expr: ECall(macro @:pos(pos) this.$by, [for (a in args) on(a)]), pos: e.pos};
+			case EBinop(op = OpAssign | OpAssignOp(_), {expr: EField({expr: EConst(CIdent("super"))}, name)}, value):
+				var set = accessor("set", name, parent, forwards, e.pos);
+				var get = op == OpAssign ? null : accessor("get", name, parent, forwards, e.pos);
+				if (set == null || (op != OpAssign && get == null))
+					return e;
+				var v = switch op {
+					case OpAssignOp(by): {expr: EBinop(by, macro @:pos(e.pos) this.$get(), on(value)), pos: e.pos};
+					case _: on(value);
+				}
+				macro @:pos(e.pos) this.$set($v);
+			case EUnop(op = OpIncrement | OpDecrement, postFix, {expr: EField({expr: EConst(CIdent("super"))}, name)}):
+				var get = accessor("get", name, parent, forwards, e.pos);
+				var set = accessor("set", name, parent, forwards, e.pos);
+				if (get == null || set == null)
+					return e;
+				var step = op == OpIncrement ? macro 1 : macro - 1;
+				postFix ? macro @:pos(e.pos) {
+					var before = this.$get();
+					this.$set(before + $step);
+					before;
+				} : macro @:pos(e.pos) this.$set(this.$get() + $step);
+			case EField({expr: EConst(CIdent("super"))}, name):
+				var get = accessor("get", name, parent, forwards, e.pos);
+				get == null ? e : macro @:pos(e.pos) this.$get();
+			// A string's `${...}` is an expression only once the string is read as one.
+			case EConst(CString(s, SingleQuotes)) if (s.indexOf("$") >= 0):
+				on(haxe.macro.MacroStringTools.formatString(s, e.pos));
 			case _:
-				haxe.macro.ExprTools.map(e, x -> forwarded(x, parent, forwards));
+				haxe.macro.ExprTools.map(e, on);
 		}
+	}
+
+	// The name of the function of the class calling `super`'s function of a name, made once a name (`forwards`), or null when `super`
+	// has none.
+	static function forwarder(name:String, parent:ClassType, forwards:Map<String, Null<Field>>, pos:Position):Null<String> {
+		if (!forwards.exists(name))
+			forwards.set(name, forward(name, parent, pos));
+		return forwards.get(name) == null ? null : SUPER + name;
+	}
+
+	// The name of the function of the class calling the accessor (`get` or `set`) of `super`'s property, or null when `super` has no
+	// property of the name with one.
+	static function accessor(side:String, name:String, parent:ClassType, forwards:Map<String, Null<Field>>, pos:Position):Null<String> {
+		var field = inherited(name, parent);
+		var access = field == null ? null : switch field.kind {
+			case FVar(read, write): side == "get" ? read : write;
+			case _: null;
+		}
+		return access != null && access.match(AccCall) ? forwarder(side + "_" + name, parent, forwards, pos) : null;
+	}
+
+	// The field of a name a class has or inherits, or null.
+	static function inherited(name:String, parent:ClassType):Null<ClassField> {
+		var c:Null<ClassType> = parent;
+		while (c != null) {
+			for (f in c.fields.get())
+				if (f.name == name)
+					return f;
+			c = c.superClass == null ? null : c.superClass.t.get();
+		}
+		return null;
 	}
 
 	// A function of the class calling `super`'s function of a name with its own arguments, or null when `super` has none of the name.
 	static function forward(name:String, parent:ClassType, pos:Position):Null<Field> {
-		var found:Null<ClassField> = null;
-		var c:Null<ClassType> = parent;
-		while (c != null && found == null) {
-			for (f in c.fields.get())
-				if (f.name == name)
-					found = f;
-			c = c.superClass == null ? null : c.superClass.t.get();
-		}
+		var found = inherited(name, parent);
 		if (found == null)
 			return null;
 		return switch Context.follow(found.type) {

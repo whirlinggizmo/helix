@@ -110,6 +110,8 @@ class WaitShapes {
 		var doubler:WaitCounter = new WaitDoubler();
 		var doubled = doubler.count(2);
 		WaitTests.check(doubled == 5 && Runtime.frames - before == 4, 'an override that waits calls the function it overrides: $doubled');
+		var recounted = new WaitDoubler().recount(2);
+		WaitTests.check(recounted == "2 10 15 16 -1", 'a function that waits reads and writes a property of super: $recounted');
 
 		before = Runtime.frames;
 		var within = nested(4);
@@ -288,6 +290,17 @@ class WaitShapes {
 class WaitCounter {
 	var total = 0;
 
+	/** The frames counted so far, through accessors. */
+	public var counted(get, set):Int;
+
+	function get_counted():Int {
+		return total;
+	}
+
+	function set_counted(value:Int):Int {
+		return total = value;
+	}
+
 	/** Creates one that counted nothing. */
 	public function new() {}
 
@@ -316,6 +329,25 @@ class WaitDoubler extends WaitCounter {
 	override public function count(frames:Int):Int {
 		super.count(frames);
 		return super.count(frames) + 1;
+	}
+
+	override function get_counted():Int {
+		return -1;
+	}
+
+	/** Runs frames, then reads and writes the count through the accessors of the property it overrides.
+
+		@param frames  How many.
+		@return  The steps' values, joined. */
+	public function recount(frames:Int):String {
+		super.count(frames);
+		var read = super.counted;
+		var set = super.counted = 10;
+		super.counted += 5;
+		var after = super.counted++;
+		++super.counted;
+		super.counted--;
+		return '$read $set $after ${super.counted} $counted';
 	}
 }
 
