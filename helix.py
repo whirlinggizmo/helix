@@ -30,7 +30,7 @@ def result(args,**kw):
 
 def test(native,audio_device):
     """The adapter rule's check, the layers' check, the names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the
-    API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/measure_sizes.py --check), the doc comments' check
+    API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/gen_sizes.py --check), the doc comments' check
     (tools/check_docs.py); each library's tests on the interpreter and Node, the shader compiler's on the interpreter, Trig's bits across
     targets, helix-raylib's tests on Node; and with native each library's tests, Trig's bits and helix-raylib's tests in hxcpp, and the
     platform's C tests (SDL3's dummy audio driver)."""
@@ -40,7 +40,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/check_tools.py'])
     run([sys.executable,'tools/gen_raylib.py','--check'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
-    run([sys.executable,'tools/measure_sizes.py','--check'])
+    run([sys.executable,'tools/gen_sizes.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
     (ROOT/'build/tests').mkdir(parents=True,exist_ok=True)
     if native:

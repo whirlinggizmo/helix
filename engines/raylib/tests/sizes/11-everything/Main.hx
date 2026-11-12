@@ -1,4 +1,4 @@
-// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader.
+// helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader.
 import helix.raylib.Raylib.*;
 
 /** helix-raylib's high-water mark: a program calling every function of `Raylib`, `Raymath`, `Rlgl`, `Raygui`, `Raylib6`, `Rlights` and `helix.raylib.extras` that compiles (`Everything.calls`

@@ -1,4 +1,4 @@
-// The platform's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one an image downloaded and decoded into a texture.
+// The platform's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one an image downloaded and decoded into a texture.
 import helix.platform.Blend;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;

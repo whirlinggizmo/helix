@@ -23,7 +23,7 @@ class Bunny {
 }
 
 /**
-	raylib's textures_bunnymark on helix-raylib, for tools/compare/compare.py. It spawns from run options instead of the mouse: count=N spawns N bunnies,
+	raylib's textures_bunnymark on helix-raylib, for tools/gen_speed.py. It spawns from run options instead of the mouse: count=N spawns N bunnies,
 	draws 120 frames to warm up and times 600, then prints one JSON line. ramp=1 starts at 1000 and adds 1000 each 60 frames while those held 59 fps,
 	printing the largest count that did. Every bunny starts the same from a fixed xorshift32 seed, as in the C version.
 **/
@@ -69,7 +69,7 @@ class Main {
 		#end
 	}
 
-	// A run option as compare.py passes it: in a page the URL's query (?count=N), natively the command line (--count=N).
+	// A run option as gen_speed.py passes it: in a page the URL's query (?count=N), natively the command line (--count=N).
 	static function option(name:String):Null<String> {
 		#if js
 		return new js.html.URLSearchParams(js.Browser.location.search).get(name);

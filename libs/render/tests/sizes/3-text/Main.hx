@@ -1,4 +1,4 @@
-// helix-render's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one text: a TrueType font loaded from beside the page, rasterized by the page's canvas, measured and drawn, and wrapped in a layout.
+// helix-render's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one text: a TrueType font loaded from beside the page, rasterized by the page's canvas, measured and drawn, and wrapped in a layout.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;
 import helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter;

@@ -1,4 +1,4 @@
-// helix-render's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one 3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D.
+// helix-render's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one 3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D.
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
 import helix.math.Matrix3D;

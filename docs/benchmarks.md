@@ -1,16 +1,406 @@
 # Benchmarks
 
-Two pages, each written by a tool from the numbers it keeps.
+How fast helix-raylib draws and how large its programs are, against raylib C, Godot, three.js, Lime and helix-legacy, and what each
+library's features cost a page. Two tools write this page, each its own sections between their markers, from the numbers it keeps:
 
-- **[sizes.md](sizes.md)**, from `tools/measure_sizes.py --write` and `sizes.json`: each library's and engine's web size ladder, a
-  program a rung, each adding one feature to the one before, so a rung's increment is what the feature costs, gzip and brotli. The
-  baseline CI holds to: a rung more than 1% and 1 KB larger fails `helix.py test`. helix-raylib's window is 34.5 KB gzip, its game rung
-  (a skinned model, textures, a font, audio, input, a save, a shader, a render texture, raygui) 134.6 KB, and everything it has 308.1 KB.
-- **[speed.md](speed.md)**, from `tools/compare/compare.py --write` and `speed.json`: helix-raylib against raylib C, Godot, three.js
-  and helix-legacy on two programs, raylib's bunnymark and its robots, in a page over Vulkan and over GL and natively, with each contender's
-  size. Each contender's row keeps the date it was measured.
+- `tools/gen_speed.py --write`, from `speed.json`: the speed section, its tables and its charts (`benchmarks/*.svg`). It runs when asked,
+  never in CI, as a run takes minutes to hours and wants a quiet machine and its display. With no contender named it times helix-raylib,
+  raylib C as the control, and each other contender whose rows are missing or whose pinned version changed; `--all` times them all.
+  Each row keeps the date it was measured.
+- `tools/gen_sizes.py --write`, from `sizes.json`: the web sizes. `helix.py test` checks every build against `sizes.json`: a rung more
+  than 1% and 1 KB larger, gzipped, fails.
 
 What they say together: helix-raylib's pages are under half of raylib wasm's download, and two fifths to a half of a three.js
 game's. On the bunnymark it draws about three times as fast as raylib C, in a page and natively, and a fifth slower than three.js's
 instanced sprites in a page. On the robots it is twice as fast as three.js in a page and level with raylib wasm's GPU skinning, and
 twice as fast as raylib C natively.
+
+## Speed
+
+How fast helix-raylib draws, and how large it is, against raylib C, Godot, three.js, Lime and helix-legacy on the same programs. Whatever
+changes helix-raylib's drawing is held to these numbers.
+
+Measured on coinspinner: an i9-13900HX and an RTX 4080 Laptop GPU, on Linux and X11. Native programs run in windows on the real display
+with vsync off. Pages run in headless Chromium 1248 on the GPU, ANGLE over Vulkan, with its frame rate cap lifted. A frame's time is the
+mean of 600 frames after 120 warming up, and each cell is the median of three runs. At 16.7 ms a frame a program runs at 60 fps, and at
+33.3 ms at 30 fps.
+
+### The bunnymark
+
+raylib's `textures_bunnymark`, the same program in each: bunnies of one 32 x 32 texture bouncing in an 800 x 450 window, each spawned
+from the same seed, so every program draws the same frames. The example's counter bar is left out. Each contender's program is in
+`tools/speed/contenders/`.
+
+The most held is the largest count, rising by 1000 every second, whose frames averaged 59 fps or better. A single slow frame ends it,
+so it is the noisier measure. Size is every file of the program's code a page fetches, gzipped, without the bunny's texture, or the
+native program stripped. three.js's size is its page bundled and minified with esbuild, which is what a three.js game ships, with the
+size as served (its modules unminified) beside it.
+
+![The bunnymark's frame time at 200k bunnies](benchmarks/bunnymark-speed.svg)
+
+![The bunnymark's size](benchmarks/bunnymark-size.svg)
+
+Frame time in ms:
+
+<!-- gen_speed: bunnymark -->
+| program | where | 10k | 50k | 100k | 150k | 200k | most held | size |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| **helix-raylib** | page, WebGL2 | 0.26 | 1.09 | 1.99 | 3.25 | 4.54 | 557k | 51.4 KB |
+| raylib C 5.5 | page, wasm, WebGL1 | 0.66 | 3.19 | 6.42 | 9.55 | 12.95 | 272k | 117.4 KB |
+| Godot 4.7.2, MultiMesh | page, wasm, WebGL2 (2026-11-04) | 10.16 | 46.27 | 91.00 | 135.61 | 183.95 | 15k | 10,125.4 KB |
+| Godot 4.7.2, a Sprite2D each | page, wasm, WebGL2 (2026-11-04) | 20.17 | 102.34 | 203.58 | 285.45 | 376.67 | 7k | 10,125.4 KB |
+| three.js 0.187.0, InstancedMesh | page, WebGL2 (2026-11-05) | 0.13 | 0.51 | 1.03 | 3.54 | 3.84 | 512k | 136.2 KB bundled (422.3 as served) |
+| three.js 0.187.0, a Sprite each | page, WebGL2 (2026-11-05) | 11.07 | 55.96 | 112.18 | 166.96 | 223.06 | 16k | 136.2 KB bundled (422.3 as served) |
+| Lime 8.3.1 | page, WebGL (2026-11-05) | 0.35 | 3.61 | 5.50 | 7.93 | 11.16 | 288k | 151.2 KB |
+| helix-legacy, a Sprite2D each | page, WebGL2 (2026-11-04) | 2.64 | 14.81 | 28.04 | 41.58 | 54.70 | 63k | 83.6 KB |
+| **helix-raylib** | native, GL | 0.28 | 1.00 | 2.01 | 3.08 | 4.14 | 658k | 8.0 MB |
+| raylib C 5.5 | native, GL | 0.72 | 3.08 | 6.05 | 9.27 | 12.04 | 271k | 0.9 MB |
+| Godot 4.7.2, MultiMesh | native, GL, Compatibility (2026-11-04) | 1.45 | 7.19 | 13.92 | 21.03 | 27.81 | 111k | 73.5 MB |
+| **helix-raylib** | native, SDL_GPU (Vulkan) | 0.25 | 0.98 | 1.96 | 3.34 | 4.70 | 716k | 7.2 MB |
+| Godot 4.7.2, MultiMesh | native, Vulkan, Forward+ (2026-11-04) | 1.31 | 6.12 | 11.77 | 16.99 | 23.66 | 131k | 73.5 MB |
+<!-- /gen_speed: bunnymark -->
+
+Godot's `Sprite2D` page past 50k is one run each.
+
+### Animated robots
+
+raylib's `models_animation`, many at once: a grid of the same robot (`robot.glb`, 7218 vertices and 43 bones), each posed by
+`UpdateModelAnimation` at its own frame and drawn with `DrawModel`, in a 1280 x 720 window. helix-raylib skins on the GPU. raylib C
+does either: on the CPU, as `UpdateModelAnimation` does by default, or on the GPU with `UpdateModelAnimationBones` and its skinning
+shader. three.js skins on the GPU, one `SkinnedMesh` and one `AnimationMixer` a robot. Size leaves out the robot's file (1.6 MB), which
+each program loads.
+
+![The robots' frame time at 400 robots](benchmarks/robots-speed.svg)
+
+![The robots' size](benchmarks/robots-size.svg)
+
+Frame time in ms:
+
+<!-- gen_speed: robots -->
+| program | where | 50 | 200 | 400 | size |
+|---|---|---:|---:|---:|---:|
+| **helix-raylib** | page, WebGL2 | 2.01 | 7.75 | 15.37 | 86.8 KB |
+| raylib C 5.5, CPU skinning | page, wasm, WebGL1 | 18.58 | 72.18 | 143.90 | 193.0 KB |
+| raylib C 5.5, GPU skinning | page, wasm, WebGL1 | 1.94 | 8.17 | 16.12 | 192.8 KB |
+| Godot 4.7.2 | page, wasm, WebGL2 (2026-11-04) | 13.20 | 56.44 | 163.98 | 10,125.4 KB |
+| three.js 0.187.0 | page, WebGL2 (2026-11-05) | 4.07 | 18.20 | 38.69 | 160.1 KB bundled (459.8 as served) |
+| **helix-raylib** | native, GL | 1.98 | 7.06 | 14.14 | 8.8 MB |
+| raylib C 5.5, CPU skinning | native, GL | 5.35 | 22.20 | 44.67 | 1.2 MB |
+| raylib C 5.5, GPU skinning | native, GL | 3.55 | 14.25 | 29.89 | 1.2 MB |
+| Godot 4.7.2 | native, GL, Compatibility (2026-11-04) | 15.08 | 59.72 |  | 73.5 MB |
+| **helix-raylib** | native, SDL_GPU (Vulkan) | 1.75 | 6.82 | 14.43 | 8.0 MB |
+<!-- /gen_speed: robots -->
+
+### Where they differ
+
+- **Size at game scale:** the bunnymark is a small program. The fair size comparison with three.js is helix-raylib's game rung below, a
+  skinned model, textures, a font, audio, input, a save, a shader and a render texture: 134.6 KB gzip, against three's 160 KB bundled
+  with its model loader, and a three.js game's UI is the page's DOM, which costs it nothing.
+- **three.js on the desktop** is its page in Electron, a window of Chromium's own: the same frames as a page, ANGLE over GL as Chrome's
+  default on Linux, and Electron's files as the size.
+- **three.js's two bunnymarks:** `InstancedMesh` keeps the quad on the GPU and sends a matrix and a color an instance, in one draw. A
+  `Sprite` a bunny, its idiomatic 2D path, is one object and one draw each, with a `SpriteMaterial` of its own for its tint.
+- **three.js's robots** are each a `SkinnedMesh` with its own skeleton, bone texture and mixer: one bone texture upload and eight draws
+  (the robot's meshes) a robot, where helix-raylib poses into one palette texture a frame.
+- **raylib's builds:** natively, raylib C is raylib's default release (-O1) with GLFW. In a page it is Emscripten -O3 and WebGL1
+  (raylib's default ES2), where helix-raylib is WebGL2 and unminified.
+- **Godot's programs** are GDScript. The `Sprite2D` version is the idiomatic one (one manager's `_process` moves every node), and
+  MultiMesh is its documented fast path. Its web export has only the Compatibility renderer. It draws at fractional positions, where
+  raylib and helix-raylib truncate them to whole pixels.
+- **helix-legacy** draws a `Sprite2D` on its stage for each bunny. Its `Batch2D`, the fast path, is internal and not something a game reaches.
+- **Chromium's backend** changes the page's numbers: see below.
+
+### Pages over GL
+
+ANGLE over GL is Chrome's default on Linux, and the pages run there as below (`gen_speed.py --backend gl`). A visible window is within 15%
+of headless over GL. Over Vulkan a visible window loses its WebGL context at startup, every program's, so pages are measured headless.
+
+<!-- gen_speed: bunnymark-gl -->
+| program | where | 10k | 50k | 100k | 150k | 200k | most held | size |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| **helix-raylib** | page, WebGL2 | 0.33 | 1.18 | 2.54 | 4.24 | 5.59 | 452k | 51.6 KB |
+| raylib C 5.5 | page, wasm, WebGL1 | 0.78 | 3.40 | 6.84 | 10.29 | 13.35 | 243k | 117.4 KB |
+| three.js 0.187.0, InstancedMesh | page, WebGL2 | 0.15 | 0.67 | 1.30 | 2.23 | 3.33 | 512k | 136.2 KB bundled (422.3 as served) |
+| three.js 0.187.0, a Sprite each | page, WebGL2 | 11.11 | 54.95 | 111.51 | 164.81 | 222.86 | 16k | 136.2 KB bundled (422.3 as served) |
+| Lime 8.3.1 | page, WebGL | 0.47 | 1.83 | 15.50 | 19.53 | 32.89 | 89k | 151.2 KB |
+<!-- /gen_speed: bunnymark-gl -->
+
+<!-- gen_speed: robots-gl -->
+| program | where | 50 | 200 | 400 | size |
+|---|---|---:|---:|---:|---:|
+| **helix-raylib** | page, WebGL2 | 2.79 | 10.50 | 20.66 | 86.1 KB |
+| raylib C 5.5, CPU skinning | page, wasm, WebGL1 | 6.04 | 23.41 | 48.13 | 193.1 KB |
+| raylib C 5.5, GPU skinning | page, wasm, WebGL1 | 2.22 | 7.71 | 16.09 | 192.8 KB |
+| three.js 0.187.0 | page, WebGL2 | 5.76 | 32.24 | 64.54 | 160.1 KB bundled (459.8 as served) |
+<!-- /gen_speed: robots-gl -->
+
+## Web sizes
+
+Each library has a ladder of programs on it and what it sits on, each constructing only what it uses and adding one feature to the one
+before, so a rung's increment is what the feature costs. Every rung is a release browser build (`-dce full`, the analyzer), its
+JavaScript unminified, as Haxe alone writes it; sizes in KB.
+
+<!-- gen_sizes -->
+Measured from cb2e522 2026-11-11 with Haxe 4.3.7.
+
+### helix-platform
+
+Programs on helix-platform alone (`libs/platform/tests/sizes/`), each constructing only the adapters it uses and adding one to the one before: what a feature costs is its row's increment, gzip; brotli in brackets. The adapters' bytes are counted under their interface.
+
+| rung | adds | raw | gzip (brotli) | increment |
+|---|---|---:|---:|---:|
+| 1-clear | a window cleared each frame: the window, its events and the GPU | 34.8 | 7.7 (6.8) |  |
+| 2-triangle | a triangle drawn: a compiled shader, a buffer and a pipeline | 62.3 | 13.8 (12.1) | +6.1 |
+| 3-http | a file downloaded over HTTP | 71.0 | 16.2 (14.2) | +2.4 |
+| 4-audio | the file decoded and played as a sound | 83.8 | 18.8 (16.5) | +2.7 |
+| 5-image | an image downloaded and decoded into a texture | 86.9 | 19.5 (17.0) | +0.6 |
+| 6-filesystem | a file written to the browser's file system and read back | 95.0 | 21.4 (18.7) | +1.9 |
+
+Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
+
+| package | 1-clear | 2-triangle | 3-http | 4-audio | 5-image | 6-filesystem |
+|---|---:|---:|---:|---:|---:|---:|
+| platform/graphics | 13.3 | 35.9 | 35.9 | 35.9 | 35.9 | 35.9 |
+| haxe metadata | 8.7 | 9.1 | 9.8 | 11.9 | 12.3 | 13.1 |
+| std/js | 3.9 | 4.2 | 6.4 | 6.7 | 6.7 | 9.1 |
+| platform/audio | 0.0 | 0.0 | 0.0 | 7.7 | 7.7 | 7.7 |
+| platform/shared | 3.3 | 5.1 | 5.1 | 5.1 | 5.6 | 5.6 |
+| platform/http | 0.0 | 0.0 | 5.5 | 5.5 | 5.5 | 5.5 |
+| program | 0.8 | 2.2 | 2.7 | 3.1 | 3.4 | 3.9 |
+| platform/events | 3.5 | 3.5 | 3.5 | 3.5 | 3.5 | 3.5 |
+| platform/filesystem | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.0 |
+| platform/audiodecoder | 0.0 | 0.0 | 0.0 | 2.3 | 2.3 | 2.3 |
+| platform/imagedecoder | 0.0 | 0.0 | 0.0 | 0.0 | 1.8 | 1.8 |
+| platform | 0.1 | 0.8 | 0.8 | 0.8 | 0.8 | 1.4 |
+| std/haxe | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 1.3 |
+| platform/window | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 |
+| std/core | 0.0 | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 |
+
+### helix-services
+
+Programs on helix-services and what it sits on (`libs/services/tests/sizes/`), each adding one service, with the platform's adapters it needs, to the one before, from a window cleared each frame: what a service costs is its row's increment, gzip; brotli in brackets. Each service's bytes are counted under its package; the adapters' under their interface.
+
+| rung | adds | raw | gzip (brotli) | increment |
+|---|---|---:|---:|---:|
+| 1-clear | a window cleared each frame: the platform's window, its events and the GPU, no service | 34.8 | 7.7 (6.8) |  |
+| 2-time | the game's time and a timer | 38.3 | 8.5 (7.5) | +0.8 |
+| 3-config | an option read | 40.7 | 9.2 (8.1) | +0.7 |
+| 4-input | an action bound to a key and a gamepad button, read each frame | 64.0 | 13.6 (11.9) | +4.4 |
+| 5-saves | a value loaded, set and written | 78.8 | 17.1 (14.9) | +3.5 |
+| 6-assets | a file loaded from a file system | 82.5 | 17.8 (15.5) | +0.7 |
+| 7-server | a server after the file system, its files downloaded and kept (RevalidateCache) | 104.7 | 22.8 (19.6) | +5.0 |
+| 8-audio | a sound loaded through the assets and played | 124.7 | 27.0 (23.3) | +4.2 |
+| 9-manifest | the server's copies known by its manifests (ManifestCache) | 135.6 | 29.4 (25.2) | +2.3 |
+
+Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
+
+| package | 1-clear | 2-time | 3-config | 4-input | 5-saves | 6-assets | 7-server | 8-audio | 9-manifest |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| services/assets | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.7 | 13.8 | 13.8 | 23.5 |
+| haxe metadata | 8.7 | 9.0 | 9.2 | 12.6 | 14.3 | 14.8 | 17.1 | 18.9 | 19.2 |
+| platform/graphics | 13.3 | 13.3 | 13.3 | 13.3 | 13.3 | 13.3 | 13.3 | 13.3 | 13.3 |
+| services/input | 0.0 | 0.0 | 0.0 | 10.3 | 10.3 | 10.3 | 10.3 | 10.3 | 10.3 |
+| std/js | 3.9 | 3.9 | 4.6 | 5.4 | 7.7 | 7.7 | 9.4 | 9.8 | 10.0 |
+| platform/audio | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 9.0 | 9.0 |
+| services/audio | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 6.0 | 6.0 |
+| platform/http | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 5.5 | 5.5 | 5.5 |
+| services/saves | 0.0 | 0.0 | 0.0 | 0.0 | 4.8 | 4.8 | 4.8 | 4.8 | 4.8 |
+| platform/keyboard | 0.0 | 0.0 | 0.0 | 4.5 | 4.5 | 4.5 | 4.5 | 4.5 | 4.5 |
+| platform/filesystem | 0.0 | 0.0 | 0.0 | 0.0 | 3.0 | 3.0 | 3.2 | 3.2 | 3.9 |
+| platform/events | 3.5 | 3.5 | 3.5 | 3.6 | 3.6 | 3.6 | 3.6 | 3.6 | 3.6 |
+| program | 0.8 | 1.0 | 1.1 | 1.8 | 2.2 | 2.6 | 3.0 | 3.4 | 3.4 |
+| platform/shared | 3.3 | 3.3 | 3.3 | 3.3 | 3.3 | 3.3 | 3.3 | 3.3 | 3.3 |
+| platform/gamepads | 0.0 | 0.0 | 0.0 | 3.3 | 3.3 | 3.3 | 3.3 | 3.3 | 3.3 |
+| services/time | 0.0 | 2.9 | 2.9 | 2.9 | 2.9 | 2.9 | 2.9 | 2.9 | 2.9 |
+| platform/audiodecoder | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.3 | 2.3 |
+| platform | 0.1 | 0.1 | 0.1 | 0.3 | 0.8 | 0.8 | 1.4 | 1.4 | 1.4 |
+| std/haxe | 0.4 | 0.4 | 0.4 | 0.4 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 |
+| log | 0.0 | 0.0 | 0.0 | 0.0 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 |
+| std/core | 0.0 | 0.0 | 0.6 | 0.6 | 0.6 | 0.6 | 1.1 | 1.1 | 1.1 |
+| platform/window | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 |
+| services/config | 0.0 | 0.0 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 |
+| platform/system | 0.0 | 0.1 | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 |
+
+### helix-render
+
+Programs on helix-render and what it sits on (`libs/render/tests/sizes/`), each adding one feature to the one before, from the renderer's frame clearing the screen: what a feature costs is its row's increment, gzip; brotli in brackets. Its first draw brings the batches' shader (GLSL ES carried in the program) and helix-services' shaders; its text the assets, the images and the fonts it loads a TrueType font through; its 3D the 3D batch, a mesh and an unlit material; its light the lights and the lit materials' one shader, every shading, counted under `BatchLighting`, which compiles it. helix-render's bytes are counted by source file, or by package for `effects`.
+
+| rung | adds | raw | gzip (brotli) | increment |
+|---|---|---:|---:|---:|
+| 1-clear | the renderer's frame, the screen cleared each frame through it | 100.5 | 21.3 (18.5) |  |
+| 2-sprites | sprites: a texture made from an image in memory, drawn turned by the 2D batch | 151.2 | 32.0 (27.6) | +10.7 |
+| 3-text | text: a TrueType font loaded from beside the page, rasterized by the page's canvas, measured and drawn, and wrapped in a layout | 224.8 | 49.0 (41.3) | +17.0 |
+| 4-shapes | shapes: lines, a polyline, rectangles rounded and not, circles, ellipses and polygons, filled and stroked | 239.8 | 52.2 (44.0) | +3.2 |
+| 5-mesh | 3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D | 352.5 | 73.9 (61.4) | +21.7 |
+| 6-lit | light: the cube drawn lit, metallic-roughness, under a sun and an ambient light | 415.0 | 84.0 (69.2) | +10.1 |
+
+Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
+
+| package | 1-clear | 2-sprites | 3-text | 4-shapes | 5-mesh | 6-lit |
+|---|---:|---:|---:|---:|---:|---:|
+| render/BatchLighting | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 58.6 |
+| render/Batch3D | 0.0 | 0.0 | 0.0 | 0.0 | 51.5 | 51.6 |
+| services/shaders | 20.6 | 36.3 | 36.3 | 36.3 | 44.9 | 45.0 |
+| platform/graphics | 42.2 | 42.9 | 42.9 | 42.9 | 43.4 | 43.4 |
+| math | 0.0 | 3.3 | 5.8 | 5.8 | 24.3 | 24.3 |
+| render/Batch2D | 0.0 | 17.7 | 18.1 | 19.5 | 24.3 | 24.3 |
+| haxe metadata | 12.4 | 14.9 | 19.5 | 19.6 | 21.7 | 22.5 |
+| formats | 0.0 | 0.0 | 14.5 | 14.5 | 14.5 | 14.5 |
+| services/assets | 0.0 | 0.0 | 13.2 | 13.2 | 13.2 | 13.2 |
+| render/Renderer | 5.7 | 9.6 | 9.8 | 9.8 | 11.3 | 11.3 |
+| render/GpuMesh3D | 0.0 | 0.0 | 0.0 | 0.0 | 10.7 | 10.7 |
+| std/js | 5.4 | 6.5 | 10.1 | 10.1 | 10.6 | 10.6 |
+| render/PlaneDrawing2D | 0.0 | 2.7 | 5.0 | 9.0 | 9.0 | 9.0 |
+| render/Tessellator2D | 0.0 | 0.0 | 0.0 | 8.7 | 8.7 | 8.7 |
+| services/fonts | 0.0 | 0.0 | 6.9 | 6.9 | 6.9 | 6.9 |
+| platform/http | 0.0 | 0.0 | 5.5 | 5.5 | 5.5 | 5.5 |
+| platform/shared | 5.1 | 5.1 | 5.1 | 5.1 | 5.1 | 5.1 |
+| platform/fontrasterizer | 0.0 | 0.0 | 5.1 | 5.1 | 5.1 | 5.1 |
+| geometry | 0.0 | 0.0 | 0.0 | 0.0 | 4.8 | 4.8 |
+| render/RenderFill | 0.0 | 0.0 | 0.0 | 0.0 | 4.2 | 4.2 |
+| program | 0.9 | 1.2 | 2.5 | 3.2 | 3.7 | 3.9 |
+| platform/events | 3.5 | 3.5 | 3.5 | 3.5 | 3.5 | 3.5 |
+| platform/filesystem | 0.0 | 0.0 | 3.2 | 3.2 | 3.2 | 3.2 |
+| render/GpuFont2D | 0.0 | 0.0 | 2.9 | 2.9 | 2.9 | 2.9 |
+| render/RenderView | 0.0 | 0.0 | 0.0 | 0.0 | 2.8 | 2.8 |
+| platform | 1.3 | 1.3 | 2.5 | 2.5 | 2.5 | 2.5 |
+| render/TextLayout2D | 0.0 | 0.0 | 2.4 | 2.4 | 2.4 | 2.4 |
+| std/haxe | 0.4 | 0.4 | 1.3 | 1.3 | 2.0 | 2.0 |
+| std/core | 0.1 | 0.1 | 1.3 | 1.3 | 1.3 | 1.3 |
+| log | 0.0 | 0.0 | 1.3 | 1.3 | 1.3 | 1.3 |
+| render/Material3D | 0.0 | 0.0 | 0.0 | 0.0 | 0.4 | 1.2 |
+| render/RenderStream | 0.7 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| render/Light3D | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.0 |
+| render/RenderDraw | 0.6 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| services/images | 0.0 | 0.8 | 0.9 | 0.9 | 0.9 | 0.9 |
+| render/Texture2D | 0.2 | 0.7 | 0.8 | 0.8 | 0.9 | 0.9 |
+| platform/window | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 |
+| render/TextureRegion2D | 0.0 | 0.6 | 0.6 | 0.6 | 0.6 | 0.6 |
+| render/RenderPass | 0.3 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 |
+| render/DirectionalLight3D | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.5 |
+| render/View3D | 0.0 | 0.0 | 0.0 | 0.0 | 0.4 | 0.4 |
+| render/Environment3D | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.3 |
+| render/RenderTarget2D | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 |
+| render/MeshState3D | 0.0 | 0.0 | 0.0 | 0.0 | 0.2 | 0.2 |
+| render/Fog3D | 0.0 | 0.0 | 0.0 | 0.0 | 0.1 | 0.1 |
+| platform/imagedecoder | 0.0 | 0.0 | 0.1 | 0.1 | 0.1 | 0.1 |
+
+### helix-raylib
+
+Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each adding one feature to the one before, from a window cleared each frame: what a feature costs through raylib's API is its row's increment, gzip; brotli in brackets. Against the services' ladder this is what the familiar API costs (DECISIONS 15): helix-raylib's window brings its time, the screen (with the saves it keeps its state in) and the keyboard, so its first rung holds them; the rest (the assets its files load through, the image decoder, the dropped files) comes with the functions that need it (DECISIONS 30). Each rung's `@:adds` names what it adds. Its 3D starts with a cube made in memory (GenMeshCube, LoadModelFromMesh), drawn unlit with a camera: the 3D drawing alone, so the glTF rung after it is the reader's own cost. helix-raylib's bytes are counted by source file: raylib's modules (R*) and its internals, its facade and structs as raylib. The last two rungs are its high-water marks. The game is what a real game uses, one file format of each kind (a skinned, blended glTF model, PNG textures, a TTF font, WAV sounds and Ogg music, every input, a save, a shader and a render texture). The kitchen sink calls every function of `Raylib`, `Raymath`, `Rlgl`, `Raygui`, `Raylib6`, `Rlights` and `helix.raylib.extras` that compiles, written as the program builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-raylib is left out: it is the comparison point for whole-library sizes, such as an Emscripten build of raylib exporting everything.
+
+| rung | adds | raw | gzip (brotli) | increment |
+|---|---|---:|---:|---:|
+| 1-window | a window cleared each frame: raylib's loop and frame, and what helix-raylib builds before main | 161.8 | 34.5 (29.2) |  |
+| 2-shapes | 2D shapes: a rectangle, a circle, a line and a triangle | 189.7 | 39.2 (33.1) | +4.8 |
+| 3-text | text in raylib's default font | 215.1 | 45.6 (38.2) | +6.4 |
+| 4-texture | a texture loaded with LoadTextureAsync and drawn | 265.2 | 56.5 (46.9) | +10.9 |
+| 5-cube | 3D: a cube made with GenMeshCube and LoadModelFromMesh, drawn with a camera | 316.4 | 67.0 (55.2) | +10.5 |
+| 6-model | a glTF model loaded with LoadModelAsync and drawn beside the cube | 397.7 | 84.5 (68.6) | +17.5 |
+| 7-skinned | the model's animations loaded with LoadModelAnimationsAsync and one played | 442.4 | 92.7 (74.9) | +8.2 |
+| 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight | 448.4 | 93.9 (75.8) | +1.2 |
+| 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 473.4 | 99.1 (80.1) | +5.2 |
+| 10-game | a game: what a real game uses, its file formats one of each | 663.7 | 134.6 (108.5) | +35.5 |
+| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1726.3 | 308.1 (239.3) | +173.5 |
+
+Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
+
+| package | 1-window | 2-shapes | 3-text | 4-texture | 5-cube | 6-model | 7-skinned | 8-lit | 9-audio | 10-game | 11-everything |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| formats | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 25.6 | 25.6 | 25.6 | 25.6 | 43.5 | 128.8 |
+| raylib/RTextures | 0.0 | 0.0 | 6.3 | 8.9 | 8.9 | 8.9 | 8.9 | 8.9 | 8.9 | 12.5 | 109.7 |
+| program | 0.6 | 1.0 | 1.1 | 1.4 | 1.8 | 2.1 | 2.5 | 2.9 | 3.2 | 8.2 | 96.2 |
+| raylib/RGuiControls | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 86.6 |
+| raylib/RCore | 1.9 | 1.9 | 1.9 | 2.0 | 3.3 | 3.3 | 3.3 | 4.2 | 4.2 | 16.5 | 82.6 |
+| raylib/RModels | 0.0 | 0.0 | 0.0 | 0.0 | 7.5 | 8.1 | 8.4 | 9.4 | 9.5 | 12.3 | 77.8 |
+| raylib/RShapes | 0.0 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 4.5 | 63.7 |
+| raylib/RText | 0.0 | 0.0 | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 | 16.4 | 50.3 |
+| platform/graphics | 45.0 | 45.8 | 45.8 | 45.8 | 45.8 | 45.8 | 46.4 | 46.4 | 46.4 | 47.0 | 49.7 |
+| math | 8.6 | 9.1 | 9.1 | 9.1 | 23.3 | 30.3 | 30.3 | 30.3 | 30.3 | 36.1 | 45.3 |
+| raylib/RMath | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 7.0 | 14.4 | 14.4 | 14.4 | 15.1 | 44.1 |
+| raylib/RLighting | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 44.1 |
+| haxe metadata | 13.0 | 13.8 | 14.5 | 19.2 | 20.3 | 23.3 | 23.8 | 24.0 | 26.2 | 33.3 | 44.1 |
+| raylib/Frame | 26.1 | 30.7 | 31.8 | 31.8 | 39.1 | 39.1 | 39.1 | 39.1 | 39.1 | 39.5 | 43.6 |
+| services/images | 0.0 | 0.2 | 0.2 | 1.9 | 1.9 | 1.9 | 1.9 | 1.9 | 1.9 | 3.2 | 34.7 |
+| services/input | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 14.9 | 32.2 |
+| raylib/RGui | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 29.7 |
+| services/shaders | 26.8 | 27.0 | 27.0 | 27.0 | 27.7 | 27.7 | 28.1 | 28.1 | 28.1 | 28.1 | 28.6 |
+| raylib/RAudio | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.2 | 7.5 | 28.0 |
+| platform/audio | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 9.0 | 24.8 | 26.4 |
+| raylib/FrameConverter | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 24.3 | 25.2 |
+| raylib/Models | 0.0 | 0.0 | 0.0 | 0.0 | 8.4 | 21.1 | 21.3 | 21.3 | 21.3 | 21.8 | 24.2 |
+| std/haxe | 0.4 | 0.4 | 0.7 | 1.7 | 2.3 | 3.9 | 3.9 | 3.9 | 3.9 | 4.1 | 23.3 |
+| raylib/Runtime | 8.5 | 9.0 | 9.1 | 13.3 | 13.3 | 13.6 | 13.6 | 13.6 | 13.6 | 19.2 | 22.8 |
+| raylib/Animations | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.4 | 19.2 | 19.2 | 19.2 | 20.5 | 21.6 |
+| raylib/Pixels | 0.0 | 0.0 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 19.3 |
+| raylib/Automation | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 18.7 |
+| raylib | 0.0 | 0.9 | 1.6 | 1.6 | 6.0 | 6.8 | 7.1 | 7.4 | 7.7 | 9.5 | 18.6 |
+| raylib/RDebug | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 18.0 |
+| services/assets | 0.0 | 0.0 | 0.0 | 13.8 | 13.8 | 13.8 | 13.8 | 13.8 | 13.8 | 18.0 | 18.0 |
+| raylib/RFilesAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.4 | 17.5 |
+| raylib/Textures | 0.5 | 4.5 | 7.9 | 9.4 | 10.7 | 12.6 | 12.6 | 12.6 | 12.6 | 13.1 | 17.5 |
+| raylib/ParShapes | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 17.4 |
+| geometry | 0.0 | 0.0 | 0.0 | 0.0 | 1.2 | 7.5 | 7.5 | 7.5 | 7.5 | 8.9 | 17.1 |
+| raylib/RRlgl | 0.0 | 3.0 | 3.0 | 3.0 | 3.1 | 3.1 | 3.1 | 3.1 | 3.1 | 5.8 | 16.4 |
+| raylib/Skinning | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 15.3 | 15.3 | 15.3 | 15.3 | 15.3 |
+| raylib/GuiIcons | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 15.3 |
+| raylib/RTexturesAsync | 0.0 | 0.0 | 0.0 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 2.7 | 14.1 |
+| raylib/VirtualGamepads | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 13.4 |
+| raylib/RModelsMerged | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 12.9 |
+| std/js | 6.3 | 6.3 | 7.3 | 10.6 | 10.6 | 10.7 | 10.7 | 10.7 | 10.7 | 10.7 | 12.1 |
+| services/audio | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 6.9 | 9.7 | 11.2 |
+| services/models | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 9.9 | 9.9 | 9.9 | 9.9 | 9.9 | 9.9 |
+| platform/shared | 5.3 | 5.5 | 5.5 | 5.9 | 5.9 | 5.9 | 5.9 | 5.9 | 5.9 | 8.0 | 8.8 |
+| platform/window | 2.1 | 2.1 | 2.1 | 2.1 | 2.1 | 2.1 | 2.1 | 2.1 | 2.1 | 2.9 | 8.6 |
+| raylib/Program | 4.0 | 4.0 | 4.0 | 4.0 | 6.5 | 6.9 | 8.4 | 8.5 | 8.5 | 8.5 | 8.5 |
+| raylib/RWindowAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.7 | 7.8 |
+| raylib/ObjModels | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 7.1 |
+| raylib/RModelsAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.2 | 2.4 | 2.4 | 2.4 | 2.4 | 6.8 |
+| platform/fontrasterizer | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 5.1 | 6.4 |
+| services/fonts | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 5.2 | 6.0 |
+| services/screen | 4.4 | 4.4 | 4.4 | 4.4 | 4.4 | 4.4 | 4.4 | 4.4 | 4.4 | 4.9 | 5.9 |
+| raylib/RAudioAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.8 | 1.6 | 5.9 |
+| services/saves | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 5.1 | 5.7 |
+| platform/http | 0.0 | 0.0 | 0.0 | 5.5 | 5.5 | 5.5 | 5.5 | 5.5 | 5.5 | 5.5 | 5.5 |
+| platform/mouse | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.3 | 5.3 |
+| raylib/RTextAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.2 | 4.7 |
+| platform/keyboard | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 4.6 | 4.7 |
+| raylib/Waves | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 4.4 |
+| platform/gamepads | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.5 | 4.4 |
+| raylib/RGuiAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 4.3 |
+| platform/tilt | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 4.0 |
+| platform/filesystem | 0.0 | 0.0 | 0.0 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 | 3.8 | 3.8 |
+| raylib/DefaultFont | 0.0 | 0.0 | 3.8 | 3.8 | 3.8 | 3.8 | 3.8 | 3.8 | 3.8 | 3.8 | 3.8 |
+| platform/events | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 | 3.7 |
+| raylib/MemoryFiles | 0.0 | 0.0 | 0.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 2.1 | 3.7 |
+| raylib/Sprites | 0.0 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 | 3.2 |
+| raylib/RDevice | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.0 |
+| services/time | 2.6 | 2.6 | 2.6 | 2.6 | 2.6 | 2.6 | 2.6 | 2.6 | 2.6 | 2.8 | 2.8 |
+| platform | 0.8 | 0.8 | 0.9 | 2.0 | 2.0 | 2.0 | 2.0 | 2.0 | 2.0 | 2.4 | 2.6 |
+| platform/clipboard | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.4 |
+| platform/audiodecoder | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.3 | 2.3 | 2.3 |
+| raylib/RGuiSkins | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.3 |
+| raylib/RCompiledShaders | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.4 | 1.4 | 1.4 | 2.2 |
+| platform/system | 0.3 | 0.3 | 0.3 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.5 | 2.2 |
+| raylib/Stereo | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.0 |
+| raylib/RModelsPosed | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.0 |
+| std/core | 0.3 | 0.3 | 0.3 | 1.3 | 1.3 | 1.4 | 1.4 | 1.4 | 1.4 | 1.4 | 1.9 |
+| raylib/Answers | 0.0 | 0.0 | 0.0 | 0.2 | 0.2 | 0.2 | 0.2 | 0.2 | 0.2 | 0.6 | 1.9 |
+| platform/imagedecoder | 0.0 | 0.0 | 0.0 | 1.6 | 1.6 | 1.6 | 1.6 | 1.6 | 1.6 | 1.9 | 1.9 |
+| platform/touch | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.7 | 1.8 |
+| raylib/LitProgram | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.8 |
+| raylib/RLights | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.7 | 1.7 | 1.7 | 1.7 |
+| raylib/RVirtualGamepad | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.7 |
+| raylib/FontAtlases | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.4 |
+| raylib/CallbackFiles | 0.0 | 0.0 | 0.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.4 | 1.4 |
+| raylib/DroppedFiles | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.3 |
+| log | 0.0 | 0.0 | 0.0 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 | 1.3 |
+| services/screenshots | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.1 |
+| raylib/RSprites | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.9 |
+| raylib/Mipmaps | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.9 |
+| raylib/EarlyEvents | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 | 0.7 |
+| platform/export | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.7 |
+| raylib/RModels6 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.5 | 0.5 |
+| raylib/MeshGpu | 0.0 | 0.0 | 0.0 | 0.0 | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 | 0.3 |
+| raylib/AudioStreams | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.2 | 0.2 |
+<!-- /gen_sizes -->

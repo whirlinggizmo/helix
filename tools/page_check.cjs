@@ -7,7 +7,7 @@
 // allowed to start without a gesture so a test page can check it. A query naming safeArea=TOP,RIGHT,BOTTOM,LEFT (CSS pixels) has Chromium
 // report those as the page's env(safe-area-inset-*), as a phone with a notch would. --headed opens the browser's window on the display,
 // paced by it, for a page timed or seen as a person would see it, on ANGLE over GL on Linux, as a visible window over Vulkan loses its
-// WebGL context at startup there (docs/speed.md); --headless, the default, runs it off screen.
+// WebGL context at startup there (docs/benchmarks.md); --headless, the default, runs it off screen.
 const given=require('./cli.cjs').args(__filename,['browser','site','query','output'],['--headed','--headless','--wait=']);
 const WAIT=Number(given.values.get('--wait')||30);
 const [browserPath,site,query,output]=given;

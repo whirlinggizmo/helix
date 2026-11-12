@@ -1,4 +1,4 @@
-// The platform's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a triangle drawn: a compiled shader, a buffer and a pipeline.
+// The platform's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one a triangle drawn: a compiled shader, a buffer and a pipeline.
 import helix.platform.Blend;
 import haxe.io.Bytes;
 import helix.platform.tools.ShaderCompiler;

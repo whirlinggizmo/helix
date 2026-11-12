@@ -1,4 +1,4 @@
-// The platform's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a window cleared each frame: the window, its events and the GPU.
+// The platform's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one a window cleared each frame: the window, its events and the GPU.
 import haxe.io.Bytes;
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;

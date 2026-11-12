@@ -1,4 +1,4 @@
-// helix-render's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one light: the cube drawn lit, metallic-roughness, under a sun and an ambient light.
+// helix-render's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one light: the cube drawn lit, metallic-roughness, under a sun and an ambient light.
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
 import helix.math.Matrix3D;

@@ -72,12 +72,13 @@
     "purpose": "glslang and SPIRV-Cross, which helix-platform's shader compiler runs (glslang compiles GLSL to SPIR-V; SPIRV-Cross translates it to every other dialect and reflects it)",
     "pinned": "in libs/platform/src/helix/platform/tools/ShaderTools.hx, so the compiler finds them wherever helix-platform is installed: glslang 16.6.0's official releases, SPIRV-Cross's vulkan-sdk-1.4.363.0 source"
   },
-  "compare": {
-    "purpose": "tools/compare/compare.py, which measures helix-raylib against the others (docs/speed.md); the toolchains are found, never fetched: Emscripten at EMSDK or HELIX_EMSDK or ~/toolchains/emsdk, Godot at HELIX_GODOT or on PATH or ~/toolchains/godot, helix-legacy at HELIX_LEGACY or ../helix-legacy, three.js and esbuild installed with npm into build/compare/three/npm",
+  "speed": {
+    "purpose": "tools/gen_speed.py, which measures helix-raylib against the others (docs/benchmarks.md); the toolchains are found, never fetched: Emscripten at EMSDK or HELIX_EMSDK or ~/toolchains/emsdk, Godot at HELIX_GODOT or on PATH or ~/toolchains/godot, helix-legacy at HELIX_LEGACY or ../helix-legacy, three.js, esbuild and Electron installed with npm into build/speed/three/npm",
     "raylib": "5.5 (tools/raylib_parity.py's pinned release: its C programs, its web library, and the assets, wabbit_alpha.png and robot.glb)",
     "godot": "4.7.2",
     "three": "0.187.0",
     "esbuild": "0.25.0",
+    "electron": "45.1.0",
     "lime": "8.3.1"
   }
 }

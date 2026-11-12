@@ -1,4 +1,4 @@
-// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight.
+// helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight.
 import helix.raylib.Raylib.*;
 import helix.raylib.Rlights.*;
 import helix.raylib.Camera3D;

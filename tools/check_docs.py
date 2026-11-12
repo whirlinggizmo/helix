@@ -13,7 +13,7 @@ EARLIER=re.compile(r'wgrender|libwgf|libwgt',re.I)
 # Where the earlier frameworks' names don't belong: everything a reader reads but the record (DECISIONS.md) and the agents' instructions
 # (AGENTS.md, which says where to read them).
 SOURCES=sorted(p.relative_to(ROOT).as_posix() for p in ROOT.glob('*/*/src/helix') if p.parts[-4] in ('libs','engines'))
-NAMED=['libs','engines','tools','helix.py','README.md','CONTRIBUTING.md','GOALS.md','docs/ARCHITECTURE.md','docs/CONVENTIONS.md','docs/PLATFORM.md','docs/PLAN.md','docs/ROADMAP.md','docs/benchmarks.md','docs/sizes.md','docs/speed.md']
+NAMED=['libs','engines','tools','helix.py','README.md','CONTRIBUTING.md','GOALS.md','docs/ARCHITECTURE.md','docs/CONVENTIONS.md','docs/PLATFORM.md','docs/PLAN.md','docs/ROADMAP.md','docs/benchmarks.md']
 TYPE=re.compile(r'^\s*(?:@:[^\n]*\s)*(?:extern\s+|final\s+|private\s+)*(class|interface|typedef|enum abstract|enum|abstract)\s+(\w+)')
 MEMBER=re.compile(r'^\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:public\s+|static\s+|inline\s+|override\s+|final\s+|extern\s+|dynamic\s+)*)(function|var|final)\s+(\w+)')
 

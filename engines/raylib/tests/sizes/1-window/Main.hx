@@ -1,4 +1,4 @@
-// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a window cleared each frame: raylib's loop and frame, and what helix-raylib builds before main.
+// helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one a window cleared each frame: raylib's loop and frame, and what helix-raylib builds before main.
 import helix.raylib.Raylib.*;
 
 /** A program written in raylib on helix-raylib, as a game in raylib would be. */

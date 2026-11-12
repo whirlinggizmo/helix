@@ -1,7 +1,7 @@
-# The comparison
+# Speed
 
-`compare.py` measures helix-raylib against raylib C, Godot, three.js and helix-legacy on the same two programs and writes the numbers into
-`docs/speed.json` and `docs/speed.md`. `compare.py --help` has the command line.
+`tools/gen_speed.py` measures helix-raylib against raylib C, Godot, three.js, Lime and helix-legacy on the same two programs and writes
+the numbers into `docs/speed.json`, and `docs/benchmarks.md`'s speed tables and charts. `gen_speed.py --help` has the command line.
 
 ## The programs
 
@@ -26,18 +26,26 @@ averaged 59 frames a second or better, and prints the largest count that held as
 the runs (three by default), the runs taken round-robin over every program and count so a drift in the machine spreads over all of them.
 
 Pages run in Chromium with its frame rate cap lifted, on ANGLE over Vulkan or over GL. Native programs run in windows with vsync off.
-By default both run headless: the pages in headless Chromium, the native programs on a private display with software GL (not
-representative, and the tool says so). `--headed` runs both on the real display.
+three.js's native program is its page in Electron (`contenders/three/electron/main.cjs`), run by `run_page.cjs --electron`. By default
+both run headless: the pages in headless Chromium, the native programs on a private display with software GL (not representative, and
+the tool says so, and won't write them). `--headed` runs the native programs on the real display, and the pages over GL in a window.
+
+## When it runs
+
+When asked, never in CI. With no contender named a run takes helix-raylib, raylib C as the control, and each other contender whose rows
+are missing or whose pinned version changed; `--all` takes every contender and the pages over both backends. `--write` first checks the
+machine is quiet (its load, and a pinned loop's time, which a CPU held back by its firmware slows), and after the run that the control
+stayed within 20% of its last rows.
 
 ## Sizes
 
 A page's size is every file it fetched but the assets (`.png`, `.glb`, Emscripten's `.data`, Godot's `.pck`), raw, gzip -9 and brotli
 -q 11. three.js's is also its page bundled and minified with esbuild, the size a three.js game ships. A native program's size is its
-binary stripped.
+binary stripped, and Electron's is its files as installed, with the page bundled.
 
 ## Toolchains
 
 Found, never fetched, and a contender whose toolchain is missing is skipped with one line: Emscripten (`EMSDK`, `HELIX_EMSDK` or
 `~/toolchains/emsdk`), Godot's binary (`HELIX_GODOT`, `godot` on PATH, or `~/toolchains/godot/Godot_v<version>-stable_linux.x86_64`),
-helix-legacy's checkout (`HELIX_LEGACY`, or `../helix-legacy`), npm for three.js and esbuild (installed into `build/compare/three/npm` at the versions
-`dependencies.json`'s `compare` entry pins), `brotli` for the brotli sizes.
+helix-legacy's checkout (`HELIX_LEGACY`, or `../helix-legacy`), npm for three.js, esbuild and Electron (installed into
+`build/speed/three/npm` at the versions `dependencies.json`'s `speed` entry pins), `brotli` for the brotli sizes.

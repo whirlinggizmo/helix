@@ -39,7 +39,7 @@ What a program carries is what `-dce full` can't prove unused, so a library is w
   the file's extension; helix-raylib's `LoadModelAsync` is a macro that, given a constant name, calls that extension's reader alone
   (DECISIONS 29), and chooses as the program runs only for a name it can't know.
 
-`tools/measure_sizes.py --check` holds the size ladders to it: each rung's `Main` declares in `@:adds` the library packages, modules
+`tools/gen_sizes.py --check` holds the size ladders to it: each rung's `Main` declares in `@:adds` the library packages, modules
 or classes it adds (helix-math's, helix-geometry's, helix-render's and helix-services' assets by class, never a whole package, so a class
 a later rung links without naming it is caught, and `haxe.crypto.Sha256`, which no page links: a `ManifestCache` hashes with the browser's digest there, and with it natively), and a rung linking a library class no rung up to it declares, a declaration it doesn't link, run-time type
 inspection, or a library's `@:keep` fails, read from the build's `-xml` and a macro (`tools/haxe/Kept.hx`).

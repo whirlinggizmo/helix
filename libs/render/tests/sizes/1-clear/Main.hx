@@ -1,4 +1,4 @@
-// helix-render's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one the renderer's frame, the screen cleared each frame through it.
+// helix-render's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one the renderer's frame, the screen cleared each frame through it.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;

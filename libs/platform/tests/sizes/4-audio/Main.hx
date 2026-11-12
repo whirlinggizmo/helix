@@ -1,4 +1,4 @@
-// The platform's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one the file decoded and played as a sound.
+// The platform's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one the file decoded and played as a sound.
 import helix.platform.Blend;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;

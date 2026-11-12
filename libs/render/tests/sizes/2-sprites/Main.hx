@@ -1,4 +1,4 @@
-// helix-render's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one sprites: a texture made from an image in memory, drawn turned by the 2D batch.
+// helix-render's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one sprites: a texture made from an image in memory, drawn turned by the 2D batch.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
 import helix.platform.adapters.window.dom.DomWindowAdapter;

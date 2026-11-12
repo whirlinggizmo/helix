@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lime's own BunnyMark demo (lime-samples 7.0.0, demos/BunnyMark) shaped as tools/compare/compare.py's bunnymark: raylib's bunnies, a
-     count from the page's query, one JSON line after 720 frames. Built by compare.py with `haxelib run lime build html5 -release`. -->
+<!-- Lime's own BunnyMark demo (lime-samples 7.0.0, demos/BunnyMark) shaped as tools/gen_speed.py's bunnymark: raylib's bunnies, a
+     count from the page's query, one JSON line after 720 frames. Built by gen_speed.py with `haxelib run lime build html5 -release`. -->
 <project>
 	<meta title="Lime bunnymark" package="compare.lime.bunnymark" version="1.0.0" company="helix" />
 	<app main="Main" path="Export" file="bunnymark" />

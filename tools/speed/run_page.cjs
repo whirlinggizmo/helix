@@ -1,15 +1,17 @@
-// One page run for tools/compare/compare.py: serves DIRECTORY on 127.0.0.1 (a port the system picks), opens index.html?QUERY in
+// One page run for tools/gen_speed.py: serves DIRECTORY on 127.0.0.1 (a port the system picks), opens index.html?QUERY in
 // Chromium on the GPU with its frame rate cap lifted, waits up to TIMEOUT seconds for the program's JSON line on the console, and prints
 // {result, files, renderer, errors} as JSON: result the program's line (null when none came), files the paths the page fetched with their
 // sizes (for the size column), renderer the WebGL renderer's name and the frames a second requestAnimationFrame runs at.
 // BROWSER is a Chromium to run, or "" for Playwright's own (build/tools, or the one HELIX_PLAYWRIGHT names). BACKEND is what ANGLE draws
 // over: vulkan or gl. WIDTH and HEIGHT are the viewport's, in pixels. --headed opens the browser's window on the display; --headless, the
-// default, runs it off screen.
+// default, runs it off screen. --electron runs the page as a desktop program instead: BROWSER is Electron's binary, opening the page in
+// a window of its own (tools/speed/contenders/three/electron/main.cjs) on $DISPLAY, whatever --headed says.
 const given = require('../cli.cjs').args(__filename, ['browser', 'directory', 'query', 'timeout', 'backend', 'width', 'height'],
-	['--headed', '--headless']);
+	['--headed', '--headless', '--electron']);
 const [browserPath, directory, query, timeout, backend, width, height] = given;
 const path = require('path'), http = require('http'), fs = require('fs');
-const {chromium} = require(process.env.HELIX_PLAYWRIGHT || path.join(__dirname, '../../build/tools/node_modules/playwright'));
+const {chromium, _electron} = require(process.env.HELIX_PLAYWRIGHT || path.join(__dirname, '../../build/tools/node_modules/playwright'));
+const ELECTRON_MAIN = path.join(__dirname, 'contenders/three/electron/main.cjs');
 const TYPES = {'.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm', '.png': 'image/png', '.json': 'application/json',
 	'.pck': 'application/octet-stream', '.data': 'application/octet-stream', '.glb': 'model/gltf-binary', '.svg': 'image/svg+xml'};
 const root = path.resolve(directory);
@@ -36,13 +38,20 @@ function serve() {
 
 (async () => {
 	const server = await serve();
-	const browser = await chromium.launch({executablePath: browserPath || undefined, headless: !given.flags.has('--headed'),
-		args: ['--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required', `--use-angle=${backend}`, '--disable-gpu-vsync',
-			'--disable-frame-rate-limit']});
+	const url = `http://127.0.0.1:${server.address().port}/index.html${query ? '?' + query : ''}`;
+	const electron = given.flags.has('--electron');
+	const env = Object.assign({}, process.env);
+	delete env.DBUS_SESSION_BUS_ADDRESS;
+	// Electron's page is its window's, opened by its main process; a browser's is a new page, navigated below.
+	const browser = electron
+		? await _electron.launch({executablePath: browserPath, args: ['--no-sandbox', ELECTRON_MAIN, url, width, height, backend], env})
+		: await chromium.launch({executablePath: browserPath || undefined, headless: !given.flags.has('--headed'),
+			args: ['--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required', `--use-angle=${backend}`, '--disable-gpu-vsync',
+				'--disable-frame-rate-limit']});
 	const errors = [];
 	let result = null;
 	try {
-		const page = await browser.newPage({viewport: {width: Number(width), height: Number(height)}});
+		const page = electron ? await browser.firstWindow() : await browser.newPage({viewport: {width: Number(width), height: Number(height)}});
 		let found;
 		const line = new Promise(resolve => found = resolve);
 		page.on('pageerror', e => errors.push(e.message));
@@ -52,7 +61,8 @@ function serve() {
 				try { found(JSON.parse(text)); } catch (e) { errors.push('console: ' + text.slice(0, 300)); }
 			} else if (m.type() === 'error') errors.push('console: ' + text);
 		});
-		await page.goto(`http://127.0.0.1:${server.address().port}/index.html${query ? '?' + query : ''}`);
+		if (!electron)
+			await page.goto(url);
 		result = await Promise.race([line, new Promise(resolve => setTimeout(() => resolve(null), Number(timeout) * 1000))]);
 		if (!result) errors.push(`no result in ${timeout} seconds`);
 		const renderer = await page.evaluate(async () => {

@@ -1,4 +1,4 @@
-// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a sound loaded through the assets and played.
+// The services' size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one a sound loaded through the assets and played.
 import helix.platform.adapters.audio.webaudio.WebAudioAdapter;
 import helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;
 import helix.platform.adapters.events.dom.DomEventsAdapter;

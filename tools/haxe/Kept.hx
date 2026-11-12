@@ -9,7 +9,7 @@ import haxe.macro.Type;
 
 	--macro Kept.write("kept.json", ["helix."])
 
-	tools/measure_sizes.py runs it in each rung's build, beside -xml (docs/DECISIONS.md 30). */
+	tools/gen_sizes.py runs it in each rung's build, beside -xml (docs/DECISIONS.md 30). */
 class Kept {
 	/** Writes the types and fields marked `@:keep` once the program is typed.
 

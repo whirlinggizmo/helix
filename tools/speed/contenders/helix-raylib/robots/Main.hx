@@ -2,14 +2,14 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 
 // raylib's models_animation, many at once: N robots each posed by UpdateModelAnimation at its own frame, drawn with DrawModel, for
-// tools/compare/compare.py. count=N run option. Natively, gc-min=MB sets hxcpp's minimum working memory (cpp.vm.Gc.setMinimumWorkingMemory)
+// tools/gen_speed.py. count=N run option. Natively, gc-min=MB sets hxcpp's minimum working memory (cpp.vm.Gc.setMinimumWorkingMemory)
 // at start, to measure whether that collector setting changes the frame time or the collector's share of it.
 class Main {
 	static function emit(line:String):Void {
 		Sys.println(line);
 	}
 
-	// A run option as compare.py passes it, --count=N on the command line (a page's URL query, ?count=N, is its command line).
+	// A run option as gen_speed.py passes it, --count=N on the command line (a page's URL query, ?count=N, is its command line).
 	static function option(name:String):Null<String> {
 		for (arg in Sys.args())
 			if (StringTools.startsWith(arg, '--$name='))

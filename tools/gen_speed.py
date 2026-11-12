@@ -1,29 +1,38 @@
 #!/usr/bin/env python3
 """helix-raylib's speed and size against raylib C, Godot, three.js, Lime and helix-legacy on the same two programs, written for each in
-tools/compare/contenders/<name>/: raylib's textures_bunnymark (bunnies of one texture bouncing in an 800 x 450 window) and its
-models_animation many at once (the robots: a grid of robot.glb, each posed at its own frame, in 1280 x 720). The numbers are docs/speed.md's.
+tools/speed/contenders/<name>/: raylib's textures_bunnymark (bunnies of one texture bouncing in an 800 x 450 window) and its
+models_animation many at once (the robots: a grid of robot.glb, each posed at its own frame, in 1280 x 720). It makes docs/speed.json and
+docs/benchmarks.md's speed tables and charts (docs/benchmarks/*.svg). It runs when asked, never in CI: a run takes minutes to hours.
 
-    python3 tools/compare/compare.py [--native | --page] [--headless | --headed] [--backend vulkan|gl] [--runs 3] [--browser PATH] [--write]
-                                     [bunnymark] [robots] [CONTENDER ...]
+    python3 tools/gen_speed.py [--native | --page] [--headless | --headed] [--backend vulkan|gl] [--all] [--runs 3] [--browser PATH]
+                               [--write] [--unchecked] [bunnymark] [robots] [CONTENDER ...]
 
-The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the bunnymark alone) and helix-legacy, all when
-none is named; each is built into build/compare/<contender>/ under build/.lock, with the assets taken from raylib's own release (the bunny's
-texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page needs Emscripten
-(EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64),
-three needs npm, lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix-legacy needs helix-legacy's checkout (HELIX_LEGACY, or ../helix-legacy beside this one). The versions are dependencies.json's compare entry.
+The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the
+bunnymark alone) and helix-legacy. With none named, a run takes helix-raylib, raylib C as the control, and each other contender whose
+rows are missing or were measured at another version than dependencies.json's speed entry pins; --all takes every contender, and the
+pages over both backends. Each is built into build/speed/<contender>/ under build/.lock, with the assets taken from raylib's own release
+(the bunny's texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page
+needs Emscripten (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or
+~/toolchains/godot/Godot_v<version>-stable_linux.x86_64), three needs npm (and installs three.js, esbuild and, for its desktop program,
+Electron), lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix-legacy needs
+helix-legacy's checkout (HELIX_LEGACY, or ../helix-legacy beside this one).
 
 --page runs the pages (in Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native the
-native programs (one at a time, with vsync off); neither flag runs both. --headless, the default, runs them off screen (the native programs
-on a private display with software GL, whose times aren't representative; the pages in headless Chromium); --headed runs them in windows on
-$DISPLAY, the native programs' and the browser's. Every program spawns from the same seed. Each count draws 120 frames to warm up and
-times 600: the mean and the 95th percentile frame time, the median over --runs of each. ramp starts at 1000 and adds 1000 every 60 frames
-while those averaged 59 frames a second or better: the most held. The bunnymark's counts are 10k, 50k, 100k, 150k and 200k and ramp, the
-robots' 50, 200 and 400. Every run is a JSON line in build/compare/runs/<stamp>.jsonl.
+native programs (one at a time, with vsync off), three.js's in Electron; neither flag runs both. --headless, the default, runs them off
+screen (the native programs on a private display with software GL, whose times aren't representative; the pages in headless Chromium);
+--headed runs the native programs in windows on $DISPLAY, and the pages over GL in the browser's (over Vulkan a visible window loses its
+WebGL context at startup, so those stay headless). Every program spawns from the same seed. Each count draws 120 frames to warm up and
+times 600: the mean and the 95th percentile frame time, the median over --runs of each. ramp starts at 1000 and adds 1000 every 60
+frames while those averaged 59 frames a second or better: the most held. The bunnymark's counts are 10k, 50k, 100k, 150k and 200k and
+ramp, the robots' 50, 200 and 400. Every run is a JSON line in build/speed/runs/<stamp>.jsonl.
 
 --write puts the run's medians, sizes, versions, date and machine into docs/speed.json, replacing the rows of the contenders it ran and
-leaving the others, and regenerates docs/speed.md's tables from it between their markers: a row measured on another date than the table's
-newest says so. A page's size is every file it fetched but the assets (gzip and brotli too, where the brotli tool is there); three's
-is also its page bundled and minified with esbuild, the size a three.js game ships. A native program's size is its binary stripped.
+leaving the others, and remakes docs/benchmarks.md's speed tables between their markers and the charts: a row measured on another date
+than the table's newest says so. Before it times anything, the machine must be quiet: a load average of QUIET_LOAD at most, and a pinned
+loop within QUIET_LOOP_SECONDS. After, the control must be within CONTROL_DRIFT of its last rows; native times are written from --headed
+runs alone. --unchecked skips the two checks. A page's size is every file it fetched but the assets (gzip and brotli too, where the
+brotli tool is there); three's is also its page bundled and minified with esbuild, the size a three.js game ships. A native program's
+size is its binary stripped, and Electron's its files as installed with the page bundled.
 
 Linux only. Standard library only."""
 import gzip
@@ -36,8 +45,8 @@ import sys
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-TOOLS = HERE.parent
+TOOLS = Path(__file__).resolve().parent
+HERE = TOOLS / 'speed'
 ROOT = TOOLS.parent
 sys.path.insert(0, str(TOOLS))
 import cli  # noqa: E402
@@ -49,10 +58,10 @@ except ImportError:  # Windows
     fcntl = None
 
 CONTENDERS_DIR = HERE / 'contenders'
-OUT = ROOT / 'build/compare'
+OUT = ROOT / 'build/speed'
 LOCK = ROOT / 'build/.lock'
 STORE = ROOT / 'docs/speed.json'
-PAGE = ROOT / 'docs/speed.md'
+PAGE = ROOT / 'docs/benchmarks.md'
 PROGRAMS = ['bunnymark', 'robots']
 CONTENDERS = ['helix-raylib', 'raylib-c', 'godot', 'three', 'lime', 'helix-legacy']
 BUNNY_COUNTS = [10000, 50000, 100000, 150000, 200000]
@@ -65,15 +74,27 @@ ASSET_SUFFIXES = ('.png', '.glb', '.data', '.pck', '.ico')
 RAYLIB = '5.5'
 # One file fetched by helix-legacy's page that is its code, under a name the suffix rule would count out.
 GODOT_PRESETS = {'linux': 'Linux', 'web': 'Web'}
+# Electron's binary, installed beside three.js (build_three).
+ELECTRON = OUT / 'three/npm/node_modules/electron/dist/electron'
+# Where each contender runs: the rows it can have.
+WHERES = {'helix-raylib': ['page-vulkan', 'page-gl', 'native-gl', 'native-sdlgpu'], 'raylib-c': ['page-vulkan', 'page-gl', 'native-gl'],
+          'godot': ['page-vulkan', 'page-gl', 'native-gl', 'native-vulkan'], 'three': ['page-vulkan', 'page-gl', 'native-electron'],
+          'lime': ['page-vulkan', 'page-gl'], 'helix-legacy': ['page-vulkan', 'page-gl']}
+# The quiet machine timing needs: the 1-minute load average at most, and a pinned loop of 20 million additions in Python within so many
+# seconds (0.83 on coinspinner; a CPU its firmware clamps takes 0.9 and up, docs/benchmarks.md).
+QUIET_LOAD = 2.0
+QUIET_LOOP_SECONDS = 0.9
+# How far the control (raylib C) may move from its last rows, as the median ratio over its counts, before a run isn't written.
+CONTROL_DRIFT = 0.2
 
 
 def pins():
-    """dependencies.json's compare entry: the versions of three.js, esbuild and Godot."""
-    return json.loads((ROOT / 'dependencies.json').read_text(encoding='utf-8'))['compare']
+    """dependencies.json's speed entry: the versions of three.js, esbuild, Electron, Godot and Lime."""
+    return json.loads((ROOT / 'dependencies.json').read_text(encoding='utf-8'))['speed']
 
 
 def say(text):
-    print(f'compare: {text}', flush=True)
+    print(f'gen_speed: {text}', flush=True)
 
 
 def run(arguments, cwd=None, env=None, timeout=None):
@@ -81,7 +102,7 @@ def run(arguments, cwd=None, env=None, timeout=None):
     done = subprocess.run([str(a) for a in arguments], cwd=cwd, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace',
                           timeout=timeout)
     if done.returncode:
-        raise SystemExit(f'compare: {" ".join(str(a) for a in arguments[:3])}... failed\n{(done.stdout + done.stderr)[-3000:]}')
+        raise SystemExit(f'gen_speed: {" ".join(str(a) for a in arguments[:3])}... failed\n{(done.stdout + done.stderr)[-3000:]}')
     return done.stdout
 
 
@@ -142,7 +163,7 @@ def write_page(directory, title, width, height):
 
 
 def build_helix_raylib(programs, page, native):
-    """helix-raylib's programs: a page (release, unminified, as tools/measure_sizes.py builds) and natively for GL and SDL_GPU."""
+    """helix-raylib's programs: a page (release, unminified, as tools/gen_sizes.py builds) and natively for GL and SDL_GPU."""
     import native_build
     import pins as repo_pins
     import sdl3
@@ -157,7 +178,7 @@ def build_helix_raylib(programs, page, native):
     for program in programs:
         home = OUT / 'helix-raylib' / program
         common = ['-lib', 'helix-raylib', '-cp', CONTENDERS_DIR / 'helix-raylib' / program, '-main', 'Main', '-D', 'helix-company=helix',
-                  '-D', f'helix-product=compare-{program}', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'helix-raylib-portable-sys']
+                  '-D', f'helix-product=speed-{program}', '-dce', 'full', '-D', 'analyzer-optimize', '-D', 'helix-raylib-portable-sys']
         if page:
             say(f'building helix-raylib {program} page')
             web = home / 'web'
@@ -253,9 +274,9 @@ def build_godot(programs, page, native):
     return True
 
 
-def build_three(programs):
+def build_three(programs, native):
     """three.js's pages: its module and addons installed with npm at the pinned version beside them, and each page bundled with esbuild for
-    the size it would ship at."""
+    the size it would ship at. With native, Electron too, which runs each page as a desktop program."""
     if shutil.which('npm') is None:
         say('three skipped: no npm')
         return False
@@ -263,16 +284,22 @@ def build_three(programs):
     npm = OUT / 'three/npm'
     npm.mkdir(parents=True, exist_ok=True)
     wanted = {'three': versions['three'], 'esbuild': versions['esbuild']}
+    if native:
+        wanted['electron'] = versions['electron']
     installed = {}
     lock = npm / 'package-lock.json'
     if lock.is_file():
         packages = json.loads(lock.read_text(encoding='utf-8')).get('packages', {})
         installed = {name: packages.get(f'node_modules/{name}', {}).get('version') for name in wanted}
     if installed != wanted:
-        say(f'installing three {wanted["three"]} and esbuild {wanted["esbuild"]}')
-        (npm / 'package.json').write_text(json.dumps({'name': 'compare-three', 'private': True, 'dependencies': {k: v for k, v in wanted.items()}}) + '\n',
+        say('installing ' + ', '.join(f'{name} {version}' for name, version in wanted.items()))
+        (npm / 'package.json').write_text(json.dumps({'name': 'speed-three', 'private': True, 'dependencies': {k: v for k, v in wanted.items()}}) + '\n',
                                           encoding='utf-8')
         run(['npm', 'install', '--no-audit', '--no-fund', '--silent'], cwd=npm, timeout=900)
+    # Electron's binary is fetched by its package's install script, which npm may not run.
+    if native and not ELECTRON.is_file():
+        say(f'fetching Electron {wanted["electron"]}')
+        run(['node', npm / 'node_modules/electron/install.js'], cwd=npm, timeout=900)
     modules = npm / 'node_modules/three'
     source = raylib_source()
     for program in programs:
@@ -297,7 +324,7 @@ def build_three(programs):
 
 
 def build_lime(programs):
-    """Lime's own BunnyMark demo shaped as the bunnymark (tools/compare/contenders/lime/bunnymark), built with `haxelib run lime build html5
+    """Lime's own BunnyMark demo shaped as the bunnymark (tools/speed/contenders/lime/bunnymark), built with `haxelib run lime build html5
     -release` from the user's haxelib, where lime is installed at the version dependencies.json pins; skipped without it."""
     if 'bunnymark' not in programs:
         return False
@@ -326,7 +353,7 @@ def build_lime(programs):
 
 def build_legacy():
     """helix-legacy's bunnymark page, built as one of its examples by its tools/example.py (the program copied in as examples/bunnymark while it
-    builds, and taken out again), its site and assets into build/compare/helix-legacy."""
+    builds, and taken out again), its site and assets into build/speed/helix-legacy."""
     checkout = legacy_checkout()
     if checkout is None:
         say('helix-legacy skipped: no helix-legacy checkout (HELIX_LEGACY, or ../helix-legacy)')
@@ -369,7 +396,7 @@ def build(programs, contenders, page, native):
                 if not build_godot(programs, page, native):
                     continue
             elif contender == 'three':
-                if not page or not build_three(programs):
+                if not build_three(programs, native):
                     continue
             elif contender == 'lime':
                 if not page or not build_lime(programs):
@@ -434,6 +461,15 @@ def natives(programs, contenders):
                 for variant in ('gpu', 'cpu'):
                     home = OUT / 'raylib-c/robots' / f'native-{variant}'
                     found.append(('raylib-c', variant.upper() + ' skinning', program, 'native-gl', lambda mode, h=home: [str(h / 'program'), '--' + mode], home))
+        if 'three' in contenders and ELECTRON.is_file():
+            size = (800, 450) if program == 'bunnymark' else (1280, 720)
+            home = OUT / 'three' / ('bunny' if program == 'bunnymark' else 'robots')
+            variants = [('InstancedMesh', ''), ('a Sprite each', '&variant=sprite')] if program == 'bunnymark' else [('', '')]
+            for variant, extra in variants:
+                found.append(('three', variant, program, 'native-electron',
+                              lambda mode, angle='gl', h=home, e=extra, z=size: ['node', str(HERE / 'run_page.cjs'), '--electron', str(ELECTRON), str(h),
+                                                                                  mode + e, str(PAGE_SECONDS['ramp' if mode.startswith('ramp') else 'count']),
+                                                                                  angle, str(z[0]), str(z[1])], home))
         if 'godot' in contenders:
             projects = [('bunnymark-multimesh', 'MultiMesh'), ('bunnymark-nodes', 'a Sprite2D each')] if program == 'bunnymark' else [('robots', '')]
             for project, variant in projects:
@@ -464,7 +500,7 @@ def run_page(browser, directory, query, backend, size, mode, headed):
     env = dict(os.environ)
     env.pop('DBUS_SESSION_BUS_ADDRESS', None)
     try:
-        done = subprocess.run(['node', str(HERE / 'page.cjs'), '--headed' if headed else '--headless', browser, str(directory), query, str(seconds), backend, str(size[0]), str(size[1])],
+        done = subprocess.run(['node', str(HERE / 'run_page.cjs'), '--headed' if headed else '--headless', browser, str(directory), query, str(seconds), backend, str(size[0]), str(size[1])],
                               capture_output=True, text=True, encoding='utf-8', env=env, timeout=seconds + 120)
     except subprocess.TimeoutExpired:
         return None, {'errors': ['the page runner timed out']}
@@ -475,16 +511,19 @@ def run_page(browser, directory, query, backend, size, mode, headed):
     return printed['result'], printed
 
 
-def run_native(command, directory, display, mode):
-    """One native run in the program's directory; its result and the output's tail."""
-    seconds = NATIVE_SECONDS['ramp' if mode.startswith('ramp') else 'count']
+def run_native(command, directory, display, mode, where):
+    """One native run in the program's directory; its result and the output's tail. Electron's is run_page.cjs's, its line the page's."""
+    seconds = (PAGE_SECONDS if where == 'native-electron' else NATIVE_SECONDS)['ramp' if mode.startswith('ramp') else 'count'] + 120
     env = dict(display, SDL_AUDIO_DRIVER='dummy')
     env.pop('DBUS_SESSION_BUS_ADDRESS', None)
     try:
         done = subprocess.run(command, cwd=directory, env=env, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=seconds)
     except subprocess.TimeoutExpired:
         return None, f'no result in {seconds} s'
-    return found_line(done.stdout), (done.stdout + done.stderr)[-600:]
+    line = found_line(done.stdout)
+    if line is not None and 'files' in line:
+        line = line['result']
+    return line, (done.stdout + done.stderr)[-600:]
 
 
 def modes_of(program):
@@ -492,13 +531,14 @@ def modes_of(program):
     return [f'count={n}' for n in counts] + (['ramp=1'] if program == 'bunnymark' else [])
 
 
-def measure(programs, contenders, page, native, backend, runs, headed, browser, record):
-    """Every run, round-robin so a drift in the machine's state spreads over every program, each recorded."""
-    if page:
+def measure(programs, contenders, page, native, backends, runs, headed, browser, record):
+    """Every run, round-robin so a drift in the machine's state spreads over every program, each recorded. Pages over Vulkan run headless
+    even when headed: a visible window loses its WebGL context at startup there."""
+    for backend in backends if page else []:
         for run_index in range(1, runs + 1):
             for contender, variant, program, directory, query, size in pages(programs, contenders):
                 for mode in modes_of(program):
-                    result, printed = run_page(browser, directory, query(mode), backend, size, mode, headed)
+                    result, printed = run_page(browser, directory, query(mode), backend, size, mode, headed and backend == 'gl')
                     record({'where': f'page-{backend}', 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
                             'result': result, 'files': printed.get('files'), 'renderer': printed.get('renderer'), 'errors': printed.get('errors')})
     if native:
@@ -506,7 +546,9 @@ def measure(programs, contenders, page, native, backend, runs, headed, browser, 
             for run_index in range(1, runs + 1):
                 for contender, variant, program, where, command, directory in natives(programs, contenders):
                     for mode in modes_of(program):
-                        result, tail = run_native(command(mode), directory, display, mode)
+                        # Electron draws over GL on the display, and off it in software (SwiftShader), as the others do there.
+                        given = command(mode, 'gl' if headed else 'swiftshader') if where == 'native-electron' else command(mode)
+                        result, tail = run_native(given, directory, display, mode, where)
                         record({'where': where, 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
                                 'result': result, 'tail': None if result else tail})
         if headed:
@@ -553,12 +595,25 @@ def native_size(program):
     return round(size / 1e6, 2)
 
 
+def electron_size(program):
+    """three.js's program as a desktop one: Electron's files, as installed, and the page bundled, in MB."""
+    files = [f for f in ELECTRON.parent.rglob('*') if f.is_file()]
+    bundled = OUT / 'three' / ('bunny' if program == 'bunnymark' else 'robots') / 'bundled'
+    files += [f for f in bundled.rglob('*') if f.is_file()]
+    return round(sum(f.stat().st_size for f in files) / 1e6, 1)
+
+
 def versions_of(contenders):
     """What each contender is, for its rows: its version."""
     versions = pins()
     commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    return {'helix-raylib': f'helix {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}', 'lime': f'Lime {versions["lime"]}',
-            'helix-legacy': 'helix-legacy'}
+    return {'helix-raylib': f'helix {commit}', 'raylib-c': f'raylib {RAYLIB}', 'godot': f'Godot {versions["godot"]}', 'three': f'three.js {versions["three"]}',
+            'lime': f'Lime {versions["lime"]}', 'helix-legacy': 'helix-legacy'}
+
+
+def electron_version(row):
+    """The Electron a three.js row ran in: the store's, or the pinned one."""
+    return row.get('electron') or pins()['electron']
 
 
 def machine():
@@ -595,6 +650,8 @@ def summarize(rows, date, built):
         held = median(ramps, 'ramp_max')
         entry = {'contender': contender, 'variant': variant, 'program': program, 'where': where, 'version': versions[contender], 'date': date, 'machine': host,
                  'counts': counts, 'held': int(held) if held is not None else None}
+        if where == 'native-electron':
+            entry['electron'] = pins()['electron']
         if where.startswith('page'):
             first = next((r for r in runs if r.get('files')), None)
             directory = next(p[3] for p in pages([program], [contender]) if p[0] == contender and p[1] == variant) if first else None
@@ -604,6 +661,8 @@ def summarize(rows, date, built):
                 entry['bundledSize'] = compressed([bundled]) if bundled.is_file() else None
             renderer = next((r['renderer'] for r in runs if r.get('renderer')), None)
             entry['renderer'] = renderer.get('webgl2') if isinstance(renderer, dict) else renderer
+        elif where == 'native-electron':
+            entry['size'] = {'appMB': electron_size(program)}
         else:
             spec = next((n for n in natives([program], [contender]) if n[0] == contender and n[1] == variant and n[3] == where), None)
             entry['size'] = {'strippedMB': native_size(spec[4]('count=1')[0])} if spec else None
@@ -625,9 +684,10 @@ def write_store(entries):
     return store
 
 
-# ---- docs/speed.md ----
+# ---- docs/benchmarks.md ----
 
-WHERE = {'page-vulkan': 'page', 'page-gl': 'page', 'native-gl': 'native, GL', 'native-sdlgpu': 'native, SDL_GPU (Vulkan)', 'native-vulkan': 'native, Vulkan'}
+WHERE = {'page-vulkan': 'page', 'page-gl': 'page', 'native-gl': 'native, GL', 'native-sdlgpu': 'native, SDL_GPU (Vulkan)', 'native-vulkan': 'native, Vulkan',
+         'native-electron': 'native, Electron'}
 API = {('helix-raylib', 'page'): 'WebGL2', ('raylib-c', 'page'): 'wasm, WebGL1', ('godot', 'page'): 'wasm, WebGL2', ('three', 'page'): 'WebGL2',
        ('helix-legacy', 'page'): 'WebGL2', ('lime', 'page'): 'WebGL', ('godot', 'native-vulkan'): 'Forward+', ('godot', 'native-gl'): 'Compatibility'}
 
@@ -641,7 +701,7 @@ def label(row):
 def where_text(row, newest):
     kind = 'page' if row['where'].startswith('page') else row['where']
     api = API.get((row['contender'], kind)) or API.get((row['contender'], 'page' if kind == 'page' else kind))
-    text = WHERE[row['where']] + (f', {api}' if api else '')
+    text = WHERE[row['where']] + (f' {electron_version(row)}' if row['where'] == 'native-electron' else '') + (f', {api}' if api else '')
     if row['date'] != newest:
         text += f' ({row["date"]})'
     return text
@@ -653,6 +713,8 @@ def size_text(row):
         return ''
     if 'strippedMB' in size:
         return f'{size["strippedMB"]:.1f} MB'
+    if 'appMB' in size:
+        return f'{size["appMB"]:,.1f} MB'
     bundled = row.get('bundledSize')
     if bundled:
         return f'{bundled["gzipKB"]:,.1f} KB bundled ({size["gzipKB"]:,.1f} as served)'
@@ -683,50 +745,217 @@ def table(rows, program, wheres):
 
 
 def write_page_tables(store):
-    """docs/speed.md's tables, between its markers, from the store."""
+    """docs/benchmarks.md's speed tables, between their markers, from the store."""
     text = PAGE.read_text(encoding='utf-8')
-    sections = {'bunnymark': table(store['rows'], 'bunnymark', ['page-vulkan', 'native-gl', 'native-sdlgpu', 'native-vulkan']),
-                'robots': table(store['rows'], 'robots', ['page-vulkan', 'native-gl', 'native-sdlgpu']),
+    sections = {'bunnymark': table(store['rows'], 'bunnymark', ['page-vulkan', 'native-gl', 'native-sdlgpu', 'native-vulkan', 'native-electron']),
+                'robots': table(store['rows'], 'robots', ['page-vulkan', 'native-gl', 'native-sdlgpu', 'native-electron']),
                 'bunnymark-gl': table(store['rows'], 'bunnymark', ['page-gl']),
                 'robots-gl': table(store['rows'], 'robots', ['page-gl'])}
     for name, lines in sections.items():
-        start, end = f'<!-- compare: {name} -->', f'<!-- /compare: {name} -->'
+        start, end = f'<!-- gen_speed: {name} -->', f'<!-- /gen_speed: {name} -->'
         if start not in text or end not in text:
-            raise SystemExit(f'compare: docs/speed.md has no {start} ... {end} markers')
+            raise SystemExit(f'gen_speed: docs/benchmarks.md has no {start} ... {end} markers')
         head, rest = text.split(start, 1)
         _, tail = rest.split(end, 1)
         text = head + start + '\n' + '\n'.join(lines) + '\n' + end + tail
     PAGE.write_text(text, encoding='utf-8')
 
 
+# ---- docs/benchmarks/*.svg ----
+
+CHARTS = ROOT / 'docs/benchmarks'
+# The rows a chart shows, pages first: a page over Vulkan, then each native backend.
+CHART_WHERES = ['page-vulkan', 'native-gl', 'native-sdlgpu', 'native-vulkan', 'native-electron']
+# Light and dark: the surface, the text, the grid, and helix-raylib's, the control's and the others' marks.
+CHART_STYLE = """
+svg { font: 12px system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.surface { fill: #fcfcfb; } .text { fill: #0b0b0b; } .muted { fill: #52514e; } .grid { stroke: #e4e3df; } .axis { stroke: #b5b4ae; }
+.helix-raylib { fill: #2a78d6; } .raylib-c { fill: #eb6834; } .other { fill: #8a8984; }
+@media (prefers-color-scheme: dark) {
+  .surface { fill: #1a1a19; } .text { fill: #f0efec; } .muted { fill: #c3c2b7; } .grid { stroke: #33332f; } .axis { stroke: #5c5b55; }
+  .helix-raylib { fill: #3987e5; } .raylib-c { fill: #d95926; } .other { fill: #8f8e88; }
+}"""
+
+
+def escape(text):
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def ceiling(value):
+    """The round number at or above value an axis ends at: 1, 2 or 5 times a power of ten."""
+    import math
+    power = 10 ** math.floor(math.log10(value))
+    return next(step * power for step in (1, 2, 5, 10) if step * power >= value)
+
+
+def chart_size(row):
+    """A row's size for the charts: a page's gzipped code (three's bundled), a native program's MB."""
+    size = row.get('size') or {}
+    if row['where'].startswith('page'):
+        return (row.get('bundledSize') or size).get('gzipKB')
+    return size.get('strippedMB') or size.get('appMB')
+
+
+def bars(program, rows, measure):
+    """One horizontal bar chart of a program's rows, pages and native programs apart, each group sorted from the best: frame time at
+    the largest count (measure 'speed') or size ('size'). An axis ends near ten times its group's best; a longer bar breaks at the
+    edge and says its value."""
+    count = str((BUNNY_COUNTS if program == 'bunnymark' else ROBOT_COUNTS)[-1])
+    shown = f'{int(count) // 1000}k bunnies' if program == 'bunnymark' else f'{count} robots'
+    order = {w: i for i, w in enumerate(CHART_WHERES)}
+    rows = [r for r in rows if r['program'] == program and r['where'] in order]
+    newest = max(r['date'] for r in rows)
+    value_of = (lambda r: r['counts'].get(count, {}).get('meanMs')) if measure == 'speed' else chart_size
+    name = 'The bunnymark' if program == 'bunnymark' else 'Animated robots'
+    title = f'{name}: frame time at {shown}, ms (shorter is faster)' if measure == 'speed' else f'{name}: size (shorter is smaller)'
+    width, label_width, plot, row_height, bar = 1040, 400, 520, 24, 14
+    groups = []
+    for group, kind in (('Page', 'page'), ('Native', 'native')):
+        members = sorted([r for r in rows if r['where'].startswith(kind)], key=lambda r: (value_of(r) is None, value_of(r) or 0))
+        if members:
+            unit = ('ms' if measure == 'speed' else 'KB gzip' if kind == 'page' else 'MB')
+            values = [value_of(r) for r in members if value_of(r)]
+            groups.append((group, unit, members, ceiling(min(values) * 10) if values else 1))
+    height = 56 + sum(34 + len(m) * row_height for _, _, m, _ in groups) + 26
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img">',
+           f'<title>{escape(title)}</title>', f'<style>{CHART_STYLE}</style>',
+           f'<rect class="surface" width="{width}" height="{height}" rx="8"/>',
+           f'<text class="text" x="16" y="28" font-size="15" font-weight="600">{escape(title)}</text>']
+    y = 56
+    for group, unit, members, end in groups:
+        left = label_width
+        out.append(f'<text class="text" x="16" y="{y + 14}" font-weight="600">{group}</text>')
+        bottom = y + 22 + len(members) * row_height
+        for i in range(5):
+            tick = end * i / 4
+            x = left + plot * i / 4
+            out.append(f'<line class="{"axis" if i == 0 else "grid"}" x1="{x:.1f}" y1="{y + 20}" x2="{x:.1f}" y2="{bottom}" stroke-width="1"/>')
+            out.append(f'<text class="muted" x="{x:.1f}" y="{y + 14}" text-anchor="middle" font-size="11">{tick:,g}{" " + unit if i == 4 else ""}</text>')
+        y += 22
+        for row in members:
+            mark = row['contender'] if row['contender'] in ('helix-raylib', 'raylib-c') else 'other'
+            where = where_text(row, newest).removeprefix('page').removeprefix('native').lstrip(', ')
+            label_text = label(row).replace('**', '') + (' — ' + where if where else '')
+            middle = y + row_height / 2
+            out.append(f'<g><title>{escape(label_text)}</title>')
+            out.append(f'<text class="{"text" if mark != "other" else "muted"}" x="16" y="{middle + 4:.1f}"{" font-weight=\"600\"" if mark == "helix-raylib" else ""}>'
+                       f'{escape(label_text if len(label_text) <= 62 else label_text[:61] + "…")}</text>')
+            value = value_of(row)
+            if value:
+                broken = value > end
+                length = plot if broken else max(plot * value / end, 2)
+                top = middle - bar / 2
+                # The bar starts square at the axis and ends rounded at its value.
+                out.append(f'<path class="{mark}" d="M{left},{top:.1f} h{length - 4:.1f} a4,4 0 0 1 4,4 v{bar - 8} a4,4 0 0 1 -4,4 h{-(length - 4):.1f} z"/>')
+                if broken:
+                    for offset in (14, 20):
+                        x = left + plot - offset
+                        out.append(f'<line class="grid" x1="{x - 3:.1f}" y1="{top + bar + 2:.1f}" x2="{x + 3:.1f}" y2="{top - 2:.1f}" stroke-width="3"/>')
+                text = f'{value:,.2f}' if measure == 'speed' else f'{value:,.1f}'
+                out.append(f'<text class="text" x="{left + length + 6:.1f}" y="{middle + 4:.1f}" font-size="11">{text}{" →" if broken else ""}</text>')
+            else:
+                out.append(f'<text class="muted" x="{left + 6}" y="{middle + 4:.1f}" font-size="11">not measured at {shown}</text>')
+            out.append('</g>')
+            y += row_height
+        y += 12
+    out.append(f'<text class="muted" x="16" y="{height - 12}" font-size="11">Blue: helix-raylib. Orange: raylib C, the control. A broken bar '
+               'runs past the axis, its value beside it. Each row as measured on its date; the tables below have every count.</text>')
+    out.append('</svg>')
+    return '\n'.join(out) + '\n'
+
+
+def write_charts(store):
+    """docs/benchmarks/<program>-speed.svg and <program>-size.svg for each program, from the store."""
+    CHARTS.mkdir(parents=True, exist_ok=True)
+    for program in PROGRAMS:
+        for measure in ('speed', 'size'):
+            (CHARTS / f'{program}-{measure}.svg').write_text(bars(program, store['rows'], measure), encoding='utf-8')
+
+
 # ---- Main ----
+
+
+def stale(programs, wheres, store):
+    """The contenders a run takes when none is named: helix-raylib, raylib C as the control, and each other one with a row missing here or
+    measured at another version than its pin."""
+    versions = versions_of(CONTENDERS)
+    found = ['helix-raylib', 'raylib-c']
+    for contender in CONTENDERS[2:]:
+        rows = [r for r in store['rows'] if r['contender'] == contender and r['program'] in programs]
+        for where in set(wheres) & set(WHERES[contender]):
+            here = [r for r in rows if r['where'] == where]
+            if not here or any(r['version'] != versions[contender] or (where == 'native-electron' and r.get('electron') != pins()['electron'])
+                               for r in here):
+                found.append(contender)
+                break
+    return found
+
+
+def unquiet():
+    """Why this machine can't be timed now, or None: a load average over QUIET_LOAD, or a pinned loop slower than QUIET_LOOP_SECONDS."""
+    load = os.getloadavg()[0]
+    if load > QUIET_LOAD:
+        return f'the load average is {load:.2f}, over {QUIET_LOAD}: something else is running'
+    loop = 'x=0\nfor i in range(20_000_000):x+=i'
+    pinned = ['taskset', '-c', '2'] if shutil.which('taskset') else []
+    started = time.perf_counter()
+    subprocess.run([*pinned, sys.executable, '-c', loop], check=True)
+    seconds = time.perf_counter() - started
+    if seconds > QUIET_LOOP_SECONDS:
+        return (f'a pinned loop took {seconds:.2f} s, over {QUIET_LOOP_SECONDS}: the CPU is held back '
+                '(system76-power profile performance, or a power cycle when that is not enough)')
+    return None
+
+
+def drift(entries, store):
+    """How far the control moved from its rows in the store: the median of its counts' ratios, new to old, or None without both."""
+    old = {(r['variant'], r['program'], r['where']): r for r in store['rows'] if r['contender'] == 'raylib-c'}
+    ratios = []
+    for entry in entries:
+        before = old.get((entry['variant'], entry['program'], entry['where'])) if entry['contender'] == 'raylib-c' else None
+        for count, now in entry['counts'].items() if before else []:
+            then = before['counts'].get(count, {}).get('meanMs')
+            if then and now.get('meanMs'):
+                ratios.append(now['meanMs'] / then)
+    return statistics.median(ratios) if ratios else None
 
 
 def main():
     parser = cli.parser(__doc__)
     cli.runs(parser)
     parser.add_argument('--backend', choices=['vulkan', 'gl'], default='vulkan', help="what ANGLE draws the pages over (default vulkan)")
+    parser.add_argument('--all', action='store_true', help='every contender, and the pages over both backends')
     parser.add_argument('--runs', type=int, default=3, help='runs of each program and count (default 3)')
     parser.add_argument('--browser', default='', help="a Chromium to run the pages in (default Playwright's own)")
-    parser.add_argument('--write', action='store_true', help="update docs/speed.json and docs/speed.md's tables with the run")
-    parser.add_argument('names', nargs='*', metavar='NAME', help='programs (bunnymark, robots) and contenders (helix-raylib, raylib-c, godot, three, helix-legacy)')
+    parser.add_argument('--write', action='store_true', help="update docs/speed.json, docs/benchmarks.md's tables and its charts with the run")
+    parser.add_argument('--unchecked', action='store_true', help="write without the quiet machine's check and the control's")
+    parser.add_argument('names', nargs='*', metavar='NAME', help='programs (bunnymark, robots) and contenders (helix-raylib, raylib-c, godot, three, lime, helix-legacy)')
     a = parser.parse_args()
     if not sys.platform.startswith('linux'):
-        print('compare: Linux only')
+        print('gen_speed: Linux only')
         return 1
     unknown = [n for n in a.names if n not in PROGRAMS + CONTENDERS]
     if unknown:
-        print(f'compare: unknown {", ".join(unknown)}: programs are {", ".join(PROGRAMS)}, contenders {", ".join(CONTENDERS)}')
+        print(f'gen_speed: unknown {", ".join(unknown)}: programs are {", ".join(PROGRAMS)}, contenders {", ".join(CONTENDERS)}')
         return 2
     programs = [n for n in PROGRAMS if n in a.names] or PROGRAMS
-    contenders = [n for n in CONTENDERS if n in a.names] or CONTENDERS
     native, page = cli.targets(a)
+    backends = ['vulkan', 'gl'] if a.all else [a.backend]
+    wheres = ([f'page-{b}' for b in backends] if page else []) + (['native-gl', 'native-sdlgpu', 'native-vulkan', 'native-electron'] if native else [])
+    named = [n for n in CONTENDERS if n in a.names]
+    contenders = named or (CONTENDERS if a.all else stale(programs, wheres, load_store()))
+    say('contenders: ' + ', '.join(contenders))
     if a.headed and not os.environ.get('DISPLAY'):
-        print('compare: --headed needs $DISPLAY')
+        print('gen_speed: --headed needs $DISPLAY')
         return 1
-    if a.headed and page and a.backend == 'vulkan':
-        print('compare: --headed pages need --backend gl: over Vulkan a visible window loses its WebGL context at startup (docs/speed.md)')
+    if a.write and native and not a.headed:
+        print('gen_speed: native times on the private display are software GL\'s, not written: --headed runs them on this one')
         return 2
+    if a.write and not a.unchecked:
+        why = unquiet()
+        if why:
+            print(f'gen_speed: not timed, as {why} (--unchecked times it anyway)')
+            return 1
     built = build(programs, contenders, page, native)
     stamp = time.strftime('%Y-%m-%d-%H%M%S')
     runs_file = OUT / 'runs' / f'{stamp}.jsonl'
@@ -743,15 +972,21 @@ def main():
 
     import screen_power
     with screen_power.kept_on(a.headed):
-        measure(programs, built, page, native, a.backend, a.runs, a.headed, a.browser, record)
+        measure(programs, built, page, native, backends, a.runs, a.headed, a.browser, record)
     say(f'{len(rows)} runs in {runs_file.relative_to(ROOT)}')
     entries = summarize(rows, time.strftime('%Y-%m-%d'), built)
     for e in entries:
         counts = ', '.join(f'{n}: {c["meanMs"]}' for n, c in e['counts'].items() if c['meanMs'] is not None)
         print(f'  {e["program"]} {e["where"]:14} {label(e):40} {counts}' + (f', held {e["held"]}' if e.get('held') else '') + f'  size {size_text(e)}')
     if a.write:
-        write_page_tables(write_store(entries))
-        say(f'{STORE.relative_to(ROOT)} and {PAGE.relative_to(ROOT)} written')
+        moved = drift(entries, load_store())
+        if moved is not None and abs(moved - 1) > CONTROL_DRIFT and not a.unchecked:
+            say(f'not written: the control, raylib C, moved to {moved:.2f} times its last times, past {CONTROL_DRIFT:.0%} (--unchecked writes it)')
+            return 1
+        store = write_store(entries)
+        write_page_tables(store)
+        write_charts(store)
+        say(f'{STORE.relative_to(ROOT)}, {PAGE.relative_to(ROOT)} and its charts written')
     return 1 if any(not r['result'] for r in rows) else 0
 
 

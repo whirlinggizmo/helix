@@ -6,7 +6,7 @@ import lime.graphics.RenderContext;
 import lime.utils.Assets;
 import render.GLRenderer;
 
-/** raylib's textures_bunnymark on Lime, for tools/compare/compare.py: Lime's own BunnyMark demo (lime-samples 7.0.0) with raylib's bunnies,
+/** raylib's textures_bunnymark on Lime, for tools/gen_speed.py: Lime's own BunnyMark demo (lime-samples 7.0.0) with raylib's bunnies,
 	a `count=N` query spawning N (`ramp=1` adding 1000 each 60 frames while those held 59 fps), 120 frames to warm up and 600 timed, one JSON
 	line on the console, as the helix-raylib contender prints it. Every bunny starts the same from a fixed xorshift32 seed. */
 class Main extends Application {

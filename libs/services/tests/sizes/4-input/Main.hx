@@ -1,4 +1,4 @@
-// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one an action bound to a key and a gamepad button, read each frame.
+// The services' size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one an action bound to a key and a gamepad button, read each frame.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;

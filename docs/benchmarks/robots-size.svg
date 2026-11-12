@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="390" viewBox="0 0 1040 390" role="img">
+<title>Animated robots: size (shorter is smaller)</title>
+<style>
+svg { font: 12px system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.surface { fill: #fcfcfb; } .text { fill: #0b0b0b; } .muted { fill: #52514e; } .grid { stroke: #e4e3df; } .axis { stroke: #b5b4ae; }
+.helix-raylib { fill: #2a78d6; } .raylib-c { fill: #eb6834; } .other { fill: #8a8984; }
+@media (prefers-color-scheme: dark) {
+  .surface { fill: #1a1a19; } .text { fill: #f0efec; } .muted { fill: #c3c2b7; } .grid { stroke: #33332f; } .axis { stroke: #5c5b55; }
+  .helix-raylib { fill: #3987e5; } .raylib-c { fill: #d95926; } .other { fill: #8f8e88; }
+}</style>
+<rect class="surface" width="1040" height="390" rx="8"/>
+<text class="text" x="16" y="28" font-size="15" font-weight="600">Animated robots: size (shorter is smaller)</text>
+<text class="text" x="16" y="70" font-weight="600">Page</text>
+<line class="axis" x1="400.0" y1="76" x2="400.0" y2="198" stroke-width="1"/>
+<text class="muted" x="400.0" y="70" text-anchor="middle" font-size="11">0</text>
+<line class="grid" x1="530.0" y1="76" x2="530.0" y2="198" stroke-width="1"/>
+<text class="muted" x="530.0" y="70" text-anchor="middle" font-size="11">250</text>
+<line class="grid" x1="660.0" y1="76" x2="660.0" y2="198" stroke-width="1"/>
+<text class="muted" x="660.0" y="70" text-anchor="middle" font-size="11">500</text>
+<line class="grid" x1="790.0" y1="76" x2="790.0" y2="198" stroke-width="1"/>
+<text class="muted" x="790.0" y="70" text-anchor="middle" font-size="11">750</text>
+<line class="grid" x1="920.0" y1="76" x2="920.0" y2="198" stroke-width="1"/>
+<text class="muted" x="920.0" y="70" text-anchor="middle" font-size="11">1,000 KB gzip</text>
+<g><title>helix-raylib — WebGL2</title>
+<text class="text" x="16" y="94.0" font-weight="600">helix-raylib — WebGL2</text>
+<path class="helix-raylib" d="M400,83.0 h41.1 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-41.1 z"/>
+<text class="text" x="451.1" y="94.0" font-size="11">86.8</text>
+</g>
+<g><title>three.js 0.187.0 — WebGL2 (2026-11-05)</title>
+<text class="muted" x="16" y="118.0">three.js 0.187.0 — WebGL2 (2026-11-05)</text>
+<path class="other" d="M400,107.0 h79.3 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-79.3 z"/>
+<text class="text" x="489.3" y="118.0" font-size="11">160.1</text>
+</g>
+<g><title>raylib C 5.5, GPU skinning — wasm, WebGL1</title>
+<text class="text" x="16" y="142.0">raylib C 5.5, GPU skinning — wasm, WebGL1</text>
+<path class="raylib-c" d="M400,131.0 h96.3 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-96.3 z"/>
+<text class="text" x="506.3" y="142.0" font-size="11">192.8</text>
+</g>
+<g><title>raylib C 5.5, CPU skinning — wasm, WebGL1</title>
+<text class="text" x="16" y="166.0">raylib C 5.5, CPU skinning — wasm, WebGL1</text>
+<path class="raylib-c" d="M400,155.0 h96.4 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-96.4 z"/>
+<text class="text" x="506.4" y="166.0" font-size="11">193.0</text>
+</g>
+<g><title>Godot 4.7.2 — wasm, WebGL2 (2026-11-04)</title>
+<text class="muted" x="16" y="190.0">Godot 4.7.2 — wasm, WebGL2 (2026-11-04)</text>
+<path class="other" d="M400,179.0 h516.0 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-516.0 z"/>
+<line class="grid" x1="903.0" y1="195.0" x2="909.0" y2="177.0" stroke-width="3"/>
+<line class="grid" x1="897.0" y1="195.0" x2="903.0" y2="177.0" stroke-width="3"/>
+<text class="text" x="926.0" y="190.0" font-size="11">10,125.4 →</text>
+</g>
+<text class="text" x="16" y="224" font-weight="600">Native</text>
+<line class="axis" x1="400.0" y1="230" x2="400.0" y2="352" stroke-width="1"/>
+<text class="muted" x="400.0" y="224" text-anchor="middle" font-size="11">0</text>
+<line class="grid" x1="530.0" y1="230" x2="530.0" y2="352" stroke-width="1"/>
+<text class="muted" x="530.0" y="224" text-anchor="middle" font-size="11">5</text>
+<line class="grid" x1="660.0" y1="230" x2="660.0" y2="352" stroke-width="1"/>
+<text class="muted" x="660.0" y="224" text-anchor="middle" font-size="11">10</text>
+<line class="grid" x1="790.0" y1="230" x2="790.0" y2="352" stroke-width="1"/>
+<text class="muted" x="790.0" y="224" text-anchor="middle" font-size="11">15</text>
+<line class="grid" x1="920.0" y1="230" x2="920.0" y2="352" stroke-width="1"/>
+<text class="muted" x="920.0" y="224" text-anchor="middle" font-size="11">20 MB</text>
+<g><title>raylib C 5.5, CPU skinning — GL</title>
+<text class="text" x="16" y="248.0">raylib C 5.5, CPU skinning — GL</text>
+<path class="raylib-c" d="M400,237.0 h26.2 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-26.2 z"/>
+<text class="text" x="436.2" y="248.0" font-size="11">1.2</text>
+</g>
+<g><title>raylib C 5.5, GPU skinning — GL</title>
+<text class="text" x="16" y="272.0">raylib C 5.5, GPU skinning — GL</text>
+<path class="raylib-c" d="M400,261.0 h26.2 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-26.2 z"/>
+<text class="text" x="436.2" y="272.0" font-size="11">1.2</text>
+</g>
+<g><title>helix-raylib — SDL_GPU (Vulkan)</title>
+<text class="text" x="16" y="296.0" font-weight="600">helix-raylib — SDL_GPU (Vulkan)</text>
+<path class="helix-raylib" d="M400,285.0 h204.5 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-204.5 z"/>
+<text class="text" x="614.5" y="296.0" font-size="11">8.0</text>
+</g>
+<g><title>helix-raylib — GL</title>
+<text class="text" x="16" y="320.0" font-weight="600">helix-raylib — GL</text>
+<path class="helix-raylib" d="M400,309.0 h225.1 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-225.1 z"/>
+<text class="text" x="635.1" y="320.0" font-size="11">8.8</text>
+</g>
+<g><title>Godot 4.7.2 — GL, Compatibility (2026-11-04)</title>
+<text class="muted" x="16" y="344.0">Godot 4.7.2 — GL, Compatibility (2026-11-04)</text>
+<path class="other" d="M400,333.0 h516.0 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-516.0 z"/>
+<line class="grid" x1="903.0" y1="349.0" x2="909.0" y2="331.0" stroke-width="3"/>
+<line class="grid" x1="897.0" y1="349.0" x2="903.0" y2="331.0" stroke-width="3"/>
+<text class="text" x="926.0" y="344.0" font-size="11">73.5 →</text>
+</g>
+<text class="muted" x="16" y="378" font-size="11">Blue: helix-raylib. Orange: raylib C, the control. A broken bar runs past the axis, its value beside it. Each row as measured on its date; the tables below have every count.</text>
+</svg>

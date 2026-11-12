@@ -3,7 +3,7 @@
 The order (DECISIONS 40, 53, 60): raygui on helix-raylib (done, DECISIONS 41), then helix-render's stages 1 to 3 (done, and set aside,
 DECISIONS 53), then a retained-mode engine tried on helix-raylib, Gyre's or a three.js-style one as the jam decides. helix-raylib itself
 is raylib 5.5's API, the calls its refusals name, and the extras a program opts into (DECISIONS 60, 61). Whatever comes next keeps helix-raylib's size and
-speed where docs/speed.md records them.
+speed where docs/benchmarks.md records them.
 
 - **helix-render, set aside (DECISIONS 53)** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS
   35): built from its agreed API (revision 9) through stage 3 (the renderer and its recorded frame, textures and targets, `Batch2D`,
@@ -40,7 +40,7 @@ speed where docs/speed.md records them.
   `...Async` call, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's own names (the assets,
   resources and objects below). The `...Async` calls no refusal names stay in `Raylib`, and may move to the extras. A `Future` of our
   own over the callbacks, cross-target, may serve the managed layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
-- **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/speed.md) against three.js's
+- **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/benchmarks.md) against three.js's
   InstancedMesh at 3.84, both one instanced draw, so what is left is JavaScript a sprite, about 23 ns against 19: the record's twelve
   writes (about 2.5 ms for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)
   still go through `Frame.quad` out of line, since inlining it everywhere cost 640 B gzip a rung. On the phone

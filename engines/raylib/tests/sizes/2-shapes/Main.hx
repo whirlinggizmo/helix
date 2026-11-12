@@ -1,4 +1,4 @@
-// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one 2D shapes: a rectangle, a circle, a line and a triangle.
+// helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one 2D shapes: a rectangle, a circle, a line and a triangle.
 import helix.raylib.Raylib.*;
 import helix.raylib.Vector2;
 

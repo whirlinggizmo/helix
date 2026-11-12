@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="462" viewBox="0 0 1040 462" role="img">
+<title>The bunnymark: frame time at 200k bunnies, ms (shorter is faster)</title>
+<style>
+svg { font: 12px system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.surface { fill: #fcfcfb; } .text { fill: #0b0b0b; } .muted { fill: #52514e; } .grid { stroke: #e4e3df; } .axis { stroke: #b5b4ae; }
+.helix-raylib { fill: #2a78d6; } .raylib-c { fill: #eb6834; } .other { fill: #8a8984; }
+@media (prefers-color-scheme: dark) {
+  .surface { fill: #1a1a19; } .text { fill: #f0efec; } .muted { fill: #c3c2b7; } .grid { stroke: #33332f; } .axis { stroke: #5c5b55; }
+  .helix-raylib { fill: #3987e5; } .raylib-c { fill: #d95926; } .other { fill: #8f8e88; }
+}</style>
+<rect class="surface" width="1040" height="462" rx="8"/>
+<text class="text" x="16" y="28" font-size="15" font-weight="600">The bunnymark: frame time at 200k bunnies, ms (shorter is faster)</text>
+<text class="text" x="16" y="70" font-weight="600">Page</text>
+<line class="axis" x1="400.0" y1="76" x2="400.0" y2="270" stroke-width="1"/>
+<text class="muted" x="400.0" y="70" text-anchor="middle" font-size="11">0</text>
+<line class="grid" x1="530.0" y1="76" x2="530.0" y2="270" stroke-width="1"/>
+<text class="muted" x="530.0" y="70" text-anchor="middle" font-size="11">12.5</text>
+<line class="grid" x1="660.0" y1="76" x2="660.0" y2="270" stroke-width="1"/>
+<text class="muted" x="660.0" y="70" text-anchor="middle" font-size="11">25</text>
+<line class="grid" x1="790.0" y1="76" x2="790.0" y2="270" stroke-width="1"/>
+<text class="muted" x="790.0" y="70" text-anchor="middle" font-size="11">37.5</text>
+<line class="grid" x1="920.0" y1="76" x2="920.0" y2="270" stroke-width="1"/>
+<text class="muted" x="920.0" y="70" text-anchor="middle" font-size="11">50 ms</text>
+<g><title>three.js 0.187.0, InstancedMesh — WebGL2 (2026-11-05)</title>
+<text class="muted" x="16" y="94.0">three.js 0.187.0, InstancedMesh — WebGL2 (2026-11-05)</text>
+<path class="other" d="M400,83.0 h35.9 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-35.9 z"/>
+<text class="text" x="445.9" y="94.0" font-size="11">3.84</text>
+</g>
+<g><title>helix-raylib — WebGL2</title>
+<text class="text" x="16" y="118.0" font-weight="600">helix-raylib — WebGL2</text>
+<path class="helix-raylib" d="M400,107.0 h43.2 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-43.2 z"/>
+<text class="text" x="453.2" y="118.0" font-size="11">4.54</text>
+</g>
+<g><title>Lime 8.3.1 — WebGL (2026-11-05)</title>
+<text class="muted" x="16" y="142.0">Lime 8.3.1 — WebGL (2026-11-05)</text>
+<path class="other" d="M400,131.0 h112.1 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-112.1 z"/>
+<text class="text" x="522.1" y="142.0" font-size="11">11.16</text>
+</g>
+<g><title>raylib C 5.5 — wasm, WebGL1</title>
+<text class="text" x="16" y="166.0">raylib C 5.5 — wasm, WebGL1</text>
+<path class="raylib-c" d="M400,155.0 h130.7 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-130.7 z"/>
+<text class="text" x="540.7" y="166.0" font-size="11">12.95</text>
+</g>
+<g><title>helix-legacy, a Sprite2D each — WebGL2 (2026-11-04)</title>
+<text class="muted" x="16" y="190.0">helix-legacy, a Sprite2D each — WebGL2 (2026-11-04)</text>
+<path class="other" d="M400,179.0 h516.0 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-516.0 z"/>
+<line class="grid" x1="903.0" y1="195.0" x2="909.0" y2="177.0" stroke-width="3"/>
+<line class="grid" x1="897.0" y1="195.0" x2="903.0" y2="177.0" stroke-width="3"/>
+<text class="text" x="926.0" y="190.0" font-size="11">54.70 →</text>
+</g>
+<g><title>Godot 4.7.2, MultiMesh — wasm, WebGL2 (2026-11-04)</title>
+<text class="muted" x="16" y="214.0">Godot 4.7.2, MultiMesh — wasm, WebGL2 (2026-11-04)</text>
+<path class="other" d="M400,203.0 h516.0 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-516.0 z"/>
+<line class="grid" x1="903.0" y1="219.0" x2="909.0" y2="201.0" stroke-width="3"/>
+<line class="grid" x1="897.0" y1="219.0" x2="903.0" y2="201.0" stroke-width="3"/>
+<text class="text" x="926.0" y="214.0" font-size="11">183.95 →</text>
+</g>
+<g><title>three.js 0.187.0, a Sprite each — WebGL2 (2026-11-05)</title>
+<text class="muted" x="16" y="238.0">three.js 0.187.0, a Sprite each — WebGL2 (2026-11-05)</text>
+<path class="other" d="M400,227.0 h516.0 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-516.0 z"/>
+<line class="grid" x1="903.0" y1="243.0" x2="909.0" y2="225.0" stroke-width="3"/>
+<line class="grid" x1="897.0" y1="243.0" x2="903.0" y2="225.0" stroke-width="3"/>
+<text class="text" x="926.0" y="238.0" font-size="11">223.06 →</text>
+</g>
+<g><title>Godot 4.7.2, a Sprite2D each — wasm, WebGL2 (2026-11-04)</title>
+<text class="muted" x="16" y="262.0">Godot 4.7.2, a Sprite2D each — wasm, WebGL2 (2026-11-04)</text>
+<path class="other" d="M400,251.0 h516.0 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-516.0 z"/>
+<line class="grid" x1="903.0" y1="267.0" x2="909.0" y2="249.0" stroke-width="3"/>
+<line class="grid" x1="897.0" y1="267.0" x2="903.0" y2="249.0" stroke-width="3"/>
+<text class="text" x="926.0" y="262.0" font-size="11">376.67 →</text>
+</g>
+<text class="text" x="16" y="296" font-weight="600">Native</text>
+<line class="axis" x1="400.0" y1="302" x2="400.0" y2="424" stroke-width="1"/>
+<text class="muted" x="400.0" y="296" text-anchor="middle" font-size="11">0</text>
+<line class="grid" x1="530.0" y1="302" x2="530.0" y2="424" stroke-width="1"/>
+<text class="muted" x="530.0" y="296" text-anchor="middle" font-size="11">12.5</text>
+<line class="grid" x1="660.0" y1="302" x2="660.0" y2="424" stroke-width="1"/>
+<text class="muted" x="660.0" y="296" text-anchor="middle" font-size="11">25</text>
+<line class="grid" x1="790.0" y1="302" x2="790.0" y2="424" stroke-width="1"/>
+<text class="muted" x="790.0" y="296" text-anchor="middle" font-size="11">37.5</text>
+<line class="grid" x1="920.0" y1="302" x2="920.0" y2="424" stroke-width="1"/>
+<text class="muted" x="920.0" y="296" text-anchor="middle" font-size="11">50 ms</text>
+<g><title>helix-raylib — GL</title>
+<text class="text" x="16" y="320.0" font-weight="600">helix-raylib — GL</text>
+<path class="helix-raylib" d="M400,309.0 h39.1 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-39.1 z"/>
+<text class="text" x="449.1" y="320.0" font-size="11">4.14</text>
+</g>
+<g><title>helix-raylib — SDL_GPU (Vulkan)</title>
+<text class="text" x="16" y="344.0" font-weight="600">helix-raylib — SDL_GPU (Vulkan)</text>
+<path class="helix-raylib" d="M400,333.0 h44.9 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-44.9 z"/>
+<text class="text" x="454.9" y="344.0" font-size="11">4.70</text>
+</g>
+<g><title>raylib C 5.5 — GL</title>
+<text class="text" x="16" y="368.0">raylib C 5.5 — GL</text>
+<path class="raylib-c" d="M400,357.0 h121.2 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-121.2 z"/>
+<text class="text" x="531.2" y="368.0" font-size="11">12.04</text>
+</g>
+<g><title>Godot 4.7.2, MultiMesh — Vulkan, Forward+ (2026-11-04)</title>
+<text class="muted" x="16" y="392.0">Godot 4.7.2, MultiMesh — Vulkan, Forward+ (2026-11-04)</text>
+<path class="other" d="M400,381.0 h242.1 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-242.1 z"/>
+<text class="text" x="652.1" y="392.0" font-size="11">23.66</text>
+</g>
+<g><title>Godot 4.7.2, MultiMesh — GL, Compatibility (2026-11-04)</title>
+<text class="muted" x="16" y="416.0">Godot 4.7.2, MultiMesh — GL, Compatibility (2026-11-04)</text>
+<path class="other" d="M400,405.0 h285.2 a4,4 0 0 1 4,4 v6 a4,4 0 0 1 -4,4 h-285.2 z"/>
+<text class="text" x="695.2" y="416.0" font-size="11">27.81</text>
+</g>
+<text class="muted" x="16" y="450" font-size="11">Blue: helix-raylib. Orange: raylib C, the control. A broken bar runs past the axis, its value beside it. Each row as measured on its date; the tables below have every count.</text>
+</svg>

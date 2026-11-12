@@ -1,4 +1,4 @@
-// helix-render's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one shapes: lines, a polyline, rectangles rounded and not, circles, ellipses and polygons, filled and stroked.
+// helix-render's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one shapes: lines, a polyline, rectangles rounded and not, circles, ellipses and polygons, filled and stroked.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;
 import helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter;

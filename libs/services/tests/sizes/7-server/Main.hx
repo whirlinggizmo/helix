@@ -1,4 +1,4 @@
-// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one a server after the file system, its files downloaded and kept (RevalidateCache).
+// The services' size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one a server after the file system, its files downloaded and kept (RevalidateCache).
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.gamepads.dom.DomGamepadsAdapter;
 import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;

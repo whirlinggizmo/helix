@@ -1,4 +1,4 @@
-// helix-raylib's size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one text in raylib's default font.
+// helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one text in raylib's default font.
 import helix.raylib.Raylib.*;
 import helix.raylib.Vector2;
 

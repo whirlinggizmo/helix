@@ -63,8 +63,8 @@ python3 tools/gen_apidoc.py                 # remake each library's api/ after a
 python3 tools/gen_raylib.py                 # remake helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and extras/*.hx after a section changes (--check in the tests)
 ```
 
-A check reports what ran, on which target. Nothing is called faster or smaller until it is measured (`tools/measure_sizes.py`,
-`tools/compare/compare.py`).
+A check reports what ran, on which target. Nothing is called faster or smaller until it is measured (`tools/gen_sizes.py`,
+`tools/gen_speed.py`).
 
 ## Windows, sound and the machine
 
@@ -74,7 +74,7 @@ A check reports what ran, on which target. Nothing is called faster or smaller u
   so).
 - `SDL_AUDIO_DRIVER=dummy` keeps native checks silent. The browser checks run Chromium with `--mute-audio`.
 - A native program that may open a URL runs without `DBUS_SESSION_BUS_ADDRESS`, or it opens the desktop's browser.
-- Each checkout's builds take its own `build/.lock`. A tool that takes the lock itself (`tools/compare/compare.py`) is never run under
+- Each checkout's builds take its own `build/.lock`. A tool that takes the lock itself (`tools/gen_speed.py`) is never run under
   it.
 - A timing run needs a quiet machine: no other builds, a load average under 2, and the reference contender in the same run as the
   control. A run whose control moved is discarded.
@@ -107,7 +107,7 @@ built and where it is (`tools/variants.py` holds the lists).
   reflection, and its includes from the compiler's include mechanism, never from matching the GLSL's text. A library naming its own
   blocks for every shader shares them where the compiled shader declares them (`ShaderSharedBlock.whereDeclared`).
 - **Tools are named for what they are:** a runnable tool is verb_noun, words apart by underscores (`check_types.py`,
-  `measure_sizes.py`). A `check_` tool only reports, a `gen_` tool makes files (committed ones), the rest do what they say. Every tool
+  `gen_sizes.py`). A `check_` tool only reports, a `gen_` tool makes files (committed ones), the rest do what they say. Every tool
   answers `--help` with its usage from its docstring (a Node tool's leading comment), does nothing else then, and refuses an argument
   it doesn't take (`tools/cli.py`). A module the tools import says so when it is run, and is named for what it holds, a plain noun that
   can't read as a verb (`variants.py`, `pins.py`). Front doors keep their noun (`helix.py`). This table names every tool, and
@@ -130,8 +130,6 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/check_docs.py` | Every public type and member has a doc comment; nothing but DECISIONS.md and AGENTS.md names the earlier frameworks |
 | `tools/check_layers.py` | Each library names only itself and what it's built on, and no library reaches an engine; the platform's interfaces don't know each other |
 | `tools/check_names.py` | 2D and 3D named apart, counts and indices named as such (docs/CONVENTIONS.md) |
-| `tools/compare/compare.py` | helix-raylib's speed and size against raylib C, Godot, three.js, Lime and helix-legacy on the same programs (`tools/compare/contenders`), pages in headless Chromium and native programs on a private display or the desktop; `--write` keeps `docs/speed.json` and `docs/speed.md`'s tables |
-| `tools/compare/page.cjs` | One page run in Chromium on the GPU (headless, or `--headed`), ANGLE over Vulkan or GL, printing the program's JSON line and the files fetched (run by `compare.py`) |
 | `tools/check_tools.py` | Every tool answers `--help`, refuses an argument it doesn't take, and is in this table |
 | `tools/check_types.py` | Every entry point type-checked on its targets (`--web`: the browser alone) |
 | `tools/cli.py` | The Python tools' argument parsing (a module) |
@@ -139,8 +137,10 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: each library's `api/` (committed) and `build/api` (`--check`) |
 | `tools/pages.py` | The GitHub Pages site in `build/site`: the API reference's HTML at `api/`. The pages workflow deploys it |
+| `tools/gen_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write` remakes it and `docs/benchmarks.md`'s web sizes, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
+| `tools/gen_speed.py` | helix-raylib's speed and size against raylib C, Godot, three.js (in a page and in Electron), Lime and helix-legacy on the same programs (`tools/speed/contenders`), when asked, never in CI: the contenders whose rows are stale, or `--all`; `--write` remakes `docs/speed.json`, `docs/benchmarks.md`'s speed tables and its charts, once the machine is quiet and the control steady |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by section (`--check`) |
-| `tools/measure_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write`, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
+| `tools/speed/run_page.cjs` | One page run in Chromium on the GPU (headless, or `--headed`), or in Electron (`--electron`), ANGLE over Vulkan or GL, printing the program's JSON line and the files fetched (run by `gen_speed.py`) |
 | `tools/watch_job.py` | A background job's status every ten minutes, with the Eastern time, and a line when it ends, stalls or runs past its deadline (`--exit-on-trouble` exits then) |
 | `tools/screen_power.py` | Keeps the screen on while a headed run uses it, on Linux, Windows and macOS, its settings put back after (a module) |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |

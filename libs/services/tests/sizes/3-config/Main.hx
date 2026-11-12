@@ -1,4 +1,4 @@
-// The services' size ladder (tools/measure_sizes.py): each rung adds one thing to the one before; this one an option read.
+// The services' size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one an option read.
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter;
 import helix.platform.adapters.system.dom.DomSystemAdapter;

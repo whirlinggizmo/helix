@@ -35,7 +35,7 @@ def targets(web=False):
     for directory in sorted(p.parent for p in (ROOT/'libs/render/examples').glob('*/Main.hx')):
         found.append((f'render example {directory.name} js',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-cp','libs/render/examples','-main','Main','-js','build/check_types.js']))
         if not web:found.append((f'render example {directory.name} cpp',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-cp','libs/render/examples','-main','Main','-cpp','build/check_types-cpp']))
-    # The size ladder's rungs, the browser's (tools/measure_sizes.py builds them so).
+    # The size ladder's rungs, the browser's (tools/gen_sizes.py builds them so).
     for library in ('platform','services','render'):
         for rung in sorted((ROOT/'libs'/library/'tests/sizes').glob('*/Main.hx')):
             found.append((f'{library} size {rung.parent.name}',['-lib',f'helix-{library}','-cp',str(rung.parent.relative_to(ROOT)),'-main','Main','-js','build/check_types.js']))
