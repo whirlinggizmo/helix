@@ -305,10 +305,14 @@ class RCore {
 		return Runtime.window.focused;
 	}
 
-	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen. */
-	@:unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Asks for fullscreen, or for the window back at the size and place it had, and returns at once.
+
+		In a page, the browser grants fullscreen only after a key press, click or tap: asked for outside one, it waits for the next. A
+		refusal is logged.
+
+		`IsWindowFullscreen` reports the new state once the window has changed, not when the call returns. */
 	static function ToggleFullscreen():Void {
-		throw "ToggleFullscreen is unimplemented";
+		RWindowAsync.toggleFullscreen("ToggleFullscreen", false, null, null);
 	}
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a

@@ -106,18 +106,18 @@ class Device {
 	public static inline function IsWindowCloseable():Bool
 		return RDevice.IsWindowCloseable();
 
-	/** Returns whether the window can go fullscreen. See `ToggleFullscreenAsync` for asking for it.
+	/** Returns whether the window can go fullscreen. See `ToggleFullscreen` for asking for it.
 
 		False where the system doesn't allow it, as on an iPhone.
 
-		@return  True where `ToggleFullscreenAsync` can be granted. */
+		@return  True where `ToggleFullscreen` can be granted. */
 	public static inline function IsFullscreenAvailable():Bool
 		return RDevice.IsFullscreenAvailable();
 
 	/** Asynchronously asks for the screen to be held one way up, or released. See `GetScreenOrientation` for reading how it is held.
 
 		Refused where the system doesn't hold the screen, as natively and on iOS. Some systems hold it only in fullscreen, so a program
-		asks in `ToggleFullscreenAsync`'s `done`.
+		asks once `IsWindowFullscreen()` is true.
 
 		Where the lock is refused, a game shows "turn your device" when the shape is wrong (`GetScreenWidth() < GetScreenHeight()`).
 

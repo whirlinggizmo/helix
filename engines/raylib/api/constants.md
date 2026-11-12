@@ -648,7 +648,6 @@ static macro function GetClipboardImage(...args):Image
 static macro function GetWindowHandle(...args):Dynamic
 static macro function GetMonitorPhysicalWidth(...args):Int
 static macro function GetMonitorPhysicalHeight(...args):Int
-static macro function ToggleFullscreen(...args):Void
 static macro function ToggleBorderlessWindowed(...args):Void
 static macro function SetWindowPosition(...args):Void
 static macro function SetWindowMonitor(...args):Void
@@ -697,7 +696,6 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `GetWindowHandle`: Doesn't compile, since helix-raylib's window has no native handle to give.
 - `GetMonitorPhysicalWidth`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels.
 - `GetMonitorPhysicalHeight`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels.
-- `ToggleFullscreen`: Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen.
 - `ToggleBorderlessWindowed`: Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a borderless window.
 - `SetWindowPosition`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowPositionAsync` for asking for a place on the desktop. Refused where the system doesn't allow it, as Wayland doesn't.
 - `SetWindowMonitor`: Doesn't compile on any target, since the window changes later or is refused. See `SetWindowMonitorAsync` for asking for another monitor.

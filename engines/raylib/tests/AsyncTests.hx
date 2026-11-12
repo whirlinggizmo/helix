@@ -8,7 +8,7 @@ import helix.services.input.Touch;
 import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
-/** Checks helix-raylib's Async requests and writes over fakes (services' `FakeWindow`, `FakeEvents`, `FakeDevices` and
+/** Checks helix-raylib's Async requests, raylib's `ToggleFullscreen`, and writes over fakes (services' `FakeWindow`, `FakeEvents`, `FakeDevices` and
 	`FakeFileSystem`, and a clipboard here): each answers once, at a later poll and never during its call, `done` once the platform
 	reflects it and `failed` with the reason where it refuses; a request the platform can't ask is refused with why; a write is done
 	once the saves are written, or the program's save callback has said it wrote, and fails when they can't be. */
@@ -120,6 +120,21 @@ class AsyncTests {
 			&& !IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE),
 			"ToggleFullscreenAsync from borderless");
 		check(answer((d, f) -> ToggleFullscreenAsync(d, f)) == "done" && !window.fullscreen, "ToggleFullscreenAsync, back");
+		// raylib's ToggleFullscreen returns at once, and IsWindowFullscreen follows the window, refused or not.
+		ToggleFullscreen();
+		for (_ in 0...3)
+			frame();
+		check(IsWindowFullscreen() && window.fullscreen, "ToggleFullscreen");
+		ToggleFullscreen();
+		for (_ in 0...3)
+			frame();
+		check(!IsWindowFullscreen() && !window.fullscreen, "ToggleFullscreen, back");
+		window.refusing.push("fullscreen");
+		ToggleFullscreen();
+		for (_ in 0...3)
+			frame();
+		check(!IsWindowFullscreen() && !window.fullscreen, "ToggleFullscreen refused");
+		window.refusing.remove("fullscreen");
 
 		// The cursor's lock and the clipboard, which the fakes answer at the next poll, as the platform's do.
 		check(answer((d, f) -> DisableCursorAsync(d, f)) == "done"

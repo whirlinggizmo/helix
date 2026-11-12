@@ -178,8 +178,8 @@ static function CalibrateTilt():Void
   False on a phone or a tablet alone.
 - `IsWindowCloseable`: Returns whether `CloseWindow` removes the window. Where it doesn't, the window stays, cleared, and a game may hide its Quit.
   - returns: True where `CloseWindow` removes the window.
-- `IsFullscreenAvailable`: Returns whether the window can go fullscreen. See `ToggleFullscreenAsync` for asking for it.
-  - returns: True where `ToggleFullscreenAsync` can be granted.
+- `IsFullscreenAvailable`: Returns whether the window can go fullscreen. See `ToggleFullscreen` for asking for it.
+  - returns: True where `ToggleFullscreen` can be granted.
 
   False where the system doesn't allow it, as on an iPhone.
 - `SetScreenOrientationAsync`: Asynchronously asks for the screen to be held one way up, or released. See `GetScreenOrientation` for reading how it is held.
@@ -187,7 +187,7 @@ static function CalibrateTilt():Void
   - `done`: Optional. Called once the screen is held, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it was refused; when omitted, it is logged.
 
-  Refused where the system doesn't hold the screen, as natively and on iOS. Some systems hold it only in fullscreen, so a program asks in `ToggleFullscreenAsync`'s `done`.
+  Refused where the system doesn't hold the screen, as natively and on iOS. Some systems hold it only in fullscreen, so a program asks once `IsWindowFullscreen()` is true.
 
   Where the lock is refused, a game shows "turn your device" when the shape is wrong (`GetScreenWidth() < GetScreenHeight()`).
 

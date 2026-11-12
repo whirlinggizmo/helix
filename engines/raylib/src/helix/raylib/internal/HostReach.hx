@@ -12,10 +12,10 @@ using StringTools;
 
 /** Warns, as the program builds, where the program's own code reaches the page for something `Raylib` answers
 	on every target: the page's storage (`SaveFileTextAsync`, `LoadSavedFileTextAsync`) and its fullscreen (`IsWindowFullscreen`,
-	`ToggleFullscreenAsync`), when the program is built with
+	`ToggleFullscreen`), when the program is built with
 	`-D helix-raylib-host-warnings`: off by default, as a person reads the README and may reach the host on purpose, and on for an agent
 	writing raylib from memory (a trial). Each warning reads as a refusal does ("js.html.Element.requestFullscreen: Works only in a
-	browser. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)."). Each site warns once for each call, and libraries' code isn't looked at. Read from the
+	browser. See ToggleFullscreen()."). Each site warns once for each call, and libraries' code isn't looked at. Read from the
 	compiler's typed code, after typing: the fields reached, and the text of a `js.Syntax.code` call. Run by the library's
 	`extraParams.hxml`. */
 @:noCompletion
@@ -23,7 +23,7 @@ class HostReach {
 	#if macro
 	static inline final SAVE = "SaveFileTextAsync(fileName:String, text:String, ?done:Void->Void, ?failed:String->Void) and LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void)";
 	static inline final IS_FULLSCREEN = "IsWindowFullscreen()";
-	static inline final FULLSCREEN = "ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)";
+	static inline final FULLSCREEN = "ToggleFullscreen()";
 
 	/** What a warning naming a call adds, after the call. */
 	static final NOTES:Map<String, String> = [

@@ -31,7 +31,7 @@ import helix.raylib.modules.RWindowAsync;
 	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
 	A raylib call that waits for a file (`LoadModel`) doesn't compile in a function used as a value, and names the call beside it that
-	answers at a later frame (`LoadModelAsync`). A call that changes the window or reads the screen back (`ToggleFullscreen`,
+	answers at a later frame (`LoadModelAsync`). A call that changes the window or reads the screen back (`SetWindowSize`,
 	`TakeScreenshot`) doesn't compile, and names its `...Async` call. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
@@ -1207,6 +1207,15 @@ class Raylib {
 		@return  True while it has. */
 	public static inline function IsWindowFocused():Bool
 		return RCore.IsWindowFocused();
+
+	/** Asks for fullscreen, or for the window back at the size and place it had, and returns at once.
+
+		In a page, the browser grants fullscreen only after a key press, click or tap: asked for outside one, it waits for the next. A
+		refusal is logged.
+
+		`IsWindowFullscreen` reports the new state once the window has changed, not when the call returns. */
+	public static inline function ToggleFullscreen():Void
+		RCore.ToggleFullscreen();
 
 	/** Returns the window's place on the desktop.
 
@@ -7095,11 +7104,6 @@ class Raylib {
 	public static macro function GetMonitorPhysicalHeight(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-raylib's platform.",
 			macro(0 : Int));
-
-	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleFullscreenAsync` for asking for fullscreen. */
-	public static macro function ToggleFullscreen(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("ToggleFullscreen: The window changes later, or is refused. See ToggleFullscreenAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
 
 	/** Doesn't compile on any target, since the window changes later or is refused. See `ToggleBorderlessWindowedAsync` for asking for a borderless window. */
 	public static macro function ToggleBorderlessWindowed(args:Array<Expr>):ExprOf<Void>

@@ -19,6 +19,7 @@ static function SetWindowIcons(images:Array<Image>, count:Int):Void
 static function GetMonitorRefreshRate(monitor:Int):Int
 static function OpenURL(url:String):Void
 static function IsWindowFocused():Bool
+static function ToggleFullscreen():Void
 static function GetWindowPosition():Vector2
 static function GetWindowScaleDPI():Vector2
 static function GetMonitorCount():Int
@@ -236,6 +237,10 @@ static macro function EndDrawing():Void
   A URL that fails to open logs a warning.
 - `IsWindowFocused`: Returns whether the window has the keyboard.
   - returns: True while it has.
+- `ToggleFullscreen`: Asks for fullscreen, or for the window back at the size and place it had, and returns at once.
+  In a page, the browser grants fullscreen only after a key press, click or tap: asked for outside one, it waits for the next. A refusal is logged.
+
+  `IsWindowFullscreen` reports the new state once the window has changed, not when the call returns.
 - `GetWindowPosition`: Returns the window's place on the desktop.
   - returns: Its left and top edges, in pixels.
 - `GetWindowScaleDPI`: Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.

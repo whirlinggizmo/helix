@@ -21,7 +21,7 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 - A call that waits for a file (`LoadTexture`, `LoadFileText`) doesn't compile in a function used as a value, in a constructor or in
   a variable's initial value. It names the `...Async` call beside it, in `Raylib` and `Raygui`, which answers at a later frame.
-- A call that changes the window, or reads the screen, a texture or the clipboard back (`ToggleFullscreen`, `TakeScreenshot`),
+- A call that changes the window, or reads the screen, a texture or the clipboard back (`SetWindowSize`, `TakeScreenshot`),
   doesn't compile. It names its `...Async` call.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
   `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
