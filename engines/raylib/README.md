@@ -21,13 +21,14 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 - A call that waits for a file (`LoadTexture`, `LoadFileText`) doesn't compile in a function used as a value, in a constructor or in
   a variable's initial value. It names the `...Async` call beside it, in `Raylib` and `Raygui`, which answers at a later frame.
-- A call that locks the cursor, or reads the screen, a texture or the clipboard back (`DisableCursor`, `TakeScreenshot`),
-  doesn't compile. It names its `...Async` call.
-- A window request (`ToggleFullscreen`, `SetWindowSize`) returns at once, and the window changes at a later frame, as in raylib's
-  page. `IsWindowFullscreen` and the other window reads report the window as it is, and a refusal is logged.
+- A call that reads the screen or a texture back (`TakeScreenshot`, `LoadImageFromScreen`, `LoadImageFromTexture`) doesn't
+  compile. It names its `...Async` call.
+- A window or cursor request (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) returns at once, and the window changes at a
+  later frame, as in raylib's page. `IsWindowFullscreen` and the other window reads report the window as it is, and a refusal is
+  logged.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
   `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
-- Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
+- Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShader`) or its data
   (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
 - A lost GPU context is recovered automatically. Render textures are cleared.

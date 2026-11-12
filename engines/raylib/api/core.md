@@ -84,6 +84,8 @@ static function GetMouseWheelMoveV():Vector2
 static function ShowCursor():Void
 static function HideCursor():Void
 static function IsCursorHidden():Bool
+static function EnableCursor():Void
+static function DisableCursor():Void
 static function IsCursorOnScreen():Bool
 static function SetMouseCursor(cursor:Int):Void
 static function GetMouseWheelMove():Float
@@ -182,6 +184,9 @@ static function BeginBlendMode(mode:Int):Void
 static function EndBlendMode():Void
 static function BeginScissorMode(x:Int, y:Int, width:Int, height:Int):Void
 static function EndScissorMode():Void
+static macro function SetClipboardText(text:String):Void
+static macro function GetClipboardText():String
+static macro function GetClipboardImage():Image
 static macro function FileExists(fileName:String):Bool
 static macro function LoadFileText(fileName:String):Null<String>
 static macro function SaveFileText(fileName:String, text:String):Bool
@@ -474,6 +479,12 @@ static macro function EndDrawing():Void
 - `HideCursor`: Hides the cursor over the window.
 - `IsCursorHidden`: Returns whether the cursor is hidden, by `HideCursor` or `DisableCursor`.
   - returns: True while it is.
+- `EnableCursor`: Lets go of the mouse that `DisableCursor` locked and shows the cursor, and returns at once.
+  `IsCursorHidden` is false from the call.
+- `DisableCursor`: Locks the mouse to the window and hides the cursor, for looking around, and returns at once. See `EnableCursor` for letting it go.
+  `GetMouseDelta` keeps coming while the position goes on past the window's edges. `IsCursorHidden` is true from the call.
+
+  In a page, the browser grants the lock only after a click or key press: asked for outside one, it waits for the next. A refusal is logged.
 - `IsCursorOnScreen`: Returns whether the mouse is over the window.
   - returns: True from its first move over the window until it leaves.
 - `SetMouseCursor`: Sets the cursor's shape, the system's own cursor of each kind.
@@ -914,6 +925,18 @@ static macro function EndDrawing():Void
   - `width`: The width.
   - `height`: The height.
 - `EndScissorMode`: Draws everywhere again.
+- `SetClipboardText`: Puts text on the system's clipboard, and returns once it is there. See `GetClipboardText` for reading it.
+  - `text`: The text.
+
+  A page may refuse it unless it comes soon after a key press. A refusal is logged.
+- `GetClipboardText`: Reads the clipboard's text. See `GetClipboardImage` for reading an image.
+  - returns: The text, or "" when the clipboard holds none or can't be read. Why it couldn't is logged.
+
+  A page may need permission, which the browser may ask the user for.
+- `GetClipboardImage`: Reads the clipboard's image. See `GetClipboardText` for reading text.
+  - returns: The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when the clipboard holds none or can't be read. Why it couldn't is logged.
+
+  A page may need permission, which the browser may ask the user for.
 - `FileExists`: Returns whether a file exists, as `FileExistsAsync` answers it. See `DirectoryExists` for a directory.
   - `fileName`: The file.
   - returns: True when it exists.
@@ -1305,6 +1328,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 ```haxe
 static function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader -> Void, ?failed:String -> Void):Void
 static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Shader
+static macro function LoadCompiledShader(compiledShaderFileName:String):Shader
 ```
 
 - `LoadCompiledShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
@@ -1317,6 +1341,15 @@ static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Sha
   ```hxml
   --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
   ```
-- `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for loading one from a file.
+- `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShader` for loading one from a file.
   - `compiledShaderData`: The compiled shader, as `CompileShaderFile` writes it.
   - returns: The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning.
+- `LoadCompiledShader`: Loads a shader compiled ahead of time by `CompileShaderFile`, and returns it, in place of raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
+  - `compiledShaderFileName`: The compiled shader's file.
+  - returns: The shader, or an empty one (id 0) when it couldn't be loaded. Why it couldn't is logged.
+
+  Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as `<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
+
+  ```hxml
+  --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
+  ```

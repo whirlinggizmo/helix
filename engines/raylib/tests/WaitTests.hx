@@ -6,7 +6,7 @@ import helix.services.screen.Screen;
 import helix.services.time.Time;
 
 /** Checks the calls a page waits for (helix-raylib's Wait), written as raylib's programs write them: a loop calling `EndDrawing()` in a
-	function of its own, one frame an iteration, with `continue` and `break`, a `do`-`while`, and loops over a range and an array; a frame ended in a function the loop
+	function of its own, one frame an iteration, with `continue` and `break`, a `do`-`while`, and loops over a range and an array; the clipboard written, then read; a compiled shader loaded; a frame ended in a function the loop
 	calls; a load in a function returning its value, used as a statement, a value, an argument and in a string; functions calling each
 	other; a method of an object, and one overriding it that calls it; a `throw` after a wait caught by the caller; and a function reaching no wait, which returns its value at
 	once, as do functions calling each other that reach none. In a page the frames come from the test's own timer and a function that waits returns at its first wait; natively each call
@@ -48,7 +48,9 @@ class WaitTests {
 		Runtime.saves = new Saves(files);
 		Runtime.polled.push(Runtime.saves);
 		var shipped = new FakeFileSystem();
+		shipped.write("glow.shader", haxe.Resource.getBytes("glow.shader"), () -> {}, e -> throw e);
 		Runtime.polled.push(shipped);
+		Runtime.clipboardAdapter = new WaitClipboard();
 		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(shipped)]);
 		Runtime.polled.push(Runtime.assets);
 
@@ -118,6 +120,12 @@ class WaitShapes {
 		var steps = ranged(2);
 		WaitTests.check(steps == 2 && Runtime.frames - before == 6,
 			'loops over a range and an array wait in each iteration: $steps, ${Runtime.frames - before} frames');
+
+		var copied = copy("copied");
+		WaitTests.check(copied == "copied 0", 'the clipboard is written before it is read: $copied');
+		var glow = LoadCompiledShader("glow.shader");
+		var missing = LoadCompiledShader("none.shader");
+		WaitTests.check(glow.id != 0 && missing.id == 0, 'LoadCompiledShader returns the shader, or an empty one: ${glow.id} ${missing.id}');
 
 		before = Runtime.frames;
 		WaitTests.check(caught() == "caught after a frame", 'a throw after a wait is caught by the caller: ${caught()}');
@@ -247,6 +255,11 @@ class WaitShapes {
 		return ended;
 	}
 
+	static function copy(text:String):String {
+		SetClipboardText(text);
+		return '${GetClipboardText()} ${GetClipboardImage().width}';
+	}
+
 	static function failing():Void {
 		frame();
 		throw "after a frame";
@@ -296,4 +309,36 @@ class WaitDoubler extends WaitCounter {
 		super.count(frames);
 		return super.count(frames) + 1;
 	}
+}
+
+/** A clipboard answering at the next poll, as a page's does: its text kept, and no image. */
+class WaitClipboard implements helix.platform.IClipboard {
+	var text = "";
+
+	/** Creates an empty one. */
+	public function new() {}
+
+	public function requestText(read:String->Void, ?failed:String->Void):Bool {
+		Runtime.later(() -> read(text));
+		return true;
+	}
+
+	public function setText(text:String, ?done:Void->Void, ?failed:String->Void):Void {
+		Runtime.later(() -> {
+			this.text = text;
+			if (done != null)
+				done();
+		});
+	}
+
+	public function requestImage(read:haxe.io.Bytes->Void, ?failed:String->Void):Bool {
+		Runtime.later(() -> if (failed != null) failed("no image"));
+		return true;
+	}
+
+	public function setImage(png:haxe.io.Bytes, ?done:Void->Void, ?failed:String->Void):Void {
+		Runtime.later(() -> if (failed != null) failed("no images"));
+	}
+
+	public function dispose():Void {}
 }

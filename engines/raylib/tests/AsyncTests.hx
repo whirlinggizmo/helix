@@ -8,7 +8,7 @@ import helix.services.input.Touch;
 import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
-/** Checks helix-raylib's Async requests, raylib's window requests, and writes over fakes (services' `FakeWindow`, `FakeEvents`, `FakeDevices` and
+/** Checks helix-raylib's Async requests, raylib's window and cursor requests, and writes over fakes (services' `FakeWindow`, `FakeEvents`, `FakeDevices` and
 	`FakeFileSystem`, and a clipboard here): each answers once, at a later poll and never during its call, `done` once the platform
 	reflects it and `failed` with the reason where it refuses; a request the platform can't ask is refused with why; a write is done
 	once the saves are written, or the program's save callback has said it wrote, and fails when they can't be. */
@@ -168,6 +168,15 @@ class AsyncTests {
 			&& window.opacity == .25
 			&& window.limits.join(",").indexOf("minimum 50 40") >= 0,
 			"SetWindowPosition, SetWindowMonitor, SetWindowOpacity, SetWindowMinSize, SetWindowMaxSize and SetWindowFocused");
+		DisableCursor();
+		var hidden = IsCursorHidden();
+		for (_ in 0...3)
+			frame();
+		check(hidden && devices.locked, "DisableCursor: hidden from the call, locked after");
+		EnableCursor();
+		for (_ in 0...3)
+			frame();
+		check(!IsCursorHidden() && !devices.locked, "EnableCursor");
 
 		// The cursor's lock and the clipboard, which the fakes answer at the next poll, as the platform's do.
 		check(answer((d, f) -> DisableCursorAsync(d, f)) == "done"

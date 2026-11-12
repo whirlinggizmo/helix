@@ -316,7 +316,7 @@ class Program {
 		freed when the last lets go; the default program is never counted. */
 	public var refs = 1;
 
-	/** How many of `refs` are the program's own, from `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData`, so `UnloadShader` on a material's copy lets go of one of those first. */
+	/** How many of `refs` are the program's own, from `LoadCompiledShader` or `LoadCompiledShaderFromData`, so `UnloadShader` on a material's copy lets go of one of those first. */
 	public var held = 1;
 
 	// What mapTextures fills for each draw, read as the draw is recorded, so one array serves every draw.

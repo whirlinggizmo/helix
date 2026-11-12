@@ -938,8 +938,10 @@ Why things are the way they are, numbered, in order.
     natively builds for a page: a waiting call in a function used as a value (its refusal names the `...Async` call, which stays), in
     a constructor or a variable's initial value, in a function an interface declares, and in an override of a function that doesn't
     wait. The window requests (`ToggleFullscreen`, `SetWindowSize` and the rest) are raylib's: each asks and returns at once,
-    as raylib's page does, and the window's reads report the window as it is. The clipboard, the cursor's lock, `TakeScreenshot`,
-    `LoadImageFromScreen` and `LoadImageFromTexture` stay refused, each naming its `...Async` call. The async is the library's own, written where the program's expressions are: a page's
+    as raylib's page does, and the window's reads report the window as it is. So are the cursor's lock and release. The clipboard's
+    calls wait, as the loads do, and so does `LoadCompiledShader`, which `LoadShader`'s refusal names. `TakeScreenshot`,
+    `LoadImageFromScreen` and `LoadImageFromTexture` stay refused, each naming its `...Async` call: each reads a frame not drawn yet,
+    which a call waiting for it would stop the program from drawing. The async is the library's own, written where the program's expressions are: a page's
     source map stays on the program's lines (the sample's 126 segments, all on `Main`'s). A function calling one whose body isn't
     typed yet has both bodies in a page, the one run chosen as the page starts. Why: every 2026-11-11 helix-raylib entrant first met
     "Synchronous loading is not supported" and rebuilt its loads around callbacks and a count of those pending

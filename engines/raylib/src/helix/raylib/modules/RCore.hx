@@ -256,30 +256,35 @@ class RCore {
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to open URL: $url');
 	}
 
-	/** Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the
-		clipboard.
+	/** Puts text on the system's clipboard, and returns once it is there. See `GetClipboardText` for reading it.
+
+		A page may refuse it unless it comes soon after a key press. A refusal is logged.
 
 		@param text  The text. */
-	@:unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)")
-	static function SetClipboardText(text:String):Void {
-		throw "SetClipboardText is unimplemented";
+	@:waits
+	static function SetClipboardText(text:String, answer:Void->Void):Void {
+		RWindowAsync.SetClipboardTextAsync(text, answer, Answers.ended("SetClipboardText", answer));
 	}
 
-	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
+	/** Reads the clipboard's text. See `GetClipboardImage` for reading an image.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)")
-	static function GetClipboardText():String {
-		throw "GetClipboardText is unimplemented";
+		A page may need permission, which the browser may ask the user for.
+
+		@return  The text, or "" when the clipboard holds none or can't be read. Why it couldn't is logged. */
+	@:waits
+	static function GetClipboardText(answer:String->Void):Void {
+		RWindowAsync.GetClipboardTextAsync(answer, Answers.failing("GetClipboardText", answer, ""));
 	}
 
-	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the
-		clipboard.
+	/** Reads the clipboard's image. See `GetClipboardText` for reading text.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)")
-	static function GetClipboardImage():Image {
-		throw "GetClipboardImage is unimplemented";
+		A page may need permission, which the browser may ask the user for.
+
+		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when the clipboard holds none or can't be read. Why it
+			couldn't is logged. */
+	@:waits
+	static function GetClipboardImage(answer:Image->Void):Void {
+		RWindowAsync.GetClipboardImageAsync(answer, Answers.failing("GetClipboardImage", answer, new Image()));
 	}
 
 	/** Doesn't compile, since helix-raylib's window has no native handle to give.
@@ -977,16 +982,28 @@ class RCore {
 		return cursorHidden;
 	}
 
-	/** Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse. */
-	@:unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Lets go of the mouse that `DisableCursor` locked and shows the cursor, and returns at once.
+
+		`IsCursorHidden` is false from the call. */
 	static function EnableCursor():Void {
-		throw "EnableCursor is unimplemented";
+		Runtime.mouse();
+		var mouse = Runtime.mouseAdapter;
+		Answers.ask("EnableCursor", (granted, refused) -> mouse.requestLock(false, granted, refused), "the mouse can't be let go here", null, null);
+		mouse.cursorVisible = true;
+		cursorHidden = false;
 	}
 
-	/** Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse. */
-	@:unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void)")
+	/** Locks the mouse to the window and hides the cursor, for looking around, and returns at once. See `EnableCursor` for letting it go.
+
+		`GetMouseDelta` keeps coming while the position goes on past the window's edges. `IsCursorHidden` is true from the call.
+
+		In a page, the browser grants the lock only after a click or key press: asked for outside one, it waits for the next. A refusal
+		is logged. */
 	static function DisableCursor():Void {
-		throw "DisableCursor is unimplemented";
+		Runtime.mouse();
+		var mouse = Runtime.mouseAdapter;
+		Answers.ask("DisableCursor", (granted, refused) -> mouse.requestLock(true, granted, refused), "the mouse can't be locked here", null, null);
+		cursorHidden = true;
 	}
 
 	/** Returns whether the mouse is over the window.
@@ -3068,13 +3085,13 @@ class RCore {
 
 	// ---- Shaders ----
 
-	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader
+	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader
 		compiled ahead of time by `CompileShaderFile`.
 
 		@param vsFileName  The vertex stage's file.
 		@param fsFileName  The fragment stage's file.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
+	@:unsupported("LoadShader: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
 	static function LoadShader(vsFileName:String, fsFileName:String):Shader {
 		throw "LoadShader is unimplemented";
 	}
@@ -3085,7 +3102,7 @@ class RCore {
 		@param vsCode  The vertex stage's text.
 		@param fsCode  The fragment stage's text.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
+	@:unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
 	static function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader {
 		throw "LoadShaderFromMemory is unimplemented";
 	}

@@ -634,14 +634,9 @@ static inline var MATERIAL_MAP_SPECULAR:Int
 static inline var SHADER_LOC_MAP_DIFFUSE:Int
 static inline var SHADER_LOC_MAP_SPECULAR:Int
 static inline var MAX_MATERIAL_MAPS:Int
-static macro function SetClipboardText(...args):Void
-static macro function GetClipboardText(...args):String
-static macro function GetClipboardImage(...args):Image
 static macro function GetWindowHandle(...args):Dynamic
 static macro function GetMonitorPhysicalWidth(...args):Int
 static macro function GetMonitorPhysicalHeight(...args):Int
-static macro function EnableCursor(...args):Void
-static macro function DisableCursor(...args):Void
 static macro function MemAlloc(...args):Dynamic
 static macro function MemRealloc(...args):Dynamic
 static macro function MemFree(...args):Void
@@ -671,14 +666,9 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
 - `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
 - `MAX_MATERIAL_MAPS`: The number of a material's maps.
-- `SetClipboardText`: Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard.
-- `GetClipboardText`: Doesn't compile on any target, since the clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard.
-- `GetClipboardImage`: Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the clipboard.
 - `GetWindowHandle`: Doesn't compile, since helix-raylib's window has no native handle to give.
 - `GetMonitorPhysicalWidth`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels.
 - `GetMonitorPhysicalHeight`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels.
-- `EnableCursor`: Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse.
-- `DisableCursor`: Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse.
 - `MemAlloc`: Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.
 - `MemRealloc`: Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
 - `MemFree`: Doesn't compile, since Haxe frees memory once nothing holds it.
@@ -691,7 +681,7 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `emscripten_run_script_string`: Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system.
 - `emscripten_get_now`: Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
 - `emscripten_sleep`: Doesn't compile, since a frame can't wait. See `GetTime` for timing a later frame.
-- `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.
+- `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`.
 - `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
 - `LoadImageFromTexture`: Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. A texture is read back asynchronously.
 - `LoadImageFromScreen`: Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for reading the screen into an image. The screen is read back asynchronously, as a frame ends.
@@ -1022,7 +1012,7 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
   A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
 
   The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
-- `CompileShaderFile`: A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShaderAsync` to load. Typically called from the build's hxml, one line a shader:
+- `CompileShaderFile`: A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShader` to load. Typically called from the build's hxml, one line a shader:
   - `vsFileName`: The vertex stage's file, or null for raylib's default.
   - `fsFileName`: The fragment stage's file, or null for raylib's default.
   - `compiledShaderFileName`: The file to write.

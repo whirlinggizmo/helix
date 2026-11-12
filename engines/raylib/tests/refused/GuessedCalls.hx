@@ -9,9 +9,9 @@ class GuessedCalls {
 		TakeScreenshot();
 		TakeScreenshot("shot.png");
 		var pixels = LoadImageFromTexture(1, 2);
-		var text = GetClipboardText("all");
-		DisableCursor(true);
-		SetClipboardText(1, 2);
+		var shader = LoadShader("glow.vs");
+		var width = GetMonitorPhysicalWidth();
+		TextCopy("a", "b", "c");
 		CloseWindow();
 	}
 }

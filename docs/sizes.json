@@ -1,5 +1,5 @@
 {
- "commit": "aebf3d6 2026-11-11",
+ "commit": "e7d3b97 2026-11-11",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -1114,15 +1114,15 @@
    },
    "11-everything": {
     "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader",
-    "raw": 1779283,
-    "gzip": 316710,
-    "brotli": 245837,
+    "raw": 1782439,
+    "gzip": 317003,
+    "brotli": 246132,
     "packages": {
      "formats": 131880,
      "raylib/RTextures": 112673,
-     "program": 104253,
+     "program": 105214,
      "raylib/RGuiControls": 88684,
-     "raylib/RCore": 83085,
+     "raylib/RCore": 84517,
      "raylib/RModels": 80331,
      "raylib/RShapes": 65208,
      "raylib/RText": 52505,
@@ -1185,13 +1185,13 @@
      "platform/events": 3789,
      "raylib/MemoryFiles": 3763,
      "raylib/Sprites": 3244,
+     "raylib/RCompiledShaders": 3053,
      "raylib/RDevice": 3034,
      "services/time": 2839,
      "platform": 2654,
      "platform/clipboard": 2451,
      "platform/audiodecoder": 2401,
      "raylib/RGuiSkins": 2398,
-     "raylib/RCompiledShaders": 2290,
      "platform/system": 2259,
      "raylib/Stereo": 2037,
      "raylib/RModelsPosed": 2017,

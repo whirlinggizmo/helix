@@ -31,8 +31,8 @@ import helix.raylib.modules.RWindowAsync;
 	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
 	A raylib call that waits for a file (`LoadModel`) doesn't compile in a function used as a value, and names the call beside it that
-	answers at a later frame (`LoadModelAsync`). A call that locks the cursor or reads the screen back (`DisableCursor`,
-	`TakeScreenshot`) doesn't compile, and names its `...Async` call. */
+	answers at a later frame (`LoadModelAsync`). A call that reads the screen or a texture back (`TakeScreenshot`,
+	`LoadImageFromTexture`) doesn't compile, and names its `...Async` call. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -1701,6 +1701,21 @@ class Raylib {
 	public static inline function IsCursorHidden():Bool
 		return RCore.IsCursorHidden();
 
+	/** Lets go of the mouse that `DisableCursor` locked and shows the cursor, and returns at once.
+
+		`IsCursorHidden` is false from the call. */
+	public static inline function EnableCursor():Void
+		RCore.EnableCursor();
+
+	/** Locks the mouse to the window and hides the cursor, for looking around, and returns at once. See `EnableCursor` for letting it go.
+
+		`GetMouseDelta` keeps coming while the position goes on past the window's edges. `IsCursorHidden` is true from the call.
+
+		In a page, the browser grants the lock only after a click or key press: asked for outside one, it waits for the next. A refusal
+		is logged. */
+	public static inline function DisableCursor():Void
+		RCore.DisableCursor();
+
 	/** Returns whether the mouse is over the window.
 
 		@return  True from its first move over the window until it leaves. */
@@ -3049,7 +3064,7 @@ class Raylib {
 	public static inline function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void):Void
 		RCompiledShaders.LoadCompiledShaderAsync(compiledShaderFileName, loaded, failed);
 
-	/** Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for
+	/** Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShader` for
 		loading one from a file.
 
 		@param compiledShaderData  The compiled shader, as `CompileShaderFile` writes it.
@@ -6840,6 +6855,34 @@ class Raylib {
 
 	// ---- raylib.h's functions that wait for a file or an answer: each a macro, its wait in the function calling it ----
 
+	/** Puts text on the system's clipboard, and returns once it is there. See `GetClipboardText` for reading it.
+
+		A page may refuse it unless it comes soon after a key press. A refusal is logged.
+
+		@param text  The text. */
+	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>
+		return helix.raylib.internal.Wait.section("SetClipboardText: in a function used as a value, see SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)",
+			macro helix.raylib.modules.RCore.SetClipboardText, [text], true);
+
+	/** Reads the clipboard's text. See `GetClipboardImage` for reading an image.
+
+		A page may need permission, which the browser may ask the user for.
+
+		@return  The text, or "" when the clipboard holds none or can't be read. Why it couldn't is logged. */
+	public static macro function GetClipboardText():ExprOf<String>
+		return helix.raylib.internal.Wait.section("GetClipboardText: in a function used as a value, see GetClipboardTextAsync(read:String->Void, ?failed:String->Void)",
+			macro helix.raylib.modules.RCore.GetClipboardText, [], false);
+
+	/** Reads the clipboard's image. See `GetClipboardText` for reading text.
+
+		A page may need permission, which the browser may ask the user for.
+
+		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when the clipboard holds none or can't be read. Why it
+			couldn't is logged. */
+	public static macro function GetClipboardImage():ExprOf<Image>
+		return helix.raylib.internal.Wait.section("GetClipboardImage: in a function used as a value, see GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)",
+			macro helix.raylib.modules.RCore.GetClipboardImage, [], false);
+
 	/** Returns whether a file exists, as `FileExistsAsync` answers it. See `DirectoryExists` for a directory.
 
 		@param fileName  The file.
@@ -6959,6 +7002,22 @@ class Raylib {
 	public static macro function ExportAutomationEventList(list:ExprOf<AutomationEventList>, fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.raylib.internal.Wait.section("ExportAutomationEventList: in a function used as a value, see ExportAutomationEventListAsync(list:AutomationEventList, fileName:String, ?done:Void->Void, ?failed:String->Void)",
 			macro helix.raylib.modules.RCore.ExportAutomationEventList, [list, fileName], false);
+
+	/** Loads a shader compiled ahead of time by `CompileShaderFile`, and returns it, in place of raylib's `LoadShader`. See
+		`LoadCompiledShaderFromData` for making one from compiled data in memory.
+
+		Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
+		`<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
+
+		```hxml
+		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
+		```
+
+		@param compiledShaderFileName  The compiled shader's file.
+		@return  The shader, or an empty one (id 0) when it couldn't be loaded. Why it couldn't is logged. */
+	public static macro function LoadCompiledShader(compiledShaderFileName:ExprOf<String>):ExprOf<Shader>
+		return helix.raylib.internal.Wait.section("LoadCompiledShader: in a function used as a value, see LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)",
+			macro helix.raylib.modules.RCompiledShaders.LoadCompiledShader, [compiledShaderFileName], false);
 
 	/** Loads an image's raw pixels from a file, as `LoadImageRawAsync` loads them, and returns the image once they are read. See
 		`LoadImage` for an encoded image file.
@@ -7127,21 +7186,6 @@ class Raylib {
 
 	// ---- raylib.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
 
-	/** Doesn't compile on any target, since the clipboard is written later or is refused. See `SetClipboardTextAsync` for writing the clipboard. */
-	public static macro function SetClipboardText(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("SetClipboardText: The clipboard is written later, or is refused. See SetClipboardTextAsync(text:String, ?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardTextAsync` for reading the clipboard. */
-	public static macro function GetClipboardText(args:Array<Expr>):ExprOf<String>
-		return helix.platform.macros.Build.unsupported("GetClipboardText: Synchronous clipboard access is not supported. See GetClipboardTextAsync(read:String->Void, ?failed:String->Void)",
-			macro(null : String));
-
-	/** Doesn't compile on any target, since the clipboard answers later. See `GetClipboardImageAsync` for reading an image from the clipboard. */
-	public static macro function GetClipboardImage(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("GetClipboardImage: Synchronous clipboard access is not supported. See GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void)",
-			macro(null : helix.raylib.Image));
-
 	/** Doesn't compile, since helix-raylib's window has no native handle to give. */
 	public static macro function GetWindowHandle(args:Array<Expr>):ExprOf<Dynamic>
 		return helix.platform.macros.Build.unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.",
@@ -7156,16 +7200,6 @@ class Raylib {
 	public static macro function GetMonitorPhysicalHeight(args:Array<Expr>):ExprOf<Int>
 		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-raylib's platform.",
 			macro(0 : Int));
-
-	/** Doesn't compile on any target, since the mouse is let go later. See `EnableCursorAsync` for letting go of the mouse. */
-	public static macro function EnableCursor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("EnableCursor: The mouse is let go later, or is refused. See EnableCursorAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
-
-	/** Doesn't compile on any target, since the mouse is locked later or refused. See `DisableCursorAsync` for locking the mouse. */
-	public static macro function DisableCursor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("DisableCursor: The mouse is locked later, or is refused. See DisableCursorAsync(?done:Void->Void, ?failed:String->Void)",
-			macro {});
 
 	/** Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes. */
 	public static macro function MemAlloc(args:Array<Expr>):ExprOf<Dynamic>
@@ -7226,14 +7260,14 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("emscripten_sleep: Not supported: a frame can't wait. End the frame and carry on in a later one, timed with GetTime() or GetFrameTime().",
 			macro {});
 
-	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`. */
+	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`. */
 	public static macro function LoadShader(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
+		return helix.platform.macros.Build.unsupported("LoadShader: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
 	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory. */
 	public static macro function LoadShaderFromMemory(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
+		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
 	/** Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. A texture is read back asynchronously. */
@@ -7550,7 +7584,7 @@ class Raylib {
 
 	// ---- Shaders, precompiled ----
 
-	/** A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShaderAsync`
+	/** A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShader`
 		to load. Typically called from the build's hxml, one line a shader:
 
 		```hxml
@@ -7565,7 +7599,7 @@ class Raylib {
 		// Its result wanted as a value (passed to LoadCompiledShaderFromData, say) is refused here, at the program's line.
 		var expected = haxe.macro.Context.getExpectedType();
 		if (expected != null && haxe.macro.TypeTools.toString(expected) != "Void")
-			haxe.macro.Context.error("CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void)",
+			haxe.macro.Context.error("CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShader(compiledShaderFileName:String):Shader",
 				haxe.macro.Context.currentPos());
 		helix.raylib.internal.ShaderMacro.compileFile(vsFileName, fsFileName, compiledShaderFileName);
 		return macro {};
