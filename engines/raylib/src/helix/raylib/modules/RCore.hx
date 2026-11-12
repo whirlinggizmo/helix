@@ -2304,7 +2304,7 @@ class RCore {
 		for saving a screenshot.
 
 		@param fileName  The file's name, or its path. */
-	@:unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)")
+	@:unsupported("TakeScreenshot: Not supported. Use TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.")
 	static function TakeScreenshot(fileName:String):Void {
 		throw "TakeScreenshot is unimplemented";
 	}

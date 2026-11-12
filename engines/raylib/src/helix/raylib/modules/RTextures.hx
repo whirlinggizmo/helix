@@ -580,7 +580,7 @@ class RTextures {
 
 		@param texture  The texture.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)")
+	@:unsupported("LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void) instead.")
 	static function LoadImageFromTexture(texture:Texture2D):Image {
 		throw "LoadImageFromTexture is unimplemented";
 	}
@@ -591,7 +591,7 @@ class RTextures {
 		The screen is read back asynchronously, as a frame ends.
 
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)")
+	@:unsupported("LoadImageFromScreen: Not supported. Use LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) instead.")
 	static function LoadImageFromScreen():Image {
 		throw "LoadImageFromScreen is unimplemented";
 	}

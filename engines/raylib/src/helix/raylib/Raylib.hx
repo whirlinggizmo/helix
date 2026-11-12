@@ -7217,7 +7217,7 @@ class Raylib {
 
 	/** Doesn't compile on any target, since a screenshot is read back as the next frame ends and saved after. See `TakeScreenshotAsync` for saving a screenshot. */
 	public static macro function TakeScreenshot(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("TakeScreenshot: A screenshot is saved later, or is refused. See TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void)",
+		return helix.platform.macros.Build.unsupported("TakeScreenshot: Not supported. Use TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.",
 			macro {});
 
 	/** Doesn't compile, since raylib's own loop already runs once a frame. See `WindowShouldClose` for writing the loop. */
@@ -7272,12 +7272,12 @@ class Raylib {
 
 	/** Names raylib's read of a texture back from the GPU, which waits for it, and doesn't compile on any target. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. A texture is read back asynchronously. */
 	public static macro function LoadImageFromTexture(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: A texture is read back asynchronously. See LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void)",
+		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
 
 	/** Names raylib's read of the screen, which waits for the GPU, and doesn't compile on any target. See `LoadImageFromScreenAsync` for reading the screen into an image. The screen is read back asynchronously, as a frame ends. */
 	public static macro function LoadImageFromScreen(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: The screen is read back asynchronously. See LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void)",
+		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: Not supported. Use LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
 
 	/** Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text. */
