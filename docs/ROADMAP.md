@@ -120,8 +120,17 @@ speed where docs/benchmarks.md records them.
   `ShaderSource` field it reads (an `IGraphics` member, a platform interface change for review), `CompileShaderFile` would write a file
   for each (`glow.glsl300es.shader`) and the loads would fetch the running adapter's, so a new adapter's dialect needs no table above
   the platform.
-- **Physics in Wasm:** built by maintainers with Emscripten and shipped prebuilt for the browser. Natively the same C/C++ links through
-  hxcpp.
+- **A C library through the C ABI, Box2D 3.x first (GOALS 5):** the pattern every C library follows, proved on one. A flat C file of the
+  library's calls shaped for bulk work (a step, poses read into a buffer the caller owns, events read the same way), compiled from its
+  pinned source into a native program by hxcpp, and built from the same source into a `.wasm` the library ships, fetched only by a
+  program that uses it (no C toolchain in a user's path, goal 6). One Haxe class over both, in Box2D's own names, the target chosen by
+  the compiler: a binding, not an adapter, with no interface until a second implementation exists (DECISIONS 53's rule). In a page it
+  loads as the assets do, natively at once. Its test runs one scene on Node and natively and checks the two agree. helix-legacy's
+  physics study measured the crossing: 32-byte poses read in bulk, 10 to 30 ns a body in a browser. Jolt follows behind a C file of
+  its own (no exceptions or RTTI). Work off the frame (a Web Worker in a page, a thread natively) waits for physics to need it.
+- **Particles, after the C binding:** emitters and their particles updated each frame and drawn instanced, judged against
+  docs/EFFECTS.md's inventory and the earlier projects'. Written in Haxe first; its update moves into C through the binding's pattern
+  only if measuring says it pays.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
