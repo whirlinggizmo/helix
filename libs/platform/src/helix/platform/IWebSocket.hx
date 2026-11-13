@@ -35,11 +35,13 @@ interface IWebSocket extends IPollable {
 		@param message  The text. */
 	function sendText(connectionId:Int, message:String):Void;
 
-	/** Sends a binary message, after the ones sent before it. Nothing for a connection not open yet, or closed.
+	/** Sends a binary message, after the ones sent before it: a buffer's first bytes, copied as it is called, so a program can send from
+		one buffer it reuses. Nothing for a connection not open yet, or closed.
 
 		@param connectionId  The connection.
-		@param message  The bytes, copied as it is called. */
-	function sendBytes(connectionId:Int, message:Bytes):Void;
+		@param buffer  The buffer holding the message.
+		@param messageLength  The message's length in bytes, from the buffer's start. */
+	function sendBytes(connectionId:Int, buffer:Bytes, messageLength:Int):Void;
 
 	/** Gets how many bytes sent on a connection are still waiting to go out, for a program that sends faster than the network takes
 		them; 0 for a connection not open, or closed.

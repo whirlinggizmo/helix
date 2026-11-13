@@ -549,13 +549,13 @@ themselves, as hxcpp's connect ignores a socket's timeout. Native HTTPS compiles
 ## WebSocket
 
 `IWebSocket`: `open(url, protocols, opened(protocol), text(message, arrivalTime), bytes(buffer, messageLength, arrivalTime), closed(code,
-reason), failed(message))` returning the connection's id; `sendText(id, message)`, `sendBytes(id, message)`, `getWaitingBytes(id)`,
-`close(id, code, reason)`; `poll`, delivering everything that had arrived when it began, in order, and leaving what arrives during it to
-the next; `dispose`, which closes every connection at once and calls nothing more. `opened` once, then each message whole and in order,
-then `closed` or `failed`. A binary message is lent for the call, the first `messageLength` of a buffer the platform reuses, so a steady
-stream allocates nothing natively; in a page it is the browser's own buffer, wrapped without a copy. A message carries the time it
-arrived on `ISystem.getTime`'s clock, taken where the platform received it, so a program reads when it came rather than when the frame's
-`poll` got to it. Reconnecting, queuing while disconnected, heartbeats and what the messages mean are above.
+reason), failed(message))` returning the connection's id; `sendText(id, message)`, `sendBytes(id, buffer, messageLength)`,
+`getWaitingBytes(id)`, `close(id, code, reason)`; `poll`, delivering everything that had arrived when it began, in order, and leaving
+what arrives during it to the next; `dispose`, which closes every connection at once and calls nothing more. `opened` once, then each
+message whole and in order, then `closed` or `failed`. A binary message is lent for the call, the first `messageLength` of a buffer the
+platform reuses, so a steady stream allocates nothing natively; in a page it is the browser's own buffer, wrapped without a copy. A
+message carries the time it arrived on `ISystem.getTime`'s clock, taken where the platform received it, so a program reads when it came
+rather than when the frame's `poll` got to it. Reconnecting, queuing while disconnected, heartbeats and what the messages mean are above.
 
 In a page, `websocket/dom` (`DomWebSocketAdapter`) is the browser's `WebSocket`, on the main thread: the browser does the network's work
 off it, and stamps a message's arrival in its event. Natively, `websocket/haxe` (`HaxeWebSocketAdapter`) is written over Haxe's sockets,
