@@ -27,8 +27,8 @@ else in the home is hidden (the other checkouts and entrants, keys), and so are 
 /run sockets (PulseAudio, D-Bus) and /tmp, which is its own but for the X server's socket. The JSON result (usage, cost, turns, duration) goes to result.json, stderr to stderr.log, the start and
 end to run.log.
 
---extras gives a helix-raylib entrant the extras: native/brief-extras.md as its brief, and the checkout's generated API page of
-the extras (engines/raylib/api/extras.md, their doc comments) as docs/extras.md.
+--extras gives a helix-raylib entrant the extras: native/brief-extras.md as its brief, and the checkout's generated API pages of the
+extras (engines/raylib/api/extras-*.md, their doc comments) in docs/extras/, with the extras' part of the API index as its README.md.
 
 --trial names another trial's variant to make the entrant from in place of Wardens (helix-raylib only), as
 ../2026-11-13-masked-blend/module: the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
@@ -94,7 +94,12 @@ def make(entrant, engine, trial=None, extras=None):
         shutil.copy(raylib / 'src/libraylib.a', entrant / 'lib')
     shutil.copytree(raylib / 'examples', entrant / 'docs/examples')
     if extras:
-        shutil.copy(extras, entrant / 'docs/extras.md')
+        (entrant / 'docs/extras').mkdir()
+        for page in sorted(extras.glob('extras-*.md')):
+            shutil.copy(page, entrant / 'docs/extras' / page.name)
+        index = (extras / 'README.md').read_text(encoding='utf-8')
+        listed = index[index.index('- `helix.raylib.extras`'):].split('\n\n', 1)[0]
+        (entrant / 'docs/extras/README.md').write_text('# helix.raylib.extras\n\n' + listed + '\n', encoding='utf-8')
 
 def environment(entrant, helix, display):
     """The entrant's environment: the private display's, with the native build's settings and no sound, D-Bus or parent session."""
@@ -157,7 +162,7 @@ def main():
         if args.extras and args.engine != 'helix':
             sys.exit('run_entrant: --extras is for a helix-raylib entrant')
         make(entrant, args.engine, args.trial.resolve() if args.trial else None,
-             helix / 'engines/raylib/api/extras.md' if args.extras else None)
+             helix / 'engines/raylib/api' if args.extras else None)
     elif not args.command:
         sys.exit(f'run_entrant: {entrant} is there already; an entrant starts from a directory of its own')
 

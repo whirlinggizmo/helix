@@ -125,6 +125,40 @@ def same_on_both(js,cpp):
     if differ:
         sys.exit('gen_apidoc: js and cpp describe the API differently (engine code has no target conditional):\n  '+'\n  '.join(differ))
 
+# The packages whose classes of static calls each get a page of their own, with the types only they take: helix-raylib's extras, each
+# imported apart, so a reader opens the one it uses.
+SPLIT={'helix.raylib.extras'}
+
+def split(package,types,entries,texts):
+    """A split package's pages: each class of static calls first, then the package's other types each after the first of those classes
+    whose section names it, and a type no such section names on a page of its own."""
+    def calls(path):
+        node=types[path]
+        fields=[f for f in node if f.tag not in ('haxe_doc','meta','extends','implements')]
+        return node.tag=='class' and fields and all(f.get('static')=='1' for f in fields)
+    sections=list(zip([t for t,_ in entries],[h for _,h in entries],texts))
+    pages={short(t):[(t,h,x)] for t,h,x in sections if calls(t)}
+    left=[s for s in sections if not calls(s[0])]
+    def names(text,t):return re.search(r'\b'+re.escape(short(t))+r'\b',text)
+    # A type goes after the class whose section names it; one named only by a type already placed (VirtualButtonOptions, by
+    # VirtualGamepadOptions) goes with that type, placed in later passes.
+    while left:
+        placed=[]
+        for t,h,x in left:
+            owner=next((name for name,members in pages.items() if names(members[0][2],t)),None) or \
+                next((name for name,members in pages.items() for m in members[1:] if names(m[2],t)),None)
+            if owner:pages[owner].append((t,h,x));placed.append(t)
+        if not placed:
+            for t,h,x in left:pages[short(t)]=[(t,h,x)]
+            break
+        left=[s for s in left if s[0] not in placed]
+    return sorted(pages.items())
+
+def summary(section):
+    """A type's section's first sentence: its summary, for an index line."""
+    paragraphs=[p for p in section.split('\n\n') if p and not p.startswith(('#','*','```'))]
+    return re.split(r'(?<=\.)\s',paragraphs[0].replace('\n',' '),1)[0] if paragraphs else ''
+
 def anchor(heading):
     """The anchor GitHub gives a heading: lower case, its spaces as hyphens, its other punctuation dropped."""
     return re.sub(r'[^\w\- ]','',heading.lower()).replace(' ','-')
@@ -454,12 +488,19 @@ def markdown(xml,native=frozenset()):
     for package in files:libraries.setdefault('.'.join(package.split('.')[:2]),[]).append(package)
     for library,packages in sorted(libraries.items()):
         ordered=sorted(packages,key=lambda p:(p!=library,p))
-        for package in ordered:
-            out[package_file(package)]='\n'.join([f'# {package}','','[Back to the library](README.md)','']+files[package]).rstrip('\n')+'\n'
         lines=[f'# {library}','','Generated from the doc comments by `tools/gen_apidoc.py`.','','## Packages','']
-        for p in ordered:
-            page=Path(package_file(p)).name
-            lines+=[f'- [`{p}`]({page})']+[f'  - [{short(t)}]({page}#{anchor(h)})' for t,h in index[p]]
+        for package in ordered:
+            if package in SPLIT:
+                lines.append(f'- `{package}`')
+                for extra,members in split(package,types,index[package],files[package]):
+                    page=Path(package_file(package)).with_suffix('').name+'-'+extra.lower()+'.md'
+                    out[Path(package_file(package)).with_name(page).as_posix()]='\n'.join(
+                        [f'# {extra}','','[Back to the library](README.md)','']+[text for _,_,text in members]).rstrip('\n')+'\n'
+                    lines+=[f'  - [{extra}]({page}): {summary(members[0][2])}']+[f'    - [{short(t)}]({page}#{anchor(h)})' for t,h,_ in members[1:]]
+                continue
+            out[package_file(package)]='\n'.join([f'# {package}','','[Back to the library](README.md)','']+files[package]).rstrip('\n')+'\n'
+            page=Path(package_file(package)).name
+            lines+=[f'- [`{package}`]({page})']+[f'  - [{short(t)}]({page}#{anchor(h)})' for t,h in index[package]]
         lines.append('')
         if library=='helix.raylib':lines+=['## Shader includes','','[shaders.md](shaders.md): '+', '.join(f'`<helix/raylib/shaders/{n}>`' for n in INCLUDES),'']
         if library in DEFINES:lines+=['## Defines','','[defines.md](defines.md): the defines a build\'s hxml sets.','']

@@ -54,20 +54,20 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [VrDeviceInfo](types.md#vrdeviceinfo)
   - [VrStereoConfig](types.md#vrstereoconfig)
   - [Wave](types.md#wave)
-- [`helix.raylib.extras`](extras.md)
-  - [Debug](extras.md#debug)
-  - [Device](extras.md#device)
-  - [FrameStats](extras.md#framestats)
-  - [FrameStatsStyle](extras.md#framestatsstyle)
-  - [GuiSkin](extras.md#guiskin)
-  - [GuiSkins](extras.md#guiskins)
-  - [Lighting](extras.md#lighting)
-  - [Models](extras.md#models)
-  - [Sprites](extras.md#sprites)
-  - [VirtualButtonOptions](extras.md#virtualbuttonoptions)
-  - [VirtualGamepad](extras.md#virtualgamepad)
-  - [VirtualGamepadOptions](extras.md#virtualgamepadoptions)
-  - [VirtualStickOptions](extras.md#virtualstickoptions)
+- `helix.raylib.extras`
+  - [Debug](extras-debug.md): Provides drawing for looking at what a program does: a model's skeleton as posed, its posed bounds, and the frame's cost.
+    - [FrameStats](extras-debug.md#framestats)
+    - [FrameStatsStyle](extras-debug.md#framestatsstyle)
+  - [Device](extras-device.md): Provides what a game needs from the device that raylib 5.5 has no call for, helix-raylib's own: the safe area around a notch, what the device is, whether the window can close or go fullscreen, the screen's orientation, and the device's tilt.
+  - [GuiSkins](extras-guiskins.md): Provides skins for raygui's controls, helix-raylib's own: a part of a control drawn from a texture, stretched as a nine-patch so its corners keep their shape, in place of its style's flat colors.
+    - [GuiSkin](extras-guiskins.md#guiskin)
+  - [Lighting](extras-lighting.md): Provides lit shaders, built in, that rlights' lights light (`helix.raylib.Rlights`): `LoadLightingShader`, raylib's lighting examples' `lighting.vs` and `lighting.fs`, which shine every material alike, and `LoadPbrShader`, which draws a glTF's materials as authored, metallic-roughness.
+  - [Models](extras-models.md): Provides what raylib has no call for on models: a model's bounds as posed, which raylib's `GetModelBoundingBox` leaves at the bind pose (`GetModelBoundingBoxPosed`), models merged into one (`LoadModelFromModels`), and two animations blended bone by bone (`UpdateModelAnimationMasked`, `GetModelBoneMask`).
+  - [Sprites](extras-sprites.md): Provides helix-raylib's instanced texture draw, `DrawTextureInstanced`: many copies of one part of a texture, each placed by a matrix, in one call, as three.js's InstancedMesh, Godot's MultiMesh and Unity's instancing draw many of one thing (docs/DECISIONS.md 47).
+  - [VirtualGamepad](extras-virtualgamepad.md): Provides on-screen gamepads for phones: sticks and buttons a finger works, read through raylib's gamepad functions.
+    - [VirtualGamepadOptions](extras-virtualgamepad.md#virtualgamepadoptions)
+    - [VirtualStickOptions](extras-virtualgamepad.md#virtualstickoptions)
+    - [VirtualButtonOptions](extras-virtualgamepad.md#virtualbuttonoptions)
 
 ## Shader includes
 
