@@ -122,14 +122,16 @@ speed where docs/benchmarks.md records them.
   the platform.
 - **Networking:** a platform contract per transport, policy in a service above, netcode above that. `IHttp` (done) makes requests. Next,
   `IWebSocket`, a connection to a server, reliable and ordered: opened with its URL and protocols, sending text or bytes, closed with a
-  code and a reason, what arrived on the platform's threads delivered at `poll`, as `IHttp` delivers (helix-legacy's ARCHITECTURE.md drew
-  it so). Its adapters: `DomWebSocketAdapter`, the browser's WebSocket API, in a page, named as the other browser APIs' adapters are, and
-  `HaxeWebSocketAdapter` natively, Haxe's sockets with the TLS hxcpp ships and the protocol's handshake and frames in Haxe on a thread, as
-  `HaxeHttpAdapter` is written; nothing to install (goal 6). Tested against a local echo server on Node and natively: a scripted exchange,
-  a server closing first, a frame split across reads, a large binary message. Above it a service for policy: reconnecting with a backoff,
-  queuing while disconnected, heartbeats. Later, a transport unreliable and unordered for fast games (WebRTC's data channels in a page, UDP
-  natively, likely through a C binding), and netcode above the transports (state kept in step, prediction and rollback, lobbies), with the
-  user's vfstudio and vfcore for ideas.
+  code and a reason, what arrived on the platform's threads delivered at `poll`, as `IHttp` delivers, each message with the time it arrived
+  (taken in the browser's event or on the native thread, so netcode reads when it came, not when the frame got to it); in a page on the
+  main thread, where the browser already does the network's work off it, a Worker left to the work off the frame that physics wants (helix-
+  legacy's ARCHITECTURE.md drew it so). Its adapters: `DomWebSocketAdapter`, the browser's WebSocket API, in a page, named as the other
+  browser APIs' adapters are, and `HaxeWebSocketAdapter` natively, Haxe's sockets with the TLS hxcpp ships and the protocol's handshake and
+  frames in Haxe on a thread, as `HaxeHttpAdapter` is written; nothing to install (goal 6). Tested against a local echo server on Node and
+  natively: a scripted exchange, a server closing first, a frame split across reads, a large binary message. Above it a service for policy:
+  reconnecting with a backoff, queuing while disconnected, heartbeats. Later, a transport unreliable and unordered for fast games (WebRTC's
+  data channels in a page, UDP natively, likely through a C binding), and netcode above the transports (state kept in step, prediction and
+  rollback, lobbies), with the user's vfstudio and vfcore for ideas.
 - **A C library through the C ABI, Box2D 3.x first (GOALS 5):** the pattern every C library follows, proved on one. A flat C file of the
   library's calls shaped for bulk work (a step, poses read into a buffer the caller owns, events read the same way), compiled from its
   pinned source into a native program by hxcpp, and built from the same source into a `.wasm` the library ships, fetched only by a
