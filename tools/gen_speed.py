@@ -522,7 +522,15 @@ def run_page(browser, directory, query, backend, size, mode, headed):
         printed = json.loads(done.stdout.strip().splitlines()[-1])
     except (IndexError, ValueError):
         return None, {'errors': [(done.stdout + done.stderr)[-600:]]}
-    return printed['result'], printed
+    return lost(printed), printed
+
+
+def lost(printed):
+    """A page's result, or None when its WebGL context was gone by the end (no renderer to name): its frames weren't drawn."""
+    if printed.get('result') and not (printed.get('renderer') or {}).get('webgl2'):
+        printed.setdefault('errors', []).append('the WebGL context was lost: the frames timed weren\'t drawn')
+        return None
+    return printed.get('result')
 
 
 def run_native(command, directory, display, mode, where):
@@ -536,7 +544,7 @@ def run_native(command, directory, display, mode, where):
         return None, f'no result in {seconds} s'
     line = found_line(done.stdout)
     if line is not None and 'files' in line:
-        line = line['result']
+        line = lost(line)
     return line, (done.stdout + done.stderr)[-600:]
 
 
@@ -725,8 +733,7 @@ def load_store():
 
 def write_store(entries):
     """docs/speed.json with these rows in place of the ones they name, the others kept."""
-    # Without ramp_start every ramp starts at one increment, as every row before start_count was measured.
-    store = load_store() if ramp_start else {'rows': []}
+    store = load_store()
     keys = {(e['contender'], e['variant'], e['program'], e['where']) for e in entries}
     kept = [r for r in store['rows'] if (r['contender'], r['variant'], r['program'], r['where']) not in keys]
     store['rows'] = sorted(kept + entries, key=lambda r: (r['program'], r['where'].startswith('native'), r['where'], CONTENDERS.index(r['contender']), r['variant']))
