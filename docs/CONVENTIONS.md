@@ -73,7 +73,8 @@ dropped.
   keeps its own noun (`audio.stop(voice)`, `gamepads.getAxis(slot, axis)`, `touch.getX(id)`); a number of bytes is a size, named for
   its unit (`capacityBytes`, `usedBytes`). A count and a length differ: a count is how many of a kind there are, the things apart
   (`boneCount`, `vertexCount`), and a length is how far one sequence runs, indexed from 0 (`messageLength`, the part of a buffer a
-  message fills); a size is an amount of memory or storage, not a run of a sequence (`getWaitingBytes`). What's indexed has a length;
+  message fills); a size is an amount of memory or storage, not a run of a sequence (`capacityBytes`), and an amount queued is
+  counted (`getQueuedFrameCount`, `getOutgoingByteCount`). What's indexed has a length;
   what's asked "how many" has a count. `tools/check_names.py` checks every field and parameter whose doc comment calls it an index
   or a number of things.
 - **A value is a property.** One that must act when assigned has a `set_` accessor; one read back from somewhere else has a `get_`;

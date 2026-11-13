@@ -43,12 +43,19 @@ interface IWebSocket extends IPollable {
 		@param messageLength  The message's length in bytes, from the buffer's start. */
 	function sendBytes(connectionId:Int, buffer:Bytes, messageLength:Int):Void;
 
-	/** Gets how many bytes sent on a connection are still waiting to go out, for a program that sends faster than the network takes
-		them; 0 for a connection not open, or closed.
+	/** Gets how many bytes sent on a connection haven't gone out yet, for a program sending faster than the network takes them; 0 for
+		a connection not open, or closed.
 
 		@param connectionId  The connection.
-		@return  The bytes waiting. */
-	function getWaitingBytes(connectionId:Int):Int;
+		@return  The bytes not yet sent. */
+	function getOutgoingByteCount(connectionId:Int):Int;
+
+	/** Gets how many bytes received on a connection the next `poll` delivers, for a program that polls late, or watches a server
+		outpacing it; 0 for a connection not open, or closed.
+
+		@param connectionId  The connection.
+		@return  The bytes not yet delivered. */
+	function getIncomingByteCount(connectionId:Int):Int;
 
 	/** Closes a connection: the messages sent before it go first, then the close. `closed` is called once the server answers.
 

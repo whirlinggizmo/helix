@@ -1499,7 +1499,8 @@ Defines connections to servers over WebSocket: messages of text or bytes, each d
 function open(url:String, protocols:Array<String>, opened:String -> Void, text:(message:String, arrivalTime:Float) -> Void, bytes:(buffer:haxe.io.Bytes, messageLength:Int, arrivalTime:Float) -> Void, closed:(code:Int, reason:String) -> Void, failed:String -> Void):Int
 function sendText(connectionId:Int, message:String):Void
 function sendBytes(connectionId:Int, buffer:haxe.io.Bytes, messageLength:Int):Void
-function getWaitingBytes(connectionId:Int):Int
+function getOutgoingByteCount(connectionId:Int):Int
+function getIncomingByteCount(connectionId:Int):Int
 function close(connectionId:Int, ?code:Int = 1000, ?reason:String = ""):Void
 function poll():Void
 function dispose():Void
@@ -1527,9 +1528,12 @@ function dispose():Void
   - `connectionId`: The connection.
   - `buffer`: The buffer holding the message.
   - `messageLength`: The message's length in bytes, from the buffer's start.
-- `getWaitingBytes`: Gets how many bytes sent on a connection are still waiting to go out, for a program that sends faster than the network takes them; 0 for a connection not open, or closed.
+- `getOutgoingByteCount`: Gets how many bytes sent on a connection haven't gone out yet, for a program sending faster than the network takes them; 0 for a connection not open, or closed.
   - `connectionId`: The connection.
-  - returns: The bytes waiting.
+  - returns: The bytes not yet sent.
+- `getIncomingByteCount`: Gets how many bytes received on a connection the next `poll` delivers, for a program that polls late, or watches a server outpacing it; 0 for a connection not open, or closed.
+  - `connectionId`: The connection.
+  - returns: The bytes not yet delivered.
 - `close`: Closes a connection: the messages sent before it go first, then the close. `closed` is called once the server answers.
   - `connectionId`: The connection.
   - `code`: The close's code: 1000 for a normal close, or 3000 to 4999 for a program's own.

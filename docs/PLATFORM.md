@@ -550,12 +550,13 @@ themselves, as hxcpp's connect ignores a socket's timeout. Native HTTPS compiles
 
 `IWebSocket`: `open(url, protocols, opened(protocol), text(message, arrivalTime), bytes(buffer, messageLength, arrivalTime), closed(code,
 reason), failed(message))` returning the connection's id; `sendText(id, message)`, `sendBytes(id, buffer, messageLength)`,
-`getWaitingBytes(id)`, `close(id, code, reason)`; `poll`, delivering everything that had arrived when it began, in order, and leaving
-what arrives during it to the next; `dispose`, which closes every connection at once and calls nothing more. `opened` once, then each
-message whole and in order, then `closed` or `failed`. A binary message is lent for the call, the first `messageLength` of a buffer the
-platform reuses, so a steady stream allocates nothing natively; in a page it is the browser's own buffer, wrapped without a copy. A
-message carries the time it arrived on `ISystem.getTime`'s clock, taken where the platform received it, so a program reads when it came
-rather than when the frame's `poll` got to it. Reconnecting, queuing while disconnected, heartbeats and what the messages mean are above.
+`getOutgoingByteCount(id)`, `getIncomingByteCount(id)`, `close(id, code, reason)`; `poll`, delivering everything that had arrived when it
+began, in order, and leaving what arrives during it to the next; `dispose`, which closes every connection at once and calls nothing more.
+`opened` once, then each message whole and in order, then `closed` or `failed`. A binary message is lent for the call, the first
+`messageLength` of a buffer the platform reuses, so a steady stream allocates nothing natively; in a page it is the browser's own buffer,
+wrapped without a copy. A message carries the time it arrived on `ISystem.getTime`'s clock, taken where the platform received it, so a
+program reads when it came rather than when the frame's `poll` got to it. Reconnecting, queuing while disconnected, heartbeats and what
+the messages mean are above.
 
 In a page, `websocket/dom` (`DomWebSocketAdapter`) is the browser's `WebSocket`, on the main thread: the browser does the network's work
 off it, and stamps a message's arrival in its event. Natively, `websocket/haxe` (`HaxeWebSocketAdapter`) is written over Haxe's sockets,
@@ -563,12 +564,13 @@ with the TLS hxcpp ships for wss, the handshake and the frames in Haxe, a thread
 handed over at `poll`. Neither is written yet: this is the contract they're held to.
 
 The native adapter allocates nothing once traffic is steady. A connection's outgoing messages go whole, header and payload, into a ring
-of bytes. The main thread fills it, and the connection's thread drains it to the socket. Its fill is `getWaitingBytes`. When it's full it
-grows once, under a lock, rather than blocking the program. Each incoming message is read into a buffer from a pool. It's then published
-as a slot (the buffer, its length, its arrival time) in a ring of slots with one writer and one reader, two atomic indices and no lock.
-`poll` walks the slots, lends each buffer, and takes it back after its callback. A ring of bytes would split a message at its end, and a
-split message can't be lent whole, so incoming messages keep buffers of their own. `adapters/shared/Mailbox` allocates a closure and a
-node a post, so it carries only a connection's opening, closing and failing.
+of bytes. The main thread fills it, and the connection's thread drains it to the socket. Its fill is `getOutgoingByteCount`. When it's
+full it grows once, under a lock, rather than blocking the program. Each incoming message is read into a buffer from a pool. It's then
+published as a slot (the buffer, its length, its arrival time) in a ring of slots with one writer and one reader, two atomic indices and
+no lock. `poll` walks the slots, lends each buffer, and takes it back after its callback; the bytes the slots hold are
+`getIncomingByteCount`. A ring of bytes would split a message at its end, and a split message can't be lent whole, so incoming messages
+keep buffers of their own. `adapters/shared/Mailbox` allocates a closure and a node a post, so it carries only a connection's opening,
+closing and failing.
 
 In a page the browser's events arrive on the main thread, and the adapter holds them until `poll` in an array it reuses.
 
