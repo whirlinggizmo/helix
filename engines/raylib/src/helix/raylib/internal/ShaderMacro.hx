@@ -120,12 +120,25 @@ class ShaderMacro {
 		var sent = [for (d in declarations(vertex)) if (d.kind == "out") d.name];
 		for (d in declarations(fragment))
 			if (d.kind == "in" && sent.indexOf(d.name) < 0)
-				Context.error('$fsName: "${d.name}" comes in, but the vertex stage doesn\'t send it', pos);
+				Context.error(vs == null ? 'The fragment shader reads "in ${d.type} ${d.name}" without a matching "out ${d.type} ${d.name}" in the vertex shader. Pass CompileShaderFile a vertex shader that declares "out ${d.type} ${d.name}"' : 'The fragment shader reads "in ${d.type} ${d.name}" without a matching "out ${d.type} ${d.name}" in $vsName',
+					at(fsName, fs, d.name, pos));
 		for (d in declarations(vertex))
 			if (d.kind == "in" && ATTRIBUTES.indexOf(d.name) < 0 && d.type != "mat4")
 				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
-					pos);
+					at(vsName, vs, d.name, pos));
 		return {vertex: {name: vsName, text: vertex}, fragment: {name: fsName, text: fragment}};
+	}
+
+	// Where a stage's declaration of name is, in the stage's own file, for an error a reader opens it at; pos when the stage has no file
+	// (raylib's default) or the name isn't found in it.
+	static function at(file:String, text:Null<String>, name:String, pos:Position):Position {
+		if (text == null || !FileSystem.exists(file))
+			return pos;
+		var declared = new EReg('\\b(in|out|uniform)\\s+\\w+\\s+' + name + '\\b', "");
+		if (!declared.match(text))
+			return pos;
+		var start = declared.matchedPos();
+		return Context.makePosition({file: file, min: start.pos, max: start.pos + start.len});
 	}
 
 	/** Returns the expression of helix-raylib's sprite shader: its own vertex stage (`shaders/sprite.vs`, whose attributes are the sprite
