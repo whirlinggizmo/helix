@@ -91,7 +91,8 @@ def interfaces():
         return found - {path}
 
     owner = {}
-    for name, path in top.items():
+    # Interfaces claim before the devices built on them (DEVICES), so a type both reach is the base's, whatever order the files list in.
+    for name, path in sorted(top.items(), key=lambda item: (item[0][1:].lower() in DEVICES, item[0])):
         if re.fullmatch(r'I[A-Z]\w*', name) and name not in SHARED:
             interface, todo = name[1:].lower(), [path]
             while todo:
