@@ -128,6 +128,10 @@ speed where docs/benchmarks.md records them.
   loads as the assets do, natively at once. Its test runs one scene on Node and natively and checks the two agree. helix-legacy's
   physics study measured the crossing: 32-byte poses read in bulk, 10 to 30 ns a body in a browser. Jolt follows behind a C file of
   its own (no exceptions or RTTI). Work off the frame (a Web Worker in a page, a thread natively) waits for physics to need it.
+- **Pathfinding, the binding's second library:** grid A* and flow fields in Haxe, for tile and top-down games; a navmesh for 3D
+  through the binding, Recast building it from a level's geometry (ahead of time, or once at load) and Detour querying it (paths,
+  raycasts, the nearest point, DetourCrowd steering many agents, their positions read back in bulk), C++ behind a C file of its own,
+  as Jolt; hxDaedalus (Haxe, 2D) benchmarked against it first. The test: agents cross a level the same way on both targets.
 - **Particles, after the C binding:** emitters and their particles updated each frame and drawn instanced, judged against
   docs/EFFECTS.md's inventory and the earlier projects'. Written in Haxe first; its update moves into C through the binding's pattern
   only if measuring says it pays.
