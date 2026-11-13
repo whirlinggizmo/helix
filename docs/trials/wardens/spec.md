@@ -36,7 +36,8 @@ engine and no function.
 - **Animations:**
   - `Idle` standing.
   - `Run` moving.
-  - `Sword_Slash` when the sword strikes, or `Gun_Shoot` when the gun fires.
+  - `Sword_Slash` when the sword strikes, or `Gun_Shoot` when the gun fires. Standing, the attack plays on her whole body. Moving,
+    it plays from the waist up, her legs and hips running on in step.
   - `HitRecieve` when hit.
   - `Death` at the end.
   - Changes between them blend over 0.2 seconds.
@@ -45,8 +46,8 @@ engine and no function.
   sword (`Sword.glb`).
   - **The sword** strikes on its own every 0.8 seconds, hitting every enemy within 2 meters in front of her (a 120 degree arc) for 10
     damage.
-  - **The gun** (`Gun.glb`), once found, fires on its own every 0.5 seconds at the nearest enemy within 12 meters. Its shot is a small
-    glowing sphere flying at 20 meters a second, hitting the first enemy it meets for 6 damage.
+  - **The gun** (`Gun.glb`), once found, fires on its own every 0.5 seconds at the nearest enemy within 12 meters in front of her (a
+    90 degree arc). Its shot is a small glowing sphere flying at 20 meters a second, hitting the first enemy it meets for 6 damage.
   - **Holding both:** with both, she holds the one picked last, and switches with Q or a gamepad's shoulder button.
 - **Health:** 100. A health bar is drawn above her head in the world, facing the camera.
 
