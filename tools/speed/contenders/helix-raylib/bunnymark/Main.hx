@@ -24,7 +24,7 @@ class Bunny {
 
 /**
 	raylib's textures_bunnymark on helix-raylib, for tools/gen_speed.py. It spawns from run options instead of the mouse: count=N spawns N bunnies,
-	draws 120 frames to warm up and times 600, then prints one JSON line. ramp=1 starts at 1000 and adds 1000 each 60 frames while those held 59 fps,
+	draws 120 frames to warm up and times 600, then prints one JSON line. incrementCount=N starts at startCount=M bunnies (N without it) and adds N each 60 frames while those maxCount 59 fps,
 	printing the largest count that did. Every bunny starts the same from a fixed xorshift32 seed, as in the C version.
 **/
 class Main {
@@ -84,8 +84,10 @@ class Main {
 	static function main():Void {
 		var target = #if js "page" #elseif sdl_gpu "native-sdlgpu" #else "native-gl" #end;
 		var countOption = option("count");
-		var ramp = option("ramp") == "1";
-		var count = ramp ? 1000 : (countOption == null ? 1000 : Std.parseInt(countOption));
+		// incrementCount=N adds N bunnies each 60 frames, from startCount=M bunnies (N without it).
+		var incrementCount = option("incrementCount") == null ? 0 : Std.parseInt(option("incrementCount"));
+		var ramp = incrementCount > 0;
+		var count = ramp ? (option("startCount") == null ? incrementCount : Std.parseInt(option("startCount"))) : (countOption == null ? 1000 : Std.parseInt(countOption));
 		InitWindow(800, 450, "helix-raylib bunnymark");
 		var texture:Null<Texture2D> = null;
 		LoadTextureAsync("wabbit_alpha.png", t -> texture = t);
@@ -95,7 +97,7 @@ class Main {
 		var last = 0.0;
 		var deltas:Array<Float> = [];
 		var windowStart = 0.0;
-		var held = 0;
+		var maxCount = 0;
 		var done = false;
 		while (!done && !WindowShouldClose()) {
 			if (texture == null) {
@@ -146,10 +148,10 @@ class Main {
 				if (deltas.length > 120) {
 					var fps = 60 * 1000 / (now - windowStart);
 					if (fps >= 59 && bunnies.length < 2000000) {
-						held = bunnies.length;
-						spawn(bunnies, 1000);
+						maxCount = bunnies.length;
+						spawn(bunnies, incrementCount);
 					} else {
-						emit('{"contender":"helix-raylib","target":"$target","mode":"ramp","ramp_max":$held,"last_fps":$fps,"first_frame_ms":$firstFrameMs}');
+						emit('{"contender":"helix-raylib","target":"$target","mode":"ramp","max_count":$maxCount,"last_fps":$fps,"first_frame_ms":$firstFrameMs}');
 						done = true;
 					}
 				}

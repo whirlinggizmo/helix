@@ -8,13 +8,15 @@ var speeds: PackedVector2Array = PackedVector2Array()
 var rng_state: int = 2463534242
 var count: int = 1000
 var ramp: bool = false
+var increment_count: int = 0
+var start_count: int = 0
 var shot: String = ""
 var target: String = "native"
 var frame: int = -1
 var last: float = 0.0
 var window_start: float = 0.0
 var first_frame_ms: float = 0.0
-var held: int = 0
+var max_count: int = 0
 var done: bool = false
 var deltas: PackedFloat64Array = PackedFloat64Array()
 
@@ -41,12 +43,16 @@ func read_options() -> void:
 	for a in args:
 		if a.begins_with("--count="):
 			count = int(a.substr(8))
-		elif a == "--ramp=1":
-			ramp = true
+		elif a.begins_with("--incrementCount="):
+			increment_count = int(a.substr(17))
+			ramp = increment_count > 0
+		elif a.begins_with("--startCount="):
+			start_count = int(a.substr(13))
 		elif a.begins_with("--shot="):
 			shot = a.substr(7)
+	# incrementCount=N adds N bunnies each 60 frames, from startCount=M bunnies (N without it).
 	if ramp:
-		count = 1000
+		count = start_count if start_count > 0 else increment_count
 
 func wall_ms() -> float:
 	if OS.has_feature("web"):
@@ -85,10 +91,10 @@ func tick(contender: String, n: int) -> void:
 		if nd > 120:
 			var fps: float = 60.0 * 1000.0 / (now - window_start)
 			if fps >= 59.0 and n < 2000000:
-				held = n
-				spawn(1000)
+				max_count = n
+				spawn(increment_count)
 			else:
-				print(JSON.stringify({"contender": contender, "target": target, "mode": "ramp", "ramp_max": held, "last_fps": fps, "first_frame_ms": first_frame_ms}))
+				print(JSON.stringify({"contender": contender, "target": target, "mode": "ramp", "max_count": max_count, "last_fps": fps, "first_frame_ms": first_frame_ms}))
 				done = true
 		window_start = now
 	if done:

@@ -7,7 +7,7 @@ import lime.utils.Assets;
 import render.GLRenderer;
 
 /** raylib's textures_bunnymark on Lime, for tools/gen_speed.py: Lime's own BunnyMark demo (lime-samples 7.0.0) with raylib's bunnies,
-	a `count=N` query spawning N (`ramp=1` adding 1000 each 60 frames while those held 59 fps), 120 frames to warm up and 600 timed, one JSON
+	a `count=N` query spawning N (`incrementCount=N` adding N each 60 frames from `startCount=M`, N without it, while those maxCount 59 fps), 120 frames to warm up and 600 timed, one JSON
 	line on the console, as the helix-raylib contender prints it. Every bunny starts the same from a fixed xorshift32 seed. */
 class Main extends Application {
 	static var seed = 0x92D68CA2;
@@ -25,12 +25,13 @@ class Main extends Application {
 	var glRenderer:GLRenderer;
 	var image:Image;
 	var count = 1000;
+	var incrementCount = 0;
 	var ramp = false;
 	var frame = -1;
 	var last = 0.;
 	var deltas:Array<Float> = [];
 	var windowStart = 0.;
-	var held = 0;
+	var maxCount = 0;
 	var done = false;
 	var firstFrameMs = 0.;
 
@@ -38,8 +39,10 @@ class Main extends Application {
 		super();
 		var query = new js.html.URLSearchParams(js.Browser.window.location.search);
 		var c = query.get("count");
-		ramp = query.get("ramp") == "1";
-		count = ramp ? 1000 : c == null ? 1000 : Std.parseInt(c);
+		// incrementCount=N adds N bunnies each 60 frames, from startCount=M bunnies (N without it).
+		incrementCount = query.get("incrementCount") == null ? 0 : Std.parseInt(query.get("incrementCount"));
+		ramp = incrementCount > 0;
+		count = ramp ? (query.get("startCount") == null ? incrementCount : Std.parseInt(query.get("startCount"))) : c == null ? 1000 : Std.parseInt(c);
 	}
 
 	function spawn(n:Int):Void {
@@ -98,10 +101,10 @@ class Main extends Application {
 			if (deltas.length > 120) {
 				var fps = 60 * 1000 / (now - windowStart);
 				if (fps >= 59 && bunnies.length < 2000000) {
-					held = bunnies.length;
-					spawn(1000);
+					maxCount = bunnies.length;
+					spawn(incrementCount);
 				} else {
-					js.Browser.console.log('{"contender":"lime","target":"page","mode":"ramp","ramp_max":$held,"last_fps":$fps,"first_frame_ms":$firstFrameMs}');
+					js.Browser.console.log('{"contender":"lime","target":"page","mode":"ramp","max_count":$maxCount,"last_fps":$fps,"first_frame_ms":$firstFrameMs}');
 					done = true;
 				}
 			}

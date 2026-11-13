@@ -10,7 +10,7 @@ Each contender's are in `contenders/<name>/`.
 - **bunnymark**: raylib's `textures_bunnymark`. 800 x 450, the 32 x 32 `wabbit_alpha.png`, no counter bar. Every bunny spawns from
   the same xorshift32 seed (2463534242): x in [0, 768], y in [40, 418], a speed of rnd(-250, 250) / 60 a frame on each axis, a color of
   (rnd(50, 240), rnd(80, 240), rnd(100, 240), 255). The update and the bounce are raylib's, and positions are truncated to whole pixels
-  as raylib draws them. Options: `count=N`, or `ramp=1`.
+  as raylib draws them. Options: `count=N`, or `incrementCount=N` with `startCount=M`.
 - **robots**: raylib's `models_animation`, many at once. 1280 x 720, `robot.glb` (7218 vertices, 43 bones), count robots in a grid of
   ceil(sqrt(count)) columns at a spacing of 4, the camera at (0, 0.9w, 0.9w) looking at (0, 1.5, 0) with a 45 degree field of view
   where w is the columns times 4, each robot posed at frame (frame + 1 + i * 5) % frameCount of the first animation, drawn unlit.
@@ -21,9 +21,12 @@ Both assets come from raylib's own release, which `tools/raylib_parity.py` fetch
 ## The measure
 
 A `count=N` run draws 120 frames to warm up, then times 600: the mean and the 95th percentile of the frame-to-frame times, printed as
-one JSON line with `"contender"`, `mean_ms` and `p95_ms`. A `ramp=1` run starts at 1000 and adds 1000 every 60 frames while those
-averaged 59 frames a second or better, and prints the largest count that held as `ramp_max`. Each cell in the tables is the median over
-the runs (three by default), the runs taken round-robin over every program and count so a drift in the machine spreads over all of them.
+one JSON line with `"contender"`, `mean_ms` and `p95_ms`. An `incrementCount=N` run starts at `startCount=M` bunnies (N without it)
+and adds N every 60 frames while those averaged 59 frames a second or better, and prints the largest count that held as `max_count`.
+`gen_speed.py` ramps by 1000 from 1000. With `--ramp-start` it starts at half the row's last most held, since the frames below it are
+far faster than 59 a second, and from 1000 again when it didn't hold that: a ramp takes 12 to 27% less time. Each cell in the tables
+is the median over the runs (three by default), the runs taken round-robin over every program and count so a drift in the machine
+spreads over all of them.
 
 Pages run in Chromium with its frame rate cap lifted, on ANGLE over Vulkan or over GL. Native programs run in windows with vsync off.
 three.js's native program is its page in Electron (`contenders/three/electron/main.cjs`), run by `run_page.cjs --electron`. By default

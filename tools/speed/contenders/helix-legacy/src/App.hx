@@ -5,7 +5,7 @@ import helix.render2d.Stage;
 import helix.texture.Texture2D;
 import helix.texture.Textures;
 
-/** raylib's textures_bunnymark on helix-legacy, a Sprite2D per bunny (count=N or ramp=1), for helix's tools/gen_speed.py, which builds it
+/** raylib's textures_bunnymark on helix-legacy, a Sprite2D per bunny (count=N, or incrementCount=N startCount=M), for helix's tools/gen_speed.py, which builds it
 	as a helix-legacy example. */
 class App extends helix.App {
 	static var seed = 0x92D68CA2;
@@ -21,7 +21,8 @@ class App extends helix.App {
 	var last = 0.;
 	var deltas:Array<Float> = [];
 	var windowStart = 0.;
-	var held = 0;
+	var maxCount = 0;
+	var incrementCount = 0;
 	var done = false;
 
 	static function rnd(min:Int, max:Int):Int {
@@ -36,8 +37,10 @@ class App extends helix.App {
 	override public function init():Void {
 		Window.requestSize(800, 450);
 		Stage.color = 0xfff5f5f5;
-		ramp = Host.getOption("ramp", "") == "1";
-		count = ramp ? 1000 : Host.getOptionInt("count", 1000);
+		// incrementCount=N adds N bunnies each 60 frames, from startCount=M bunnies (N without it).
+		incrementCount = Host.getOptionInt("incrementCount", 0);
+		ramp = incrementCount > 0;
+		count = ramp ? Host.getOptionInt("startCount", incrementCount) : Host.getOptionInt("count", 1000);
 		Textures.load("bunnymark/wabbit_alpha.png", Nearest, t -> texture = t);
 	}
 
@@ -97,10 +100,10 @@ class App extends helix.App {
 			if (deltas.length > 120) {
 				var fps = 60 * 1000 / (now - windowStart);
 				if (fps >= 59) {
-					held = bunnies.length;
-					spawn(1000);
+					maxCount = bunnies.length;
+					spawn(incrementCount);
 				} else {
-					emit('{"contender":"helix","target":"page","mode":"ramp","ramp_max":$held,"last_fps":$fps,"first_frame_ms":$firstFrameMs}');
+					emit('{"contender":"helix","target":"page","mode":"ramp","max_count":$maxCount,"last_fps":$fps,"first_frame_ms":$firstFrameMs}');
 					done = true;
 				}
 			}

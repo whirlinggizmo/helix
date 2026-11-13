@@ -1,4 +1,4 @@
-// raylib 5.5's textures_bunnymark, spawning from run options instead of the mouse (count=N or ramp=1). The same as helix-raylib's Main.hx, for tools/gen_speed.py.
+// raylib 5.5's textures_bunnymark, spawning from run options instead of the mouse (count=N, or incrementCount=N startCount=M). The same as helix-raylib's Main.hx, for tools/gen_speed.py.
 #include "raylib.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,8 +29,9 @@ static int rnd(int min, int max) {
 static Bunny *bunnies = NULL;
 static int bunniesCount = 0, capacity = 0;
 static Texture2D texBunny;
-static int count = 1000, ramp = 0;
-static int frame = -1, held = 0, done = 0;
+// incrementCount=N adds N bunnies each 60 frames, from startCount=M bunnies (N without it).
+static int count = 1000, incrementCount = 0, startCount = 0;
+static int frame = -1, maxCount = 0, done = 0;
 static double last = 0, windowStart = 0, firstFrameMs = 0;
 static double deltas[720];
 static int ndeltas = 0;
@@ -90,7 +91,7 @@ static void UpdateDrawFrame(void) {
     EndDrawing();
     if (frame == 0) firstFrameMs = wallMs();
 
-    if (!ramp) {
+    if (!incrementCount) {
         if (ndeltas == 720) {
             double sorted[600], sum = 0;
             memcpy(sorted, deltas + 120, sizeof sorted);
@@ -105,10 +106,10 @@ static void UpdateDrawFrame(void) {
     } else if (ndeltas >= 120 && (ndeltas - 120) % 60 == 0) {
         if (ndeltas > 120) {
             double fps = 60*1000.0/(now - windowStart);
-            if (fps >= 59 && bunniesCount < 2000000) { held = bunniesCount; spawn(1000); }
+            if (fps >= 59 && bunniesCount < 2000000) { maxCount = bunniesCount; spawn(incrementCount); }
             else {
-                printf("{\"contender\":\"raylib-c\",\"target\":\"%s\",\"mode\":\"ramp\",\"ramp_max\":%d,\"last_fps\":%.3f,\"first_frame_ms\":%.3f}\n",
-                       TARGET, held, fps, firstFrameMs);
+                printf("{\"contender\":\"raylib-c\",\"target\":\"%s\",\"mode\":\"ramp\",\"max_count\":%d,\"last_fps\":%.3f,\"first_frame_ms\":%.3f}\n",
+                       TARGET, maxCount, fps, firstFrameMs);
                 fflush(stdout);
                 done = 1;
             }
@@ -124,14 +125,16 @@ int main(int argc, char **argv) {
 #if defined(PLATFORM_WEB)
     char *q = emscripten_run_script_string("location.search");
     const char *c = strstr(q, "count="); if (c) count = atoi(c + 6);
-    if (strstr(q, "ramp=1")) ramp = 1;
+    const char *r = strstr(q, "incrementCount="); if (r) incrementCount = atoi(r + 15);
+    const char *f = strstr(q, "startCount="); if (f) startCount = atoi(f + 11);
 #else
     for (int i = 1; i < argc; i++) {
         if (!strncmp(argv[i], "--count=", 8)) count = atoi(argv[i] + 8);
-        if (!strcmp(argv[i], "--ramp=1")) ramp = 1;
+        if (!strncmp(argv[i], "--incrementCount=", 17)) incrementCount = atoi(argv[i] + 17);
+        if (!strncmp(argv[i], "--startCount=", 13)) startCount = atoi(argv[i] + 13);
     }
 #endif
-    if (ramp) count = 1000;
+    if (incrementCount) count = startCount > 0 ? startCount : incrementCount;
     InitWindow(800, 450, "raylib [textures] example - bunnymark");
     texBunny = LoadTexture("resources/wabbit_alpha.png");
     // No SetTargetFPS and no FLAG_VSYNC_HINT: unpaced natively.

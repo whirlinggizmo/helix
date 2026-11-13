@@ -1,4 +1,4 @@
-// raylib's textures_bunnymark in three.js, spawning from the query string (count=N or ramp=1) as the other contenders do, two ways:
+// raylib's textures_bunnymark in three.js, spawning from the query string (count=N, or incrementCount=N startCount=M) as the other contenders do, two ways:
 // variant=instanced (the default): one InstancedMesh of a 32 x 32 textured quad, a matrix and a color an instance, the matrices rewritten
 // each frame; variant=sprite: one THREE.Sprite a bunny, each with its own SpriteMaterial (a Sprite's color is its material's).
 import * as THREE from 'three';
@@ -6,8 +6,10 @@ import * as THREE from 'three';
 const params = new URLSearchParams(location.search);
 const variant = params.get('variant') === 'sprite' ? 'sprite' : 'instanced';
 const contender = 'three-' + variant;
-const ramp = params.get('ramp') === '1';
-const count = ramp ? 1000 : Number(params.get('count') || 1000);
+// incrementCount=N adds N bunnies each 60 frames, from startCount=M bunnies (N without it).
+const incrementCount = Number(params.get('incrementCount') || 0);
+const ramp = incrementCount > 0;
+const count = ramp ? Number(params.get('startCount') || incrementCount) : Number(params.get('count') || 1000);
 const W = 800, H = 450, TW = 32, TH = 32;
 
 // xorshift32 from 2463534242, the same in every contender, so every bunny starts the same.
@@ -113,7 +115,7 @@ function drawSprites() {
 
 const draw = variant === 'sprite' ? drawSprites : drawInstanced;
 
-let frame = -1, last = 0, firstFrameMs = 0, windowStart = 0, held = 0, done = false;
+let frame = -1, last = 0, firstFrameMs = 0, windowStart = 0, maxCount = 0, done = false;
 const deltas = [];
 function tick() {
 	if (done) return;
@@ -142,9 +144,9 @@ function tick() {
 	} else if (deltas.length >= 120 && (deltas.length - 120) % 60 === 0) {
 		if (deltas.length > 120) {
 			const fps = 60 * 1000 / (now - windowStart);
-			if (fps >= 59 && bunnies.length < 2000000) { held = bunnies.length; spawn(1000); }
+			if (fps >= 59 && bunnies.length < 2000000) { maxCount = bunnies.length; spawn(incrementCount); }
 			else {
-				console.log(JSON.stringify({contender, target: 'page', mode: 'ramp', ramp_max: held, last_fps: fps, first_frame_ms: firstFrameMs}));
+				console.log(JSON.stringify({contender, target: 'page', mode: 'ramp', max_count: maxCount, last_fps: fps, first_frame_ms: firstFrameMs}));
 				done = true;
 				return;
 			}

@@ -22,17 +22,20 @@ native programs (one at a time, with vsync off), three.js's in Electron; neither
 screen (the native programs on a private display with software GL, whose times aren't representative; the pages in headless Chromium);
 --headed runs the native programs in windows on $DISPLAY, and the pages over GL in the browser's (over Vulkan a visible window loses its
 WebGL context at startup, so those stay headless). Every program spawns from the same seed. Each count draws 120 frames to warm up and
-times 600: the mean and the 95th percentile frame time, the median over --runs of each. ramp starts at 1000 and adds 1000 every 60
-frames while those averaged 59 frames a second or better: the most held. The bunnymark's counts are 10k, 50k, 100k, 150k and 200k and
-ramp, the robots' 50, 200 and 400. Every run is a JSON line in build/speed/runs/<stamp>.jsonl.
+times 600: the mean and the 95th percentile frame time, the median over --runs of each. A ramp adds INCREMENT_COUNT bunnies every
+60 frames while those averaged 59 frames a second or better, and reports the most held (max_count), starting at one increment. With
+--ramp-start it starts at half its row's last most held (start_count), as the frames below that are far faster than 59 a second, and
+from one increment again when it didn't hold that. The bunnymark's counts are 10k, 50k, 100k, 150k and 200k and a ramp, the robots' 50, 200 and 400. Every run is a JSON line
+in build/speed/runs/<stamp>.jsonl.
 
 --write puts the run's medians, sizes, versions, date and machine into docs/speed.json, replacing the rows of the contenders it ran and
 leaving the others, and remakes docs/benchmarks.md's speed tables between their markers and the charts: a row measured on another date
-than the table's newest says so. Before it times anything, the machine must be quiet: a load average of QUIET_LOAD at most, and a pinned
-loop within QUIET_LOOP_SECONDS. After, the control must be within CONTROL_DRIFT of its last rows; native times are written from --headed
-runs alone, and with the control in the run. --unchecked skips the checks. A page's size is every file it fetched but the assets (gzip and brotli too, where the
-brotli tool is there); three's is also its page bundled and minified with esbuild, the size a three.js game ships. A native program's
-size is its binary stripped, and Electron's its files as installed with the page bundled.
+than the table's newest says so. Before it times anything, the machine must be quiet: a load average of QUIET_LOAD at most, and a
+pinned loop within QUIET_LOOP_SECONDS, and the GPU no busier than QUIET_GPU. After, the control must be within CONTROL_DRIFT of its
+last rows; native times are written from --headed runs alone, and with the control in the run. --unchecked skips the checks. A page's
+size is every file it fetched but the assets (gzip and brotli too, where the brotli tool is there); three's is also its page bundled
+and minified with esbuild, the size a three.js game ships. A native program's size is its binary stripped, and Electron's its files as
+installed with the page bundled.
 
 Linux only. Standard library only."""
 import gzip
@@ -65,6 +68,8 @@ PAGE = ROOT / 'docs/benchmarks.md'
 PROGRAMS = ['bunnymark', 'robots']
 CONTENDERS = ['helix-raylib', 'raylib-c', 'godot', 'three', 'lime', 'helix-legacy']
 BUNNY_COUNTS = [10000, 50000, 100000, 150000, 200000]
+# The bunnies a ramp adds each 60 frames that held 59 a second.
+INCREMENT_COUNT = 1000
 ROBOT_COUNTS = [50, 200, 400]
 # A page's run: seconds before it is given up; native runs the same.
 PAGE_SECONDS = {'count': 600, 'ramp': 1500}
@@ -83,6 +88,10 @@ WHERES = {'helix-raylib': ['page-vulkan', 'page-gl', 'native-gl', 'native-sdlgpu
 # The quiet machine timing needs: the 1-minute load average at most, and a pinned loop of 20 million additions in Python within so many
 # seconds (0.83 on coinspinner; a CPU its firmware clamps takes 0.9 and up, docs/benchmarks.md).
 QUIET_LOAD = 2.0
+# The GPU's utilization the machine may show, in percent, over QUIET_GPU_SECONDS: a desktop and an editor idle near 10 to 20; another
+# program drawing every frame (a browser's WebGL demo) takes more, and slows the GPU-bound programs most (docs/benchmarks.md).
+QUIET_GPU = 30
+QUIET_GPU_SECONDS = 5
 QUIET_LOOP_SECONDS = 0.9
 # How far the control (raylib C) may move from its last rows, as the median ratio over its counts, before a run isn't written.
 CONTROL_DRIFT = 0.2
@@ -444,6 +453,11 @@ def pages(programs, contenders):
     return [p for p in found if (p[3] / 'index.html').is_file()]
 
 
+def options(mode):
+    """A mode as a native program's command line: count=N as --count=N, incrementCount=N&startCount=M as --incrementCount=N --startCount=M."""
+    return ['--' + part for part in mode.split('&')]
+
+
 def natives(programs, contenders):
     """Each native program to run: (contender, variant, program, where, command maker, directory)."""
     found = []
@@ -452,15 +466,15 @@ def natives(programs, contenders):
         if 'helix-raylib' in contenders:
             for backend in ('native-gl', 'native-sdlgpu'):
                 home = OUT / 'helix-raylib' / program / backend
-                found.append(('helix-raylib', '', program, backend, lambda mode, h=home: [str(h / 'Main'), '--' + mode], home))
+                found.append(('helix-raylib', '', program, backend, lambda mode, h=home: [str(h / 'Main'), *options(mode)], home))
         if 'raylib-c' in contenders:
             if program == 'bunnymark':
                 home = OUT / 'raylib-c/bunnymark/native'
-                found.append(('raylib-c', '', program, 'native-gl', lambda mode, h=home: [str(h / 'program'), '--' + mode], home))
+                found.append(('raylib-c', '', program, 'native-gl', lambda mode, h=home: [str(h / 'program'), *options(mode)], home))
             else:
                 for variant in ('gpu', 'cpu'):
                     home = OUT / 'raylib-c/robots' / f'native-{variant}'
-                    found.append(('raylib-c', variant.upper() + ' skinning', program, 'native-gl', lambda mode, h=home: [str(h / 'program'), '--' + mode], home))
+                    found.append(('raylib-c', variant.upper() + ' skinning', program, 'native-gl', lambda mode, h=home: [str(h / 'program'), *options(mode)], home))
         if 'three' in contenders and ELECTRON.is_file():
             size = (800, 450) if program == 'bunnymark' else (1280, 720)
             home = OUT / 'three' / ('bunny' if program == 'bunnymark' else 'robots')
@@ -468,7 +482,7 @@ def natives(programs, contenders):
             for variant, extra in variants:
                 found.append(('three', variant, program, 'native-electron',
                               lambda mode, angle='gl', h=home, e=extra, z=size: ['node', str(HERE / 'run_page.cjs'), '--electron', str(ELECTRON), str(h),
-                                                                                  mode + e, str(PAGE_SECONDS['ramp' if mode.startswith('ramp') else 'count']),
+                                                                                  mode + e, str(PAGE_SECONDS['ramp' if is_ramp(mode) else 'count']),
                                                                                   angle, str(z[0]), str(z[1])], home))
         if 'godot' in contenders:
             projects = [('bunnymark-multimesh', 'MultiMesh'), ('bunnymark-nodes', 'a Sprite2D each')] if program == 'bunnymark' else [('robots', '')]
@@ -478,7 +492,7 @@ def natives(programs, contenders):
                     if program == 'robots' and where == 'native-vulkan':
                         continue
                     found.append(('godot', variant, program, where,
-                                  lambda mode, h=home, m=method: [str(h / 'program.x86_64'), *godot_args, '--rendering-method', m, '--', '--' + mode], home))
+                                  lambda mode, h=home, m=method: [str(h / 'program.x86_64'), *godot_args, '--rendering-method', m, '--', *options(mode)], home))
     return [n for n in found if n[5].is_dir() and any(n[5].iterdir())]
 
 
@@ -496,7 +510,7 @@ def found_line(output):
 
 def run_page(browser, directory, query, backend, size, mode, headed):
     """One page run, in the browser's window on the display when headed; its result (None when none came) and what the runner reported."""
-    seconds = PAGE_SECONDS['ramp' if mode.startswith('ramp') else 'count']
+    seconds = PAGE_SECONDS['ramp' if is_ramp(mode) else 'count']
     env = dict(os.environ)
     env.pop('DBUS_SESSION_BUS_ADDRESS', None)
     try:
@@ -513,7 +527,7 @@ def run_page(browser, directory, query, backend, size, mode, headed):
 
 def run_native(command, directory, display, mode, where):
     """One native run in the program's directory; its result and the output's tail. Electron's is run_page.cjs's, its line the page's."""
-    seconds = (PAGE_SECONDS if where == 'native-electron' else NATIVE_SECONDS)['ramp' if mode.startswith('ramp') else 'count'] + 120
+    seconds = (PAGE_SECONDS if where == 'native-electron' else NATIVE_SECONDS)['ramp' if is_ramp(mode) else 'count'] + 120
     env = dict(display, SDL_AUDIO_DRIVER='dummy')
     env.pop('DBUS_SESSION_BUS_ADDRESS', None)
     try:
@@ -528,17 +542,47 @@ def run_native(command, directory, display, mode, where):
 
 def modes_of(program):
     counts = BUNNY_COUNTS if program == 'bunnymark' else ROBOT_COUNTS
-    return [f'count={n}' for n in counts] + (['ramp=1'] if program == 'bunnymark' else [])
+    return [f'count={n}' for n in counts] + ([f'incrementCount={INCREMENT_COUNT}'] if program == 'bunnymark' else [])
 
 
-def measure(programs, contenders, page, native, backends, runs, headed, browser, record):
+def is_ramp(mode):
+    """Whether a mode ramps: incrementCount=N adds N bunnies each 60 frames that held 59 a second."""
+    return mode.startswith('incrementCount=')
+
+
+def start_count(store, contender, variant, program, where):
+    """Where a ramp starts: half its row's last most held, in increments, or one increment without one. The frames skipped are far
+    faster than 59 a second, so where it ends is the same."""
+    row = next((r for r in store['rows'] if (r['contender'], r['variant'], r['program'], r['where']) == (contender, variant, program, where)), None)
+    most = row.get('maxCount') if row else None
+    return max(most // 2 // INCREMENT_COUNT * INCREMENT_COUNT, INCREMENT_COUNT) if most else INCREMENT_COUNT
+
+
+def ramped(run, mode, start_at):
+    """A ramp run from start_at bunnies, run again from one increment when it didn't hold its first: it started past what it holds."""
+    if start_at <= INCREMENT_COUNT:
+        return run(mode)
+    result, other = run(f'{mode}&startCount={start_at}')
+    if result and result.get('max_count', 0) < start_at:
+        result, other = run(mode)
+    return result, other
+
+
+def measure(programs, contenders, page, native, backends, runs, headed, browser, record, ramp_start=False):
     """Every run, round-robin so a drift in the machine's state spreads over every program, each recorded. Pages over Vulkan run headless
-    even when headed: a visible window loses its WebGL context at startup there."""
+    even when headed: a visible window loses its WebGL context at startup there. With ramp_start a ramp starts near where it ended last
+    (start_count)."""
+    # Without ramp_start every ramp starts at one increment, as every row before start_count was measured.
+    store = load_store() if ramp_start else {'rows': []}
     for backend in backends if page else []:
         for run_index in range(1, runs + 1):
             for contender, variant, program, directory, query, size in pages(programs, contenders):
                 for mode in modes_of(program):
-                    result, printed = run_page(browser, directory, query(mode), backend, size, mode, headed and backend == 'gl')
+                    go = lambda m: run_page(browser, directory, query(m), backend, size, m, headed and backend == 'gl')  # noqa: E731
+                    if is_ramp(mode):
+                        result, printed = ramped(go, mode, start_count(store, contender, variant, program, f'page-{backend}'))
+                    else:
+                        result, printed = go(mode)
                     record({'where': f'page-{backend}', 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
                             'result': result, 'files': printed.get('files'), 'renderer': printed.get('renderer'), 'errors': printed.get('errors')})
     if native:
@@ -547,8 +591,13 @@ def measure(programs, contenders, page, native, backends, runs, headed, browser,
                 for contender, variant, program, where, command, directory in natives(programs, contenders):
                     for mode in modes_of(program):
                         # Electron draws over GL on the display, and off it in software (SwiftShader), as the others do there.
-                        given = command(mode, 'gl' if headed else 'swiftshader') if where == 'native-electron' else command(mode)
-                        result, tail = run_native(given, directory, display, mode, where)
+                        def go(m):
+                            given = command(m, 'gl' if headed else 'swiftshader') if where == 'native-electron' else command(m)
+                            return run_native(given, directory, display, m, where)
+                        if is_ramp(mode):
+                            result, tail = ramped(go, mode, start_count(store, contender, variant, program, where))
+                        else:
+                            result, tail = go(mode)
                         record({'where': where, 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
                                 'result': result, 'tail': None if result else tail})
         if headed:
@@ -646,10 +695,10 @@ def summarize(rows, date, built):
             same = [r for r in runs if r['mode'] == mode]
             if mode.startswith('count='):
                 counts[mode[6:]] = {'meanMs': median(same, 'mean_ms'), 'p95Ms': median(same, 'p95_ms'), 'runs': sum(1 for r in same if r['result'])}
-        ramps = [r for r in runs if r['mode'] == 'ramp=1']
-        held = median(ramps, 'ramp_max')
+        ramps = [r for r in runs if is_ramp(r['mode'])]
+        max_count = median(ramps, 'max_count')
         entry = {'contender': contender, 'variant': variant, 'program': program, 'where': where, 'version': versions[contender], 'date': date, 'machine': host,
-                 'counts': counts, 'held': int(held) if held is not None else None}
+                 'counts': counts, 'maxCount': int(max_count) if max_count is not None else None}
         if where == 'native-electron':
             entry['electron'] = pins()['electron']
         if where.startswith('page'):
@@ -676,7 +725,8 @@ def load_store():
 
 def write_store(entries):
     """docs/speed.json with these rows in place of the ones they name, the others kept."""
-    store = load_store()
+    # Without ramp_start every ramp starts at one increment, as every row before start_count was measured.
+    store = load_store() if ramp_start else {'rows': []}
     keys = {(e['contender'], e['variant'], e['program'], e['where']) for e in entries}
     kept = [r for r in store['rows'] if (r['contender'], r['variant'], r['program'], r['where']) not in keys]
     store['rows'] = sorted(kept + entries, key=lambda r: (r['program'], r['where'].startswith('native'), r['where'], CONTENDERS.index(r['contender']), r['variant']))
@@ -733,14 +783,14 @@ def table(rows, program, wheres):
     newest = max(r['date'] for r in rows)
     counts = [str(n) for n in (BUNNY_COUNTS if program == 'bunnymark' else ROBOT_COUNTS)]
     heads = [f'{int(n) // 1000}k' if int(n) >= 1000 else n for n in counts]
-    held = program == 'bunnymark'
-    lines = ['| program | where | ' + ' | '.join(heads) + (' | most held' if held else '') + ' | size |',
-             '|---|---|' + '---:|' * len(counts) + ('---:|' if held else '') + '---:|']
+    ramps = program == 'bunnymark'
+    lines = ['| program | where | ' + ' | '.join(heads) + (' | most held' if ramps else '') + ' | size |',
+             '|---|---|' + '---:|' * len(counts) + ('---:|' if ramps else '') + '---:|']
     order = {w: i for i, w in enumerate(wheres)}
     for row in sorted(rows, key=lambda r: (order[r['where']], CONTENDERS.index(r['contender']), r['variant'])):
         cells = [cell(row['counts'].get(n)) for n in counts]
-        most = f'{row["held"] // 1000}k' if held and row.get('held') else ('' if held else None)
-        lines.append('| ' + ' | '.join([label(row), where_text(row, newest)] + cells + ([most] if held else []) + [size_text(row)]) + ' |')
+        most = f'{row["maxCount"] // 1000}k' if ramps and row.get('maxCount') else ('' if ramps else None)
+        lines.append('| ' + ' | '.join([label(row), where_text(row, newest)] + cells + ([most] if ramps else []) + [size_text(row)]) + ' |')
     return lines
 
 
@@ -891,11 +941,29 @@ def stale(programs, wheres, store, control):
     return found
 
 
+def gpu_busy():
+    """The GPU's mean utilization in percent over QUIET_GPU_SECONDS, from nvidia-smi, or None without it."""
+    if shutil.which('nvidia-smi') is None:
+        return None
+    samples = []
+    for _ in range(QUIET_GPU_SECONDS):
+        printed = subprocess.run(['nvidia-smi', '-q', '-d', 'UTILIZATION'], capture_output=True, text=True).stdout
+        found = [line.split(':', 1)[1] for line in printed.splitlines() if line.strip().startswith('GPU ') and '%' in line]
+        if found:
+            samples.append(float(found[0].strip().rstrip('%').strip()))
+        time.sleep(1)
+    return statistics.mean(samples) if samples else None
+
+
 def unquiet():
-    """Why this machine can't be timed now, or None: a load average over QUIET_LOAD, or a pinned loop slower than QUIET_LOOP_SECONDS."""
+    """Why this machine can't be timed now, or None: a load average over QUIET_LOAD, a GPU busier than QUIET_GPU, or a pinned loop slower
+    than QUIET_LOOP_SECONDS."""
     load = os.getloadavg()[0]
     if load > QUIET_LOAD:
         return f'the load average is {load:.2f}, over {QUIET_LOAD}: something else is running'
+    busy = gpu_busy()
+    if busy is not None and busy > QUIET_GPU:
+        return f'the GPU is {busy:.0f}% busy over {QUIET_GPU_SECONDS} s, over {QUIET_GPU}%: another program is drawing'
     loop = 'x=0\nfor i in range(20_000_000):x+=i'
     pinned = ['taskset', '-c', '2'] if shutil.which('taskset') else []
     started = time.perf_counter()
@@ -928,6 +996,7 @@ def main():
     parser.add_argument('--runs', type=int, default=3, help='runs of each program and count (default 3)')
     parser.add_argument('--browser', default='', help="a Chromium to run the pages in (default Playwright's own)")
     parser.add_argument('--write', action='store_true', help="update docs/speed.json, docs/benchmarks.md's tables and its charts with the run")
+    parser.add_argument('--ramp-start', action='store_true', help="start each ramp at half its row's last most held (start_count)")
     parser.add_argument('--no-control', action='store_true', help='leave raylib C, the control, out of a run naming no contender')
     parser.add_argument('--unchecked', action='store_true', help="write without the quiet machine's check and the control's")
     parser.add_argument('names', nargs='*', metavar='NAME', help='programs (bunnymark, robots) and contenders (helix-raylib, raylib-c, godot, three, lime, helix-legacy)')
@@ -971,17 +1040,17 @@ def main():
         with runs_file.open('a', encoding='utf-8') as f:
             f.write(json.dumps(row) + '\n')
         result = row['result']
-        shown = f'{result["mean_ms"]:.2f} ms' if result and 'mean_ms' in result else f'held {result["ramp_max"]}' if result and 'ramp_max' in result else 'FAILED'
+        shown = f'{result["mean_ms"]:.2f} ms' if result and 'mean_ms' in result else f'held {result["max_count"]}' if result and 'max_count' in result else 'FAILED'
         print(f'  {row["where"]:14} {row["contender"]:13} {row["variant"]:16} {row["program"]:10} {row["mode"]:13} run {row["run"]}: {shown}', flush=True)
 
     import screen_power
     with screen_power.kept_on(a.headed):
-        measure(programs, built, page, native, backends, a.runs, a.headed, a.browser, record)
+        measure(programs, built, page, native, backends, a.runs, a.headed, a.browser, record, a.ramp_start)
     say(f'{len(rows)} runs in {runs_file.relative_to(ROOT)}')
     entries = summarize(rows, time.strftime('%Y-%m-%d'), built)
     for e in entries:
         counts = ', '.join(f'{n}: {c["meanMs"]}' for n, c in e['counts'].items() if c['meanMs'] is not None)
-        print(f'  {e["program"]} {e["where"]:14} {label(e):40} {counts}' + (f', held {e["held"]}' if e.get('held') else '') + f'  size {size_text(e)}')
+        print(f'  {e["program"]} {e["where"]:14} {label(e):40} {counts}' + (f', held {e["maxCount"]}' if e.get('maxCount') else '') + f'  size {size_text(e)}')
     if a.write:
         moved = drift(entries, load_store())
         if moved is not None and abs(moved - 1) > CONTROL_DRIFT and not a.unchecked:
