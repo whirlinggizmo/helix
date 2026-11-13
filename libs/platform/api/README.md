@@ -1385,7 +1385,7 @@ Defines an interface that answers later, delivering what it was asked for in its
 
 The program calls `poll` once a frame on each pollable it made. One it forgets to poll never answers. A service never polls the pollables it was provided, so one built over an `IFileSystem` or an `IAudio` leaves their polls to the program.
 
-`IEvents`, `IHttp`, `IFileSystem`, `IAudio`, `IAudioDecoder` and `IImageDecoder` are pollable. A layer above them that answers later is pollable too, and is polled the same way.
+`IEvents`, `IHttp`, `IWebSocket`, `IFileSystem`, `IAudio`, `IAudioDecoder` and `IImageDecoder` are pollable. A layer above them that answers later is pollable too, and is polled the same way.
 
 ```haxe
 function poll():Void
@@ -1488,6 +1488,53 @@ function dispose():Void
 
 - `available`: Gets a value indicating whether the device has touch. A trackpad isn't touch.
 - `dispose`: Stops listening to touch.
+
+## IWebSocket
+
+*interface* in [`libs/platform/src/helix/platform/IWebSocket.hx`](../src/helix/platform/IWebSocket.hx), `import helix.platform.IWebSocket;`, extends `IPollable`
+
+Defines connections to servers over WebSocket: messages of text or bytes, each delivered whole and in the order sent, with the time it arrived.
+
+```haxe
+function open(url:String, protocols:Array<String>, opened:String -> Void, text:(message:String, arrivalTime:Float) -> Void, bytes:(buffer:haxe.io.Bytes, messageLength:Int, arrivalTime:Float) -> Void, closed:(code:Int, reason:String) -> Void, failed:String -> Void):Int
+function sendText(connectionId:Int, message:String):Void
+function sendBytes(connectionId:Int, message:haxe.io.Bytes):Void
+function getWaitingBytes(connectionId:Int):Int
+function close(connectionId:Int, ?code:Int = 1000, ?reason:String = ""):Void
+function poll():Void
+function dispose():Void
+```
+
+- `open`: Opens a connection to a server.
+  - `url`: The server's URL, ws or wss, whole.
+  - `protocols`: The subprotocols offered, the preferred first; empty for none.
+  - `opened`: Receives the subprotocol the server chose, or empty for none.
+  - `text`: Receives each text message and the time it arrived, in seconds.
+  - `bytes`: Receives each binary message: the buffer holding it, its size in bytes, and the time it arrived, in seconds.
+  - `closed`: Receives the close's code and its reason, whichever side closed first.
+  - `failed`: Receives why the connection failed: the server refused it or couldn't be reached, or it dropped without a close.
+  - returns: The connection's id.
+
+  The callbacks are called on the main thread, at `poll`, never during this call. `opened` is called once, when the server accepts the connection; then `text` or `bytes` for each message, in the order the server sent them; then one of `closed` or `failed`. A connection the program closes calls `closed` once the server answers the close, or `failed` if it never does. After `failed` or `closed`, nothing more is called, and the connection's id is no longer one.
+
+  A message's time is when it arrived: taken as the platform received it, on `ISystem.getTime`'s clock, not when `poll` delivered it, which waits for the frame.
+
+  A binary message is lent for the call: its bytes are the first `messageLength` of a buffer the platform reuses, so a program copies what it keeps, and a steady stream of messages allocates nothing natively.
+- `sendText`: Sends a text message, after the ones sent before it. Nothing for a connection not open yet, or closed.
+  - `connectionId`: The connection.
+  - `message`: The text.
+- `sendBytes`: Sends a binary message, after the ones sent before it. Nothing for a connection not open yet, or closed.
+  - `connectionId`: The connection.
+  - `message`: The bytes, copied as it is called.
+- `getWaitingBytes`: Gets how many bytes sent on a connection are still waiting to go out, for a program that sends faster than the network takes them; 0 for a connection not open, or closed.
+  - `connectionId`: The connection.
+  - returns: The bytes waiting.
+- `close`: Closes a connection: the messages sent before it go first, then the close. `closed` is called once the server answers.
+  - `connectionId`: The connection.
+  - `code`: The close's code: 1000 for a normal close, or 3000 to 4999 for a program's own.
+  - `reason`: Why, at most 123 bytes as UTF-8.
+- `poll`: Delivers, in order, everything that had arrived when the call began: each connection's opening, messages and close or failure. One arriving during the call waits for the next. The program calls it once a frame.
+- `dispose`: Closes every connection at once, without waiting for the servers, and calls nothing more.
 
 ## IWindow
 
