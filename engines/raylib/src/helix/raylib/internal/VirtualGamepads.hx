@@ -6,6 +6,9 @@ import helix.platform.IPollable;
 import helix.raylib.*;
 import helix.services.input.Touch;
 import helix.services.input.VirtualStick;
+import helix.raylib.extras.VirtualButtonOptions;
+import helix.raylib.extras.VirtualGamepadOptions;
+import helix.raylib.extras.VirtualStickOptions;
 
 /** A virtual gamepad in a slot, as `EnableVirtualGamepad` made it: the service's, given its options when enabled and its rectangles,
 	positions and radii in framebuffer pixels each frame, and drawn over the frame as `EndDrawing` ends it. */

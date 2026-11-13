@@ -1,4 +1,6 @@
-package helix.raylib;
+package helix.raylib.extras;
+
+import helix.raylib.*;
 
 /** Represents how a virtual gamepad starts and looks (`EnableVirtualGamepad`, in `helix.raylib.extras.VirtualGamepad`). Every field has a default, so options set
 	only what they change. Its placement, dead zone, hint and colors are both sticks' defaults, and its colors the buttons' too. A field set

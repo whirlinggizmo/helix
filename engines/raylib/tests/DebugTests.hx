@@ -1,6 +1,7 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Debug.*;
+import helix.raylib.extras.FrameStatsStyle;
 import helix.raylib.extras.Models.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;

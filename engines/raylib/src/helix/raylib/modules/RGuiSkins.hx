@@ -6,6 +6,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.Raygui.*;
 import helix.raylib.modules.RGui.*;
 import helix.raylib.modules.RTextures.*;
+import helix.raylib.extras.GuiSkin;
 #end
 
 /** Provides helix-raylib's raygui skins, which draw parts of controls from textures as nine-patches.

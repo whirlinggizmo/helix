@@ -1,4 +1,6 @@
-package helix.raylib;
+package helix.raylib.extras;
+
+import helix.raylib.*;
 
 /** Represents a skin: how one part of raygui's controls is drawn from a texture, a nine-patch for each state, in place of its style's flat
 	colors.

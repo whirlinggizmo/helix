@@ -1,5 +1,6 @@
-package helix.raylib;
+package helix.raylib.extras;
 
+import helix.raylib.*;
 import helix.raylib.Raylib.*;
 
 /** Represents how `DrawFrameStatsEx` (`helix.raylib.extras.Debug`) draws the frame's cost: which stats it shows, and their look.

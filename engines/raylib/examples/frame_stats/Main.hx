@@ -1,6 +1,7 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.Debug.*;
+import helix.raylib.extras.FrameStats;
 
 /** Reads the frame stats (`helix.raylib.extras.Debug`): the last half second's at the top left, in the program's own text, and a
 	recording printed as one line. It records frames 30 to 50 as it starts, and R starts a recording of its own, R again stops and

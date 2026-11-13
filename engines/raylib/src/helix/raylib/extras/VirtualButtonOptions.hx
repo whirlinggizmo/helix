@@ -1,4 +1,6 @@
-package helix.raylib;
+package helix.raylib.extras;
+
+import helix.raylib.*;
 
 /** Represents one on-screen button of a virtual gamepad (`VirtualGamepadOptions.buttons`), read as a gamepad button. Positions and sizes
 	are in the screen's pixels.

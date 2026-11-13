@@ -230,11 +230,12 @@ def stub(f, header, callbacks):
 
 
 def type_text(node, full=False):
-    """A type as Haxe writes it, from haxe -xml's type element: helix-raylib's own types by their short names (a file in helix.raylib finds
-    them), or full with their packages."""
+    """A type as Haxe writes it, from haxe -xml's type element: helix-raylib's own types and the extras' by their short names (a file in
+    helix.raylib finds the first, and a file in helix.raylib.extras both), or full with their packages."""
     if node.tag in ('c', 'x', 't', 'e'):
         path = node.get('path')
-        name = path if full or path.count('.') != 2 or not path.startswith('helix.raylib.') else path.rsplit('.', 1)[1]
+        package = path.rsplit('.', 1)[0] if '.' in path else ''
+        name = path if full or package not in ('helix.raylib', 'helix.raylib.extras') else path.rsplit('.', 1)[1]
         params = [type_text(c, full) for c in node]
         return name + (f'<{", ".join(params)}>' if params else '')
     if node.tag == 'd':

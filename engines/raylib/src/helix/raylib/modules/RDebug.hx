@@ -10,6 +10,8 @@ import helix.raylib.modules.RShapes.*;
 import helix.raylib.modules.RText.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
+import helix.raylib.extras.FrameStats;
+import helix.raylib.extras.FrameStatsStyle;
 #end
 
 /** Provides the drawing that shows what a program does: a model's skeleton and bounds as posed, and the frame's cost, drawn or read.

@@ -3,6 +3,7 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.internal.VirtualGamepads;
+import helix.raylib.extras.VirtualGamepadOptions;
 #end
 
 /** Provides on-screen gamepads for phones, read through raylib's gamepad functions.

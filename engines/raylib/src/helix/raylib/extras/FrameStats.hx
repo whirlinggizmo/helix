@@ -1,4 +1,6 @@
-package helix.raylib;
+package helix.raylib.extras;
+
+import helix.raylib.*;
 
 /** Represents the stats of a run of frames, as `GetFrameStats` and `StopFrameStatsRecording` (`helix.raylib.extras.Debug`) return them.
 
