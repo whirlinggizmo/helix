@@ -11,9 +11,9 @@ file calls (RFilesAsync) and the compiled shaders (RCompiledShaders) after RCore
 RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAsync after RGui.
 What a program opts into that raylib has no call for is in the package helix.raylib.extras, a module and a section of its own each
 (extras.Lighting from RLighting, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.GuiSkins from
-RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, a model's posed bounds and merge in extras.Models from RModelsPosed
-and RModelsMerged). The
-sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
+RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, a model's posed bounds, merge and masked blend in extras.Models from
+RModelsPosed, RModelsMerged and RModelsMasked).
+The sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
 (docs/CONVENTIONS.md). Each file's generated part has two halves:
 
   - its header's constants that aren't written by hand (an extras module has no header): raylib's enum values and number defines
@@ -89,6 +89,7 @@ TARGETS = {
     'extras/Models.hx': ([
         ('RModelsPosed', "models: a skinned model's bounds as posed"),
         ('RModelsMerged', "models: models merged into one"),
+        ('RModelsMasked', "models: two animations blended bone by bone"),
     ], None, 'Models'),
     'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders rlights' lights light")], None, 'Lighting'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),

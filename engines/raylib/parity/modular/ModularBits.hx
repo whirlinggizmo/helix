@@ -82,7 +82,8 @@ class ModularBits {
 		line('anims ${anims.length}');
 		var clips = [-1, -1, -1];
 		for (a => an in anims) {
-			line('anim $a ${an.name} ${an.frameCount} ${an.boneCount}');
+			// Names as raylib's C prints them, its struct holding 31 bytes: helix-raylib keeps them whole, and these are ASCII.
+			line('anim $a ${an.name.substr(0, 31)} ${an.frameCount} ${an.boneCount}');
 			for (c => name in CLIPS)
 				if (an.name == name)
 					clips[c] = a;

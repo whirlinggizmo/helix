@@ -85,7 +85,7 @@ var parent:Int
 function copy(?out:BoneInfo):BoneInfo
 ```
 
-- `name`: Gets or sets the name, its node's cut to 31 bytes as raylib's struct holds it.
+- `name`: Gets or sets the name, its node's.
 - `parent`: Gets or sets the parent, by its index in the same bones, or -1 for a root.
 - `copy`: Returns a separate copy.
   - `out`: Optional. The BoneInfo to copy into, so nothing is made; a new one when omitted.
@@ -751,7 +751,7 @@ var name:String
 - `frameCount`: Gets or sets the number of frames.
 - `bones`: Gets or sets the bones, as the model's are.
 - `framePoses`: Gets or sets each frame's pose: for each bone, its transform in the model, not relative to its parent (the parent's is already in it).
-- `name`: Gets or sets the name, the file's cut to 31 bytes as raylib's holds it, or empty.
+- `name`: Gets or sets the name, the file's, or empty.
 
 ## ModelMaterials
 

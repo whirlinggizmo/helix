@@ -5,7 +5,7 @@ package helix.raylib;
 	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
 @:structInit
 class BoneInfo {
-	/** Gets or sets the name, its node's cut to 31 bytes as raylib's struct holds it. */
+	/** Gets or sets the name, its node's. */
 	public var name:String;
 
 	/** Gets or sets the parent, by its index in the same bones, or -1 for a root. */

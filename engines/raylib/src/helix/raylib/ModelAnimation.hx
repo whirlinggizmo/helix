@@ -19,8 +19,13 @@ class ModelAnimation {
 		it). */
 	public var framePoses:Null<Array<Array<Transform>>> = null;
 
-	/** Gets or sets the name, the file's cut to 31 bytes as raylib's holds it, or empty. */
+	/** Gets or sets the name, the file's, or empty. */
 	public var name:String = "";
+
+	// Each frame's pose relative to each bone's parent, worked out from framePoses the first time UpdateModelAnimationMasked takes the
+	// animation (Animations.localFrames); null until then.
+	@:allow(helix.raylib)
+	var localPoses:Null<Array<Array<Transform>>> = null;
 
 	/** Creates an animation of no frames. */
 	public function new() {}

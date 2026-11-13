@@ -91,7 +91,7 @@ class Animations {
 		return parents;
 	}
 
-	/** Returns a skin's bones as raylib 6.2's `LoadBoneInfoGLTF` makes them: each joint's name, cut to 31 bytes, and its parent, the
+	/** Returns a skin's bones as raylib 6.2's `LoadBoneInfoGLTF` makes them: each joint's name and its parent, the
 		nearest node above it that is one of the skin's joints, or -1.
 
 		@param file  The file.
@@ -107,7 +107,7 @@ class Animations {
 					if (parent == -1)
 						above = parents.get(above);
 				}
-				new BoneInfo(Models.boneName(file.nodes[joint].name), parent);
+				new BoneInfo(file.nodes[joint].name, parent);
 			}
 		];
 	}
@@ -175,7 +175,7 @@ class Animations {
 				var time = input[input.length - 1];
 				animDuration = time > animDuration ? time : animDuration;
 			}
-			anim.name = Models.boneName(data.name);
+			anim.name = data.name;
 			anim.frameCount = Std.int(float32(animDuration * FRAMERATE)) + 1;
 			anim.framePoses = [];
 			for (j in 0...anim.frameCount) {
@@ -407,6 +407,167 @@ class Animations {
 			vector3LerpInto(sa, sb, blend, pose.scale);
 			setPose(model, boneIndex, pose);
 		}
+	}
+
+	/** Poses a model by two animations mixed bone by bone (helix-raylib's `UpdateModelAnimationMasked`): each bone's pose relative to its
+		parent taken from each animation's frame as `updateBonesEx` takes them, mixed by its weight times blend, then put in the model by
+		its parents as `buildPoseFromParentJoints` puts them. With `BLEND_ROTATION_MODEL`, a weighted bone's rotation is instead each
+		animation's own in the model, mixed by its weight. The blend is clamped to [0, 1]. Refused for a model without bones or an
+		animation without frames. Refused, with the reason logged, for a mask or an animation of another count of bones than the model's.
+
+		@param model  The model.
+		@param animA  The first animation.
+		@param frameA  Its frame, fractional.
+		@param animB  The second animation.
+		@param frameB  Its frame, fractional.
+		@param boneWeights  Each bone's share of the second, 0 to 1.
+		@param blend  How much of the second the weighted bones take.
+		@param rotationSpace  `BLEND_ROTATION_LOCAL` (0) or `BLEND_ROTATION_MODEL` (1).
+		@return  False when refused. */
+	public static function updateBonesMasked(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, boneWeights:Array<Float>,
+			blend:Float, rotationSpace:Int):Bool {
+		if (model.boneMatrices == null || model.bones == null)
+			return false;
+		if (animA.frameCount <= 0 || animA.framePoses == null || animB.frameCount <= 0 || animB.framePoses == null)
+			return false;
+		blend = Clamp(blend, 0, 1);
+		var count = model.boneCount;
+		if (boneWeights.length != count || animA.boneCount != count || animB.boneCount != count) {
+			Runtime.log(4,
+				'MODEL: UpdateModelAnimationMasked: the model has $count bones, the mask ${boneWeights.length}, the animations ' +
+				'${animA.boneCount} and ${animB.boneCount}');
+			return false;
+		}
+		var localA = localFrames(animA), localB = localFrames(animB);
+		var currentFrameA = truncate(frameA) % animA.frameCount;
+		var nextFrameA = (currentFrameA + 1) % animA.frameCount;
+		var blendA = Clamp(frameA - currentFrameA, 0, 1);
+		var currentFrameB = truncate(frameB) % animB.frameCount;
+		var nextFrameB = (currentFrameB + 1) % animB.frameCount;
+		var blendB = Clamp(frameB - currentFrameB, 0, 1);
+		var poses = posed(model);
+		var ta = mixA.translation, ra = mixA.rotation, sa = mixA.scale;
+		var tb = mixB.translation, rb = mixB.rotation, sb = mixB.scale;
+		var t = mixed.translation, r = mixed.rotation, s = mixed.scale;
+		for (boneIndex in 0...count) {
+			var a0 = localA[currentFrameA][boneIndex],
+				a1 = localA[nextFrameA][boneIndex];
+			var b0 = localB[currentFrameB][boneIndex],
+				b1 = localB[nextFrameB][boneIndex];
+			vector3LerpInto(a0.translation, a1.translation, blendA, ta);
+			quaternionSlerpInto(a0.rotation, a1.rotation, blendA, ra);
+			vector3LerpInto(a0.scale, a1.scale, blendA, sa);
+			vector3LerpInto(b0.translation, b1.translation, blendB, tb);
+			quaternionSlerpInto(b0.rotation, b1.rotation, blendB, rb);
+			vector3LerpInto(b0.scale, b1.scale, blendB, sb);
+			var weight = Clamp(boneWeights[boneIndex] * blend, 0, 1);
+			vector3LerpInto(ta, tb, weight, t);
+			quaternionSlerpInto(ra, rb, weight, r);
+			vector3LerpInto(sa, sb, weight, s);
+			var pose = poses[boneIndex],
+				parent = model.bones[boneIndex].parent;
+			if (parent < 0 || parent >= boneIndex)
+				copyInto(mixed, pose);
+			else
+				composeInto(poses[parent], mixed, pose);
+			if (rotationSpace == 1 && weight > 0) {
+				// Each animation's rotation in the model, from its own frames there, mixed by the weight.
+				quaternionSlerpInto(animA.framePoses[currentFrameA][boneIndex].rotation, animA.framePoses[nextFrameA][boneIndex].rotation, blendA, modelA);
+				quaternionSlerpInto(animB.framePoses[currentFrameB][boneIndex].rotation, animB.framePoses[nextFrameB][boneIndex].rotation, blendB, modelB);
+				quaternionSlerpInto(modelA, modelB, weight, pose.rotation);
+			}
+			setPose(model, boneIndex, pose);
+		}
+		return true;
+	}
+
+	// The pose updateBonesMasked mixes for a bone, relative to its parent, before it's put in the model.
+	static final mixed = new Transform();
+
+	// The two animations' rotations in the model that updateBonesMasked mixes for a weighted bone with BLEND_ROTATION_MODEL.
+	static final modelA = new Quaternion(0, 0, 0, 1);
+	static final modelB = new Quaternion(0, 0, 0, 1);
+
+	// An animation's frames relative to each bone's parent, worked out from its frames in the model the first time and kept on it: each
+	// bone's pose taken back out of its parent's, the inverse of buildPoseFromParentJoints.
+	static function localFrames(anim:ModelAnimation):Array<Array<Transform>> {
+		if (anim.localPoses != null)
+			return anim.localPoses;
+		var bones = anim.bones;
+		var out = [];
+		for (frame in anim.framePoses) {
+			var local = [];
+			for (i => pose in frame) {
+				var parent = bones == null ? -1 : bones[i].parent;
+				var l = new Transform();
+				if (parent < 0 || parent >= i)
+					copyInto(pose, l);
+				else
+					uncomposeInto(frame[parent], pose, l);
+				local.push(l);
+			}
+			out.push(local);
+		}
+		return anim.localPoses = out;
+	}
+
+	// out = a transform copied, its vectors kept.
+	static function copyInto(from:Transform, out:Transform):Void {
+		var t = from.translation, r = from.rotation, s = from.scale;
+		out.translation.x = t.x;
+		out.translation.y = t.y;
+		out.translation.z = t.z;
+		out.rotation.x = r.x;
+		out.rotation.y = r.y;
+		out.rotation.z = r.z;
+		out.rotation.w = r.w;
+		out.scale.x = s.x;
+		out.scale.y = s.y;
+		out.scale.z = s.z;
+	}
+
+	// out = local put in its parent, as buildPoseFromParentJoints puts it: the parent's rotation times local's, the scales multiplied,
+	// local's translation scaled by the parent's, turned by its rotation and moved by its translation.
+	static function composeInto(parent:Transform, local:Transform, out:Transform):Void {
+		var pr = parent.rotation, ps = parent.scale, pt = parent.translation;
+		var lr = local.rotation, ls = local.scale, lt = local.translation;
+		multiplyInto(pr.x, pr.y, pr.z, pr.w, lr.x, lr.y, lr.z, lr.w, out.rotation);
+		out.scale.x = ls.x * ps.x;
+		out.scale.y = ls.y * ps.y;
+		out.scale.z = ls.z * ps.z;
+		rotateInto(lt.x * ps.x, lt.y * ps.y, lt.z * ps.z, pr.x, pr.y, pr.z, pr.w, out.translation);
+		out.translation.x += pt.x;
+		out.translation.y += pt.y;
+		out.translation.z += pt.z;
+	}
+
+	// out = a pose in the model taken back out of its parent's: composeInto undone.
+	static function uncomposeInto(parent:Transform, pose:Transform, out:Transform):Void {
+		var pr = parent.rotation, ps = parent.scale, pt = parent.translation;
+		var r = pose.rotation, s = pose.scale, t = pose.translation;
+		multiplyInto(-pr.x, -pr.y, -pr.z, pr.w, r.x, r.y, r.z, r.w, out.rotation);
+		out.scale.x = ps.x == 0 ? 0 : s.x / ps.x;
+		out.scale.y = ps.y == 0 ? 0 : s.y / ps.y;
+		out.scale.z = ps.z == 0 ? 0 : s.z / ps.z;
+		rotateInto(t.x - pt.x, t.y - pt.y, t.z - pt.z, -pr.x, -pr.y, -pr.z, pr.w, out.translation);
+		out.translation.x = ps.x == 0 ? 0 : out.translation.x / ps.x;
+		out.translation.y = ps.y == 0 ? 0 : out.translation.y / ps.y;
+		out.translation.z = ps.z == 0 ? 0 : out.translation.z / ps.z;
+	}
+
+	// out = the quaternion a times b, raymath's QuaternionMultiply.
+	static function multiplyInto(ax:Float, ay:Float, az:Float, aw:Float, bx:Float, by:Float, bz:Float, bw:Float, out:Quaternion):Void {
+		out.x = ax * bw + aw * bx + ay * bz - az * by;
+		out.y = ay * bw + aw * by + az * bx - ax * bz;
+		out.z = az * bw + aw * bz + ax * by - ay * bx;
+		out.w = aw * bw - ax * bx - ay * by - az * bz;
+	}
+
+	// out = the vector turned by the quaternion, raymath's Vector3RotateByQuaternion.
+	static function rotateInto(x:Float, y:Float, z:Float, qx:Float, qy:Float, qz:Float, qw:Float, out:Vector3):Void {
+		out.x = x * (qx * qx + qw * qw - qy * qy - qz * qz) + y * (2 * qx * qy - 2 * qw * qz) + z * (2 * qx * qz + 2 * qw * qy);
+		out.y = x * (2 * qw * qz + 2 * qx * qy) + y * (qw * qw - qx * qx + qy * qy - qz * qz) + z * (-2 * qw * qx + 2 * qy * qz);
+		out.z = x * (-2 * qw * qy + 2 * qx * qz) + y * (2 * qw * qx + 2 * qy * qz) + z * (qw * qw - qx * qx - qy * qy + qz * qz);
 	}
 
 	// The model's pose, a transform a bone, each with vectors of its own that the posing functions write into: made the first time.

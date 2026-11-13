@@ -80,8 +80,9 @@ class AnimBits {
 			LoadModelAnimationsAsync(file, a -> anims = a, e -> throw e);
 			pump(() -> anims != null);
 			line('model ${model.meshCount} ${model.materialCount} ${model.boneCount}');
+			// Names as raylib's C prints them, its struct holding 31 bytes: helix-raylib keeps them whole, and these are ASCII.
 			for (b in 0...model.boneCount) {
-				line('bone $b ${model.bones[b].name} ${model.bones[b].parent}');
+				line('bone $b ${model.bones[b].name.substr(0, 31)} ${model.bones[b].parent}');
 				tr('bind $b', model.bindPose[b]);
 			}
 			for (i => m in model.meshes) {
@@ -97,7 +98,7 @@ class AnimBits {
 			}
 			line('anims ${anims.length}');
 			for (a => an in anims) {
-				line('anim $a ${an.name} ${an.frameCount} ${an.boneCount} ${IsModelAnimationValid(model, an) ? 1 : 0}');
+				line('anim $a ${an.name.substr(0, 31)} ${an.frameCount} ${an.boneCount} ${IsModelAnimationValid(model, an) ? 1 : 0}');
 				for (k in [0, 1, 7, 30, an.frameCount - 1]) {
 					if (k >= an.frameCount)
 						continue;
