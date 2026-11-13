@@ -4,15 +4,46 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 
 ## Packages
 
-- [`helix.formats.audio`](audio.md): AudioHeader
-- [`helix.formats.bmfont`](bmfont.md): BmFontChar, BmFontFile, BmFontKerning, BmFontPage
-- [`helix.formats.deflate`](deflate.md): Deflate
-- [`helix.formats.gif`](gif.md): GifDisposal, GifFile, GifFrame
-- [`helix.formats.gltf`](gltf.md): GltfAnimation, GltfChannel, GltfFile, GltfImage, GltfMaterial, GltfMesh, GltfNode, GltfPrimitive, GltfSampler, GltfSkin
-- [`helix.formats.obj`](obj.md): MtlFile, MtlMaterial, ObjFile, ObjGroup, ObjPart
-- [`helix.formats.png`](png.md): PngFile
-- [`helix.formats.qoa`](qoa.md): QoaFile
-- [`helix.formats.qoi`](qoi.md): QoiFile
-- [`helix.formats.text`](text.md): Utf8Text
-- [`helix.formats.truetype`](truetype.md): TrueTypeTables
-- [`helix.formats.wav`](wav.md): WavEncoding, WavFile
+- [`helix.formats.audio`](audio.md)
+  - [AudioHeader](audio.md#audioheader)
+- [`helix.formats.bmfont`](bmfont.md)
+  - [BmFontChar](bmfont.md#bmfontchar)
+  - [BmFontFile](bmfont.md#bmfontfile)
+  - [BmFontKerning](bmfont.md#bmfontkerning)
+  - [BmFontPage](bmfont.md#bmfontpage)
+- [`helix.formats.deflate`](deflate.md)
+  - [Deflate](deflate.md#deflate)
+- [`helix.formats.gif`](gif.md)
+  - [GifDisposal](gif.md#gifdisposal)
+  - [GifFile](gif.md#giffile)
+  - [GifFrame](gif.md#gifframe)
+- [`helix.formats.gltf`](gltf.md)
+  - [GltfAnimation](gltf.md#gltfanimation)
+  - [GltfChannel](gltf.md#gltfchannel)
+  - [GltfFile](gltf.md#gltffile)
+  - [GltfImage](gltf.md#gltfimage)
+  - [GltfMaterial](gltf.md#gltfmaterial)
+  - [GltfMesh](gltf.md#gltfmesh)
+  - [GltfNode](gltf.md#gltfnode)
+  - [GltfPrimitive](gltf.md#gltfprimitive)
+  - [GltfSampler](gltf.md#gltfsampler)
+  - [GltfSkin](gltf.md#gltfskin)
+- [`helix.formats.obj`](obj.md)
+  - [MtlFile](obj.md#mtlfile)
+  - [MtlMaterial](obj.md#mtlmaterial)
+  - [ObjFile](obj.md#objfile)
+  - [ObjGroup](obj.md#objgroup)
+  - [ObjPart](obj.md#objpart)
+- [`helix.formats.png`](png.md)
+  - [PngFile](png.md#pngfile)
+- [`helix.formats.qoa`](qoa.md)
+  - [QoaFile](qoa.md#qoafile)
+- [`helix.formats.qoi`](qoi.md)
+  - [QoiFile](qoi.md#qoifile)
+- [`helix.formats.text`](text.md)
+  - [Utf8Text](text.md#utf8text)
+- [`helix.formats.truetype`](truetype.md)
+  - [TrueTypeTables](truetype.md#truetypetables)
+- [`helix.formats.wav`](wav.md)
+  - [WavEncoding](wav.md#wavencoding)
+  - [WavFile](wav.md#wavfile)

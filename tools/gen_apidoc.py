@@ -1,7 +1,8 @@
 """Generate the libraries' API reference from their doc comments: as HTML with dox (pinned in dependencies.json) into build/api, and as
-Markdown in each library's api/ directory, committed, so the repository carries a readable reference: api/README.md holds the
-library's own package and lists the rest, a file each with its types' public members (helix.services.audio in libs/services/api/audio.md),
-and the platform's adapters together in libs/platform/api/adapters.md.
+Markdown in each library's api/ directory, committed, so the repository carries a readable reference: api/README.md is the library's
+index, listing its pages: a file each package with its types' public members (the library's own package in types.md, helix.services.audio
+in libs/services/api/audio.md), the platform's adapters together in libs/platform/api/adapters.md, and a library's defines in
+defines.md.
 
 The reference is what a program writes against: a type or member marked @:noCompletion is a library's own (an adapter's internals,
 checked by tools/check_adapters.py), hidden from the language server and left out here as dox leaves it out. Haxe describes the code
@@ -124,6 +125,10 @@ def same_on_both(js,cpp):
     if differ:
         sys.exit('gen_apidoc: js and cpp describe the API differently (engine code has no target conditional):\n  '+'\n  '.join(differ))
 
+def anchor(heading):
+    """The anchor GitHub gives a heading: lower case, its spaces as hyphens, its other punctuation dropped."""
+    return re.sub(r'[^\w\- ]','',heading.lower()).replace(' ','-')
+
 def short(path):
     """A type's name without its package."""
     return path.rsplit('.',1)[-1]
@@ -133,10 +138,10 @@ def page_package(path):
     return ADAPTERS if adapter(path) else path.rsplit('.',1)[0]
 
 def package_file(package):
-    """The Markdown file a package's page is, from the checkout's root: in its library's api/ directory, README.md for the library's own
+    """The Markdown file a package's page is, from the checkout's root: in its library's api/ directory, types.md for the library's own
     package and the rest by their names below it (helix.services.audio is libs/services/api/audio.md)."""
     parts=package.split('.')
-    return (pins.LIBRARIES['helix-'+parts[1]].relative_to(ROOT)/'api'/('README.md' if len(parts)==2 else '-'.join(parts[2:])+'.md')).as_posix()
+    return (pins.LIBRARIES['helix-'+parts[1]].relative_to(ROOT)/'api'/('types.md' if len(parts)==2 else '-'.join(parts[2:])+'.md')).as_posix()
 
 def type_text(node,known):
     """A type as Haxe writes it, from the XML's type element, helix's own types by their short names (the index finds them)."""
@@ -442,19 +447,23 @@ def markdown(xml,native=frozenset()):
                         if len(f):lines.append(f'- `{f.tag}:{type_text(list(f)[0],known)}`'+(f': {doc_text(f)}' if doc_text(f) else ''))
                 else:lines.append(f'An alias of `{type_text(inner[0],known)}`.')
                 lines.append('')
-        index.setdefault(file,[]).append((path,doc));files.setdefault(file,[]).append('\n'.join(lines))
-    # A page a package, and a library's README.md its own package's (or none, when it has no types of its own) with the rest listed.
+        index.setdefault(file,[]).append((path,header));files.setdefault(file,[]).append('\n'.join(lines))
+    # A page a package, and a library's README.md its index: its packages, the library's own first, its shader includes and its defines.
     out={}
     libraries={}
     for package in files:libraries.setdefault('.'.join(package.split('.')[:2]),[]).append(package)
     for library,packages in sorted(libraries.items()):
-        others=[p for p in sorted(packages) if p!=library]
-        for package in others:
+        ordered=sorted(packages,key=lambda p:(p!=library,p))
+        for package in ordered:
             out[package_file(package)]='\n'.join([f'# {package}','','[Back to the library](README.md)','']+files[package]).rstrip('\n')+'\n'
-        lines=[f'# {library}','','Generated from the doc comments by `tools/gen_apidoc.py`.','']
-        if others:lines+=['## Packages','']+[f'- [`{p}`]({Path(package_file(p)).name}): '+', '.join(short(t) for t,_ in index[p]) for p in others]+['']
+        lines=[f'# {library}','','Generated from the doc comments by `tools/gen_apidoc.py`.','','## Packages','']
+        for p in ordered:
+            page=Path(package_file(p)).name
+            lines+=[f'- [`{p}`]({page})']+[f'  - [{short(t)}]({page}#{anchor(h)})' for t,h in index[p]]
+        lines.append('')
         if library=='helix.raylib':lines+=['## Shader includes','','[shaders.md](shaders.md): '+', '.join(f'`<helix/raylib/shaders/{n}>`' for n in INCLUDES),'']
-        out[package_file(library)]='\n'.join(lines+files.get(library,[])).rstrip('\n')+'\n'
+        if library in DEFINES:lines+=['## Defines','','[defines.md](defines.md): the defines a build\'s hxml sets.','']
+        out[Path(package_file(library)).with_name('README.md').as_posix()]='\n'.join(lines).rstrip('\n')+'\n'
     out.update(PAGES)
     out['engines/raylib/api/shaders.md']=includes_page()
     return out
@@ -519,12 +528,16 @@ def main():
     p=cli.parser(__doc__);p.add_argument('--check',action='store_true',help="write nothing; fail when a library's api/ isn't what the sources give")
     generate(check=p.parse_args().check)
 
+# The libraries with defines of their own: their haxelib, the macro registering them, and an example.
+DEFINES={'helix.platform':('helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids'),
+         'helix.raylib':('helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-native-root=../assets')}
+
 def defines_section(env,library,macro,example):
     """A library's defines, as its init macro registers them for the compiler (its Defines.ALL), so the reference and
     haxe --help-user-defines can't differ."""
     done=subprocess.run(['haxe','-lib',library,'--macro',f'{macro}.describe()'],cwd=ROOT,
                         env=env,capture_output=True,text=True,encoding='utf-8',check=True)
-    lines=['## Defines','',f'Set in a build\'s hxml, as `{example}`'+(' (quoted when the value has a space: `-D "helix-company=Whirling Gizmo"`)' if library=='helix-platform' else '')+'. '
+    lines=[f'# {library}\'s defines','','[Back to the library](README.md)','',f'Set in a build\'s hxml, as `{example}`'+(' (quoted when the value has a space: `-D "helix-company=Whirling Gizmo"`)' if library=='helix-platform' else '')+'. '
            '`haxe --help-user-defines` lists them too, and an editor completes them in an hxml file.','']
     for define in json.loads(done.stdout.strip().splitlines()[-1]):
         params=''.join(f'=<{p}>' for p in define.get('params',[]))
@@ -558,8 +571,8 @@ def generate(check=False):
     leaked=leaks(OUT/'xml/api.xml')
     if leaked:sys.exit('gen_apidoc: shown members name hidden (@:noCompletion) types; hide or privatize the member, or show the type:\n  '+'\n  '.join(leaked))
     pages=markdown(OUT/'xml/api.xml',native)
-    pages['libs/platform/api/README.md']=pages['libs/platform/api/README.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids')
-    pages['engines/raylib/api/README.md']=pages['engines/raylib/api/README.md'].rstrip('\n')+'\n\n'+defines_section(env,'helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-native-root=../assets')
+    for library,(name,macro,example) in DEFINES.items():
+        pages[Path(package_file(library)).with_name('defines.md').as_posix()]=defines_section(env,name,macro,example)
     # A departure from raylib is answered where it's met: every name a doc or a refusal gives is one the program can look up.
     unknown=unknown_names(OUT/'xml/api.xml',pages)
     if unknown:sys.exit("gen_apidoc: helix-raylib's docs name what no reference shows; name what the program uses, or the name's owner "
