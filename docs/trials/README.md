@@ -60,3 +60,7 @@ python3 docs/trials/wardens/run_entrant.py /home/rknopf/projects/local/helix/tri
 python3 docs/trials/wardens/score_page.py /home/rknopf/projects/local/helix/trials/wardens/helix-raylib-blind.00* --helix ../helix-blind-a
 python3 docs/trials/wardens/score_frames.py /home/rknopf/projects/local/helix/trials/wardens/*-blind.00? --helix ../helix-blind-a --headed
 ```
+
+`run_entrant.py --trial` makes an entrant from another trial's variant in place of Wardens, as
+[the masked blend's](2026-11-13-masked-blend) `module` and `control`: the variant's brief and files, its trial's task and build file, and
+the Wardens assets its `assets.txt` lists.

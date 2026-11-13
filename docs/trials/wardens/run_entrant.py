@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Runs one entrant of the native blind trial (../README.md): claude -p in its own directory, on a private display, with no sound.
 
-    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c] [--model sonnet] [--hours 3] [--command CMD]
+    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c] [--trial <variant>] [--model sonnet] [--hours 3]
+        [--command CMD]
 
 The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
 (docs/examples), with the engine's own files:
@@ -26,6 +27,10 @@ else in the home is hidden (the other checkouts and entrants, keys), and so are 
 /run sockets (PulseAudio, D-Bus) and /tmp, which is its own but for the X server's socket. The JSON result (usage, cost, turns, duration) goes to result.json, stderr to stderr.log, the start and
 end to run.log.
 
+--trial names another trial's variant to make the entrant from in place of Wardens (helix-raylib only), as
+../2026-11-13-masked-blend/module: the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
+beside it (task.md, build.hxml), the assets its assets.txt lists from Wardens' assets/, and raylib 5.5's headers and C examples.
+
 --command runs a shell command in the entrant's environment in place of claude, to check the harness."""
 import argparse
 import os
@@ -45,10 +50,27 @@ def log(entrant, line):
     with open(entrant / 'run.log', 'a', encoding='utf-8') as f:
         f.write(datetime.now().astimezone().isoformat(timespec='seconds') + ' ' + line + '\n')
 
-def make(entrant, engine):
-    """Makes the entrant's directory from the trial's files and raylib 5.5's."""
+def make(entrant, engine, trial=None):
+    """Makes the entrant's directory from the trial's files and raylib 5.5's, or from another trial's variant."""
     import raylib_parity
     raylib = raylib_parity.raylib('5.5')
+    if trial:
+        shutil.copytree(trial, entrant)
+        for path in trial.parent.iterdir():
+            if path.is_file() and path.name != 'assets.txt':
+                shutil.copy(path, entrant / path.name)
+        for name in (trial.parent / 'assets.txt').read_text(encoding='utf-8').split():
+            (entrant / 'assets' / name).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(HERE / 'assets' / name, entrant / 'assets' / name)
+        brief = (entrant / 'brief.md').read_text(encoding='utf-8')
+        (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
+        with open(entrant / 'build.hxml', 'a', encoding='utf-8') as f:
+            f.write(f'-D helix-company=helix-trials\n-D helix-product={entrant.name}\n')
+        (entrant / 'docs/include').mkdir(parents=True)
+        for header in ('src/raylib.h', 'src/raymath.h', 'src/rlgl.h'):
+            shutil.copy(raylib / header, entrant / 'docs/include')
+        shutil.copytree(raylib / 'examples', entrant / 'docs/examples')
+        return
     entrant.mkdir(parents=True)
     own = HERE / ('native' if engine == 'helix' else 'native-c')
     brief = (own / 'brief.md').read_text(encoding='utf-8')
@@ -113,6 +135,7 @@ def main():
     parser.add_argument('--engine', choices=('helix', 'c'), default='helix')
     parser.add_argument('--model', default='sonnet')
     parser.add_argument('--hours', type=float, default=3)
+    parser.add_argument('--trial', type=Path)
     parser.add_argument('--command')
     args = parser.parse_args()
     entrant = args.entrant.resolve()
@@ -125,7 +148,7 @@ def main():
     if subprocess.run(['git', '-C', str(probe), 'rev-parse'], capture_output=True).returncode == 0:
         sys.exit(f'run_entrant: {entrant} is inside a git repository, whose commit messages the entrant would read')
     if not entrant.exists():
-        make(entrant, args.engine)
+        make(entrant, args.engine, args.trial.resolve() if args.trial else None)
     elif not args.command:
         sys.exit(f'run_entrant: {entrant} is there already; an entrant starts from a directory of its own')
 
