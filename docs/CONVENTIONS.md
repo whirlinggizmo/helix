@@ -61,6 +61,7 @@ dropped.
 | Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)`, `window.requestSize(800, 600)` |
 | An action | a verb | `window.close()`, `audio.stop(voice)`, `assets.load(path, done)` |
 | A count or a limit | a property naming what it counts, ending in `Count`; an array of counts ends in `Counts`; the limit first | `events.gamepadCount`, `graphics.msaaSampleCount`, `graphics.maxMsaaSampleCount`, `wav.channelCount` |
+| How far a sequence runs | `length`, or a name ending in `Length`, in the sequence's own elements (a string's characters, an array's items, a buffer's bytes), its positions 0 to the length less one | `bytes.length`, `bytes(buffer, messageLength, arrivalTime)` |
 | An index | a property naming what it indexes, ending in `Index`; an array of indices ends in `Indices`. A mesh's vertex indices stay `indices`, as glTF and raylib name them | `GltfNode.meshIndex`, `GltfMaterial.baseColorImageIndex`, `Model3D.meshMaterialIndices`, `Mesh3D.indices` |
 | Fill what it's given | a verb, not a property | `camera.computeRay(x, y, ray)`, `node.computeWorld(out)` |
 | A command for what follows in a pass | `applyX(...)` (sokol's word) | `graphics.applyViewport(...)`, `graphics.applyScissor(...)` |
@@ -70,7 +71,10 @@ dropped.
 - **A parameter holding a count or an index is named as such a property would be:** `window.getMonitorX(monitorIndex)`,
   `Mesh3D.fromSphere(radius, sliceCount, stackCount)`, `gltf.setBuffer(bufferIndex, bytes)`. A handle, an id or a slot is neither, and
   keeps its own noun (`audio.stop(voice)`, `gamepads.getAxis(slot, axis)`, `touch.getX(id)`); a number of bytes is a size, named for
-  its unit (`capacityBytes`, `usedBytes`). `tools/check_names.py` checks every field and parameter whose doc comment calls it an index
+  its unit (`capacityBytes`, `usedBytes`). A count and a length differ: a count is how many of a kind there are, the things apart
+  (`boneCount`, `vertexCount`), and a length is how far one sequence runs, indexed from 0 (`messageLength`, the part of a buffer a
+  message fills); a size is an amount of memory or storage, not a run of a sequence (`getWaitingBytes`). What's indexed has a length;
+  what's asked "how many" has a count. `tools/check_names.py` checks every field and parameter whose doc comment calls it an index
   or a number of things.
 - **A value is a property.** One that must act when assigned has a `set_` accessor; one read back from somewhere else has a `get_`;
   one nothing may assign is `(default, null)`. A record made whole and never changed after (`Touch`, a parsed header, a progress
