@@ -129,9 +129,12 @@ speed where docs/benchmarks.md records them.
   browser APIs' adapters are, and `HaxeWebSocketAdapter` natively, Haxe's sockets with the TLS hxcpp ships and the protocol's handshake and
   frames in Haxe on a thread, as `HaxeHttpAdapter` is written; nothing to install (goal 6). Tested against a local echo server on Node and
   natively: a scripted exchange, a server closing first, a frame split across reads, a large binary message. Above it a service for policy:
-  reconnecting with a backoff, queuing while disconnected, heartbeats. Later, a transport unreliable and unordered for fast games (WebRTC's
-  data channels in a page, UDP natively, likely through a C binding), and netcode above the transports (state kept in step, prediction and
-  rollback, lobbies), with the user's vfstudio and vfcore for ideas.
+  reconnecting with a backoff, queuing while disconnected, heartbeats. After it, `IWebTransport`, for fast games: one connection to a
+  server over HTTP/3 carrying datagrams, unreliable and unordered, and streams, reliable and ordered and many at once. In a page the
+  browser's WebTransport (`DomWebTransportAdapter`), so no Wasm; natively a QUIC library (msquic, quiche or ngtcp2) through the C binding,
+  its native half alone, as QUIC needs TLS 1.3, which hxcpp's TLS predates; WebSocket the fallback where a browser lacks it, WebRTC's data
+  channels only for peer to peer. Later, and netcode above the transports (state kept in step, prediction and rollback, lobbies), with the
+  user's vfstudio and vfcore for ideas.
 - **A C library through the C ABI, Box2D 3.x first (GOALS 5):** the pattern every C library follows, proved on one. A flat C file of the
   library's calls shaped for bulk work (a step, poses read into a buffer the caller owns, events read the same way), compiled from its
   pinned source into a native program by hxcpp, and built from the same source into a `.wasm` the library ships, fetched only by a
