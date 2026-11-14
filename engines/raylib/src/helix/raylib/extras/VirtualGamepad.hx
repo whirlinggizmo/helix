@@ -21,7 +21,8 @@ import helix.raylib.modules.RVirtualGamepad;
 	slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
 	A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a
-	finger landing on one of them. A free finger counts as the mouse, and as a touch point, as every finger
+	finger landing on one of them. A finger landing within the blocked bounds (`VirtualGamepadOptions.blockedBounds`) stays a free
+	finger. A free finger counts as the mouse, and as a touch point, as every finger
 	does without a virtual gamepad. A captured finger is neither: the touch functions list the free fingers.
 
 	The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch, its buttons and fixed sticks are

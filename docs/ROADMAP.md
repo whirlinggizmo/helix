@@ -154,6 +154,9 @@ speed where docs/benchmarks.md records them.
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
   and `Mouse`, as helix-legacy's `PointerGestures` and touch gesture had them.
+- **A UI toolkit beyond raygui, HaxeUI first:** components, layouts and styles at Godot's Control and Theme's reach, through the DOM in
+  a page and in Electron and drawn by helix natively, one Haxe API over both. Measured first: what haxeui-core adds to a page, and
+  whether a helix backend drawing it natively keeps up with the DOM backend.
 - **From a jam game's friction log (F numbers), for the layers that own them:**
   - helix-scene: `find` by name and kind, `addChildAt`, `getChildIndex`, `removeChildAt`, `contains` (F1, F2, F4); text pivot or
     vertical align (F20); a sprite keeping its sheet and index across a reload (F56); a matrix transform, so skew (F57); a pointer

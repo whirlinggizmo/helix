@@ -32,10 +32,12 @@ import helix.raylib.*;
 		zone's center. */
 	@:optional public var fixedBasePosition:Null<Vector2>;
 
-	/** Gets or sets how far the knob travels for a full push. Defaults to 60. */
+	/** Gets or sets how far the knob travels for a full push, in the screen's pixels. Defaults to 60. */
 	@:optional public var radius:Null<Float>;
 
-	/** Gets or sets how far the knob moves before the stick reads, as a share of the radius. */
+	/** Gets or sets how far the knob moves before the stick reads, as a share of the radius, 0 to 1. Defaults to the gamepad's `deadZone`.
+
+		Past the dead zone, the stick reads from 0, rising evenly to 1 at the radius in any direction from the base. */
 	@:optional public var deadZone:Null<Float>;
 
 	/** Gets or sets a value indicating whether the stick's hint is visible until the first touch. */

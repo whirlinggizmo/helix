@@ -12,7 +12,7 @@ The first touch anywhere on the screen plugs an enabled virtual gamepad in, and 
 
 A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
-A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a finger landing on one of them. A free finger counts as the mouse, and as a touch point, as every finger does without a virtual gamepad. A captured finger is neither: the touch functions list the free fingers.
+A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a finger landing on one of them. A finger landing within the blocked bounds (`VirtualGamepadOptions.blockedBounds`) stays a free finger. A free finger counts as the mouse, and as a touch point, as every finger does without a virtual gamepad. A captured finger is neither: the touch functions list the free fingers.
 
 The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch, its buttons and fixed sticks are drawn from the moment it's enabled, and every other stick while it has captured a finger. A program drawing its own controls sets their `visible` to false and draws from `IsVirtualGamepadVisible`, `IsVirtualStickHeld`, `GetVirtualStickBase` and `GetVirtualStickKnob`. The virtual gamepad is hidden while a physical gamepad is in its slot.
 
@@ -112,7 +112,8 @@ var buttons:Null<Array<VirtualButtonOptions>>
 ```
 
 - `basePlacement`: Gets or sets where each stick's base goes: `VIRTUAL_STICK_BASE_FLOATING`, `VIRTUAL_STICK_BASE_FOLLOWING` or `VIRTUAL_STICK_BASE_FIXED`. Defaults to `VIRTUAL_STICK_BASE_FLOATING`.
-- `deadZone`: Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. A push past the dead zone reads from 0. Defaults to 0.12. A game's own dead zone applies on top.
+- `deadZone`: Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. Defaults to 0.12.
+  Past the dead zone, a stick reads from 0, rising evenly to 1 at the radius in any direction from the base. A game's own dead zone applies on top.
 - `hintVisible`: Gets or sets a value indicating whether each floating or following stick's hint is visible until the first touch. The hint is a fainter copy of the stick at rest, centered one and a half radii in from the touch zone's bottom outer corner, on a device with touch. Defaults to true.
 - `baseOutlineColor`: Gets or sets each stick's ring around the base. Defaults to `Fade(LIGHTGRAY, 0.5)`. The hint is this ring, fainter.
 - `baseFillColor`: Gets or sets each stick's disc inside the ring. Defaults to `BLANK`.
@@ -162,8 +163,9 @@ var knobTexture:Null<Texture2D>
   A tilt stick is hidden and ignores fingers. The tilt plugs the virtual gamepad in once the tilt is on, as a touch does. A tilt stick reads 0 until the tilt is on and level (`GetTiltStatus`, `IsTiltCalibrating`).
 - `basePlacement`: Gets or sets where the base goes.
 - `fixedBasePosition`: Gets or sets where the base stays with `VIRTUAL_STICK_BASE_FIXED`. The base follows changes to this vector's fields. Defaults to the touch zone's center.
-- `radius`: Gets or sets how far the knob travels for a full push. Defaults to 60.
-- `deadZone`: Gets or sets how far the knob moves before the stick reads, as a share of the radius.
+- `radius`: Gets or sets how far the knob travels for a full push, in the screen's pixels. Defaults to 60.
+- `deadZone`: Gets or sets how far the knob moves before the stick reads, as a share of the radius, 0 to 1. Defaults to the gamepad's `deadZone`.
+  Past the dead zone, the stick reads from 0, rising evenly to 1 at the radius in any direction from the base.
 - `hintVisible`: Gets or sets a value indicating whether the stick's hint is visible until the first touch.
 - `visible`: Gets or sets a value indicating whether the stick is visible. A stick that isn't visible still reads. Defaults to true.
 - `baseOutlineColor`: Gets or sets the ring around the base.

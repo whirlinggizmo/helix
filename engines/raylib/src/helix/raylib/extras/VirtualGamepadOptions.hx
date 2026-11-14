@@ -11,8 +11,10 @@ import helix.raylib.*;
 		Defaults to `VIRTUAL_STICK_BASE_FLOATING`. */
 	@:optional public var basePlacement:Null<Int>;
 
-	/** Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. A push past the dead zone reads from 0.
-		Defaults to 0.12. A game's own dead zone applies on top. */
+	/** Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. Defaults to 0.12.
+
+		Past the dead zone, a stick reads from 0, rising evenly to 1 at the radius in any direction from the base. A game's own dead zone
+		applies on top. */
 	@:optional public var deadZone:Null<Float>;
 
 	/** Gets or sets a value indicating whether each floating or following stick's hint is visible until the first touch. The hint is a
