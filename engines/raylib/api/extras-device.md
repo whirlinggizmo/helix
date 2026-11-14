@@ -46,6 +46,9 @@ static function GetWindowSafeArea():Rectangle
 static function GetPlatformOS():String
 static function IsTouchAvailable():Bool
 static function IsFinePointerAvailable():Bool
+static function EnableTouchEmulation():Void
+static function DisableTouchEmulation():Void
+static function IsTouchEmulated():Bool
 static function IsWindowCloseable():Bool
 static function IsFullscreenAvailable():Bool
 static function SetScreenOrientationAsync(orientation:Int, ?done:() -> Void, ?failed:String -> Void):Void
@@ -78,6 +81,19 @@ static function CalibrateTilt():Void
   - returns: True with a fine pointer.
 
   False on a phone or a tablet alone.
+- `EnableTouchEmulation`: Enables touch emulation: the left mouse button works as one finger. See `DisableTouchEmulation` for ending touch emulation.
+  A press of the left mouse button lands a finger at the pointer, and releasing the left mouse button lifts the finger. The touch functions (`GetTouchPointCount`, `GetTouchPosition`, `GetTouchPointId`) and the virtual gamepad (`VirtualGamepad`) read the finger as a touch.
+
+  The finger counts as a touch does: a free finger counts as the mouse and as a touch point, and a finger the virtual gamepad captures is neither.
+
+  On a device with touch, a touch and the left mouse button both work as fingers.
+
+  Touch emulation takes effect at the next press of the left mouse button, before or after `EnableVirtualGamepad`.
+
+  `IsTouchAvailable` is unchanged.
+- `DisableTouchEmulation`: Disables touch emulation (`EnableTouchEmulation`): the left mouse button works as the mouse alone. A finger down from the left mouse button lifts.
+- `IsTouchEmulated`: Returns whether touch emulation is enabled (`EnableTouchEmulation`).
+  - returns: True while the left mouse button works as a finger.
 - `IsWindowCloseable`: Returns whether `CloseWindow` removes the window. Where it doesn't, the window stays, cleared, and a game may hide its Quit.
   - returns: True where `CloseWindow` removes the window.
 - `IsFullscreenAvailable`: Returns whether the window can go fullscreen. See `ToggleFullscreen` for asking for it.

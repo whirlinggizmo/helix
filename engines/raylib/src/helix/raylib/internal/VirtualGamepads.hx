@@ -116,7 +116,7 @@ class VirtualGamepads implements IPollable {
 		service.poll();
 	}
 
-	// Draws every virtual gamepad over the frame: each button and fixed stick on a device with touch, each held stick, and each stick's hint
+	// Draws every virtual gamepad over the frame: each button and fixed stick on a device with touch or with touch emulation, each held stick, and each stick's hint
 	// until the first touch.
 	static function drawAll():Void {
 		for (gamepad in made)
@@ -317,6 +317,12 @@ private class FreeFingers extends Touch {
 
 	override function get_available():Bool
 		return all.available;
+
+	override function get_emulated():Bool
+		return all.emulated;
+
+	override function set_emulated(value:Bool):Bool
+		return all.emulated = value;
 
 	override function get_fingers():Array<Int>
 		return free(all.fingers);

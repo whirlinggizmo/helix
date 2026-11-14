@@ -218,6 +218,44 @@ class VirtualGamepadTests {
 		check(tilt.calibrating, "taking level again");
 		tilt.releaseAccess();
 		check(!tilt.calibrating, "the tilt released while level is being taken: not calibrating");
+
+		// Touch emulation: the left mouse button works as one finger, read by a second virtual gamepad.
+		virtualGamepad.enabled = false;
+		devices.touchAvailable = false;
+		frame([MouseDown(Left, 200, 300), MouseUp(Left, 200, 300)]);
+		check(touch.pressed.length == 0 && !touch.emulated, "without emulation, the left mouse button lands no finger");
+		var second = new VirtualGamepad(touch, window, devices, 1);
+		check(!second.visible, "no touch, no emulation: the buttons aren't drawn");
+		touch.emulated = true;
+		check(second.visible && second.hintVisible && !touch.available, "with emulation: drawn, and touch still unavailable");
+		frame([MouseDown(Left, 200, 300)]);
+		second.poll();
+		check(touch.isFingerPressed(Touch.EMULATED_FINGER)
+			&& near(touch.getX(Touch.EMULATED_FINGER), 200), "a left press lands the finger at the pointer");
+		check(second.pluggedIn && second.left.held && second.left.finger == Touch.EMULATED_FINGER,
+			"the press plugs it in, and the left stick takes the finger");
+		frame([MouseMove(260, 300)]);
+		second.poll();
+		check(near(touch.getX(Touch.EMULATED_FINGER), 260)
+			&& second.left.x > 0, "the mouse moving moves the finger, and the stick reads it");
+		frame([MouseUp(Left, 260, 300)]);
+		second.poll();
+		check(touch.isFingerReleased(Touch.EMULATED_FINGER)
+			&& touch.fingers.length == 0
+			&& !second.left.held, "releasing the left button lifts the finger");
+		frame([MouseDown(Right, 200, 300), MouseUp(Right, 200, 300)]);
+		check(touch.pressed.length == 0, "the right button lands no finger");
+		frame([MouseDown(Left, 200, 300)]);
+		touch.emulated = false;
+		frame();
+		check(touch.isFingerReleased(Touch.EMULATED_FINGER)
+			&& touch.fingers.length == 0, "turned off while down: the finger lifts at the next poll");
+		devices.touchAvailable = true;
+		touch.emulated = true;
+		frame([TouchDown(20, 100, 100), MouseDown(Left, 500, 300)]);
+		check(touch.fingers.length == 2, "with touch: a touch and the left mouse button both work as fingers");
+		frame([TouchUp(20, 100, 100), MouseUp(Left, 500, 300)]);
+		touch.emulated = false;
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

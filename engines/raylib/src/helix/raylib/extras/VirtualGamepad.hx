@@ -11,8 +11,9 @@ import helix.raylib.modules.RVirtualGamepad;
 	constants: `import helix.raylib.extras.VirtualGamepad.*;`.
 	The example `engines/raylib/examples/extras/virtual_gamepad` uses it.
 
-	The first touch anywhere on the screen plugs an enabled virtual gamepad in, and so does the tilt once it's on, for a tilt stick
-	(`VirtualStickOptions.tilt`). A mouse click leaves the virtual gamepad unplugged. Once
+	The first touch in the window plugs an enabled virtual gamepad in, as does a press of the left mouse button with touch emulation
+	(`EnableTouchEmulation`). A virtual gamepad with a tilt stick (`VirtualStickOptions.tilt`) is plugged in once the tilt is on
+	(`EnableTiltAsync`). Once
 	the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons
 	through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`.
 	`IsGamepadVirtual` tells a virtual gamepad from a physical one.
@@ -25,7 +26,7 @@ import helix.raylib.modules.RVirtualGamepad;
 	finger. A free finger counts as the mouse, and as a touch point, as every finger
 	does without a virtual gamepad. A captured finger is neither: the touch functions list the free fingers.
 
-	The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch, its buttons and fixed sticks are
+	The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch or with touch emulation, its buttons and fixed sticks are
 	drawn from the moment it's enabled, and every other stick while it has captured a finger. A program drawing its own controls sets their `visible`
 	to false and draws from `IsVirtualGamepadVisible`, `IsVirtualStickHeld`, `GetVirtualStickBase` and `GetVirtualStickKnob`. The virtual gamepad is hidden while a physical
 	gamepad is in its slot.
@@ -92,7 +93,8 @@ class VirtualGamepad {
 	public static inline function IsGamepadVirtual(gamepad:Int):Bool
 		return RVirtualGamepad.IsGamepadVirtual(gamepad);
 
-	/** Returns whether the virtual gamepad in a slot is drawn: enabled, on a device with touch, with no physical gamepad in its slot. A
+	/** Returns whether the virtual gamepad in a slot is drawn: enabled, on a device with touch or with touch emulation
+		(`EnableTouchEmulation`), with no physical gamepad in its slot. A
 		program drawing its own sticks (`visible: false`) draws them while this is true.
 
 		@param gamepad  The slot, 0 to 3.

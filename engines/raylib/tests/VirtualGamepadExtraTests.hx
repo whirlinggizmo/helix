@@ -15,7 +15,7 @@ import helix.services.screen.Screen;
 	up and the touch functions, and a free finger tapping a blocked bound as a click there; a physical gamepad replacing it; disabled, unplugged; and a button pressed and released through raylib's
 	gamepad functions, following its position, in a design's pixels too;
 	the default diamond; a button and a stick that aren't visible still reading; the sticks' read-backs; and the tilt's status and a tilt
-	stick. */
+	stick; and touch emulation, the left mouse button as a finger a stick captures or a blocked bound leaves free. */
 @:access(helix.raylib.internal.Runtime)
 class VirtualGamepadExtraTests {
 	static var checks = 0;
@@ -183,6 +183,33 @@ class VirtualGamepadExtraTests {
 		check(!IsTiltCalibrating(), "the tilt turned off while level is being taken: not calibrating");
 		frame([TouchUp(11, 400, 300), TiltState(Refused)]);
 		check(GetTiltStatus() == TILT_STATUS_REFUSED && GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) == 0, "refused: reads 0");
+
+		// Touch emulation: the left mouse button works as a finger.
+		EnableVirtualGamepad(0, {blockedBounds: [pause]});
+		check(!IsTouchEmulated(), "touch emulation off at first");
+		EnableTouchEmulation();
+		check(IsTouchEmulated(), "touch emulation on");
+		frame([MouseDown(Left, 200, 300)]);
+		check(IsVirtualStickHeld(0, VIRTUAL_STICK_LEFT) && !IsMouseButtonDown(MOUSE_BUTTON_LEFT) && GetTouchPointCount() == 0,
+			"a left press on the left half: the stick captures the finger, which is neither the mouse nor a touch point");
+		frame([MouseMove(300, 300)]);
+		check(GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) > 0
+			&& !IsMouseButtonDown(MOUSE_BUTTON_LEFT), "the mouse moving pushes the stick");
+		frame([MouseUp(Left, 300, 300)]);
+		check(!IsVirtualStickHeld(0, VIRTUAL_STICK_LEFT), "the release lets go of the stick");
+		frame([MouseDown(Left, 760, 30)]);
+		check(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && GetTouchPointCount() == 1 && GetTouchPosition(0).x == 760,
+			"a left press on a blocked bound: a free finger, the mouse and a touch point");
+		frame([MouseUp(Left, 760, 30)]);
+		check(IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && GetTouchPointCount() == 0, "its release releases the mouse");
+		DisableTouchEmulation();
+		frame([MouseDown(Left, 200, 300)]);
+		check(!IsTouchEmulated()
+			&& IsMouseButtonDown(MOUSE_BUTTON_LEFT)
+			&& !IsVirtualStickHeld(0, VIRTUAL_STICK_LEFT)
+			&& GetTouchPointCount() == 0,
+			"touch emulation off: the left button is the mouse alone");
+		frame([MouseUp(Left, 200, 300)]);
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

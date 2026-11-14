@@ -794,7 +794,7 @@ class RCore {
 			&& pressed.length > 0
 			&& [for (id in Runtime.touch().fingers) if (pressed.indexOf(id) < 0) id].length == 0)
 			return true;
-		return button >= 0 && button <= 2 && mouse.isButtonPressed(cast button);
+		return button >= 0 && button <= 2 && !emulatedButton(button) && mouse.isButtonPressed(cast button);
 	}
 
 	/** Returns whether a mouse button is held.
@@ -815,7 +815,7 @@ class RCore {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().fingers.length > 0)
 			return true;
-		return button >= 0 && button <= 2 && mouse.isButtonDown(cast button);
+		return button >= 0 && button <= 2 && !emulatedButton(button) && mouse.isButtonDown(cast button);
 	}
 
 	/** Returns whether a mouse button went up this frame.
@@ -836,7 +836,12 @@ class RCore {
 		var mouse = Runtime.mouse();
 		if (button == MOUSE_BUTTON_LEFT && Runtime.touch().released.length > 0 && Runtime.touch().fingers.length == 0)
 			return true;
-		return button >= 0 && button <= 2 && mouse.isButtonReleased(cast button);
+		return button >= 0 && button <= 2 && !emulatedButton(button) && mouse.isButtonReleased(cast button);
+	}
+
+	// Whether a mouse button works as a finger (EnableTouchEmulation), read through the fingers in place of the mouse.
+	static function emulatedButton(button:Int):Bool {
+		return button == MOUSE_BUTTON_LEFT && Runtime.touch().emulated;
 	}
 
 	/** Returns whether a mouse button isn't held.
@@ -889,7 +894,8 @@ class RCore {
 		if (fingers.length > 0) {
 			lastPointerX = screen.toDesignX(touch.getX(fingers[0]));
 			lastPointerY = screen.toDesignY(touch.getY(fingers[0]));
-		} else if (mouse.x != lastMouseX || mouse.y != lastMouseY) {
+		} else if ((mouse.x != lastMouseX || mouse.y != lastMouseY)
+			&& !(touch.emulated && mouse.isButtonDown(helix.platform.MouseButton.Left))) {
 			lastMouseX = mouse.x;
 			lastMouseY = mouse.y;
 			lastPointerX = screen.toDesignX(mouse.x);

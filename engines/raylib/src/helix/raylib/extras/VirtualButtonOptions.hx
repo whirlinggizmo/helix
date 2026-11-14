@@ -9,7 +9,8 @@ import helix.raylib.*;
 	finger the buttons captured is within its circle, including a finger that slid there from another button. The mouse follows the free
 	fingers.
 
-	The buttons are drawn at `EndDrawing` while the virtual gamepad is enabled, on a device with touch. The buttons are hidden while a
+	The buttons are drawn at `EndDrawing` while the virtual gamepad is enabled, on a device with touch or with touch
+	emulation (`EnableTouchEmulation`). The buttons are hidden while a
 	physical gamepad is in the virtual gamepad's slot. */
 @:structInit class VirtualButtonOptions {
 	/** Gets or sets the gamepad button the button is read as, such as `GAMEPAD_BUTTON_RIGHT_FACE_DOWN`. */

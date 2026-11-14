@@ -14,7 +14,8 @@ import helix.platform.GamepadButton;
 	through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both
 	through `Actions`, as any gamepad's do.
 
-	The first touch anywhere in the window plugs the virtual gamepad in, and so does the tilt while a tilt stick reads it. A physical gamepad plugged into the virtual gamepad's slot
+	The first touch in the window plugs the virtual gamepad in, as does a press of the left mouse button with touch emulation
+	(`Touch.emulated`). A virtual gamepad with a tilt stick is plugged in while the tilt stick reads the tilt. A physical gamepad plugged into the virtual gamepad's slot
 	replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after
 	the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical
 	gamepads alone.
@@ -138,18 +139,18 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		return gamepads.isConnected(slot);
 
 	/** Gets a value indicating whether an engine draws the buttons and the `Fixed` sticks: enabled, its slot free of physical gamepads,
-		and on a device with touch (`Touch.available`). */
+		and on a device with touch (`Touch.available`) or with touch emulation (`Touch.emulated`). */
 	public var visible(get, never):Bool;
 
 	function get_visible():Bool
-		return enabled && !gamepads.isConnected(slot) && touch.available;
+		return enabled && !gamepads.isConnected(slot) && (touch.available || touch.emulated);
 
 	/** Gets a value indicating whether an engine draws a hint at the base of each unheld stick read by fingers: enabled, untouched, its slot free of physical
-		gamepads, and on a device with touch (`Touch.available`). The first touch ends every stick's hint. */
+		gamepads, and on a device with touch (`Touch.available`) or with touch emulation (`Touch.emulated`). The first touch ends every stick's hint. */
 	public var hintVisible(get, never):Bool;
 
 	function get_hintVisible():Bool
-		return enabled && !touched && !gamepads.isConnected(slot) && touch.available;
+		return enabled && !touched && !gamepads.isConnected(slot) && (touch.available || touch.emulated);
 
 	/** Gets the left stick, read as `LeftX` and `LeftY`. */
 	public var left(default, null):VirtualStick;

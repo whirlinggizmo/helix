@@ -401,7 +401,7 @@ Specifies an axis of the device's tilt, turned with the screen (`Tilt.getAxis`).
 
 Provides the fingers on the screen as state: which are down, where each is, and which landed or lifted this frame.
 
-The program constructs one over its `IEvents` and its `ITouch`, and calls `poll` once a frame, as `Keyboard` is. A finger is known by its id from the frame it lands until the frame it lifts. Positions are in framebuffer pixels. When the window loses focus, every finger counts as lifted.
+The program constructs one over its `IEvents` and its `ITouch`, and calls `poll` once a frame, as `Keyboard` is. A finger is known by its id from the frame it lands until the frame it lifts. Positions are in framebuffer pixels. When the window loses focus, every finger counts as lifted. With touch emulation (`emulated`), the left mouse button works as one more finger.
 
 ```haxe
 var touch = new Touch(events, touchAdapter);
@@ -412,7 +412,9 @@ for (id in touch.pressed) tapAt(touch.getX(id), touch.getY(id));
 
 ```haxe
 function new(events:IEvents, touch:ITouch)
+static inline var EMULATED_FINGER:Int
 var available(get, never):Bool
+var emulated(get, set):Bool
 var fingers(get, never):Array<Int>
 var pressed(get, never):Array<Int>
 var released(get, never):Array<Int>
@@ -427,7 +429,10 @@ function getY(id:Int):Float
 - `new`: Creates the touch over the platform's events and touch, with no finger down.
   - `events`: The platform's events, whose last `poll` this one reads.
   - `touch`: The platform's touch, whose fingers those events carry.
+- `EMULATED_FINGER`: The id of the finger the left mouse button works as, with touch emulation (`emulated`).
 - `available`: Gets a value indicating whether the device has touch.
+- `emulated`: Gets or sets a value indicating whether the left mouse button works as one finger, `EMULATED_FINGER`. Defaults to false.
+  A press of the left mouse button lands the finger at the pointer, the mouse moving moves the finger, and releasing the left mouse button lifts the finger. On a device with touch, a touch and the left mouse button both work as fingers. Turned off while the finger is down, the finger lifts at the next poll. `available` is unchanged.
 - `fingers`: Gets the fingers down, by id, in the order they landed. The array is reused by the next poll.
 - `pressed`: Gets the fingers that landed this frame, by id. The array is reused by the next poll.
 - `released`: Gets the fingers that lifted this frame, by id. The array is reused by the next poll.
@@ -508,7 +513,7 @@ Provides an on-screen gamepad worked by the fingers, read as a gamepad in a slot
 
 The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both through `Actions`, as any gamepad's do.
 
-The first touch anywhere in the window plugs the virtual gamepad in, and so does the tilt while a tilt stick reads it. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical gamepads alone.
+The first touch in the window plugs the virtual gamepad in, as does a press of the left mouse button with touch emulation (`Touch.emulated`). A virtual gamepad with a tilt stick is plugged in while the tilt stick reads the tilt. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical gamepads alone.
 
 Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick or a button included. Drawing is the engine's: each button and each `Fixed` stick while `visible` is true, each other stick while `held`, and each stick's hint while `hintVisible` is true. A tilt stick (`VirtualStick.tilt`) isn't drawn, and has no hint.
 
@@ -561,8 +566,8 @@ function dispose():Void
 - `enabled`: Gets or sets whether it's enabled. Turned off, the virtual gamepad is unplugged, its sticks let go and its buttons are up. Defaults to true.
 - `pluggedIn`: Gets a value indicating whether it's plugged in: enabled, touched or with a tilt stick reading the tilt, and its slot free of physical gamepads. While a physical gamepad is in its slot, the virtual gamepad's sticks ignore touches.
 - `physicalConnected`: Gets a value indicating whether a physical gamepad is in the virtual gamepad's slot.
-- `visible`: Gets a value indicating whether an engine draws the buttons and the `Fixed` sticks: enabled, its slot free of physical gamepads, and on a device with touch (`Touch.available`).
-- `hintVisible`: Gets a value indicating whether an engine draws a hint at the base of each unheld stick read by fingers: enabled, untouched, its slot free of physical gamepads, and on a device with touch (`Touch.available`). The first touch ends every stick's hint.
+- `visible`: Gets a value indicating whether an engine draws the buttons and the `Fixed` sticks: enabled, its slot free of physical gamepads, and on a device with touch (`Touch.available`) or with touch emulation (`Touch.emulated`).
+- `hintVisible`: Gets a value indicating whether an engine draws a hint at the base of each unheld stick read by fingers: enabled, untouched, its slot free of physical gamepads, and on a device with touch (`Touch.available`) or with touch emulation (`Touch.emulated`). The first touch ends every stick's hint.
 - `left`: Gets the left stick, read as `LeftX` and `LeftY`.
 - `right`: Gets the right stick, read as `RightX` and `RightY`.
 - `tilt`: Gets or sets the tilt a tilt stick reads (`VirtualStick.tilt`), polled by the program before the virtual gamepad. While the tilt is null, a tilt stick reads 0.

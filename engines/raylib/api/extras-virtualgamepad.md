@@ -8,13 +8,13 @@
 
 Provides on-screen gamepads for phones: sticks and buttons a finger works, read through raylib's gamepad functions. Imported apart, with its constants: `import helix.raylib.extras.VirtualGamepad.*;`. The example `engines/raylib/examples/extras/virtual_gamepad` uses it.
 
-The first touch anywhere on the screen plugs an enabled virtual gamepad in, and so does the tilt once it's on, for a tilt stick (`VirtualStickOptions.tilt`). A mouse click leaves the virtual gamepad unplugged. Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
+The first touch in the window plugs an enabled virtual gamepad in, as does a press of the left mouse button with touch emulation (`EnableTouchEmulation`). A virtual gamepad with a tilt stick (`VirtualStickOptions.tilt`) is plugged in once the tilt is on (`EnableTiltAsync`). Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
 
 A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
 A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a finger landing on one of them. A finger landing within the blocked bounds (`VirtualGamepadOptions.blockedBounds`) stays a free finger. A free finger counts as the mouse, and as a touch point, as every finger does without a virtual gamepad. A captured finger is neither: the touch functions list the free fingers.
 
-The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch, its buttons and fixed sticks are drawn from the moment it's enabled, and every other stick while it has captured a finger. A program drawing its own controls sets their `visible` to false and draws from `IsVirtualGamepadVisible`, `IsVirtualStickHeld`, `GetVirtualStickBase` and `GetVirtualStickKnob`. The virtual gamepad is hidden while a physical gamepad is in its slot.
+The virtual gamepad is drawn at `EndDrawing`, over everything the frame drew. On a device with touch or with touch emulation, its buttons and fixed sticks are drawn from the moment it's enabled, and every other stick while it has captured a finger. A program drawing its own controls sets their `visible` to false and draws from `IsVirtualGamepadVisible`, `IsVirtualStickHeld`, `GetVirtualStickBase` and `GetVirtualStickKnob`. The virtual gamepad is hidden while a physical gamepad is in its slot.
 
 ```haxe
 InitWindow(800, 450, "twin stick");
@@ -67,7 +67,7 @@ static function GetVirtualStickKnob(gamepad:Int, stick:Int):Vector2
 - `IsGamepadVirtual`: Returns whether the gamepad in a slot is a virtual one (`EnableVirtualGamepad`).
   - `gamepad`: The slot, 0 to 3.
   - returns: True while a virtual gamepad is plugged in there. False for a physical one or an empty slot.
-- `IsVirtualGamepadVisible`: Returns whether the virtual gamepad in a slot is drawn: enabled, on a device with touch, with no physical gamepad in its slot. A program drawing its own sticks (`visible: false`) draws them while this is true.
+- `IsVirtualGamepadVisible`: Returns whether the virtual gamepad in a slot is drawn: enabled, on a device with touch or with touch emulation (`EnableTouchEmulation`), with no physical gamepad in its slot. A program drawing its own sticks (`visible: false`) draws them while this is true.
   - `gamepad`: The slot, 0 to 3.
   - returns: True while drawn.
 - `IsVirtualStickHeld`: Returns whether a finger holds a stick of the virtual gamepad in a slot.
@@ -114,7 +114,7 @@ var buttons:Null<Array<VirtualButtonOptions>>
 - `basePlacement`: Gets or sets where each stick's base goes: `VIRTUAL_STICK_BASE_FLOATING`, `VIRTUAL_STICK_BASE_FOLLOWING` or `VIRTUAL_STICK_BASE_FIXED`. Defaults to `VIRTUAL_STICK_BASE_FLOATING`.
 - `deadZone`: Gets or sets how far each stick's knob moves before the stick reads, as a share of the radius, 0 to 1. Defaults to 0.12.
   Past the dead zone, a stick reads from 0, rising evenly to 1 at the radius in any direction from the base. A game's own dead zone applies on top.
-- `hintVisible`: Gets or sets a value indicating whether each floating or following stick's hint is visible until the first touch. The hint is a fainter copy of the stick at rest, centered one and a half radii in from the touch zone's bottom outer corner, on a device with touch. Defaults to true.
+- `hintVisible`: Gets or sets a value indicating whether each floating or following stick's hint is visible until the first touch. The hint is a fainter copy of the stick at rest, centered one and a half radii in from the touch zone's bottom outer corner, on a device with touch or with touch emulation (`EnableTouchEmulation`). Defaults to true.
 - `baseOutlineColor`: Gets or sets each stick's ring around the base. Defaults to `Fade(LIGHTGRAY, 0.5)`. The hint is this ring, fainter.
 - `baseFillColor`: Gets or sets each stick's disc inside the ring. Defaults to `BLANK`.
 - `knobColor`: Gets or sets each stick's knob, the disc under the finger, 0.4 of the radius. Defaults to the stick's base outline color, a little more opaque.
@@ -182,7 +182,7 @@ Represents one on-screen button of a virtual gamepad (`VirtualGamepadOptions.but
 
 The buttons capture a finger landing on one of them, even within a stick's touch zone, until the finger lifts. A button is down while a finger the buttons captured is within its circle, including a finger that slid there from another button. The mouse follows the free fingers.
 
-The buttons are drawn at `EndDrawing` while the virtual gamepad is enabled, on a device with touch. The buttons are hidden while a physical gamepad is in the virtual gamepad's slot.
+The buttons are drawn at `EndDrawing` while the virtual gamepad is enabled, on a device with touch or with touch emulation (`EnableTouchEmulation`). The buttons are hidden while a physical gamepad is in the virtual gamepad's slot.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 

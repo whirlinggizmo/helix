@@ -18,7 +18,8 @@ import helix.raylib.*;
 	@:optional public var deadZone:Null<Float>;
 
 	/** Gets or sets a value indicating whether each floating or following stick's hint is visible until the first touch. The hint is a
-		fainter copy of the stick at rest, centered one and a half radii in from the touch zone's bottom outer corner, on a device with touch.
+		fainter copy of the stick at rest, centered one and a half radii in from the touch zone's bottom outer corner, on a device with touch or with
+		touch emulation (`EnableTouchEmulation`).
 		Defaults to true. */
 	@:optional public var hintVisible:Null<Bool>;
 

@@ -52,7 +52,8 @@ class RVirtualGamepad {
 		return made != null && made.service.pluggedIn;
 	}
 
-	/** Returns whether the virtual gamepad in a slot is drawn: enabled, on a device with touch, with no physical gamepad in its slot. A
+	/** Returns whether the virtual gamepad in a slot is drawn: enabled, on a device with touch or with touch emulation
+		(`EnableTouchEmulation`), with no physical gamepad in its slot. A
 		program drawing its own sticks (`visible: false`) draws them while this is true.
 
 		@param gamepad  The slot, 0 to 3.
