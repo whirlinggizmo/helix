@@ -963,3 +963,25 @@ Why things are the way they are, numbered, in order.
 
     Rejected: marks the program writes (`@await`, the hxasync haxelib), on every function on the way to `EndDrawing`, natively too;
     Emscripten's Asyncify, which has no counterpart for Haxe's JavaScript.
+
+73. **`TakeScreenshot` saves the frame the next `EndDrawing` ends, and that `EndDrawing` returns once the file is written.** It
+    replaces 72's refusal of `TakeScreenshot` and 24's `TakeScreenshotAsync`, which is removed. The call returns at once. The next
+    `EndDrawing` reads the frame back as it ends, saves the file, and returns once the file is written, or in a page downloaded.
+    `EndDrawing` is already a waiting call (72), so the program writes nothing more. Called while a frame is drawn, the screenshot is
+    of that frame. Called between frames, it is of the next one. `CloseWindow` refuses a screenshot with no `EndDrawing` called after
+    `TakeScreenshot`, logging "TakeScreenshot: <file>: Screenshot could not be saved: Screenshots are generated during EndDrawing()".
+    `LoadImageFromScreen` and `LoadImageFromTexture` stay refused.
+
+    Why: every entrant writing its own program met the refusal (the Wardens runs, the null font's six), and three of the null font's
+    saved a black `shot.png` first, its frame drawn empty while `TakeScreenshotAsync` waited. `TakeScreenshotAsync` waits no less: the
+    frame is read back and the file written as the frame is shown, on every target. Its one extra was a callback when the file is
+    written or refused, which raylib's `TakeScreenshot` never had.
+
+    Tried: docs/trials/2026-11-14-take-screenshot, nine Sonnet entrants. The three with the pages called it as they give it. The
+    three without called it after the last `EndDrawing`, as a C program does, read `CloseWindow`'s refusal and moved it. The three
+    given a program calling it late did the same.
+
+    Rejected: the frame drawn last, as a C program calling it after `EndDrawing` gets. raylib 5.5 reads the back buffer when called
+    (`rcore.c`'s `glReadPixels`, read, not run), whose contents OpenGL leaves undefined after the swap. Keeping the frame here means a
+    copy of every frame, or a page's `preserveDrawingBuffer`. Drawing the last frame again when asked was rejected too, as the frame
+    keeps no draws once shown.

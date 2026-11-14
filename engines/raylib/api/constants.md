@@ -640,7 +640,6 @@ static macro function GetMonitorPhysicalHeight(...args):Int
 static macro function MemAlloc(...args):Dynamic
 static macro function MemRealloc(...args):Dynamic
 static macro function MemFree(...args):Void
-static macro function TakeScreenshot(...args):Void
 static macro function emscripten_set_main_loop(...args):Void
 static macro function emscripten_set_main_loop_arg(...args):Void
 static macro function emscripten_cancel_main_loop(...args):Void
@@ -689,7 +688,6 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `MemAlloc`: Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.
 - `MemRealloc`: Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
 - `MemFree`: Doesn't compile, since Haxe frees memory once nothing holds it.
-- `TakeScreenshot`: Doesn't compile. See `TakeScreenshotAsync` for saving a screenshot.
 - `emscripten_set_main_loop`: Doesn't compile. See `WindowShouldClose` for writing the loop.
 - `emscripten_set_main_loop_arg`: Doesn't compile. See `WindowShouldClose` for writing the loop.
 - `emscripten_cancel_main_loop`: Doesn't compile. See `WindowShouldClose` for writing the loop.

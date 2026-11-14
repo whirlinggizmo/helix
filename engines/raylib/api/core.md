@@ -592,7 +592,7 @@ static macro function EndDrawing():Void
 - `GetWorkingDirectory`: Returns the working directory. See `GetApplicationDirectory` for finding the program's files.
   - returns: The directory, without a slash at its end.
 
-  `TakeScreenshotAsync` writes to it.
+  `TakeScreenshot` writes to it.
 
   helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
 - `GetApplicationDirectory`: Returns the directory the program's files are read from.
@@ -603,7 +603,7 @@ static macro function EndDrawing():Void
   - `dir`: The directory.
   - returns: True when the working directory is it now.
 
-  `TakeScreenshotAsync` writes to the new directory from then on.
+  `TakeScreenshot` writes to the new directory from then on.
 
   helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
 
@@ -989,6 +989,8 @@ static macro function EndDrawing():Void
   - `fileName`: The file.
   - returns: Whether it was written. Why it wasn't is logged.
 - `EndDrawing`: Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input. In a page the wait is for the browser's next frame.
+  A screenshot `TakeScreenshot` asked for is of this frame, and its file is written before `EndDrawing` returns.
+
   Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input.
 
 
@@ -1010,7 +1012,7 @@ static function EnableCursorAsync(?done:() -> Void, ?failed:String -> Void):Void
 static function SetClipboardTextAsync(text:String, ?done:() -> Void, ?failed:String -> Void):Void
 static function GetClipboardTextAsync(read:String -> Void, ?failed:String -> Void):Void
 static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> Void):Void
-static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:String -> Void):Void
+static function TakeScreenshot(fileName:String):Void
 ```
 
 - `ToggleFullscreenAsync`: Asynchronously asks for fullscreen, or for the window back at the size and place it had. See `ToggleBorderlessWindowedAsync` for the borderless window, replacing raylib's `ToggleFullscreen`.
@@ -1131,22 +1133,18 @@ static function TakeScreenshotAsync(fileName:String, ?done:() -> Void, ?failed:S
   - `failed`: Optional. Receives why there is none, or why it couldn't be read; when omitted, it is logged.
 
   It may need permission, which the system may ask for.
-- `TakeScreenshotAsync`: Asynchronously takes a screenshot of the next frame and saves it as a file, replacing raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for the screen as an `Image`.
+- `TakeScreenshot`: Takes a screenshot of the frame the next `EndDrawing` ends, and saves it as a file. That `EndDrawing` returns once the file is written or downloaded. See `LoadImageFromScreenAsync` for the screen as an `Image`.
   - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
-  - `done`: Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.
-  - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
+
+  Called while drawing a frame, the screenshot is of that frame. Called between frames, it is of the next frame, not of the frame drawn last as raylib's is.
 
   The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
-  It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories kept. An absolute one is where it is.
+  It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
 
-  A directory that isn't there isn't made, and the screenshot is refused.
+  The image's alpha is opaque, as raylib's is.
 
-  Taken as the next frame ends, not from the frame drawn last as raylib's is.
-
-  The image\'s alpha is opaque, as raylib's is.
-
-  Refused before `InitWindow`.
+  A screenshot that can't be saved is refused, with the reason logged. It is refused before `InitWindow`, and by `CloseWindow` when no `EndDrawing` was called after `TakeScreenshot`.
 
 
 ```haxe

@@ -123,7 +123,7 @@ class Main {
 			GuiLabel(R(620, 530, 100, 20), "A label too long for its bounds");
 			GuiDropdownBox(R(780, 440, 140, 24), "One;Two;Three;Four", drop, true);
 			if (frame == 8)
-				TakeScreenshotAsync("helix.png");
+				TakeScreenshot("helix.png");
 			EndDrawing();
 			frame++;
 		}

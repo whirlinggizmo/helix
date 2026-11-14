@@ -400,7 +400,7 @@ class Automation implements PlayedInput {
 			case 21:
 				RCore.SetWindowSize(p[0], p[1]);
 			case 22:
-				RWindowAsync.TakeScreenshotAsync('screenshot${StringTools.lpad(Std.string(screenshots), "0", 3)}.png');
+				RWindowAsync.TakeScreenshot('screenshot${StringTools.lpad(Std.string(screenshots), "0", 3)}.png');
 				screenshots++;
 			case 23:
 				RCore.SetTargetFPS(p[0]);

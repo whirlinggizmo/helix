@@ -31,8 +31,8 @@ import helix.raylib.modules.RWindowAsync;
 	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
 	`EndDrawing`, `WaitTime`, a file call (`LoadFileText`) and a clipboard call don't compile in a function used as a value, a
-	constructor or a variable's initial value. An asset load (`LoadModel`), `TakeScreenshot`, `LoadImageFromScreen` and
-	`LoadImageFromTexture` don't compile, and each names its `...Async` call. */
+	constructor or a variable's initial value. An asset load (`LoadModel`), `LoadImageFromScreen` and `LoadImageFromTexture`
+	don't compile, and each names its `...Async` call. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -1937,7 +1937,7 @@ class Raylib {
 	/** Returns the working directory. See `GetApplicationDirectory` for finding
 		the program's files.
 
-		`TakeScreenshotAsync` writes to it.
+		`TakeScreenshot` writes to it.
 
 		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
 
@@ -1956,7 +1956,7 @@ class Raylib {
 
 	/** Changes the working directory.
 
-		`TakeScreenshotAsync` writes to the new directory from then on.
+		`TakeScreenshot` writes to the new directory from then on.
 
 		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
 
@@ -2760,27 +2760,25 @@ class Raylib {
 	public static inline function GetClipboardImageAsync(loaded:Image->Void, ?failed:String->Void):Void
 		RWindowAsync.GetClipboardImageAsync(loaded, failed);
 
-	/** Asynchronously takes a screenshot of the next frame and saves it as a file, replacing raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for
-		the screen as an `Image`.
+	/** Takes a screenshot of the frame the next `EndDrawing` ends, and saves it as a file. That `EndDrawing` returns once the file is
+		written or downloaded. See `LoadImageFromScreenAsync` for the screen as an `Image`.
+
+		Called while drawing a frame, the screenshot is of that frame. Called between frames, it is of the next frame, not of the frame
+		drawn last as raylib's is.
 
 		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
 		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
-		kept. An absolute one is where it is.
+		kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
 
-		A directory that isn't there isn't made, and the screenshot is refused.
+		The image's alpha is opaque, as raylib's is.
 
-		Taken as the next frame ends, not from the frame drawn last as raylib's is.
+		A screenshot that can't be saved is refused, with the reason logged. It is refused before `InitWindow`, and by `CloseWindow` when
+		no `EndDrawing` was called after `TakeScreenshot`.
 
-		The image\'s alpha is opaque, as raylib's is.
-
-		Refused before `InitWindow`.
-
-		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is.
-		@param done  Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.
-		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
-	public static inline function TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void):Void
-		RWindowAsync.TakeScreenshotAsync(fileName, done, failed);
+		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
+	public static inline function TakeScreenshot(fileName:String):Void
+		RWindowAsync.TakeScreenshot(fileName);
 
 	// ---- rcore: the file reads, writes and questions in place of rcore's that wait for a file (raylib/RFilesAsync.hx) ----
 
@@ -4864,7 +4862,7 @@ class Raylib {
 	public static inline function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void):Void
 		RTexturesAsync.LoadImageFromTextureAsync(texture, loaded, failed);
 
-	/** Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshotAsync` for saving the screen to a file.
+	/** Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshot` for saving the screen to a file.
 
 		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
 
@@ -4883,7 +4881,7 @@ class Raylib {
 		- ".qoi": RGB or RGBA alone.
 		- ".raw": the pixels as they are.
 
-		The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshotAsync` writes a real file.
+		The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshot` writes a real file.
 
 		@param image  The image.
 		@param fileName  The file; its extension chooses the format.
@@ -7120,11 +7118,6 @@ class Raylib {
 	public static macro function MemFree(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.", macro {});
 
-	/** Doesn't compile. See `TakeScreenshotAsync` for saving a screenshot. */
-	public static macro function TakeScreenshot(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("TakeScreenshot: Not supported. Use TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.",
-			macro {});
-
 	/** Doesn't compile. See `WindowShouldClose` for writing the loop. */
 	public static macro function emscripten_set_main_loop(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop: Not needed. Use while (!WindowShouldClose()) { ... } instead.", macro {});
@@ -7332,6 +7325,8 @@ class Raylib {
 
 	/** Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input. In
 		a page the wait is for the browser's next frame.
+
+		A screenshot `TakeScreenshot` asked for is of this frame, and its file is written before `EndDrawing` returns.
 
 		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
 		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */

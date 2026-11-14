@@ -21,7 +21,7 @@ class Main {
 			ClearBackground(RAYWHITE);
 			@CASES@
 			if (frame == 2)
-				TakeScreenshotAsync("helix.png");
+				TakeScreenshot("helix.png");
 			EndDrawing();
 			frame++;
 		}

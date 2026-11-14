@@ -296,13 +296,6 @@ class AsyncTests {
 		check(answer((d, f) -> ExportWaveAsync(wave, "wave.wav", d, f)) == "done", "ExportWaveAsync");
 		check(answer((d, f) -> ExportWaveAsync(wave, "wave.qoa", d, f)) == "failed: wave.qoa: Failed to export wave data", "a wave of another kind");
 
-		// A screenshot needs the window's frame.
-		check(answer((d, f) -> TakeScreenshotAsync("shot.png", d, f)) == "failed: shot.png: Screenshot could not be saved: InitWindow first",
-			"TakeScreenshotAsync before InitWindow");
-		check(StringTools.startsWith(answer((d, f) -> TakeScreenshotAsync("it's.png", d, f)),
-			"failed: it's.png: Provided fileName could be potentially malicious"),
-			"a name with ' refused, as raylib's is");
-
 		// The first finger is where the mouse is while no finger is down, as raylib's.
 		Runtime.touchService = new Touch(Runtime.events, devices);
 		(cast Runtime.events : FakeEvents).next.push(MouseMove(30, 40));

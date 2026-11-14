@@ -6,8 +6,6 @@ import helix.raylib.Raylib.*;
 class GuessedCalls {
 	static function main():Void {
 		InitWindow(320, 200, "refused");
-		TakeScreenshot();
-		TakeScreenshot("shot.png");
 		var pixels = LoadImageFromTexture(1, 2);
 		var shader = LoadShader("glow.vs");
 		var width = GetMonitorPhysicalWidth();

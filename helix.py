@@ -70,7 +70,7 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
 # helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/raylib_parity.py).
-RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','SpritesTests','WaitTests','ShaderValueTests','AnimationMaskTests')
+RAYLIB_TESTS=('CountTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','ScreenshotTests','SpritesTests','WaitTests','ShaderValueTests','AnimationMaskTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.
 TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader'),('own_lights.vs','own_lights.fs','own_lights.shader')]
@@ -91,9 +91,8 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String)
     'ShaderCalls':('LoadShader: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void) instead. It loads a shader precompiled by the CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro',
     'LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(','or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes',
     'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync('),
-    'GuessedCalls':('GuessedCalls.hx:9: characters 3-19 : TakeScreenshot: Not supported. Use TakeScreenshotAsync(','GuessedCalls.hx:10: characters 3-29 : TakeScreenshot: Not supported.',
-    'GuessedCalls.hx:11: characters 16-42 : LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(','GuessedCalls.hx:12: characters 16-37 : LoadShader: Not supported. Use LoadCompiledShaderAsync(',
-    'GuessedCalls.hx:13: characters 15-40 : GetMonitorPhysicalWidth: A monitor','GuessedCalls.hx:14: characters 3-26 : TextCopy: A String can\'t be written into'),
+    'GuessedCalls':('GuessedCalls.hx:9: characters 16-42 : LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(','GuessedCalls.hx:10: characters 16-37 : LoadShader: Not supported. Use LoadCompiledShaderAsync(',
+    'GuessedCalls.hx:11: characters 15-40 : GetMonitorPhysicalWidth: A monitor','GuessedCalls.hx:12: characters 3-26 : TextCopy: A String can\'t be written into'),
     'WaitCalls':("WaitCalls.hx:10: characters 21-45 : LoadFileText: Not supported in a constructor or a variable's initial value.",
     "WaitCalls.hx:39: characters 11-33 : FileExists: Not supported in a constructor or a variable's initial value.",
     'WaitCalls.hx:19: characters 19-31 : EndDrawing: Not supported in a function used as a value.',

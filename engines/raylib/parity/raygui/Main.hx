@@ -91,7 +91,7 @@ class Main {
 			Column(490, STATE_PRESSED);
 			Column(725, STATE_DISABLED);
 			if (frame == 2)
-				TakeScreenshotAsync("helix.png");
+				TakeScreenshot("helix.png");
 			EndDrawing();
 			frame++;
 		}

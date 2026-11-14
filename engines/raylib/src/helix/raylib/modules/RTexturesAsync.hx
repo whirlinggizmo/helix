@@ -373,7 +373,7 @@ class RTexturesAsync {
 			read();
 	}
 
-	/** Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshotAsync` for saving the screen to a file.
+	/** Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshot` for saving the screen to a file.
 
 		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
 
@@ -402,7 +402,7 @@ class RTexturesAsync {
 		- ".qoi": RGB or RGBA alone.
 		- ".raw": the pixels as they are.
 
-		The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshotAsync` writes a real file.
+		The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshot` writes a real file.
 
 		@param image  The image.
 		@param fileName  The file; its extension chooses the format.

@@ -41,7 +41,7 @@ class Main {
 			}
 			EndMode3D();
 			if (frame == 2)
-				TakeScreenshotAsync("helix.png");
+				TakeScreenshot("helix.png");
 			EndDrawing();
 			if (frame >= 0)
 				frame++;

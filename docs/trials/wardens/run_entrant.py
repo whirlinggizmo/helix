@@ -37,7 +37,7 @@ and each extra's example program in docs/extras/examples/.
 
 --trial names another trial's variant to make the entrant from in place of Wardens (helix-raylib only), as
 ../2026-11-13-masked-blend/module: the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
-beside it (task.md, build.hxml), the assets its assets.txt lists from Wardens' assets/, and raylib 5.5's headers and C examples.
+beside it (task.md, build.hxml; not its record, README.md), the assets its assets.txt lists from Wardens' assets/, and raylib 5.5's headers and C examples.
 
 --command runs a shell command in the entrant's environment in place of claude, to check the harness."""
 import argparse
@@ -77,7 +77,7 @@ def make(entrant, engine, trial=None, extras=None):
     if trial:
         shutil.copytree(trial, entrant)
         for path in trial.parent.iterdir():
-            if path.is_file() and path.name != 'assets.txt':
+            if path.is_file() and path.name not in ('assets.txt', 'README.md'):
                 shutil.copy(path, entrant / path.name)
         for name in (trial.parent / 'assets.txt').read_text(encoding='utf-8').split():
             (entrant / 'assets' / name).parent.mkdir(parents=True, exist_ok=True)

@@ -60,7 +60,7 @@ class Main {
 			DrawTexturePro(target.texture, sourceRec, destRec, new Vector2(0, 0), 0, WHITE);
 			EndShaderMode();
 			if (frame == 2)
-				TakeScreenshotAsync("helix.png");
+				TakeScreenshot("helix.png");
 			EndDrawing();
 			frame++;
 		}

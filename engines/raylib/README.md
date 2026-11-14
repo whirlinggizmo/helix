@@ -21,8 +21,9 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 - `EndDrawing`, `WaitTime`, a file call (`LoadFileText`, `SaveFileText`) and a clipboard call don't compile in a function used as
   a value, in a constructor or in a variable's initial value (see "Calls that wait").
-- An asset load (`LoadTexture`, `LoadModel`, `LoadSound`), `TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` don't
-  compile. Each names its `...Async` call.
+- An asset load (`LoadTexture`, `LoadModel`, `LoadSound`), `LoadImageFromScreen` and `LoadImageFromTexture` don't compile. Each names
+  its `...Async` call.
+- `TakeScreenshot` saves the frame the next `EndDrawing` ends, and that `EndDrawing` returns once the file is written.
 - A window or cursor request (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) returns at once, and the window changes at a
   later frame. `IsWindowFullscreen` and the other window reads report the window as it is. A refusal is logged.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the

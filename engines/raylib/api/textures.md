@@ -851,7 +851,7 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
   A texture not drawn yet is read from memory. raylib's default texture is its white pixel.
 
   A cubemap is read from the image it was made from while that is kept in memory. Its faces on the GPU aren't read.
-- `LoadImageFromScreenAsync`: Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshotAsync` for saving the screen to a file.
+- `LoadImageFromScreenAsync`: Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshot` for saving the screen to a file.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
@@ -868,7 +868,7 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
 
   - ".png": any uncompressed format. A format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA. - ".qoi": RGB or RGBA alone. - ".raw": the pixels as they are.
 
-  The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshotAsync` writes a real file.
+  The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshot` writes a real file.
 - `ExportImageAsCodeAsync`: Asynchronously writes an image as a C header through `SaveFileTextAsync`, replacing raylib's `ExportImageAsCode`. See `ExportImageAsync` for writing a PNG, QOI or raw file.
   - `image`: The image.
   - `fileName`: The file; its name, upper case, names the defines and the array.

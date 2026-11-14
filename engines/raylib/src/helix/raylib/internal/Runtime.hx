@@ -578,6 +578,10 @@ class Runtime {
 
 	static var screenshotsService:Null<helix.services.screenshots.Screenshots> = null;
 
+	/** The screenshots `TakeScreenshot` asked for that are neither written nor refused yet: `EndDrawing` returns once there are none,
+		and `close` refuses those left. */
+	public static final screenshotsAsked:Array<{fileName:String}> = [];
+
 	/** Gets where files are handed out, made when first asked for: in a page a download, natively the working directory. */
 	public static function exporter():helix.platform.IExport {
 		if (exportAdapter == null) {
@@ -680,6 +684,14 @@ class Runtime {
 	@:helix.raylib.waits
 	public static function endFrame():Void {
 		showFrame();
+		#if !js
+		// The screenshots TakeScreenshot asked for are written, or refused, before EndDrawing returns.
+		while (screenshotsAsked.length > 0) {
+			pollAnswers();
+			if (screenshotsAsked.length > 0)
+				Sys.sleep(.0005);
+		}
+		#end
 		#if (!js && !helix_raylib_custom_frame_control)
 		wait();
 		#end
@@ -720,6 +732,14 @@ class Runtime {
 		return new js.lib.Promise((resolve, _) -> {
 			var frame:Float->Void = null;
 			frame = _ -> {
+				// The screenshots TakeScreenshot asked for are written, or refused, before EndDrawing returns.
+				if (screenshotsAsked.length > 0) {
+					pollAnswers();
+					if (screenshotsAsked.length > 0) {
+						requestFrame(frame);
+						return;
+					}
+				}
 				// A frame the target rate has no room for is skipped, with a millisecond's slack for the display's jitter.
 				var now = system.getTime();
 				var frameTarget = time.targetDelta;
@@ -972,6 +992,10 @@ class Runtime {
 		cleared and stays so, and the page's input is the page's again: the input adapters made are disposed (`closing`), taking their
 		listeners and the styles they set with them. */
 	public static function close():Void {
+		// The screenshots TakeScreenshot asked for with no frame ended since.
+		for (asked in screenshotsAsked)
+			log(4, 'TakeScreenshot: ${asked.fileName}: Screenshot could not be saved: Screenshots are generated during EndDrawing()');
+		screenshotsAsked.resize(0);
 		#if js
 		// The canvas cleared, and a frame of nothing shown.
 		if (frame != null) {

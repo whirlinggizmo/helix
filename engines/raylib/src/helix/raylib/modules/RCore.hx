@@ -551,6 +551,8 @@ class RCore {
 
 	/** Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
 
+		A screenshot `TakeScreenshot` asked for is of this frame, and its file is written before `EndDrawing` returns.
+
 		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
 		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
 	static function EndDrawing():Void {
@@ -1535,7 +1537,7 @@ class RCore {
 	/** Returns the working directory. See `GetApplicationDirectory` for finding
 		the program's files.
 
-		`TakeScreenshotAsync` writes to it.
+		`TakeScreenshot` writes to it.
 
 		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
 
@@ -1564,7 +1566,7 @@ class RCore {
 
 	/** Changes the working directory.
 
-		`TakeScreenshotAsync` writes to the new directory from then on.
+		`TakeScreenshot` writes to the new directory from then on.
 
 		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
 
@@ -2305,16 +2307,6 @@ class RCore {
 	@:unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.")
 	static function MemFree(ptr:Dynamic):Void {
 		throw "MemFree is unimplemented";
-	}
-
-	// ---- Screenshots ----
-
-	/** Doesn't compile. See `TakeScreenshotAsync` for saving a screenshot.
-
-		@param fileName  The file's name, or its path. */
-	@:unsupported("TakeScreenshot: Not supported. Use TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.")
-	static function TakeScreenshot(fileName:String):Void {
-		throw "TakeScreenshot is unimplemented";
 	}
 
 	// ---- Log ----

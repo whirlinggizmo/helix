@@ -281,27 +281,35 @@ class RWindowAsync {
 			.requestImage(png -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed), error -> refuse("GetClipboardImageAsync", error, failed));
 	}
 
-	/** Asynchronously takes a screenshot of the next frame and saves it as a file, replacing raylib's `TakeScreenshot`. See `LoadImageFromScreenAsync` for
-		the screen as an `Image`.
+	/** Takes a screenshot of the frame the next `EndDrawing` ends, and saves it as a file. That `EndDrawing` returns once the file is
+		written or downloaded. See `LoadImageFromScreenAsync` for the screen as an `Image`.
+
+		Called while drawing a frame, the screenshot is of that frame. Called between frames, it is of the next frame, not of the frame
+		drawn last as raylib's is.
 
 		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
 		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
-		kept. An absolute one is where it is.
+		kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
 
-		A directory that isn't there isn't made, and the screenshot is refused.
+		The image's alpha is opaque, as raylib's is.
 
-		Taken as the next frame ends, not from the frame drawn last as raylib's is.
+		A screenshot that can't be saved is refused, with the reason logged. It is refused before `InitWindow`, and by `CloseWindow` when
+		no `EndDrawing` was called after `TakeScreenshot`.
 
-		The image\'s alpha is opaque, as raylib's is.
-
-		Refused before `InitWindow`.
-
-		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is.
-		@param done  Optional. Called once the file is written or downloaded, or once it is refused, at a later poll.
-		@param failed  Optional. Receives why it wasn't; when omitted, it is logged. */
-	static function TakeScreenshotAsync(fileName:String, ?done:Void->Void, ?failed:String->Void):Void {
-		var refused = (error:String) -> refuse("TakeScreenshotAsync", error, failed);
+		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
+	static function TakeScreenshot(fileName:String):Void {
+		// The screenshot is among Runtime.screenshotsAsked until it is written or refused. Once CloseWindow refused it, nothing more is
+		// written or logged.
+		var asked = {fileName: fileName};
+		Runtime.screenshotsAsked.push(asked);
+		var dropped = () -> Runtime.screenshotsAsked.indexOf(asked) < 0;
+		var refused = (error:String) -> {
+			if (dropped())
+				return;
+			Runtime.screenshotsAsked.remove(asked);
+			Runtime.log(LOG_WARNING, 'TakeScreenshot: $error');
+		};
 		if (fileName.indexOf("'") >= 0) {
 			Runtime.later(() -> refused('$fileName: Provided fileName could be potentially malicious, avoid [\'] character'));
 			return;
@@ -327,6 +335,8 @@ class RWindowAsync {
 			return;
 		}
 		Runtime.screenshots().captureFrame(captured -> {
+			if (dropped())
+				return;
 			var pixels = captured.pixels;
 			for (i in 0...captured.width * captured.height)
 				pixels.set(i * 4 + 3, 255);
@@ -339,8 +349,7 @@ class RWindowAsync {
 			exporter.export(name, type, file, where -> {
 				Runtime.log(LOG_INFO, 'FILEIO: [$where] Image exported successfully');
 				Runtime.log(LOG_INFO, 'SYSTEM: [$where] Screenshot taken successfully');
-				if (done != null)
-					done();
+				Runtime.screenshotsAsked.remove(asked);
 			}, error -> refused('$name: Screenshot could not be saved: $error'));
 		}, error -> refused('$name: Screenshot could not be saved: $error'));
 	}
