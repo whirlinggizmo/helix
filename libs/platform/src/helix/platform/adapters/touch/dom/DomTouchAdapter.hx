@@ -2,6 +2,7 @@ package helix.platform.adapters.touch.dom;
 
 import helix.platform.ITouch;
 import helix.platform.adapters.shared.EventStream;
+import helix.platform.adapters.shared.FingerIds;
 import helix.platform.adapters.shared.dom.DomListeners;
 import helix.platform.adapters.shared.dom.DomPointer;
 import js.html.CanvasElement;
@@ -11,13 +12,12 @@ import js.html.PointerEvent;
 
 	The canvas keeps a finger until it lifts, so one sliding off it still arrives. While it exists the canvas's `touch-action` is `none`,
 	so the browser doesn't take a moving finger to scroll or zoom the page, which would cancel it; one the browser takes anyway arrives as
-	its `TouchUp`. */
+	its `TouchUp`. A landing finger takes the smallest id no finger down has, as natively. */
 class DomTouchAdapter implements ITouch {
 	final stream:EventStream;
 	final canvas:CanvasElement;
 	final listeners = new DomListeners();
-	// The fingers down, by the browser's pointer id.
-	var fingers:Array<Int> = [];
+	final ids = new FingerIds();
 	// The canvas's touch-action before, put back at dispose.
 	final touchAction:String;
 
@@ -47,16 +47,14 @@ class DomTouchAdapter implements ITouch {
 
 	function finger(event:PointerEvent, down:Bool):Void {
 		var p = DomPointer.position(canvas, event);
-		var known = fingers.indexOf(event.pointerId) >= 0;
+		var id = ids.find(event.pointerId);
 		if (!down) {
-			if (fingers.remove(event.pointerId))
-				stream.record(TouchUp(event.pointerId, p.x, p.y));
-		} else if (known)
-			stream.record(TouchMove(event.pointerId, p.x, p.y));
-		else if (event.type == "pointerdown") {
-			fingers.push(event.pointerId);
-			stream.record(TouchDown(event.pointerId, p.x, p.y));
-		}
+			if (ids.lift(event.pointerId) >= 0)
+				stream.record(TouchUp(id, p.x, p.y));
+		} else if (id >= 0)
+			stream.record(TouchMove(id, p.x, p.y));
+		else if (event.type == "pointerdown")
+			stream.record(TouchDown(ids.land(event.pointerId), p.x, p.y));
 	}
 
 	public function dispose():Void {

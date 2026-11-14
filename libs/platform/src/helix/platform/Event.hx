@@ -29,7 +29,7 @@ enum Event {
 	/** The wheel turned, in notches. Right and away from the player are positive. */
 	Wheel(dx:Float, dy:Float);
 
-	/** A finger touched the screen. id stays the same for that finger until it lifts. */
+	/** A finger touched the screen. id is the smallest no finger down has, and stays the same for that finger until it lifts. */
 	TouchDown(id:Int, x:Float, y:Float);
 
 	/** A finger moved. */

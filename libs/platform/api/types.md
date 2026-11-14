@@ -280,7 +280,7 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `MouseUp(button:MouseButton, x:Float, y:Float)`: A mouse button went up.
 - `MouseLeave`: The mouse left the window.
 - `Wheel(dx:Float, dy:Float)`: The wheel turned, in notches. Right and away from the player are positive.
-- `TouchDown(id:Int, x:Float, y:Float)`: A finger touched the screen. id stays the same for that finger until it lifts.
+- `TouchDown(id:Int, x:Float, y:Float)`: A finger touched the screen. id is the smallest no finger down has, and stays the same for that finger until it lifts.
 - `TouchMove(id:Int, x:Float, y:Float)`: A finger moved.
 - `TouchUp(id:Int, x:Float, y:Float)`: A finger lifted, or the OS took the touch away.
 - `Tilt(beta:Float, gamma:Float, screenAngle:Float)`: Reports the device's orientation while tilt access is held (`ITilt.requestAccess`). beta and gamma are in degrees, and screenAngle is the screen's angle.

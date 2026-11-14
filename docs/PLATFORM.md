@@ -166,7 +166,7 @@ enum Event {
 	MouseUp(button:MouseButton, x:Float, y:Float);
 	MouseLeave;
 	Wheel(dx:Float, dy:Float);
-	TouchDown(id:Int, x:Float, y:Float); // ITouch
+	TouchDown(id:Int, x:Float, y:Float); // ITouch; id the smallest no finger down has
 	TouchMove(id:Int, x:Float, y:Float);
 	TouchUp(id:Int, x:Float, y:Float);
 	Tilt(beta:Float, gamma:Float, screenAngle:Float);   // ITilt

@@ -932,7 +932,7 @@ final events:Sdl3EventsAdapter
 
 Provides `ITouch` in a browser page: fingers on the canvas, in its framebuffer pixels.
 
-The canvas keeps a finger until it lifts, so one sliding off it still arrives. While it exists the canvas's `touch-action` is `none`, so the browser doesn't take a moving finger to scroll or zoom the page, which would cancel it; one the browser takes anyway arrives as its `TouchUp`.
+The canvas keeps a finger until it lifts, so one sliding off it still arrives. While it exists the canvas's `touch-action` is `none`, so the browser doesn't take a moving finger to scroll or zoom the page, which would cancel it; one the browser takes anyway arrives as its `TouchUp`. A landing finger takes the smallest id no finger down has, as natively.
 
 ```haxe
 function new(options:DomTouchAdapterOptions)
