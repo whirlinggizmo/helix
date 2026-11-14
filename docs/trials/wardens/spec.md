@@ -27,9 +27,8 @@ engine and no function.
   pose.
 - **Moving:** WASD, the arrow keys or a gamepad's left stick, at 5 meters a second whatever the frame rate, no faster on a diagonal. She
   faces where she moves. Walls stop her.
-- **Touch:** once the screen has been touched, a finger landing anywhere on the play area (not on a button) holds a stick centered where it landed.
-  Its drag from there moves her, full speed at 80 pixels and none within 10, in any direction. While held, a ring is drawn where it
-  landed with a knob under the finger. Lifting the finger stops her.
+- **Touch:** once the screen has been touched, an on-screen stick moves her, as a gamepad's left stick does: it appears where a
+  finger lands on the play area (not on a button), and lifting the finger stops her.
 - **Touch buttons:** once the screen has been touched, a pause button at the top right pauses, as Escape does, and once she holds both weapons a
   button at the bottom right switches them, as Q does. A finger on either button doesn't move her. The menus' buttons, the slider and
   the cards are tapped.
