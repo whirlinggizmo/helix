@@ -61,6 +61,11 @@ python3 docs/trials/wardens/score_page.py /home/rknopf/projects/local/helix/tria
 python3 docs/trials/wardens/score_frames.py /home/rknopf/projects/local/helix/trials/wardens/*-blind.00? --helix ../helix-blind-a --headed
 ```
 
+`run_entrant.py --engine three` makes a three.js entrant ([wardens/three](wardens/three)): JavaScript from `src/main.js` on three.js
+0.187 and its addons, installed with `npm ci` (npm open to it, for loaders it chooses), bundled with esbuild and run in headless
+Chromium by its `run.cjs`, which prints the page's console and takes screenshots at set seconds (`--shots`), its saves kept between
+runs. Its frame time is taken by `run.cjs --gpu --frames=W,N`.
+
 `run_entrant.py --trial` makes an entrant from another trial's variant in place of Wardens, as
 [the masked blend's](2026-11-13-masked-blend) `module` and `control`: the variant's brief and files, its trial's task and build file, and
 the Wardens assets its `assets.txt` lists.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Runs one entrant of the native blind trial (../README.md): claude -p in its own directory, on a private display, with no sound.
 
-    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c] [--extras] [--trial <variant>] [--model sonnet]
+    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c|three] [--extras] [--trial <variant>] [--model sonnet]
         [--hours 3] [--command CMD]
 
 The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
@@ -11,6 +11,10 @@ The entrant directory is made, and must not be there yet unless --command is giv
   in docs/include.
 - c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/CMakeLists.txt, raylib 5.5's headers in include/ and its desktop
   library as lib/libraylib.a.
+- three (three.js 0.187, in JavaScript or TypeScript, for the browser): three/brief.md as brief.md, three/index.html, three/run.cjs (it
+  bundles the game with esbuild and runs it in headless Chromium, Playwright's own, on SwiftShader), an empty src/, and three/package.json
+  and package-lock.json, three.js and esbuild installed from them (npm ci) into the entrant's own node_modules, to which it may add from
+  npm. No raylib files.
 raylib's files are copied from the release tools/raylib_parity.py fetches and builds. A directory inside a git repository is refused,
 as the entrant would see its commit messages.
 
@@ -45,6 +49,7 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+PLAYWRIGHT_BROWSERS = Path(os.environ.get('PLAYWRIGHT_BROWSERS_PATH', Path.home() / '.cache/ms-playwright'))
 # Claude Code's own session variables, so the entrant starts as a session of its own, not a child of the one starting it.
 CLAUDE_VARS = ('CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT', 'CLAUDE_CODE_CHILD_SESSION', 'CLAUDE_CODE_SESSION_ID', 'CLAUDE_PID',
                'CLAUDE_CODE_MESSAGING_SOCKET', 'CLAUDE_CODE_MESSAGING_TOKEN', 'CLAUDE_CODE_BRIDGE_SESSION_ID',
@@ -56,6 +61,17 @@ def log(entrant, line):
 
 def make(entrant, engine, trial=None, extras=None):
     """Makes the entrant's directory from the trial's files and raylib 5.5's, or from another trial's variant."""
+    if engine == 'three':
+        entrant.mkdir(parents=True)
+        brief = (HERE / 'three/brief.md').read_text(encoding='utf-8')
+        (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
+        for name in ('index.html', 'run.cjs', 'package.json', 'package-lock.json'):
+            shutil.copy(HERE / 'three' / name, entrant / name)
+        (entrant / 'src').mkdir()
+        subprocess.run(['npm', 'ci', '--no-audit', '--no-fund'], cwd=entrant, check=True)
+        shutil.copy(HERE / 'spec.md', entrant / 'spec.md')
+        shutil.copytree(HERE / 'assets', entrant / 'assets')
+        return
     import raylib_parity
     raylib = raylib_parity.raylib('5.5')
     if trial:
@@ -106,6 +122,10 @@ def make(entrant, engine, trial=None, extras=None):
             (entrant / 'docs/extras/examples' / main.parent.name).mkdir(parents=True)
             shutil.copy(main, entrant / 'docs/extras/examples' / main.parent.name / 'Main.hx')
 
+def playwright(helix):
+    """Playwright's package: HELIX_PLAYWRIGHT's, else the checkout's tools'."""
+    return Path(os.environ.get('HELIX_PLAYWRIGHT', helix / 'build/tools/node_modules/playwright'))
+
 def environment(entrant, helix, display):
     """The entrant's environment: the private display's, with the native build's settings and no sound, D-Bus or parent session."""
     import native_build
@@ -113,9 +133,11 @@ def environment(entrant, helix, display):
     env = native_build.env(sdl3.find())
     for k in ('DISPLAY', 'SDL_VIDEO_DRIVER'):
         env[k] = display[k]
-    for k in ('XAUTHORITY', 'WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS') + CLAUDE_VARS:
+    for k in ('XAUTHORITY', 'WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'NODE_EXTRA_CA_CERTS') + CLAUDE_VARS:
         env.pop(k, None)
     home = entrant.parent / '.home' / entrant.name
+    # A three.js entrant's run.cjs: Playwright and its browsers, read-only in the sandbox.
+    env.update(HELIX_PLAYWRIGHT=str(playwright(helix)), PLAYWRIGHT_BROWSERS_PATH=str(PLAYWRIGHT_BROWSERS))
     env.update(HAXELIB_PATH=str(helix / 'build/haxelib'), HXCPP_COMPILE_THREADS='4', SDL_AUDIO_DRIVER='dummy',
                XDG_DATA_HOME=str(home / 'data'), XDG_CACHE_HOME=str(home / 'cache'))
     (home / 'data').mkdir(parents=True, exist_ok=True)
@@ -135,7 +157,8 @@ def sandbox(entrant, helix, claude_json):
     home = Path.home()
     args = ['bwrap', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp', '--ro-bind', '/tmp/.X11-unix',
             '/tmp/.X11-unix', '--tmpfs', f'/run/user/{os.getuid()}', '--tmpfs', str(home)]
-    for path in (home / '.local/bin', home / '.local/share/claude', home / 'toolchains', home / '.cache/helix/tools', helix):
+    for path in (home / '.local/bin', home / '.local/share/claude', home / 'toolchains', home / '.cache/helix/tools', PLAYWRIGHT_BROWSERS,
+                 playwright(helix).parent, helix):
         if path.exists():
             args += ['--ro-bind', str(path), str(path)]
     for path in (home / '.claude', helix / 'build', entrant, entrant.parent / '.home' / entrant.name):
@@ -147,7 +170,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('entrant', type=Path)
     parser.add_argument('--helix', type=Path, required=True)
-    parser.add_argument('--engine', choices=('helix', 'c'), default='helix')
+    parser.add_argument('--engine', choices=('helix', 'c', 'three'), default='helix')
     parser.add_argument('--model', default='sonnet')
     parser.add_argument('--hours', type=float, default=3)
     parser.add_argument('--trial', type=Path)
