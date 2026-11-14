@@ -1,0 +1,7 @@
+{
+  "what": "the skinned button's orange border, and raylib's white background beside it.",
+  "points": [
+    {"x": 44, "y": 90, "color": [255, 161, 0], "tolerance": 3},
+    {"x": 600, "y": 90, "color": [245, 245, 245], "tolerance": 3}
+  ]
+}

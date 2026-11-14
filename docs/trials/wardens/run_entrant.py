@@ -28,7 +28,8 @@ else in the home is hidden (the other checkouts and entrants, keys), and so are 
 end to run.log.
 
 --extras gives a helix-raylib entrant the extras: native/brief-extras.md as its brief, and the checkout's generated API pages of the
-extras (engines/raylib/api/extras-*.md, their doc comments) in docs/extras/, with the extras' part of the API index as its README.md.
+extras (engines/raylib/api/extras-*.md, their doc comments) in docs/extras/, with the extras' part of the API index as its README.md,
+and each extra's example program in docs/extras/examples/.
 
 --trial names another trial's variant to make the entrant from in place of Wardens (helix-raylib only), as
 ../2026-11-13-masked-blend/module: the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
@@ -100,6 +101,10 @@ def make(entrant, engine, trial=None, extras=None):
         index = (extras / 'README.md').read_text(encoding='utf-8')
         listed = index[index.index('- `helix.raylib.extras`'):].split('\n\n', 1)[0]
         (entrant / 'docs/extras/README.md').write_text('# helix.raylib.extras\n\n' + listed + '\n', encoding='utf-8')
+        # Each extra's example program, as engines/raylib/examples/extras/<extra>/Main.hx.
+        for main in sorted((extras.parent / 'examples/extras').glob('*/Main.hx')):
+            (entrant / 'docs/extras/examples' / main.parent.name).mkdir(parents=True)
+            shutil.copy(main, entrant / 'docs/extras/examples' / main.parent.name / 'Main.hx')
 
 def environment(entrant, helix, display):
     """The entrant's environment: the private display's, with the native build's settings and no sound, D-Bus or parent session."""

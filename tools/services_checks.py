@@ -70,7 +70,7 @@ def main():
     EXAMPLES = pins.LIBRARIES['helix-' + a.library] / 'examples'
     platform_checks.HEADED = a.headed
     platform_checks.NATIVE, platform_checks.PAGE = cli.targets(a)
-    names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx'))
+    names = a.names or sorted(p.parent.relative_to(EXAMPLES).as_posix() for p in EXAMPLES.glob('**/Main.hx') if 'native' not in p.parts)
     failed = False
     import screen_power
     with screen_power.kept_on(a.headed):

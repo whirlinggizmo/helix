@@ -1,0 +1,6 @@
+{
+  "what": "raylib's white background above the sprites, which start 40 pixels down.",
+  "points": [
+    {"x": 790, "y": 15, "color": [245, 245, 245], "tolerance": 3}
+  ]
+}

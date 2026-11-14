@@ -12,6 +12,7 @@ import helix.raylib.modules.RSprites;
 /** Provides helix-raylib's instanced texture draw, `DrawTextureInstanced`: many copies of one part of a texture, each placed by a
 	matrix, in one call, as three.js's InstancedMesh, Godot's MultiMesh and Unity's instancing draw many of one thing (docs/DECISIONS.md
 	47). Imported apart: `import helix.raylib.extras.Sprites.*;`.
+	The example `engines/raylib/examples/extras/sprites` uses it.
 
 	```haxe
 	var copies = [for (i in 0...100) MatrixMultiply(MatrixRotateZ(i * 0.1), MatrixTranslate(i * 8, 100, 0))];

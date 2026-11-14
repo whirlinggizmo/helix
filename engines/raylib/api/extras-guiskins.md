@@ -6,7 +6,7 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/GuiSkins.hx`](../src/helix/raylib/extras/GuiSkins.hx), `import helix.raylib.extras.GuiSkins;`
 
-Provides skins for raygui's controls, helix-raylib's own: a part of a control drawn from a texture, stretched as a nine-patch so its corners keep their shape, in place of its style's flat colors. The controls keep raygui's signatures, so a skinned button is still `GuiButton(bounds, text)`, and its text is still drawn in the style's text colors and font. Imported apart: `import helix.raylib.extras.GuiSkins.*;`. The skin's type, `GuiSkin`, is `helix.raylib`'s, with raylib's.
+Provides skins for raygui's controls, helix-raylib's own: a part of a control drawn from a texture, stretched as a nine-patch so its corners keep their shape, in place of its style's flat colors. The controls keep raygui's signatures, so a skinned button is still `GuiButton(bounds, text)`, and its text is still drawn in the style's text colors and font. Imported apart: `import helix.raylib.extras.GuiSkins.*;`, and the skin's type apart: `import helix.raylib.extras.GuiSkin;`. The example `engines/raylib/examples/extras/gui_skins` uses it.
 
 ```haxe
 // button.png: a cell of 190 x 49 for each state, top down (normal, focused, pressed, disabled), borders of 14.

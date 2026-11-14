@@ -1,0 +1,6 @@
+{
+  "what": "the dark background below the spheres.",
+  "points": [
+    {"x": 400, "y": 590, "color": [30, 32, 40], "tolerance": 3}
+  ]
+}

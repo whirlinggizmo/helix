@@ -1,0 +1,6 @@
+{
+  "what": "the maroon ball where it starts, no stick held.",
+  "points": [
+    {"x": 400, "y": 225, "color": [190, 33, 55], "tolerance": 3}
+  ]
+}

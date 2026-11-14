@@ -5,9 +5,9 @@ libs/platform/examples/*/native/
 libs/platform/examples/*/native-gpu/
 libs/services/examples/*/web/app.js
 libs/services/examples/*/native/
-engines/raylib/examples/*/web/app.js
-engines/raylib/examples/*/native/
-engines/raylib/examples/*/native-gpu/
+engines/raylib/examples/**/web/app.js
+engines/raylib/examples/**/native/
+engines/raylib/examples/**/native-gpu/
 libs/services/examples/patch/**/manifest.json
 libs/services/examples/patch/**/.*.manifests
 libs/services/examples/patch/.*.manifests

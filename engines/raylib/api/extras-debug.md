@@ -6,7 +6,7 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Debug.hx`](../src/helix/raylib/extras/Debug.hx), `import helix.raylib.extras.Debug;`
 
-Provides drawing for looking at what a program does: a model's skeleton as posed, its posed bounds, and the frame's cost. helix-raylib's own. raylib's DrawModelWires, DrawBoundingBox, DrawGrid and DrawFPS draw the rest. Imported apart: `import helix.raylib.extras.Debug.*;`.
+Provides drawing for looking at what a program does: a model's skeleton as posed, its posed bounds, and the frame's cost. helix-raylib's own. raylib's DrawModelWires, DrawBoundingBox, DrawGrid and DrawFPS draw the rest. Imported apart: `import helix.raylib.extras.Debug.*;`. The example `engines/raylib/examples/extras/debug` uses it.
 
 ### debug: a model's skeleton and bounds as posed, and the frame's cost
 

@@ -1,0 +1,7 @@
+{
+  "what": "the safe area's sky-blue outline at the window's left edge, and the platform printed natively.",
+  "printed": ["platform "],
+  "points": [
+    {"x": 1, "y": 300, "color": [102, 191, 255], "tolerance": 3}
+  ]
+}

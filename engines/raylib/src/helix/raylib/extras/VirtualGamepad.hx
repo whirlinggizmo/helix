@@ -9,6 +9,7 @@ import helix.raylib.modules.RVirtualGamepad;
 
 /** Provides on-screen gamepads for phones: sticks and buttons a finger works, read through raylib's gamepad functions. Imported apart, with its
 	constants: `import helix.raylib.extras.VirtualGamepad.*;`.
+	The example `engines/raylib/examples/extras/virtual_gamepad` uses it.
 
 	The first touch anywhere on the screen plugs an enabled virtual gamepad in, and so does the tilt once it's on, for a tilt stick
 	(`VirtualStickOptions.tilt`). A mouse click leaves the virtual gamepad unplugged. Once
