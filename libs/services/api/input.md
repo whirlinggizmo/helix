@@ -18,7 +18,7 @@ actions.bind("left", Keyboard(Left), Keyboard(A), Axis(0, LeftX, Negative));
 actions.bind("right", Keyboard(Right), Keyboard(D), Axis(0, LeftX, Positive));
 actions.bind("up", Keyboard(Up), Keyboard(W), Axis(0, LeftY, Negative));
 actions.bind("down", Keyboard(Down), Keyboard(S), Axis(0, LeftY, Positive));
-var move = new Vector2D();
+var move = new Vector2();
 // each frame:
 if (actions.isPressed("jump")) jump();
 actions.computeVector("left", "right", "up", "down", move);
@@ -37,7 +37,7 @@ function isPressed(name:String):Bool
 function isReleased(name:String):Bool
 function getValue(name:String):Float
 function getAxis(negative:String, positive:String):Float
-function computeVector(left:String, right:String, up:String, down:String, ?out:Vector2D):Vector2D
+function computeVector(left:String, right:String, up:String, down:String, ?out:Vector2):Vector2
 ```
 
 - `new`: Creates actions with nothing bound, over the devices the game made.
@@ -459,7 +459,7 @@ The buttons capture a finger landing on one of them, even within a stick's touch
 ```haxe
 var enabled:Bool
 var button:GamepadButton
-var position:Null<Vector2D>
+var position:Null<Vector2>
 var radius:Float
 var down(default, null):Bool
 var centerX(default, null):Float
@@ -485,12 +485,12 @@ Represents how one button of a `VirtualGamepad` starts. Positions and sizes are 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{button:GamepadButton, ?position:Vector2D, ?enabled:Bool, ?radius:Float}
+{button:GamepadButton, ?position:Vector2, ?enabled:Bool, ?radius:Float}
 ```
 
 ```haxe
 final button:GamepadButton
-final position:Null<Vector2D>
+final position:Null<Vector2>
 final enabled:Null<Bool>
 final radius:Null<Float>
 ```
@@ -536,7 +536,7 @@ var left(default, null):VirtualStick
 var right(default, null):VirtualStick
 var tilt:Null<Tilt>
 var buttons(default, null):Array<VirtualButton>
-var blockedBounds:Array<Bounds2D>
+var blockedBounds:Array<Aabb2D>
 function poll():Void
 function isConnected(slot:Int):Bool
 function getName(slot:Int):String
@@ -603,13 +603,13 @@ Represents how a `VirtualGamepad` starts. Every field has a default, so options 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{?basePlacement:VirtualStickBase, ?deadZone:Float, ?blockedBounds:Array<Bounds2D>, ?left:VirtualStickOptions, ?right:VirtualStickOptions, ?buttons:Array<VirtualButtonOptions>}
+{?basePlacement:VirtualStickBase, ?deadZone:Float, ?blockedBounds:Array<Aabb2D>, ?left:VirtualStickOptions, ?right:VirtualStickOptions, ?buttons:Array<VirtualButtonOptions>}
 ```
 
 ```haxe
 final basePlacement:Null<VirtualStickBase>
 final deadZone:Null<Float>
-final blockedBounds:Null<Array<Bounds2D>>
+final blockedBounds:Null<Array<Aabb2D>>
 final left:Null<VirtualStickOptions>
 final right:Null<VirtualStickOptions>
 final buttons:Null<Array<VirtualButtonOptions>>
@@ -636,10 +636,10 @@ A stick with `tilt` reads the tilt in place of a finger, and captures none.
 
 ```haxe
 var enabled(default, set):Bool
-var touchZone:Null<Bounds2D>
+var touchZone:Null<Aabb2D>
 var tilt(default, set):Bool
 var basePlacement:VirtualStickBase
-var fixedBasePosition:Null<Vector2D>
+var fixedBasePosition:Null<Vector2>
 var radius:Float
 var deadZone(default, set):Float
 var held(get, never):Bool
@@ -687,15 +687,15 @@ Represents how one stick of a `VirtualGamepad` starts. A field left out takes th
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{?enabled:Bool, ?touchZone:Bounds2D, ?tilt:Bool, ?basePlacement:VirtualStickBase, ?fixedBasePosition:Vector2D, ?radius:Float, ?deadZone:Float}
+{?enabled:Bool, ?touchZone:Aabb2D, ?tilt:Bool, ?basePlacement:VirtualStickBase, ?fixedBasePosition:Vector2, ?radius:Float, ?deadZone:Float}
 ```
 
 ```haxe
 final enabled:Null<Bool>
-final touchZone:Null<Bounds2D>
+final touchZone:Null<Aabb2D>
 final tilt:Null<Bool>
 final basePlacement:Null<VirtualStickBase>
-final fixedBasePosition:Null<Vector2D>
+final fixedBasePosition:Null<Vector2>
 final radius:Null<Float>
 final deadZone:Null<Float>
 ```

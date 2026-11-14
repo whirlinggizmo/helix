@@ -1,7 +1,7 @@
 package helix.render;
 
 #if !macro
-import helix.math.Matrix2D;
+import helix.math.Matrix3;
 import helix.platform.Blend;
 import helix.platform.ColorChannels;
 import helix.platform.CullFace;
@@ -122,7 +122,7 @@ import helix.services.shaders.ShaderValues;
 	var crate = new Material3D();
 	crate.baseColorTexture = crateTexture;
 	crate.roughness = .8;
-	batch.drawMesh(cube, crate, Matrix3D.fromTranslation(0, .5, 0, placement));
+	batch.drawMesh(cube, crate, Matrix4.fromTranslation(0, .5, 0, placement));
 	``` */
 class Material3D {
 	#if !macro
@@ -232,7 +232,7 @@ class Material3D {
 
 		It is read at each draw, so changing it each frame scrolls, turns or tiles the material's textures with no shader of the
 		program's (`material.textureTransform.makeIdentity().appendTranslation(time * .1, 0, material.textureTransform)`). */
-	public final textureTransform = new Matrix2D();
+	public final textureTransform = new Matrix3();
 
 	/** Gets or sets the alpha below which a texel isn't drawn, for cut-out leaves and fences, in the color and the shadow pass alike: 0
 		until set, so nothing is cut. Clamped to 0 to 1. */

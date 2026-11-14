@@ -1,6 +1,6 @@
 package helix.raylib.internal;
 
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.formats.gltf.GltfMaterial;
@@ -529,7 +529,7 @@ class Models {
 				new BoneInfo(bones.bones[b].name, parent);
 			}
 		];
-		var identity = new Matrix3D(), given = false;
+		var identity = new Matrix4(), given = false;
 		for (m in skin.inverseBinds)
 			for (k in 0...16)
 				if (m.values[k] != identity.values[k])

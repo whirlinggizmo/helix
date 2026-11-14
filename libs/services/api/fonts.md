@@ -75,7 +75,7 @@ function toString():String
 Specifies how `Fonts.load` places glyphs on the atlas.
 
 - `FontPacking.Rows`: In rows, in the order asked for, each row a line's height.
-- `FontPacking.Skyline`: As tightly as a skyline packs them, tallest first (helix-math's `RectPacker2D`).
+- `FontPacking.Skyline`: As tightly as a skyline packs them, tallest first (helix-math's `RectanglePacker`).
 
 ```haxe
 function toString():String

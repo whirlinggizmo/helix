@@ -1,6 +1,6 @@
 package helix.geometry;
 
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.math.Transform3D;
 
 /** Represents a skeleton: bones, each a parent's child or a root, that skinned meshes' vertices follow, through skins.
@@ -46,12 +46,12 @@ class Skeleton3D {
 		@param pose  Each bone's transform relative to its parent.
 		@param out  Optional. Set to the matrices, reused.
 		@return  The matrices, by bone. */
-	public function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix3D>):Array<Matrix3D> {
-		out = fit(out, bones.length, () -> new Matrix3D());
+	public function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix4>):Array<Matrix4> {
+		out = fit(out, bones.length, () -> new Matrix4());
 		for (i => bone in bones) {
 			pose[i].toMatrix(out[i]);
 			if (bone.parentIndex >= 0)
-				Matrix3D.compose(out[i], out[bone.parentIndex], out[i]);
+				Matrix4.compose(out[i], out[bone.parentIndex], out[i]);
 		}
 		return out;
 	}

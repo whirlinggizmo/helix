@@ -174,7 +174,7 @@ class Renderer {
 			pixels are copied.
 		@return  The cube texture, sampled linearly. `createCubeTextureMipmapped` makes one with mipmaps.
 		@throws String  Not six faces, faces not square and alike, or larger than this GPU allows. */
-	public function createCubeTexture(faces:Array<Image>):CubeTexture3D {
+	public function createCubeTexture(faces:Array<Image>):CubeTexture {
 		checkFaces(faces);
 		var levels:Array<Bytes> = [];
 		levels.push(cubeLevel(faces));
@@ -188,7 +188,7 @@ class Renderer {
 			pixels are copied.
 		@return  The cube texture, sampled linearly.
 		@throws String  Not six faces, faces not square and alike, or larger than this GPU allows. */
-	public function createCubeTextureMipmapped(faces:Array<Image>):CubeTexture3D {
+	public function createCubeTextureMipmapped(faces:Array<Image>):CubeTexture {
 		checkFaces(faces);
 		var mips = [for (f in faces) f.getMipmaps()];
 		var levels = [cubeLevel(faces)];
@@ -215,8 +215,8 @@ class Renderer {
 		return bytes;
 	}
 
-	function cubeOf(levels:Array<Bytes>, size:Int):CubeTexture3D {
-		var cube = new CubeTexture3D(graphics.createCubeTexture(size, levels, Rgba8), size);
+	function cubeOf(levels:Array<Bytes>, size:Int):CubeTexture {
+		var cube = new CubeTexture(graphics.createCubeTexture(size, levels, Rgba8), size);
 		cube.renderer = this;
 		live.set(cube, cube.dispose);
 		return cube;

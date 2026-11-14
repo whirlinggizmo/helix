@@ -1,7 +1,7 @@
 package helix.render;
 
 /** Represents a light that a `Batch3D` lights its lit materials with: a `DirectionalLight3D`, a `PointLight3D`, a `SpotLight3D` or a
-	`HemisphereLight3D`.
+	`HemisphereLight`.
 
 	A program makes its lights and puts them in `Batch3D.lights`; each `begin` reads them as they are then. Its color is 0xAARRGGBB, its
 	alpha ignored, decoded from sRGB and multiplied by its intensity into the light's radiance, which the shaders work in.

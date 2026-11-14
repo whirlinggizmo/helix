@@ -1,9 +1,9 @@
 package helix.render;
 
-import helix.geometry.Frustum3D;
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
-import helix.math.Vector3D;
+import helix.geometry.Frustum;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
+import helix.math.Vector3;
 import helix.platform.Blend;
 import helix.platform.CullFace;
 import helix.platform.Sampling;
@@ -70,8 +70,8 @@ class BatchShadows {
 	// The shadow map the views' draws read, this begin's.
 	final shared = new ShaderSharedTexture(0, Sampling.LINEAR);
 	// This begin's maps: each one's matrix, the volume it covers, its pass, and how many there are.
-	final matrices = [for (_ in 0...MOST_MAPS) new Matrix3D()];
-	final volumes = [for (_ in 0...MOST_MAPS) new Frustum3D()];
+	final matrices = [for (_ in 0...MOST_MAPS) new Matrix4()];
+	final volumes = [for (_ in 0...MOST_MAPS) new Frustum()];
 	final passes:Array<RenderPass> = [];
 	var mapCount = 0;
 	// The bone palettes uploaded before this begin's passes.
@@ -83,12 +83,12 @@ class BatchShadows {
 	// The casters' pipeline states, by indexing and cull.
 	final states = new Map<Int, ShaderPipelineState>();
 	// Scratch values, reused.
-	final view = new Matrix3D();
-	final projection = new Matrix3D();
-	final scratch = new Matrix3D();
-	final inverse = new Matrix3D();
-	final box = new Bounds3D();
-	final moved = new Vector3D();
+	final view = new Matrix4();
+	final projection = new Matrix4();
+	final scratch = new Matrix4();
+	final inverse = new Matrix4();
+	final box = new Aabb3D();
+	final moved = new Vector3();
 	final corners:Array<Float> = [];
 	final floats = [0., 0, 0, 0];
 	final ends = [0., 0, 0, 0];
@@ -148,21 +148,21 @@ class BatchShadows {
 				var half = Math.min(Math.atan(Math.tan(outer) * (1 + 2 * (shadow.radius + 2) / shadow.mapSize)), 1.5);
 				var dx = f[at + 4], dy = f[at + 5], dz = f[at + 6];
 				var up = Math.abs(dy) > .99;
-				Matrix3D.fromLookAt(f[at], f[at + 1], f[at + 2], f[at] + dx, f[at + 1] + dy, f[at + 2] + dz, 0, up ? 0 : 1, up ? 1 : 0, view);
-				Matrix3D.fromPerspective(half * 2, 1, reach * NEAR, reach, projection);
+				Matrix4.fromLookAt(f[at], f[at + 1], f[at + 2], f[at] + dx, f[at + 1] + dy, f[at + 2] + dz, 0, up ? 0 : 1, up ? 1 : 0, view);
+				Matrix4.fromPerspective(half * 2, 1, reach * NEAR, reach, projection);
 				addMap(view, projection);
 			} else {
 				mode = 3;
 				var reach = f[at + 3] > 0 ? Math.min(f[at + 3], shadow.distance) : shadow.distance;
 				var fov = 2 * Math.atan(1 + 2 * (shadow.radius + 2) / shadow.mapSize);
-				Matrix3D.fromPerspective(fov, 1, reach * NEAR, reach, projection);
+				Matrix4.fromPerspective(fov, 1, reach * NEAR, reach, projection);
 				var x = f[at], y = f[at + 1], z = f[at + 2];
 				for (face in 0...6) {
 					var axis = face >> 1, sign = face & 1 == 0 ? 1 : -1;
 					var tx = axis == 0 ? sign : 0,
 						ty = axis == 1 ? sign : 0,
 						tz = axis == 2 ? sign : 0;
-					Matrix3D.fromLookAt(x, y, z, x + tx, y + ty, z + tz, 0, axis == 1 ? 0 : -1, axis == 1 ? sign : 0, view);
+					Matrix4.fromLookAt(x, y, z, x + tx, y + ty, z + tz, 0, axis == 1 ? 0 : -1, axis == 1 ? sign : 0, view);
 					addMap(view, projection);
 				}
 			}
@@ -198,20 +198,20 @@ class BatchShadows {
 	// Sets view to look along a direction from the origin.
 	function lookAlong(dx:Float, dy:Float, dz:Float):Void {
 		var up = Math.abs(dy) > .99;
-		Matrix3D.fromLookAt(0, 0, 0, dx, dy, dz, 0, up ? 0 : 1, up ? 1 : 0, view);
+		Matrix4.fromLookAt(0, 0, 0, dx, dy, dz, 0, up ? 0 : 1, up ? 1 : 0, view);
 	}
 
 	// Adds a map of a view and a projection.
-	function addMap(view:Matrix3D, projection:Matrix3D):Void {
+	function addMap(view:Matrix4, projection:Matrix4):Void {
 		if (mapCount == MOST_MAPS)
 			throw "helix-render: more than 24 shadow maps in a batch";
-		Matrix3D.compose(view, projection, matrices[mapCount]);
-		Frustum3D.fromMatrix(matrices[mapCount], volumes[mapCount]);
+		Matrix4.compose(view, projection, matrices[mapCount]);
+		Frustum.fromMatrix(matrices[mapCount], volumes[mapCount]);
 		mapCount++;
 	}
 
 	// A directional light's one map over a box, square, the light looking along view.
-	function fitBox(bounds:Bounds3D):Void {
+	function fitBox(bounds:Aabb3D):Void {
 		box.makeEmpty();
 		for (corner in 0...8) {
 			view.transformPoint(corner & 1 == 0 ? bounds.minX : bounds.maxX, corner & 2 == 0 ? bounds.minY : bounds.maxY,
@@ -222,7 +222,7 @@ class BatchShadows {
 			cx = box.centerX,
 			cy = box.centerY;
 		var margin = (box.maxZ - box.minZ) * .01 + 1e-4;
-		Matrix3D.fromOrthographic(cx - half, cx + half, cy - half, cy + half, -box.maxZ - margin, -box.minZ + margin, projection);
+		Matrix4.fromOrthographic(cx - half, cx + half, cy - half, cy + half, -box.maxZ - margin, -box.minZ + margin, projection);
 		addMap(view, projection);
 	}
 
@@ -279,7 +279,7 @@ class BatchShadows {
 			var cx = Math.floor(moved.x / texel) * texel,
 				cy = Math.floor(moved.y / texel) * texel;
 			var back = 2 * Math.max(radius, shadow.distance);
-			Matrix3D.fromOrthographic(cx - radius, cx + radius, cy - radius, cy + radius, -moved.z - radius - back, -moved.z + radius, projection);
+			Matrix4.fromOrthographic(cx - radius, cx + radius, cy - radius, cy + radius, -moved.z - radius - back, -moved.z + radius, projection);
 			addMap(view, projection);
 		}
 	}
@@ -288,7 +288,7 @@ class BatchShadows {
 	// depths along its axis.
 	function slice(v:View3D):Void {
 		corners.resize(26);
-		Matrix3D.compose(v.viewMatrix, v.projectionMatrix, scratch);
+		Matrix4.compose(v.viewMatrix, v.projectionMatrix, scratch);
 		if (scratch.invert(inverse) == null)
 			inverse.makeIdentity();
 		var m = inverse.values, w = v.viewMatrix.values;
@@ -401,7 +401,7 @@ class BatchShadows {
 	}
 
 	/** Draws a mesh's depth into each map whose volume holds it, placed, skinned and cut as its color draw is. */
-	function castMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, state:Null<MeshState3D>, bounds:Bounds3D, skinning:Null<Array<Matrix3D>>,
+	function castMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, state:Null<MeshState3D>, bounds:Aabb3D, skinning:Null<Array<Matrix4>>,
 			boneTexture:Int, boneOffset:Int):Void {
 		if (!casts(material))
 			return;
@@ -429,7 +429,7 @@ class BatchShadows {
 		for (k in 0...mapCount) {
 			if (!volumes[k].intersectsBounds(box))
 				continue;
-			fill.matrix(fill.modelViewProjection, Matrix3D.compose(transform, matrices[k], scratch));
+			fill.matrix(fill.modelViewProjection, Matrix4.compose(transform, matrices[k], scratch));
 			var d = renderer.makeDraw(spec);
 			d.setBuffer(0, mesh.buffer);
 			d.setBuffer(1, batch.identityInstance);
@@ -441,7 +441,7 @@ class BatchShadows {
 	}
 
 	/** Draws a mesh's instanced copies' depth into every map, those copies a map's volume holds. */
-	function castInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix3D>, parent:Null<Matrix3D>, firstIndex:Int, copyCount:Int):Void {
+	function castInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix4>, parent:Null<Matrix4>, firstIndex:Int, copyCount:Int):Void {
 		if (!casts(material))
 			return;
 		if (mesh.disposed)
@@ -452,7 +452,7 @@ class BatchShadows {
 		var stream = batch.instances, first = stream.count, kept = 0;
 		for (i in firstIndex...firstIndex + copyCount) {
 			var copy = transforms[i];
-			Batch3D.transformBox(mesh.bounds, parent == null ? copy : Matrix3D.compose(copy, parent, scratch), box);
+			Batch3D.transformBox(mesh.bounds, parent == null ? copy : Matrix4.compose(copy, parent, scratch), box);
 			var reached = false;
 			for (k in 0...mapCount)
 				if (volumes[k].intersectsBounds(box))
@@ -472,7 +472,7 @@ class BatchShadows {
 		fill.matrix(fill.model, model);
 		var spec = renderer.pipelineFor(fill.shader, stateFor(mesh.indexBuffer != 0, material.cull), mesh.layout);
 		for (k in 0...mapCount) {
-			fill.matrix(fill.modelViewProjection, Matrix3D.compose(model, matrices[k], scratch));
+			fill.matrix(fill.modelViewProjection, Matrix4.compose(model, matrices[k], scratch));
 			var d = renderer.makeDraw(spec);
 			d.setBuffer(0, mesh.buffer);
 			d.setBuffer(1, 0, stream);

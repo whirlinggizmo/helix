@@ -5,7 +5,7 @@ import helix.geometry.Animation3D;
 import helix.geometry.Mesh3D;
 import helix.geometry.Skeleton3D;
 import helix.geometry.Skin3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 
 /** Represents a model as `Models` reads it: its meshes, with their nodes' transforms put into them, its materials, and its images
 	decoded for the GPU (`ModelImage3D`). A glTF file and an OBJ file give the same kinds: an OBJ file's materials are made glTF materials
@@ -30,7 +30,7 @@ class Model3D {
 	/** Gets each mesh's node's transform in the model, beside it in `meshes`. A mesh without a skin has it in its vertices already; a
 		skinned one hasn't, and doesn't need it: its skin's matrices put it in the model. It is kept for an engine that places skinned
 		meshes by their nodes anyway, as raylib does. An OBJ file's are identities. */
-	public final meshTransforms:Array<Matrix3D>;
+	public final meshTransforms:Array<Matrix4>;
 
 	/** Gets the skeleton its skinned meshes follow: every node any of the file's skins names as a joint, and the nodes above them, each a
 		bone (its node's name, its parent, its node's own transform at rest), parents first; null for a model without skins. */
@@ -58,7 +58,7 @@ class Model3D {
 	public final images:Array<Null<ModelImage3D>>;
 
 	@:allow(helix.services.models)
-	function new(path:String, meshes:Array<Mesh3D>, meshMaterialIndices:Array<Int>, meshSkinIndices:Array<Int>, meshTransforms:Array<Matrix3D>,
+	function new(path:String, meshes:Array<Mesh3D>, meshMaterialIndices:Array<Int>, meshSkinIndices:Array<Int>, meshTransforms:Array<Matrix4>,
 			skeleton:Null<Skeleton3D>, skins:Array<Skin3D>, animations:Array<Animation3D>, materials:Array<GltfMaterial>, images:Array<Null<ModelImage3D>>) {
 		this.path = path;
 		this.meshes = meshes;

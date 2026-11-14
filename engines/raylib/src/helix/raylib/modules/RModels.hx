@@ -3,7 +3,7 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.math.Trig;
 import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
@@ -786,10 +786,10 @@ class RModels {
 	// DrawModelEx from numbers, its matrices composed into the scratch ones, so a draw allocates none.
 	static function drawModelAt(model:Model, x:Float, y:Float, z:Float, axisX:Float, axisY:Float, axisZ:Float, angle:Float, scaleX:Float, scaleY:Float,
 			scaleZ:Float, tint:Color):Void {
-		var m = Matrix3D.fromScale(scaleX, scaleY, scaleZ, placed);
-		Matrix3D.compose(m, Matrix3D.fromRotation(axisX, axisY, axisZ, angle * DEG2RAD, placing), m);
-		Matrix3D.compose(m, Matrix3D.fromTranslation(x, y, z, placing), m);
-		var transform = Matrix3D.compose(toMatrix3D(model.transform, placing), m, placing);
+		var m = Matrix4.fromScale(scaleX, scaleY, scaleZ, placed);
+		Matrix4.compose(m, Matrix4.fromRotation(axisX, axisY, axisZ, angle * DEG2RAD, placing), m);
+		Matrix4.compose(m, Matrix4.fromTranslation(x, y, z, placing), m);
+		var transform = Matrix4.compose(toMatrix4(model.transform, placing), m, placing);
 		for (i in 0...model.meshCount) {
 			var material = model.materials[model.meshMaterial[i]];
 			if (material == null)
@@ -799,8 +799,8 @@ class RModels {
 	}
 
 	// The matrices drawModelAt composes in: the placement, and what is composed into it, then the model's transform placed.
-	static final placed = new Matrix3D();
-	static final placing = new Matrix3D();
+	static final placed = new Matrix4();
+	static final placing = new Matrix4();
 
 	/** Draws a model's triangles as their edges, as `DrawModel` places it, through rlgl's wire mode.
 
@@ -882,7 +882,7 @@ class RModels {
 		@param material  The material.
 		@param transform  The transform. */
 	static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void {
-		drawMesh(mesh, material, toMatrix3D(transform, placing), WHITE);
+		drawMesh(mesh, material, toMatrix4(transform, placing), WHITE);
 	}
 
 	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
@@ -917,11 +917,11 @@ class RModels {
 		}
 		var bytes = haxe.io.Bytes.alloc(count * 64);
 		for (i in 0...count)
-			for (k => v in toMatrix3D(transforms[i]).values)
+			for (k => v in toMatrix4(transforms[i]).values)
 				bytes.setFloat((i * 16 + k) * 4, v);
 		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
 		Runtime.frame.retire(buffer);
-		drawMesh(mesh, material, new Matrix3D(), WHITE, buffer, count);
+		drawMesh(mesh, material, new Matrix4(), WHITE, buffer, count);
 	}
 
 	/** Sends a mesh's vertices to the GPU, so the mesh can be drawn.
@@ -1964,7 +1964,7 @@ class RModels {
 		var v = mesh.vertices;
 		if (v == null)
 			return collision;
-		var t = toMatrix3D(transform);
+		var t = toMatrix4(transform);
 		function corner(i:Int):Vector3 {
 			var p = t.transformPoint(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
 			return new Vector3(p.x, p.y, p.z);
@@ -2113,7 +2113,7 @@ class RModels {
 		if (Std.isOfType(value, Vector4))
 			return [value.x, value.y, value.z, value.w];
 		if (Std.isOfType(value, Matrix))
-			return toMatrix3D(value).values;
+			return toMatrix4(value).values;
 		if (Std.isOfType(value, Float))
 			return [(value : Float)];
 		var memory:Null<{bytes:haxe.io.Bytes, offset:Int, length:Int}> = if (Std.isOfType(value, haxe.io.Bytes)) {
@@ -2139,9 +2139,9 @@ class RModels {
 
 	// raylib's Matrix, named by rows, and helix-math's, stored by columns: m0 to m3 the first column in both.
 
-	static function toMatrix3D(m:Matrix, ?out:Matrix3D):Matrix3D {
+	static function toMatrix4(m:Matrix, ?out:Matrix4):Matrix4 {
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		var v = out.values;
 		v[0] = m.m0;
 		v[1] = m.m1;
@@ -2162,7 +2162,7 @@ class RModels {
 		return out;
 	}
 
-	static function toMatrix(m:Matrix3D):Matrix {
+	static function toMatrix(m:Matrix4):Matrix {
 		var a = m.values;
 		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
 	}
@@ -2178,7 +2178,7 @@ class RModels {
 	// a program without one links none of it.
 	static var boneWriter:Null<(mesh:Mesh, shader:Shader) -> Void>;
 
-	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix3D, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
+	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix4, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);
 		if (mesh.gpu.buffers == null)

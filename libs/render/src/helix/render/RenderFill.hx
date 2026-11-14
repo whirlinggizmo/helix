@@ -1,7 +1,7 @@
 package helix.render;
 
-import helix.math.Matrix2D;
-import helix.math.Matrix3D;
+import helix.math.Matrix3;
+import helix.math.Matrix4;
 import helix.platform.Sampling;
 import helix.services.shaders.Shader;
 import helix.services.shaders.ShaderSampler;
@@ -91,7 +91,7 @@ class RenderFill {
 	static inline function holds(u:ShaderUniform):Bool
 		return u.declared && !u.shared;
 
-	function matrix(u:ShaderUniform, m:Matrix3D):Void
+	function matrix(u:ShaderUniform, m:Matrix4):Void
 		if (holds(u))
 			values.writeMatrix(u, m);
 
@@ -112,7 +112,7 @@ class RenderFill {
 			values.writeTexture(s, handle, sampling);
 
 	/** Writes a 2D matrix as a `mat3`, by columns. */
-	function matrix2D(u:ShaderUniform, m:Matrix2D):Void {
+	function matrix2D(u:ShaderUniform, m:Matrix3):Void {
 		if (!holds(u))
 			return;
 		var f = scratch;

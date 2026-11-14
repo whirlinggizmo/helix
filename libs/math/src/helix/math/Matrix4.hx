@@ -11,11 +11,11 @@ package helix.math;
 	`Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
 
 	```haxe
-	var model = Matrix3D.fromScale(2, 2, 2);
+	var model = Matrix4.fromScale(2, 2, 2);
 	model.appendRotation(0, 1, 0, angle, model).appendTranslation(x, 0, z, model);
-	var mvp = Matrix3D.compose(model, view).append(projection);
+	var mvp = Matrix4.compose(model, view).append(projection);
 	``` */
-class Matrix3D {
+class Matrix4 {
 	/** Gets the 16 numbers, by columns: row r of column c at `values[c * 4 + r]`; the translation at 12, 13 and 14. */
 	public final values:Array<Float> = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
@@ -25,7 +25,7 @@ class Matrix3D {
 	/** Makes this matrix the identity.
 
 		@return  This matrix. */
-	public function makeIdentity():Matrix3D {
+	public function makeIdentity():Matrix4 {
 		return set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 	}
 
@@ -33,7 +33,7 @@ class Matrix3D {
 
 		@param other  The matrix to copy.
 		@return  This matrix. */
-	public function copyFrom(other:Matrix3D):Matrix3D {
+	public function copyFrom(other:Matrix4):Matrix4 {
 		for (i in 0...16)
 			values[i] = other.values[i];
 		return this;
@@ -46,9 +46,9 @@ class Matrix3D {
 		@param z  Along z.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromTranslation(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D {
+	public static function fromTranslation(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4 {
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1);
 	}
 
@@ -59,9 +59,9 @@ class Matrix3D {
 		@param z  Along z.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromScale(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D {
+	public static function fromScale(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4 {
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1);
 	}
 
@@ -73,7 +73,7 @@ class Matrix3D {
 		@param radians  The angle, counterclockwise looking down the axis toward its origin.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix3D):Matrix3D {
+	public static function fromRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix4):Matrix4 {
 		var x = axisX, y = axisY, z = axisZ, lengthSquared = x * x + y * y + z * z;
 		if (lengthSquared != 1 && lengthSquared != 0) {
 			var inverse = 1 / Math.sqrt(lengthSquared);
@@ -83,7 +83,7 @@ class Matrix3D {
 		}
 		var s = Trig.sin(radians), c = Trig.cos(radians), t = 1 - c;
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(x * x * t
 			+ c, y * x * t
 			+ z * s, z * x * t
@@ -105,10 +105,10 @@ class Matrix3D {
 		@param w  Its w.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromQuaternion(x:Float, y:Float, z:Float, w:Float, ?out:Matrix3D):Matrix3D {
+	public static function fromQuaternion(x:Float, y:Float, z:Float, w:Float, ?out:Matrix4):Matrix4 {
 		var a2 = x * x, b2 = y * y, c2 = z * z, ac = x * z, ab = x * y, bc = y * z, ad = w * x, bd = w * y, cd = w * z;
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(1
 			- 2 * (b2 + c2), 2 * (ab + cd), 2 * (ac - bd), 0, 2 * (ab - cd), 1
 			- 2 * (a2 + c2), 2 * (bc + ad), 0, 2 * (ac + bd), 2 * (bc - ad),
@@ -130,7 +130,7 @@ class Matrix3D {
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
 	public static function fromLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float,
-			?out:Matrix3D):Matrix3D {
+			?out:Matrix4):Matrix4 {
 		var zx = eyeX - targetX, zy = eyeY - targetY, zz = eyeZ - targetZ;
 		var length = Math.sqrt(zx * zx + zy * zy + zz * zz);
 		if (length == 0)
@@ -151,7 +151,7 @@ class Matrix3D {
 			yy = zz * xx - zx * xz,
 			yz = zx * xy - zy * xx;
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(xx, yx, zx, 0, xy, yy, zy, 0, xz, yz, zz, 0,
 			-(xx * eyeX + xy * eyeY + xz * eyeZ),
 			-(yx * eyeX + yy * eyeY + yz * eyeZ),
@@ -166,12 +166,12 @@ class Matrix3D {
 		@param far  The far plane's distance.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromPerspective(fovY:Float, aspect:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D {
+	public static function fromPerspective(fovY:Float, aspect:Float, near:Float, far:Float, ?out:Matrix4):Matrix4 {
 		var top = near * Trig.tan(fovY * .5),
 			right = top * aspect,
 			depth = far - near;
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(near / right, 0, 0, 0, 0, near / top, 0, 0, 0, 0, -(far + near) / depth, -1, 0, 0, -(far * near * 2) / depth, 0);
 	}
 
@@ -185,10 +185,10 @@ class Matrix3D {
 		@param far  The far plane's distance.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D {
+	public static function fromOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix4):Matrix4 {
 		var width = right - left, height = top - bottom, depth = far - near;
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(2 / width, 0, 0, 0, 0, 2 / height, 0, 0, 0, 0, -2 / depth, 0,
 			-(left + right) / width,
 			-(top + bottom) / height,
@@ -206,10 +206,10 @@ class Matrix3D {
 		@param far  The far plane's distance.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D {
+	public static function fromFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix4):Matrix4 {
 		var width = right - left, height = top - bottom, depth = far - near;
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set(near * 2 / width, 0, 0, 0, 0, near * 2 / height, 0, 0, (right + left) / width, (top + bottom) / height, -(far + near) / depth, -1, 0,
 			0, -(far * near * 2) / depth, 0);
 	}
@@ -220,9 +220,9 @@ class Matrix3D {
 		@param second  The transform applied after it.
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be first or second.
 		@return  The matrix. */
-	public static function compose(first:Matrix3D, second:Matrix3D, ?out:Matrix3D):Matrix3D {
+	public static function compose(first:Matrix4, second:Matrix4, ?out:Matrix4):Matrix4 {
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		var a = first.values, b = second.values;
 		for (column in 0...4)
 			for (row in 0...4)
@@ -239,7 +239,7 @@ class Matrix3D {
 		@param other  The transform applied after this one.
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be this matrix or the other.
 		@return  The matrix. */
-	public function append(other:Matrix3D, ?out:Matrix3D):Matrix3D {
+	public function append(other:Matrix4, ?out:Matrix4):Matrix4 {
 		return compose(this, other, out);
 	}
 
@@ -248,7 +248,7 @@ class Matrix3D {
 		@param other  The transform applied before this one.
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be this matrix or the other.
 		@return  The matrix. */
-	public function prepend(other:Matrix3D, ?out:Matrix3D):Matrix3D {
+	public function prepend(other:Matrix4, ?out:Matrix4):Matrix4 {
 		return compose(other, this, out);
 	}
 
@@ -259,7 +259,7 @@ class Matrix3D {
 		@param z  Along z.
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be this matrix.
 		@return  The matrix. */
-	public function appendTranslation(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D {
+	public function appendTranslation(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4 {
 		out = copied(out);
 		var values = out.values;
 		values[12] += values[15] * x;
@@ -281,7 +281,7 @@ class Matrix3D {
 		@param z  Along z.
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be this matrix.
 		@return  The matrix. */
-	public function appendScale(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D {
+	public function appendScale(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4 {
 		out = copied(out);
 		var values = out.values;
 		for (column in 0...4) {
@@ -300,7 +300,7 @@ class Matrix3D {
 		@param radians  The angle, counterclockwise looking down the axis toward its origin.
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be this matrix.
 		@return  The matrix. */
-	public function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix3D):Matrix3D {
+	public function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix4):Matrix4 {
 		return compose(this, fromRotation(axisX, axisY, axisZ, radians, shared()), out);
 	}
 
@@ -308,7 +308,7 @@ class Matrix3D {
 
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be this matrix.
 		@return  The inverse, or null, leaving out unchanged and making nothing, when this matrix has no inverse. */
-	public function invert(?out:Matrix3D):Null<Matrix3D> {
+	public function invert(?out:Matrix4):Null<Matrix4> {
 		var m = values;
 		var a00 = m[0], a01 = m[1], a02 = m[2], a03 = m[3], a10 = m[4], a11 = m[5], a12 = m[6], a13 = m[7];
 		var a20 = m[8], a21 = m[9], a22 = m[10], a23 = m[11], a30 = m[12], a31 = m[13], a32 = m[14], a33 = m[15];
@@ -329,7 +329,7 @@ class Matrix3D {
 			return null;
 		var d = 1 / determinant;
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out.set((a11 * b11 - a12 * b10 + a13 * b09) * d, (-a01 * b11 + a02 * b10 - a03 * b09) * d, (a31 * b05 - a32 * b04 + a33 * b03) * d,
 			(-a21 * b05 + a22 * b04 - a23 * b03) * d, (-a10 * b11 + a12 * b08 - a13 * b07) * d, (a00 * b11 - a02 * b08 + a03 * b07) * d,
 			(-a30 * b05 + a32 * b02 - a33 * b01) * d, (a20 * b05 - a22 * b02 + a23 * b01) * d, (a10 * b10 - a11 * b08 + a13 * b06) * d,
@@ -342,7 +342,7 @@ class Matrix3D {
 
 		@param out  Optional. The matrix to fill; a new one when omitted. It may be this matrix.
 		@return  The transpose. */
-	public function transpose(?out:Matrix3D):Matrix3D {
+	public function transpose(?out:Matrix4):Matrix4 {
 		out = copied(out);
 		var values = out.values;
 		for (column in 0...4)
@@ -361,10 +361,10 @@ class Matrix3D {
 		@param z  Its z.
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The point. */
-	public function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D {
+	public function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3 {
 		var m = values;
 		if (out == null)
-			out = new Vector3D();
+			out = new Vector3();
 		return out.set(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]);
 	}
 
@@ -375,17 +375,17 @@ class Matrix3D {
 		@param z  Its z.
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The direction. */
-	public function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D {
+	public function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3):Vector3 {
 		var m = values;
 		if (out == null)
-			out = new Vector3D();
+			out = new Vector3();
 		return out.set(m[0] * x + m[4] * y + m[8] * z, m[1] * x + m[5] * y + m[9] * z, m[2] * x + m[6] * y + m[10] * z);
 	}
 
 	// The out, a new matrix when there is none, holding this matrix's values, for an operation that then changes it where it is.
-	function copied(out:Null<Matrix3D>):Matrix3D {
+	function copied(out:Null<Matrix4>):Matrix4 {
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		return out == this ? out : out.copyFrom(this);
 	}
 
@@ -393,7 +393,7 @@ class Matrix3D {
 	static final scratch:Array<Float> = [for (_ in 0...16) 0.];
 
 	function set(m0:Float, m1:Float, m2:Float, m3:Float, m4:Float, m5:Float, m6:Float, m7:Float, m8:Float, m9:Float, m10:Float, m11:Float, m12:Float,
-			m13:Float, m14:Float, m15:Float):Matrix3D {
+			m13:Float, m14:Float, m15:Float):Matrix4 {
 		var v = values;
 		v[0] = m0;
 		v[1] = m1;
@@ -415,11 +415,11 @@ class Matrix3D {
 	}
 
 	// A matrix appendRotation turns into, reused.
-	static var rotation:Null<Matrix3D> = null;
+	static var rotation:Null<Matrix4> = null;
 
-	static function shared():Matrix3D {
+	static function shared():Matrix4 {
 		if (rotation == null)
-			rotation = new Matrix3D();
+			rotation = new Matrix4();
 		return rotation;
 	}
 }

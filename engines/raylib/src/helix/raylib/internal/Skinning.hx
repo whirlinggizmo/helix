@@ -1,7 +1,7 @@
 package helix.raylib.internal;
 
 import haxe.io.Bytes;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.raylib.*;
 import helix.raylib.modules.RMath.*;
 
@@ -134,7 +134,7 @@ class Skinning {
 	// Draws a posed mesh: through a shader skinning from the palette (the default shader's skinned twin, or a program's own including
 	// skinning.glsl), or through its own shader from buffers posed on the CPU. False for a draw left as it is: a shader reading the bone
 	// ids itself (raylib's skinning.vs), or a mesh whose vertices no bone moves (raylib's CPU skinning leaves its buffers).
-	static function draw(mesh:Mesh, shader:Shader, material:Material, transform:Matrix3D, diffuse:Array<Float>, instances:Int, instanceCount:Int):Bool {
+	static function draw(mesh:Mesh, shader:Shader, material:Material, transform:Matrix4, diffuse:Array<Float>, instances:Int, instanceCount:Int):Bool {
 		var pose = mesh.pose;
 		if (!weighted(mesh, pose))
 			return false;

@@ -5,7 +5,7 @@ import helix.formats.bmfont.BmFontFile;
 import helix.formats.text.Utf8Text;
 import helix.formats.truetype.TrueTypeTables;
 import helix.log.Log;
-import helix.math.RectPacker2D;
+import helix.math.RectanglePacker;
 import helix.platform.IFontRasterizer;
 import helix.platform.RasterGlyph;
 import helix.services.assets.Assets;
@@ -273,7 +273,7 @@ class Fonts {
 				sizes.push(g.width + 2 * padding);
 				sizes.push(g.height + 2 * padding);
 			}
-			var places = RectPacker2D.pack(width, height, sizes);
+			var places = RectanglePacker.pack(width, height, sizes);
 			for (i in 0...glyphs.length) {
 				if (places[i * 3 + 2] == 0)
 					return null;

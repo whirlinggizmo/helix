@@ -1,7 +1,7 @@
 package helix.render;
 
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 import helix.services.images.Image;
 import helix.services.models.Model3D;
 
@@ -27,7 +27,7 @@ class GpuModel3D {
 	public final textures:Array<Null<Texture2D>>;
 
 	/** Gets the box around its meshes at rest, in the model's units. */
-	public final bounds = new Bounds3D();
+	public final bounds = new Aabb3D();
 
 	@:allow(helix.render)
 	function new(model:Model3D, meshes:Array<GpuMesh3D>, materials:Array<Material3D>, meshMaterialIndices:Array<Int>, textures:Array<Null<Texture2D>>) {
@@ -46,11 +46,11 @@ class GpuModel3D {
 		@param boneMatrices  Optional. Each bone's place in the model, as `Batch3D.drawModel` takes them; the rest pose when omitted.
 		@param out  Optional. Set to the box; a new one when omitted.
 		@return  The box, in world units, or the box made empty for a model with no vertices. */
-	public function computeBounds(transform:Matrix3D, ?boneMatrices:Array<Matrix3D>, ?out:Bounds3D):Bounds3D {
+	public function computeBounds(transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?out:Aabb3D):Aabb3D {
 		if (out == null)
-			out = new Bounds3D();
+			out = new Aabb3D();
 		out.makeEmpty();
-		var box = new Bounds3D();
+		var box = new Aabb3D();
 		for (i in 0...meshes.length) {
 			var skinning = skinningOf(i, boneMatrices);
 			meshes[i].computeBounds(transform, skinning, null, box);
@@ -83,13 +83,13 @@ class GpuModel3D {
 	var disposed = false;
 
 	// The rest pose's bones in the model, worked out the first time a skinned mesh is drawn without bones; each skin's matrices, reused.
-	var rest:Null<Array<Matrix3D>> = null;
-	final skinnings:Array<Array<Matrix3D>> = [];
+	var rest:Null<Array<Matrix4>> = null;
+	final skinnings:Array<Array<Matrix4>> = [];
 
 	// The skinning matrices of a mesh, posed by bones or at rest; null for a mesh without a skin.
 
 	@:allow(helix.render)
-	function skinningOf(meshIndex:Int, boneMatrices:Null<Array<Matrix3D>>):Null<Array<Matrix3D>> {
+	function skinningOf(meshIndex:Int, boneMatrices:Null<Array<Matrix4>>):Null<Array<Matrix4>> {
 		var skinIndex = meshIndex < model.meshSkinIndices.length ? model.meshSkinIndices[meshIndex] : -1;
 		var skeleton = model.skeleton;
 		if (skinIndex < 0 || skeleton == null || !meshes[meshIndex].hasJoints)

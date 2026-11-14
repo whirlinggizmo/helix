@@ -2,11 +2,11 @@ package helix.render;
 
 #if !macro
 import helix.geometry.Camera2D;
-import helix.math.Matrix2D;
+import helix.math.Matrix3;
 import helix.platform.Blend;
 import helix.services.shaders.ShaderValues;
-import helix.math.Bounds2D;
-import helix.math.Matrix3D;
+import helix.math.Aabb2D;
+import helix.math.Matrix4;
 import helix.platform.Sampling;
 import helix.services.shaders.Shader;
 import helix.services.shaders.ShaderSampler;
@@ -120,7 +120,7 @@ class Batch2D {
 	/** Gets the matrix the following draws are moved by, before the camera: identity until changed.
 
 		It is changed in place (`batch.transform.makeIdentity().appendRotation(turn, batch.transform)`), and read as each draw is made. */
-	public final transform = new Matrix2D();
+	public final transform = new Matrix3();
 
 	/** Gets or sets how the following draws are combined with what is under them: `Blend.ALPHA` until set; any factors and
 		operations the platform's `Blend` takes (multiply, screen, premultiplied alpha). */
@@ -259,7 +259,7 @@ class Batch2D {
 		@throws String  No frame being recorded, or a batch (this or another) already open. */
 	public function beginCamera(camera:Camera2D):Void {
 		var width = renderer.viewportWidth, height = renderer.viewportHeight;
-		camera.computeViewMatrix(cameraMatrix).toMatrix3D(viewMatrix);
+		camera.computeViewMatrix(cameraMatrix).toMatrix4(viewMatrix);
 		camera.computeBounds(width, height, viewBounds);
 		zoom = Math.abs(camera.zoom);
 		opened();
@@ -271,8 +271,8 @@ class Batch2D {
 		open = true;
 		opens++;
 		var width = renderer.viewportWidth, height = renderer.viewportHeight;
-		Matrix3D.fromOrthographic(0, width, height, 0, -1, 1, projectionMatrix);
-		Matrix3D.compose(viewMatrix, projectionMatrix, viewProjection);
+		Matrix4.fromOrthographic(0, width, height, 0, -1, 1, projectionMatrix);
+		Matrix4.compose(viewMatrix, projectionMatrix, viewProjection);
 		linear = renderer.linearPass();
 		renderer.command(Viewport(renderer.viewportX, renderer.viewportY, width, height));
 	}
@@ -536,7 +536,7 @@ class Batch2D {
 		@param list  The list.
 		@param placement  Optional. Its place in the batch's units; identity when omitted.
 		@throws String  A texture it holds disposed. */
-	public function drawList(list:DrawList2D, ?placement:Matrix2D):Void {
+	public function drawList(list:DrawList2D, ?placement:Matrix3):Void {
 		requireOpen();
 		if (placement != null && list.bounds.isEmpty == false) {
 			var b = list.bounds, p = placement;
@@ -553,9 +553,9 @@ class Batch2D {
 				return;
 		} else if (!list.bounds.isEmpty && !visible(list.bounds.minX, list.bounds.minY, list.bounds.maxX, list.bounds.maxY))
 			return;
-		var held = new Matrix2D().copyFrom(transform);
+		var held = new Matrix3().copyFrom(transform);
 		if (placement != null)
-			Matrix2D.compose(placement, held, transform);
+			Matrix3.compose(placement, held, transform);
 		try {
 			list.replay(this);
 		} catch (e:Dynamic) {
@@ -603,11 +603,11 @@ class Batch2D {
 	var runValues:Null<ShaderValues> = null;
 	// What is in view, in the batch's units before the transform; the camera's zoom; the view and projection, whether the pass holds
 	// linear light, and the number of opens.
-	final viewBounds = new Bounds2D();
+	final viewBounds = new Aabb2D();
 	var zoom = 1.;
-	final viewMatrix = new Matrix3D();
-	final projectionMatrix = new Matrix3D();
-	final viewProjection = new Matrix3D();
+	final viewMatrix = new Matrix4();
+	final projectionMatrix = new Matrix4();
+	final viewProjection = new Matrix4();
 	var linear = false;
 	var opens = 0;
 	// The program's shaders' draws (shaderValues), made by drawValues at the first shaderValues set, so a program that never sets one
@@ -617,8 +617,8 @@ class Batch2D {
 	var valuesStart:Null<Void->Void> = null;
 	var valuesFlush:Null<(Int, Int) -> Void> = null;
 
-	static final cameraMatrix = new Matrix2D();
-	static final identity = new Matrix3D();
+	static final cameraMatrix = new Matrix3();
+	static final identity = new Matrix4();
 	// The default shader's vertices: x and y, u and v as floats, the color as four bytes, and customData's four bytes it doesn't read.
 	static var layout:Null<ShaderVertexLayout> = null;
 	// The sprite stage's buffers: the quad's corner numbers, and the records, each the four corners' x and y and the texture's u0, v0,

@@ -1,6 +1,6 @@
 package helix.render;
 
-import helix.math.Bounds2D;
+import helix.math.Aabb2D;
 
 /** Represents 2D drawing recorded once and replayed by a `Batch2D` as often as wanted (`Batch2D.drawList`), under a transform: a HUD
 	panel, a level's static decoration, a shape built of many calls.
@@ -17,11 +17,11 @@ import helix.math.Bounds2D;
 	panel.strokeRoundedRectangle(0, 0, 220, 64, 8, 2, 0xff4080c0);
 	panel.drawText(font, "Cargo", 12, 10);
 	// each frame:
-	batch.drawList(panel, Matrix2D.fromTranslation(16, 16, place));
+	batch.drawList(panel, Matrix3.fromTranslation(16, 16, place));
 	``` */
 class DrawList2D {
 	/** Gets the box around what it holds, in its own units: empty when it holds nothing. Text is measured as it is recorded. */
-	public final bounds = new Bounds2D();
+	public final bounds = new Aabb2D();
 
 	/** Gets the number of calls recorded. */
 	public var callCount(default, null):Int = 0;

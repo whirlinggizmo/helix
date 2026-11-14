@@ -1,7 +1,7 @@
 import helix.math.DistanceField2D;
-import helix.math.RectPacker2D;
+import helix.math.RectanglePacker;
 
-/** Checks DistanceField2D and RectPacker2D with the library alone: a distance field against measured distances, and rectangles packed
+/** Checks DistanceField2D and RectanglePacker with the library alone: a distance field against measured distances, and rectangles packed
 	apart, inside the area, tallest first. */
 class Grid2DTests {
 	static var checks = 0;
@@ -28,7 +28,7 @@ class Grid2DTests {
 		check(right, "a distance field: each cell's squared distance to the nearest zero");
 
 		var sizes = [10, 30, 20, 10, 20, 20, 5, 5, 0, 4],
-			places = RectPacker2D.pack(40, 40, sizes);
+			places = RectanglePacker.pack(40, 40, sizes);
 		var placed = true;
 		for (i in 0...4) {
 			var x = places[i * 3],
@@ -43,7 +43,7 @@ class Grid2DTests {
 		}
 		check(placed, "packed: every rectangle inside the area, none overlapping");
 		check(places[0] == 0 && places[1] == 0 && places[12] == 0 && places[13] == 0 && places[14] == 1, "the tallest at the corner; an empty one at 0, 0");
-		var full = RectPacker2D.pack(10, 10, [10, 10, 1, 1]);
+		var full = RectanglePacker.pack(10, 10, [10, 10, 1, 1]);
 		check(full[2] == 1 && full[5] == 0, "one too many doesn't fit, and says so");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

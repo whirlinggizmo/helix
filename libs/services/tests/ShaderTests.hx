@@ -1,5 +1,5 @@
 import haxe.io.Bytes;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.platform.Sampling;
 import helix.services.assets.Assets;
 import helix.services.assets.FileSystemSource;
@@ -161,7 +161,7 @@ class ShaderTests {
 		check(near(b.getFloat(0), 2 * Math.pow((128 / 255 + .055) / 1.055, 2.4)), "writeLinearRgb decodes sRGB and scales");
 		v.write(s.getUniform("offsetScale"), Vector(1, 2, 3, 4));
 		check(v.uniforms[0].getFloat(12) == 4, "a value held as data");
-		var m = new Matrix3D();
+		var m = new Matrix4();
 		check(m.values.length == 16, "a matrix's values");
 		v.writeTexture(s.getSampler("image"), 42, Sampling.NEAREST);
 		check(v.textures.join(",") == "42,0,0" && v.samplings[0] == Sampling.NEAREST && v.samplings[1] == Sampling.LINEAR, "textures and samplings by slot");
@@ -238,7 +238,7 @@ class ShaderTests {
 			"gathered in the order given");
 		var values = new ShaderValues(plain);
 		throws(() -> values.uniforms, "Camera", "a shared block shared nowhere refused at the read");
-		throws(() -> values.writeMatrix(lit.getUniform("viewProjection"), new Matrix3D()), "shared block", "a shared uniform written on values refused");
+		throws(() -> values.writeMatrix(lit.getUniform("viewProjection"), new Matrix4()), "shared block", "a shared uniform written on values refused");
 		var block = new ShaderBlockValues(lit, "Camera");
 		var lightBlock = ShaderBlockCompiler.compile("shaders/lights.glsl", "Lights", ["pointLights", "ambient"]);
 		var scene = new ShaderScene();
@@ -332,11 +332,11 @@ class ShaderTests {
 		var typed:LitValues = material.getValues(LitValues.SKINNED);
 		var drawn = new LitValues(LitValues.SKINNED);
 		drawn.base = typed;
-		drawn.setModel(new Matrix3D());
-		drawn.setBoneMatrices(2, new Matrix3D());
+		drawn.setModel(new Matrix4());
+		drawn.setBoneMatrices(2, new Matrix4());
 		check(typed.textures[0] == 3 && LitMaterial.SKINNED == LitValues.SKINNED, "typed per-variant values from a material class");
 		var camera = new CameraValues();
-		camera.setViewProjection(new Matrix3D());
+		camera.setViewProjection(new Matrix4());
 		camera.setEye(0, 0, 0, 1);
 		check(camera.bytes.getFloat(0) == 1 && camera.bytes.getFloat(76) == 1, "a typed shared block");
 	}

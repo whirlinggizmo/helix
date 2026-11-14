@@ -1,7 +1,7 @@
 // helix-render's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one 3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D.
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.platform.adapters.events.dom.DomEventsAdapter;
 import helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter;
 import helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter;
@@ -25,10 +25,10 @@ import helix.services.images.Image;
 import helix.services.images.Images;
 
 /** A program on helix-render and what it sits on, constructing only what it uses, as a game built on them would. */
-@:adds("helix.geometry.Camera3D", "helix.geometry.Frustum3D", "helix.geometry.Mesh3D", "helix.math.Bounds3D", "helix.math.Quaternion3D",
-	"helix.math.Transform3D", "helix.math.Trig", "helix.math.Vector3D", "helix.render.Batch3D", "helix.render.Fog3D", "helix.render.GpuMesh3D",
-	"helix.render.Material3D", "helix.render.MeshState3D", "helix.render.RenderFill", "helix.render.RenderView", "helix.render.View3D",
-	"helix.services.shaders.ShaderBlockValues", "helix.services.shaders.compiled")
+@:adds("helix.geometry.Camera3D", "helix.geometry.Frustum", "helix.geometry.Mesh3D", "helix.math.Aabb3D", "helix.math.Quaternion", "helix.math.Transform3D",
+	"helix.math.Trig", "helix.math.Vector3", "helix.render.Batch3D", "helix.render.Fog3D", "helix.render.GpuMesh3D", "helix.render.Material3D",
+	"helix.render.MeshState3D", "helix.render.RenderFill", "helix.render.RenderView", "helix.render.View3D", "helix.services.shaders.ShaderBlockValues",
+	"helix.services.shaders.compiled")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;
@@ -39,7 +39,7 @@ class Main {
 	static var cube:GpuMesh3D;
 	static var material:Material3D;
 	static final camera = new Camera3D();
-	static final place = new Matrix3D();
+	static final place = new Matrix4();
 	static var sprite:TextureRegion2D;
 	static var font:Null<GpuFont2D> = null;
 	static var layout:Null<TextLayout2D> = null;
@@ -79,7 +79,7 @@ class Main {
 			rasterizer.poll();
 			renderer.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff0a0e18);
 			batch3D.begin(camera);
-			batch3D.drawMesh(cube, material, Matrix3D.fromRotation(0, 1, 0, turn, place), null, null, 0xffc0e0ff);
+			batch3D.drawMesh(cube, material, Matrix4.fromRotation(0, 1, 0, turn, place), null, null, 0xffc0e0ff);
 			batch3D.end();
 			batch.begin();
 			batch.drawSprite(sprite, 100, 100, turn += .01);

@@ -16,7 +16,7 @@ import helix.geometry.Skeleton3D;
 import helix.geometry.Skin3D;
 import helix.math.Transform3D;
 import helix.log.Log;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.services.assets.Assets;
 import helix.services.images.Images;
 
@@ -219,7 +219,7 @@ class Models {
 						meshes.push(objMesh(file, part.cornerIndices));
 						indices.push(part.materialIndex);
 					}
-					loaded(new Model3D(path, meshes, indices, [for (_ in meshes) -1], [for (_ in meshes) new Matrix3D()], null, [], [], made, decoded));
+					loaded(new Model3D(path, meshes, indices, [for (_ in meshes) -1], [for (_ in meshes) new Matrix4()], null, [], [], made, decoded));
 				}
 				decoded.resize(imagePaths.length);
 				for (i => texture in imagePaths)
@@ -376,9 +376,9 @@ class Models {
 				}
 			}
 		var bones = [], boneOf = new Map<Int, Int>();
-		function visit(index:Int, parent:Matrix3D, bone:Int):Void {
+		function visit(index:Int, parent:Matrix4, bone:Int):Void {
 			var node = nodes[index];
-			var world = Matrix3D.compose(node.transform, parent);
+			var world = Matrix4.compose(node.transform, parent);
 			if (wanted.exists(index)) {
 				boneOf.set(index, bones.length);
 				bones.push(new Bone3D(node.name, bone, new Transform3D().copyFrom(node.local)));
@@ -408,7 +408,7 @@ class Models {
 				visit(child, world, bone);
 		}
 		for (root in file.sceneNodeIndices)
-			visit(root, new Matrix3D(), -1);
+			visit(root, new Matrix4(), -1);
 		var skeleton = bones.length > 0 ? new Skeleton3D(bones) : null;
 		var madeSkins = [
 			for (skin in fileSkins)

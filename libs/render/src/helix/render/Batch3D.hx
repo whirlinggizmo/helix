@@ -2,15 +2,15 @@ package helix.render;
 
 #if !macro
 import helix.geometry.Camera3D;
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 import helix.platform.Blend;
 import helix.platform.ColorChannels;
 import helix.platform.CullFace;
 import helix.platform.DepthTest;
 import helix.services.shaders.ShaderValues;
 import haxe.io.Bytes;
-import helix.math.Vector3D;
+import helix.math.Vector3;
 import helix.platform.Sampling;
 import helix.render.RenderPass.RenderCommand;
 import helix.services.shaders.Shader;
@@ -217,7 +217,7 @@ import helix.services.shaders.ShaderVertexLayout;
 	// each frame, between Renderer.beginFrame and endFrame:
 	batch.begin(camera);
 	batch.drawBackground();
-	batch.drawModel(level, Matrix3D.fromTranslation(0, 0, 0, placement));
+	batch.drawModel(level, Matrix4.fromTranslation(0, 0, 0, placement));
 	batch.end();
 	``` */
 class Batch3D {
@@ -513,7 +513,7 @@ class Batch3D {
 		@param state  Optional. State this draw takes in place of the material's (`MeshState3D`), read now; the material's when
 			omitted.
 		@throws String  A disposed mesh, or a texture of the material disposed. */
-	public function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, ?skinning:Array<Matrix3D>, ?morphWeights:Array<Float>, ?tint:Int,
+	public function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, ?skinning:Array<Matrix4>, ?morphWeights:Array<Float>, ?tint:Int,
 			?state:MeshState3D):Void {
 		requireOpen();
 		if (morphWeights != null && morphWeights.length > 0)
@@ -544,7 +544,7 @@ class Batch3D {
 		@param instanceCount  Optional. How many copies are drawn from it, as an InstancedMesh's `count`; every one to the end of
 			`transforms` when omitted. None draws nothing.
 		@throws String  A disposed mesh, a texture of the material disposed, or copies past the end of `transforms`. */
-	public function drawMeshInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix3D>, ?colors:Array<Int>, ?transform:Matrix3D,
+	public function drawMeshInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix4>, ?colors:Array<Int>, ?transform:Matrix4,
 			firstInstanceIndex = 0, ?instanceCount:Int):Void {
 		requireOpen();
 		var count = instanceCount == null ? transforms.length - firstInstanceIndex : instanceCount;
@@ -562,7 +562,7 @@ class Batch3D {
 		for (i in firstInstanceIndex...firstInstanceIndex + count) {
 			var copy = transforms[i];
 			if (culling) {
-				var world = transform == null ? copy : Matrix3D.compose(copy, transform, scratch);
+				var world = transform == null ? copy : Matrix4.compose(copy, transform, scratch);
 				if (!placedInView(mesh.bounds, world))
 					continue;
 			}
@@ -596,7 +596,7 @@ class Batch3D {
 		@param state  Optional. State every mesh of this draw takes in place of its material's (`MeshState3D`), read now; each
 			material's when omitted.
 		@throws String  A disposed model. */
-	public function drawModel(model:GpuModel3D, transform:Matrix3D, ?boneMatrices:Array<Matrix3D>, ?tint:Int, ?state:MeshState3D):Void {
+	public function drawModel(model:GpuModel3D, transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?tint:Int, ?state:MeshState3D):Void {
 		requireOpen();
 		if (model.disposed)
 			throw "helix-render: a draw of a disposed model";
@@ -636,15 +636,15 @@ class Batch3D {
 		@param width  Optional. The width, in framebuffer pixels, whatever the transform; defaults to 1.
 		@param strip  Optional. Whether the positions are one line through them all, rather than a segment each two; defaults to false.
 		@param transform  Optional. What the positions are moved by, as a Line's own place; identity when omitted. */
-	public function drawLines(positions:Array<Float>, color:Int, ?colors:Array<Int>, width = 1., strip = false, ?transform:Matrix3D):Void {
+	public function drawLines(positions:Array<Float>, color:Int, ?colors:Array<Int>, width = 1., strip = false, ?transform:Matrix4):Void {
 		requireOpen();
 		if (positions.length < 6 || !inView(positionsBox(positions, transform)))
 			return;
 		var count = Std.int(positions.length / 3);
-		var a = new Vector3D(), b = new Vector3D();
+		var a = new Vector3(), b = new Vector3();
 		var i = 0;
 		while (i + 1 < count) {
-			inline function at(index:Int, out:Vector3D):Vector3D {
+			inline function at(index:Int, out:Vector3):Vector3 {
 				var x = positions[index * 3],
 					y = positions[index * 3 + 1],
 					z = positions[index * 3 + 2];
@@ -661,7 +661,7 @@ class Batch3D {
 
 		@param bounds  The box, in world units.
 		@param color  The color. */
-	public function strokeBox(bounds:Bounds3D, color:Int):Void {
+	public function strokeBox(bounds:Aabb3D, color:Int):Void {
 		drawLines(boxEdges(bounds), color);
 	}
 
@@ -689,7 +689,7 @@ class Batch3D {
 
 		@param transform  The transform, as a mesh would be placed by it.
 		@param length  Each axis' length, before the transform's scale. */
-	public function drawAxes(transform:Matrix3D, length:Float):Void {
+	public function drawAxes(transform:Matrix4, length:Float):Void {
 		drawLines([0, 0, 0, length, 0, 0, 0, 0, 0, 0, length, 0, 0, 0, 0, 0, 0, length], 0,
 			[0xffff0000, 0xffff0000, 0xff00ff00, 0xff00ff00, 0xff0000ff, 0xff0000ff], 1, false, transform);
 	}
@@ -719,7 +719,7 @@ class Batch3D {
 		@param texture  Optional. The texture across each square; white when omitted.
 		@param transform  Optional. What the positions are moved by, as a Points object's own place; identity when omitted. A point's
 			size is not scaled by it. */
-	public function drawPoints(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?texture:Texture2D, ?transform:Matrix3D):Void {
+	public function drawPoints(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?texture:Texture2D, ?transform:Matrix4):Void {
 		requireOpen();
 		if (texture != null)
 			texture.drawnHandle();
@@ -753,7 +753,7 @@ class Batch3D {
 		@param normals  Optional. Each vertex's normal, x, y and z; 0, 0, 1 for every vertex when omitted.
 		@param transform  Optional. What the positions and normals are moved by; identity when omitted. */
 	public function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>,
-			?normals:Array<Float>, ?transform:Matrix3D):Void {
+			?normals:Array<Float>, ?transform:Matrix4):Void {
 		requireOpen();
 		if (texture != null)
 			texture.drawnHandle();
@@ -805,7 +805,7 @@ class Batch3D {
 		@param thickness  The width, in the plane's units.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity, the world's xy plane, when omitted. */
-	public function drawPolyline(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void {
+	public function drawPolyline(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.polyline(points, thickness, color, false);
 	}
@@ -820,7 +820,7 @@ class Batch3D {
 		@param y2  The third corner, down.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int, ?transform:Matrix3D):Void {
+	public function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.triangle(x0, y0, x1, y1, x2, y2, color);
 	}
@@ -833,7 +833,7 @@ class Batch3D {
 		@param height  The height.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int, ?transform:Matrix3D):Void {
+	public function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.rectangle(x, y, width, height, color);
 	}
@@ -847,7 +847,7 @@ class Batch3D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
+	public function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.strokeRectangle(x, y, width, height, thickness, color);
 	}
@@ -861,7 +861,7 @@ class Batch3D {
 		@param radius  The corners' radius, clamped to half the shorter side.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int, ?transform:Matrix3D):Void {
+	public function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.roundedRectangle(x, y, width, height, radius, color);
 	}
@@ -876,7 +876,7 @@ class Batch3D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
+	public function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.strokeRoundedRectangle(x, y, width, height, radius, thickness, color);
 	}
@@ -888,7 +888,7 @@ class Batch3D {
 		@param radius  The radius.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function fillCircle(x:Float, y:Float, radius:Float, color:Int, ?transform:Matrix3D):Void {
+	public function fillCircle(x:Float, y:Float, radius:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.ellipse(x, y, radius, radius, color);
 	}
@@ -901,7 +901,7 @@ class Batch3D {
 		@param thickness  The outline's width, centered on the circle.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
+	public function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.strokeEllipse(x, y, radius, radius, thickness, color);
 	}
@@ -914,7 +914,7 @@ class Batch3D {
 		@param radiusY  The radius down.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int, ?transform:Matrix3D):Void {
+	public function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.ellipse(x, y, radiusX, radiusY, color);
 	}
@@ -928,7 +928,7 @@ class Batch3D {
 		@param thickness  The outline's width, centered on the ellipse.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void {
+	public function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.strokeEllipse(x, y, radiusX, radiusY, thickness, color);
 	}
@@ -939,7 +939,7 @@ class Batch3D {
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted.
 		@return  False when its edges cross, and nothing is drawn. */
-	public function fillPolygon(points:Array<Float>, color:Int, ?transform:Matrix3D):Bool {
+	public function fillPolygon(points:Array<Float>, color:Int, ?transform:Matrix4):Bool {
 		inPlane(transform);
 		return plane.polygon(points, color);
 	}
@@ -950,7 +950,7 @@ class Batch3D {
 		@param thickness  The outline's width, centered on the edges.
 		@param color  The color.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function strokePolygon(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void {
+	public function strokePolygon(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.polyline(points, thickness, color, true);
 	}
@@ -972,7 +972,7 @@ class Batch3D {
 		@param originY  Optional. That point, in texels from the region's top; the region's `originY` when omitted.
 		@param transform  Optional. The plane it is drawn in; identity, the world's xy plane, when omitted. */
 	public function drawSprite(region:TextureRegion2D, x:Float, y:Float, rotation = 0., scaleX = 1., scaleY = 1., tint:Int = 0xffffffff, flipX = false,
-			flipY = false, ?originX:Float, ?originY:Float, ?transform:Matrix3D):Void {
+			flipY = false, ?originX:Float, ?originY:Float, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.sprite(region, x, y, rotation, scaleX, scaleY, tint, flipX, flipY, originX, originY);
 	}
@@ -995,7 +995,7 @@ class Batch3D {
 		@param tint  Optional. The color its texels are multiplied by; defaults to white.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float,
-			height:Float, rotation = 0., originX = 0., originY = 0., tint:Int = 0xffffffff, ?transform:Matrix3D):Void {
+			height:Float, rotation = 0., originX = 0., originY = 0., tint:Int = 0xffffffff, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.textureRegion(texture, regionX, regionY, regionWidth, regionHeight, x, y, width, height, rotation, originX, originY, tint);
 	}
@@ -1013,7 +1013,7 @@ class Batch3D {
 			doesn't kern.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true,
-			?transform:Matrix3D):Void {
+			?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.text(font, text, x, y, color, size, letterSpacing, kerned);
 	}
@@ -1026,7 +1026,7 @@ class Batch3D {
 		@param y  The top of the first line.
 		@param color  Optional. The color; defaults to white.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
-	public function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, color:Int = 0xffffffff, ?transform:Matrix3D):Void {
+	public function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, color:Int = 0xffffffff, ?transform:Matrix4):Void {
 		inPlane(transform);
 		plane.layout(layout, x, y, color);
 	}
@@ -1038,7 +1038,7 @@ class Batch3D {
 		@param list  The list.
 		@param transform  Its place in the world, read now.
 		@throws String  A mesh, model or texture it holds disposed. */
-	public function drawList(list:DrawList3D, transform:Matrix3D):Void {
+	public function drawList(list:DrawList3D, transform:Matrix4):Void {
 		requireOpen();
 		if (!list.bounds.isEmpty && shadowMesh == null && !placedInView(list.bounds, transform))
 			return;
@@ -1090,7 +1090,7 @@ class Batch3D {
 	final runPlanes:Array<Float> = [];
 	// The plane drawn in by the 2D draws, null for the world's xy plane; its normal; the texture and font kind they read; a triangle's
 	// corners as they come.
-	var planeMatrix:Null<Matrix3D> = null;
+	var planeMatrix:Null<Matrix4> = null;
 	var planeTexture:Null<Texture2D> = null;
 	var planeFontKind = 0;
 	var planeNX = 0.;
@@ -1109,14 +1109,14 @@ class Batch3D {
 	static var makeLighting:Null<Batch3D->Void> = null;
 
 	var lightingBegin:Null<Array<View3D>->Void> = null;
-	var lightingPrepare:Null<(Null<Shader>, Null<Material3D>, Null<GpuMesh3D>, Null<Bounds3D>, Null<Matrix3D>) -> Null<Shader>> = null;
+	var lightingPrepare:Null<(Null<Shader>, Null<Material3D>, Null<GpuMesh3D>, Null<Aabb3D>, Null<Matrix4>) -> Null<Shader>> = null;
 	var lightWriter:Null<ShaderValues->Void> = null;
 
 	// The shadow casters, hooks a BatchShadows sets once a light has cast (BatchShadows.install): a mesh drawn once, given its box in
 	// its own units and its skin's palette and first bone where the color draw has written them (0, 0 where it hasn't), and a mesh's
 	// instanced copies, each given before the view culls them, so what is out of view still casts into it.
-	var shadowMesh:Null<(GpuMesh3D, Material3D, Matrix3D, Null<MeshState3D>, Bounds3D, Null<Array<Matrix3D>>, Int, Int) -> Void> = null;
-	var shadowInstanced:Null<(GpuMesh3D, Material3D, Array<Matrix3D>, Null<Matrix3D>, Int, Int) -> Void> = null;
+	var shadowMesh:Null<(GpuMesh3D, Material3D, Matrix4, Null<MeshState3D>, Aabb3D, Null<Array<Matrix4>>, Int, Int) -> Void> = null;
+	var shadowInstanced:Null<(GpuMesh3D, Material3D, Array<Matrix4>, Null<Matrix4>, Int, Int) -> Void> = null;
 
 	// Meshes drawn as large points, hooks MeshPoints sets once the program sets a point size (MeshPoints.install): the pipeline a mesh's
 	// points are drawn by, and the recording of its draws in a view. A large point's six corners, each with a copy placed where it is
@@ -1129,14 +1129,14 @@ class Batch3D {
 	var pointCorners = 0;
 	var copyCorners:Null<RenderStream> = null;
 	// Scratch values, reused.
-	final box = new Bounds3D();
-	final posed = new Bounds3D();
-	final moved = new Vector3D();
-	final scratch = new Matrix3D();
-	final normalScratch = new Matrix3D();
-	final mvpScratch = new Matrix3D();
+	final box = new Aabb3D();
+	final posed = new Aabb3D();
+	final moved = new Vector3();
+	final scratch = new Matrix4();
+	final normalScratch = new Matrix4();
+	final mvpScratch = new Matrix4();
 
-	static final identity = new Matrix3D();
+	static final identity = new Matrix4();
 	static var narrowLayout:Null<ShaderVertexLayout> = null;
 	static var wideLayout:Null<ShaderVertexLayout> = null;
 
@@ -1407,7 +1407,7 @@ class Batch3D {
 	}
 
 	// Whether a box in the world may be seen in any view; always while culling is off.
-	function inView(b:Bounds3D):Bool {
+	function inView(b:Aabb3D):Bool {
 		if (!culling)
 			return true;
 		for (i in 0...viewCount)
@@ -1417,7 +1417,7 @@ class Batch3D {
 	}
 
 	// Whether a box, moved by a matrix, may be seen.
-	function placedInView(b:Bounds3D, m:Null<Matrix3D>):Bool {
+	function placedInView(b:Aabb3D, m:Null<Matrix4>):Bool {
 		if (!culling)
 			return true;
 		if (m == null)
@@ -1426,7 +1426,7 @@ class Batch3D {
 		return inView(box);
 	}
 
-	static function transformBox(b:Bounds3D, matrix:Matrix3D, out:Bounds3D):Bounds3D {
+	static function transformBox(b:Aabb3D, matrix:Matrix4, out:Aabb3D):Aabb3D {
 		var m = matrix.values;
 		var empty = b.isEmpty, minX = b.minX, minY = b.minY, minZ = b.minZ, maxX = b.maxX, maxY = b.maxY, maxZ = b.maxZ;
 		out.makeEmpty();
@@ -1442,7 +1442,7 @@ class Batch3D {
 	}
 
 	// The box around positions, x, y and z each, moved by a matrix.
-	function positionsBox(positions:Array<Float>, m:Null<Matrix3D>):Bounds3D {
+	function positionsBox(positions:Array<Float>, m:Null<Matrix4>):Aabb3D {
 		box.makeEmpty();
 		var i = 0;
 		while (i + 2 < positions.length) {
@@ -1566,7 +1566,7 @@ class Batch3D {
 	}
 
 	// Draws in a plane: its transform, the scale its curves are cut at, its normal.
-	function inPlane(transform:Null<Matrix3D>):Void {
+	function inPlane(transform:Null<Matrix4>):Void {
 		requireOpen();
 		planeMatrix = transform;
 		pendingCount = 0;
@@ -1585,7 +1585,7 @@ class Batch3D {
 
 	// The palette texture holding a skin's matrices, four texels a bone, 64 bones a row, after those of the draws before it; its first
 	// bone is left in paletteOffset. The texture is written once, before the pass that first draws from it.
-	function bones(skinning:Array<Matrix3D>):Int {
+	function bones(skinning:Array<Matrix4>):Int {
 		var frame = renderer.frameNumber;
 		if (paletteFrame != frame) {
 			paletteFrame = frame;
@@ -1652,8 +1652,8 @@ class Batch3D {
 
 	// A mesh's draw, once a view: its material's names or its program's shader, its state, skinned when given matrices; instanced copies
 	// from the frame's stream when it has some; its lights chosen by its box, in the units its transform places.
-	function meshDraw(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, skinning:Null<Array<Matrix3D>>, tint:Null<Int>, state:Null<MeshState3D>,
-			firstInstance:Int, instanceCount:Int, instanced:Bool, bounds:Bounds3D):Void {
+	function meshDraw(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, skinning:Null<Array<Matrix4>>, tint:Null<Int>, state:Null<MeshState3D>,
+			firstInstance:Int, instanceCount:Int, instanced:Bool, bounds:Aabb3D):Void {
 		if (mesh.disposed)
 			throw "helix-render: a draw of a disposed mesh";
 		var custom = material.shaderValues;
@@ -1713,7 +1713,7 @@ class Batch3D {
 			values.scene = view.scene;
 			fill.matrix(fill.model, transform);
 			fill.matrix(fill.normalMatrix, normalMatrix);
-			fill.matrix(fill.modelViewProjection, Matrix3D.compose(transform, view.viewProjection, mvpScratch));
+			fill.matrix(fill.modelViewProjection, Matrix4.compose(transform, view.viewProjection, mvpScratch));
 			fill.color(fill.baseColor, dark ? color & 0xff000000 : color);
 			fill.texture(fill.baseColorTexture, baseHandle, baseTexture == null ? Sampling.LINEAR : baseTexture.sampling);
 			fill.texture(fill.alphaTexture, alphaHandle, alpha == null ? Sampling.LINEAR : alpha.sampling);
@@ -1760,7 +1760,7 @@ class Batch3D {
 	}
 
 	// The positions of a box's twelve edges, two ends each.
-	static function boxEdges(b:Bounds3D):Array<Float> {
+	static function boxEdges(b:Aabb3D):Array<Float> {
 		var out = [];
 		for (e in [
 			[0, 1], [1, 3], [3, 2], [2, 0], [4, 5], [5, 7], [7, 6], [6, 4], [0, 4], [1, 5], [2, 6], [3, 7]])

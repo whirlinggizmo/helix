@@ -2,7 +2,7 @@ package helix.formats.gltf;
 
 import haxe.io.Bytes;
 import helix.formats.text.Utf8Text;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.math.Transform3D;
 
 /** Represents a glTF 2.0 model read from a .gltf or GLB file: its nodes, its scene, its meshes, materials and images, as plain data.
@@ -239,7 +239,7 @@ class GltfFile {
 					var values = inverse == null ? null : floats(inverse);
 					var matrices = [
 						for (j in 0...joints.length) {
-							var m = new Matrix3D();
+							var m = new Matrix4();
 							if (values != null) for (i in 0...16)
 								m.values[i] = values[j * 16 + i];
 							m;
@@ -318,10 +318,10 @@ class GltfFile {
 	}
 
 	// A node's own transform: its matrix, or its scale, then rotation, then translation.
-	static function local(node:Dynamic):Matrix3D {
+	static function local(node:Dynamic):Matrix4 {
 		var matrix = optionalNumbers(field(node, "matrix"));
 		if (matrix != null) {
-			var m = new Matrix3D();
+			var m = new Matrix4();
 			for (i in 0...16)
 				m.values[i] = matrix[i];
 			return m;
@@ -329,16 +329,16 @@ class GltfFile {
 		var s = optionalNumbers(field(node, "scale")),
 			r = optionalNumbers(field(node, "rotation")),
 			t = optionalNumbers(field(node, "translation"));
-		var m = s == null ? new Matrix3D() : Matrix3D.fromScale(s[0], s[1], s[2]);
+		var m = s == null ? new Matrix4() : Matrix4.fromScale(s[0], s[1], s[2]);
 		if (r != null)
-			m = Matrix3D.compose(m, Matrix3D.fromQuaternion(r[0], r[1], r[2], r[3]));
+			m = Matrix4.compose(m, Matrix4.fromQuaternion(r[0], r[1], r[2], r[3]));
 		if (t != null)
-			m = Matrix3D.compose(m, Matrix3D.fromTranslation(t[0], t[1], t[2]));
+			m = Matrix4.compose(m, Matrix4.fromTranslation(t[0], t[1], t[2]));
 		return m;
 	}
 
 	// A node's translation, rotation and scale: as it gives them, or its matrix taken apart.
-	static function parts(node:Dynamic, transform:Matrix3D):Transform3D {
+	static function parts(node:Dynamic, transform:Matrix4):Transform3D {
 		if (field(node, "matrix") != null)
 			return Transform3D.fromMatrix(transform);
 		var t = numbers(field(node, "translation"), [0, 0, 0]),

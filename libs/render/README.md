@@ -47,7 +47,7 @@ needs them. It stays on main with its examples, tests and checks. Every member o
    unlit meshes and models (tints, `MeshState3D`, instancing, skinning by a bone texture, polygon modes), `DrawList3D`, and the
    compile macros for a program's own shaders.
 2. **Done:** lit materials and lights: `Lambert`, `Phong` and `MetallicRoughness` (with clearcoat, sheen, specular and ior) shaded by
-   `DirectionalLight3D`, `PointLight3D`, `SpotLight3D` and `HemisphereLight3D` in three.js's units and formulas, each draw by the 8
+   `DirectionalLight3D`, `PointLight3D`, `SpotLight3D` and `HemisphereLight` in three.js's units and formulas, each draw by the 8
    lights reaching its box most, and by the ambient light; normal, metallic-roughness, occlusion, emissive and light maps; flat
    shading; `lighting.glsl` and `material.glsl` for a program's own lit shader; and a mesh drawn as points larger than a pixel. A
    program giving no light links none of it (`Light3D` says what links it), and a lit material there is drawn black.

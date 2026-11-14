@@ -7,13 +7,13 @@ Math for games, in pure Haxe.
 - `Interpolate`: interpolating, clamping, smoothing and easing numbers and angles, and points on spline pieces (Catmull-Rom,
   B-spline, Bezier).
 - `Curve`: curves through points or by control points, in 2D and 3D, and moving along them.
-- `Vector2D`, `Vector3D`, `Bounds2D`, `Bounds3D`: vectors (positions and directions, their sums, products, lengths, blends and
+- `Vector2`, `Vector3`, `Aabb2D`, `Aabb3D`: vectors (positions and directions, their sums, products, lengths, blends and
   turns) and axis-aligned boxes, and where boxes overlap.
 - `DistanceField2D`: a grid's distance transform, for distance fields.
 - `Color`: colors as 0xAARRGGBB integers: their channels, the CSS order, hue, saturation and value, mixing, laying one over another,
   tinting, brightening and contrasting.
-- `RectPacker2D`: rectangles packed into an area, as stb_rect_pack packs them (an atlas's images, say).
-- `Matrix2D`, `Matrix3D`, `Quaternion3D`, `Transform2D`, `Transform3D`: transforms, moving, turning, scaling and projecting points,
+- `RectanglePacker`: rectangles packed into an area, as stb_rect_pack packs them (an atlas's images, say).
+- `Matrix3`, `Matrix4`, `Quaternion`, `Transform2D`, `Transform3D`: transforms, moving, turning, scaling and projecting points,
   the same on every target.
 
 Cameras, rays, meshes and the tests on shapes built on these are in [helix-geometry](../geometry/README.md).
@@ -44,8 +44,8 @@ build with `-lib helix-math` alone.
 
 ## Credit
 
-Portions of `Matrix3D` are from [raylib](https://www.raylib.com) 5.5's raymath, by Ramon Santamaria (@raysan5) and its contributors,
+Portions of `Matrix4` are from [raylib](https://www.raylib.com) 5.5's raymath, by Ramon Santamaria (@raysan5) and its contributors,
 altered; zlib license, `vendor/raylib/LICENSE`.
-`Interpolate`'s spline pieces follow raylib 5.5's rshapes. `RectPacker2D` is
+`Interpolate`'s spline pieces follow raylib 5.5's rshapes. `RectanglePacker` is
 [stb_rect_pack](https://github.com/nothings/stb) 1.01's skyline packer, by Sean Barrett, ported; public domain. `DistanceField2D` is
 Felzenszwalb and Huttenlocher's distance transform ("Distance Transforms of Sampled Functions", 2012).

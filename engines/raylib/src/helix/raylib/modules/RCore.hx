@@ -3,10 +3,8 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.math.Matrix3D;
-import helix.math.Quaternion3D;
+import helix.math.Matrix4;
 import helix.math.Trig;
-import helix.math.Vector3D;
 import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.DroppedFiles;
@@ -2573,7 +2571,7 @@ class RCore {
 		@param camera  The camera. */
 	static function BeginMode2D(camera:Camera2D):Void {
 		Runtime.frame.cut();
-		Runtime.frame.view = camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix3D();
+		Runtime.frame.view = camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix4();
 	}
 
 	/** Goes back to drawing in the screen's pixels. */
@@ -2586,7 +2584,7 @@ class RCore {
 		@param camera  The camera.
 		@return  The matrix. */
 	static function GetCameraMatrix2D(camera:Camera2D):Matrix {
-		return toMatrix(camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix3D());
+		return toMatrix(camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix4());
 	}
 
 	/** Returns where a point in a 2D camera's world is on the screen.
@@ -2613,9 +2611,9 @@ class RCore {
 	// helix-math's the camera), its zoom and its offset.
 	static final view2D = new helix.geometry.Camera2D();
 
-	static final viewMatrix2D = new helix.math.Matrix2D();
+	static final viewMatrix2D = new helix.math.Matrix3();
 
-	static final point2D = new helix.math.Vector2D();
+	static final point2D = new helix.math.Vector2();
 
 	static function camera2D(camera:Camera2D):helix.geometry.Camera2D {
 		view2D.transform.position.set(camera.target.x, camera.target.y);
@@ -2680,7 +2678,8 @@ class RCore {
 		if (mode == CAMERA_CUSTOM) {} else if (mode == CAMERA_ORBITAL) {
 			var p = camera.position, t = camera.target;
 			var up = cameraUp(camera);
-			var view = Quaternion3D.fromAxisAngle(up.x, up.y, up.z, orbitalSpeed, turn3D).transformPoint(p.x - t.x, p.y - t.y, p.z - t.z, view3DVector);
+			var view = helix.math.Quaternion.fromAxisAngle(up.x, up.y, up.z, orbitalSpeed, turn3D)
+				.transformPoint(p.x - t.x, p.y - t.y, p.z - t.z, view3DVector);
 			camera.position = new Vector3(t.x + view.x, t.y + view.y, t.z + view.z);
 		} else {
 			if (IsKeyDown(KEY_DOWN))
@@ -2769,26 +2768,26 @@ class RCore {
 	// They act on raylib's position, target and up as rcamera does, not on a Transform3D: raylib's up needn't be square to the view, and
 	// the yaw, the move up and the pitch's lock use it as it is, where a Transform3D's own up is always square to the way it faces.
 	// The view, from the position to the target, into a vector of its own.
-	static function cameraView(camera:Camera):Vector3D {
+	static function cameraView(camera:Camera):helix.math.Vector3 {
 		var p = camera.position, t = camera.target;
 		return viewVector.set(t.x - p.x, t.y - p.y, t.z - p.z);
 	}
 
-	static function cameraForward(camera:Camera):Vector3D {
+	static function cameraForward(camera:Camera):helix.math.Vector3 {
 		return cameraView(camera).normalize(forwardVector);
 	}
 
-	static function cameraUp(camera:Camera):Vector3D {
+	static function cameraUp(camera:Camera):helix.math.Vector3 {
 		var u = camera.up;
 		return upVector.set(u.x, u.y, u.z).normalize(upVector);
 	}
 
-	static function cameraRight(camera:Camera):Vector3D {
+	static function cameraRight(camera:Camera):helix.math.Vector3 {
 		return cameraForward(camera).cross(cameraUp(camera), rightVector).normalize(rightVector);
 	}
 
 	// The camera's position or target, as the other plus or minus the view.
-	static function placeAlong(camera:Camera, view:Vector3D, rotateAroundTarget:Bool):Void {
+	static function placeAlong(camera:Camera, view:helix.math.Vector3, rotateAroundTarget:Bool):Void {
 		var p = camera.position, t = camera.target;
 		if (rotateAroundTarget)
 			camera.position = new Vector3(t.x - view.x, t.y - view.y, t.z - view.z);
@@ -2797,7 +2796,7 @@ class RCore {
 	}
 
 	// Moves the position and the target alike.
-	static function cameraMove(camera:Camera, by:Vector3D):Void {
+	static function cameraMove(camera:Camera, by:helix.math.Vector3):Void {
 		var p = camera.position, t = camera.target;
 		camera.position = new Vector3(p.x + by.x, p.y + by.y, p.z + by.z);
 		camera.target = new Vector3(t.x + by.x, t.y + by.y, t.z + by.z);
@@ -2805,7 +2804,7 @@ class RCore {
 
 	// A direction in the world's plane, as raylib 6.2's: the part along the axis the camera's up is mostly along dropped (z when its
 	// up's z is over 0.7071, else x when its x is, else y), then of length 1.
-	static function inWorldPlane(camera:Camera, v:Vector3D):Vector3D {
+	static function inWorldPlane(camera:Camera, v:helix.math.Vector3):helix.math.Vector3 {
 		var up = camera.up;
 		if (Math.abs(up.z) > 0.7071)
 			v.z = 0;
@@ -2847,8 +2846,8 @@ class RCore {
 	}
 
 	// A vector turned around an axis, which needn't be of length 1 (one of length 0 turns nothing), in place.
-	static function turnAround(vector:Vector3D, axis:Vector3D, angle:Float):Vector3D {
-		return Quaternion3D.fromAxisAngle(axis.x, axis.y, axis.z, angle, turn3D).transformPoint(vector.x, vector.y, vector.z, vector);
+	static function turnAround(vector:helix.math.Vector3, axis:helix.math.Vector3, angle:Float):helix.math.Vector3 {
+		return helix.math.Quaternion.fromAxisAngle(axis.x, axis.y, axis.z, angle, turn3D).transformPoint(vector.x, vector.y, vector.z, vector);
 	}
 
 	static function cameraYaw(camera:Camera, angle:Float, rotateAroundTarget:Bool):Void {
@@ -2882,21 +2881,21 @@ class RCore {
 	}
 
 	// The angle between two vectors, raymath's Vector3Angle: 0 when either is of length 0.
-	static function angleBetween(a:Vector3D, b:Vector3D):Float {
+	static function angleBetween(a:helix.math.Vector3, b:helix.math.Vector3):Float {
 		return Trig.atan2(a.cross(b, crossVector).length, a.dot(b));
 	}
 
-	static final viewVector = new Vector3D();
+	static final viewVector = new helix.math.Vector3();
 
-	static final forwardVector = new Vector3D();
+	static final forwardVector = new helix.math.Vector3();
 
-	static final upVector = new Vector3D();
+	static final upVector = new helix.math.Vector3();
 
-	static final rightVector = new Vector3D();
+	static final rightVector = new helix.math.Vector3();
 
-	static final crossVector = new Vector3D();
+	static final crossVector = new helix.math.Vector3();
 
-	static final turn3D = new Quaternion3D();
+	static final turn3D = new helix.math.Quaternion();
 
 	/** Returns a camera's view, as `BeginMode3D` uses it.
 
@@ -2963,22 +2962,22 @@ class RCore {
 	}
 
 	// raylib's Camera3D as helix-math's, reused: its position, turned to face its target with its up kept as near as it can be (an up
-	// along the view, or a target at its position, as Quaternion3D.fromLookRotation replaces them), its fovy in radians or, orthographic,
+	// along the view, or a target at its position, as helix.math.Quaternion.fromLookRotation replaces them), its fovy in radians or, orthographic,
 	// the height it shows, and raylib's near and far planes, 0.01 and 1000.
 	static final view3D = new helix.geometry.Camera3D();
 
-	static final viewMatrix3D = new Matrix3D();
+	static final viewMatrix3D = new Matrix4();
 
-	static final point3D = new Vector3D();
+	static final point3D = new helix.math.Vector3();
 
 	static final ray3D = new helix.geometry.Ray3D();
 
-	static final view3DVector = new Vector3D();
+	static final view3DVector = new helix.math.Vector3();
 
 	static function camera3D(camera:Camera3D):helix.geometry.Camera3D {
 		var p = camera.position, t = camera.target, u = camera.up;
 		view3D.transform.position.set(p.x, p.y, p.z);
-		Quaternion3D.fromLookRotation(t.x - p.x, t.y - p.y, t.z - p.z, u.x, u.y, u.z, view3D.transform.rotation);
+		helix.math.Quaternion.fromLookRotation(t.x - p.x, t.y - p.y, t.z - p.z, u.x, u.y, u.z, view3D.transform.rotation);
 		view3D.orthographic = camera.projection == CAMERA_ORTHOGRAPHIC;
 		view3D.fieldOfView = camera.fovy * DEG2RAD;
 		view3D.orthographicHeight = camera.fovy;
@@ -3201,7 +3200,7 @@ class RCore {
 		if (shader.program == null)
 			return;
 		Runtime.frame.cut();
-		shader.program.write(locIndex, toMatrix3D(mat).values);
+		shader.program.write(locIndex, toMatrix4(mat).values);
 	}
 
 	/** Sets a shader's texture for the draws after the call, a `Texture2D` at a `sampler2D` or a cubemap (`LoadTextureCubemap`) at a

@@ -1,7 +1,7 @@
 package helix.geometry;
 
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 
 /** Represents what a view sees: six planes bounding a volume, from any view-projection matrix.
 
@@ -15,7 +15,7 @@ import helix.math.Matrix3D;
 		if (frustum.intersectsBounds(thing.bounds))
 			draw(thing);
 	``` */
-class Frustum3D {
+class Frustum {
 	/** Gets the planes' 24 numbers: left, right, bottom, top, near and far, each a, b, c and d, where a point (x, y, z) is on the inside
 		when a x + b y + c z + d is 0 or more. Each plane's (a, b, c) is of length 1, so that sum is the distance from it. */
 	public final planes:Array<Float> = [for (_ in 0...24) 0.];
@@ -28,13 +28,13 @@ class Frustum3D {
 
 	/** Returns the volume a view-projection matrix shows: what lands inside GL's clip space, -1 to 1 on each axis.
 
-		@param viewProjection  The view matrix composed with the projection (`Matrix3D.compose(view, projection)`).
+		@param viewProjection  The view matrix composed with the projection (`Matrix4.compose(view, projection)`).
 		@param out  Optional. The frustum to fill; a new one when omitted.
 		@return  The frustum. */
-	public static function fromMatrix(viewProjection:Matrix3D, ?out:Frustum3D):Frustum3D {
+	public static function fromMatrix(viewProjection:Matrix4, ?out:Frustum):Frustum {
 		var m = viewProjection.values;
 		if (out == null)
-			out = new Frustum3D();
+			out = new Frustum();
 		var p = out.planes;
 		// Each plane is the matrix's last row plus or minus another (Gribb and Hartmann's): left and right x, bottom and top y, near and far z.
 		for (plane in 0...6) {
@@ -54,7 +54,7 @@ class Frustum3D {
 
 		@param other  The frustum to copy.
 		@return  This frustum. */
-	public function copyFrom(other:Frustum3D):Frustum3D {
+	public function copyFrom(other:Frustum):Frustum {
 		for (i in 0...24)
 			planes[i] = other.planes[i];
 		return this;
@@ -92,7 +92,7 @@ class Frustum3D {
 		An empty box is never inside.
 		@param bounds  The box, in the matrix's world units.
 		@return  True when some of it may be inside. */
-	public function intersectsBounds(bounds:Bounds3D):Bool {
+	public function intersectsBounds(bounds:Aabb3D):Bool {
 		if (bounds.isEmpty)
 			return false;
 		var p = planes;

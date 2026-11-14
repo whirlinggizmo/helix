@@ -110,12 +110,12 @@ var pointed = camera.viewToWorld(mouseX, mouseY, pointerScratch);
 function new()
 final transform:Transform2D
 var zoom:Float
-final offset:Vector2D
+final offset:Vector2
 function copyFrom(other:Camera2D):Camera2D
-function computeViewMatrix(?out:Matrix2D):Matrix2D
-function worldToView(x:Float, y:Float, ?out:Vector2D):Vector2D
-function viewToWorld(x:Float, y:Float, ?out:Vector2D):Null<Vector2D>
-function computeBounds(viewWidth:Float, viewHeight:Float, ?out:Bounds2D):Bounds2D
+function computeViewMatrix(?out:Matrix3):Matrix3
+function worldToView(x:Float, y:Float, ?out:Vector2):Vector2
+function viewToWorld(x:Float, y:Float, ?out:Vector2):Null<Vector2>
+function computeBounds(viewWidth:Float, viewHeight:Float, ?out:Aabb2D):Aabb2D
 ```
 
 - `new`: Creates a camera at the origin, unturned, at zoom 1, its position showing at the view's top left.
@@ -171,10 +171,10 @@ var orthographicHeight:Float
 var near:Float
 var far:Float
 function copyFrom(other:Camera3D):Camera3D
-function computeViewMatrix(?out:Matrix3D):Matrix3D
-function computeProjectionMatrix(aspect:Float, ?out:Matrix3D):Matrix3D
-function computeFrustum(aspect:Float, ?out:Frustum3D):Frustum3D
-function project(x:Float, y:Float, z:Float, aspect:Float, ?out:Vector3D):Vector3D
+function computeViewMatrix(?out:Matrix4):Matrix4
+function computeProjectionMatrix(aspect:Float, ?out:Matrix4):Matrix4
+function computeFrustum(aspect:Float, ?out:Frustum):Frustum
+function project(x:Float, y:Float, z:Float, aspect:Float, ?out:Vector3):Vector3
 function computeRay(viewX:Float, viewY:Float, aspect:Float, ?out:Ray3D):Ray3D
 ```
 
@@ -215,9 +215,9 @@ function computeRay(viewX:Float, viewY:Float, aspect:Float, ?out:Ray3D):Ray3D
   - `out`: Optional. Set to the ray.
   - returns: The ray, its direction of length 1.
 
-## Frustum3D
+## Frustum
 
-*class* in [`libs/geometry/src/helix/geometry/Frustum3D.hx`](../src/helix/geometry/Frustum3D.hx), `import helix.geometry.Frustum3D;`
+*class* in [`libs/geometry/src/helix/geometry/Frustum.hx`](../src/helix/geometry/Frustum.hx), `import helix.geometry.Frustum;`
 
 Represents what a view sees: six planes bounding a volume, from any view-projection matrix.
 
@@ -232,17 +232,17 @@ draw(thing);
 
 ```haxe
 function new()
-static function fromMatrix(viewProjection:Matrix3D, ?out:Frustum3D):Frustum3D
+static function fromMatrix(viewProjection:Matrix4, ?out:Frustum):Frustum
 final planes:Array<Float>
-function copyFrom(other:Frustum3D):Frustum3D
+function copyFrom(other:Frustum):Frustum
 function contains(x:Float, y:Float, z:Float):Bool
 function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
-function intersectsBounds(bounds:Bounds3D):Bool
+function intersectsBounds(bounds:Aabb3D):Bool
 ```
 
 - `new`: Creates a frustum that holds everything until it is set from a matrix (`fromMatrix`).
 - `fromMatrix`: Returns the volume a view-projection matrix shows: what lands inside GL's clip space, -1 to 1 on each axis.
-  - `viewProjection`: The view matrix composed with the projection (`Matrix3D.compose(view, projection)`).
+  - `viewProjection`: The view matrix composed with the projection (`Matrix4.compose(view, projection)`).
   - `out`: Optional. The frustum to fill; a new one when omitted.
   - returns: The frustum.
 - `planes`: Gets the planes' 24 numbers: left, right, bottom, top, near and far, each a, b, c and d, where a point (x, y, z) is on the inside when a x + b y + c z + d is 0 or more. Each plane's (a, b, c) is of length 1, so that sum is the distance from it.
@@ -275,7 +275,7 @@ Provides tests on points, segments, triangles, polygons and circles in a plane, 
 Lines that are parallel within a ten-millionth (by the cross product of their directions) don't cross.
 
 ```haxe
-static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Vector2D):Bool
+static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Vector2):Bool
 static function isPointInTriangle(x:Float, y:Float, ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float):Bool
 static function isPointInPolygon(x:Float, y:Float, points:Array<Float>):Bool
 static function getDistanceToSegment(x:Float, y:Float, ax:Float, ay:Float, bx:Float, by:Float):Float
@@ -373,12 +373,12 @@ var triangleCount(get, never):Int
 function tint(color:Int, ?out:Mesh3D):Mesh3D
 function remapJointIndices(newJointIndices:Array<Int>, ?out:Mesh3D):Mesh3D
 function copyFrom(other:Mesh3D):Mesh3D
-function transform(matrix:Matrix3D, ?out:Mesh3D):Mesh3D
+function transform(matrix:Matrix4, ?out:Mesh3D):Mesh3D
 function toUnindexed(?out:Mesh3D):Mesh3D
 function computeNormals(?weldDistance:Float, ?out:Array<Float>):Array<Float>
 function computeTangents(?out:Array<Float>):Null<Array<Float>>
-function computeSkinned(skinning:Array<Matrix3D>, ?out:Mesh3D):Mesh3D
-function computeBounds(?out:Bounds3D):Bounds3D
+function computeSkinned(skinning:Array<Matrix4>, ?out:Mesh3D):Mesh3D
+function computeBounds(?out:Aabb3D):Aabb3D
 ```
 
 - `new`: Creates an empty mesh: no positions, nothing else.
@@ -504,21 +504,21 @@ function computeBounds(?out:Bounds3D):Bounds3D
 
 Represents a ray: a point it starts from and a direction it goes in, for picking and line of sight.
 
-A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses, its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1, in world units. Shapes are given as plain numbers, as `Frustum3D` and `Bounds3D` take them. Given an out, no test allocates.
+A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses, its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1, in world units. Shapes are given as plain numbers, as `Frustum` and `Aabb3D` take them. Given an out, no test allocates.
 
 ```haxe
 function new()
-final origin:Vector3D
-final direction:Vector3D
+final origin:Vector3
+final direction:Vector3
 function set(x:Float, y:Float, z:Float, dx:Float, dy:Float, dz:Float):Ray3D
 function copyFrom(other:Ray3D):Ray3D
-function computePoint(distance:Float, ?out:Vector3D):Vector3D
-function transform(matrix:Matrix3D, ?out:Ray3D):Ray3D
+function computePoint(distance:Float, ?out:Vector3):Vector3
+function transform(matrix:Matrix4, ?out:Ray3D):Ray3D
 function intersectPlane(x:Float, y:Float, z:Float, nx:Float, ny:Float, nz:Float, ?out:RayHit3D):Null<RayHit3D>
 function intersectSphere(x:Float, y:Float, z:Float, radius:Float, ?out:RayHit3D):Null<RayHit3D>
-function intersectBounds(bounds:Bounds3D, ?out:RayHit3D):Null<RayHit3D>
+function intersectBounds(bounds:Aabb3D, ?out:RayHit3D):Null<RayHit3D>
 function intersectTriangle(ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float, cy:Float, cz:Float, ?out:RayHit3D):Null<RayHit3D>
-function intersectMesh(mesh:Mesh3D, ?transform:Matrix3D, ?out:RayHit3D):Null<RayHit3D>
+function intersectMesh(mesh:Mesh3D, ?transform:Matrix4, ?out:RayHit3D):Null<RayHit3D>
 ```
 
 - `new`: Creates a ray from the origin along -z.
@@ -590,8 +590,8 @@ Represents where a ray meets something (`Ray3D`'s tests): how far along it, the 
 ```haxe
 function new()
 var distance:Float
-final point:Vector3D
-final normal:Vector3D
+final point:Vector3
+final normal:Vector3
 var triangleIndex:Int
 function copyFrom(other:RayHit3D):RayHit3D
 ```
@@ -618,7 +618,7 @@ function new(bones:Array<Bone3D>)
 final bones:Array<Bone3D>
 function findBone(name:String):Int
 function computeRestPose(?out:Array<Transform3D>):Array<Transform3D>
-function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix3D>):Array<Matrix3D>
+function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix4>):Array<Matrix4>
 ```
 
 - `new`: Creates a skeleton.
@@ -642,11 +642,11 @@ function computeWorld(pose:Array<Transform3D>, ?out:Array<Matrix3D>):Array<Matri
 Represents a skin: the bones of a skeleton a mesh's vertices follow, and how each vertex was bound to them. A vertex's `jointIndices` index this skin's `boneIndices`, not the skeleton's.
 
 ```haxe
-function new(name:String, boneIndices:Array<Int>, inverseBinds:Array<Matrix3D>)
+function new(name:String, boneIndices:Array<Int>, inverseBinds:Array<Matrix4>)
 final name:String
 final boneIndices:Array<Int>
-final inverseBinds:Array<Matrix3D>
-function computeSkinning(world:Array<Matrix3D>, ?out:Array<Matrix3D>):Array<Matrix3D>
+final inverseBinds:Array<Matrix4>
+function computeSkinning(world:Array<Matrix4>, ?out:Array<Matrix4>):Array<Matrix4>
 ```
 
 - `new`: Creates a skin.

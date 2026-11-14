@@ -4,7 +4,7 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Rlgl.*;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -56,7 +56,7 @@ class RRlgl {
 		}
 		if (matrixMode == RL_MODELVIEW)
 			pushed = true;
-		stack.push(new Matrix3D().copyFrom(current()));
+		stack.push(new Matrix4().copyFrom(current()));
 	}
 
 	/** Goes back to the matrix last saved by `rlPushMatrix`. */
@@ -71,7 +71,7 @@ class RRlgl {
 
 	/** Makes the current matrix the identity. */
 	static function rlLoadIdentity():Void {
-		set(new Matrix3D());
+		set(new Matrix4());
 	}
 
 	/** Moves by an offset before the current matrix.
@@ -80,7 +80,7 @@ class RRlgl {
 		@param y  The y offset.
 		@param z  The z offset. */
 	static function rlTranslatef(x:Float, y:Float, z:Float):Void {
-		apply(Matrix3D.fromTranslation(x, y, z));
+		apply(Matrix4.fromTranslation(x, y, z));
 	}
 
 	/** Turns about an axis before the current matrix.
@@ -90,7 +90,7 @@ class RRlgl {
 		@param y  Its y.
 		@param z  Its z. */
 	static function rlRotatef(angle:Float, x:Float, y:Float, z:Float):Void {
-		apply(Matrix3D.fromRotation(x, y, z, angle * DEG2RAD));
+		apply(Matrix4.fromRotation(x, y, z, angle * DEG2RAD));
 	}
 
 	/** Scales before the current matrix.
@@ -99,14 +99,14 @@ class RRlgl {
 		@param y  The y scale.
 		@param z  The z scale. */
 	static function rlScalef(x:Float, y:Float, z:Float):Void {
-		apply(Matrix3D.fromScale(x, y, z));
+		apply(Matrix4.fromScale(x, y, z));
 	}
 
 	/** Applies a matrix before the current one.
 
 		@param matf  The matrix's 16 numbers, by columns, as `MatrixToFloatV` gives them. */
 	static function rlMultMatrixf(matf:Array<Float>):Void {
-		var m = new Matrix3D();
+		var m = new Matrix4();
 		for (i in 0...16)
 			m.values[i] = matf[i];
 		apply(m);
@@ -121,7 +121,7 @@ class RRlgl {
 		@param znear  The near plane.
 		@param zfar  The far plane. */
 	static function rlOrtho(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void {
-		apply(Matrix3D.fromOrthographic(left, right, bottom, top, znear, zfar));
+		apply(Matrix4.fromOrthographic(left, right, bottom, top, znear, zfar));
 	}
 
 	/** Applies a perspective projection before the current matrix, by its near plane's edges.
@@ -133,7 +133,7 @@ class RRlgl {
 		@param znear  The near plane.
 		@param zfar  The far plane. */
 	static function rlFrustum(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void {
-		apply(Matrix3D.fromFrustum(left, right, bottom, top, znear, zfar));
+		apply(Matrix4.fromFrustum(left, right, bottom, top, znear, zfar));
 	}
 
 	/** Returns the view, which is the screen's, `BeginMode2D`'s or `BeginMode3D`'s.
@@ -154,7 +154,7 @@ class RRlgl {
 
 		@return  The matrix. */
 	static function rlGetMatrixTransform():Matrix {
-		return toMatrix(pushed ? transform : new Matrix3D());
+		return toMatrix(pushed ? transform : new Matrix4());
 	}
 
 	/** Sets the view.
@@ -162,7 +162,7 @@ class RRlgl {
 		@param view  The matrix. */
 	static function rlSetMatrixModelview(view:Matrix):Void {
 		Runtime.frame.cut();
-		Runtime.frame.view = toMatrix3D(view);
+		Runtime.frame.view = toMatrix4(view);
 	}
 
 	/** Sets the projection.
@@ -170,7 +170,7 @@ class RRlgl {
 		@param proj  The matrix. */
 	static function rlSetMatrixProjection(proj:Matrix):Void {
 		Runtime.frame.cut();
-		Runtime.frame.projection = toMatrix3D(proj);
+		Runtime.frame.projection = toMatrix4(proj);
 	}
 
 	/** Returns the near distance cameras see from, 0.01 until `rlSetClipPlanes` sets it.
@@ -772,8 +772,8 @@ class RRlgl {
 		@param right  Eye 0's projection, drawn in the left half (raylib names it the right).
 		@param left  Eye 1's, drawn in the right half. */
 	static function rlSetMatrixProjectionStereo(right:Matrix, left:Matrix):Void {
-		helix.raylib.internal.Stereo.projections[0].copyFrom(toMatrix3D(right));
-		helix.raylib.internal.Stereo.projections[1].copyFrom(toMatrix3D(left));
+		helix.raylib.internal.Stereo.projections[0].copyFrom(toMatrix4(right));
+		helix.raylib.internal.Stereo.projections[1].copyFrom(toMatrix4(left));
 	}
 
 	/** Sets each eye's view offset in stereo rendering, applied after the view from the batch's next flush and in a mesh's mvp.
@@ -781,8 +781,8 @@ class RRlgl {
 		@param right  Eye 0's offset, drawn in the left half (raylib names it the right).
 		@param left  Eye 1's, drawn in the right half. */
 	static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void {
-		helix.raylib.internal.Stereo.offsets[0].copyFrom(toMatrix3D(right));
-		helix.raylib.internal.Stereo.offsets[1].copyFrom(toMatrix3D(left));
+		helix.raylib.internal.Stereo.offsets[0].copyFrom(toMatrix4(right));
+		helix.raylib.internal.Stereo.offsets[1].copyFrom(toMatrix4(left));
 	}
 
 	// ---- rlgl's GL objects and GL itself, which helix-raylib draws without: each refuses to compile, saying what to use ----
@@ -1689,8 +1689,8 @@ class RRlgl {
 	static var framebufferHeight = 0;
 	static var framebufferPass = -1;
 	static var pushed = false;
-	static final transform = new Matrix3D();
-	static final stack:Array<Matrix3D> = [];
+	static final transform = new Matrix4();
+	static final stack:Array<Matrix4> = [];
 	// The corners of the quad being added, 0 to 3.
 	static var quadCorners = 0;
 	static var u = 0.;
@@ -1706,27 +1706,27 @@ class RRlgl {
 	}
 
 	// The matrix the matrix calls change now.
-	static function current():Matrix3D {
+	static function current():Matrix4 {
 		return matrixMode == RL_PROJECTION ? Runtime.frame.projection : pushed ? transform : Runtime.frame.view;
 	}
 
 	// Replaces the current matrix: the view or projection after the draws asked for so far, the transform at the next vertex.
-	static function set(m:Matrix3D):Void {
+	static function set(m:Matrix4):Void {
 		if (matrixMode == RL_PROJECTION) {
 			Runtime.frame.cut();
-			Runtime.frame.projection = new Matrix3D().copyFrom(m);
+			Runtime.frame.projection = new Matrix4().copyFrom(m);
 		} else if (matrixMode == RL_MODELVIEW && pushed) {
 			transform.copyFrom(m);
 			Runtime.frame.transform = transform;
 		} else if (matrixMode == RL_MODELVIEW) {
 			Runtime.frame.cut();
-			Runtime.frame.view = new Matrix3D().copyFrom(m);
+			Runtime.frame.view = new Matrix4().copyFrom(m);
 		}
 	}
 
 	// Applies a matrix before the current one, as rlgl multiplies them.
-	static function apply(m:Matrix3D):Void {
-		set(Matrix3D.compose(m, current()));
+	static function apply(m:Matrix4):Void {
+		set(Matrix4.compose(m, current()));
 	}
 
 	// The draw call's texture, the white one for none.

@@ -1,7 +1,7 @@
-import helix.math.Bounds2D;
+import helix.math.Aabb2D;
 import helix.geometry.Camera2D;
-import helix.math.Matrix2D;
-import helix.math.Vector2D;
+import helix.math.Matrix3;
+import helix.math.Vector2;
 
 /** Checks Camera2D with the library alone: made and copied; its view matrix, conversions and bounds pinned to values computed apart
 	from Haxe, the matrix also to raylib 5.5's own 4 x 4 path for the same camera; each result into a new value or one given, alike, even
@@ -19,10 +19,10 @@ class Camera2DTests {
 	static function near(a:Float, b:Float, tolerance = 1e-9):Bool
 		return Math.abs(a - b) < tolerance;
 
-	static function at(p:Vector2D, x:Float, y:Float, tolerance = 1e-9):Bool
+	static function at(p:Vector2, x:Float, y:Float, tolerance = 1e-9):Bool
 		return near(p.x, x, tolerance) && near(p.y, y, tolerance);
 
-	static function is(m:Matrix2D, values:Array<Float>):Bool
+	static function is(m:Matrix3, values:Array<Float>):Bool
 		return near(m.a, values[0]) && near(m.b, values[1]) && near(m.c, values[2]) && near(m.d, values[3]) && near(m.tx, values[4]) && near(m.ty, values[5]);
 
 	// At (120.5, -33.25), turned -0.4, zoom 2.5, its position at (400, 225): raylib's Camera2D with that target and offset, a rotation
@@ -37,9 +37,9 @@ class Camera2DTests {
 	}
 
 	// Runs a conversion into a new vector, into one given, into the camera's own offset and its own position: the same each way.
-	static function fourWays(op:(Camera2D, Null<Vector2D>) -> Vector2D, message:String):Vector2D {
+	static function fourWays(op:(Camera2D, Null<Vector2>) -> Vector2, message:String):Vector2 {
 		var camera = sample();
-		var result = op(camera, null), given = new Vector2D();
+		var result = op(camera, null), given = new Vector2();
 		check(result != camera.offset && result != camera.transform.position && camera.offset.x == 400 && camera.transform.position.x == 120.5,
 			'$message: into a new vector, the camera unchanged');
 		check(op(sample(), given) == given && given.equals(result), '$message: into the one given');
@@ -74,7 +74,7 @@ class Camera2DTests {
 			184.25091950600887
 		];
 		check(is(sample().computeViewMatrix(), view), "the view matrix: pinned, and raylib's");
-		var m = new Matrix2D();
+		var m = new Matrix3();
 		check(sample().computeViewMatrix(m) == m && is(m, view), "the view matrix, into the one given");
 		check(at(sample().worldToView(120.5, -33.25), 400, 225), "its position shows at its offset");
 		check(at(fourWays((c, out) -> c.worldToView(100, 50, out), "worldToView"), 271.74793156436425, 396.73812933353213), "worldToView: pinned");
@@ -82,7 +82,7 @@ class Camera2DTests {
 		check(sample().worldToView(100, 50).equals(sample().computeViewMatrix().transformPoint(100, 50)), "worldToView is the view matrix's");
 
 		// There and back, over turned, zoomed and mirrored cameras and points far apart.
-		var c = new Camera2D(), p = new Vector2D();
+		var c = new Camera2D(), p = new Vector2();
 		for (rotation in [0., .3, -1.7, Math.PI, 5.5])
 			for (zoom in [1., 2.5, .125, -3.])
 				for (point in [[0., 0.], [123.25, -987.5], [-1e5, 3e4]]) {
@@ -111,7 +111,7 @@ class Camera2DTests {
 			&& near(bounds.maxX, 302.91740984824014)
 			&& near(bounds.maxY, 111.9524242296437),
 			"the bounds of a turned, zoomed view: pinned");
-		var corners = new Bounds2D();
+		var corners = new Aabb2D();
 		for (corner in [[0., 0.], [800., 0.], [0., 450.], [800., 450.]]) {
 			var world = sample().viewToWorld(corner[0], corner[1]);
 			check(bounds.contains(world.x, world.y), "holds each corner of the view");
@@ -119,7 +119,7 @@ class Camera2DTests {
 		}
 		check(near(corners.minX, bounds.minX) && near(corners.maxX, bounds.maxX) && near(corners.minY, bounds.minY) && near(corners.maxY, bounds.maxY),
 			"and no more than its corners");
-		var given = new Bounds2D();
+		var given = new Aabb2D();
 		check(sample().computeBounds(800, 450, given) == given
 			&& given.minX == bounds.minX
 			&& given.maxY == bounds.maxY, "the bounds, into the box given");
@@ -131,7 +131,7 @@ class Camera2DTests {
 		check(box.minX == -90 && box.minY == -30 && box.maxX == 110 && box.maxY == 70, "unturned: the view's size over the zoom, around its position");
 
 		// At zoom 0 nothing shows: no place in the world for a point in the view.
-		var flat = sample(), kept = new Vector2D(7, 8);
+		var flat = sample(), kept = new Vector2(7, 8);
 		flat.zoom = 0;
 		check(flat.viewToWorld(1, 2) == null && flat.viewToWorld(1, 2, kept) == null && kept.x == 7 && kept.y == 8,
 			"zoom 0: viewToWorld null, the out unchanged");

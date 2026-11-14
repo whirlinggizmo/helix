@@ -2,9 +2,9 @@ import haxe.io.Bytes;
 import helix.geometry.Camera2D;
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
-import helix.math.Bounds3D;
-import helix.math.Matrix2D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix3;
+import helix.math.Matrix4;
 import helix.platform.Blend;
 import helix.platform.VertexBuffer;
 import helix.render.*;
@@ -500,8 +500,8 @@ class RenderTests {
 		check(list.callCount == 3 && list.bounds.maxX == 41 && list.bounds.minY == -1, "a list's box around what it holds; arrays copied");
 		r.beginFrame(100, 100);
 		b.begin();
-		b.drawList(list, Matrix2D.fromTranslation(10, 10));
-		b.drawList(list, Matrix2D.fromTranslation(500, 10));
+		b.drawList(list, Matrix3.fromTranslation(10, 10));
+		b.drawList(list, Matrix3.fromTranslation(500, 10));
 		b.end();
 		r.endFrame();
 		check(g.draws.length == 2
@@ -516,13 +516,13 @@ class RenderTests {
 
 	static function views3D():Void {
 		var view = new View3D().setFromScreen(100, 50);
-		var box = new Bounds3D().set(10, 10, 0, 20, 20, 0);
+		var box = new Aabb3D().set(10, 10, 0, 20, 20, 0);
 		check(view.isInView(box), "a box in a screen view");
-		check(!view.isInView(new Bounds3D().set(200, 10, 0, 210, 20, 0)), "one past its right");
+		check(!view.isInView(new Aabb3D().set(200, 10, 0, 210, 20, 0)), "one past its right");
 		var camera = new Camera3D();
 		camera.transform.position.set(0, 0, 10);
 		view.setFromCamera(camera, 1);
-		check(view.isInView(new Bounds3D().set(-1, -1, -1, 1, 1, 1)) && !view.isInView(new Bounds3D().set(-1, -1, 20, 1, 1, 21)),
+		check(view.isInView(new Aabb3D().set(-1, -1, -1, 1, 1, 1)) && !view.isInView(new Aabb3D().set(-1, -1, 20, 1, 1, 21)),
 			"in front of the camera, and behind it");
 		var g = new RecordingGraphics(),
 			r = new Renderer(g),
@@ -583,12 +583,12 @@ class RenderTests {
 		material.shading = Unlit;
 		var state = new MeshState3D();
 		state.depthTest = Off;
-		b.drawMesh(mesh, material, new Matrix3D(), null, null, 0xff808080, state);
-		b.drawMesh(mesh, material, Matrix3D.fromTranslation(0, 0, 50));
-		var copies = [for (i in 0...4) Matrix3D.fromTranslation(i * 100 - 100, 0, 0)];
+		b.drawMesh(mesh, material, new Matrix4(), null, null, 0xff808080, state);
+		b.drawMesh(mesh, material, Matrix4.fromTranslation(0, 0, 50));
+		var copies = [for (i in 0...4) Matrix4.fromTranslation(i * 100 - 100, 0, 0)];
 		b.drawMeshInstanced(mesh, material, copies, null, null, 1, 3);
 		b.polygonMode = Lines;
-		b.drawMesh(mesh, material, new Matrix3D());
+		b.drawMesh(mesh, material, new Matrix4());
 		b.resetState();
 		b.end();
 		r.endFrame();
@@ -605,13 +605,13 @@ class RenderTests {
 		skinned.weights = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0];
 		var gpu = r.createMesh(skinned);
 		check(gpu.hasJoints && gpu.jointBoxes.length == 2, "a joint's box for each joint");
-		var skin = [new Matrix3D(), Matrix3D.fromTranslation(0, 5, 0)];
-		var bounds = gpu.computeBounds(Matrix3D.fromTranslation(10, 0, 0), skin);
+		var skin = [new Matrix4(), Matrix4.fromTranslation(0, 5, 0)];
+		var bounds = gpu.computeBounds(Matrix4.fromTranslation(10, 0, 0), skin);
 		check(near(bounds.maxY, 6) && near(bounds.minX, 10), "exact bounds posed on the CPU: " + bounds.maxY);
 		g.forget();
 		r.beginFrame(100, 100);
 		b.begin(camera);
-		b.drawMesh(gpu, material, new Matrix3D(), skin);
+		b.drawMesh(gpu, material, new Matrix4(), skin);
 		b.end();
 		r.endFrame();
 		var updated = [for (i => l in g.log) if (StringTools.startsWith(l, "update")) i],
@@ -620,7 +620,7 @@ class RenderTests {
 		gpu.dispose();
 		r.beginFrame(100, 100);
 		b.begin(camera);
-		throws(() -> b.drawMesh(gpu, material, new Matrix3D()), "disposed", "a disposed mesh's draw");
+		throws(() -> b.drawMesh(gpu, material, new Matrix4()), "disposed", "a disposed mesh's draw");
 		b.end();
 		r.endFrame();
 		r.dispose();
@@ -659,10 +659,10 @@ class RenderTests {
 		r.beginFrame(100, 100);
 		b.begin(camera);
 		b.polygonMode = Points;
-		b.drawMesh(mesh, material, new Matrix3D());
+		b.drawMesh(mesh, material, new Matrix4());
 		b.pointSize = 6;
-		b.drawMesh(mesh, material, new Matrix3D());
-		b.drawMeshInstanced(mesh, material, [Matrix3D.fromTranslation(-1, 0, 0), Matrix3D.fromTranslation(1, 0, 0)]);
+		b.drawMesh(mesh, material, new Matrix4());
+		b.drawMeshInstanced(mesh, material, [Matrix4.fromTranslation(-1, 0, 0), Matrix4.fromTranslation(1, 0, 0)]);
 		b.resetState();
 		b.end();
 		r.endFrame();
@@ -690,7 +690,7 @@ class RenderTests {
 		camera.transform.position.set(0, 0, 10);
 		r.beginFrame(100, 100);
 		b.begin(camera);
-		b.drawMesh(mesh, material, new Matrix3D());
+		b.drawMesh(mesh, material, new Matrix4());
 		b.end();
 		r.endFrame();
 		check(g.draws.length == 1 && !declaresBlock(g, g.draws[0], "Lighting") && Batch3D.makeLighting == null,
@@ -720,15 +720,15 @@ class RenderTests {
 		g.forget();
 		r.beginFrame(100, 100);
 		b.begin(camera);
-		b.drawMesh(mesh, material, new Matrix3D());
+		b.drawMesh(mesh, material, new Matrix4());
 		b.lights.resize(0);
 		b.lights.push(short);
 		b.lights.push(away);
 		b.lights.push(toward);
-		b.lights.push(new HemisphereLight3D());
+		b.lights.push(new HemisphereLight());
 		b.end();
 		b.begin(camera);
-		b.drawMesh(mesh, material, new Matrix3D());
+		b.drawMesh(mesh, material, new Matrix4());
 		b.end();
 		r.endFrame();
 		check(g.draws.length == 2
@@ -756,8 +756,8 @@ class RenderTests {
 		g.log.resize(0);
 		r.beginFrame(100, 100);
 		b.begin(camera);
-		b.drawMesh(mesh, material, new Matrix3D());
-		b.drawMesh(mesh, glass, Matrix3D.fromTranslation(0, 2, 0));
+		b.drawMesh(mesh, material, new Matrix4());
+		b.drawMesh(mesh, glass, Matrix4.fromTranslation(0, 2, 0));
 		b.end();
 		r.endFrame();
 		var order = [

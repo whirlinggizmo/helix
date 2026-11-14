@@ -1,8 +1,8 @@
 package helix.render;
 
 import helix.geometry.Mesh3D;
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 
 /** Represents a mesh on the GPU: its vertices and indices, uploaded once and drawn as often as wanted (`Batch3D.drawMesh`).
 
@@ -17,7 +17,7 @@ class GpuMesh3D {
 	public var triangleCount(default, null):Int;
 
 	/** Gets the box around its positions as uploaded, in the mesh's own units (a skinned mesh's in its bind pose). */
-	public final bounds = new Bounds3D();
+	public final bounds = new Aabb3D();
 
 	/** Gets a value indicating whether it has joints and weights, so it is drawn skinned when given a skin's matrices. */
 	public var hasJoints(default, null):Bool;
@@ -57,13 +57,13 @@ class GpuMesh3D {
 		@param out  Optional. Set to the box; a new one when omitted.
 		@return  The box, in world units.
 		@throws String  A disposed mesh. */
-	public function computeBounds(transform:Matrix3D, ?skinning:Array<Matrix3D>, ?morphWeights:Array<Float>, ?out:Bounds3D):Bounds3D {
+	public function computeBounds(transform:Matrix4, ?skinning:Array<Matrix4>, ?morphWeights:Array<Float>, ?out:Aabb3D):Aabb3D {
 		if (disposed)
 			throw "helix-render: computeBounds of a disposed mesh";
 		if (morphWeights != null && morphWeights.length > 0)
 			throw "helix-render: GpuMesh3D.computeBounds with morph weights is not yet built (stage 7, morph targets)";
 		if (out == null)
-			out = new Bounds3D();
+			out = new Aabb3D();
 		out.makeEmpty();
 		var m = transform.values, p = positions;
 		for (v in 0...vertexCount) {
@@ -137,7 +137,7 @@ class GpuMesh3D {
 	var indices:Null<Array<Int>> = null;
 
 	@:allow(helix.render)
-	final jointBoxes:Array<Bounds3D> = [];
+	final jointBoxes:Array<Aabb3D> = [];
 
 	static final layouts = new Map<Int, helix.services.shaders.ShaderVertexLayout>();
 
@@ -325,7 +325,7 @@ class GpuMesh3D {
 					if (weights[v * 4 + k] > 0) {
 						var j = joints[v * 4 + k];
 						while (jointBoxes.length <= j)
-							jointBoxes.push(new Bounds3D());
+							jointBoxes.push(new Aabb3D());
 						jointBoxes[j].expand(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
 					}
 	}
@@ -357,7 +357,7 @@ class GpuMesh3D {
 	// corners exactly.
 
 	@:allow(helix.render)
-	function skinnedBounds(skinning:Array<Matrix3D>, out:Bounds3D):Bounds3D {
+	function skinnedBounds(skinning:Array<Matrix4>, out:Aabb3D):Aabb3D {
 		out.makeEmpty();
 		for (j in 0...jointBoxes.length) {
 			var b = jointBoxes[j];

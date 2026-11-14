@@ -1,10 +1,10 @@
 package helix.geometry;
 
-import helix.math.Matrix3D;
-import helix.math.Quaternion3D;
+import helix.math.Matrix4;
+import helix.math.Quaternion;
 import helix.math.Transform3D;
 import helix.math.Trig;
-import helix.math.Vector3D;
+import helix.math.Vector3;
 
 /** Represents a view of a 3D world: where it is and which way it looks (a `Transform3D`), and how it projects what it sees.
 
@@ -59,14 +59,14 @@ class Camera3D {
 
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The view matrix. */
-	public function computeViewMatrix(?out:Matrix3D):Matrix3D {
+	public function computeViewMatrix(?out:Matrix4):Matrix4 {
 		var position = transform.position,
 			px = position.x,
 			py = position.y,
 			pz = position.z;
 		var q = turned();
 		// The rotation's transpose undoes it, and the position, turned back, moves the world the other way.
-		var view = Matrix3D.fromQuaternion(q.x, q.y, q.z, q.w, out);
+		var view = Matrix4.fromQuaternion(q.x, q.y, q.z, q.w, out);
 		view.transpose(view);
 		var v = view.values;
 		v[12] = -(v[0] * px + v[4] * py + v[8] * pz);
@@ -80,11 +80,11 @@ class Camera3D {
 		@param aspect  The view's width over its height.
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The projection matrix. */
-	public function computeProjectionMatrix(aspect:Float, ?out:Matrix3D):Matrix3D {
+	public function computeProjectionMatrix(aspect:Float, ?out:Matrix4):Matrix4 {
 		if (!orthographic)
-			return Matrix3D.fromPerspective(fieldOfView, aspect, near, far, out);
+			return Matrix4.fromPerspective(fieldOfView, aspect, near, far, out);
 		var top = orthographicHeight / 2, right = top * aspect;
-		return Matrix3D.fromOrthographic(-right, right, -top, top, near, far, out);
+		return Matrix4.fromOrthographic(-right, right, -top, top, near, far, out);
 	}
 
 	/** Returns what the camera sees, to test what is in view before drawing it.
@@ -92,9 +92,9 @@ class Camera3D {
 		@param aspect  The view's width over its height.
 		@param out  Optional. The frustum to write into; a new one when omitted.
 		@return  The frustum, in world units. */
-	public function computeFrustum(aspect:Float, ?out:Frustum3D):Frustum3D {
+	public function computeFrustum(aspect:Float, ?out:Frustum):Frustum {
 		var view = computeViewMatrix(shared());
-		return Frustum3D.fromMatrix(view.append(computeProjectionMatrix(aspect, sharedProjection()), view), out);
+		return Frustum.fromMatrix(view.append(computeProjectionMatrix(aspect, sharedProjection()), view), out);
 	}
 
 	/** Returns where a point in the world lands in the view, from -1 to 1 across and up, with its depth.
@@ -107,7 +107,7 @@ class Camera3D {
 		@param out  Optional. The vector to write into: x and y from -1 (left, bottom) to 1, z the depth from -1 (near) to 1 (far); a new
 			one when omitted.
 		@return  The point; outside -1 to 1 when it isn't in view. */
-	public function project(x:Float, y:Float, z:Float, aspect:Float, ?out:Vector3D):Vector3D {
+	public function project(x:Float, y:Float, z:Float, aspect:Float, ?out:Vector3):Vector3 {
 		var x = real(x), y = real(y), z = real(z);
 		var view = computeViewMatrix(shared());
 		var m = view.append(computeProjectionMatrix(aspect, sharedProjection()), view).values;
@@ -115,7 +115,7 @@ class Camera3D {
 		var px = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w,
 			py = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w,
 			pz = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
-		return out == null ? new Vector3D(px, py, pz) : out.set(px, py, pz);
+		return out == null ? new Vector3(px, py, pz) : out.set(px, py, pz);
 	}
 
 	/** Returns the ray from the camera through a point of its view, for picking: from the camera's position for a perspective camera,
@@ -146,28 +146,28 @@ class Camera3D {
 	}
 
 	// Its rotation made length 1, so a rotation set by hand still gives a rigid view.
-	function turned():Quaternion3D {
+	function turned():Quaternion {
 		if (rotation == null)
-			rotation = new Quaternion3D();
+			rotation = new Quaternion();
 		return transform.rotation.normalize(rotation);
 	}
 
 	// The matrices and the rotation the methods go through, reused.
-	static var rotation:Null<Quaternion3D> = null;
+	static var rotation:Null<Quaternion> = null;
 
-	static var matrix:Null<Matrix3D> = null;
+	static var matrix:Null<Matrix4> = null;
 
-	static var projection:Null<Matrix3D> = null;
+	static var projection:Null<Matrix4> = null;
 
-	static function shared():Matrix3D {
+	static function shared():Matrix4 {
 		if (matrix == null)
-			matrix = new Matrix3D();
+			matrix = new Matrix4();
 		return matrix;
 	}
 
-	static function sharedProjection():Matrix3D {
+	static function sharedProjection():Matrix4 {
 		if (projection == null)
-			projection = new Matrix3D();
+			projection = new Matrix4();
 		return projection;
 	}
 

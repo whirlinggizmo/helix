@@ -2,7 +2,7 @@ package helix.math;
 
 /** Provides packing rectangles into an area, as stb_rect_pack 1.01 does (public domain, Sean Barrett), which raylib packs its font
 	atlases with: a skyline, each rectangle placed as low as it goes and then as far left, the tallest first. */
-class RectPacker2D {
+class RectanglePacker {
 	/** Places rectangles in an area.
 
 		@param width  The area's width.

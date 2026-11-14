@@ -1,7 +1,7 @@
 package helix.geometry;
 
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 import helix.math.Trig;
 
 /** Represents a mesh: a surface made of triangles, as arrays a GPU or a file takes: positions, and for each vertex its normal, texture
@@ -510,7 +510,7 @@ class Mesh3D {
 		@param matrix  The transform.
 		@param out  Optional. Set to the moved mesh; may be this one.
 		@return  The moved mesh. */
-	public function transform(matrix:Matrix3D, ?out:Mesh3D):Mesh3D {
+	public function transform(matrix:Matrix4, ?out:Mesh3D):Mesh3D {
 		if (out == null)
 			out = new Mesh3D();
 		if (out != this)
@@ -713,7 +713,7 @@ class Mesh3D {
 			other arrays this mesh's own, not copied, so a mesh moved every frame allocates nothing. It may not be this mesh.
 		@return  The moved mesh.
 		@throws String  The out is this mesh. */
-	public function computeSkinned(skinning:Array<Matrix3D>, ?out:Mesh3D):Mesh3D {
+	public function computeSkinned(skinning:Array<Matrix4>, ?out:Mesh3D):Mesh3D {
 		if (out == null)
 			out = new Mesh3D();
 		if (out == this)
@@ -784,9 +784,9 @@ class Mesh3D {
 
 		@param out  Optional. Set to the bounds.
 		@return  The bounds; empty for a mesh without positions. */
-	public function computeBounds(?out:Bounds3D):Bounds3D {
+	public function computeBounds(?out:Aabb3D):Aabb3D {
 		if (out == null)
-			out = new Bounds3D();
+			out = new Aabb3D();
 		out.makeEmpty();
 		var p = positions;
 		for (i in 0...vertexCount)

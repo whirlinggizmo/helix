@@ -13,7 +13,7 @@ speed where docs/benchmarks.md records them.
   pulled out of that engine rather than built ahead of it. What was asked of the libraries below it is still wanted on its own:
   helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions (`KHR_materials_unlit` done),
   and morph targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an
-  object's `lookAt` and `Bounds3D` through a matrix. Effects (particles, model passes such as outlines, sprite and ground effects,
+  object's `lookAt` and `Aabb3D` through a matrix. Effects (particles, model passes such as outlines, sprite and ground effects,
   screen effects) start from docs/EFFECTS.md, an inventory of the earlier projects' effects, each judged by other engines and by what
   the jam's entrants write.
 - **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on

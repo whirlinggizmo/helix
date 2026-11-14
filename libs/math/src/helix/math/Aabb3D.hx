@@ -6,7 +6,7 @@ package helix.math;
 	`copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` writes its result into an optional out, the last
 	argument, and returns it: a new box when it is omitted, this one left unchanged; the out may be this box or the other. Its space is
 	its maker's. */
-class Bounds3D {
+class Aabb3D {
 	/** Gets or sets the least x coordinate; infinity while empty. */
 	public var minX:Float = Math.POSITIVE_INFINITY;
 
@@ -37,7 +37,7 @@ class Bounds3D {
 		@param maxY  The greatest y coordinate.
 		@param maxZ  The greatest z coordinate.
 		@return  This box. */
-	public function set(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Bounds3D {
+	public function set(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Aabb3D {
 		this.minX = minX;
 		this.maxX = maxX;
 		this.minY = minY;
@@ -50,7 +50,7 @@ class Bounds3D {
 	/** Makes the box empty, holding nothing.
 
 		@return  This box. */
-	public function makeEmpty():Bounds3D {
+	public function makeEmpty():Aabb3D {
 		minX = Math.POSITIVE_INFINITY;
 		maxX = Math.NEGATIVE_INFINITY;
 		minY = Math.POSITIVE_INFINITY;
@@ -64,7 +64,7 @@ class Bounds3D {
 
 		@param other  The box to copy.
 		@return  This box. */
-	public function copyFrom(other:Bounds3D):Bounds3D {
+	public function copyFrom(other:Aabb3D):Aabb3D {
 		minX = other.minX;
 		maxX = other.maxX;
 		minY = other.minY;
@@ -122,7 +122,7 @@ class Bounds3D {
 		@param y  The point's y coordinate.
 		@param z  The point's z coordinate.
 		@return  This box. */
-	public function expand(x:Float, y:Float, z:Float):Bounds3D {
+	public function expand(x:Float, y:Float, z:Float):Aabb3D {
 		if (x < minX)
 			minX = x;
 		if (x > maxX)
@@ -144,9 +144,9 @@ class Bounds3D {
 		@param other  The other box.
 		@param out  Optional. The box to fill; a new one when omitted. It may be this box or the other.
 		@return  The union. */
-	public function union(other:Bounds3D, ?out:Bounds3D):Bounds3D {
+	public function union(other:Aabb3D, ?out:Aabb3D):Aabb3D {
 		if (out == null)
-			out = new Bounds3D();
+			out = new Aabb3D();
 		if (other.isEmpty)
 			return out.copyFrom(this);
 		return out.set(minX < other.minX ? minX : other.minX, minY < other.minY ? minY : other.minY, minZ < other.minZ ? minZ : other.minZ,
@@ -166,7 +166,7 @@ class Bounds3D {
 
 		@param other  The other box.
 		@return  True when they overlap; false when either is empty. */
-	public function intersects(other:Bounds3D):Bool
+	public function intersects(other:Aabb3D):Bool
 		return !isEmpty && !other.isEmpty && minX <= other.maxX && other.minX <= maxX && minY <= other.maxY && other.minY <= maxY && minZ <= other.maxZ
 			&& other.minZ <= maxZ;
 

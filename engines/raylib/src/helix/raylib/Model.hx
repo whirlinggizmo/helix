@@ -51,7 +51,7 @@ class Model {
 
 	// Each bone's bind pose inverted, as the animations last needed it, and the bind pose's numbers it was made from (Animations).
 	@:allow(helix.raylib)
-	var inverseBinds:Array<Null<helix.math.Matrix3D>> = [];
+	var inverseBinds:Array<Null<helix.math.Matrix4>> = [];
 
 	@:allow(helix.raylib)
 	var inverseBindKeys:Array<Float> = [];

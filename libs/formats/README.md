@@ -2,7 +2,7 @@
 
 File formats read into plain data, and written from it: bytes or text in, typed data out, and pixels in, a file's bytes out. Pure Haxe,
 with no I/O: a program reads the file, hands its bytes to a parser, and loads whatever other files the data names (a model's buffers and
-images, a font's pages) itself; it saves what a writer returns. Depends on helix-math (a glTF node's transform is a `Matrix3D`).
+images, a font's pages) itself; it saves what a writer returns. Depends on helix-math (a glTF node's transform is a `Matrix4`).
 
 - `gltf.GltfFile`: a glTF 2.0 model, from a .gltf or a GLB: its nodes and their transforms, the default scene, meshes (positions,
   normals, texture coordinates, colors, indices), metallic-roughness materials and images. Buffers held in the file are read at once;

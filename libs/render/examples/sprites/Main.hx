@@ -5,7 +5,7 @@ import helix.render.Renderer;
 import helix.render.TextLayout2D;
 import helix.render.TextureRegion2D;
 import helix.geometry.Camera2D;
-import helix.math.Matrix2D;
+import helix.math.Matrix3;
 import helix.platform.IEvents;
 import helix.platform.IFileSystem;
 import helix.platform.IFontRasterizer;
@@ -54,7 +54,7 @@ class Main {
 	static var story:Null<TextLayout2D> = null;
 	// The story's panel, recorded once its font is in, replayed each frame at the screen's top left.
 	static final panel = new DrawList2D();
-	static final panelPlace = Matrix2D.fromTranslation(16, 16);
+	static final panelPlace = Matrix3.fromTranslation(16, 16);
 	// Each rock's x, y, radius and spin.
 	static var frame = 0;
 	static var framesLeft = -1;

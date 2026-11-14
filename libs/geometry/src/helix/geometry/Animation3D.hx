@@ -1,6 +1,6 @@
 package helix.geometry;
 
-import helix.math.Quaternion3D;
+import helix.math.Quaternion;
 import helix.math.Transform3D;
 
 /** Represents an animation of a skeleton: tracks moving its bones over time. */
@@ -78,7 +78,7 @@ class Animation3D {
 					if (track.interpolation == Linear && t > 0) {
 						from.set(v[at(k)], v[at(k) + 1], v[at(k) + 2], v[at(k) + 3]);
 						to.set(v[at(k + 1)], v[at(k + 1) + 1], v[at(k + 1) + 2], v[at(k + 1) + 3]);
-						Quaternion3D.slerp(from, to, t, target.rotation);
+						Quaternion.slerp(from, to, t, target.rotation);
 					} else
 						target.rotation.set(scratch[0], scratch[1], scratch[2], scratch[3]).normalize(target.rotation);
 			}
@@ -89,7 +89,7 @@ class Animation3D {
 	// A key's components between keys, and two rotations to go between, reused.
 	static final scratch = [0., 0, 0, 0];
 
-	static final from = new Quaternion3D();
+	static final from = new Quaternion();
 
-	static final to = new Quaternion3D();
+	static final to = new Quaternion();
 }

@@ -799,7 +799,7 @@ function writeRgb(uniform:ShaderUniform, rgb:Int, ?elementIndex:Int = 0):Void
 function writeLinearRgb(uniform:ShaderUniform, rgb:Int, ?scale:Float = 1, ?elementIndex:Int = 0):Void
 function writeLinearColor(uniform:ShaderUniform, color:Int, ?elementIndex:Int = 0):Void
 function writeBool(uniform:ShaderUniform, value:Bool, ?elementIndex:Int = 0):Void
-function writeMatrix(uniform:ShaderUniform, matrix:Matrix3D, ?elementIndex:Int = 0):Void
+function writeMatrix(uniform:ShaderUniform, matrix:Matrix4, ?elementIndex:Int = 0):Void
 function writeFloats(uniform:ShaderUniform, values:Array<Float>, ?firstElementIndex:Int = 0):Void
 function writeInt(uniform:ShaderUniform, value:Int, ?elementIndex:Int = 0):Void
 function writeInts(uniform:ShaderUniform, values:Array<Int>, ?firstElementIndex:Int = 0):Void
@@ -885,7 +885,7 @@ Each is written as its method writes it: `Vector` as `writeVector`, `Color` as `
 - `LinearRgb(rgb:Int, scale:Float)`: A color without alpha, 0xRRGGBB, decoded to linear light and multiplied by a scale (`writeLinearRgb`).
 - `Texture(texture:Int, ?sampling:Sampling)`: A texture and how it is sampled, for a sampler (`IShaderValues.writeSamplerValue`); `write` refuses it.
 - `Bool(value:Bool)`: A `bool`.
-- `Matrix(matrix:Matrix3D)`: A `mat4`.
+- `Matrix(matrix:Matrix4)`: A `mat4`.
 - `Floats(values:Array<Float>)`: Floats in GLSL's order: a vector's components, a matrix's by columns, elements one after another.
 - `Int(value:Int)`: An integer.
 - `Ints(values:Array<Int>)`: Integers in order: an `ivecN`'s components, elements one after another.

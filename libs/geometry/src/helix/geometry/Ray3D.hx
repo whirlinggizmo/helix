@@ -1,21 +1,21 @@
 package helix.geometry;
 
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
-import helix.math.Vector3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
+import helix.math.Vector3;
 
 /** Represents a ray: a point it starts from and a direction it goes in, for picking and line of sight.
 
 	A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a
 	sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses,
 	its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1,
-	in world units. Shapes are given as plain numbers, as `Frustum3D` and `Bounds3D` take them. Given an out, no test allocates. */
+	in world units. Shapes are given as plain numbers, as `Frustum` and `Aabb3D` take them. Given an out, no test allocates. */
 class Ray3D {
 	/** Gets the point it starts from. */
-	public final origin = new Vector3D(0, 0, 0);
+	public final origin = new Vector3(0, 0, 0);
 
 	/** Gets the way it goes; any length but 0. */
-	public final direction = new Vector3D(0, 0, -1);
+	public final direction = new Vector3(0, 0, -1);
 
 	/** Creates a ray from the origin along -z. */
 	public function new() {}
@@ -50,11 +50,11 @@ class Ray3D {
 		@param distance  How far, in the direction's lengths.
 		@param out  Optional. Set to the point.
 		@return  The point. */
-	public function computePoint(distance:Float, ?out:Vector3D):Vector3D {
+	public function computePoint(distance:Float, ?out:Vector3):Vector3 {
 		var x = origin.x + direction.x * distance,
 			y = origin.y + direction.y * distance,
 			z = origin.z + direction.z * distance;
-		return out == null ? new Vector3D(x, y, z) : out.set(x, y, z);
+		return out == null ? new Vector3(x, y, z) : out.set(x, y, z);
 	}
 
 	/** Returns the ray moved by a transform: its origin as a point, its direction as a direction. A ray put into a mesh's own space with
@@ -63,7 +63,7 @@ class Ray3D {
 		@param matrix  The transform.
 		@param out  Optional. Set to the moved ray; may be this one.
 		@return  The moved ray. */
-	public function transform(matrix:Matrix3D, ?out:Ray3D):Ray3D {
+	public function transform(matrix:Matrix4, ?out:Ray3D):Ray3D {
 		if (out == null)
 			out = new Ray3D();
 		var dx = direction.x, dy = direction.y, dz = direction.z;
@@ -131,7 +131,7 @@ class Ray3D {
 		@param bounds  The bounds; empty ones are never met.
 		@param out  Optional. Set to the hit.
 		@return  The hit; null when it misses or the bounds are behind it. */
-	public function intersectBounds(bounds:Bounds3D, ?out:RayHit3D):Null<RayHit3D> {
+	public function intersectBounds(bounds:Aabb3D, ?out:RayHit3D):Null<RayHit3D> {
 		if (bounds.isEmpty || direction.lengthSquared == 0)
 			return null;
 		var near = Math.NEGATIVE_INFINITY, far = Math.POSITIVE_INFINITY;
@@ -196,7 +196,7 @@ class Ray3D {
 		@param transform  Optional. Where the mesh is: its positions are moved by it. Omitted, they are as they are.
 		@param out  Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) give them.
 		@return  The nearest hit; null when it meets none. */
-	public function intersectMesh(mesh:Mesh3D, ?transform:Matrix3D, ?out:RayHit3D):Null<RayHit3D> {
+	public function intersectMesh(mesh:Mesh3D, ?transform:Matrix4, ?out:RayHit3D):Null<RayHit3D> {
 		var p = mesh.positions,
 			indices = mesh.indices,
 			m = transform == null ? null : transform.values;

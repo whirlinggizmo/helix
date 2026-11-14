@@ -1,6 +1,6 @@
 package helix.geometry;
 
-import helix.math.Vector3D;
+import helix.math.Vector3;
 
 /** Represents where a ray meets something (`Ray3D`'s tests): how far along it, the point, and the surface's normal there. */
 class RayHit3D {
@@ -8,10 +8,10 @@ class RayHit3D {
 	public var distance:Float = 0;
 
 	/** Gets the point. */
-	public final point = new Vector3D();
+	public final point = new Vector3();
 
 	/** Gets the surface's normal at the point, of length 1. */
-	public final normal = new Vector3D();
+	public final normal = new Vector3();
 
 	/** Gets or sets the index of the mesh's triangle that was met (`Ray3D.intersectMesh`), counted from 0; -1 for any other test. */
 	public var triangleIndex:Int = -1;

@@ -69,7 +69,7 @@ batch.end();
 function new(renderer:Renderer)
 static macro function compileShader(fragment:String, ?options:haxe.macro.Expr.ExprOf<ShaderOptions>):haxe.macro.Expr.ExprOf<Shader>
 static macro function compileShaderStages(vertex:String, fragment:String, ?options:haxe.macro.Expr.ExprOf<ShaderOptions>):haxe.macro.Expr.ExprOf<Shader>
-final transform:Matrix2D
+final transform:Matrix3
 var blend(default, set):Blend
 var shaderValues(default, set):Null<ShaderValues>
 var shapeRegion(default, set):Null<TextureRegion2D>
@@ -99,7 +99,7 @@ function strokePolygon(points:Array<Float>, thickness:Float, color:Int):Void
 function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>):Void
 function drawText(font:GpuFont2D, text:String, x:Float, y:Float, ?color:Int = 0xffffffff, ?size:Float, ?letterSpacing:Float = 0., ?kerned:Bool = true):Void
 function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xffffffff):Void
-function drawList(list:DrawList2D, ?placement:Matrix2D):Void
+function drawList(list:DrawList2D, ?placement:Matrix3):Void
 ```
 
 - `new`: Creates a batch over a renderer, with its default shader: textured and colored triangles, the texel times the color, which draw sprites, shapes and text.
@@ -396,7 +396,7 @@ batch.environment.setAmbient(0xff8090a0, .3);
 // each frame, between Renderer.beginFrame and endFrame:
 batch.begin(camera);
 batch.drawBackground();
-batch.drawModel(level, Matrix3D.fromTranslation(0, 0, 0, placement));
+batch.drawModel(level, Matrix4.fromTranslation(0, 0, 0, placement));
 batch.end();
 ```
 
@@ -430,35 +430,35 @@ function begin(camera:Camera3D):Void
 function beginViews(views:Array<View3D>):Void
 function end():Void
 function drawBackground():Void
-function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, ?skinning:Array<Matrix3D>, ?morphWeights:Array<Float>, ?tint:Int, ?state:MeshState3D):Void
-function drawMeshInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix3D>, ?colors:Array<Int>, ?transform:Matrix3D, ?firstInstanceIndex:Int = 0, ?instanceCount:Int):Void
-function drawModel(model:GpuModel3D, transform:Matrix3D, ?boneMatrices:Array<Matrix3D>, ?tint:Int, ?state:MeshState3D):Void
+function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, ?skinning:Array<Matrix4>, ?morphWeights:Array<Float>, ?tint:Int, ?state:MeshState3D):Void
+function drawMeshInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix4>, ?colors:Array<Int>, ?transform:Matrix4, ?firstInstanceIndex:Int = 0, ?instanceCount:Int):Void
+function drawModel(model:GpuModel3D, transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?tint:Int, ?state:MeshState3D):Void
 function drawLine(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void
-function drawLines(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?width:Float = 1., ?strip:Bool = false, ?transform:Matrix3D):Void
-function strokeBox(bounds:Bounds3D, color:Int):Void
+function drawLines(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?width:Float = 1., ?strip:Bool = false, ?transform:Matrix4):Void
+function strokeBox(bounds:Aabb3D, color:Int):Void
 function strokeSphere(x:Float, y:Float, z:Float, radius:Float, color:Int):Void
 function drawGrid(lineCount:Int, spacing:Float, color:Int):Void
-function drawAxes(transform:Matrix3D, length:Float):Void
+function drawAxes(transform:Matrix4, length:Float):Void
 function drawBillboard(region:TextureRegion2D, x:Float, y:Float, z:Float, width:Float, height:Float, ?tint:Int = 0xffffffff, ?rotation:Float = 0.):Void
-function drawPoints(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?texture:Texture2D, ?transform:Matrix3D):Void
-function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>, ?normals:Array<Float>, ?transform:Matrix3D):Void
-function drawPolyline(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int, ?transform:Matrix3D):Void
-function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int, ?transform:Matrix3D):Void
-function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int, ?transform:Matrix3D):Void
-function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillCircle(x:Float, y:Float, radius:Float, color:Int, ?transform:Matrix3D):Void
-function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int, ?transform:Matrix3D):Void
-function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillPolygon(points:Array<Float>, color:Int, ?transform:Matrix3D):Bool
-function strokePolygon(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function drawSprite(region:TextureRegion2D, x:Float, y:Float, ?rotation:Float = 0., ?scaleX:Float = 1., ?scaleY:Float = 1., ?tint:Int = 0xffffffff, ?flipX:Bool = false, ?flipY:Bool = false, ?originX:Float, ?originY:Float, ?transform:Matrix3D):Void
-function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?originX:Float = 0., ?originY:Float = 0., ?tint:Int = 0xffffffff, ?transform:Matrix3D):Void
-function drawText(font:GpuFont2D, text:String, x:Float, y:Float, ?color:Int = 0xffffffff, ?size:Float, ?letterSpacing:Float = 0., ?kerned:Bool = true, ?transform:Matrix3D):Void
-function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xffffffff, ?transform:Matrix3D):Void
-function drawList(list:DrawList3D, transform:Matrix3D):Void
+function drawPoints(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?texture:Texture2D, ?transform:Matrix4):Void
+function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>, ?normals:Array<Float>, ?transform:Matrix4):Void
+function drawPolyline(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int, ?transform:Matrix4):Void
+function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int, ?transform:Matrix4):Void
+function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int, ?transform:Matrix4):Void
+function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillCircle(x:Float, y:Float, radius:Float, color:Int, ?transform:Matrix4):Void
+function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int, ?transform:Matrix4):Void
+function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillPolygon(points:Array<Float>, color:Int, ?transform:Matrix4):Bool
+function strokePolygon(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix4):Void
+function drawSprite(region:TextureRegion2D, x:Float, y:Float, ?rotation:Float = 0., ?scaleX:Float = 1., ?scaleY:Float = 1., ?tint:Int = 0xffffffff, ?flipX:Bool = false, ?flipY:Bool = false, ?originX:Float, ?originY:Float, ?transform:Matrix4):Void
+function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?originX:Float = 0., ?originY:Float = 0., ?tint:Int = 0xffffffff, ?transform:Matrix4):Void
+function drawText(font:GpuFont2D, text:String, x:Float, y:Float, ?color:Int = 0xffffffff, ?size:Float, ?letterSpacing:Float = 0., ?kerned:Bool = true, ?transform:Matrix4):Void
+function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xffffffff, ?transform:Matrix4):Void
+function drawList(list:DrawList3D, transform:Matrix4):Void
 ```
 
 - `new`: Creates a batch over a renderer, with its default shaders: every shading (skinned, morphed and instanced too), the shadow casters, the background, and the batch draws' (lines, points, triangles, shapes, sprites and text). A program carries the shaders of the draws it calls: the meshes' with `drawMesh` or `drawModel`, the wide lines' and large points' with `drawLines` or `drawPoints`, the tone-mapped batch draws' once `toneMapped` is set.
@@ -760,9 +760,9 @@ function toString():String
 
 - `toString`: Returns the value's name as written (Auto, Srgb): what Std.string, interpolation and trace show.
 
-## CubeTexture3D
+## CubeTexture
 
-*class* in [`libs/render/src/helix/render/CubeTexture3D.hx`](../src/helix/render/CubeTexture3D.hx), `import helix.render.CubeTexture3D;`
+*class* in [`libs/render/src/helix/render/CubeTexture.hx`](../src/helix/render/CubeTexture.hx), `import helix.render.CubeTexture;`
 
 Represents a cube of six square images on the GPU, sampled by direction: a skybox a program's shader draws, or a reflection it reads (`samplerCube`).
 
@@ -796,7 +796,7 @@ batch.lights.push(sun);
 
 ```haxe
 function new()
-final direction:Vector3D
+final direction:Vector3
 ```
 
 - `new`: Creates a white directional light of intensity π shining straight down: a surface facing it shows its own color.
@@ -816,12 +816,12 @@ panel.fillRoundedRectangle(0, 0, 220, 64, 8, 0xc0101828);
 panel.strokeRoundedRectangle(0, 0, 220, 64, 8, 2, 0xff4080c0);
 panel.drawText(font, "Cargo", 12, 10);
 // each frame:
-batch.drawList(panel, Matrix2D.fromTranslation(16, 16, place));
+batch.drawList(panel, Matrix3.fromTranslation(16, 16, place));
 ```
 
 ```haxe
 function new()
-final bounds:Bounds2D
+final bounds:Aabb2D
 var callCount(default, null):Int
 function makeEmpty():DrawList2D
 function drawTexture(texture:Texture2D, x:Float, y:Float, ?tint:Int = 0xffffffff):Void
@@ -1000,44 +1000,44 @@ A program records into it with `Batch3D`'s calls for meshes, models and the batc
 ```haxe
 var guides = new DrawList3D();
 guides.drawGrid(40, 1, 0xff404858);
-guides.drawAxes(new Matrix3D(), 2);
+guides.drawAxes(new Matrix4(), 2);
 // each frame, inside batch.begin and end:
 batch.drawList(guides, identity);
 ```
 
 ```haxe
 function new()
-final bounds:Bounds3D
+final bounds:Aabb3D
 var callCount(default, null):Int
 function makeEmpty():DrawList3D
-function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix3D, ?skinning:Array<Matrix3D>, ?morphWeights:Array<Float>, ?tint:Int, ?state:MeshState3D):Void
-function drawMeshInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix3D>, ?colors:Array<Int>, ?transform:Matrix3D, ?firstInstanceIndex:Int = 0, ?instanceCount:Int):Void
-function drawModel(model:GpuModel3D, transform:Matrix3D, ?boneMatrices:Array<Matrix3D>, ?tint:Int, ?state:MeshState3D):Void
+function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, ?skinning:Array<Matrix4>, ?morphWeights:Array<Float>, ?tint:Int, ?state:MeshState3D):Void
+function drawMeshInstanced(mesh:GpuMesh3D, material:Material3D, transforms:Array<Matrix4>, ?colors:Array<Int>, ?transform:Matrix4, ?firstInstanceIndex:Int = 0, ?instanceCount:Int):Void
+function drawModel(model:GpuModel3D, transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?tint:Int, ?state:MeshState3D):Void
 function drawLine(x0:Float, y0:Float, z0:Float, x1:Float, y1:Float, z1:Float, color:Int):Void
-function drawLines(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?width:Float = 1., ?strip:Bool = false, ?transform:Matrix3D):Void
-function strokeBox(bounds:Bounds3D, color:Int):Void
+function drawLines(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?width:Float = 1., ?strip:Bool = false, ?transform:Matrix4):Void
+function strokeBox(bounds:Aabb3D, color:Int):Void
 function strokeSphere(x:Float, y:Float, z:Float, radius:Float, color:Int):Void
 function drawGrid(lineCount:Int, spacing:Float, color:Int):Void
-function drawAxes(transform:Matrix3D, length:Float):Void
+function drawAxes(transform:Matrix4, length:Float):Void
 function drawBillboard(region:TextureRegion2D, x:Float, y:Float, z:Float, width:Float, height:Float, ?tint:Int = 0xffffffff, ?rotation:Float = 0.):Void
-function drawPoints(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?texture:Texture2D, ?transform:Matrix3D):Void
-function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>, ?normals:Array<Float>, ?transform:Matrix3D):Void
-function drawPolyline(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int, ?transform:Matrix3D):Void
-function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int, ?transform:Matrix3D):Void
-function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int, ?transform:Matrix3D):Void
-function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillCircle(x:Float, y:Float, radius:Float, color:Int, ?transform:Matrix3D):Void
-function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int, ?transform:Matrix3D):Void
-function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function fillPolygon(points:Array<Float>, color:Int, ?transform:Matrix3D):Bool
-function strokePolygon(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix3D):Void
-function drawSprite(region:TextureRegion2D, x:Float, y:Float, ?rotation:Float = 0., ?scaleX:Float = 1., ?scaleY:Float = 1., ?tint:Int = 0xffffffff, ?flipX:Bool = false, ?flipY:Bool = false, ?originX:Float, ?originY:Float, ?transform:Matrix3D):Void
-function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?originX:Float = 0., ?originY:Float = 0., ?tint:Int = 0xffffffff, ?transform:Matrix3D):Void
-function drawText(font:GpuFont2D, text:String, x:Float, y:Float, ?color:Int = 0xffffffff, ?size:Float, ?letterSpacing:Float = 0., ?kerned:Bool = true, ?transform:Matrix3D):Void
-function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xffffffff, ?transform:Matrix3D):Void
+function drawPoints(positions:Array<Float>, color:Int, ?colors:Array<Int>, ?texture:Texture2D, ?transform:Matrix4):Void
+function drawTriangles(texture:Null<Texture2D>, positions:Array<Float>, ?texCoords:Array<Float>, ?colors:Array<Int>, ?indices:Array<Int>, ?normals:Array<Float>, ?transform:Matrix4):Void
+function drawPolyline(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float, color:Int, ?transform:Matrix4):Void
+function fillRectangle(x:Float, y:Float, width:Float, height:Float, color:Int, ?transform:Matrix4):Void
+function strokeRectangle(x:Float, y:Float, width:Float, height:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, color:Int, ?transform:Matrix4):Void
+function strokeRoundedRectangle(x:Float, y:Float, width:Float, height:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillCircle(x:Float, y:Float, radius:Float, color:Int, ?transform:Matrix4):Void
+function strokeCircle(x:Float, y:Float, radius:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, color:Int, ?transform:Matrix4):Void
+function strokeEllipse(x:Float, y:Float, radiusX:Float, radiusY:Float, thickness:Float, color:Int, ?transform:Matrix4):Void
+function fillPolygon(points:Array<Float>, color:Int, ?transform:Matrix4):Bool
+function strokePolygon(points:Array<Float>, thickness:Float, color:Int, ?transform:Matrix4):Void
+function drawSprite(region:TextureRegion2D, x:Float, y:Float, ?rotation:Float = 0., ?scaleX:Float = 1., ?scaleY:Float = 1., ?tint:Int = 0xffffffff, ?flipX:Bool = false, ?flipY:Bool = false, ?originX:Float, ?originY:Float, ?transform:Matrix4):Void
+function drawTextureRegion(texture:Texture2D, regionX:Float, regionY:Float, regionWidth:Float, regionHeight:Float, x:Float, y:Float, width:Float, height:Float, ?rotation:Float = 0., ?originX:Float = 0., ?originY:Float = 0., ?tint:Int = 0xffffffff, ?transform:Matrix4):Void
+function drawText(font:GpuFont2D, text:String, x:Float, y:Float, ?color:Int = 0xffffffff, ?size:Float, ?letterSpacing:Float = 0., ?kerned:Bool = true, ?transform:Matrix4):Void
+function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xffffffff, ?transform:Matrix4):Void
 ```
 
 - `new`: Creates an empty list.
@@ -1433,7 +1433,7 @@ A character the font lacks is drawn, and measured, as the font's `?`, or else as
 final font:Font2D
 final atlas:Texture2D
 var lineHeight(get, never):Float
-function measureText(text:String, ?size:Float, ?letterSpacing:Float = 0., ?kerned:Bool = true, ?out:Vector2D):Vector2D
+function measureText(text:String, ?size:Float, ?letterSpacing:Float = 0., ?kerned:Bool = true, ?out:Vector2):Vector2
 function dispose():Void
 ```
 
@@ -1460,11 +1460,11 @@ Represents a mesh on the GPU: its vertices and indices, uploaded once and drawn 
 ```haxe
 var vertexCount(default, null):Int
 var triangleCount(default, null):Int
-final bounds:Bounds3D
+final bounds:Aabb3D
 var hasJoints(default, null):Bool
 var morphTargetCount(default, null):Int
 function update(mesh:Mesh3D):Void
-function computeBounds(transform:Matrix3D, ?skinning:Array<Matrix3D>, ?morphWeights:Array<Float>, ?out:Bounds3D):Bounds3D
+function computeBounds(transform:Matrix4, ?skinning:Array<Matrix4>, ?morphWeights:Array<Float>, ?out:Aabb3D):Aabb3D
 function dispose():Void
 ```
 
@@ -1503,8 +1503,8 @@ final meshes:Array<GpuMesh3D>
 final materials:Array<Material3D>
 final meshMaterialIndices:Array<Int>
 final textures:Array<Null<Texture2D>>
-final bounds:Bounds3D
-function computeBounds(transform:Matrix3D, ?boneMatrices:Array<Matrix3D>, ?out:Bounds3D):Bounds3D
+final bounds:Aabb3D
+function computeBounds(transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?out:Aabb3D):Aabb3D
 function dispose():Void
 ```
 
@@ -1524,16 +1524,16 @@ function dispose():Void
 - `dispose`: Frees its meshes and textures, after the frame being recorded when it holds a draw of them. A second call does nothing.
   A texture of it a program gave another material is freed too.
 
-## HemisphereLight3D
+## HemisphereLight
 
-*class* in [`libs/render/src/helix/render/HemisphereLight3D.hx`](../src/helix/render/HemisphereLight3D.hx), `import helix.render.HemisphereLight3D;`, extends `Light3D`
+*class* in [`libs/render/src/helix/render/HemisphereLight.hx`](../src/helix/render/HemisphereLight.hx), `import helix.render.HemisphereLight;`, extends `Light3D`
 
 Represents light from the sky above and the ground below: a surface facing up gets the sky's color, one facing down the ground's, one between a blend, from no one direction. It is three.js's HemisphereLight, and casts no shadows.
 
 ```haxe
 function new()
 var groundColor:Int
-final up:Vector3D
+final up:Vector3
 ```
 
 - `new`: Creates a hemisphere light of intensity π: a white sky over a dark grey ground.
@@ -1544,7 +1544,7 @@ final up:Vector3D
 
 *class* in [`libs/render/src/helix/render/Light3D.hx`](../src/helix/render/Light3D.hx), `import helix.render.Light3D;`
 
-Represents a light that a `Batch3D` lights its lit materials with: a `DirectionalLight3D`, a `PointLight3D`, a `SpotLight3D` or a `HemisphereLight3D`.
+Represents a light that a `Batch3D` lights its lit materials with: a `DirectionalLight3D`, a `PointLight3D`, a `SpotLight3D` or a `HemisphereLight`.
 
 A program makes its lights and puts them in `Batch3D.lights`; each `begin` reads them as they are then. Its color is 0xAARRGGBB, its alpha ignored, decoded from sRGB and multiplied by its intensity into the light's radiance, which the shaders work in.
 
@@ -1582,7 +1582,7 @@ Bias is in shadow-map texels, so it holds whatever the map's size and reach: a c
 function new()
 var mapSize(default, set):Int
 var distance(default, set):Float
-var bounds:Null<Bounds3D>
+var bounds:Null<Aabb3D>
 var cascadeCount(default, set):Int
 var cascadeSplit(default, set):Float
 var bias(default, set):Float
@@ -1672,7 +1672,7 @@ The lights and `receiveShadows` are declared by `lighting.glsl`, not by the shad
 var crate = new Material3D();
 crate.baseColorTexture = crateTexture;
 crate.roughness = .8;
-batch.drawMesh(cube, crate, Matrix3D.fromTranslation(0, .5, 0, placement));
+batch.drawMesh(cube, crate, Matrix4.fromTranslation(0, .5, 0, placement));
 ```
 
 ```haxe
@@ -1708,7 +1708,7 @@ var emissiveStrength(default, set):Float
 var emissiveTexture:Null<Texture2D>
 var environmentMap:Null<EnvironmentMap3D>
 var environmentIntensity(default, set):Float
-final textureTransform:Matrix2D
+final textureTransform:Matrix3
 var alphaCutoff(default, set):Float
 var blend:Blend
 var colorWrite:ColorChannels
@@ -1822,7 +1822,7 @@ Its intensity is three.js's PointLight's with decay 2 (candela, as glTF's KHR_li
 
 ```haxe
 function new()
-final position:Vector3D
+final position:Vector3
 var range(default, set):Float
 ```
 
@@ -1928,8 +1928,8 @@ function createTexture(image:Image):Texture2D
 function createTextureFromImage(image:IDecodedImage):Texture2D
 function createTextureMipmapped(image:Image):Texture2D
 function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:TargetDepth = Buffer, ?msaaSampleCount:Int):RenderTarget2D
-function createCubeTexture(faces:Array<Image>):CubeTexture3D
-function createCubeTextureMipmapped(faces:Array<Image>):CubeTexture3D
+function createCubeTexture(faces:Array<Image>):CubeTexture
+function createCubeTextureMipmapped(faces:Array<Image>):CubeTexture
 function createMesh(mesh:Mesh3D, ?updatedOften:Bool = false):GpuMesh3D
 function createModel(model:Model3D, ?colorSpace:ColorSpace = Auto):GpuModel3D
 function createModelMipmapped(model:Model3D, ?colorSpace:ColorSpace = Auto):GpuModel3D
@@ -2092,8 +2092,8 @@ Represents a point light shining in a cone: full inside its inner cone, fading t
 
 ```haxe
 function new()
-final position:Vector3D
-final direction:Vector3D
+final position:Vector3
+final direction:Vector3
 var range(default, set):Float
 var innerCone(default, null):Float
 var outerCone(default, null):Float
@@ -2363,15 +2363,15 @@ The batches' own draws multiply their colors as stored, and write the product as
 
 ```haxe
 function new()
-final viewMatrix:Matrix3D
-final projectionMatrix:Matrix3D
+final viewMatrix:Matrix4
+final projectionMatrix:Matrix4
 var viewportX(default, null):Int
 var viewportY(default, null):Int
 var viewportWidth(default, null):Int
 var viewportHeight(default, null):Int
 function setFromCamera(camera:Camera3D, aspect:Float):View3D
 function setFromScreen(width:Float, height:Float):View3D
-function isInView(bounds:Bounds3D):Bool
+function isInView(bounds:Aabb3D):Bool
 function setViewport(x:Int, y:Int, width:Int, height:Int):View3D
 ```
 

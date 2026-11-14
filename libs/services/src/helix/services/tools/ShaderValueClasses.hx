@@ -461,7 +461,7 @@ class ShaderValueClasses {
 					]), macro writeInts($h, $a{values}, $at));
 				case "mat4":
 					add('set$camel', 'Writes $text.\n\n$indexDoc@param matrix  The matrix.',
-						index.concat([{name: "matrix", type: macro :helix.math.Matrix3D}]), macro writeMatrix($h, matrix, $at));
+						index.concat([{name: "matrix", type: macro :helix.math.Matrix4}]), macro writeMatrix($h, matrix, $at));
 				case "mat2" | "mat3":
 					add('set$camel', 'Writes $text from its floats by columns.\n\n$indexDoc@param values  The floats.',
 						index.concat([{name: "values", type: macro :Array<Float>}]), macro writeFloats($h, values, $at));

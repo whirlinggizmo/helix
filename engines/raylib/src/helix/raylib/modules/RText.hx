@@ -3,7 +3,7 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Models;
@@ -95,11 +95,11 @@ class RText {
 		@param tint  The color. */
 	static function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float, tint:Color):Void {
 		var frame = Runtime.frame, view = frame.view;
-		var m = Matrix3D.fromTranslation(-origin.x, -origin.y, 0);
-		m = Matrix3D.compose(m, Matrix3D.fromRotation(0, 0, 1, rotation * DEG2RAD));
-		m = Matrix3D.compose(m, Matrix3D.fromTranslation(position.x, position.y, 0));
+		var m = Matrix4.fromTranslation(-origin.x, -origin.y, 0);
+		m = Matrix4.compose(m, Matrix4.fromRotation(0, 0, 1, rotation * DEG2RAD));
+		m = Matrix4.compose(m, Matrix4.fromTranslation(position.x, position.y, 0));
 		frame.cut();
-		frame.view = Matrix3D.compose(m, view);
+		frame.view = Matrix4.compose(m, view);
 		DrawTextEx(font, text, new Vector2(), fontSize, spacing, tint);
 		frame.cut();
 		frame.view = view;
@@ -488,7 +488,7 @@ class RText {
 				sizes.push(glyphs[i].image.width + 2 * padding);
 				sizes.push(glyphs[i].image.height + 2 * padding);
 			}
-			var places = helix.math.RectPacker2D.pack(atlas.width, atlas.height, sizes);
+			var places = helix.math.RectanglePacker.pack(atlas.width, atlas.height, sizes);
 			for (i in 0...glyphCount) {
 				var glyph = glyphs[i],
 					x = places[i * 3] + padding,

@@ -1,6 +1,6 @@
 package helix.render;
 
-import helix.math.Bounds3D;
+import helix.math.Aabb3D;
 
 /** Represents how a light's shadows are made: its shadow map's size and reach, its bias against a surface shadowing itself, and how soft
 	and dark its shadows are.
@@ -28,7 +28,7 @@ class LightShadow3D {
 
 	/** Gets or sets the box a directional light's map covers, in world units, in place of what the camera sees; null until set, so the
 		map follows the camera. A fixed box suits a small scene seen whole. */
-	public var bounds:Null<Bounds3D> = null;
+	public var bounds:Null<Aabb3D> = null;
 
 	/** Gets or sets a directional light's number of cascades, 1 to 4: 1 until set, a single map. Each covers a farther slice of `distance` with a map
 		of its own, so near shadows are sharp and far ones still drawn; each costs a pass. */

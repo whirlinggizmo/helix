@@ -169,7 +169,7 @@ A node is read from the file's `nodes`, as `GltfFile.nodes` lists them; its chil
 final name:String
 final meshIndex:Int
 final childIndices:Array<Int>
-final transform:Matrix3D
+final transform:Matrix4
 final local:Transform3D
 final skinIndex:Int
 ```
@@ -238,7 +238,7 @@ Represents a glTF skin: the nodes a skinned mesh's vertices follow, and how the 
 ```haxe
 final name:String
 final jointIndices:Array<Int>
-final inverseBindMatrices:Array<Matrix3D>
+final inverseBindMatrices:Array<Matrix4>
 final skeletonIndex:Int
 ```
 

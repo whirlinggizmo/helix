@@ -223,7 +223,7 @@ class GltfTests {
 			".gltf: a skin's name, joints and skeleton");
 		check(near(skin.inverseBindMatrices[1].values[13], -2)
 			&& near(skin.inverseBindMatrices[0].values[0], 1), ".gltf: its inverse binds");
-		check(model.skins[1].inverseBindMatrices[0].values.join(",") == new helix.math.Matrix3D().values.join(",") && model.skins[1].skeletonIndex == -1
+		check(model.skins[1].inverseBindMatrices[0].values.join(",") == new helix.math.Matrix4().values.join(",") && model.skins[1].skeletonIndex == -1
 			&& model.skins[1].name == "",
 			".gltf: none given, identities; no skeleton, no name");
 		var walk = model.animations[0];

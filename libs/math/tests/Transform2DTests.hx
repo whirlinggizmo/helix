@@ -1,6 +1,6 @@
-import helix.math.Matrix2D;
+import helix.math.Matrix3;
 import helix.math.Transform2D;
-import helix.math.Vector2D;
+import helix.math.Vector2;
 
 /** Checks Transform2D with the library alone: made, copied and reset, each returning itself; its forward and right; moved along them
 	and toward a point (stopping short of it); turned, turned to face a point and swung around one; points carried and its matrix, pinned
@@ -18,10 +18,10 @@ class Transform2DTests {
 	static function near(a:Float, b:Float):Bool
 		return Math.abs(a - b) < 1e-9;
 
-	static function at(p:Vector2D, x:Float, y:Float):Bool
+	static function at(p:Vector2, x:Float, y:Float):Bool
 		return near(p.x, x) && near(p.y, y);
 
-	static function is(m:Matrix2D, values:Array<Float>):Bool
+	static function is(m:Matrix3, values:Array<Float>):Bool
 		return near(m.a, values[0]) && near(m.b, values[1]) && near(m.c, values[2]) && near(m.d, values[3]) && near(m.tx, values[4]) && near(m.ty, values[5]);
 
 	static function sample():Transform2D {
@@ -33,9 +33,9 @@ class Transform2DTests {
 	}
 
 	// Runs a result into a new vector and into one given, and into the transform's own position: the same each way.
-	static function twoWays(op:(Transform2D, Null<Vector2D>) -> Vector2D, message:String):Vector2D {
+	static function twoWays(op:(Transform2D, Null<Vector2>) -> Vector2, message:String):Vector2 {
 		var t = sample();
-		var result = op(t, null), given = new Vector2D();
+		var result = op(t, null), given = new Vector2();
 		check(op(sample(), given) == given && given.equals(result) && t.position.equals(sample().position), '$message: into a new vector or the one given');
 		var own = sample();
 		check(op(own, own.position) == own.position && own.position.equals(result), '$message: into its own position');
@@ -60,7 +60,7 @@ class Transform2DTests {
 			3,
 			-4
 		]), "its matrix scales, turns and moves: pinned");
-		var m = new Matrix2D();
+		var m = new Matrix3();
 		check(sample().toMatrix(m) == m && is(m, [
 			1.2432199365413288,
 			1.5666538192549668,
@@ -115,9 +115,9 @@ class Transform2DTests {
 		}
 		var back = Transform2D.fromMatrix(sample().toMatrix(), t);
 		check(back == t && at(t.position, 3, -4) && near(t.rotation, .9) && at(t.scale, 2, .5), "back from its matrix into the one given: what made it");
-		var mirrored = Transform2D.fromMatrix(Matrix2D.fromScale(1, -1));
+		var mirrored = Transform2D.fromMatrix(Matrix3.fromScale(1, -1));
 		check(mirrored.rotation == 0 && at(mirrored.scale, 1, -1), "a mirroring matrix: y's scale less than 0");
-		var sheared = Transform2D.fromMatrix(new Matrix2D().set(2, 0, 1, 3, 0, 0));
+		var sheared = Transform2D.fromMatrix(new Matrix3().set(2, 0, 1, 3, 0, 0));
 		check(sheared.rotation == 0 && at(sheared.scale, 2, 3), "a shearing matrix: its x axis kept, the shear lost");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

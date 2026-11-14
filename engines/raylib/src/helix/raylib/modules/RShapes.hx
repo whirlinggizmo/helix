@@ -3,11 +3,10 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.math.Matrix3D;
-import helix.math.Bounds2D;
+import helix.math.Matrix4;
+import helix.math.Aabb2D;
 import helix.geometry.Geometry2D;
 import helix.math.Interpolate;
-import helix.math.Vector2D;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -1517,7 +1516,7 @@ class RShapes {
 		@param collisionPoint  Set to where they cross, when they do; null leaves it out.
 		@return  True when they cross. */
 	static function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool {
-		var at = new Vector2D();
+		var at = new helix.math.Vector2();
 		if (!Geometry2D.intersectSegments(startPos1.x, startPos1.y, endPos1.x, endPos1.y, startPos2.x, startPos2.y, endPos2.x, endPos2.y, at))
 			return false;
 		if (collisionPoint != null) {
@@ -1533,8 +1532,8 @@ class RShapes {
 		@param rec2  The other.
 		@return  The overlap, or an empty rectangle at 0, 0 when they don't. */
 	static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle {
-		var overlap = new Bounds2D().set(rec1.x, rec1.y, rec1.x + rec1.width, rec1.y + rec1.height)
-			.intersection(new Bounds2D().set(rec2.x, rec2.y, rec2.x + rec2.width, rec2.y + rec2.height));
+		var overlap = new Aabb2D().set(rec1.x, rec1.y, rec1.x + rec1.width, rec1.y + rec1.height)
+			.intersection(new Aabb2D().set(rec2.x, rec2.y, rec2.x + rec2.width, rec2.y + rec2.height));
 		// raylib's: rectangles that only touch don't overlap.
 		return overlap.width > 0
 			&& overlap.height > 0 ? new Rectangle(overlap.minX, overlap.minY, overlap.width, overlap.height) : new Rectangle();

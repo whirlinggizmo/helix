@@ -1,7 +1,7 @@
 package helix.render;
 
 import helix.log.Log;
-import helix.math.Vector2D;
+import helix.math.Vector2;
 import helix.services.fonts.Font2D;
 import helix.services.fonts.Glyph2D;
 
@@ -48,9 +48,9 @@ class GpuFont2D {
 		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them, as `drawText`'s `kerned`; defaults to true.
 		@param out  Optional. Set to the size; a new vector when omitted.
 		@return  The width of its widest line as x, and its lines' height as y, in the units it is drawn in. */
-	public function measureText(text:String, ?size:Float, letterSpacing = 0., kerned = true, ?out:Vector2D):Vector2D {
+	public function measureText(text:String, ?size:Float, letterSpacing = 0., kerned = true, ?out:Vector2):Vector2 {
 		if (out == null)
-			out = new Vector2D();
+			out = new Vector2();
 		var scale = scaleOf(size), widest = 0., lines = 0;
 		for (line in text.split("\n")) {
 			widest = Math.max(widest, widthOf(codes(line), scale, letterSpacing, kerned));

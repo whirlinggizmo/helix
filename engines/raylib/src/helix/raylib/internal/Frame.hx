@@ -1,6 +1,6 @@
 package helix.raylib.internal;
 
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import haxe.io.Bytes;
 import helix.platform.Blend;
 import helix.platform.ColorChannels;
@@ -155,9 +155,9 @@ class Frame {
 	public var program:Program;
 
 	/** The matrices drawn with: in 2D the screen's (or `BeginMode2D`'s camera's), in 3D the camera's. */
-	public var view:Matrix3D;
+	public var view:Matrix4;
 
-	public var projection:Matrix3D;
+	public var projection:Matrix4;
 
 	/** Whether the next draws test depth, as rlgl's `rlEnableDepthTest` sets it (`BeginMode3D` does, `EndMode3D` stops it); raylib's
 		GL state, kept from frame to frame. */
@@ -184,7 +184,7 @@ class Frame {
 	/** Gives the points a mesh's triangles are drawn as, in rlgl's point mode: null while it is off. `rlEnablePointMode` sets it to
 		`pointsOfMesh`. It receives the mesh, its transform and whether it is drawn as instances, and returns the index buffer of the points
 		(0 for none: the vertices in order) and their count. */
-	public var pointMesh:Null<(mesh:helix.raylib.Mesh, model:Matrix3D, instanced:Bool) -> Array<Int>> = null;
+	public var pointMesh:Null<(mesh:helix.raylib.Mesh, model:Matrix4, instanced:Bool) -> Array<Int>> = null;
 
 	/** Whether the next draws blend as `blend` says, rlgl's `rlEnableColorBlend`; when not, they draw over what is there. */
 	public var colorBlend = true;
@@ -203,7 +203,7 @@ class Frame {
 	public var nz = 0.;
 
 	/** The matrix the next immediate vertices are moved by, rlgl's pushed one (`rlPushMatrix`); null for none. */
-	public var transform:Null<Matrix3D> = null;
+	public var transform:Null<Matrix4> = null;
 
 	/** The mode of the draw call rlgl's next vertices join (`RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`), as `rlBegin` sets it; each flush
 		starts a new one in `RL_QUADS`, as rlgl's batch does. */
@@ -214,7 +214,7 @@ class Frame {
 	public var drawTexture = 0;
 
 	// Where a vertex goes under the transform.
-	final moved = new helix.math.Vector3D();
+	final moved = new helix.math.Vector3();
 
 	/** raylib's `BLEND_ALPHA` as rlgl sets it, `glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)`: alpha blended by the same factors as
 		the color, so a render texture's alpha becomes alpha * alpha + its own * (1 - alpha). */
@@ -251,7 +251,7 @@ class Frame {
 	/** Draws a mesh `UpdateModelAnimation` posed, skinned: set by the first call (`Skinning`), null before, so a program without one links
 		none of it. Receives the mesh, the shader, the material, the transform, the diffuse color, and the instances' buffer and count;
 		returns false for a draw it leaves to be drawn as it is. */
-	public var skinned:Null<(mesh:helix.raylib.Mesh, shader:helix.raylib.Shader, material:helix.raylib.Material, model:Matrix3D, diffuse:Array<Float>,
+	public var skinned:Null<(mesh:helix.raylib.Mesh, shader:helix.raylib.Shader, material:helix.raylib.Material, model:Matrix4, diffuse:Array<Float>,
 			instances:Int, instanceCount:Int) -> Bool> = null;
 
 	/** Creates the frame, with raylib's default shader and the white texture.
@@ -266,8 +266,8 @@ class Frame {
 		spriteFloats = new js.lib.Float32Array(spriteData.getData());
 		#end
 		makeOwn();
-		view = new Matrix3D();
-		projection = new Matrix3D();
+		view = new Matrix4();
+		projection = new Matrix4();
 		pass = {
 			target: 0,
 			clear: 0xff000000,
@@ -347,8 +347,8 @@ class Frame {
 	/** Sets the matrices to 2D over the current pass: pixels from its top left, the batch flushed first. */
 	public function screen2D():Void {
 		flush();
-		view = new Matrix3D();
-		projection = Matrix3D.fromOrthographic(0, pass.width, pass.height, 0, 0, 1);
+		view = new Matrix4();
+		projection = Matrix4.fromOrthographic(0, pass.width, pass.height, 0, 0, 1);
 	}
 
 	/** Starts drawing into a render target, as its own pass, until `toScreen`: over what it holds, as raylib's render textures keep it,
@@ -485,14 +485,14 @@ class Frame {
 	public var eyes:Null<(add:() -> Void, mesh:Bool)->Void> = null;
 
 	/** The view a mesh's mvp is made with in place of `view`, an eye's in stereo; null otherwise. */
-	public var meshView:Null<Matrix3D> = null;
+	public var meshView:Null<Matrix4> = null;
 
 	/** The projection a mesh's mvp is made with in place of `projection`, an eye's in stereo; null otherwise. */
-	public var meshProjection:Null<Matrix3D> = null;
+	public var meshProjection:Null<Matrix4> = null;
 
 	// The batch's runs as draws in the pass, through the current program, matrices and state.
 	function drawBatch():Void {
-		var m = wire && cull ? Matrix3D.compose(view, projection, viewProjection).values : null;
+		var m = wire && cull ? Matrix4.compose(view, projection, viewProjection).values : null;
 		for (run in batch) {
 			if (run.mode == SPRITES) {
 				if (run.count == 0)
@@ -671,7 +671,7 @@ class Frame {
 			viewport: viewport,
 			textures: textures,
 			cubes: p.cubes,
-			uniforms: values(p, new Matrix3D(), [1, 1, 1, 1]),
+			uniforms: values(p, new Matrix4(), [1, 1, 1, 1]),
 			instances: count,
 			firstInstance: first
 		};
@@ -973,7 +973,7 @@ class Frame {
 	public function pointsOfRun(first:Int, count:Int, quads:Bool):Array<Int> {
 		if (!cull && !quads)
 			return [first, count - count % 3];
-		var m = cull ? Matrix3D.compose(view, projection, viewProjection).values : null,
+		var m = cull ? Matrix4.compose(view, projection, viewProjection).values : null,
 			from = vertices;
 		for (k in 0...Std.int(corners(count, quads) / 3)) {
 			var a = corner(first, quads, k * 3) * STRIDE,
@@ -999,11 +999,11 @@ class Frame {
 		@param model  Its transform.
 		@param instanced  Whether it is drawn as instances.
 		@return  The index buffer of the points (0 for none) and their count. */
-	public function pointsOfMesh(mesh:helix.raylib.Mesh, model:Matrix3D, instanced:Bool):Array<Int> {
+	public function pointsOfMesh(mesh:helix.raylib.Mesh, model:Matrix4, instanced:Bool):Array<Int> {
 		var indices = mesh.indices;
 		if (!cull || instanced)
 			return indices != null ? [mesh.gpu.indexBuffer, mesh.triangleCount * 3] : [0, mesh.vertexCount - mesh.vertexCount % 3];
-		var m = Matrix3D.compose(Matrix3D.compose(model, view, viewProjection), projection, viewProjection).values;
+		var m = Matrix4.compose(Matrix4.compose(model, view, viewProjection), projection, viewProjection).values;
 		var p = mesh.animVertices != null ? mesh.animVertices : mesh.vertices, corners = [];
 		for (k in 0...(indices != null ? mesh.triangleCount : Std.int(mesh.vertexCount / 3))) {
 			var a = indices == null ? k * 3 : indices[k * 3],
@@ -1061,7 +1061,7 @@ class Frame {
 		var textures = p.bindTextures([]);
 		if (p.texture0 >= 0)
 			textures[p.texture0] = texture;
-		var model = new Matrix3D();
+		var model = new Matrix4();
 		return {
 			pipeline: pipeline,
 			buffers: null,
@@ -1106,7 +1106,7 @@ class Frame {
 		@param instances  Optional. The instances' transforms, a static buffer of 16 floats each, column by column, fed to the program's
 			mat4 attribute; 0 for one instance, the attribute fed GL's default.
 		@param instanceCount  Optional. How many instances; defaults to 1. */
-	public function mesh(mesh:helix.raylib.Mesh, p:Program, model:Matrix3D, diffuse:Array<Float>, textures:Array<Int>, instances:Int = 0,
+	public function mesh(mesh:helix.raylib.Mesh, p:Program, model:Matrix4, diffuse:Array<Float>, textures:Array<Int>, instances:Int = 0,
 			instanceCount:Int = 1):Void {
 		meshBuffers = null;
 		// In point mode, the mesh's triangles drawn as their corners: those culling leaves, found here, as GL's point mode culls the
@@ -1121,7 +1121,7 @@ class Frame {
 		// line mode culls the triangles it outlines.
 		var edges = 0, edgeCount = mesh.triangleCount * 6;
 		if (wire && cull && instances == 0) {
-			var front = frontEdges(mesh, Matrix3D.compose(Matrix3D.compose(model, view, viewProjection), projection, viewProjection).values);
+			var front = frontEdges(mesh, Matrix4.compose(Matrix4.compose(model, view, viewProjection), projection, viewProjection).values);
 			edgeCount = front.length;
 			if (edgeCount == 0)
 				return;
@@ -1164,7 +1164,7 @@ class Frame {
 	}
 
 	// A mesh's draw, in the pass: its blocks captured as they are now.
-	function addMesh(pipeline:Int, buffers:Array<Int>, indices:Int, count:Int, primitive:Primitive, bound:Array<Int>, p:Program, model:Matrix3D,
+	function addMesh(pipeline:Int, buffers:Array<Int>, indices:Int, count:Int, primitive:Primitive, bound:Array<Int>, p:Program, model:Matrix4,
 			diffuse:Array<Float>, instanceCount:Int):Void {
 		var d = drawCount < drawPool.length ? drawPool[drawCount] : null;
 		if (d == null)
@@ -1203,7 +1203,7 @@ class Frame {
 	}
 
 	// A mesh's draws in stereo, one an eye, sharing its buffers (meshBuffers).
-	function meshEyes(pipeline:Int, buffers:Array<Int>, indices:Int, count:Int, primitive:Primitive, bound:Array<Int>, p:Program, model:Matrix3D,
+	function meshEyes(pipeline:Int, buffers:Array<Int>, indices:Int, count:Int, primitive:Primitive, bound:Array<Int>, p:Program, model:Matrix4,
 			diffuse:Array<Float>, instanceCount:Int):Void
 		eyes(() -> addMesh(pipeline, buffers, indices, count, primitive, bound, p, model, diffuse, instanceCount), true);
 
@@ -1290,7 +1290,7 @@ class Frame {
 	public var meshBuffers:Null<Array<Int>> = null;
 
 	// The view and projection together, reused.
-	final viewProjection = new Matrix3D();
+	final viewProjection = new Matrix4();
 
 	// Whether culling drops a triangle, its corners moved by a matrix to clip space: by the sign of its area on the screen, GL's rule,
 	// counterclockwise its front, one of no area its back. One with a corner behind the eye is kept.
@@ -1372,7 +1372,7 @@ class Frame {
 		return cull ? (cullFront ? Front : Back) : None;
 
 	// The program's blocks as they are now, with raylib's own values set: the matrices and the diffuse color.
-	function values(p:Program, model:Matrix3D, diffuse:Array<Float>):Array<Null<Bytes>> {
+	function values(p:Program, model:Matrix4, diffuse:Array<Float>):Array<Null<Bytes>> {
 		var snapshot = snapshotCount < snapshots.length ? snapshots[snapshotCount] : null;
 		if (snapshot == null)
 			snapshots[snapshotCount] = snapshot = new helix.services.shaders.ShaderSnapshot();

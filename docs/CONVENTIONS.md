@@ -97,8 +97,8 @@ dropped.
   a value is a plain verb on it (`set`, `copyFrom`, `makeEmpty`, `transform.yaw`). A value an operation may not have returns null,
   out unchanged (`m.invert(?out)` for a matrix with no inverse).
 - **A value type's other methods are named for what they return.** A static `fromX(..., ?out)` builds one from what it's given
-  (`Matrix3D.fromPerspective`, `Quaternion3D.fromAxisAngle`); a blend or a composition of others is a static named for it
-  (`Vector3D.lerp(a, b, amount, ?out)`, `Matrix3D.compose(first, second, ?out)`). `toX(?out)` converts one into another kind
+  (`Matrix4.fromPerspective`, `Quaternion.fromAxisAngle`); a blend or a composition of others is a static named for it
+  (`Vector3.lerp(a, b, amount, ?out)`, `Matrix4.compose(first, second, ?out)`). `toX(?out)` converts one into another kind
   (`rotation.toMatrix()`) and `computeX(?out)` derives a value from it (`transform.computeForward()`). A number it has is a property
   (`vector.length`).
 - **A completion takes a lambda per outcome, success first,** and on a platform interface none is optional (`read(path, maxBytes,
@@ -124,12 +124,17 @@ dropped.
 - **A directory is a directory,** as Haxe's standard library names it (`FileSystem.readDirectory`, `Path.directory`) and as programming
   APIs generally do: in names, doc comments and docs, never "folder" (the desktop's word) or "dir" (an abbreviation):
   `getProgramDirectory`, `assetDirectory`. Only a third party's own name keeps its word.
-- **2D and 3D are named apart, always:** a type of one kind ends in its kind, whether or not the other kind has a counterpart yet
-  (`Vector2D` and `Vector3D`, `Bounds2D` and `Bounds3D`, and as much `Mesh3D`, `Camera2D`), so no one guesses which kind a name means,
-  and a counterpart arriving later renames nothing. That holds for a type that belongs to one of a kind, and for a family named by a
-  file of one kind. Only what holds both kinds or neither keeps a plain name: a file format, a type both kinds use, which is
-  neutral and lives outside them in the package of its own domain. The kind ends the name (`LayoutDirection2D`, not
-  `Layout2DDirection`). `tools/check_names.py` checks it, its lists of the plain ones each giving the reason.
+- **2D and 3D are named apart:** a type of one kind ends in its kind, whether or not the other kind has a counterpart yet (`Aabb2D`
+  and `Aabb3D`, and as much `Mesh3D`, `Camera2D`), so no one guesses which kind a name means, and a counterpart arriving later renames
+  nothing. That holds for a type that belongs to one of a kind, and for a family named by a file of one kind. A name whose word already
+  fixes its kind drops the ending: `Quaternion`, `Frustum`, `CubeTexture`, `HemisphereLight`, `RectanglePacker`. A vector or a matrix
+  is named for its size, as raylib, three.js, Godot and Unity name them: `Vector2` and `Vector3` count components, `Matrix3` and
+  `Matrix4` rows. Only what holds both kinds or neither keeps a plain name: a file format, a type both kinds use, which is neutral and
+  lives outside them in the package of its own domain. The kind ends the name (`LayoutDirection2D`, not `Layout2DDirection`).
+  `tools/check_names.py` checks it, its lists of the plain ones each giving the reason.
+- **Words are whole:** no short forms (`Vec`, `Mat`, `Quat`, `Rect`, `Box` for a rectangle). A box is 3D and a rectangle 2D. An
+  axis-aligned box is an `Aabb2D` or an `Aabb3D`, an oriented one an `Obb2D` or an `Obb3D`. A name holding bounds says their shape where
+  its type doesn't.
 - **A method computing a value object takes an optional out last and returns the result:** `node.computeBounds()` makes new bounds,
   `node.computeBounds(scratch)` fills scratch and returns it, null meaning there's nothing, not a Bool beside the out. Given an out, it
   allocates nothing, so per-frame code can call it freely; without one it allocates exactly the result. Haxe skips an optional
@@ -150,7 +155,8 @@ dropped.
 - **Capitals:** `2D` and `3D` keep a capital D. Every acronym, abbreviation and product name in a name is written as a word, its first
   letter alone a capital, as Haxe's standard library writes them (`haxe.Json`, `haxe.Http`, `Xml`, `Utf8`, `Md5`): `Ui`, `Gpu`, `Url`,
   `id`, `Sdl3`, `Dom`, `WebGl2`, `IndexedDb`. No length decides it and no name is an exception, so any name can be written without
-  looking it up. Prose keeps a product's own spelling (WebGL2, IndexedDB, SDL3).
+  looking it up. Prose keeps a product's own spelling (WebGL2, IndexedDB, SDL3). A familiar API's own names keep its spelling (raylib's `GetFPS`,
+  `GetCollisionRec`). Names it lacks follow the rule, and none of its names gets a second spelling.
 
 ## Units
 

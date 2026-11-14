@@ -1,6 +1,6 @@
 package helix.services.shaders;
 
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 
 /** Specifies a uniform's value for `ShaderUniformValues.write`, for code that holds values as data (a material's table of them).
 
@@ -31,7 +31,7 @@ enum ShaderValue {
 	Bool(value:Bool);
 
 	/** A `mat4`. */
-	Matrix(matrix:Matrix3D);
+	Matrix(matrix:Matrix4);
 
 	/** Floats in GLSL's order: a vector's components, a matrix's by columns, elements one after another. */
 	Floats(values:Array<Float>);

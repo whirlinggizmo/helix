@@ -1,6 +1,6 @@
 package helix.geometry;
 
-import helix.math.Vector2D;
+import helix.math.Vector2;
 
 /** Provides tests on points, segments, triangles, polygons and circles in a plane, their points given as plain numbers.
 
@@ -22,7 +22,7 @@ class Geometry2D {
 		@param dy  Its end y.
 		@param out  Optional. Set to where they cross, when they do: on the first segment, at its fraction.
 		@return  True when they cross, their ends included. */
-	public static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Vector2D):Bool {
+	public static function intersectSegments(ax:Float, ay:Float, bx:Float, by:Float, cx:Float, cy:Float, dx:Float, dy:Float, ?out:Vector2):Bool {
 		var rx = bx - ax, ry = by - ay, sx = dx - cx, sy = dy - cy;
 		var div = rx * sy - ry * sx;
 		if (Math.abs(div) < EPSILON)

@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Vector2D;
+import helix.math.Vector2;
 import helix.platform.GamepadButton;
 
 /** Represents how one button of a `VirtualGamepad` starts. Positions and sizes are framebuffer pixels. */
@@ -10,7 +10,7 @@ class VirtualButtonOptions {
 	public final button:GamepadButton;
 
 	/** Gets its center. Defaults to its place in the diamond of the face buttons (`VirtualButton.position`). */
-	@:optional public final position:Null<Vector2D>;
+	@:optional public final position:Null<Vector2>;
 
 	/** Gets a value indicating whether it's enabled. Defaults to true. */
 	@:optional public final enabled:Null<Bool>;

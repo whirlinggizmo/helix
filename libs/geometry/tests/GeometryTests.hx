@@ -1,5 +1,5 @@
 import helix.geometry.Geometry2D;
-import helix.math.Vector2D;
+import helix.math.Vector2;
 
 /** Checks Geometry2D with the library alone: segments crossing (parallel, end-to-end and nearly vertical ones too), points in triangles and polygons,
 	distances to segments and circles touching them. */
@@ -16,7 +16,7 @@ class GeometryTests {
 		return Math.abs(a - b) < 1e-9;
 
 	static function main():Void {
-		var p = new Vector2D();
+		var p = new Vector2();
 		check(Geometry2D.intersectSegments(0, 0, 10, 10, 0, 10, 10, 0, p) && near(p.x, 5) && near(p.y, 5), "segments crossing, and where");
 		check(!Geometry2D.intersectSegments(0, 0, 4, 4, 0, 10, 10, 0), "short of each other: no crossing");
 		check(!Geometry2D.intersectSegments(0, 0, 10, 0, 0, 1, 10, 1) && !Geometry2D.intersectSegments(0, 0, 10, 0, 5, 0, 15, 0),

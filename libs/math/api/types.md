@@ -2,9 +2,9 @@
 
 [Back to the library](README.md)
 
-## Bounds2D
+## Aabb2D
 
-*class* in [`libs/math/src/helix/math/Bounds2D.hx`](../src/helix/math/Bounds2D.hx), `import helix.math.Bounds2D;`
+*class* in [`libs/math/src/helix/math/Aabb2D.hx`](../src/helix/math/Aabb2D.hx), `import helix.math.Aabb2D;`
 
 Represents an axis-aligned box in 2 dimensions: its least and greatest coordinate on each axis.
 
@@ -16,19 +16,19 @@ var minX:Float
 var maxX:Float
 var minY:Float
 var maxY:Float
-function set(minX:Float, minY:Float, maxX:Float, maxY:Float):Bounds2D
-function makeEmpty():Bounds2D
-function copyFrom(other:Bounds2D):Bounds2D
+function set(minX:Float, minY:Float, maxX:Float, maxY:Float):Aabb2D
+function makeEmpty():Aabb2D
+function copyFrom(other:Aabb2D):Aabb2D
 var isEmpty(get, never):Bool
 var width(get, never):Float
 var height(get, never):Float
 var centerX(get, never):Float
 var centerY(get, never):Float
-function expand(x:Float, y:Float):Bounds2D
-function union(other:Bounds2D, ?out:Bounds2D):Bounds2D
+function expand(x:Float, y:Float):Aabb2D
+function union(other:Aabb2D, ?out:Aabb2D):Aabb2D
 function contains(x:Float, y:Float):Bool
-function intersection(other:Bounds2D, ?out:Bounds2D):Bounds2D
-function intersects(other:Bounds2D):Bool
+function intersection(other:Aabb2D, ?out:Aabb2D):Aabb2D
+function intersects(other:Aabb2D):Bool
 ```
 
 - `new`: Creates an empty box.
@@ -74,9 +74,9 @@ function intersects(other:Bounds2D):Bool
   - `other`: The other box.
   - returns: True when they overlap; false when either is empty.
 
-## Bounds3D
+## Aabb3D
 
-*class* in [`libs/math/src/helix/math/Bounds3D.hx`](../src/helix/math/Bounds3D.hx), `import helix.math.Bounds3D;`
+*class* in [`libs/math/src/helix/math/Aabb3D.hx`](../src/helix/math/Aabb3D.hx), `import helix.math.Aabb3D;`
 
 Represents an axis-aligned box in 3 dimensions: its least and greatest coordinate on each axis.
 
@@ -90,9 +90,9 @@ var minY:Float
 var maxY:Float
 var minZ:Float
 var maxZ:Float
-function set(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Bounds3D
-function makeEmpty():Bounds3D
-function copyFrom(other:Bounds3D):Bounds3D
+function set(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Aabb3D
+function makeEmpty():Aabb3D
+function copyFrom(other:Aabb3D):Aabb3D
 var isEmpty(get, never):Bool
 var width(get, never):Float
 var height(get, never):Float
@@ -100,10 +100,10 @@ var depth(get, never):Float
 var centerX(get, never):Float
 var centerY(get, never):Float
 var centerZ(get, never):Float
-function expand(x:Float, y:Float, z:Float):Bounds3D
-function union(other:Bounds3D, ?out:Bounds3D):Bounds3D
+function expand(x:Float, y:Float, z:Float):Aabb3D
+function union(other:Aabb3D, ?out:Aabb3D):Aabb3D
 function contains(x:Float, y:Float, z:Float):Bool
-function intersects(other:Bounds3D):Bool
+function intersects(other:Aabb3D):Bool
 function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
 ```
 
@@ -609,44 +609,44 @@ static function easeInOutBounce(t:Float):Float
   - `t`: The fraction, 0 to 1.
   - returns: The eased fraction, 0 at 0 and 1 at 1.
 
-## Matrix2D
+## Matrix3
 
-*class* in [`libs/math/src/helix/math/Matrix2D.hx`](../src/helix/math/Matrix2D.hx), `import helix.math.Matrix2D;`
+*class* in [`libs/math/src/helix/math/Matrix3.hx`](../src/helix/math/Matrix3.hx), `import helix.math.Matrix3;`
 
 Represents a 2D affine matrix: moving, turning, scaling and shearing points in 2 dimensions.
 
 It is the 3 x 3 matrix whose last row is 0, 0, 1, kept as its six other numbers as a canvas's `setTransform` and Flash's `Matrix` keep them: a point (x, y) goes to (a x + c y + tx, b x + d y + ty). Its operations follow helix-math's out rule: each writes into an optional out, last, and returns it; omitted, it makes a new matrix; given the matrix itself, it works in place. Rotations use `Trig`, so a matrix comes out the same on every target. Angles are radians, a positive one turning from +x toward +y, clockwise on screen where y grows downward.
 
 ```haxe
-var model = Matrix2D.fromScale(2, 2);
+var model = Matrix3.fromScale(2, 2);
 model.appendRotation(angle, model).appendTranslation(x, y, model);
 var onScreen = model.transformPoint(0, 0);
 ```
 
 ```haxe
 function new()
-static function fromTranslation(x:Float, y:Float, ?out:Matrix2D):Matrix2D
-static function fromScale(x:Float, y:Float, ?out:Matrix2D):Matrix2D
-static function fromRotation(radians:Float, ?out:Matrix2D):Matrix2D
-static function compose(first:Matrix2D, second:Matrix2D, ?out:Matrix2D):Matrix2D
+static function fromTranslation(x:Float, y:Float, ?out:Matrix3):Matrix3
+static function fromScale(x:Float, y:Float, ?out:Matrix3):Matrix3
+static function fromRotation(radians:Float, ?out:Matrix3):Matrix3
+static function compose(first:Matrix3, second:Matrix3, ?out:Matrix3):Matrix3
 var a:Float
 var b:Float
 var c:Float
 var d:Float
 var tx:Float
 var ty:Float
-function set(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Matrix2D
-function copyFrom(other:Matrix2D):Matrix2D
-function makeIdentity():Matrix2D
-function append(other:Matrix2D, ?out:Matrix2D):Matrix2D
-function prepend(other:Matrix2D, ?out:Matrix2D):Matrix2D
-function appendTranslation(x:Float, y:Float, ?out:Matrix2D):Matrix2D
-function appendScale(x:Float, y:Float, ?out:Matrix2D):Matrix2D
-function appendRotation(radians:Float, ?out:Matrix2D):Matrix2D
-function invert(?out:Matrix2D):Null<Matrix2D>
-function transformPoint(x:Float, y:Float, ?out:Vector2D):Vector2D
-function transformDirection(x:Float, y:Float, ?out:Vector2D):Vector2D
-function toMatrix3D(?out:Matrix3D):Matrix3D
+function set(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Matrix3
+function copyFrom(other:Matrix3):Matrix3
+function makeIdentity():Matrix3
+function append(other:Matrix3, ?out:Matrix3):Matrix3
+function prepend(other:Matrix3, ?out:Matrix3):Matrix3
+function appendTranslation(x:Float, y:Float, ?out:Matrix3):Matrix3
+function appendScale(x:Float, y:Float, ?out:Matrix3):Matrix3
+function appendRotation(radians:Float, ?out:Matrix3):Matrix3
+function invert(?out:Matrix3):Null<Matrix3>
+function transformPoint(x:Float, y:Float, ?out:Vector2):Vector2
+function transformDirection(x:Float, y:Float, ?out:Vector2):Vector2
+function toMatrix4(?out:Matrix4):Matrix4
 ```
 
 - `new`: Creates the identity matrix.
@@ -725,47 +725,47 @@ function toMatrix3D(?out:Matrix3D):Matrix3D
   - `y`: The direction's y.
   - `out`: Optional. The vector to write into; a new one when omitted.
   - returns: The direction.
-- `toMatrix3D`: Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader takes a 2D view.
+- `toMatrix4`: Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader takes a 2D view.
   - `out`: Optional. The matrix to write into; a new one when omitted.
   - returns: The matrix.
 
-## Matrix3D
+## Matrix4
 
-*class* in [`libs/math/src/helix/math/Matrix3D.hx`](../src/helix/math/Matrix3D.hx), `import helix.math.Matrix3D;`
+*class* in [`libs/math/src/helix/math/Matrix4.hx`](../src/helix/math/Matrix4.hx), `import helix.math.Matrix4;`
 
 Represents a 4 x 4 matrix transforming points in 3 dimensions: moving, turning, scaling and projecting them.
 
 It acts on column vectors and is stored by columns, as GPUs take it, so `values` can be sent to a shader as they are. A static `fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix (`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this matrix unchanged; given this matrix, it changes it in place (`m.transpose(m)`). The out may be this matrix or any other argument, and none of them allocates when given one, so a caller can reuse one matrix every frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
 
 ```haxe
-var model = Matrix3D.fromScale(2, 2, 2);
+var model = Matrix4.fromScale(2, 2, 2);
 model.appendRotation(0, 1, 0, angle, model).appendTranslation(x, 0, z, model);
-var mvp = Matrix3D.compose(model, view).append(projection);
+var mvp = Matrix4.compose(model, view).append(projection);
 ```
 
 ```haxe
 function new()
-static function fromTranslation(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
-static function fromScale(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
-static function fromRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix3D):Matrix3D
-static function fromQuaternion(x:Float, y:Float, z:Float, w:Float, ?out:Matrix3D):Matrix3D
-static function fromLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float, ?out:Matrix3D):Matrix3D
-static function fromPerspective(fovY:Float, aspect:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D
-static function fromOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D
-static function fromFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix3D):Matrix3D
-static function compose(first:Matrix3D, second:Matrix3D, ?out:Matrix3D):Matrix3D
+static function fromTranslation(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
+static function fromScale(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
+static function fromRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix4):Matrix4
+static function fromQuaternion(x:Float, y:Float, z:Float, w:Float, ?out:Matrix4):Matrix4
+static function fromLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float, ?out:Matrix4):Matrix4
+static function fromPerspective(fovY:Float, aspect:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
+static function fromOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
+static function fromFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
+static function compose(first:Matrix4, second:Matrix4, ?out:Matrix4):Matrix4
 final values:Array<Float>
-function makeIdentity():Matrix3D
-function copyFrom(other:Matrix3D):Matrix3D
-function append(other:Matrix3D, ?out:Matrix3D):Matrix3D
-function prepend(other:Matrix3D, ?out:Matrix3D):Matrix3D
-function appendTranslation(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
-function appendScale(x:Float, y:Float, z:Float, ?out:Matrix3D):Matrix3D
-function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix3D):Matrix3D
-function invert(?out:Matrix3D):Null<Matrix3D>
-function transpose(?out:Matrix3D):Matrix3D
-function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
-function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
+function makeIdentity():Matrix4
+function copyFrom(other:Matrix4):Matrix4
+function append(other:Matrix4, ?out:Matrix4):Matrix4
+function prepend(other:Matrix4, ?out:Matrix4):Matrix4
+function appendTranslation(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
+function appendScale(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
+function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix4):Matrix4
+function invert(?out:Matrix4):Null<Matrix4>
+function transpose(?out:Matrix4):Matrix4
+function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
+function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
 ```
 
 - `new`: Creates the identity matrix.
@@ -889,45 +889,45 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
   - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The direction.
 
-## Quaternion3D
+## Quaternion
 
-*class* in [`libs/math/src/helix/math/Quaternion3D.hx`](../src/helix/math/Quaternion3D.hx), `import helix.math.Quaternion3D;`
+*class* in [`libs/math/src/helix/math/Quaternion.hx`](../src/helix/math/Quaternion.hx), `import helix.math.Quaternion;`
 
 Represents a rotation in 3 dimensions, as a unit quaternion.
 
 Two rotations blend along the shortest arc (`slerp`), which matrices can't do, so an animation's rotations are kept as these and turned into a matrix to draw. A static `fromX` makes a rotation, and `slerp`, `nlerp` and `compose` make one from others. Each of those, and each operation on a rotation (`append`, `invert`, `normalize`, `transformPoint`, `toMatrix`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this rotation unchanged; given this rotation, it changes it in place (`q.normalize(q)`). The out may be this rotation or any other argument, and calls chain through what each returns. `set`, `copyFrom` and `makeIdentity` change this rotation and return it. It uses `Trig`, so a rotation comes out the same on every target. Space is right-handed with +y up, as every 3D type here.
 
 ```haxe
-var turn = Quaternion3D.fromAxisAngle(0, 1, 0, Math.PI / 2);
-var halfway = Quaternion3D.slerp(from, turn, .5);
+var turn = Quaternion.fromAxisAngle(0, 1, 0, Math.PI / 2);
+var halfway = Quaternion.slerp(from, turn, .5);
 var facing = turn.transformPoint(0, 0, -1);
 ```
 
 ```haxe
 function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0., ?w:Float = 1.)
-static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Quaternion3D):Quaternion3D
-static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion3D):Quaternion3D
-static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0., ?out:Quaternion3D):Quaternion3D
-static function fromBetween(from:Vector3D, to:Vector3D, ?out:Quaternion3D):Quaternion3D
-static function fromMatrix(matrix:Matrix3D, ?out:Quaternion3D):Quaternion3D
-static function slerp(from:Quaternion3D, to:Quaternion3D, amount:Float, ?out:Quaternion3D):Quaternion3D
-static function nlerp(from:Quaternion3D, to:Quaternion3D, amount:Float, ?out:Quaternion3D):Quaternion3D
-static function compose(first:Quaternion3D, second:Quaternion3D, ?out:Quaternion3D):Quaternion3D
+static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Quaternion):Quaternion
+static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion
+static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0., ?out:Quaternion):Quaternion
+static function fromBetween(from:Vector3, to:Vector3, ?out:Quaternion):Quaternion
+static function fromMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion
+static function slerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion
+static function nlerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion
+static function compose(first:Quaternion, second:Quaternion, ?out:Quaternion):Quaternion
 var x:Float
 var y:Float
 var z:Float
 var w:Float
-function set(x:Float, y:Float, z:Float, w:Float):Quaternion3D
-function copyFrom(other:Quaternion3D):Quaternion3D
-function makeIdentity():Quaternion3D
-function append(other:Quaternion3D, ?out:Quaternion3D):Quaternion3D
-function prepend(other:Quaternion3D, ?out:Quaternion3D):Quaternion3D
-function invert(?out:Quaternion3D):Quaternion3D
-function normalize(?out:Quaternion3D):Quaternion3D
-function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
-function toEuler(?out:Vector3D):Vector3D
+function set(x:Float, y:Float, z:Float, w:Float):Quaternion
+function copyFrom(other:Quaternion):Quaternion
+function makeIdentity():Quaternion
+function append(other:Quaternion, ?out:Quaternion):Quaternion
+function prepend(other:Quaternion, ?out:Quaternion):Quaternion
+function invert(?out:Quaternion):Quaternion
+function normalize(?out:Quaternion):Quaternion
+function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
+function toEuler(?out:Vector3):Vector3
 var angle(get, never):Float
-function toMatrix(?out:Matrix3D):Matrix3D
+function toMatrix(?out:Matrix4):Matrix4
 ```
 
 - `new`: Creates a rotation, the identity unless the quaternion is provided.
@@ -1107,9 +1107,9 @@ function shuffle(items:Array<T>):Array<T>
   - `items`: The items.
   - returns: The same array, shuffled.
 
-## RectPacker2D
+## RectanglePacker
 
-*class* in [`libs/math/src/helix/math/RectPacker2D.hx`](../src/helix/math/RectPacker2D.hx), `import helix.math.RectPacker2D;`
+*class* in [`libs/math/src/helix/math/RectanglePacker.hx`](../src/helix/math/RectanglePacker.hx), `import helix.math.RectanglePacker;`
 
 Provides packing rectangles into an area, as stb_rect_pack 1.01 does (public domain, Sean Barrett), which raylib packs its font atlases with: a skyline, each rectangle placed as low as it goes and then as far left, the tallest first.
 
@@ -1129,7 +1129,7 @@ static function pack(width:Int, height:Int, sizes:Array<Int>):Array<Int>
 
 Represents where an object is in 2 dimensions, which way it faces, and how large it is: a position, a rotation and a scale.
 
-It faces along its own +x, so a rotation of 0 faces +x and a positive one turns toward +y, clockwise on screen where y grows downward. Moving and turning are along and around its own axes unless a method says otherwise, so a sprite, a turret or a 2D camera is steered the same way. The matrix that draws it scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix2D.compose`). It uses `Trig`, so a transform comes out the same on every target.
+It faces along its own +x, so a rotation of 0 faces +x and a positive one turns toward +y, clockwise on screen where y grows downward. Moving and turning are along and around its own axes unless a method says otherwise, so a sprite, a turret or a 2D camera is steered the same way. The matrix that draws it scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix3.compose`). It uses `Trig`, so a transform comes out the same on every target.
 
 ```haxe
 var ship = new Transform2D();
@@ -1141,22 +1141,22 @@ var model = ship.toMatrix(scratch);
 
 ```haxe
 function new()
-static function fromMatrix(matrix:Matrix2D, ?out:Transform2D):Transform2D
-final position:Vector2D
+static function fromMatrix(matrix:Matrix3, ?out:Transform2D):Transform2D
+final position:Vector2
 var rotation:Float
-final scale:Vector2D
+final scale:Vector2
 function copyFrom(other:Transform2D):Transform2D
 function makeIdentity():Transform2D
-function computeForward(?out:Vector2D):Vector2D
-function computeRight(?out:Vector2D):Vector2D
+function computeForward(?out:Vector2):Vector2
+function computeRight(?out:Vector2):Vector2
 function moveForward(distance:Float):Transform2D
 function moveRight(distance:Float):Transform2D
 function moveToward(x:Float, y:Float, distance:Float, ?nearest:Float = .001):Transform2D
 function rotate(radians:Float):Transform2D
 function lookAt(x:Float, y:Float):Transform2D
 function orbit(x:Float, y:Float, radians:Float):Transform2D
-function transformPoint(x:Float, y:Float, ?out:Vector2D):Vector2D
-function toMatrix(?out:Matrix2D):Matrix2D
+function transformPoint(x:Float, y:Float, ?out:Vector2):Vector2
+function toMatrix(?out:Matrix3):Matrix3
 ```
 
 - `new`: Creates a transform at the origin, facing +x, at scale 1.
@@ -1223,7 +1223,7 @@ function toMatrix(?out:Matrix2D):Matrix2D
 
 Represents where an object is in 3 dimensions, which way it faces, and how large it is: a position, a rotation and a scale.
 
-Its own axes are its rotation's: -z is forward, +x right and +y up, as a camera looks down -z. Moving and turning are along and around those axes unless a method says otherwise, so a ship, a turret or a camera is steered the same way. The matrix that draws it scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix3D.compose`). It uses `Trig`, so a transform comes out the same on every target.
+Its own axes are its rotation's: -z is forward, +x right and +y up, as a camera looks down -z. Moving and turning are along and around those axes unless a method says otherwise, so a ship, a turret or a camera is steered the same way. The matrix that draws it scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix4.compose`). It uses `Trig`, so a transform comes out the same on every target.
 
 ```haxe
 var ship = new Transform3D();
@@ -1236,15 +1236,15 @@ var model = ship.toMatrix(scratch);
 
 ```haxe
 function new()
-static function fromMatrix(matrix:Matrix3D, ?out:Transform3D):Transform3D
-final position:Vector3D
-final rotation:Quaternion3D
-final scale:Vector3D
+static function fromMatrix(matrix:Matrix4, ?out:Transform3D):Transform3D
+final position:Vector3
+final rotation:Quaternion
+final scale:Vector3
 function copyFrom(other:Transform3D):Transform3D
 function makeIdentity():Transform3D
-function computeForward(?out:Vector3D):Vector3D
-function computeRight(?out:Vector3D):Vector3D
-function computeUp(?out:Vector3D):Vector3D
+function computeForward(?out:Vector3):Vector3
+function computeRight(?out:Vector3):Vector3
+function computeUp(?out:Vector3):Vector3
 function moveForward(distance:Float, ?inWorldPlane:Bool = false):Transform3D
 function moveRight(distance:Float, ?inWorldPlane:Bool = false):Transform3D
 function moveUp(distance:Float):Transform3D
@@ -1254,8 +1254,8 @@ function pitch(radians:Float, ?lock:Bool = false):Transform3D
 function roll(radians:Float):Transform3D
 function lookAt(x:Float, y:Float, z:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0.):Transform3D
 function orbit(x:Float, y:Float, z:Float, yaw:Float, pitch:Float, ?lock:Bool = false):Transform3D
-function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D
-function toMatrix(?out:Matrix3D):Matrix3D
+function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
+function toMatrix(?out:Matrix4):Matrix4
 ```
 
 - `new`: Creates a transform at the origin, facing -z, at scale 1.
@@ -1381,9 +1381,9 @@ static function acos(x:Float):Float
   - `x`: The cosine, from -1 to 1.
   - returns: The angle, in radians, from 0 to π, or NaN if x is outside -1 to 1.
 
-## Vector2D
+## Vector2
 
-*class* in [`libs/math/src/helix/math/Vector2D.hx`](../src/helix/math/Vector2D.hx), `import helix.math.Vector2D;`
+*class* in [`libs/math/src/helix/math/Vector2.hx`](../src/helix/math/Vector2.hx), `import helix.math.Vector2;`
 
 Represents a vector in 2 dimensions: a position or a direction, as its user means it.
 
@@ -1392,34 +1392,34 @@ Each operation writes its result into an optional out, the last argument, and re
 It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, and `Trig` for angles, so a vector comes out the same everywhere. Angles are radians, turning from +x toward +y. Its space is its user's.
 
 ```haxe
-var velocity = Vector2D.fromAngle(heading, speed);
+var velocity = Vector2.fromAngle(heading, speed);
 position.addScaled(velocity, dt, position);
 var toward = target.subtract(position).normalize();
 ```
 
 ```haxe
 function new(?x:Float = 0., ?y:Float = 0.)
-static function fromAngle(radians:Float, ?length:Float = 1., ?out:Vector2D):Vector2D
-static function lerp(from:Vector2D, to:Vector2D, amount:Float, ?out:Vector2D):Vector2D
+static function fromAngle(radians:Float, ?length:Float = 1., ?out:Vector2):Vector2
+static function lerp(from:Vector2, to:Vector2, amount:Float, ?out:Vector2):Vector2
 var x:Float
 var y:Float
-function set(x:Float, y:Float):Vector2D
-function copyFrom(other:Vector2D):Vector2D
-function add(other:Vector2D, ?out:Vector2D):Vector2D
-function subtract(other:Vector2D, ?out:Vector2D):Vector2D
-function scale(factor:Float, ?out:Vector2D):Vector2D
-function addScaled(other:Vector2D, factor:Float, ?out:Vector2D):Vector2D
-function negate(?out:Vector2D):Vector2D
-function normalize(?out:Vector2D):Vector2D
-function rotate(radians:Float, ?out:Vector2D):Vector2D
+function set(x:Float, y:Float):Vector2
+function copyFrom(other:Vector2):Vector2
+function add(other:Vector2, ?out:Vector2):Vector2
+function subtract(other:Vector2, ?out:Vector2):Vector2
+function scale(factor:Float, ?out:Vector2):Vector2
+function addScaled(other:Vector2, factor:Float, ?out:Vector2):Vector2
+function negate(?out:Vector2):Vector2
+function normalize(?out:Vector2):Vector2
+function rotate(radians:Float, ?out:Vector2):Vector2
 var length(get, never):Float
 var lengthSquared(get, never):Float
 var angle(get, never):Float
-function dot(other:Vector2D):Float
-function cross(other:Vector2D):Float
-function distance(other:Vector2D):Float
-function distanceSquared(other:Vector2D):Float
-function equals(other:Vector2D, ?tolerance:Float = 0.):Bool
+function dot(other:Vector2):Float
+function cross(other:Vector2):Float
+function distance(other:Vector2):Float
+function distanceSquared(other:Vector2):Float
+function equals(other:Vector2, ?tolerance:Float = 0.):Bool
 ```
 
 - `new`: Creates a vector.
@@ -1496,13 +1496,13 @@ function equals(other:Vector2D, ?tolerance:Float = 0.):Bool
   - `tolerance`: Optional. The most each coordinate may differ by; defaults to 0, exactly equal.
   - returns: True when every coordinate is within the tolerance.
 
-## Vector3D
+## Vector3
 
-*class* in [`libs/math/src/helix/math/Vector3D.hx`](../src/helix/math/Vector3D.hx), `import helix.math.Vector3D;`
+*class* in [`libs/math/src/helix/math/Vector3.hx`](../src/helix/math/Vector3.hx), `import helix.math.Vector3;`
 
 Represents a vector in 3 dimensions: a position or a direction, as its user means it.
 
-Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. `Matrix3D` keeps positions and directions apart by its methods: `transformPoint` moves a position, `transformDirection` only turns and scales a direction.
+Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. `Matrix4` keeps positions and directions apart by its methods: `transformPoint` moves a position, `transformDirection` only turns and scales a direction.
 
 It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, so a vector comes out the same everywhere. Space is right-handed with +y up, as every 3D type here.
 
@@ -1514,25 +1514,25 @@ var right = forward.cross(up);
 
 ```haxe
 function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0.)
-static function lerp(from:Vector3D, to:Vector3D, amount:Float, ?out:Vector3D):Vector3D
+static function lerp(from:Vector3, to:Vector3, amount:Float, ?out:Vector3):Vector3
 var x:Float
 var y:Float
 var z:Float
-function set(x:Float, y:Float, z:Float):Vector3D
-function copyFrom(other:Vector3D):Vector3D
-function add(other:Vector3D, ?out:Vector3D):Vector3D
-function subtract(other:Vector3D, ?out:Vector3D):Vector3D
-function scale(factor:Float, ?out:Vector3D):Vector3D
-function addScaled(other:Vector3D, factor:Float, ?out:Vector3D):Vector3D
-function negate(?out:Vector3D):Vector3D
-function normalize(?out:Vector3D):Vector3D
-function cross(other:Vector3D, ?out:Vector3D):Vector3D
+function set(x:Float, y:Float, z:Float):Vector3
+function copyFrom(other:Vector3):Vector3
+function add(other:Vector3, ?out:Vector3):Vector3
+function subtract(other:Vector3, ?out:Vector3):Vector3
+function scale(factor:Float, ?out:Vector3):Vector3
+function addScaled(other:Vector3, factor:Float, ?out:Vector3):Vector3
+function negate(?out:Vector3):Vector3
+function normalize(?out:Vector3):Vector3
+function cross(other:Vector3, ?out:Vector3):Vector3
 var length(get, never):Float
 var lengthSquared(get, never):Float
-function dot(other:Vector3D):Float
-function distance(other:Vector3D):Float
-function distanceSquared(other:Vector3D):Float
-function equals(other:Vector3D, ?tolerance:Float = 0.):Bool
+function dot(other:Vector3):Float
+function distance(other:Vector3):Float
+function distanceSquared(other:Vector3):Float
+function equals(other:Vector3, ?tolerance:Float = 0.):Bool
 ```
 
 - `new`: Creates a vector.

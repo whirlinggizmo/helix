@@ -1,15 +1,15 @@
 package helix.render;
 
-import helix.math.Vector3D;
+import helix.math.Vector3;
 
 /** Represents a point light shining in a cone: full inside its inner cone, fading to nothing at its outer, falling off with distance as a
 	`PointLight3D` does. */
 class SpotLight3D extends Light3D {
 	/** Gets its position, in world units: the origin until changed. */
-	public final position = new Vector3D();
+	public final position = new Vector3();
 
 	/** Gets the direction it shines in, its cone's axis; it needn't be of length 1. Straight down until changed. */
-	public final direction = new Vector3D(0, -1, 0);
+	public final direction = new Vector3(0, -1, 0);
 
 	/** Gets or sets its range, in world units, past which it lights nothing: 0 for none. 0 until set; below 0 is clamped to 0. */
 	public var range(default, set):Float = 0;

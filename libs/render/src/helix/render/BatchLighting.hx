@@ -1,8 +1,8 @@
 package helix.render;
 
 import haxe.ds.ObjectMap;
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 import helix.platform.Sampling;
 import helix.services.shaders.Shader;
 import helix.services.shaders.ShaderBlockValues;
@@ -44,7 +44,7 @@ class BatchLighting {
 	// Whether each mesh layout holds tangents, for the normal map.
 	final tangents = new ObjectMap<ShaderVertexLayout, Bool>();
 	// A draw's box in the world, or the first view's eye, for its lights.
-	final box = new Bounds3D();
+	final box = new Aabb3D();
 
 	/** Reads the batch's lights and environment as its `begin` does, fits the shadows to the views where a light casts, writes the
 		block, and shares it with the views it opens. */
@@ -69,7 +69,7 @@ class BatchLighting {
 		shading, or emissive light to add) or null for the unlit one; and the batch's `lightWriter` set to `write` where that shader reads
 		a lit name, the lights reaching its box in the world chosen (a batch draw's, with no box, those reaching the first view's eye), or
 		to null. */
-	function prepare(custom:Null<Shader>, material:Null<Material3D>, mesh:Null<GpuMesh3D>, bounds:Null<Bounds3D>, transform:Null<Matrix3D>):Null<Shader> {
+	function prepare(custom:Null<Shader>, material:Null<Material3D>, mesh:Null<GpuMesh3D>, bounds:Null<Aabb3D>, transform:Null<Matrix4>):Null<Shader> {
 		batch.lightWriter = null;
 		var s = custom;
 		if (s == null && material != null && (material.shading != Unlit || material.emissiveColor & 0xffffff != 0))
@@ -149,7 +149,7 @@ class BatchLighting {
 
 	/** Chooses the lights reaching a box in the world most, at most MOST: each light's brightness through its falloff at the box's
 		nearest point and its cone toward the box. */
-	function choose(box:Bounds3D):Void {
+	function choose(box:Aabb3D):Void {
 		chosenCount = 0;
 		var f = lights;
 		for (i in 0...lightCount) {
@@ -190,7 +190,7 @@ class BatchLighting {
 
 	// A point or spot light's falloff at a box: by the distance to its nearest point, the range's window, and for a spot its cone toward
 	// the box, widened by the box's reach about its center.
-	static function falloffAt(box:Bounds3D, f:Array<Float>, at:Int, kind:Int):Float {
+	static function falloffAt(box:Aabb3D, f:Array<Float>, at:Int, kind:Int):Float {
 		if (box.isEmpty)
 			return 0;
 		var x = f[at], y = f[at + 1], z = f[at + 2], range = f[at + 3];

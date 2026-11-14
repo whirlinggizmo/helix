@@ -1,7 +1,7 @@
 package helix.services.input;
 
-import helix.math.Bounds2D;
-import helix.math.Vector2D;
+import helix.math.Aabb2D;
+import helix.math.Vector2;
 
 /** Represents one stick of a `VirtualGamepad`: its settings, and the finger it captured.
 
@@ -22,7 +22,7 @@ class VirtualStick {
 	/** Gets or sets where the stick captures a landing finger. The zone follows changes to these bounds' fields. Null for its default: the
 		window's left or right half with both sticks enabled and read by fingers, and the whole window with one, following the window's
 		size. */
-	public var touchZone:Null<Bounds2D> = null;
+	public var touchZone:Null<Aabb2D> = null;
 
 	/** Gets or sets whether the stick reads the virtual gamepad's tilt (`VirtualGamepad.tilt`) in place of a finger: `Tilt.getAxis(X)` as
 		x and `Tilt.getAxis(Y)` as y, past the stick's dead zone. A tilt stick ignores fingers. Defaults to false. */
@@ -33,7 +33,7 @@ class VirtualStick {
 
 	/** Gets or sets where the base stays with `Fixed` placement. The base follows changes to this vector's fields. Null for the touch
 		zone's center. */
-	public var fixedBasePosition:Null<Vector2D> = null;
+	public var fixedBasePosition:Null<Vector2> = null;
 
 	/** Gets or sets how far the knob travels for a full push, in framebuffer pixels. */
 	public var radius:Float = 60;
@@ -72,7 +72,7 @@ class VirtualStick {
 	// Which side of the screen its default zone and its home are on; its zone this frame, its own or its default; and the finger that
 	// lifted from it this frame, -1 for none.
 	final right:Bool;
-	final zone = new Bounds2D();
+	final zone = new Aabb2D();
 	var lifted = -1;
 
 	function new(right:Bool) {

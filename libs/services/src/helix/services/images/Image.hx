@@ -2,7 +2,7 @@ package helix.services.images;
 
 import haxe.ds.Vector;
 import haxe.io.Bytes;
-import helix.math.Bounds2D;
+import helix.math.Aabb2D;
 import helix.math.Random;
 import helix.services.fonts.Font2D;
 import helix.services.fonts.Glyph2D;
@@ -872,9 +872,9 @@ class Image {
 		@param threshold  The threshold, 0 to 1, in 255ths: the rest of it is dropped.
 		@param out  Optional. The bounds to set and return; new ones when omitted.
 		@return  The bounds, in pixels, from the first pixel's top-left to past the last's bottom-right; empty when no pixel is over it. */
-	public function getAlphaBorder(threshold:Float, ?out:Bounds2D):Bounds2D {
+	public function getAlphaBorder(threshold:Float, ?out:Aabb2D):Aabb2D {
 		if (out == null)
-			out = new Bounds2D();
+			out = new Aabb2D();
 		var limit = byte(f32(f32(threshold) * 255)), xMin = 65536, xMax = 0, yMin = 65536, yMax = 0;
 		for (y in 0...height)
 			for (x in 0...width)

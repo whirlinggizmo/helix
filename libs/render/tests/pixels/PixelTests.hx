@@ -1,6 +1,6 @@
 import haxe.io.Bytes;
 import helix.geometry.Mesh3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.ISystem;
@@ -233,8 +233,8 @@ class PixelTests {
 			for (i in 0...count) {
 				var a = 2 * ((i * 3 + phase) % 6),
 					b = 2 * ((i * 5 + phase) % 7);
-				batch3D.drawMesh(crowdMesh, crowdMaterial, Matrix3D.fromTranslation(i % 20 * 16 + 2, Std.int(i / 20) * 16 + 2, 0),
-					[Matrix3D.fromTranslation(a, 0, 0), Matrix3D.fromTranslation(0, b, 0)], null, crowdColor(i));
+				batch3D.drawMesh(crowdMesh, crowdMaterial, Matrix4.fromTranslation(i % 20 * 16 + 2, Std.int(i / 20) * 16 + 2, 0),
+					[Matrix4.fromTranslation(a, 0, 0), Matrix4.fromTranslation(0, b, 0)], null, crowdColor(i));
 			}
 			batch3D.end();
 			renderer.endTarget();
@@ -414,9 +414,9 @@ class PixelTests {
 					var stored = unlit(true);
 					stored.baseColor = 0xff808080;
 					stored.baseColorTexture = grey;
-					batch3D.drawMesh(plane, stored, Matrix3D.fromScale(.5, 1, 1));
+					batch3D.drawMesh(plane, stored, Matrix4.fromScale(.5, 1, 1));
 					var mapped = unlit(false);
-					batch3D.drawMesh(plane, mapped, Matrix3D.fromScale(.5, 1, 1).appendTranslation(32, 0, 0));
+					batch3D.drawMesh(plane, mapped, Matrix4.fromScale(.5, 1, 1).appendTranslation(32, 0, 0));
 					batch3D.end();
 					renderer.endTarget();
 					threeD;
@@ -432,14 +432,14 @@ class PixelTests {
 				draw: () -> {
 					renderer.beginTarget(threeD, 0xff000000);
 					batch3D.beginViews([screenView()]);
-					batch3D.drawMeshInstanced(small, unlit(true), [Matrix3D.fromTranslation(8, 8, 0), Matrix3D.fromTranslation(24, 8, 0)],
+					batch3D.drawMeshInstanced(small, unlit(true), [Matrix4.fromTranslation(8, 8, 0), Matrix4.fromTranslation(24, 8, 0)],
 						[0xffff0000, 0xff00ff00]);
 					// The second joint moves its corners 32 pixels down.
-					batch3D.drawMesh(skinned, unlit(true), Matrix3D.fromTranslation(0, 16, 0), [new Matrix3D(), Matrix3D.fromTranslation(0, 24, 0)]);
+					batch3D.drawMesh(skinned, unlit(true), Matrix4.fromTranslation(0, 16, 0), [new Matrix4(), Matrix4.fromTranslation(0, 24, 0)]);
 					var material = unlit(true);
 					material.baseColor = 0xff2040c0;
 					material.shaderValues = new ShaderValues(solid);
-					batch3D.drawMesh(small, material, Matrix3D.fromTranslation(52, 8, 0));
+					batch3D.drawMesh(small, material, Matrix4.fromTranslation(52, 8, 0));
 					batch3D.end();
 					renderer.endTarget();
 					threeD;
@@ -635,7 +635,7 @@ class PixelTests {
 		for (l in lights)
 			batch3D.lights.push(l);
 		batch3D.beginViews([screenView()]);
-		batch3D.drawMesh(mesh, material, Matrix3D.fromTranslation(x, y, 0));
+		batch3D.drawMesh(mesh, material, Matrix4.fromTranslation(x, y, 0));
 		batch3D.end();
 		batch3D.lights.resize(0);
 	}
@@ -666,7 +666,7 @@ class PixelTests {
 				drawLit(cell, litMaterial(Lambert, 0xffffffff), 0, 32, []);
 				batch3D.environment = new Environment3D();
 				// The sky along x, the surface facing z: halfway between the sky and the black ground.
-				var hemisphere = new HemisphereLight3D();
+				var hemisphere = new HemisphereLight();
 				hemisphere.groundColor = 0xff000000;
 				hemisphere.up.set(1, 0, 0);
 				drawLit(cell, litMaterial(Lambert, 0xffffffff), 32, 32, [hemisphere]);
@@ -759,9 +759,9 @@ class PixelTests {
 				batch3D.beginViews([screenView()]);
 				batch3D.polygonMode = Points;
 				batch3D.pointSize = 6;
-				batch3D.drawMesh(corners, unlit(true), new Matrix3D());
+				batch3D.drawMesh(corners, unlit(true), new Matrix4());
 				batch3D.pointSize = 4;
-				batch3D.drawMeshInstanced(small, unlit(true), [Matrix3D.fromTranslation(8, 56, 0), Matrix3D.fromTranslation(40, 56, 0)],
+				batch3D.drawMeshInstanced(small, unlit(true), [Matrix4.fromTranslation(8, 56, 0), Matrix4.fromTranslation(40, 56, 0)],
 					[0xffff0000, 0xff00ff00]);
 				batch3D.resetState();
 				batch3D.end();
@@ -782,7 +782,7 @@ class PixelTests {
 	// A view in the target's pixels, y down, seeing z from -100 (farthest) to 100 (nearest), as setFromScreen does but deeper.
 	static function deepView():View3D {
 		var v = new View3D();
-		Matrix3D.fromOrthographic(0, SIZE, SIZE, 0, -100, 100, v.projectionMatrix);
+		Matrix4.fromOrthographic(0, SIZE, SIZE, 0, -100, 100, v.projectionMatrix);
 		return v;
 	}
 
@@ -829,8 +829,8 @@ class PixelTests {
 			batch3D.environment = new Environment3D();
 			batch3D.environment.setAmbient(0xff404040, Math.PI);
 			batch3D.beginViews([deepView()]);
-			batch3D.drawMesh(plane, floor == null ? litMaterial(Lambert, 0xffffffff) : floor, new Matrix3D());
-			batch3D.drawMesh(box, caster == null ? litMaterial(Lambert, 0xffffffff) : caster, Matrix3D.fromTranslation(14, 32, 12));
+			batch3D.drawMesh(plane, floor == null ? litMaterial(Lambert, 0xffffffff) : floor, new Matrix4());
+			batch3D.drawMesh(box, caster == null ? litMaterial(Lambert, 0xffffffff) : caster, Matrix4.fromTranslation(14, 32, 12));
 			batch3D.end();
 			batch3D.lights.resize(0);
 			batch3D.environment = new Environment3D();
@@ -898,10 +898,10 @@ class PixelTests {
 				batch3D.environment.setAmbient(0xff404040, Math.PI);
 				batch3D.beginViews([deepView()]);
 				var floor = litMaterial(Lambert, 0xffffffff);
-				batch3D.drawMesh(halfPlane, floor, new Matrix3D());
-				batch3D.drawMesh(halfPlane, floor, Matrix3D.fromTranslation(32, 0, 40));
-				batch3D.drawMesh(small, floor, Matrix3D.fromTranslation(6, 32, 12));
-				batch3D.drawMesh(small, floor, Matrix3D.fromTranslation(38, 32, 52));
+				batch3D.drawMesh(halfPlane, floor, new Matrix4());
+				batch3D.drawMesh(halfPlane, floor, Matrix4.fromTranslation(32, 0, 40));
+				batch3D.drawMesh(small, floor, Matrix4.fromTranslation(6, 32, 12));
+				batch3D.drawMesh(small, floor, Matrix4.fromTranslation(38, 32, 52));
 				batch3D.end();
 				batch3D.lights.resize(0);
 				batch3D.environment = new Environment3D();
@@ -946,11 +946,11 @@ class PixelTests {
 				batch3D.environment = new Environment3D();
 				batch3D.environment.setAmbient(0xff404040, Math.PI);
 				batch3D.beginViews([deepView()]);
-				batch3D.drawMesh(plane, litMaterial(Lambert, 0xffffffff), new Matrix3D());
+				batch3D.drawMesh(plane, litMaterial(Lambert, 0xffffffff), new Matrix4());
 				var leaf = litMaterial(Lambert, 0xffffffff);
 				leaf.baseColorTexture = cutTexture;
 				leaf.alphaCutoff = .5;
-				batch3D.drawMesh(sheet, leaf, Matrix3D.fromTranslation(4, 24, 20));
+				batch3D.drawMesh(sheet, leaf, Matrix4.fromTranslation(4, 24, 20));
 				batch3D.end();
 				batch3D.lights.resize(0);
 				batch3D.environment = new Environment3D();

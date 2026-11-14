@@ -1,6 +1,6 @@
 package helix.raylib.internal;
 
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 
 /** Holds rlgl's stereo rendering: each eye's projection and view offset, and the frame's `eyes` while it is on, drawing what is added
 	once for each eye in its half of what is drawn into, as rlgl 5.5's `rlDrawRenderBatch` and raylib's `DrawMesh` do. A program naming
@@ -26,8 +26,8 @@ class Stereo {
 			Runtime.frame.eyes = on ? draw : null;
 	}
 
-	static function zero():Matrix3D {
-		var m = new Matrix3D();
+	static function zero():Matrix4 {
+		var m = new Matrix4();
 		for (i in 0...16)
 			m.values[i] = 0;
 		return m;
@@ -43,7 +43,7 @@ class Stereo {
 		var view = f.view, projection = f.projection;
 		for (eye in 0...2) {
 			f.viewport = [Std.int(eye * width / 2), 0, Std.int(width / 2), height];
-			var moved = Matrix3D.compose(view, offsets[eye]);
+			var moved = Matrix4.compose(view, offsets[eye]);
 			if (mesh) {
 				f.meshView = moved;
 				f.meshProjection = projections[eye];

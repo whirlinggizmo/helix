@@ -1,6 +1,6 @@
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.ISystem;
@@ -33,7 +33,7 @@ class Main {
 	static final floor = new Material3D();
 	static final crate = new Material3D();
 	static final stone = new Material3D();
-	static final place = new Matrix3D();
+	static final place = new Matrix4();
 	static var frame = 0;
 	static var framesLeft = -1;
 
@@ -115,9 +115,9 @@ class Main {
 		var t = frame++ / 60;
 		renderer.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff101418);
 		batch.begin(camera);
-		batch.drawMesh(ground, floor, Matrix3D.fromTranslation(0, 0, 0, place));
-		batch.drawMesh(box, crate, Matrix3D.fromRotation(0, 1, 0, t * .5, place).appendTranslation(0, 1.2, 0, place));
-		batch.drawMesh(pillar, stone, Matrix3D.fromTranslation(-2.2, 1.2, 1, place));
+		batch.drawMesh(ground, floor, Matrix4.fromTranslation(0, 0, 0, place));
+		batch.drawMesh(box, crate, Matrix4.fromRotation(0, 1, 0, t * .5, place).appendTranslation(0, 1.2, 0, place));
+		batch.drawMesh(pillar, stone, Matrix4.fromTranslation(-2.2, 1.2, 1, place));
 		batch.end();
 		renderer.endFrame();
 		if (framesLeft == 1)

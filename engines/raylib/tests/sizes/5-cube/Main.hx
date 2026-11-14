@@ -7,7 +7,7 @@ import helix.raylib.Vector3;
 
 /** A program written in raylib on helix-raylib, as a game in raylib would be. Its image is docs/trials/2026-10-30-async/assets/player.png;
 	its cube is made in memory, no file. */
-@:adds("helix.geometry.Camera3D", "helix.math.Quaternion3D", "helix.math.Transform3D", "helix.math.Trig", "helix.raylib.internal.MeshGpu",
+@:adds("helix.geometry.Camera3D", "helix.math.Quaternion", "helix.math.Transform3D", "helix.math.Trig", "helix.raylib.internal.MeshGpu",
 	"helix.raylib.internal.Models", "helix.raylib.modules.RModels")
 class Main {
 	static function main():Void {

@@ -7,7 +7,7 @@ import helix.raylib.extras.Textures.*;
 	reader, so nothing of helix-raylib can be left out. A game approaches it from below. It is built and measured, never run: its calls are
 	given nothing, and its files aren't there. */
 @:adds("helix.formats.deflate", "helix.formats.gif", "helix.formats.obj", "helix.formats.png", "helix.formats.qoa", "helix.formats.wav",
-	"helix.geometry.Geometry2D", "helix.math.Bounds2D", "helix.math.DistanceField2D", "helix.platform.adapters.clipboard.dom",
+	"helix.geometry.Geometry2D", "helix.math.Aabb2D", "helix.math.DistanceField2D", "helix.platform.adapters.clipboard.dom",
 	"helix.platform.adapters.export.download", "helix.math.Interpolate", "helix.raylib.internal.Automation", "helix.raylib.internal.DroppedFiles",
 	"helix.raylib.internal.FontAtlases", "helix.raylib.internal.GuiIcons", "helix.raylib.internal.Mipmaps", "helix.raylib.internal.ObjModels",
 	"helix.raylib.internal.ParShapes", "helix.raylib.internal.Stereo", "helix.raylib.internal.Waves", "helix.raylib.modules.RGui",

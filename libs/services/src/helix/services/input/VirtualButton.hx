@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Vector2D;
+import helix.math.Vector2;
 import helix.platform.GamepadButton;
 
 /** Represents one on-screen button of a `VirtualGamepad`, read as a gamepad button.
@@ -20,7 +20,7 @@ class VirtualButton {
 		buttons (`South`, `East`, `West` and `North`) at the window's bottom-right corner, following the window's size: the diamond's center
 		three and a half radii in from the corner, each face button 1.6 radii from that center. Another button without a position is up and
 		ignores fingers. */
-	public var position:Null<Vector2D>;
+	public var position:Null<Vector2>;
 
 	/** Gets or sets its radius, the reach of a finger landing on it, in framebuffer pixels. */
 	public var radius:Float;
@@ -37,7 +37,7 @@ class VirtualButton {
 	/** Gets a value indicating whether it has a center this frame: a position, or a place in the diamond. */
 	public var placed(default, null):Bool = false;
 
-	function new(button:GamepadButton, position:Null<Vector2D>, radius:Float) {
+	function new(button:GamepadButton, position:Null<Vector2>, radius:Float) {
 		this.button = button;
 		this.position = position;
 		this.radius = radius;

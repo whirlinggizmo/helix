@@ -1,7 +1,7 @@
 package helix.render;
 
-import helix.geometry.Frustum3D;
-import helix.math.Matrix3D;
+import helix.geometry.Frustum;
+import helix.math.Matrix4;
 import helix.services.shaders.Shader;
 import helix.services.shaders.ShaderBlockValues;
 import helix.services.shaders.ShaderScene;
@@ -12,10 +12,10 @@ import helix.services.shaders.ShaderUniform;
 @:noCompletion
 @:allow(helix.render)
 class RenderView {
-	final view = new Matrix3D();
-	final projection = new Matrix3D();
-	final viewProjection = new Matrix3D();
-	final frustum = new Frustum3D();
+	final view = new Matrix4();
+	final projection = new Matrix4();
+	final viewProjection = new Matrix4();
+	final frustum = new Frustum();
 	// The rectangle it fills, in the pass's pixels from its top left.
 	var x = 0;
 	var y = 0;
@@ -36,7 +36,7 @@ class RenderView {
 	final scene = new ShaderScene();
 	final names:Array<ShaderUniform>;
 
-	static final inverse = new Matrix3D();
+	static final inverse = new Matrix4();
 
 	/** Makes a view whose block is laid out as a shader naming `View` shared lays it out. */
 	function new(shader:Shader) {
@@ -60,11 +60,11 @@ class RenderView {
 	}
 
 	/** Takes the matrices and the rectangle, and works out the rest. */
-	function set(view:Matrix3D, projection:Matrix3D, x:Int, y:Int, width:Int, height:Int):Void {
+	function set(view:Matrix4, projection:Matrix4, x:Int, y:Int, width:Int, height:Int):Void {
 		this.view.copyFrom(view);
 		this.projection.copyFrom(projection);
-		Matrix3D.compose(view, projection, viewProjection);
-		Frustum3D.fromMatrix(viewProjection, frustum);
+		Matrix4.compose(view, projection, viewProjection);
+		Frustum.fromMatrix(viewProjection, frustum);
 		this.x = x;
 		this.y = y;
 		this.width = width;

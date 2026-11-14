@@ -1,7 +1,6 @@
 package helix.raylib.internal;
 
-import helix.math.Bounds2D;
-import helix.math.Vector2D;
+import helix.math.Aabb2D;
 import helix.platform.IPollable;
 import helix.raylib.*;
 import helix.services.input.Touch;
@@ -88,7 +87,7 @@ class VirtualGamepads implements IPollable {
 
 	// The blocked bounds as the program gave them, and in framebuffer pixels; each stick's look and rectangles; and each button's.
 	var rects:Array<Rectangle> = [];
-	final blocked:Array<Bounds2D> = [];
+	final blocked:Array<Aabb2D> = [];
 	final left:Stick;
 	final right:Stick;
 	var buttons:Array<Button> = [];
@@ -104,7 +103,7 @@ class VirtualGamepads implements IPollable {
 	/** Sets the rectangles, positions and radii in framebuffer pixels, then reads the fingers. */
 	public function poll():Void {
 		while (blocked.length < rects.length)
-			blocked.push(new Bounds2D());
+			blocked.push(new Aabb2D());
 		blocked.resize(rects.length);
 		for (i in 0...rects.length)
 			Stick.toFramebuffer(rects[i], blocked[i]);
@@ -147,8 +146,8 @@ private class Stick {
 	var knob = new Color(200, 200, 200, 192);
 	var baseTexture:Null<Texture2D> = null;
 	var knobTexture:Null<Texture2D> = null;
-	final zoneBounds = new Bounds2D();
-	final base = new Vector2D();
+	final zoneBounds = new Aabb2D();
+	final base = new helix.math.Vector2();
 
 	public function new(stick:VirtualStick) {
 		this.stick = stick;
@@ -210,7 +209,7 @@ private class Stick {
 			helix.raylib.modules.RShapes.DrawCircleV(at, radius * .4, full ? knob : ring);
 	}
 
-	public static function toFramebuffer(r:Rectangle, out:Bounds2D):Bounds2D {
+	public static function toFramebuffer(r:Rectangle, out:Aabb2D):Aabb2D {
 		var screen = Runtime.screen;
 		return out.set(screen.toScreenX(r.x), screen.toScreenY(r.y), screen.toScreenX(r.x + r.width), screen.toScreenY(r.y + r.height));
 	}
@@ -237,7 +236,7 @@ private class Button {
 	final text:Null<Color>;
 	final texture:Null<Texture2D>;
 	final downTexture:Null<Texture2D>;
-	final center = new Vector2D();
+	final center = new helix.math.Vector2();
 
 	// Takes the button's options, its colors defaulting to the gamepad's ring and knob colors.
 	public function new(own:VirtualButtonOptions, all:VirtualGamepadOptions) {

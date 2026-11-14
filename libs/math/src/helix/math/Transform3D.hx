@@ -4,7 +4,7 @@ package helix.math;
 
 	Its own axes are its rotation's: -z is forward, +x right and +y up, as a camera looks down -z. Moving and turning are along and
 	around those axes unless a method says otherwise, so a ship, a turret or a camera is steered the same way. The matrix that draws it
-	scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix3D.compose`). It uses
+	scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's (`Matrix4.compose`). It uses
 	`Trig`, so a transform comes out the same on every target.
 
 	```haxe
@@ -17,13 +17,13 @@ package helix.math;
 	``` */
 class Transform3D {
 	/** Gets the position, in its parent's units; the origin until changed. */
-	public final position = new Vector3D();
+	public final position = new Vector3();
 
 	/** Gets the rotation; the identity until changed. */
-	public final rotation = new Quaternion3D();
+	public final rotation = new Quaternion();
 
 	/** Gets the scale along its own axes; 1 on each until changed. */
-	public final scale = new Vector3D(1, 1, 1);
+	public final scale = new Vector3(1, 1, 1);
 
 	/** Creates a transform at the origin, facing -z, at scale 1. */
 	public function new() {}
@@ -56,7 +56,7 @@ class Transform3D {
 		@param matrix  The matrix.
 		@param out  Optional. The transform to fill; a new one when omitted.
 		@return  The transform. */
-	public static function fromMatrix(matrix:Matrix3D, ?out:Transform3D):Transform3D {
+	public static function fromMatrix(matrix:Matrix4, ?out:Transform3D):Transform3D {
 		var v = matrix.values;
 		var m = [for (i in [0, 1, 2, 4, 5, 6, 8, 9, 10]) real(v[i])];
 		var u = nearestRotation(m);
@@ -67,7 +67,7 @@ class Transform3D {
 		if (out == null)
 			out = new Transform3D();
 		out.position.set(v[12], v[13], v[14]);
-		Quaternion3D.fromMatrix(rotationMatrix, out.rotation);
+		Quaternion.fromMatrix(rotationMatrix, out.rotation);
 		out.scale.set(u[0] * m[0] + u[1] * m[1] + u[2] * m[2], u[3] * m[3] + u[4] * m[4] + u[5] * m[5], u[6] * m[6] + u[7] * m[7] + u[8] * m[8]);
 		return out;
 	}
@@ -76,7 +76,7 @@ class Transform3D {
 
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
-	public function computeForward(?out:Vector3D):Vector3D {
+	public function computeForward(?out:Vector3):Vector3 {
 		var forward = rotation.transformPoint(0, 0, -1, out);
 		return forward.normalize(forward);
 	}
@@ -85,7 +85,7 @@ class Transform3D {
 
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
-	public function computeRight(?out:Vector3D):Vector3D {
+	public function computeRight(?out:Vector3):Vector3 {
 		var right = rotation.transformPoint(1, 0, 0, out);
 		return right.normalize(right);
 	}
@@ -94,7 +94,7 @@ class Transform3D {
 
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
-	public function computeUp(?out:Vector3D):Vector3D {
+	public function computeUp(?out:Vector3):Vector3 {
 		var up = rotation.transformPoint(0, 1, 0, out);
 		return up.normalize(up);
 	}
@@ -206,7 +206,7 @@ class Transform3D {
 			dy = real(y) - position.y,
 			dz = real(z) - position.z;
 		if (dx != 0 || dy != 0 || dz != 0)
-			Quaternion3D.fromLookRotation(dx, dy, dz, upX, upY, upZ, rotation);
+			Quaternion.fromLookRotation(dx, dy, dz, upX, upY, upZ, rotation);
 		return this;
 	}
 
@@ -227,17 +227,17 @@ class Transform3D {
 		var x = real(x), y = real(y), z = real(z);
 		var offset = vector().set(position.x - x, position.y - y, position.z - z);
 		// The yaw around the world's up, through the point: the offset and the rotation turned alike.
-		var turn = Quaternion3D.fromAxisAngle(0, 1, 0, yaw, quaternion());
+		var turn = Quaternion.fromAxisAngle(0, 1, 0, yaw, quaternion());
 		turn.transformPoint(offset.x, offset.y, offset.z, offset);
-		Quaternion3D.compose(rotation, turn, rotation);
+		Quaternion.compose(rotation, turn, rotation);
 		// The pitch around its own right: a swing upward turns the offset up and the transform down toward the point, a turn of -pitch.
 		var right = computeRight(axis());
 		var angle = -pitch;
 		if (lock)
 			angle = lockedTurn(offset, right, angle, Trig.cos(LOCK_MARGIN) * offset.length);
-		Quaternion3D.fromAxisAngle(right.x, right.y, right.z, angle, turn);
+		Quaternion.fromAxisAngle(right.x, right.y, right.z, angle, turn);
 		turn.transformPoint(offset.x, offset.y, offset.z, offset);
-		Quaternion3D.compose(rotation, turn, rotation);
+		Quaternion.compose(rotation, turn, rotation);
 		rotation.normalize(rotation);
 		position.set(x + offset.x, y + offset.y, z + offset.z);
 		return this;
@@ -250,7 +250,7 @@ class Transform3D {
 		@param z  The point's z.
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The point, in its parent's units. */
-	public function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D {
+	public function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3 {
 		var px = position.x, py = position.y, pz = position.z;
 		var point = rotation.transformPoint(real(x) * scale.x, real(y) * scale.y, real(z) * scale.z, out);
 		return point.set(point.x + px, point.y + py, point.z + pz);
@@ -260,9 +260,9 @@ class Transform3D {
 
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public function toMatrix(?out:Matrix3D):Matrix3D {
+	public function toMatrix(?out:Matrix4):Matrix4 {
 		var px = position.x, py = position.y, pz = position.z, sx = scale.x, sy = scale.y, sz = scale.z;
-		var matrix = Matrix3D.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, out);
+		var matrix = Matrix4.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, out);
 		var v = matrix.values;
 		for (row in 0...3) {
 			v[row] *= sx;
@@ -280,7 +280,7 @@ class Transform3D {
 
 	// Turns it around one of its own axes.
 	function turnOwn(axisX:Float, axisY:Float, axisZ:Float, radians:Float):Transform3D {
-		Quaternion3D.compose(Quaternion3D.fromAxisAngle(axisX, axisY, axisZ, radians, quaternion()), rotation, rotation);
+		Quaternion.compose(Quaternion.fromAxisAngle(axisX, axisY, axisZ, radians, quaternion()), rotation, rotation);
 		rotation.normalize(rotation);
 		return this;
 	}
@@ -288,7 +288,7 @@ class Transform3D {
 	// How far a turn of a vector around an axis of length 1 may go before its y passes a limit either way: the angle, or less. The
 	// vector's y as it turns is base + a cos t + b sin t; where it crosses the limit going outward, the turn stops. One already past the
 	// limit and going further doesn't turn.
-	static function lockedTurn(vector:Vector3D, axis:Vector3D, angle:Float, limit:Float):Float {
+	static function lockedTurn(vector:Vector3, axis:Vector3, angle:Float, limit:Float):Float {
 		if (angle == 0)
 			return 0;
 		var along = axis.x * vector.x + axis.y * vector.y + axis.z * vector.z;
@@ -411,35 +411,35 @@ class Transform3D {
 	static final cofactor:Array<Float> = [for (_ in 0...9) 0.];
 
 	// A matrix, a rotation and two vectors the methods go through, reused.
-	static var matrix:Null<Matrix3D> = null;
+	static var matrix:Null<Matrix4> = null;
 
-	static var turn:Null<Quaternion3D> = null;
+	static var turn:Null<Quaternion> = null;
 
-	static var scratch:Null<Vector3D> = null;
+	static var scratch:Null<Vector3> = null;
 
-	static var scratchAxis:Null<Vector3D> = null;
+	static var scratchAxis:Null<Vector3> = null;
 
-	static function shared():Matrix3D {
+	static function shared():Matrix4 {
 		if (matrix == null)
-			matrix = new Matrix3D();
+			matrix = new Matrix4();
 		return matrix;
 	}
 
-	static function quaternion():Quaternion3D {
+	static function quaternion():Quaternion {
 		if (turn == null)
-			turn = new Quaternion3D();
+			turn = new Quaternion();
 		return turn;
 	}
 
-	static function vector():Vector3D {
+	static function vector():Vector3 {
 		if (scratch == null)
-			scratch = new Vector3D();
+			scratch = new Vector3();
 		return scratch;
 	}
 
-	static function axis():Vector3D {
+	static function axis():Vector3 {
 		if (scratchAxis == null)
-			scratchAxis = new Vector3D();
+			scratchAxis = new Vector3();
 		return scratchAxis;
 	}
 

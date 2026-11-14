@@ -1,8 +1,8 @@
 import helix.geometry.Camera3D;
-import helix.geometry.Frustum3D;
+import helix.geometry.Frustum;
 import helix.geometry.Ray3D;
-import helix.math.Matrix3D;
-import helix.math.Vector3D;
+import helix.math.Matrix4;
+import helix.math.Vector3;
 
 /** Checks Camera3D with the library alone: made and copied; its view matrix, projections, a point projected and the ray through a
 	point in the view, perspective and orthographic, pinned to values computed apart from Haxe (the ray from the inverse view-projection,
@@ -21,10 +21,10 @@ class Camera3DTests {
 	static function near(a:Float, b:Float, tolerance = 1e-12):Bool
 		return Math.abs(a - b) < tolerance;
 
-	static function at(p:Vector3D, x:Float, y:Float, z:Float, tolerance = 1e-12):Bool
+	static function at(p:Vector3, x:Float, y:Float, z:Float, tolerance = 1e-12):Bool
 		return near(p.x, x, tolerance) && near(p.y, y, tolerance) && near(p.z, z, tolerance);
 
-	static function matrixIs(m:Matrix3D, values:Array<Float>, tolerance = 1e-12):Bool {
+	static function matrixIs(m:Matrix4, values:Array<Float>, tolerance = 1e-12):Bool {
 		for (i in 0...16)
 			if (!near(m.values[i], values[i], tolerance))
 				return false;
@@ -45,9 +45,9 @@ class Camera3DTests {
 	}
 
 	// Runs a result into a new vector, into one given and into the camera's own position: the same each way.
-	static function threeWays(orthographic:Bool, op:(Camera3D, Null<Vector3D>) -> Vector3D, message:String):Vector3D {
+	static function threeWays(orthographic:Bool, op:(Camera3D, Null<Vector3>) -> Vector3, message:String):Vector3 {
 		var camera = sample(orthographic);
-		var result = op(camera, null), given = new Vector3D();
+		var result = op(camera, null), given = new Vector3();
 		check(result != camera.transform.position && at(camera.transform.position, 2, 3, 8), '$message: into a new vector, the camera unchanged');
 		check(op(sample(orthographic), given) == given && given.equals(result), '$message: into the one given');
 		var own = sample(orthographic);
@@ -117,7 +117,7 @@ class Camera3DTests {
 			-8.72098446,
 			1
 		], 2e-6), "and raylib's MatrixLookAt");
-		var given = new Matrix3D();
+		var given = new Matrix4();
 		check(sample().computeViewMatrix(given) == given && matrixIs(given, view), "its view matrix, into the one given");
 		var scaled = sample();
 		scaled.transform.scale.set(3, -2, .5);
@@ -236,11 +236,11 @@ class Camera3DTests {
 			}
 
 		// What it sees.
-		var frustum = sample().computeFrustum(aspect), into = new Frustum3D();
+		var frustum = sample().computeFrustum(aspect), into = new Frustum();
 		check(frustum.contains(0, 1, 0) && !frustum.contains(4, 5, 16) && !frustum.contains(200, 1, 0),
 			"its frustum holds what it looks at, not what is behind or beside");
-		var vp = Matrix3D.compose(sample().computeViewMatrix(), sample().computeProjectionMatrix(aspect));
-		check(sample().computeFrustum(aspect, into) == into && into.planes.join(",") == Frustum3D.fromMatrix(vp).planes.join(","),
+		var vp = Matrix4.compose(sample().computeViewMatrix(), sample().computeProjectionMatrix(aspect));
+		check(sample().computeFrustum(aspect, into) == into && into.planes.join(",") == Frustum.fromMatrix(vp).planes.join(","),
 			"its frustum, into the one given: its view-projection's");
 		// 1 ahead and 5 to the right: outside the perspective view, 0.86 wide each way there, inside the orthographic one, 10.67.
 		var wide = sample(true).computeFrustum(aspect), t = sample().transform;

@@ -6,7 +6,7 @@ package helix.math;
 	`copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` and `intersection` write their result into an optional
 	out, the last argument, and return it: a new box when it is omitted, this one left unchanged; the out may be this box or the other.
 	Its space is its maker's. */
-class Bounds2D {
+class Aabb2D {
 	/** Gets or sets the least x coordinate; infinity while empty. */
 	public var minX:Float = Math.POSITIVE_INFINITY;
 
@@ -29,7 +29,7 @@ class Bounds2D {
 		@param maxX  The greatest x coordinate.
 		@param maxY  The greatest y coordinate.
 		@return  This box. */
-	public function set(minX:Float, minY:Float, maxX:Float, maxY:Float):Bounds2D {
+	public function set(minX:Float, minY:Float, maxX:Float, maxY:Float):Aabb2D {
 		this.minX = minX;
 		this.maxX = maxX;
 		this.minY = minY;
@@ -40,7 +40,7 @@ class Bounds2D {
 	/** Makes the box empty, holding nothing.
 
 		@return  This box. */
-	public function makeEmpty():Bounds2D {
+	public function makeEmpty():Aabb2D {
 		minX = Math.POSITIVE_INFINITY;
 		maxX = Math.NEGATIVE_INFINITY;
 		minY = Math.POSITIVE_INFINITY;
@@ -52,7 +52,7 @@ class Bounds2D {
 
 		@param other  The box to copy.
 		@return  This box. */
-	public function copyFrom(other:Bounds2D):Bounds2D {
+	public function copyFrom(other:Aabb2D):Aabb2D {
 		minX = other.minX;
 		maxX = other.maxX;
 		minY = other.minY;
@@ -95,7 +95,7 @@ class Bounds2D {
 		@param x  The point's x coordinate.
 		@param y  The point's y coordinate.
 		@return  This box. */
-	public function expand(x:Float, y:Float):Bounds2D {
+	public function expand(x:Float, y:Float):Aabb2D {
 		if (x < minX)
 			minX = x;
 		if (x > maxX)
@@ -113,9 +113,9 @@ class Bounds2D {
 		@param other  The other box.
 		@param out  Optional. The box to fill; a new one when omitted. It may be this box or the other.
 		@return  The union. */
-	public function union(other:Bounds2D, ?out:Bounds2D):Bounds2D {
+	public function union(other:Aabb2D, ?out:Aabb2D):Aabb2D {
 		if (out == null)
-			out = new Bounds2D();
+			out = new Aabb2D();
 		if (other.isEmpty)
 			return out.copyFrom(this);
 		return out.set(minX < other.minX ? minX : other.minX, minY < other.minY ? minY : other.minY, maxX > other.maxX ? maxX : other.maxX,
@@ -135,9 +135,9 @@ class Bounds2D {
 		@param other  The other box.
 		@param out  Optional. The box to fill; a new one when omitted. It may be this box or the other.
 		@return  The overlap. */
-	public function intersection(other:Bounds2D, ?out:Bounds2D):Bounds2D {
+	public function intersection(other:Aabb2D, ?out:Aabb2D):Aabb2D {
 		if (out == null)
-			out = new Bounds2D();
+			out = new Aabb2D();
 		if (!intersects(other))
 			return out.makeEmpty();
 		return out.set(minX > other.minX ? minX : other.minX, minY > other.minY ? minY : other.minY, maxX < other.maxX ? maxX : other.maxX,
@@ -148,6 +148,6 @@ class Bounds2D {
 
 		@param other  The other box.
 		@return  True when they overlap; false when either is empty. */
-	public function intersects(other:Bounds2D):Bool
+	public function intersects(other:Aabb2D):Bool
 		return !isEmpty && !other.isEmpty && minX <= other.maxX && other.minX <= maxX && minY <= other.maxY && other.minY <= maxY;
 }

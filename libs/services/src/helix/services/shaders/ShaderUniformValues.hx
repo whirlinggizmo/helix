@@ -1,6 +1,6 @@
 package helix.services.shaders;
 
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.services.shaders.ShaderLayout.ShaderShape;
 
 /** Provides writing uniform values by handle, which `ShaderValues`, `ShaderBlockValues` and `ShaderVariantValues` share.
@@ -228,7 +228,7 @@ class ShaderUniformValues {
 		@param uniform  The uniform.
 		@param matrix  The matrix.
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
-	public function writeMatrix(uniform:ShaderUniform, matrix:Matrix3D, elementIndex:Int = 0):Void {
+	public function writeMatrix(uniform:ShaderUniform, matrix:Matrix4, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeMatrix", MAT4);
 		var m = matrix.values;
 		var same = !fresh;

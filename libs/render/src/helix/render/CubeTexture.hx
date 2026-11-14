@@ -9,7 +9,7 @@ import helix.services.shaders.ShaderSharedTexture;
 	`Renderer.createCubeTexture` makes one; a program's shader reads it through `sharedTexture`
 	(`values.shareTexture(shader.getSampler("skybox"), cube.sharedTexture)`). The program frees it with `dispose`. An environment that
 	lights materials is an `EnvironmentMap3D`, baked from a picture of all around. */
-class CubeTexture3D {
+class CubeTexture {
 	/** Gets each face's width and height, in texels. */
 	public final size:Int;
 

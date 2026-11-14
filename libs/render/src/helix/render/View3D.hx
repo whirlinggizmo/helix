@@ -1,8 +1,8 @@
 package helix.render;
 
 import helix.geometry.Camera3D;
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 
 /** Represents one view a `Batch3D` draws through: where the eye is and how it projects, as matrices, and the rectangle of the pass it
 	fills.
@@ -57,11 +57,11 @@ import helix.math.Matrix3D;
 	mapping reaches it (`Batch3D`); a material writes by `writeColor`, through `material.glsl`'s `writeMaterialColor`. */
 class View3D {
 	/** Gets the matrix that puts the world into the eye's space, +y up and looking down -z: changed in place, read at `beginViews`. */
-	public final viewMatrix = new Matrix3D();
+	public final viewMatrix = new Matrix4();
 
 	/** Gets the matrix that projects the eye's space into GL's clip space (depth -1 to 1), as `Camera3D.computeProjectionMatrix` makes
 		it: changed in place, read at `beginViews`. */
-	public final projectionMatrix = new Matrix3D();
+	public final projectionMatrix = new Matrix4();
 
 	/** Gets the left edge of the rectangle it fills, in the pass's pixels from the left of the renderer's viewport: 0 until set. */
 	public var viewportX(default, null):Int = 0;
@@ -100,7 +100,7 @@ class View3D {
 		@return  This view. */
 	public function setFromScreen(width:Float, height:Float):View3D {
 		viewMatrix.makeIdentity();
-		Matrix3D.fromOrthographic(0, width, height, 0, 0, 1, projectionMatrix);
+		Matrix4.fromOrthographic(0, width, height, 0, 0, 1, projectionMatrix);
 		return this;
 	}
 
@@ -110,9 +110,9 @@ class View3D {
 		`Batch3D`'s culling makes the same test against every view it draws through.
 		@param bounds  The box, in world units.
 		@return  True when some of it may be in the frustum; false when all of it is out. */
-	public function isInView(bounds:Bounds3D):Bool {
-		Matrix3D.compose(viewMatrix, projectionMatrix, scratch);
-		return helix.geometry.Frustum3D.fromMatrix(scratch, frustum).intersectsBounds(bounds);
+	public function isInView(bounds:Aabb3D):Bool {
+		Matrix4.compose(viewMatrix, projectionMatrix, scratch);
+		return helix.geometry.Frustum.fromMatrix(scratch, frustum).intersectsBounds(bounds);
 	}
 
 	/** Sets the rectangle of the renderer's viewport it fills.
@@ -130,6 +130,6 @@ class View3D {
 		return this;
 	}
 
-	static final scratch = new Matrix3D();
-	static final frustum = new helix.geometry.Frustum3D();
+	static final scratch = new Matrix4();
+	static final frustum = new helix.geometry.Frustum();
 }

@@ -1,6 +1,6 @@
 package helix.formats.gltf;
 
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 
 /** Represents a glTF skin: the nodes a skinned mesh's vertices follow, and how the mesh was bound to them. */
 class GltfSkin {
@@ -12,13 +12,13 @@ class GltfSkin {
 
 	/** Gets each joint's inverse bind matrix, taking a vertex from the mesh's space to the joint's at rest; identities when the file gives
 		none. */
-	public final inverseBindMatrices:Array<Matrix3D>;
+	public final inverseBindMatrices:Array<Matrix4>;
 
 	/** Gets the node at the skeleton's root, an index into `GltfFile.nodes`, or -1 when the file names none. */
 	public final skeletonIndex:Int;
 
 	@:allow(helix.formats.gltf)
-	function new(name:String, jointIndices:Array<Int>, inverseBindMatrices:Array<Matrix3D>, skeletonIndex:Int) {
+	function new(name:String, jointIndices:Array<Int>, inverseBindMatrices:Array<Matrix4>, skeletonIndex:Int) {
 		this.name = name;
 		this.jointIndices = jointIndices;
 		this.inverseBindMatrices = inverseBindMatrices;

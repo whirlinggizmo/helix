@@ -1,6 +1,6 @@
 import helix.geometry.Mesh3D;
-import helix.math.Bounds3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.math.Matrix4;
 
 /** Checks Mesh3D with the library alone: each shape's triangles facing out (its volume, summed from them, positive and near the
 	shape's), its closed shapes closed (each edge, its seams' doubled vertices as one, on two triangles), no triangle of no area, its
@@ -253,12 +253,12 @@ class Mesh3DTests {
 		// Transforms.
 		var moved = Mesh3D.fromCylinder(1, 1, 2, 12, 1, true);
 		moved.tangents = moved.computeTangents();
-		var m = Matrix3D.fromRotation(1, 0, 0, Math.PI / 2).appendTranslation(5, 0, 0);
+		var m = Matrix4.fromRotation(1, 0, 0, Math.PI / 2).appendTranslation(5, 0, 0);
 		var turned = moved.transform(m);
 		check(turned != moved && near(volume(turned), volume(moved), 1e-9), "moved: the same volume, the original unchanged");
 		check(near(turned.computeBounds().minX, 4) && near(turned.computeBounds().maxZ, 1), "moved: turned on its side and along x");
-		sound(new Mesh3D().copyFrom(turned).transform(new Matrix3D(), null), "moved", false);
-		var mirror = moved.transform(Matrix3D.fromScale(-1, 2, 1));
+		sound(new Mesh3D().copyFrom(turned).transform(new Matrix4(), null), "moved", false);
+		var mirror = moved.transform(Matrix4.fromScale(-1, 2, 1));
 		check(volume(mirror) > 0 && near(volume(mirror), 2 * volume(moved), 1e-9), "mirrored: its triangles turned round, facing out");
 		var facingOut = true;
 		for (k in 0...mirror.triangleCount) {
@@ -279,9 +279,9 @@ class Mesh3DTests {
 		check(facingOut, "mirrored: its normals still out");
 		check(mirror.tangents[3] == -moved.tangents[3], "mirrored: its tangents' w turned");
 		var inPlace = Mesh3D.fromBox(1, 1, 1);
-		check(inPlace.transform(Matrix3D.fromTranslation(0, 3, 0), inPlace) == inPlace
+		check(inPlace.transform(Matrix4.fromTranslation(0, 3, 0), inPlace) == inPlace
 			&& near(inPlace.computeBounds().minY, 2.5), "moved in place");
-		var flatMirror = Mesh3D.fromBox(1, 1, 1).toUnindexed().transform(Matrix3D.fromScale(1, 1, -1));
+		var flatMirror = Mesh3D.fromBox(1, 1, 1).toUnindexed().transform(Matrix4.fromScale(1, 1, -1));
 		check(near(volume(flatMirror), 1, 1e-12), "mirrored without indices: its vertices turned round");
 
 		// Merging and copying.
@@ -333,7 +333,7 @@ class Mesh3DTests {
 		var copy = new Mesh3D().copyFrom(sphere);
 		copy.positions[0] = 99;
 		check(sphere.positions[0] != 99 && copy.vertexCount == sphere.vertexCount, "copied: its own arrays");
-		var bounds = new Bounds3D();
+		var bounds = new Aabb3D();
 		check(sphere.computeBounds(bounds) == bounds
 			&& new Mesh3D().computeBounds().isEmpty, "bounds into those given; none for no positions");
 

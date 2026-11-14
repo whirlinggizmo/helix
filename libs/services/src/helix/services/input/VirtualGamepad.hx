@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Bounds2D;
+import helix.math.Aabb2D;
 import helix.platform.IGamepads;
 import helix.platform.IPollable;
 import helix.platform.IWindow;
@@ -166,7 +166,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 
 	/** Gets or sets bounds where a landing finger stays free, even within a stick's touch zone, such as a GUI button's bounds. The blocked bounds follow changes to these
 		bounds' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound. */
-	public var blockedBounds:Array<Bounds2D>;
+	public var blockedBounds:Array<Aabb2D>;
 
 	/** Reads the fingers `Touch` read this frame, and moves each stick and button. Call it once a frame, after `Touch.poll`. */
 	public function poll():Void {

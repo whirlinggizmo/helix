@@ -11,11 +11,11 @@ package helix.math;
 	same on every target. Space is right-handed with +y up, as every 3D type here.
 
 	```haxe
-	var turn = Quaternion3D.fromAxisAngle(0, 1, 0, Math.PI / 2);
-	var halfway = Quaternion3D.slerp(from, turn, .5);
+	var turn = Quaternion.fromAxisAngle(0, 1, 0, Math.PI / 2);
+	var halfway = Quaternion.slerp(from, turn, .5);
 	var facing = turn.transformPoint(0, 0, -1);
 	``` */
-class Quaternion3D {
+class Quaternion {
 	/** Gets or sets the quaternion's x, the axis's x scaled by the sine of half the angle. */
 	public var x:Float;
 
@@ -47,7 +47,7 @@ class Quaternion3D {
 		@param radians  The angle, counterclockwise looking down the axis toward the origin.
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
-	public static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Quaternion3D):Quaternion3D {
+	public static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Quaternion):Quaternion {
 		var ax = real(axisX), ay = real(axisY), az = real(axisZ);
 		var length = Math.sqrt(ax * ax + ay * ay + az * az);
 		if (length == 0)
@@ -63,7 +63,7 @@ class Quaternion3D {
 		@param roll  The turn around z, in radians.
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
-	public static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion3D):Quaternion3D {
+	public static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion {
 		var cx = Trig.cos(real(pitch) / 2),
 			sx = Trig.sin(real(pitch) / 2),
 			cy = Trig.cos(real(yaw) / 2),
@@ -84,7 +84,7 @@ class Quaternion3D {
 		@param upZ  Optional. Up's z; defaults to 0.
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
-	public static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, upX = 0., upY = 1., upZ = 0., ?out:Quaternion3D):Quaternion3D {
+	public static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, upX = 0., upY = 1., upZ = 0., ?out:Quaternion):Quaternion {
 		var fx = real(forwardX), fy = real(forwardY), fz = real(forwardZ);
 		var length = Math.sqrt(fx * fx + fy * fy + fz * fz);
 		if (length == 0)
@@ -124,7 +124,7 @@ class Quaternion3D {
 		@param to  The second direction.
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
-	public static function fromBetween(from:Vector3D, to:Vector3D, ?out:Quaternion3D):Quaternion3D {
+	public static function fromBetween(from:Vector3, to:Vector3, ?out:Quaternion):Quaternion {
 		var ax = real(from.x),
 			ay = real(from.y),
 			az = real(from.z),
@@ -162,7 +162,7 @@ class Quaternion3D {
 		@param matrix  The matrix: a rotation, scale and translation.
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
-	public static function fromMatrix(matrix:Matrix3D, ?out:Quaternion3D):Quaternion3D {
+	public static function fromMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion {
 		var v = matrix.values;
 		var x = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]),
 			y = Math.sqrt(v[4] * v[4] + v[5] * v[5] + v[6] * v[6]),
@@ -188,7 +188,7 @@ class Quaternion3D {
 		@param amount  How far, 0 to 1; outside it the turn goes on past either end.
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be from or to.
 		@return  The rotation. */
-	public static function slerp(from:Quaternion3D, to:Quaternion3D, amount:Float, ?out:Quaternion3D):Quaternion3D {
+	public static function slerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion {
 		var ax = real(from.x),
 			ay = real(from.y),
 			az = real(from.z),
@@ -207,7 +207,7 @@ class Quaternion3D {
 		if (cos > 1 - 1e-9) {
 			// So near that a straight line between them is the arc, to the last bit; and the sine below would be all rounding.
 			if (out == null)
-				out = new Quaternion3D();
+				out = new Quaternion();
 			return out.set(ax + (bx - ax) * amount, ay + (by - ay) * amount, az + (bz - az) * amount, aw + (bw - aw) * amount).normalize(out);
 		}
 		var angle = Trig.acos(cos), sin = Trig.sin(angle);
@@ -224,7 +224,7 @@ class Quaternion3D {
 		@param amount  How far, 0 to 1.
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be from or to.
 		@return  The rotation. */
-	public static function nlerp(from:Quaternion3D, to:Quaternion3D, amount:Float, ?out:Quaternion3D):Quaternion3D {
+	public static function nlerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion {
 		var ax = real(from.x),
 			ay = real(from.y),
 			az = real(from.z),
@@ -238,7 +238,7 @@ class Quaternion3D {
 		}
 		var amount = real(amount);
 		if (out == null)
-			out = new Quaternion3D();
+			out = new Quaternion();
 		return out.set(ax + (bx - ax) * amount, ay + (by - ay) * amount, az + (bz - az) * amount, aw + (bw - aw) * amount).normalize(out);
 	}
 
@@ -248,7 +248,7 @@ class Quaternion3D {
 		@param second  The rotation applied after it.
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be first or second.
 		@return  The rotation. */
-	public static function compose(first:Quaternion3D, second:Quaternion3D, ?out:Quaternion3D):Quaternion3D {
+	public static function compose(first:Quaternion, second:Quaternion, ?out:Quaternion):Quaternion {
 		// The Hamilton product second first: turning by it turns by first, then by second.
 		var ax = real(second.x),
 			ay = real(second.y),
@@ -281,7 +281,7 @@ class Quaternion3D {
 		@param z  The z.
 		@param w  The w.
 		@return  This rotation. */
-	public function set(x:Float, y:Float, z:Float, w:Float):Quaternion3D {
+	public function set(x:Float, y:Float, z:Float, w:Float):Quaternion {
 		this.x = real(x);
 		this.y = real(y);
 		this.z = real(z);
@@ -293,14 +293,14 @@ class Quaternion3D {
 
 		@param other  The rotation to copy.
 		@return  This rotation. */
-	public function copyFrom(other:Quaternion3D):Quaternion3D {
+	public function copyFrom(other:Quaternion):Quaternion {
 		return set(other.x, other.y, other.z, other.w);
 	}
 
 	/** Makes this the rotation that turns nothing.
 
 		@return  This rotation. */
-	public function makeIdentity():Quaternion3D {
+	public function makeIdentity():Quaternion {
 		return set(0, 0, 0, 1);
 	}
 
@@ -309,7 +309,7 @@ class Quaternion3D {
 		@param other  The rotation applied after this one.
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be this rotation or the other.
 		@return  The rotation. */
-	public function append(other:Quaternion3D, ?out:Quaternion3D):Quaternion3D {
+	public function append(other:Quaternion, ?out:Quaternion):Quaternion {
 		return compose(this, other, out);
 	}
 
@@ -318,7 +318,7 @@ class Quaternion3D {
 		@param other  The rotation applied before this one.
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be this rotation or the other.
 		@return  The rotation. */
-	public function prepend(other:Quaternion3D, ?out:Quaternion3D):Quaternion3D {
+	public function prepend(other:Quaternion, ?out:Quaternion):Quaternion {
 		return compose(other, this, out);
 	}
 
@@ -326,7 +326,7 @@ class Quaternion3D {
 
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be this rotation.
 		@return  The inverse. */
-	public function invert(?out:Quaternion3D):Quaternion3D {
+	public function invert(?out:Quaternion):Quaternion {
 		return result(out, -x, -y, -z, w);
 	}
 
@@ -335,7 +335,7 @@ class Quaternion3D {
 		A quaternion of length 0 gives the identity.
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be this rotation.
 		@return  The rotation. */
-	public function normalize(?out:Quaternion3D):Quaternion3D {
+	public function normalize(?out:Quaternion):Quaternion {
 		var x = real(this.x),
 			y = real(this.y),
 			z = real(this.z),
@@ -351,7 +351,7 @@ class Quaternion3D {
 		@param z  The point's z.
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The turned point. */
-	public function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3D):Vector3D {
+	public function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3 {
 		var px = real(x), py = real(y), pz = real(z);
 		var qx = this.x, qy = this.y, qz = this.z, qw = this.w;
 		// p + 2w (q x p) + 2 q x (q x p), the quaternion's x, y and z as the vector q.
@@ -361,7 +361,7 @@ class Quaternion3D {
 		var rx = px + qw * tx + qy * tz - qz * ty,
 			ry = py + qw * ty + qz * tx - qx * tz,
 			rz = pz + qw * tz + qx * ty - qy * tx;
-		return out == null ? new Vector3D(rx, ry, rz) : out.set(rx, ry, rz);
+		return out == null ? new Vector3(rx, ry, rz) : out.set(rx, ry, rz);
 	}
 
 	/** Returns the turns around x, y and z that `fromEuler` would make this from.
@@ -370,7 +370,7 @@ class Quaternion3D {
 		and the roll turn around the same axis, the roll is 0 and the pitch carries the whole turn.
 		@param out  Optional. The vector to write into: pitch in x, yaw in y, roll in z, in radians; a new one when omitted.
 		@return  The angles. */
-	public function toEuler(?out:Vector3D):Vector3D {
+	public function toEuler(?out:Vector3):Vector3 {
 		var x = this.x, y = this.y, z = this.z, w = this.w;
 		// The rotation's matrix, row then column, the parts the angles are read from.
 		var m00 = 1 - 2 * (y * y + z * z),
@@ -389,7 +389,7 @@ class Quaternion3D {
 			pitch = Trig.atan2(m21, m22);
 			roll = Trig.atan2(m10, m00);
 		}
-		return out == null ? new Vector3D(pitch, yaw, roll) : out.set(pitch, yaw, roll);
+		return out == null ? new Vector3(pitch, yaw, roll) : out.set(pitch, yaw, roll);
 	}
 
 	/** Gets the angle this rotation turns by, around whatever axis, in radians, 0 to pi. */
@@ -403,13 +403,13 @@ class Quaternion3D {
 
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public function toMatrix(?out:Matrix3D):Matrix3D {
-		return Matrix3D.fromQuaternion(x, y, z, w, out);
+	public function toMatrix(?out:Matrix4):Matrix4 {
+		return Matrix4.fromQuaternion(x, y, z, w, out);
 	}
 
 	// The rotation whose own x, y and z axes are these, each of length 1 and square to the others: raymath's QuaternionFromMatrix,
 	// from the largest of the four parts, so none is found by dividing by a small one.
-	static function fromBasis(xx:Float, xy:Float, xz:Float, yx:Float, yy:Float, yz:Float, zx:Float, zy:Float, zz:Float, ?out:Quaternion3D):Quaternion3D {
+	static function fromBasis(xx:Float, xy:Float, xz:Float, yx:Float, yy:Float, yz:Float, zx:Float, zy:Float, zz:Float, ?out:Quaternion):Quaternion {
 		var w4 = xx + yy + zz,
 			x4 = xx - yy - zz,
 			y4 = yy - xx - zz,
@@ -437,8 +437,8 @@ class Quaternion3D {
 	}
 
 	// The out filled with a result its inputs were read for first: a new rotation when there is none.
-	static inline function result(out:Null<Quaternion3D>, x:Float, y:Float, z:Float, w:Float):Quaternion3D
-		return out == null ? new Quaternion3D(x, y, z, w) : out.set(x, y, z, w);
+	static inline function result(out:Null<Quaternion>, x:Float, y:Float, z:Float, w:Float):Quaternion
+		return out == null ? new Quaternion(x, y, z, w) : out.set(x, y, z, w);
 
 	// The interpreter keeps an Int passed for a Float as an Int and multiplies two such as Ints, overflowing; dividing makes it a Float.
 	static inline function real(value:Float):Float {

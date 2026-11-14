@@ -1,7 +1,7 @@
 package helix.raylib.internal;
 
 import haxe.io.FPHelper;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.formats.gltf.GltfFile;
 import helix.raylib.*;
 import helix.raylib.modules.RMath.*;
@@ -582,18 +582,18 @@ class Animations {
 	static final mixB = new Transform();
 
 	// A bone's matrix from its pose, just written into the model's: the bind pose's inverse, then the pose, as raylib's
-	// MatrixMultiply(MatrixInvert(bind), current) and helix-raylib's raymath compute it (through Matrix3D's compose), written into the
+	// MatrixMultiply(MatrixInvert(bind), current) and helix-raylib's raymath compute it (through Matrix4's compose), written into the
 	// bone's matrix in place, so a pose allocates no matrix.
 	static function setPose(model:Model, boneIndex:Int, pose:Transform):Void {
 		var translation = pose.translation,
 			rotation = pose.rotation,
 			scale = pose.scale;
-		Matrix3D.fromScale(scale.x, scale.y, scale.z, scaled);
-		Matrix3D.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, rotated);
-		Matrix3D.compose(scaled, rotated, current);
-		Matrix3D.fromTranslation(translation.x, translation.y, translation.z, scaled);
-		Matrix3D.compose(current, scaled, rotated);
-		var v = Matrix3D.compose(inverseBind(model, boneIndex), rotated, current).values;
+		Matrix4.fromScale(scale.x, scale.y, scale.z, scaled);
+		Matrix4.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, rotated);
+		Matrix4.compose(scaled, rotated, current);
+		Matrix4.fromTranslation(translation.x, translation.y, translation.z, scaled);
+		Matrix4.compose(current, scaled, rotated);
+		var v = Matrix4.compose(inverseBind(model, boneIndex), rotated, current).values;
 		var m = model.boneMatrices[boneIndex];
 		m.m0 = v[0];
 		m.m1 = v[1];
@@ -614,12 +614,12 @@ class Animations {
 	}
 
 	// What setPose works in.
-	static final scaled = new Matrix3D();
-	static final rotated = new Matrix3D();
-	static final current = new Matrix3D();
+	static final scaled = new Matrix4();
+	static final rotated = new Matrix4();
+	static final current = new Matrix4();
 
 	// A bone's bind pose's matrix inverted, kept on the model with the ten numbers it was made from, and made again only when they change.
-	static function inverseBind(model:Model, boneIndex:Int):Matrix3D {
+	static function inverseBind(model:Model, boneIndex:Int):Matrix4 {
 		var bind = model.bindPose[boneIndex];
 		var t = bind.translation, r = bind.rotation, s = bind.scale;
 		var keys = model.inverseBindKeys, at = boneIndex * 10;
@@ -628,7 +628,7 @@ class Animations {
 		var inverse = model.inverseBinds[boneIndex];
 		if (inverse == null || keys[at] != t.x || keys[at + 1] != t.y || keys[at + 2] != t.z || keys[at + 3] != r.x || keys[at + 4] != r.y
 			|| keys[at + 5] != r.z || keys[at + 6] != r.w || keys[at + 7] != s.x || keys[at + 8] != s.y || keys[at + 9] != s.z) {
-			inverse = model.inverseBinds[boneIndex] = helix.raylib.modules.RModels.toMatrix3D(MatrixInvert(trs(t.x, t.y, t.z, r, s.x, s.y, s.z)));
+			inverse = model.inverseBinds[boneIndex] = helix.raylib.modules.RModels.toMatrix4(MatrixInvert(trs(t.x, t.y, t.z, r, s.x, s.y, s.z)));
 			keys[at] = t.x;
 			keys[at + 1] = t.y;
 			keys[at + 2] = t.z;

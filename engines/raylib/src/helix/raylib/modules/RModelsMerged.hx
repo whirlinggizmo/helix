@@ -2,7 +2,7 @@ package helix.raylib.modules;
 
 #if !macro
 import helix.geometry.Mesh3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.internal.Models;
@@ -48,10 +48,10 @@ class RModelsMerged {
 			return refuse("no models");
 		if (skeleton != null && skeleton.boneCount > 256)
 			return refuse('a skeleton of ${skeleton.boneCount} bones, over 256');
-		var skeletonTransform = skeleton == null ? null : RModels.toMatrix3D(skeleton.transform);
+		var skeletonTransform = skeleton == null ? null : RModels.toMatrix4(skeleton.transform);
 		if (skeleton != null)
 			for (model in models)
-				if (hasBones(model) && !near(RModels.toMatrix3D(model.transform), skeletonTransform, 1e-5))
+				if (hasBones(model) && !near(RModels.toMatrix4(model.transform), skeletonTransform, 1e-5))
 					return refuse("a model with bones whose transform differs from the skeleton's");
 
 		// Each group is the meshes of one material but for its diffuse color, in the order the groups' first meshes come.
@@ -114,15 +114,15 @@ class RModelsMerged {
 		return model.boneCount > 0 && model.bones != null;
 
 	// What moves a model's vertices to their place in the new model: its transform, under a skeleton's the inverse of that one's.
-	static function placement(model:Model, skeletonTransform:Null<Matrix3D>):Matrix3D {
-		var own = RModels.toMatrix3D(model.transform);
+	static function placement(model:Model, skeletonTransform:Null<Matrix4>):Matrix4 {
+		var own = RModels.toMatrix4(model.transform);
 		if (skeletonTransform == null)
 			return own;
 		var inverse = skeletonTransform.invert();
-		return inverse == null ? own : Matrix3D.compose(own, inverse);
+		return inverse == null ? own : Matrix4.compose(own, inverse);
 	}
 
-	static function near(a:Matrix3D, b:Matrix3D, tolerance:Float):Bool {
+	static function near(a:Matrix4, b:Matrix4, tolerance:Float):Bool {
 		for (i in 0...16)
 			if (Math.abs(a.values[i] - b.values[i]) > tolerance)
 				return false;
@@ -221,7 +221,7 @@ class RModelsMerged {
 
 	// Each of a model's bones' new index in the skeleton, by name, or its nearest ancestor's, or -1; and when a bind pose differs, what
 	// moves a vertex following each bone from the model's bind pose to the skeleton's (null for a bone the skeleton has nothing for).
-	static function bonesOnto(model:Model, skeleton:Model):{newJointIndices:Array<Int>, rebinds:Null<Array<Null<Matrix3D>>>} {
+	static function bonesOnto(model:Model, skeleton:Model):{newJointIndices:Array<Int>, rebinds:Null<Array<Null<Matrix4>>>} {
 		var byName = new Map<String, Int>();
 		if (hasBones(skeleton))
 			for (i => b in skeleton.bones)
@@ -243,15 +243,15 @@ class RModelsMerged {
 		}
 		if (model.bindPose == null || skeleton.bindPose == null)
 			return {newJointIndices: newJointIndices, rebinds: null};
-		var identity = new Matrix3D();
+		var identity = new Matrix4();
 		var any = false;
-		var rebinds:Array<Null<Matrix3D>> = [
+		var rebinds:Array<Null<Matrix4>> = [
 			for (i in 0...count) {
-				var move:Null<Matrix3D> = null;
+				var move:Null<Matrix4> = null;
 				if (matched[i] >= 0) {
 					var inverse = matrixOf(model.bindPose[matched[i]]).invert();
 					if (inverse != null) {
-						move = Matrix3D.compose(inverse, matrixOf(skeleton.bindPose[newJointIndices[i]]));
+						move = Matrix4.compose(inverse, matrixOf(skeleton.bindPose[newJointIndices[i]]));
 						any = any || !near(move, identity, 1e-4);
 					}
 				}
@@ -261,14 +261,14 @@ class RModelsMerged {
 		return {newJointIndices: newJointIndices, rebinds: any ? rebinds : null};
 	}
 
-	static function matrixOf(t:Transform):Matrix3D {
-		var m = Matrix3D.compose(Matrix3D.fromScale(t.scale.x, t.scale.y, t.scale.z),
-			Matrix3D.fromQuaternion(t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w));
-		return Matrix3D.compose(m, Matrix3D.fromTranslation(t.translation.x, t.translation.y, t.translation.z));
+	static function matrixOf(t:Transform):Matrix4 {
+		var m = Matrix4.compose(Matrix4.fromScale(t.scale.x, t.scale.y, t.scale.z),
+			Matrix4.fromQuaternion(t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w));
+		return Matrix4.compose(m, Matrix4.fromTranslation(t.translation.x, t.translation.y, t.translation.z));
 	}
 
 	// Moves each vertex by its bones' moves, blended by its weights, into new arrays: a part's positions and normals are the mesh's own.
-	static function rebind(part:Mesh3D, rebinds:Array<Null<Matrix3D>>):Void {
+	static function rebind(part:Mesh3D, rebinds:Array<Null<Matrix4>>):Void {
 		var joints = part.jointIndices, weights = part.weights;
 		var positions = part.positions.copy();
 		var normals = part.normals == null ? null : part.normals.copy();

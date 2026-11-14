@@ -1,5 +1,5 @@
-import helix.math.Bounds2D;
-import helix.math.Vector2D;
+import helix.math.Aabb2D;
+import helix.math.Vector2;
 import helix.services.input.Gamepads;
 import helix.services.input.Tilt;
 import helix.services.input.Touch;
@@ -29,7 +29,7 @@ class VirtualGamepadTests {
 			window = new FakeWindow();
 		devices.gamepadConnected = false;
 		var touch = new Touch(events, devices);
-		var pause = new Bounds2D().set(700, 0, 800, 100);
+		var pause = new Aabb2D().set(700, 0, 800, 100);
 		var virtualGamepad = new VirtualGamepad(touch, window, devices, 0, {blockedBounds: [pause]});
 		var gamepads = new Gamepads(events, virtualGamepad);
 		var tilt = new Tilt(events, devices);
@@ -89,7 +89,7 @@ class VirtualGamepadTests {
 		check(!virtualGamepad.left.held && gamepads.getAxis(0, LeftX) == 0 && near(virtualGamepad.left.baseX, 90), "let go: 0, back home");
 
 		virtualGamepad.right.basePlacement = Fixed;
-		virtualGamepad.right.fixedBasePosition = new Vector2D(700, 500);
+		virtualGamepad.right.fixedBasePosition = new Vector2(700, 500);
 		frame([TouchDown(5, 500, 500)]);
 		check(near(virtualGamepad.right.baseX, 700)
 			&& near(gamepads.getAxis(0, RightX), -1), "a fixed stick is pushed from its base toward the finger");
@@ -129,9 +129,9 @@ class VirtualGamepadTests {
 		frame([TouchUp(8, 200, 300)]);
 		virtualGamepad.configure({
 			buttons: [
-				{button: South, position: new Vector2D(700, 500)},
-				{button: West, position: new Vector2D(600, 500), radius: 30},
-				{button: North, position: new Vector2D(100, 100), enabled: false}
+				{button: South, position: new Vector2(700, 500)},
+				{button: West, position: new Vector2(600, 500), radius: 30},
+				{button: North, position: new Vector2(100, 100), enabled: false}
 			]
 		});
 		frame();

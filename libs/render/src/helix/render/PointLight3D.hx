@@ -1,6 +1,6 @@
 package helix.render;
 
-import helix.math.Vector3D;
+import helix.math.Vector3;
 
 /** Represents a light from a point, in every direction, falling off with the square of the distance and, given a range, to nothing at
 	it.
@@ -10,7 +10,7 @@ import helix.math.Vector3D;
 	recommended window does: times (1 - (d / range)⁴)², clamped to 0. */
 class PointLight3D extends Light3D {
 	/** Gets its position, in world units: the origin until changed. */
-	public final position = new Vector3D();
+	public final position = new Vector3();
 
 	/** Gets or sets its range, in world units, past which it lights nothing: 0 for none, so it only falls off. 0 until set; below 0 is
 		clamped to 0. */

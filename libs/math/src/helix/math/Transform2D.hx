@@ -5,7 +5,7 @@ package helix.math;
 	It faces along its own +x, so a rotation of 0 faces +x and a positive one turns toward +y, clockwise on screen where y grows downward.
 	Moving and turning are along and around its own axes unless a method says otherwise, so a sprite, a turret or a 2D camera is steered
 	the same way. The matrix that draws it scales, then rotates, then moves (`toMatrix`); a child's is its own composed with its parent's
-	(`Matrix2D.compose`). It uses `Trig`, so a transform comes out the same on every target.
+	(`Matrix3.compose`). It uses `Trig`, so a transform comes out the same on every target.
 
 	```haxe
 	var ship = new Transform2D();
@@ -16,13 +16,13 @@ package helix.math;
 	``` */
 class Transform2D {
 	/** Gets the position, in its parent's units; the origin until changed. */
-	public final position = new Vector2D();
+	public final position = new Vector2();
 
 	/** Gets or sets the rotation in radians; 0, facing +x, until set. */
 	public var rotation = 0.;
 
 	/** Gets the scale along its own axes; 1 on each until changed. */
-	public final scale = new Vector2D(1, 1);
+	public final scale = new Vector2(1, 1);
 
 	/** Creates a transform at the origin, facing +x, at scale 1. */
 	public function new() {}
@@ -55,7 +55,7 @@ class Transform2D {
 		@param matrix  The matrix.
 		@param out  Optional. The transform to write into; a new one when omitted.
 		@return  The transform. */
-	public static function fromMatrix(matrix:Matrix2D, ?out:Transform2D):Transform2D {
+	public static function fromMatrix(matrix:Matrix3, ?out:Transform2D):Transform2D {
 		var a = matrix.a, b = matrix.b, c = matrix.c, d = matrix.d;
 		var scaleX = Math.sqrt(a * a + b * b);
 		if (out == null)
@@ -75,17 +75,17 @@ class Transform2D {
 
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
-	public function computeForward(?out:Vector2D):Vector2D {
-		return Vector2D.fromAngle(rotation, 1, out);
+	public function computeForward(?out:Vector2):Vector2 {
+		return Vector2.fromAngle(rotation, 1, out);
 	}
 
 	/** Returns its right, a quarter turn from forward toward +y, of length 1.
 
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
-	public function computeRight(?out:Vector2D):Vector2D {
+	public function computeRight(?out:Vector2):Vector2 {
 		var cos = Trig.cos(rotation), sin = Trig.sin(rotation);
-		return out == null ? new Vector2D(-sin, cos) : out.set(-sin, cos);
+		return out == null ? new Vector2(-sin, cos) : out.set(-sin, cos);
 	}
 
 	/** Moves it along the way it faces.
@@ -172,7 +172,7 @@ class Transform2D {
 		@param y  The point's y.
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The point, in its parent's units. */
-	public function transformPoint(x:Float, y:Float, ?out:Vector2D):Vector2D {
+	public function transformPoint(x:Float, y:Float, ?out:Vector2):Vector2 {
 		return toMatrix(shared()).transformPoint(x, y, out);
 	}
 
@@ -180,22 +180,22 @@ class Transform2D {
 
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public function toMatrix(?out:Matrix2D):Matrix2D {
+	public function toMatrix(?out:Matrix3):Matrix3 {
 		var cos = Trig.cos(rotation),
 			sin = Trig.sin(rotation),
 			scaleX = scale.x,
 			scaleY = scale.y;
 		if (out == null)
-			out = new Matrix2D();
+			out = new Matrix3();
 		return out.set(cos * scaleX, sin * scaleX, -sin * scaleY, cos * scaleY, position.x, position.y);
 	}
 
 	// A matrix transformPoint goes through, reused.
-	static var matrix:Null<Matrix2D> = null;
+	static var matrix:Null<Matrix3> = null;
 
-	static function shared():Matrix2D {
+	static function shared():Matrix3 {
 		if (matrix == null)
-			matrix = new Matrix2D();
+			matrix = new Matrix3();
 		return matrix;
 	}
 }

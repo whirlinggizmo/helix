@@ -1,10 +1,10 @@
 package helix.geometry;
 
-import helix.math.Bounds2D;
-import helix.math.Matrix2D;
+import helix.math.Aabb2D;
+import helix.math.Matrix3;
 import helix.math.Transform2D;
 import helix.math.Trig;
-import helix.math.Vector2D;
+import helix.math.Vector2;
 
 /** Represents a view of a 2D world: where it looks and how it is turned (a `Transform2D`), how near it is, and where in the view the
 	point it looks at shows.
@@ -36,7 +36,7 @@ class Camera2D {
 
 	/** Gets where in the view its position shows, in view units from the view's top left; the top left until changed. Half the view's
 		size centers it. */
-	public final offset = new Vector2D();
+	public final offset = new Vector2();
 
 	/** Creates a camera at the origin, unturned, at zoom 1, its position showing at the view's top left. */
 	public function new() {}
@@ -57,11 +57,11 @@ class Camera2D {
 
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The view matrix, from world units to view units. */
-	public function computeViewMatrix(?out:Matrix2D):Matrix2D {
+	public function computeViewMatrix(?out:Matrix3):Matrix3 {
 		if (out == null)
-			out = new Matrix2D();
+			out = new Matrix3();
 		var position = transform.position;
-		return Matrix2D.fromTranslation(-position.x, -position.y, out)
+		return Matrix3.fromTranslation(-position.x, -position.y, out)
 			.appendRotation(-transform.rotation, out)
 			.appendScale(zoom, zoom, out)
 			.appendTranslation(offset.x, offset.y, out);
@@ -73,7 +73,7 @@ class Camera2D {
 		@param y  The point's y.
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The point, in view units. */
-	public function worldToView(x:Float, y:Float, ?out:Vector2D):Vector2D {
+	public function worldToView(x:Float, y:Float, ?out:Vector2):Vector2 {
 		return computeViewMatrix(shared()).transformPoint(x, y, out);
 	}
 
@@ -83,7 +83,7 @@ class Camera2D {
 		@param y  The point's y.
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The point, in world units; null at zoom 0, where it has none, the out unchanged. */
-	public function viewToWorld(x:Float, y:Float, ?out:Vector2D):Null<Vector2D> {
+	public function viewToWorld(x:Float, y:Float, ?out:Vector2):Null<Vector2> {
 		var inverse = computeViewMatrix(shared()).invert(shared());
 		return inverse == null ? null : inverse.transformPoint(x, y, out);
 	}
@@ -95,9 +95,9 @@ class Camera2D {
 		@param viewHeight  The view's height.
 		@param out  Optional. The box to write into; a new one when omitted.
 		@return  The box, in world units; empty at zoom 0, where nothing shows. */
-	public function computeBounds(viewWidth:Float, viewHeight:Float, ?out:Bounds2D):Bounds2D {
+	public function computeBounds(viewWidth:Float, viewHeight:Float, ?out:Aabb2D):Aabb2D {
 		if (out == null)
-			out = new Bounds2D();
+			out = new Aabb2D();
 		out.makeEmpty();
 		var inverse = computeViewMatrix(shared()).invert(shared());
 		if (inverse == null)
@@ -110,11 +110,11 @@ class Camera2D {
 	}
 
 	// A matrix the conversions and computeBounds go through, reused.
-	static var matrix:Null<Matrix2D> = null;
+	static var matrix:Null<Matrix3> = null;
 
-	static function shared():Matrix2D {
+	static function shared():Matrix3 {
 		if (matrix == null)
-			matrix = new Matrix2D();
+			matrix = new Matrix3();
 		return matrix;
 	}
 }

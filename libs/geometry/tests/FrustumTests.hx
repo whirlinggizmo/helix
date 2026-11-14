@@ -1,12 +1,12 @@
-import helix.math.Bounds3D;
-import helix.geometry.Frustum3D;
-import helix.math.Matrix3D;
+import helix.math.Aabb3D;
+import helix.geometry.Frustum;
+import helix.math.Matrix4;
 
-/** Checks Frustum3D with the library alone: made holding everything; its planes from a perspective and an orthographic view-projection,
+/** Checks Frustum with the library alone: made holding everything; its planes from a perspective and an orthographic view-projection,
 	pinned to Gribb and Hartmann's planes computed apart from Haxe; copied and filled into the one given; points, spheres and boxes
 	inside, outside and straddling each kind, on a plane, past near and far, and an empty box; and a box outside near a corner, counted
 	in as its doc comment allows. */
-class Frustum3DTests {
+class FrustumTests {
 	static var checks = 0;
 
 	static function check(value:Bool, message:String):Void {
@@ -18,28 +18,28 @@ class Frustum3DTests {
 	static function near(a:Float, b:Float, tolerance = 1e-12):Bool
 		return Math.abs(a - b) < tolerance * Math.max(1, Math.abs(b));
 
-	static function box(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Bounds3D
-		return new Bounds3D().set(minX, minY, minZ, maxX, maxY, maxZ);
+	static function box(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float):Aabb3D
+		return new Aabb3D().set(minX, minY, minZ, maxX, maxY, maxZ);
 
 	// A camera at (2, 3, 8) looking at (0, 1, 0), +y up: its view, then a projection of 16 / 9, near 0.1 and far 1000.
-	static function viewProjection(orthographic:Bool):Matrix3D {
-		var view = Matrix3D.fromLookAt(2, 3, 8, 0, 1, 0, 0, 1, 0);
+	static function viewProjection(orthographic:Bool):Matrix4 {
+		var view = Matrix4.fromLookAt(2, 3, 8, 0, 1, 0, 0, 1, 0);
 		var aspect = 16 / 9;
-		var projection = orthographic ? Matrix3D.fromOrthographic(-6 * aspect, 6 * aspect, -6, 6, .1, 1000) : Matrix3D.fromPerspective(.9, aspect, .1, 1000);
-		return Matrix3D.compose(view, projection);
+		var projection = orthographic ? Matrix4.fromOrthographic(-6 * aspect, 6 * aspect, -6, 6, .1, 1000) : Matrix4.fromPerspective(.9, aspect, .1, 1000);
+		return Matrix4.compose(view, projection);
 	}
 
 	static function main():Void {
-		var everything = new Frustum3D();
+		var everything = new Frustum();
 		check(everything.contains(0, 0, 0)
 			&& everything.contains(1e30, -1e30, 5)
 			&& everything.intersectsSphere(-1e20, 0, 0, 0)
 			&& everything.intersectsBounds(box(1e10, 1e10, 1e10, 1e10 + 1, 1e10 + 1, 1e10 + 1)),
 			"made: holds everything");
-		check(!everything.intersectsBounds(new Bounds3D()), "made: an empty box is still never inside");
+		check(!everything.intersectsBounds(new Aabb3D()), "made: an empty box is still never inside");
 
 		// Pinned: each plane the last row plus or minus another, normalized, in Python with numpy, apart from Haxe.
-		var perspective = Frustum3D.fromMatrix(viewProjection(false));
+		var perspective = Frustum.fromMatrix(viewProjection(false));
 		var planes = [
 			  0.5824369146810011, -0.15356009878926333,  -0.7982396485246195,  5.6817236552027435,  -0.8895571122595278, -0.15356009878926333,
 			-0.43024114178948714,   5.6817236552027435, -0.15399749426721182,  0.7725549300277239,  -0.6159899770688473,   2.9182500150020303,
@@ -53,7 +53,7 @@ class Frustum3DTests {
 			check(near(Math.sqrt(p[plane * 4] * p[plane * 4] + p[plane * 4 + 1] * p[plane * 4 + 1] + p[plane * 4 + 2] * p[plane * 4 + 2]), 1),
 				'plane $plane of length 1');
 		}
-		var orthographic = Frustum3D.fromMatrix(viewProjection(true));
+		var orthographic = Frustum.fromMatrix(viewProjection(true));
 		var flat = [
 			0.9701425001453319,
 			0.0,
@@ -81,10 +81,10 @@ class Frustum3DTests {
 			991.2790163653659
 		];
 		check([for (i in 0...24) near(orthographic.planes[i], flat[i], 1e-9)].indexOf(false) < 0, "an orthographic view's planes: pinned");
-		var given = new Frustum3D();
-		check(Frustum3D.fromMatrix(viewProjection(false), given) == given
+		var given = new Frustum();
+		check(Frustum.fromMatrix(viewProjection(false), given) == given
 			&& given.planes.join(",") == perspective.planes.join(","), "into the one given");
-		var copied = new Frustum3D();
+		var copied = new Frustum();
 		check(copied.copyFrom(orthographic) == copied
 			&& copied.planes.join(",") == orthographic.planes.join(",")
 			&& copied.planes != orthographic.planes,
@@ -126,7 +126,7 @@ class Frustum3DTests {
 		check(f.intersectsBounds(box(-1e4, -1e4, -1e4, 1e4, 1e4, 1e4)), "a box holding all of it");
 		check(f.intersectsBounds(box(0, 1, 0, 0, 1, 0))
 			&& !f.intersectsBounds(box(200, 1, 0, 200, 1, 0)), "a box of one point is that point");
-		check(!f.intersectsBounds(new Bounds3D()) && !f.intersectsBounds(box(1, 1, 1, 0, 2, 2)), "an empty box, never inside");
+		check(!f.intersectsBounds(new Aabb3D()) && !f.intersectsBounds(box(1, 1, 1, 0, 2, 2)), "an empty box, never inside");
 		check(!orthographic.intersectsBounds(box(150, -5, -5, 160, 5, 5)) && orthographic.intersectsBounds(box(-1, 0, -1, 1, 2, 1)),
 			"the orthographic one alike");
 		// Outside near a corner, past the left and the top planes but neither alone: counted in, erring toward in view.

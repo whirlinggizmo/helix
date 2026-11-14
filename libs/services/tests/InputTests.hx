@@ -1,4 +1,4 @@
-import helix.math.Vector2D;
+import helix.math.Vector2;
 import helix.services.input.Actions;
 import helix.services.input.Gamepads;
 import helix.services.input.Keyboard;
@@ -130,7 +130,7 @@ class InputTests {
 		check(actions.isReleased("left"), "an axis let go: released");
 
 		frame([KeyDown(Right, false), KeyDown(Down, false)]);
-		var move = new Vector2D();
+		var move = new Vector2();
 		check(actions.computeVector("left", "right", "up", "down", move) == move, "computeVector fills the vector given");
 		check(Math.abs(Math.sqrt(move.x * move.x + move.y * move.y) - 1) < 1e-9 && move.x > 0 && move.y > 0, "a diagonal capped at 1");
 		frame([KeyUp(Down)]);

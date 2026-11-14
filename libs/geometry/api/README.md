@@ -11,7 +11,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Bone3D](types.md#bone3d)
   - [Camera2D](types.md#camera2d)
   - [Camera3D](types.md#camera3d)
-  - [Frustum3D](types.md#frustum3d)
+  - [Frustum](types.md#frustum)
   - [Geometry2D](types.md#geometry2d)
   - [KeyInterpolation](types.md#keyinterpolation)
   - [Mesh3D](types.md#mesh3d)

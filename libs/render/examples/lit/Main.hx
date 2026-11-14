@@ -1,6 +1,6 @@
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.ISystem;
@@ -8,7 +8,7 @@ import helix.platform.IWindow;
 import helix.render.Batch3D;
 import helix.render.DirectionalLight3D;
 import helix.render.GpuMesh3D;
-import helix.render.HemisphereLight3D;
+import helix.render.HemisphereLight;
 import helix.render.Material3D;
 import helix.render.PointLight3D;
 import helix.render.Renderer;
@@ -37,7 +37,7 @@ class Main {
 	static final floor = new Material3D();
 	static final glowing = new Material3D();
 	static final red = new PointLight3D();
-	static final place = new Matrix3D();
+	static final place = new Matrix4();
 	static var frame = 0;
 	static var framesLeft = -1;
 
@@ -112,7 +112,7 @@ class Main {
 		var sun = new DirectionalLight3D();
 		sun.direction.set(-1, -2, -1);
 		sun.intensity = 2;
-		var sky = new HemisphereLight3D();
+		var sky = new HemisphereLight();
 		sky.color = 0xff80a0ff;
 		sky.groundColor = 0xff806040;
 		sky.intensity = 1;
@@ -143,10 +143,10 @@ class Main {
 		red.position.set(Math.cos(t) * 3, 1.5, Math.sin(t) * 3);
 		renderer.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff101418);
 		batch.begin(camera);
-		batch.drawMesh(ground, floor, Matrix3D.fromTranslation(0, -.8, 0, place));
+		batch.drawMesh(ground, floor, Matrix4.fromTranslation(0, -.8, 0, place));
 		for (i in 0...materials.length)
-			batch.drawMesh(sphere, materials[i], Matrix3D.fromTranslation((i - 2) * 2, 0, 0, place));
-		batch.drawMesh(cube, glowing, Matrix3D.fromRotation(0, 1, 0, t, place).appendTranslation(3.5, -.4, 2.2, place));
+			batch.drawMesh(sphere, materials[i], Matrix4.fromTranslation((i - 2) * 2, 0, 0, place));
+		batch.drawMesh(cube, glowing, Matrix4.fromRotation(0, 1, 0, t, place).appendTranslation(3.5, -.4, 2.2, place));
 		batch.end();
 		renderer.endFrame();
 		if (framesLeft == 1)

@@ -9,11 +9,11 @@ package helix.math;
 	where y grows downward.
 
 	```haxe
-	var model = Matrix2D.fromScale(2, 2);
+	var model = Matrix3.fromScale(2, 2);
 	model.appendRotation(angle, model).appendTranslation(x, y, model);
 	var onScreen = model.transformPoint(0, 0);
 	``` */
-class Matrix2D {
+class Matrix3 {
 	/** Gets or sets how x scales x: the top left. */
 	public var a:Float;
 
@@ -46,7 +46,7 @@ class Matrix2D {
 		@param tx  The translation's x.
 		@param ty  The translation's y.
 		@return  This matrix. */
-	public function set(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Matrix2D {
+	public function set(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Matrix3 {
 		this.a = real(a);
 		this.b = real(b);
 		this.c = real(c);
@@ -60,14 +60,14 @@ class Matrix2D {
 
 		@param other  The matrix to copy.
 		@return  This matrix. */
-	public function copyFrom(other:Matrix2D):Matrix2D {
+	public function copyFrom(other:Matrix3):Matrix3 {
 		return set(other.a, other.b, other.c, other.d, other.tx, other.ty);
 	}
 
 	/** Makes this the identity.
 
 		@return  This matrix. */
-	public function makeIdentity():Matrix2D {
+	public function makeIdentity():Matrix3 {
 		return set(1, 0, 0, 1, 0, 0);
 	}
 
@@ -77,7 +77,7 @@ class Matrix2D {
 		@param y  How far along y.
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public static function fromTranslation(x:Float, y:Float, ?out:Matrix2D):Matrix2D {
+	public static function fromTranslation(x:Float, y:Float, ?out:Matrix3):Matrix3 {
 		return result(out, 1, 0, 0, 1, x, y);
 	}
 
@@ -87,7 +87,7 @@ class Matrix2D {
 		@param y  The scale along y.
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public static function fromScale(x:Float, y:Float, ?out:Matrix2D):Matrix2D {
+	public static function fromScale(x:Float, y:Float, ?out:Matrix3):Matrix3 {
 		return result(out, x, 0, 0, y, 0, 0);
 	}
 
@@ -96,7 +96,7 @@ class Matrix2D {
 		@param radians  The angle; more than 0 turns from +x toward +y.
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public static function fromRotation(radians:Float, ?out:Matrix2D):Matrix2D {
+	public static function fromRotation(radians:Float, ?out:Matrix3):Matrix3 {
 		var cos = Trig.cos(radians), sin = Trig.sin(radians);
 		return result(out, cos, sin, -sin, cos, 0, 0);
 	}
@@ -108,7 +108,7 @@ class Matrix2D {
 		@param second  The matrix applied after it.
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public static function compose(first:Matrix2D, second:Matrix2D, ?out:Matrix2D):Matrix2D {
+	public static function compose(first:Matrix3, second:Matrix3, ?out:Matrix3):Matrix3 {
 		var a = real(first.a),
 			b = real(first.b),
 			c = real(first.c),
@@ -132,7 +132,7 @@ class Matrix2D {
 		@param other  The matrix applied after this one.
 		@param out  Optional. The matrix to write into, which may be this one or other; a new one when omitted.
 		@return  The matrix. */
-	public function append(other:Matrix2D, ?out:Matrix2D):Matrix2D {
+	public function append(other:Matrix3, ?out:Matrix3):Matrix3 {
 		return compose(this, other, out);
 	}
 
@@ -141,7 +141,7 @@ class Matrix2D {
 		@param other  The matrix applied before this one.
 		@param out  Optional. The matrix to write into, which may be this one or other; a new one when omitted.
 		@return  The matrix. */
-	public function prepend(other:Matrix2D, ?out:Matrix2D):Matrix2D {
+	public function prepend(other:Matrix3, ?out:Matrix3):Matrix3 {
 		return compose(other, this, out);
 	}
 
@@ -151,7 +151,7 @@ class Matrix2D {
 		@param y  How far along y.
 		@param out  Optional. The matrix to write into, which may be this one; a new one when omitted.
 		@return  The matrix. */
-	public function appendTranslation(x:Float, y:Float, ?out:Matrix2D):Matrix2D {
+	public function appendTranslation(x:Float, y:Float, ?out:Matrix3):Matrix3 {
 		return result(out, a, b, c, d, tx + x, ty + y);
 	}
 
@@ -161,7 +161,7 @@ class Matrix2D {
 		@param y  The scale along y.
 		@param out  Optional. The matrix to write into, which may be this one; a new one when omitted.
 		@return  The matrix. */
-	public function appendScale(x:Float, y:Float, ?out:Matrix2D):Matrix2D {
+	public function appendScale(x:Float, y:Float, ?out:Matrix3):Matrix3 {
 		var a = real(this.a),
 			b = real(this.b),
 			c = real(this.c),
@@ -176,7 +176,7 @@ class Matrix2D {
 		@param radians  The angle; more than 0 turns from +x toward +y.
 		@param out  Optional. The matrix to write into, which may be this one; a new one when omitted.
 		@return  The matrix. */
-	public function appendRotation(radians:Float, ?out:Matrix2D):Matrix2D {
+	public function appendRotation(radians:Float, ?out:Matrix3):Matrix3 {
 		var cos = Trig.cos(radians), sin = Trig.sin(radians);
 		var a = real(this.a),
 			b = real(this.b),
@@ -197,7 +197,7 @@ class Matrix2D {
 
 		@param out  Optional. The matrix to write into, which may be this one; a new one when omitted.
 		@return  The inverse, or null when there is none (a matrix that flattens points onto a line), the out unchanged. */
-	public function invert(?out:Matrix2D):Null<Matrix2D> {
+	public function invert(?out:Matrix3):Null<Matrix3> {
 		var a = real(this.a),
 			b = real(this.b),
 			c = real(this.c),
@@ -217,10 +217,10 @@ class Matrix2D {
 		@param y  The point's y.
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The point. */
-	public function transformPoint(x:Float, y:Float, ?out:Vector2D):Vector2D {
+	public function transformPoint(x:Float, y:Float, ?out:Vector2):Vector2 {
 		var x = real(x), y = real(y);
 		var px = a * x + c * y + tx, py = b * x + d * y + ty;
-		return out == null ? new Vector2D(px, py) : out.set(px, py);
+		return out == null ? new Vector2(px, py) : out.set(px, py);
 	}
 
 	/** Returns a direction turned and scaled by this matrix, its translation ignored.
@@ -229,19 +229,19 @@ class Matrix2D {
 		@param y  The direction's y.
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
-	public function transformDirection(x:Float, y:Float, ?out:Vector2D):Vector2D {
+	public function transformDirection(x:Float, y:Float, ?out:Vector2):Vector2 {
 		var x = real(x), y = real(y);
 		var px = a * x + c * y, py = b * x + d * y;
-		return out == null ? new Vector2D(px, py) : out.set(px, py);
+		return out == null ? new Vector2(px, py) : out.set(px, py);
 	}
 
 	/** Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader takes a 2D view.
 
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
-	public function toMatrix3D(?out:Matrix3D):Matrix3D {
+	public function toMatrix4(?out:Matrix4):Matrix4 {
 		if (out == null)
-			out = new Matrix3D();
+			out = new Matrix4();
 		var v = out.values;
 		v[0] = a;
 		v[1] = b;
@@ -263,9 +263,9 @@ class Matrix2D {
 	}
 
 	// The out filled with a result its inputs were read for first: a new matrix when there is none.
-	static inline function result(out:Null<Matrix2D>, a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Matrix2D {
+	static inline function result(out:Null<Matrix3>, a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Matrix3 {
 		if (out == null)
-			out = new Matrix2D();
+			out = new Matrix3();
 		return out.set(a, b, c, d, tx, ty);
 	}
 

@@ -3,7 +3,7 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -626,7 +626,7 @@ class RMath {
 		@param mat  The matrix.
 		@return  The transformed point. */
 	static function Vector3Transform(v:Vector3, mat:Matrix):Vector3 {
-		var p = toMatrix3D(mat).transformPoint(v.x, v.y, v.z);
+		var p = toMatrix4(mat).transformPoint(v.x, v.y, v.z);
 		return new Vector3(p.x, p.y, p.z);
 	}
 
@@ -654,7 +654,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The turned vector. */
 	static function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3 {
-		var m = Matrix3D.fromRotation(axis.x, axis.y, axis.z, angle);
+		var m = Matrix4.fromRotation(axis.x, axis.y, axis.z, angle);
 		var p = m.transformPoint(v.x, v.y, v.z);
 		return new Vector3(p.x, p.y, p.z);
 	}
@@ -1207,7 +1207,7 @@ class RMath {
 		@param mat  The matrix.
 		@return  Its transpose. */
 	static function MatrixTranspose(mat:Matrix):Matrix {
-		return toMatrix(toMatrix3D(mat).transpose());
+		return toMatrix(toMatrix4(mat).transpose());
 	}
 
 	/** Returns a matrix's inverse.
@@ -1258,7 +1258,7 @@ class RMath {
 
 		@return  The matrix. */
 	static function MatrixIdentity():Matrix {
-		return toMatrix(new Matrix3D());
+		return toMatrix(new Matrix4());
 	}
 
 	/** Returns the sum of two matrices.
@@ -1321,7 +1321,7 @@ class RMath {
 		@param right  The second.
 		@return  The product. */
 	static function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
-		return toMatrix(Matrix3D.compose(toMatrix3D(left), toMatrix3D(right)));
+		return toMatrix(Matrix4.compose(toMatrix4(left), toMatrix4(right)));
 	}
 
 	/** Returns a translation.
@@ -1331,7 +1331,7 @@ class RMath {
 		@param z  Along z.
 		@return  The matrix. */
 	static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
-		return toMatrix(Matrix3D.fromTranslation(x, y, z));
+		return toMatrix(Matrix4.fromTranslation(x, y, z));
 	}
 
 	/** Returns a rotation about an axis.
@@ -1340,7 +1340,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotate(axis:Vector3, angle:Float):Matrix {
-		return toMatrix(Matrix3D.fromRotation(axis.x, axis.y, axis.z, angle));
+		return toMatrix(Matrix4.fromRotation(axis.x, axis.y, axis.z, angle));
 	}
 
 	/** Returns a rotation about x.
@@ -1348,7 +1348,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotateX(angle:Float):Matrix {
-		return toMatrix(Matrix3D.fromRotation(1, 0, 0, angle));
+		return toMatrix(Matrix4.fromRotation(1, 0, 0, angle));
 	}
 
 	/** Returns a rotation about y.
@@ -1356,7 +1356,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotateY(angle:Float):Matrix {
-		return toMatrix(Matrix3D.fromRotation(0, 1, 0, angle));
+		return toMatrix(Matrix4.fromRotation(0, 1, 0, angle));
 	}
 
 	/** Returns a rotation about z.
@@ -1364,7 +1364,7 @@ class RMath {
 		@param angle  The angle, in radians.
 		@return  The matrix. */
 	static function MatrixRotateZ(angle:Float):Matrix {
-		return toMatrix(Matrix3D.fromRotation(0, 0, 1, angle));
+		return toMatrix(Matrix4.fromRotation(0, 0, 1, angle));
 	}
 
 	/** Returns a rotation by three angles that turns a point about z, then y, then x. See `MatrixRotateZYX` for turning in the reverse
@@ -1376,7 +1376,7 @@ class RMath {
 		var cosz = Math.cos(-angle.z), sinz = Math.sin(-angle.z);
 		var cosy = Math.cos(-angle.y), siny = Math.sin(-angle.y);
 		var cosx = Math.cos(-angle.x), sinx = Math.sin(-angle.x);
-		var result = toMatrix(new Matrix3D());
+		var result = toMatrix(new Matrix4());
 		result.m0 = cosz * cosy;
 		result.m1 = (cosz * siny * sinx) - (sinz * cosx);
 		result.m2 = (cosz * siny * cosx) + (sinz * sinx);
@@ -1413,7 +1413,7 @@ class RMath {
 		@param z  Along z.
 		@return  The matrix. */
 	static function MatrixScale(x:Float, y:Float, z:Float):Matrix {
-		return toMatrix(Matrix3D.fromScale(x, y, z));
+		return toMatrix(Matrix4.fromScale(x, y, z));
 	}
 
 	/** Returns a perspective projection by its near plane's edges.
@@ -1439,7 +1439,7 @@ class RMath {
 		@param farPlane  The far plane.
 		@return  The matrix. */
 	static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return toMatrix(Matrix3D.fromPerspective(fovY, aspect, nearPlane, farPlane));
+		return toMatrix(Matrix4.fromPerspective(fovY, aspect, nearPlane, farPlane));
 	}
 
 	/** Returns an orthographic projection.
@@ -1452,7 +1452,7 @@ class RMath {
 		@param farPlane  The far plane.
 		@return  The matrix. */
 	static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return toMatrix(Matrix3D.fromOrthographic(left, right, bottom, top, nearPlane, farPlane));
+		return toMatrix(Matrix4.fromOrthographic(left, right, bottom, top, nearPlane, farPlane));
 	}
 
 	/** Returns a view looking from eye at target.
@@ -1462,7 +1462,7 @@ class RMath {
 		@param up  Up.
 		@return  The matrix. */
 	static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
-		return toMatrix(Matrix3D.fromLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
+		return toMatrix(Matrix4.fromLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
 	}
 
 	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader takes them.
@@ -1768,7 +1768,7 @@ class RMath {
 		@param q  The quaternion.
 		@return  The matrix. */
 	static function QuaternionToMatrix(q:Quaternion):Matrix {
-		return toMatrix(Matrix3D.fromQuaternion(q.x, q.y, q.z, q.w));
+		return toMatrix(Matrix4.fromQuaternion(q.x, q.y, q.z, q.w));
 	}
 
 	/** Returns the rotation about an axis as a quaternion, normalized.

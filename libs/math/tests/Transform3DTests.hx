@@ -1,7 +1,7 @@
-import helix.math.Matrix3D;
-import helix.math.Quaternion3D;
+import helix.math.Matrix4;
+import helix.math.Quaternion;
 import helix.math.Transform3D;
-import helix.math.Vector3D;
+import helix.math.Vector3;
 
 /** Checks Transform3D with the library alone: made, copied and reset, each returning itself; its forward, right and up; moved along
 	them, along the ground and toward a point (stopping short of it); turned around its own axes, the pitch locked short of straight up
@@ -21,15 +21,15 @@ class Transform3DTests {
 	static function near(a:Float, b:Float, tolerance = 1e-12):Bool
 		return Math.abs(a - b) < tolerance;
 
-	static function at(p:Vector3D, x:Float, y:Float, z:Float, tolerance = 1e-12):Bool
+	static function at(p:Vector3, x:Float, y:Float, z:Float, tolerance = 1e-12):Bool
 		return near(p.x, x, tolerance) && near(p.y, y, tolerance) && near(p.z, z, tolerance);
 
-	static function turnsAs(q:Quaternion3D, v:Array<Float>, tolerance = 1e-12):Bool {
+	static function turnsAs(q:Quaternion, v:Array<Float>, tolerance = 1e-12):Bool {
 		var sign = q.x * v[0] + q.y * v[1] + q.z * v[2] + q.w * v[3] < 0 ? -1 : 1;
 		return near(q.x, sign * v[0], tolerance) && near(q.y, sign * v[1], tolerance) && near(q.z, sign * v[2], tolerance) && near(q.w, sign * v[3], tolerance);
 	}
 
-	static function matrixIs(m:Matrix3D, values:Array<Float>, tolerance = 1e-12):Bool {
+	static function matrixIs(m:Matrix4, values:Array<Float>, tolerance = 1e-12):Bool {
 		for (i in 0...16)
 			if (!near(m.values[i], values[i], tolerance))
 				return false;
@@ -40,15 +40,15 @@ class Transform3DTests {
 	static function sample():Transform3D {
 		var t = new Transform3D();
 		t.position.set(3, -4, 2);
-		Quaternion3D.fromEuler(.3, -1.1, .5, t.rotation);
+		Quaternion.fromEuler(.3, -1.1, .5, t.rotation);
 		t.scale.set(2, .5, 1.5);
 		return t;
 	}
 
 	// Runs a result into a new vector, into one given and into the transform's own position: the same each way.
-	static function threeWays(op:(Transform3D, Null<Vector3D>) -> Vector3D, message:String):Vector3D {
+	static function threeWays(op:(Transform3D, Null<Vector3>) -> Vector3, message:String):Vector3 {
 		var t = sample();
-		var result = op(t, null), given = new Vector3D();
+		var result = op(t, null), given = new Vector3();
 		check(result != t.position && t.position.equals(sample().position), '$message: into a new vector, the transform unchanged');
 		check(op(sample(), given) == given && given.equals(result), '$message: into the one given');
 		var own = sample();
@@ -57,7 +57,7 @@ class Transform3DTests {
 	}
 
 	// The angle between a direction and the world's up.
-	static function fromUp(v:Vector3D):Float
+	static function fromUp(v:Vector3):Float
 		return Math.acos(v.y / v.length);
 
 	static function main():Void {
@@ -76,7 +76,7 @@ class Transform3DTests {
 			-0.9082446196519794, -1.001291518441541, 0.6500053891855546, 0,                  3,                 -4,                   2, 1
 		];
 		check(matrixIs(sample().toMatrix(), matrix), "its matrix scales, turns and moves: pinned");
-		var m = new Matrix3D();
+		var m = new Matrix4();
 		check(sample().toMatrix(m) == m && matrixIs(m, matrix), "its matrix, into the one given");
 		var point = threeWays((t, out) -> t.transformPoint(1.5, 2, -.5, out), "transformPoint");
 		check(at(point, 3.959185008805524, -2.134837102889302, 4.482666205135998), "a point carried: pinned");
@@ -165,15 +165,15 @@ class Transform3DTests {
 		check(s.lookAt(10, 7, -3) == s
 			&& turnsAs(s.rotation, [0.389600901306046, -0.41131790526508594, 0.2004955958339072, 0.7992685622249036]),
 			"turned to face a point: pinned");
-		var toward = new Vector3D(10 - 3, 7 + 4, -3 - 2).normalize();
+		var toward = new Vector3(10 - 3, 7 + 4, -3 - 2).normalize();
 		check(s.computeForward().equals(toward, 1e-12)
 			&& near(s.computeRight().y, 0)
 			&& s.computeUp().y > 0, "facing it, its right level");
-		var before = new Quaternion3D().copyFrom(s.rotation);
+		var before = new Quaternion().copyFrom(s.rotation);
 		check(s.lookAt(3, -4, 2) == s && s.rotation.x == before.x && s.rotation.w == before.w, "a point at its position leaves it as it is");
 		s.lookAt(3, -10, 2, 0, 0, -1);
-		check(s.computeForward().equals(new Vector3D(0, -1, 0), 1e-15)
-			&& s.computeUp().equals(new Vector3D(0, 0, -1), 1e-15), "an up given");
+		check(s.computeForward().equals(new Vector3(0, -1, 0), 1e-15)
+			&& s.computeUp().equals(new Vector3(0, 0, -1), 1e-15), "an up given");
 
 		// Swung around a point.
 		s = sample();
@@ -237,10 +237,10 @@ class Transform3DTests {
 			&& turnsAs(t.rotation, [sampled.x, sampled.y, sampled.z, sampled.w])
 			&& at(t.scale, 2, .5, 1.5),
 			"back from its matrix into the one given: what made it");
-		var mirrored = Transform3D.fromMatrix(Matrix3D.fromScale(1, 1, -1));
+		var mirrored = Transform3D.fromMatrix(Matrix4.fromScale(1, 1, -1));
 		check(at(mirrored.scale, -1, 1, 1) && near(Math.abs(mirrored.rotation.y), 1) && at(mirrored.computeForward(), 0, 0, 1),
 			"a matrix that mirrors z: x's scale less than 0, its rotation a half turn, facing the way the matrix does");
-		var sheared = new Matrix3D();
+		var sheared = new Matrix4();
 		var shear = [
 			2.0,
 			0.0,
@@ -270,7 +270,7 @@ class Transform3DTests {
 				0.9784757884486139
 			]) && at(nearest.scale, 1.971405786818069, 1.5742197977634664, 0.8589104391495211) && at(nearest.position, 1, 2, 3),
 			"a matrix that shears: the nearest rotation, as the SVD gives it, and the scale along its axes, pinned");
-		var empty = Transform3D.fromMatrix(Matrix3D.fromScale(0, 0, 0));
+		var empty = Transform3D.fromMatrix(Matrix4.fromScale(0, 0, 0));
 		check(turnsAs(empty.rotation, [0, 0, 0, 1]) && at(empty.scale, 0, 0, 0), "a matrix that flattens everything: unturned, scale 0");
 
 		// The interpreter multiplies Ints passed for Floats as Ints; whole numbers this large must still multiply as floats.

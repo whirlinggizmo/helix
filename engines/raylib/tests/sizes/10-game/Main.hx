@@ -25,7 +25,7 @@ import helix.raylib.Vector3;
 	doesn't usually carry is left to the next rung: the other readers (OBJ, GIF, QOA, MP3, BMFont, image fonts), VR, ExportFontAsCodeAsync,
 	automation events, the clipboard. It is built and measured, never run: its files aren't there. */
 @:adds("helix.formats.audio.AudioHeader", "helix.formats.bmfont", "helix.formats.qoi", "helix.formats.truetype", "helix.geometry.Camera2D",
-	"helix.geometry.Ray3D", "helix.math.Matrix2D", "helix.math.RectPacker2D", "helix.math.Transform2D", "helix.math.Vector2D",
+	"helix.geometry.Ray3D", "helix.math.Matrix3", "helix.math.RectanglePacker", "helix.math.Transform2D", "helix.math.Vector2",
 	"helix.platform.adapters.fontrasterizer.canvas", "helix.platform.adapters.gamepads.dom", "helix.platform.adapters.keyboard.dom",
 	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.FrameConverter",
 	"helix.raylib.modules.RFilesAsync", "helix.raylib.modules.RModels6", "helix.raylib.modules.RTextAsync", "helix.raylib.modules.RWindowAsync",

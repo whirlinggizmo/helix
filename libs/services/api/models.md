@@ -13,7 +13,7 @@ final path:String
 final meshes:Array<Mesh3D>
 final meshMaterialIndices:Array<Int>
 final meshSkinIndices:Array<Int>
-final meshTransforms:Array<Matrix3D>
+final meshTransforms:Array<Matrix4>
 final skeleton:Null<Skeleton3D>
 final skins:Array<Skin3D>
 final animations:Array<Animation3D>

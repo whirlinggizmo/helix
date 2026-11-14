@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Bounds2D;
+import helix.math.Aabb2D;
 
 /** Represents how a `VirtualGamepad` starts. Every field has a default, so options set only what they change. Its placement and dead
 	zone are both sticks' defaults. A field set in a stick's own options replaces it for that stick. Positions and sizes are framebuffer pixels. */
@@ -13,7 +13,7 @@ class VirtualGamepadOptions {
 	@:optional public final deadZone:Null<Float>;
 
 	/** Gets bounds where a landing finger stays free, even within a stick's touch zone. */
-	@:optional public final blockedBounds:Null<Array<Bounds2D>>;
+	@:optional public final blockedBounds:Null<Array<Aabb2D>>;
 
 	/** Gets the left stick. */
 	@:optional public final left:Null<VirtualStickOptions>;

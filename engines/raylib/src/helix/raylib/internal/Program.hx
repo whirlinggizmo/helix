@@ -269,11 +269,11 @@ class Program {
 		@param mvpView  Optional. The view the mvp is made with in place of `view` (an eye's, in stereo).
 		@param mvpProjection  Optional. The projection it is made with in place of `projection`.
 		@return  The blocks' bytes, by stage and slot. */
-	public function capture(snapshot:ShaderSnapshot, model:helix.math.Matrix3D, view:helix.math.Matrix3D, projection:helix.math.Matrix3D,
-			diffuse:Array<Float>, ?mvpView:helix.math.Matrix3D, ?mvpProjection:helix.math.Matrix3D):Array<Null<Bytes>> {
+	public function capture(snapshot:ShaderSnapshot, model:helix.math.Matrix4, view:helix.math.Matrix4, projection:helix.math.Matrix4, diffuse:Array<Float>,
+			?mvpView:helix.math.Matrix4, ?mvpProjection:helix.math.Matrix4):Array<Null<Bytes>> {
 		if (mvp != null) {
-			helix.math.Matrix3D.compose(model, mvpView != null ? mvpView : view, scratch);
-			values.writeMatrix(mvp, helix.math.Matrix3D.compose(scratch, mvpProjection != null ? mvpProjection : projection, composed));
+			helix.math.Matrix4.compose(model, mvpView != null ? mvpView : view, scratch);
+			values.writeMatrix(mvp, helix.math.Matrix4.compose(scratch, mvpProjection != null ? mvpProjection : projection, composed));
 		}
 		if (matModel != null)
 			values.writeMatrix(matModel, model);
@@ -293,8 +293,8 @@ class Program {
 	}
 
 	// Matrices a capture composes into, so a draw allocates none.
-	static final scratch = new helix.math.Matrix3D();
-	static final composed = new helix.math.Matrix3D();
+	static final scratch = new helix.math.Matrix4();
+	static final composed = new helix.math.Matrix4();
 
 	/** Returns the pipeline drawing through the program in a way.
 

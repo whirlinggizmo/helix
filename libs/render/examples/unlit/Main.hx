@@ -1,6 +1,6 @@
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.ISystem;
@@ -32,9 +32,9 @@ class Main {
 	static final grid = new DrawList3D();
 	static final white = new Material3D();
 	static final over = new MeshState3D();
-	static final copies = [for (_ in 0...12) new Matrix3D()];
+	static final copies = [for (_ in 0...12) new Matrix4()];
 	static final colors = [for (i in 0...12) helix.math.Color.fromHsv(i * 30, .7, 1)];
-	static final place = new Matrix3D();
+	static final place = new Matrix4();
 	static var frame = 0;
 	static var framesLeft = -1;
 
@@ -81,7 +81,7 @@ class Main {
 		white.toneMapped = false;
 		over.depthTest = Off;
 		grid.drawGrid(21, 1, 0xff304050);
-		grid.drawAxes(new Matrix3D(), 2);
+		grid.drawAxes(new Matrix4(), 2);
 		camera.transform.position.set(0, 6, 10);
 		camera.transform.lookAt(0, 0, 0);
 	}
@@ -98,21 +98,21 @@ class Main {
 		var t = frame++ / 60;
 		for (i in 0...copies.length) {
 			var a = i * Math.PI * 2 / copies.length + t * .5;
-			Matrix3D.fromScale(.6, .6, .6, copies[i]).appendTranslation(Math.cos(a) * 4, .3, Math.sin(a) * 4, copies[i]);
+			Matrix4.fromScale(.6, .6, .6, copies[i]).appendTranslation(Math.cos(a) * 4, .3, Math.sin(a) * 4, copies[i]);
 		}
 		renderer.beginFrame(window.framebufferWidth, window.framebufferHeight, 0xff101418);
 		batch.begin(camera);
-		batch.drawList(grid, Matrix3D.fromTranslation(0, 0, 0, place));
+		batch.drawList(grid, Matrix4.fromTranslation(0, 0, 0, place));
 		batch.drawMeshInstanced(cube, white, copies, colors);
 		// Drawn over the ring, its depth not tested, tinted half grey.
-		batch.drawMesh(cube, white, Matrix3D.fromRotation(0, 1, 0, t, place).appendTranslation(0, 1, 0, place), null, null, 0xff808080, over);
+		batch.drawMesh(cube, white, Matrix4.fromRotation(0, 1, 0, t, place).appendTranslation(0, 1, 0, place), null, null, 0xff808080, over);
 		batch.drawLines([-4, 2, -4, 4, 2, -4, 4, 2, 4, -4, 2, 4], 0xffffc040, null, 6, true);
 		batch.drawLine(-5, 0, 5, 5, 0, -5, 0xffffffff);
 		batch.drawPoints([-3, 3, 0, 0, 3.5, 0, 3, 3, 0], 0xff40ff80);
 		batch.pointSize = 12;
 		batch.drawPoints([-3, 4, 0, 3, 4, 0], 0xffff4080);
 		batch.resetState();
-		batch.fillCircle(0, 0, 1.5, 0x8040c0ff, Matrix3D.fromRotation(1, 0, 0, -Math.PI / 2, place).appendTranslation(0, .01, 0, place));
+		batch.fillCircle(0, 0, 1.5, 0x8040c0ff, Matrix4.fromRotation(1, 0, 0, -Math.PI / 2, place).appendTranslation(0, .01, 0, place));
 		batch.end();
 		renderer.endFrame();
 		if (framesLeft == 1)

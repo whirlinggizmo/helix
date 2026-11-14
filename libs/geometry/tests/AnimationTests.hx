@@ -4,7 +4,7 @@ import helix.geometry.Bone3D;
 import helix.geometry.Mesh3D;
 import helix.geometry.Skeleton3D;
 import helix.geometry.Skin3D;
-import helix.math.Matrix3D;
+import helix.math.Matrix4;
 import helix.math.Transform3D;
 
 /** Checks Skeleton3D, Skin3D, Animation3D and Mesh3D's skinning with the library alone, on an arm made by hand (a shoulder at the
@@ -24,7 +24,7 @@ class AnimationTests {
 	static function near(a:Float, b:Float, tolerance = 1e-12):Bool
 		return Math.abs(a - b) <= tolerance;
 
-	static function at(m:Matrix3D, x:Float, y:Float, z:Float, tolerance = 1e-12):Bool
+	static function at(m:Matrix4, x:Float, y:Float, z:Float, tolerance = 1e-12):Bool
 		return near(m.values[12], x, tolerance) && near(m.values[13], y, tolerance) && near(m.values[14], z, tolerance);
 
 	static function rest(y:Float):Transform3D {
@@ -92,7 +92,7 @@ class AnimationTests {
 		check(near(sloped.computePose(arm, 1)[0].position.x, 1), "cubic, tangents a line's slope: the line");
 
 		// A tube 0.2 in radius from y 0 to y 2: below y 1 it follows the shoulder, above it the elbow.
-		var tube = Mesh3D.fromCylinder(.2, .2, 2, 8, 4, false).transform(Matrix3D.fromTranslation(0, 1, 0));
+		var tube = Mesh3D.fromCylinder(.2, .2, 2, 8, 4, false).transform(Matrix4.fromTranslation(0, 1, 0));
 		tube.jointIndices = [];
 		tube.weights = [];
 		for (v in 0...tube.vertexCount) {
@@ -135,7 +135,7 @@ class AnimationTests {
 		var outs = [new Transform3D()];
 		var first = outs[0];
 		check(arm.computeRestPose(outs) == outs && outs.length == 3 && outs[0] == first, "an out pose grown, its first kept");
-		var big = [for (_ in 0...5) new Matrix3D()];
+		var big = [for (_ in 0...5) new Matrix4()];
 		check(arm.computeWorld(pose, big) == big && big.length == 3, "an out shrunk");
 
 		// Joints and weights carried.
@@ -172,7 +172,7 @@ class AnimationTests {
 			"unindexed: spread");
 		var copied = new Mesh3D().copyFrom(a);
 		check(copied.jointIndices.join(",") == a.jointIndices.join(",") && copied.jointIndices != a.jointIndices, "copied: its own");
-		var mirrored = flat.transform(Matrix3D.fromScale(-1, 1, 1));
+		var mirrored = flat.transform(Matrix4.fromScale(-1, 1, 1));
 		check(mirrored.jointIndices.length == flat.jointIndices.length, "mirrored: joints turned round with the triangles");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});

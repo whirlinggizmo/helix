@@ -62,7 +62,7 @@ function convolve(kernel:Array<Float>):Image
 function dither(redBits:Int, greenBits:Int, blueBits:Int, alphaBits:Int):Image
 function getPixel(x:Int, y:Int):Int
 function getPalette(max:Int):Array<Int>
-function getAlphaBorder(threshold:Float, ?out:Bounds2D):Bounds2D
+function getAlphaBorder(threshold:Float, ?out:Aabb2D):Aabb2D
 function fill(color:Int):Image
 function setPixel(x:Int, y:Int, color:Int):Image
 function drawLine(x0:Int, y0:Int, x1:Int, y1:Int, color:Int):Image
