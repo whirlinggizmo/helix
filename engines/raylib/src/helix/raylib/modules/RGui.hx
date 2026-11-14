@@ -390,13 +390,33 @@ class RGui {
 	}
 
 	// Draws a part of a control from its skin, returning whether it drew: false, drawing nothing, until helix.raylib.extras.GuiSkins
-	// replaces it at the first skin set, so a program setting none links none of the skins.
-	static dynamic function drawSkin(control:Int, part:Int, state:Int, rec:Rectangle):Bool
+	// replaces it at the first skin, fill mode or fill edge set, so a program setting none links none of the skins. A fill (part 1) up to
+	// its value is given its whole track and its color, drawn in its fill mode with its fill edge.
+	static dynamic function drawSkin(control:Int, part:Int, state:Int, rec:Rectangle, whole:Null<Rectangle>, color:Color):Bool
 		return false;
 
-	// A part of a control: from its skin, or as raygui draws it (drawRectangle).
-	static function box(control:Int, part:Int, state:Int, rec:Rectangle, borderWidth:Int, borderColor:Color, color:Color):Void {
-		if (!drawSkin(control, part, state, rec))
+	// Where a control's text moves inside textOffsetBounds, the skinned base it draws over: set by helix.raylib.extras.GuiSkins as the
+	// base draws, null when it moves none.
+	static var textOffsetBounds:Null<Rectangle> = null;
+	static var textOffsetX = 0.;
+	static var textOffsetY = 0.;
+
+	// An icon's width in a control's text, raygui's icon's scaled, until helix.raylib.extras.GuiSkins replaces it at the first icon texture
+	// set.
+	static dynamic function iconWidth(iconId:Int):Int
+		return ICON_SIZE * guiIconScale;
+
+	// Draws an icon at x, centered down bounds, in tint: raygui's, until helix.raylib.extras.GuiSkins replaces it.
+	static dynamic function drawIcon(iconId:Int, x:Int, bounds:Rectangle, tint:Color):Void
+		drawPixelIcon(iconId, x, bounds, tint);
+
+	// Draws raygui's icon at x, centered down bounds, as raygui's GuiDrawText does.
+	static function drawPixelIcon(iconId:Int, x:Int, bounds:Rectangle, tint:Color):Void
+		GuiDrawIcon(iconId, x, Std.int(bounds.y + bounds.height / 2 - idiv(ICON_SIZE * guiIconScale, 2) + Std.int(bounds.height) % 2), guiIconScale, tint);
+
+	// A part of a control: from its skin, or as raygui draws it (drawRectangle). A fill up to its value is given its whole track.
+	static function box(control:Int, part:Int, state:Int, rec:Rectangle, borderWidth:Int, borderColor:Color, color:Color, ?whole:Rectangle):Void {
+		if (!drawSkin(control, part, state, rec, whole, color))
 			drawRectangle(rec, borderWidth, borderColor, color);
 	}
 
@@ -561,6 +581,13 @@ class RGui {
 	static function drawTextBytes(b:Array<Int>, start:Int, bounds:Rectangle, alignment:Int, tint:Color):Void {
 		if (byteAt(b, start) == 0)
 			return;
+		var within = textOffsetBounds;
+		if (within != null
+			&& bounds.x >= within.x
+			&& bounds.y >= within.y
+			&& bounds.x + bounds.width <= within.x + within.width
+			&& bounds.y + bounds.height <= within.y + within.height)
+			bounds = new Rectangle(bounds.x + textOffsetX, bounds.y + textOffsetY, bounds.width, bounds.height);
 		inline function pixelOffset(h:Float):Int
 			return Std.int(h) % 2;
 		// Its lines, at each '\n', as raygui's GetTextLines.
@@ -586,7 +613,7 @@ class RGui {
 			var x = bounds.x, y = bounds.y, widthOffset = 0.;
 			var textSizeX = textWidth(b, line);
 			if (iconId >= 0) {
-				textSizeX += ICON_SIZE * guiIconScale;
+				textSizeX += iconWidth(iconId);
 				if (byteAt(b, line) != 0)
 					textSizeX += ICON_TEXT_PADDING;
 			}
@@ -613,10 +640,9 @@ class RGui {
 			x = Std.int(x);
 			y = Std.int(y);
 			if (iconId >= 0) {
-				GuiDrawIcon(iconId, Std.int(x), Std.int(bounds.y + bounds.height / 2 - idiv(ICON_SIZE * guiIconScale, 2) + pixelOffset(bounds.height)),
-					guiIconScale, tint);
-				x += ICON_SIZE * guiIconScale + ICON_TEXT_PADDING;
-				widthOffset = ICON_SIZE * guiIconScale + ICON_TEXT_PADDING;
+				drawIcon(iconId, Std.int(x), bounds, tint);
+				x += iconWidth(iconId) + ICON_TEXT_PADDING;
+				widthOffset = iconWidth(iconId) + ICON_TEXT_PADDING;
 			}
 			var lineSize = 0;
 			while (byteAt(b, line + lineSize) != 0 && byteAt(b, line + lineSize) != "\n".code && byteAt(b, line + lineSize) != "\r".code)

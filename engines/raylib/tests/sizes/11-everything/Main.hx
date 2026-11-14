@@ -1,5 +1,6 @@
 // helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader.
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Textures.*;
 
 /** helix-raylib's high-water mark: a program calling every function of `Raylib`, `Raymath`, `Rlgl`, `Raygui`, `Raylib6`, `Rlights` and `helix.raylib.extras` that compiles (`Everything.calls`
 	writes them as the program builds), and each macro function that chooses a reader by a constant file name (DECISIONS 29) once for each
@@ -18,7 +19,8 @@ import helix.raylib.Raylib.*;
 	"helix.services.input.VirtualGamepadOptions", "helix.services.input.VirtualStick", "helix.services.input.VirtualStickOptions",
 	"helix.raylib.modules.RLighting", "helix.raylib.internal.LitProgram", "helix.raylib.modules.RDevice", "helix.platform.adapters.tilt.dom",
 	"helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.raylib.modules.RDebug", "helix.raylib.modules.RGuiSkins",
-	"helix.raylib.modules.RSprites")
+	"helix.raylib.modules.RSprites", "helix.raylib.modules.RTextureDraws", "helix.raylib.modules.RTextureFills", "helix.raylib.modules.RTextureAtlases",
+	"helix.raylib.modules.RRenderTextureFit", "helix.raylib.extras.TextureAtlas")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");
@@ -37,6 +39,8 @@ class Main {
 			LoadImageFromMemoryAsync(".gif", Everything.value, 0, loaded -> Everything.result = loaded);
 			LoadTextureAsync("a.png", loaded -> Everything.result = loaded);
 			LoadTextureAsync("a.gif", loaded -> Everything.result = loaded);
+			LoadTextureAtlasAsync("a.json", loaded -> Everything.result = loaded);
+			LoadTextureAtlasAsync("a.xml", loaded -> Everything.result = loaded);
 			LoadFontAsync("a.ttf", loaded -> Everything.result = loaded);
 			LoadFontAsync("a.fnt", loaded -> Everything.result = loaded);
 			LoadFontAsync("a.png", loaded -> Everything.result = loaded);

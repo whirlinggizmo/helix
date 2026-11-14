@@ -34,7 +34,8 @@ class Everything {
 		"helix.raylib.extras.Device",
 		"helix.raylib.extras.GuiSkins",
 		"helix.raylib.extras.Debug",
-		"helix.raylib.extras.Sprites"
+		"helix.raylib.extras.Sprites",
+		"helix.raylib.extras.Textures"
 	];
 
 	/** raylib's modules in helix-raylib, whose functions carry the refusals' metadata. */
@@ -56,11 +57,15 @@ class Everything {
 		"RModelsAsync",
 		"RModelsPosed",
 		"RModelsMerged",
+		"RRenderTextureFit",
 		"RRlgl",
 		"RShapes",
 		"RSprites",
 		"RText",
 		"RTextAsync",
+		"RTextureAtlases",
+		"RTextureDraws",
+		"RTextureFills",
 		"RTextures",
 		"RTexturesAsync",
 		"RVirtualGamepad",
@@ -85,7 +90,8 @@ class Everything {
 		"LoadImageAnimFromMemoryAsync",
 		"LoadWaveAsync",
 		"LoadWaveFromMemoryAsync",
-		"LoadAutomationEventList"
+		"LoadAutomationEventList",
+		"LoadTextureAtlasAsync"
 	];
 	#end
 

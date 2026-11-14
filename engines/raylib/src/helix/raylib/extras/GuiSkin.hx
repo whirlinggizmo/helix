@@ -25,4 +25,38 @@ class GuiSkin {
 
 	/** Gets or sets the tint multiplying the patches, `WHITE` to draw them unchanged. */
 	public var tint:Color;
+
+	/** Gets or sets how the patches fill a control across: `NPATCH_MODE_STRETCH`, `NPATCH_MODE_TILE` or `NPATCH_MODE_TILE_FIT` from
+		`Textures`. `NPATCH_MODE_STRETCH` in a skin made by `GuiSkinFromTexture` or `GuiSkinFromSheet`. */
+	public var horizontalPatchMode:Int = 0;
+
+	/** Gets or sets how the patches fill a control down, as `horizontalPatchMode`. */
+	public var verticalPatchMode:Int = 0;
+
+	/** Gets or sets how a `GUI_SKIN_FILL` skin is drawn: `GUI_SKIN_FILL_STRETCHED` over the filled part, or `GUI_SKIN_FILL_CLIPPED`
+		over the whole control and shown up to the filled part. `GUI_SKIN_FILL_STRETCHED` in a made skin. Read for a progress bar's
+		progress and `GuiSliderBar`'s bar. */
+	public var fillMode:Int = 0;
+
+	/** Gets or sets the texture a `GUI_SKIN_FILL` skin draws at the moving end of its fill, a thermometer's rounded tip or a line, or
+		null for none. Drawn whole at the texture's size, centered on the fill's end, over the fill, at every value from the minimum to
+		the maximum. It isn't clipped to the control: at the minimum and the maximum, half of it lies outside the control. Null in a
+		made skin. */
+	public var fillEdge:Null<Texture2D> = null;
+
+	/** Gets or sets how far a control's text and icon move from where raygui draws them, in pixels, x right and y down, in
+		`STATE_NORMAL`: (0, -2) to center them on a face whose bottom 4 pixels are a lip. (0, 0) in a skin made by `GuiSkinFromTexture`,
+		set from the lip in one made by `GuiSkinFromSheet`. */
+	public var normalTextOffset:Vector2 = new Vector2(0, 0);
+
+	/** Gets or sets how far a control's text and icon move in `STATE_FOCUSED`, as `normalTextOffset`: (0, -4) for that face lifted
+		2 pixels more. */
+	public var focusedTextOffset:Vector2 = new Vector2(0, 0);
+
+	/** Gets or sets how far a control's text and icon move in `STATE_PRESSED`, as `normalTextOffset`: (0, 2) for that face pushed
+		down 4 pixels onto its lip. */
+	public var pressedTextOffset:Vector2 = new Vector2(0, 0);
+
+	/** Gets or sets how far a control's text and icon move in `STATE_DISABLED`, as `normalTextOffset`. */
+	public var disabledTextOffset:Vector2 = new Vector2(0, 0);
 }

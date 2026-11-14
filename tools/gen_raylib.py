@@ -12,7 +12,8 @@ RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAs
 What a program opts into that raylib has no call for is in the package helix.raylib.extras, a module and a section of its own each
 (extras.Lighting from RLighting, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.GuiSkins from
 RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, a model's posed bounds, merge and masked blend in extras.Models from
-RModelsPosed, RModelsMerged and RModelsMasked).
+RModelsPosed, RModelsMerged and RModelsMasked, and the fills, tiled and patched draws, atlases and fitted render texture in
+extras.Textures from RTextureFills, RTextureDraws, RTextureAtlases and RRenderTextureFit).
 The sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
 (docs/CONVENTIONS.md). Each file's generated part has two halves:
 
@@ -97,6 +98,12 @@ TARGETS = {
     'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
     'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),
     'extras/Sprites.hx': ([('RSprites', "sprites: many copies of one part of a texture, each placed by a matrix, in one call")], None, 'Sprites'),
+    'extras/Textures.hx': ([
+        ('RTextureFills', "textures: part of a texture shown up to an amount, and the fill's edge"),
+        ('RTextureDraws', "textures: tiled draws, nine-patches whose edges repeat, and textured polygons"),
+        ('RTextureAtlases', "textures: an atlas's images by name"),
+        ('RRenderTextureFit', "textures: a render texture fitted to the screen, and the mouse read in its pixels"),
+    ], None, 'Textures'),
 }
 # The package of what helix-raylib adds to raylib's API, a module for each of the TARGETS under extras/.
 EXTRAS = 'helix.raylib.extras'

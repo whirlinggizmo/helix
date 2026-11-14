@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="icons.png">
+	<SubTexture name="sword.png" x="0" y="0" width="32" height="32"/>
+	<SubTexture name="shield.png" x="33" y="0" width="32" height="32"/>
+	<SubTexture name="potion.png" x="0" y="33" width="32" height="32"/>
+	<SubTexture name="bow.png" x="33" y="33" width="32" height="32"/>
+</TextureAtlas>

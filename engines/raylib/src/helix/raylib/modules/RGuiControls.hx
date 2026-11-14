@@ -1089,8 +1089,9 @@ class RGuiControls {
 			progress.width = f32(f32(value[0] / (maxValue - minValue)) * bounds.width) - (value[0] >= maxValue ? 2 * border : 0.);
 		if (state == STATE_DISABLED)
 			box(PROGRESSBAR, 0, state, bounds, border, styleColor(PROGRESSBAR, BORDER + state * 3), BLANK);
-		else if (drawSkin(PROGRESSBAR, 0, state, bounds))
-			box(PROGRESSBAR, 1, state, progress, 0, BLANK, styleColor(PROGRESSBAR, BASE_COLOR_PRESSED));
+		else if (drawSkin(PROGRESSBAR, 0, state, bounds, null, BLANK))
+			box(PROGRESSBAR, 1, state, progress, 0, BLANK, styleColor(PROGRESSBAR, BASE_COLOR_PRESSED),
+				new Rectangle(progress.x, progress.y, bounds.width - 2 * border, progress.height));
 		else {
 			var focused = styleColor(PROGRESSBAR, BORDER_COLOR_FOCUSED),
 				normal = styleColor(PROGRESSBAR, BORDER_COLOR_NORMAL);
@@ -1108,7 +1109,8 @@ class RGuiControls {
 				drawRectangle(new Rectangle(bounds.x + reached + 1, bounds.y + bounds.height - 1, bounds.width - reached - 1, border), 0, BLANK, normal);
 				drawRectangle(new Rectangle(bounds.x + bounds.width - 1, bounds.y + 1, border, bounds.height - 2), 0, BLANK, normal);
 			}
-			box(PROGRESSBAR, 1, state, progress, 0, BLANK, styleColor(PROGRESSBAR, BASE_COLOR_PRESSED));
+			box(PROGRESSBAR, 1, state, progress, 0, BLANK, styleColor(PROGRESSBAR, BASE_COLOR_PRESSED),
+				new Rectangle(progress.x, progress.y, bounds.width - 2 * border, progress.height));
 		}
 		sideTexts(PROGRESSBAR, bounds, textLeft, textRight, styleColor(PROGRESSBAR, TEXT + state * 3));
 		return 0;
@@ -1820,13 +1822,13 @@ class RGuiControls {
 		box(SLIDER, 0, state, bounds, border, styleColor(SLIDER, BORDER + state * 3),
 			styleColor(SLIDER, state != STATE_DISABLED ? BASE_COLOR_NORMAL : BASE_COLOR_DISABLED));
 		// A slider's handle, or a slider bar's bar.
-		var part = sliderWidth > 0 ? 2 : 1;
-		if (state == STATE_NORMAL)
-			box(SLIDER, part, state, slider, 0, BLANK, styleColor(SLIDER, BASE_COLOR_PRESSED));
-		else if (state == STATE_FOCUSED)
-			box(SLIDER, part, state, slider, 0, BLANK, styleColor(SLIDER, TEXT_COLOR_FOCUSED));
-		else if (state == STATE_PRESSED)
-			box(SLIDER, part, state, slider, 0, BLANK, styleColor(SLIDER, TEXT_COLOR_PRESSED));
+		if (state != STATE_DISABLED) {
+			var color = styleColor(SLIDER, state == STATE_FOCUSED ? TEXT_COLOR_FOCUSED : state == STATE_PRESSED ? TEXT_COLOR_PRESSED : BASE_COLOR_PRESSED);
+			if (sliderWidth > 0)
+				box(SLIDER, 2, state, slider, 0, BLANK, color);
+			else
+				box(SLIDER, 1, state, slider, 0, BLANK, color, new Rectangle(bounds.x + border, slider.y, bounds.width - 2 * border, slider.height));
+		}
 		sideTexts(SLIDER, bounds, textLeft, textRight, styleColor(SLIDER, TEXT + state * 3));
 		return result;
 	}
@@ -1928,7 +1930,7 @@ class RGuiControls {
 				value = minValue;
 		}
 		// A skin's box is the bar and its track together.
-		if (!drawSkin(SCROLLBAR, 0, state, bounds)) {
+		if (!drawSkin(SCROLLBAR, 0, state, bounds, null, BLANK)) {
 			drawRectangle(bounds, border, styleColor(LISTVIEW, BORDER + state * 3), styleColor(DEFAULT, BORDER_COLOR_DISABLED));
 			drawRectangle(scrollbar, 0, BLANK, styleColor(BUTTON, BASE_COLOR_NORMAL));
 		}

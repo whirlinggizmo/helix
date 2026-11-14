@@ -6,14 +6,17 @@ import helix.raylib.extras.GuiSkins.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 import helix.raylib.modules.RGui;
+import helix.raylib.modules.RGuiSkins;
 
 /** Checks helix-raylib's skins for raygui (`helix.raylib.extras.GuiSkins`), on graphics that keep nothing: no hook until a skin is set, so
 	a program setting none draws as raygui does; a skinned button drawing exactly the vertices `DrawTextureNPatch` draws for its state's
 	patch, normal, focused, pressed (falling back to focused) and disabled (falling back to normal); a skin set on `DEFAULT` set on every
-	control, a control's own after it kept; a sheet cut down and across; a skin put back after one call; and `GuiClearSkins` drawing flat
-	again. The controls are locked (`GuiLock`), so the state is the one `GuiSetState` gives, with no mouse. */
+	control, a control's own after it kept; a sheet cut down and across; a skin put back after one call; a one-call skin taken by the
+	next call alone; the text offsets a sheet's lip and lift give, and a base moving its control's text; icon textures laid out by
+	their width; a button of images and its click mask; and `GuiClearSkins` drawing flat again. The controls are locked (`GuiLock`), so the state is the one `GuiSetState` gives, with no mouse. */
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.modules.RGui)
+@:access(helix.raylib.modules.RGuiSkins)
 class GuiSkinsTests {
 	static var checks = 0;
 
@@ -61,7 +64,7 @@ class GuiSkinsTests {
 		GuiLock();
 
 		// No skin set: no hook, and a button draws flat.
-		check(!RGui.drawSkin(BUTTON, GUI_SKIN_BASE, STATE_NORMAL, bounds), "no skin drawn until one is set");
+		check(!RGui.drawSkin(BUTTON, GUI_SKIN_BASE, STATE_NORMAL, bounds, null, BLANK), "no skin drawn until one is set");
 		GuiButton(bounds, "");
 		var flat = drawn();
 		check(flat.length > 0, "a flat button draws");
@@ -69,7 +72,7 @@ class GuiSkinsTests {
 		// A skinned button draws its state's patch, as DrawTextureNPatch does.
 		var skin = GuiSkinFromTexture(sheet, patch(0), patch(32), null, patch(96));
 		GuiSetSkin(BUTTON, GUI_SKIN_BASE, skin);
-		check(RGui.drawSkin(BUTTON, GUI_SKIN_BASE, STATE_NORMAL, bounds), "the hook is set with the first skin");
+		check(RGui.drawSkin(BUTTON, GUI_SKIN_BASE, STATE_NORMAL, bounds, null, BLANK), "the hook is set with the first skin");
 		drawn();
 		for (state => y in [
 			STATE_NORMAL => 0,
@@ -112,6 +115,54 @@ class GuiSkinsTests {
 		var back = drawn();
 		DrawTextureNPatch(sheet, patch(0), bounds, new Vector2(0, 0), 0, WHITE);
 		check(back == drawn(), "the skin put back");
+
+		// A one-call skin: the next call takes it, the one after draws GuiSetSkin's again.
+		GuiSetSkinOnce(BUTTON, GUI_SKIN_BASE, GuiSkinFromTexture(sheet, patch(64)));
+		GuiButton(bounds, "");
+		check(drawn() == once, "the next call takes the one-call skin");
+		GuiButton(bounds, "");
+		check(drawn() == back, "the call after draws GuiSetSkin's again");
+		GuiSetSkinOnce(BUTTON, GUI_SKIN_BASE, null);
+		GuiButton(bounds, "");
+		check(drawn() == flat, "a null one-call skin draws that call flat");
+		GuiButton(bounds, "");
+		check(drawn() == back, "and the next call skinned again");
+
+		// The text offsets from a sheet's lip and lift, and a base moving its control's text by its state's.
+		var lipped = GuiSkinFromSheet(sheet, 64, 32, 8, 8, 8, 8, 4, 2);
+		check(lipped.normalTextOffset.y == -2 && lipped.disabledTextOffset.y == -2 && lipped.pressedTextOffset.y == 2 && lipped.focusedTextOffset.y == -4,
+			"the offsets from a lip of 4 and a lift of 2");
+		check(GuiSkinFromSheet(sheet, 64, 32, 8, 8, 8, 8).pressedTextOffset.y == 0, "no lip, no offsets");
+		GuiSetSkin(BUTTON, GUI_SKIN_BASE, lipped);
+		RGui.drawSkin(BUTTON, GUI_SKIN_BASE, STATE_PRESSED, bounds, null, BLANK);
+		check(RGui.textOffsetBounds == bounds && RGui.textOffsetY == 2, "a pressed base moves the text 2 down inside it");
+		RGui.drawSkin(SLIDER, GUI_SKIN_BASE, STATE_NORMAL, bounds, null, BLANK);
+		check(RGui.textOffsetBounds == null, "a base with no offset moves none");
+		drawn();
+
+		// An icon drawn from a texture is laid out by its width, raygui's icon by its own.
+		var icon = LoadTextureFromImage(GenImageColor(24, 10, WHITE));
+		GuiSetIconTexture(ICON_229, icon);
+		check(RGui.iconWidth(ICON_229) == 24 && RGui.iconWidth(ICON_FILE) == 16, "an icon texture's width, raygui's icon's 16");
+		GuiSetIconTexture(ICON_229, icon, new Rectangle(0, 0, 12, 10));
+		check(RGui.iconWidth(ICON_229) == 12, "the source's width");
+		GuiSetIconTexture(ICON_229, null);
+		check(RGui.iconWidth(ICON_229) == 16, "raygui's icon again");
+
+		// A button of images draws its state's texture over its bounds; a click mask's clear texels don't answer.
+		var up = LoadTextureFromImage(GenImageColor(8, 8, WHITE)),
+			off = LoadTextureFromImage(GenImageColor(8, 8, GRAY));
+		check(GuiTextureButton(bounds, up, null, null, off) == 0, "a locked image button isn't clicked");
+		var normalDrawn = drawn();
+		GuiSetState(STATE_DISABLED);
+		GuiTextureButton(bounds, up, null, null, off);
+		GuiSetState(STATE_NORMAL);
+		check(drawn() != normalDrawn, "a disabled image button draws its disabled texture");
+		var mask = GenImageColor(2, 2, BLANK);
+		ImageDrawPixel(mask, 1, 1, WHITE);
+		check(!RGuiSkins.masked(mask, bounds, new Vector2(20, 25)), "a clear texel doesn't answer");
+		check(RGuiSkins.masked(mask, bounds, new Vector2(150, 55)), "an opaque one does");
+		check(RGuiSkins.masked(null, bounds, new Vector2(20, 25)), "no mask, the whole rectangle answers");
 
 		// Cleared: flat again.
 		GuiClearSkins();

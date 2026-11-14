@@ -1,0 +1,8 @@
+{
+  "what": "the stone floor's dark square at the top left, the portrait's blue in its hexagon, and the shield icon's blue from the atlas, the render texture fitted to the page's 800 x 600, 75 pixels down.",
+  "points": [
+    {"x": 5, "y": 80, "color": [70, 70, 80], "tolerance": 3},
+    {"x": 120, "y": 325, "color": [51, 136, 213], "tolerance": 20},
+    {"x": 375, "y": 347, "color": [60, 110, 200], "tolerance": 12}
+  ]
+}

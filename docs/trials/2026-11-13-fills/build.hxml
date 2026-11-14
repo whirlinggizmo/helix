@@ -1,0 +1,9 @@
+-lib helix-raylib
+-cp api
+-cp .
+-main Main
+-dce full
+-cpp native
+--no-output
+-D helix-raylib-native-root=..
+-D helix-raylib-portable-sys
