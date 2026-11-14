@@ -775,16 +775,22 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
+
+  An asynchronously loaded image is invalid until `loaded` is called.
 - `LoadImageFromMemoryAsync`: Decodes an image file's bytes, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImageFromMemory`, as images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s, a GIF file's when the type is ".gif" or ".GIF". The reader is chosen as the program builds when the type is a constant, as `LoadImageAsync`'s is by the name.
   - `fileType`: The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
   - `fileData`: The file's bytes.
   - `dataSize`: How many of them.
   - `loaded`: Receives the image.
   - `failed`: Optional. Receives why it couldn't be decoded; when omitted, it is logged.
+
+  An asynchronously loaded image is invalid until `loaded` is called.
 - `LoadTextureAsync`: Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the file is read later. The file is read as `LoadImageAsync` reads it, a GIF file's first frame among them, its reader chosen as the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU when first drawn. The answer comes at a later frame, never during the call.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the texture.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
+
+  An asynchronously loaded texture is invalid until `loaded` is called.
 - `LoadImageAnimAsync`: Loads an animated image's frames, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnim`. The frames are one image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, the file's screen size, each frame's pixels after the last's (`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their delays and loop count aren't kept.
   - `fileName`: The file, as the program names it.
   - `frames`: Receives the frame count, in its first element.
@@ -794,6 +800,8 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some frames gives the frames before the break, as raylib's does; one with no frames, or broken before its first frame ends, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
+
+  An asynchronously loaded image is invalid until `loaded` is called.
 - `LoadImageAnimFromMemoryAsync`: Decodes an animated image file's bytes, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF"; any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when the type is a constant, as `LoadImageAnimAsync`'s is by the name.
   - `fileType`: The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
   - `fileData`: The file's bytes.
@@ -801,6 +809,8 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `frames`: Receives the frame count, in its first element.
   - `loaded`: Receives the frames.
   - `failed`: Optional. Receives why they couldn't be decoded; when omitted, it is logged.
+
+  An asynchronously loaded image is invalid until `loaded` is called.
 
 
 ```haxe
@@ -823,6 +833,8 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
   A file with fewer bytes than the pixels need fails.
 
   A file too small for the header and the pixels is read from its first byte.
+
+  An asynchronously loaded image is invalid until `loaded` is called.
 - `LoadImageFromTextureAsync`: Asynchronously reads a texture's pixels into an RGBA image, replacing raylib's `LoadImageFromTexture`. See `LoadImageFromScreenAsync` for the screen.
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.

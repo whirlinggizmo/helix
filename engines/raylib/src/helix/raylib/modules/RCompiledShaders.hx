@@ -24,6 +24,8 @@ class RCompiledShaders {
 		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
 		```
 
+		An asynchronously loaded shader is invalid until `loaded` is called.
+
 		@param compiledShaderFileName  The compiled shader's file.
 		@param loaded  Receives the shader.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */

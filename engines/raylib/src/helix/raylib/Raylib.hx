@@ -3053,6 +3053,8 @@ class Raylib {
 		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
 		```
 
+		An asynchronously loaded shader is invalid until `loaded` is called.
+
 		@param compiledShaderFileName  The compiled shader's file.
 		@param loaded  Receives the shader.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
@@ -4828,6 +4830,8 @@ class Raylib {
 
 		A file too small for the header and the pixels is read from its first byte.
 
+		An asynchronously loaded image is invalid until `loaded` is called.
+
 		@param fileName  The file.
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -4932,7 +4936,7 @@ class Raylib {
 
 		Each "\n" moves down by the size and the space `SetTextLineSpacing` sets.
 
-		@param font  The font; one with no texture draws as the default font.
+		@param font  The font; one with no texture draws as the default font. Null is refused, with the reason logged.
 		@param text  The text; "\n" starts a line.
 		@param position  The top-left corner.
 		@param fontSize  The height of a line, in pixels; the font is scaled from its size to it.
@@ -4943,7 +4947,7 @@ class Raylib {
 
 	/** Draws text in a font, turned about a point.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param text  The text.
 		@param position  Where the point goes.
 		@param origin  The point turned about, from the text's top-left corner.
@@ -4957,7 +4961,7 @@ class Raylib {
 
 	/** Draws one character in a font. See `DrawTextCodepoints` for drawing several.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param codepoint  The character.
 		@param position  The top-left corner of its line.
 		@param fontSize  The height of a line, in pixels.
@@ -4967,7 +4971,7 @@ class Raylib {
 
 	/** Draws characters in a font, as `DrawTextEx` draws text.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param codepoints  The characters.
 		@param codepointCount  How many of them.
 		@param position  The top-left corner.
@@ -4988,11 +4992,11 @@ class Raylib {
 
 	/** Returns the size text is drawn at by `DrawTextEx`: its widest line's width, and its lines' height.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
 		@param spacing  The space between letters, in pixels.
-		@return  The size, in pixels; 0 by 0 for no text or a font with no texture. */
+		@return  The size, in pixels; 0 by 0 for no text, a font with no texture or a null font. */
 	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
 		return RText.MeasureTextEx(font, text, fontSize, spacing);
 
@@ -5010,7 +5014,7 @@ class Raylib {
 
 		@param font  The font.
 		@param codepoint  The character.
-		@return  The glyph. */
+		@return  The glyph; an empty one, every field 0, for a font that isn't valid (`IsFontValid`). */
 	public static inline function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo
 		return RText.GetGlyphInfo(font, codepoint);
 
@@ -5018,7 +5022,7 @@ class Raylib {
 
 		@param font  The font.
 		@param codepoint  The character.
-		@return  The rectangle, in texels. */
+		@return  The rectangle, in texels; 0 by 0 at 0, 0 for a font that isn't valid (`IsFontValid`). */
 	public static inline function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
 		return RText.GetGlyphAtlasRec(font, codepoint);
 
@@ -5038,7 +5042,7 @@ class Raylib {
 	/** Returns whether a font has a size, glyphs, and their places on its texture.
 
 		@param font  The font.
-		@return  True when it does. */
+		@return  True when it does; false for null. */
 	public static inline function IsFontValid(font:Font):Bool
 		return RText.IsFontValid(font);
 
@@ -5382,6 +5386,8 @@ class Raylib {
 
 		Each Unicode space the file has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
 
+		An asynchronously loaded font is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
 		@param codepoints  The characters, or null for those from the space on.
@@ -5396,6 +5402,8 @@ class Raylib {
 		The glyphs are rasterized off the main thread.
 
 		The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
+
+		An asynchronously loaded font is invalid until `loaded` is called.
 
 		@param fileType  The file's extension, ".ttf" or ".otf". Any other is refused.
 		@param fileData  The file's bytes.
@@ -6260,6 +6268,8 @@ class Raylib {
 
 		Each frame's pose is its bones' transforms in the model.
 
+		Asynchronously loaded animations are invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the animations, as many as the file has; their count is its length.
 		@param failed  Optional. Receives why they couldn't be loaded; when omitted, it is logged. */
@@ -6285,6 +6295,8 @@ class Raylib {
 		A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
 
 		A file that breaks the format fails.
+
+		Asynchronously loaded materials are invalid until `loaded` is called.
 
 		@param fileName  The file, as the program names it: an .mtl file.
 		@param loaded  Receives the materials, in the file's order; their count is its length.
@@ -6793,6 +6805,8 @@ class Raylib {
 
 		A file loaded again shares its first load's decoded sound.
 
+		An asynchronously loaded sound is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the sound.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
@@ -6806,6 +6820,8 @@ class Raylib {
 		A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
 
 		Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
+
+		An asynchronously loaded music stream is invalid until `loaded` is called.
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
 		@param loaded  Receives the music, ready to play, once enough of the file has arrived to start.
@@ -7289,6 +7305,8 @@ class Raylib {
 		naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension
 		then. The answer comes at a later frame, never during the call.
 
+		An asynchronously loaded image is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the image, its pixels its own.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
@@ -7299,6 +7317,8 @@ class Raylib {
 	/** Decodes an image file's bytes, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImageFromMemory`, as
 		images are decoded asynchronously. The formats and channels are `LoadImageAsync`'s, a GIF file's when the type is ".gif" or
 		".GIF". The reader is chosen as the program builds when the type is a constant, as `LoadImageAsync`'s is by the name.
+
+		An asynchronously loaded image is invalid until `loaded` is called.
 
 		@param fileType  The file's extension: ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".qoi", ".gif" or ".GIF".
 		@param fileData  The file's bytes.
@@ -7324,6 +7344,8 @@ class Raylib {
 		the program builds as `LoadImageAsync`'s is. A file loaded again shares its first load's texture, and the image goes to the GPU
 		when first drawn. The answer comes at a later frame, never during the call.
 
+		An asynchronously loaded texture is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the texture.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
@@ -7346,6 +7368,8 @@ class Raylib {
 		naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension
 		then. The answer comes at a later frame, never during the call.
 
+		An asynchronously loaded image is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param frames  Receives the frame count, in its first element.
 		@param loaded  Receives the frames.
@@ -7359,6 +7383,8 @@ class Raylib {
 		`LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF";
 		any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when
 		the type is a constant, as `LoadImageAnimAsync`'s is by the name.
+
+		An asynchronously loaded image is invalid until `loaded` is called.
 
 		@param fileType  The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
 		@param fileData  The file's bytes.
@@ -7378,6 +7404,8 @@ class Raylib {
 		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the
 		space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program
 		builds as `LoadImageAsync`'s is.
+
+		An asynchronously loaded font is invalid until `loaded` is called.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the font.
@@ -7408,6 +7436,8 @@ class Raylib {
 		naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs
 		brings both, the reader chosen by its extension then.
 
+		An asynchronously loaded model is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the model.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
@@ -7423,6 +7453,8 @@ class Raylib {
 		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
 		naming only Ogg files carries no WAV or QOA reader; a name known only as the program runs brings every reader, the one its
 		extension names chosen then.
+
+		An asynchronously loaded wave is invalid until `loaded` is called.
 
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the wave, its samples its own.
@@ -7447,6 +7479,8 @@ class Raylib {
 
 		The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or
 		QOA reader; a type known only as the program runs brings every reader.
+
+		An asynchronously loaded wave is invalid until `loaded` is called.
 
 		@param fileType  The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
 		@param fileData  The file's bytes.

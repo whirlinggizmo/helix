@@ -63,6 +63,8 @@ class Textures {
 
 		Refused for a file of another format, an image packed rotated, a GIF texture or a texture that doesn't load.
 
+		An asynchronously loaded atlas is invalid until `loaded` is called.
+
 		@param fileName  The atlas's file.
 		@param loaded  Called with the atlas.
 		@param failed  Optional. Called with the reason when refused; when omitted, it is logged. */

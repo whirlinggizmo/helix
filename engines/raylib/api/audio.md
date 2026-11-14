@@ -312,6 +312,8 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only Ogg files carries no WAV or QOA reader; a name known only as the program runs brings every reader, the one its extension names chosen then.
+
+  An asynchronously loaded wave is invalid until `loaded` is called.
 - `LoadWaveFromMemoryAsync`: Reads a sound file's samples from its bytes, answering when they are read: helix-raylib's own, in place of raylib's `LoadWaveFromMemory`, as files other than WAV and QOA are decoded off the main thread. Each is read as raylib 5.5 reads it.
   - `fileType`: The file's extension with its dot: ".wav", ".qoa", ".ogg" or ".mp3", or the same in upper case.
   - `fileData`: The file's bytes.
@@ -322,6 +324,8 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
 
   The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
+
+  An asynchronously loaded wave is invalid until `loaded` is called.
 
 
 ```haxe
@@ -339,6 +343,8 @@ static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Vo
   `InitAudioDevice` must come first.
 
   A file loaded again shares its first load's decoded sound.
+
+  An asynchronously loaded sound is invalid until `loaded` is called.
 - `LoadMusicStreamAsync`: Asynchronously opens a music file to be played as it is read, replacing raylib's `LoadMusicStream`. See `LoadSoundAsync` for decoding a file whole first.
   - `fileName`: The file, as the program names it, such as "assets/theme.ogg".
   - `loaded`: Receives the music, ready to play, once enough of the file has arrived to start.
@@ -349,6 +355,8 @@ static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Vo
   A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
 
   Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
+
+  An asynchronously loaded music stream is invalid until `loaded` is called.
 - `ExportWaveAsync`: Asynchronously writes a wave to a sound file, replacing raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.
   - `wave`: The wave.
   - `fileName`: The file; its extension chooses the format.

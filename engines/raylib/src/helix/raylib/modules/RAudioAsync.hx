@@ -44,6 +44,8 @@ class RAudioAsync {
 
 		A file loaded again shares its first load's decoded sound.
 
+		An asynchronously loaded sound is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the sound.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
@@ -158,6 +160,8 @@ class RAudioAsync {
 		A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
 
 		Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
+
+		An asynchronously loaded music stream is invalid until `loaded` is called.
 
 		@param fileName  The file, as the program names it, such as "assets/theme.ogg".
 		@param loaded  Receives the music, ready to play, once enough of the file has arrived to start.

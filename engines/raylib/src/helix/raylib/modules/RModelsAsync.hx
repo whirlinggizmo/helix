@@ -166,6 +166,8 @@ class RModelsAsync {
 
 		Each frame's pose is its bones' transforms in the model.
 
+		Asynchronously loaded animations are invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param loaded  Receives the animations, as many as the file has; their count is its length.
 		@param failed  Optional. Receives why they couldn't be loaded; when omitted, it is logged. */
@@ -208,6 +210,8 @@ class RModelsAsync {
 		A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
 
 		A file that breaks the format fails.
+
+		Asynchronously loaded materials are invalid until `loaded` is called.
 
 		@param fileName  The file, as the program names it: an .mtl file.
 		@param loaded  Receives the materials, in the file's order; their count is its length.

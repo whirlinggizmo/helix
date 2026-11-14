@@ -91,6 +91,8 @@ class RTextAsync {
 
 		Each Unicode space the file has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
 
+		An asynchronously loaded font is invalid until `loaded` is called.
+
 		@param fileName  The file, as the program names it.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
 		@param codepoints  The characters, or null for those from the space on.
@@ -112,6 +114,8 @@ class RTextAsync {
 		The glyphs are rasterized off the main thread.
 
 		The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
+
+		An asynchronously loaded font is invalid until `loaded` is called.
 
 		@param fileType  The file's extension, ".ttf" or ".otf". Any other is refused.
 		@param fileData  The file's bytes.

@@ -68,7 +68,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 
   A size under 10 is measured at 10.
 - `DrawTextEx`: Draws text in a font. See `DrawTextPro` for drawing text turned about a point.
-  - `font`: The font; one with no texture draws as the default font.
+  - `font`: The font; one with no texture draws as the default font. Null is refused, with the reason logged.
   - `text`: The text; "\n" starts a line.
   - `position`: The top-left corner.
   - `fontSize`: The height of a line, in pixels; the font is scaled from its size to it.
@@ -77,7 +77,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 
   Each "\n" moves down by the size and the space `SetTextLineSpacing` sets.
 - `DrawTextPro`: Draws text in a font, turned about a point.
-  - `font`: The font.
+  - `font`: The font. Null is refused, with the reason logged.
   - `text`: The text.
   - `position`: Where the point goes.
   - `origin`: The point turned about, from the text's top-left corner.
@@ -86,13 +86,13 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `spacing`: The space between letters, in pixels.
   - `tint`: The color.
 - `DrawTextCodepoint`: Draws one character in a font. See `DrawTextCodepoints` for drawing several.
-  - `font`: The font.
+  - `font`: The font. Null is refused, with the reason logged.
   - `codepoint`: The character.
   - `position`: The top-left corner of its line.
   - `fontSize`: The height of a line, in pixels.
   - `tint`: The color.
 - `DrawTextCodepoints`: Draws characters in a font, as `DrawTextEx` draws text.
-  - `font`: The font.
+  - `font`: The font. Null is refused, with the reason logged.
   - `codepoints`: The characters.
   - `codepointCount`: How many of them.
   - `position`: The top-left corner.
@@ -104,11 +104,11 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 
   Defaults to 2 pixels.
 - `MeasureTextEx`: Returns the size text is drawn at by `DrawTextEx`: its widest line's width, and its lines' height.
-  - `font`: The font.
+  - `font`: The font. Null is refused, with the reason logged.
   - `text`: The text.
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, in pixels.
-  - returns: The size, in pixels; 0 by 0 for no text or a font with no texture.
+  - returns: The size, in pixels; 0 by 0 for no text, a font with no texture or a null font.
 - `GetGlyphIndex`: Returns the index of a character's glyph in a font.
   - `font`: The font.
   - `codepoint`: The character.
@@ -118,11 +118,11 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 - `GetGlyphInfo`: Returns a character's glyph in a font, as `GetGlyphIndex` finds it.
   - `font`: The font.
   - `codepoint`: The character.
-  - returns: The glyph.
+  - returns: The glyph; an empty one, every field 0, for a font that isn't valid (`IsFontValid`).
 - `GetGlyphAtlasRec`: Returns where a character's glyph is on its font's texture, as `GetGlyphIndex` finds it.
   - `font`: The font.
   - `codepoint`: The character.
-  - returns: The rectangle, in texels.
+  - returns: The rectangle, in texels; 0 by 0 at 0, 0 for a font that isn't valid (`IsFontValid`).
 - `GetFontDefault`: Returns raylib's default font, made at the first call.
   - returns: The font.
 
@@ -133,7 +133,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   The font's texture goes to the GPU when first drawn.
 - `IsFontValid`: Returns whether a font has a size, glyphs, and their places on its texture.
   - `font`: The font.
-  - returns: True when it does.
+  - returns: True when it does; false for null.
 - `UnloadFont`: Frees a font's texture and its glyphs' images.
   - `font`: The font.
 
@@ -348,6 +348,8 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
 
+  An asynchronously loaded font is invalid until `loaded` is called.
+
 
 ```haxe
 static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font -> Void, ?failed:String -> Void):Void
@@ -367,6 +369,8 @@ static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Vo
   The font holds only the characters the file has. `glyphCount` may be fewer than asked for, and a character it lacks draws as its '?'.
 
   Each Unicode space the file has (U+0020, U+00A0, U+2000 to U+200A, U+3000 and the others) is a blank glyph as wide as its advance.
+
+  An asynchronously loaded font is invalid until `loaded` is called.
 - `LoadFontFromMemoryAsync`: Asynchronously makes a font from a TrueType or OpenType file's bytes, replacing raylib's `LoadFontFromMemory`. See `LoadFontExAsync` for loading a file by its name. The glyphs are rasterized off the main thread.
   - `fileType`: The file's extension, ".ttf" or ".otf". Any other is refused.
   - `fileData`: The file's bytes.
@@ -378,6 +382,8 @@ static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Vo
   - `failed`: Optional. Receives why it couldn't be made; when omitted, it is logged.
 
   The font holds only the characters the file has, as `LoadFontExAsync`'s does. With none of them, it is the default font.
+
+  An asynchronously loaded font is invalid until `loaded` is called.
 - `LoadFontDataAsync`: Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See `LoadFontFromMemoryAsync` for a font ready to draw, replacing raylib's `LoadFontData`.
   - `fileData`: The font file's bytes.
   - `dataSize`: How many of them.

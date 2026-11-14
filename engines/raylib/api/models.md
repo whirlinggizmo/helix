@@ -572,6 +572,8 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs brings both, the reader chosen by its extension then.
 
+  An asynchronously loaded model is invalid until `loaded` is called.
+
 
 ```haxe
 static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation> -> Void, ?failed:String -> Void):Void
@@ -592,6 +594,8 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
   Each animation is sampled 60 times a second, as raylib 6.2 samples it, with (int)(duration * 60) + 1 frames.
 
   Each frame's pose is its bones' transforms in the model.
+
+  Asynchronously loaded animations are invalid until `loaded` is called.
 - `LoadMaterialsAsync`: Asynchronously loads an .mtl file's materials with the textures they name, replacing raylib's `LoadMaterials`. See `LoadModelAsync` for loading an OBJ file with the materials its `mtllib` names.
   - `fileName`: The file, as the program names it: an .mtl file.
   - `loaded`: Receives the materials, in the file's order; their count is its length.
@@ -608,6 +612,8 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
   A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
 
   A file that breaks the format fails.
+
+  Asynchronously loaded materials are invalid until `loaded` is called.
 - `ExportMeshAsync`: Asynchronously writes a mesh as an OBJ file through `SaveFileTextAsync`, replacing raylib's `ExportMesh`. See `ExportMeshAsCodeAsync` for writing a C header.
   - `mesh`: The mesh, with positions, texture coordinates and normals.
   - `fileName`: The file; only ".obj" is written.

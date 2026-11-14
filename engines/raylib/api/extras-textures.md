@@ -53,6 +53,8 @@ static macro function LoadTextureAtlasAsync(fileName:String, loaded:TextureAtlas
 
   Refused for a file of another format, an image packed rotated, a GIF texture or a texture that doesn't load.
 
+  An asynchronously loaded atlas is invalid until `loaded` is called.
+
 ### textures: part of a texture shown up to an amount, and the fill's edge
 
 ```haxe

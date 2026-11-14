@@ -108,6 +108,8 @@ class RTexturesAsync {
 
 		A file too small for the header and the pixels is read from its first byte.
 
+		An asynchronously loaded image is invalid until `loaded` is called.
+
 		@param fileName  The file.
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.

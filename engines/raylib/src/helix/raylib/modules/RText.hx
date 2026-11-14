@@ -59,13 +59,17 @@ class RText {
 
 		Each "\n" moves down by the size and the space `SetTextLineSpacing` sets.
 
-		@param font  The font; one with no texture draws as the default font.
+		@param font  The font; one with no texture draws as the default font. Null is refused, with the reason logged.
 		@param text  The text; "\n" starts a line.
 		@param position  The top-left corner.
 		@param fontSize  The height of a line, in pixels; the font is scaled from its size to it.
 		@param spacing  The space between letters, in pixels.
 		@param tint  The color. */
 	static function DrawTextEx(font:Font, text:String, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void {
+		if (font == null) {
+			refuseNull("DrawTextEx");
+			return;
+		}
 		if (font.texture == null || font.texture.id == 0)
 			font = GetFontDefault();
 		var x = 0., y = 0., scale = fontSize / font.baseSize;
@@ -85,7 +89,7 @@ class RText {
 
 	/** Draws text in a font, turned about a point.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param text  The text.
 		@param position  Where the point goes.
 		@param origin  The point turned about, from the text's top-left corner.
@@ -94,6 +98,10 @@ class RText {
 		@param spacing  The space between letters, in pixels.
 		@param tint  The color. */
 	static function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vector2, rotation:Float, fontSize:Float, spacing:Float, tint:Color):Void {
+		if (font == null) {
+			refuseNull("DrawTextPro");
+			return;
+		}
 		var frame = Runtime.frame, view = frame.view;
 		var m = Matrix4.fromTranslation(-origin.x, -origin.y, 0);
 		m = Matrix4.compose(m, Matrix4.fromRotation(0, 0, 1, rotation * DEG2RAD));
@@ -107,12 +115,16 @@ class RText {
 
 	/** Draws one character in a font. See `DrawTextCodepoints` for drawing several.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param codepoint  The character.
 		@param position  The top-left corner of its line.
 		@param fontSize  The height of a line, in pixels.
 		@param tint  The color. */
 	static function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fontSize:Float, tint:Color):Void {
+		if (font == null) {
+			refuseNull("DrawTextCodepoint");
+			return;
+		}
 		var index = GetGlyphIndex(font, codepoint);
 		var scale = fontSize / font.baseSize,
 			padding = font.glyphPadding,
@@ -126,7 +138,7 @@ class RText {
 
 	/** Draws characters in a font, as `DrawTextEx` draws text.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param codepoints  The characters.
 		@param codepointCount  How many of them.
 		@param position  The top-left corner.
@@ -134,6 +146,10 @@ class RText {
 		@param spacing  The space between letters, in pixels.
 		@param tint  The color. */
 	static function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void {
+		if (font == null) {
+			refuseNull("DrawTextCodepoints");
+			return;
+		}
 		var x = 0., y = 0., scale = fontSize / font.baseSize;
 		for (i in 0...codepointCount) {
 			var codepoint = codepoints[i],
@@ -150,6 +166,17 @@ class RText {
 		}
 	}
 
+	// Logs a text call given a null font, as a font is until its ...Async load's loaded callback is called: the first time only, as text
+	// is drawn each frame.
+	static function refuseNull(call:String):Void {
+		if (nullRefused)
+			return;
+		nullRefused = true;
+		Runtime.log(LOG_WARNING, 'FONT: $call refused: the font is null. An asynchronously loaded font is invalid until its loaded callback is called.');
+	}
+
+	static var nullRefused = false;
+
 	/** Sets the space between lines of text, added to the size at each "\n".
 
 		Defaults to 2 pixels.
@@ -161,12 +188,16 @@ class RText {
 
 	/** Returns the size text is drawn at by `DrawTextEx`: its widest line's width, and its lines' height.
 
-		@param font  The font.
+		@param font  The font. Null is refused, with the reason logged.
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
 		@param spacing  The space between letters, in pixels.
-		@return  The size, in pixels; 0 by 0 for no text or a font with no texture. */
+		@return  The size, in pixels; 0 by 0 for no text, a font with no texture or a null font. */
 	static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2 {
+		if (font == null) {
+			refuseNull("MeasureTextEx");
+			return new Vector2();
+		}
 		if (font.texture == null || font.texture.id == 0 || text == null || text.length == 0)
 			return new Vector2();
 		// raylib's float arithmetic, each step rounded to single precision.
@@ -219,18 +250,18 @@ class RText {
 
 		@param font  The font.
 		@param codepoint  The character.
-		@return  The glyph. */
+		@return  The glyph; an empty one, every field 0, for a font that isn't valid (`IsFontValid`). */
 	static function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo {
-		return font.glyphs[GetGlyphIndex(font, codepoint)];
+		return IsFontValid(font) ? font.glyphs[GetGlyphIndex(font, codepoint)] : new GlyphInfo();
 	}
 
 	/** Returns where a character's glyph is on its font's texture, as `GetGlyphIndex` finds it.
 
 		@param font  The font.
 		@param codepoint  The character.
-		@return  The rectangle, in texels. */
+		@return  The rectangle, in texels; 0 by 0 at 0, 0 for a font that isn't valid (`IsFontValid`). */
 	static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle {
-		return font.recs[GetGlyphIndex(font, codepoint)];
+		return IsFontValid(font) ? font.recs[GetGlyphIndex(font, codepoint)] : new Rectangle();
 	}
 
 	/** Returns raylib's default font, made at the first call.
@@ -287,9 +318,9 @@ class RText {
 	/** Returns whether a font has a size, glyphs, and their places on its texture.
 
 		@param font  The font.
-		@return  True when it does. */
+		@return  True when it does; false for null. */
 	static function IsFontValid(font:Font):Bool {
-		return font.baseSize > 0 && font.glyphCount > 0 && font.recs != null && font.glyphs != null;
+		return font != null && font.baseSize > 0 && font.glyphCount > 0 && font.recs != null && font.glyphs != null;
 	}
 
 	/** Frees a font's texture and its glyphs' images.

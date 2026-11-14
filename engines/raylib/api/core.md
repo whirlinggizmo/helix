@@ -1340,6 +1340,8 @@ static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Sha
   ```hxml
   --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
   ```
+
+  An asynchronously loaded shader is invalid until `loaded` is called.
 - `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShaderAsync` for loading one from a file.
   - `compiledShaderData`: The compiled shader, as `CompileShaderFile` writes it.
   - returns: The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning.
