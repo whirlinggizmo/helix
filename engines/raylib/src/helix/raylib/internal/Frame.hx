@@ -1391,6 +1391,9 @@ class Frame {
 		present();
 		for (call in drawing)
 			call();
+		// The frame's vertices and sprites go up once, in its first pass: every pass draws from the same buffers, and a buffer written
+		// again after a pass drew from it takes another copy of the buffer on some graphics adapters, which run out of them.
+		var uploaded = false;
 		for (p in passes) {
 			for (u in p.updates)
 				graphics.updateTexture(u.texture, u.x, u.y, u.width, u.height, u.rgba);
@@ -1403,7 +1406,10 @@ class Frame {
 				graphics.resumeTargetPass(p.target);
 			else
 				graphics.beginTargetPass(p.target, (color >> 16 & 255) / 255, (color >> 8 & 255) / 255, (color & 255) / 255, (color >>> 24) / 255);
-			upload();
+			if (!uploaded) {
+				upload();
+				uploaded = true;
+			}
 			var width = p.target == 0 ? framebufferWidth : Std.int(p.width),
 				height = p.target == 0 ? framebufferHeight : Std.int(p.height);
 			var clipped:Null<Array<Float>> = null,
