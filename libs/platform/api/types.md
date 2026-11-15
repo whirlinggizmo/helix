@@ -146,7 +146,7 @@ function toString():String
 
 Specifies what a pipeline's flip uniform holds, so that an adapter can draw a render target the right way up.
 
-The uniform is the one at `PipelineDesc.flipBlockSlot` and `flipOffset`, in the vertex stage's block of that slot. An adapter whose render targets are stored bottom row first, as GL's are, flips its draws into a target. With ClipScale every adapter writes the vec4 there, all four components: (1, -1, 1, 1) in a pass into a target on an adapter storing targets bottom row first, and (1, 1, 1, 1) otherwise, so a shader multiplying `gl_Position` by it is right everywhere. With ViewProjection an adapter storing targets bottom row first negates the y row of the column-major matrix there in a pass into a target. An adapter flips its own copy of the bytes, never the caller's, and reverses the winding with it. A shadow pass is never flipped.
+The uniform is the one at `PipelineDesc.flipBlockSlot` and `flipOffset`, in the vertex stage's block of that slot. An adapter whose backend stores a target the other way round from how it was made (`IGraphics.createRenderTarget`'s `bottomRowFirst`) flips its draws into it: GL into a target stored top row first, Metal and SDL_GPU into one stored bottom row first. With ClipScale every adapter writes the vec4 there, all four components: (1, -1, 1, 1) in a flipped pass and (1, 1, 1, 1) otherwise, so a shader multiplying `gl_Position` by it is right everywhere. With ViewProjection an adapter negates the y row of the column-major matrix there in a flipped pass. An adapter flips its own copy of the bytes, never the caller's, and reverses the winding with it. A shadow pass is never flipped.
 
 - `ClipFlip.None`: Nothing is touched.
 - `ClipFlip.ClipScale`: The uniform is a vec4 clip scale that the adapter writes.
@@ -1026,7 +1026,7 @@ var device(get, never):GraphicsDevice
 var textureBytes(get, never):Float
 var bufferBytes(get, never):Float
 function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
-function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?msaaSampleCount:Int = 0):Int
+function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?msaaSampleCount:Int = 0, ?bottomRowFirst:Bool = false):Int
 function canRender(format:TextureFormat):Bool
 function createShadowMap(size:Int, layerCount:Int):Int
 function disposeTexture(handle:Int):Void
@@ -1119,10 +1119,11 @@ function dispose():Void
   - `format`: Optional. The texels' format; defaults to Rgba8.
   - `depth`: Optional. Whether it has a depth buffer; defaults to true.
   - `msaaSampleCount`: Optional. The multisampling samples per texel asked for: 1 for none, or 0, the default, for the screen's (`msaaSampleCount`).
+  - `bottomRowFirst`: Optional. Whether it is stored bottom row first; defaults to false, top row first.
   - returns: The render target's handle.
   - throws `String`: A size of 0 or less, a format this GPU cannot draw into (`canRender`), or a sample count below 0.
 
-  The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. Whether it has depth and how many samples it is drawn with are chosen apart. A target of more than one sample is drawn into its samples, which are resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`. A count the GPU can't give is never refused. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
+  The target is sampled like any texture and stored top row first, or bottom row first when asked, as GL stores its framebuffers: what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth buffer. Whether it has depth and how many samples it is drawn with are chosen apart. A target of more than one sample is drawn into its samples, which are resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`. A count the GPU can't give is never refused. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
 - `canRender`: Returns whether this GPU draws into, blends over and filters render targets of a format.
   - `format`: The format.
   - returns: True when render targets of the format can be drawn into.
@@ -1250,7 +1251,7 @@ function dispose():Void
   Natively the wait paces the caller's loop. In a page it does nothing, because the browser shows the frame when the frame's callback returns.
 - `readPixels`: Reads a texture, a render target, or the frame just ended, back from the GPU.
   - `handle`: An RGBA8 `createTexture` texture (its top level), an RGBA8 render target, or 0 for the frame `endFrame` just ended.
-  - `read`: Receives the pixels and their width and height. The pixels are `width * height * 4` bytes of RGBA8, with rows top first.
+  - `read`: Receives the pixels and their width and height. The pixels are `width * height * 4` bytes of RGBA8, with rows top first: a texture's or render target's as it is stored, its first row first, so a target stored bottom row first reads bottom row first.
   - `failed`: Receives why the pixels can't be read, which is that no frame has ended since the last `beginFrame`.
   - throws `String`: A call inside a pass, or a handle that is none of these.
 

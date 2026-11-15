@@ -130,7 +130,8 @@ interface IGraphics {
 
 	/** Creates a render target, which is a texture that a target pass draws into.
 
-		The target is sampled like any texture and stored top row first. A target with depth has its own depth buffer. Whether it has depth
+		The target is sampled like any texture and stored top row first, or bottom row first when asked, as GL stores its framebuffers:
+		what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth buffer. Whether it has depth
 		and how many samples it is drawn with are chosen apart. A target of more than one sample is drawn into its samples, which are
 		resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is
 		rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`.
@@ -143,9 +144,11 @@ interface IGraphics {
 		@param depth  Optional. Whether it has a depth buffer; defaults to true.
 		@param msaaSampleCount  Optional. The multisampling samples per texel asked for: 1 for none, or 0, the default, for the screen's
 			(`msaaSampleCount`).
+		@param bottomRowFirst  Optional. Whether it is stored bottom row first; defaults to false, top row first.
 		@return  The render target's handle.
 		@throws String  A size of 0 or less, a format this GPU cannot draw into (`canRender`), or a sample count below 0. */
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int;
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0,
+		bottomRowFirst:Bool = false):Int;
 
 	/** Returns whether this GPU draws into, blends over and filters render targets of a format.
 
@@ -362,7 +365,8 @@ interface IGraphics {
 		left it. The frame `endFrame` ended must be read before `present`, and in a page before the frame's callback returns. One of `read`
 		or `failed` is called once, on the main thread. It is called during the call, or later on a GPU that reads back asynchronously.
 		@param handle  An RGBA8 `createTexture` texture (its top level), an RGBA8 render target, or 0 for the frame `endFrame` just ended.
-		@param read  Receives the pixels and their width and height. The pixels are `width * height * 4` bytes of RGBA8, with rows top first.
+		@param read  Receives the pixels and their width and height. The pixels are `width * height * 4` bytes of RGBA8, with rows top first:
+			a texture's or render target's as it is stored, its first row first, so a target stored bottom row first reads bottom row first.
 		@param failed  Receives why the pixels can't be read, which is that no frame has ended since the last `beginFrame`.
 		@throws String  A call inside a pass, or a handle that is none of these. */
 	public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void;

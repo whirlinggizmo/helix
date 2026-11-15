@@ -34,7 +34,9 @@ private typedef Target = {
 	hasDepth:Bool,
 	asked:Int,
 	// The samples it has.
-	samples:Int
+	samples:Int,
+	// Whether it is stored bottom row first, as GL stores it, so its passes aren't flipped.
+	bottom:Bool
 }
 
 /** A program's uniform block: its binding point, which is its index in a draw's uniforms, its size, and whether the linked program kept
@@ -298,6 +300,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			textures[id] = dataTexture(d.width, d.height);
 		for (id => t in targets) {
 			var made = target(t.width, t.height, t.half, t.hasDepth, t.asked);
+			made.target.bottom = t.bottom;
 			textures[id] = made.texture;
 			targets[id] = made.target;
 		}
@@ -814,10 +817,12 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return most;
 	}
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0):Int {
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0,
+			bottomRowFirst:Bool = false):Int {
 		if (width <= 0 || height <= 0 || !canRender(format) || msaaSampleCount < 0)
 			throw "Invalid render target";
 		var made = target(width, height, format == Rgba16f, depth, msaaSampleCount);
+		made.target.bottom = bottomRowFirst;
 		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = made.texture;
 		targets[id] = made.target;
@@ -898,7 +903,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				height: height,
 				hasDepth: depth,
 				asked: msaaSampleCount,
-				samples: count
+				samples: count,
+				bottom: false
 			}
 		};
 	}
@@ -987,7 +993,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.drawn != null ? t.drawn : t.framebuffer);
 		drawing = t;
 		passTexture = target;
-		inTarget = flipped = true;
+		inTarget = true;
+		flipped = !t.bottom;
 		open(t.width, t.height, clear || !t.cleared, red, green, blue, alpha);
 		t.cleared = true;
 	}
@@ -1511,7 +1518,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 		var raw = Bytes.ofData(pixels.buffer);
 		if (handle != 0) {
-			// A texture's rows are its first first, as uploaded, and a target's top first, drawn flipped.
+			// A texture's rows are its first first, as uploaded, and a target's as stored: top first, drawn flipped, or bottom first.
 			read(raw, width, height);
 			return;
 		}

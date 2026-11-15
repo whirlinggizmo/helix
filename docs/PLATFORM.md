@@ -302,10 +302,13 @@ page `present` does nothing, since the browser presents when the frame's callbac
 presents at once and waits for nothing, and the frame may tear: GL swaps with interval 0, SDL_GPU presents IMMEDIATE, or MAILBOX where the
 window has no IMMEDIATE, or VSYNC where it has neither. A page always waits.
 
-Render targets are stored top row first on every backend: GL's adapters draw into a target flipped, through the uniform a pipeline
-names (`PipelineDesc.flip`, `flipBlockSlot` and `flipOffset`): with `ClipScale` every adapter writes the vec4 there, (1, -1, 1, 1) in a GL
-target pass and (1, 1, 1, 1) otherwise; with `ViewProjection` GL negates the y row of the matrix there in a target pass; each into its own
-copy of the block, the caller's bytes unchanged, and with the winding reversed. A shadow pass is never flipped. A declared texture a draw leaves unbound gets a placeholder, so a shader may
+Render targets are stored top row first on every backend, or bottom row first, as GL stores its framebuffers, when made so
+(`createRenderTarget`'s `bottomRowFirst`, which helix-raylib's render textures are, as raylib's are on GL). An adapter whose backend
+stores the other way draws into a target flipped, through the uniform a pipeline names (`PipelineDesc.flip`, `flipBlockSlot` and
+`flipOffset`): GL into a target top row first, and Metal and SDL_GPU into one bottom row first. With `ClipScale` every adapter writes the
+vec4 there, (1, -1, 1, 1) in a flipped pass and (1, 1, 1, 1) otherwise; with `ViewProjection` it negates the y row of the matrix there in
+a flipped pass; each into its own copy of the block, the caller's bytes unchanged, and with the winding reversed. A shadow pass is never
+flipped. A declared texture a draw leaves unbound gets a placeholder, so a shader may
 declare more than a draw binds. Adapters: `graphics/webgl2` (`WebGl2GraphicsAdapter`), `graphics/sokol` (`SokolGraphicsAdapter`,
 sokol_gfx on GL 4.1), `graphics/sdl3gpu` (`Sdl3GpuGraphicsAdapter`, SDL_GPU on Vulkan, Direct3D 12 or Metal). `libs/platform/tests/graphics`
 draws on each and checks the pixels it reads back.

@@ -659,10 +659,11 @@ class GraphicsTests {
 		// Single-sampled, so the cases' edges fall on whole texels.
 		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1),
 			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1);
-		// With depth, multisampled as the screen is, kept from one frame to the next; and one never cleared.
+		// With depth, multisampled as the screen is, kept from one frame to the next; one never cleared; and one stored bottom row first.
 		var kept = graphics.createRenderTarget(SIZE, SIZE),
-			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1);
-		for (t in [target, second, kept, fresh]) {
+			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1),
+			upward = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1, true);
+		for (t in [target, second, kept, fresh, upward]) {
 			textures.push(t);
 			surviving.push(t);
 		}
@@ -826,6 +827,17 @@ class GraphicsTests {
 					for (i => s in spots)
 						expectSpot(p, s, spotColors[i].concat([1]));
 				}
+			},
+			{
+				name: "points into a target stored bottom row first, read back bottom row first",
+				before: () -> {
+					graphics.beginTargetPass(upward, 0, 0, 0, 1);
+					draw(dotted, dots, 5);
+					graphics.endTargetPass();
+				},
+				target: upward,
+				check: p -> for (i => s in spots)
+					expectSpot(p, [s[0], SIZE - 1 - s[1]], spotColors[i].concat([1]))
 			},
 			{
 				name: "points by index",

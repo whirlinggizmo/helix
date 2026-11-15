@@ -124,7 +124,7 @@ static sg_buffer extras[SLOTS][MAX_RENAMES];static int renamed[SLOTS],bound[SLOT
 static char appended[SLOTS];
 /* Render targets, by texture view slot: their color and depth attachment views (no depth view without depth), depth image and size, the
    pipelines' variant drawing into them (unflipped), and whether a pass has cleared them yet. */
-static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant,cleared;}targets[SLOTS];
+static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant,cleared,bottom;}targets[SLOTS];
 /* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
    (comparing, linear, clamped), made with the first. */
 #define MAX_SHADOW_LAYERS 24
@@ -581,7 +581,7 @@ int helix_can_render(int format){
 int helix_max_target_samples(int format){return helix_can_render(format)&&sg_query_pixelformat(format_of(format)).msaa?max_samples:1;}
 /* A render target: a color image of format sampled through the returned texture view, drawn with the samples asked for (at least 1) rounded
    down to 1, 2, 4 or 8 and to helix_max_target_samples; with depth, a depth image of the same samples for its passes. */
-uint32_t helix_target(int w,int h,int format,int depth,int asked){
+uint32_t helix_target(int w,int h,int format,int depth,int asked,int bottom){
  if(w<=0||h<=0||w>16384||h>16384||!helix_can_render(format)||asked<1)return 0;
  const int most=helix_max_target_samples(format),n=asked<most?asked:most,samples=n>=8?8:n>=4?4:n>=2?2:1;
  /* The screen's depth format (sokol's environment default). Multisampled, its passes draw into an image of its samples, resolved at the
@@ -605,7 +605,7 @@ uint32_t helix_target(int w,int h,int format,int depth,int asked){
  targets[slot].color=sg_make_view(&(sg_view_desc){.color_attachment.image=drawn});
  if(samples>1){targets[slot].resolve=sg_make_view(&(sg_view_desc){.resolve_attachment.image=color});targets[slot].samples_image=drawn;}
  if(depth){targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth_image});targets[slot].depth_image=depth_image;}
- targets[slot].width=w;targets[slot].height=h;
+ targets[slot].width=w;targets[slot].height=h;targets[slot].bottom=bottom!=0;
  targets[slot].variant=(format==4?1:0)|(depth?0:2)|((power_of(samples)^power_of(screen_samples()))<<2);
  /* The texture sampled, the image of its samples when multisampled, and its depth, 4 bytes a sample. */
  const double texel=format==4?8:4,area=(double)w*h;
@@ -644,13 +644,13 @@ static sg_color color_of(uint32_t color){return (sg_color){((color>>16)&255)/255
 /* A pass into target, before the screen's: cleared to red, green, blue, alpha as its texels store them and its depth, if it has one, to the
    farthest, or (clear 0) loading what it holds, cleared to transparent black the first time. Its samples and depth are stored either way
    (sokol's defaults discard a multisampled image's samples once resolved, and depth), so a later pass can load them. Drawn flipped where the
-   backend's origin is the bottom left (GL). */
+   backend's origin is the bottom left (GL), and for a target stored bottom row first, where it is the top left (Metal). */
 static int begin_target(uint32_t target,int clear,sg_color color){
  int slot=target&0xffff;
  if(active||slot>=SLOTS||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
  if(!targets[slot].cleared)clear=1;
  targets[slot].cleared=1;
- active=2;flipped=!sg_query_features().origin_top_left;frame_width=targets[slot].width;frame_height=targets[slot].height;pass_texture=target;
+ active=2;flipped=sg_query_features().origin_top_left==targets[slot].bottom;frame_width=targets[slot].width;frame_height=targets[slot].height;pass_texture=target;
  pass_variant=targets[slot].variant|(flipped?16:0);
  const sg_load_action load=clear?SG_LOADACTION_CLEAR:SG_LOADACTION_LOAD;
  sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=load,.store_action=SG_STOREACTION_STORE,.clear_value=color},
@@ -691,7 +691,7 @@ int helix_read_width(uint32_t handle){return handle&&!id_of(TEXTURE_IDS,handle)?
 int helix_read_height(uint32_t handle){return handle&&!id_of(TEXTURE_IDS,handle)?0:read_height(id_of(TEXTURE_IDS,handle));}
 /* Reads target into out (width * height * 4 bytes, RGBA8, rows top first) through GL, outside any pass: the back buffer for 0 (GL's rows
    come bottom first, so they're turned over), else the texture's (a target's color) top level attached to a framebuffer of the moment (its
-   rows are already top first: textures are uploaded first row first, and target passes draw flipped). sokol caches GL state, so its cache is
+   rows as stored, first row first: textures are uploaded first row first, and a target stored top row first is drawn flipped). sokol caches GL state, so its cache is
    reset after. */
 int helix_read_pixels(uint32_t handle,unsigned char *out){
  const uint32_t target=id_of(TEXTURE_IDS,handle);

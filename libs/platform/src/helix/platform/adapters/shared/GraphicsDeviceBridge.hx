@@ -19,7 +19,7 @@ extern class GraphicsDeviceBridge {
 	@:native("helix_pipeline") static function pipeline(desc:cpp.RawPointer<Int>, count:Int):Int;
 	@:native("helix_update") static function update(buffer:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
 	@:native("helix_append") static function append(buffer:Int, data:cpp.RawPointer<cpp.UInt8>, bytes:Int):Int;
-	@:native("helix_target") static function target(w:Int, h:Int, format:Int, depth:Int, askedSamples:Int):Int;
+	@:native("helix_target") static function target(w:Int, h:Int, format:Int, depth:Int, askedSamples:Int, bottom:Int):Int;
 	@:native("helix_max_target_samples") static function maxTargetSamples(format:Int):Int;
 	@:native("helix_can_render") static function canRender(format:Int):Int;
 	@:native("helix_begin_target") static function beginTarget(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Int;
