@@ -57,7 +57,7 @@ static function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mes
 static function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh
 static function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
 static function GenMeshTangents(mesh:Mesh):Void
-static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
+static function LoadModelAnimations(fileName:String, ?animCount:Array<Int>):Array<ModelAnimation>
 static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
 static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
 static function UnloadModelAnimation(anim:ModelAnimation):Void
@@ -433,7 +433,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   Gives a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is mostly z, else (-y, x, 0) of the normal, with w 1.
 - `LoadModelAnimations`: Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` reads them.
   - `fileName`: The file.
-  - `animCount`: Receives how many, in its first element.
+  - `animCount`: Optional. Receives how many, in its first element: the returned array's length.
   - returns: The animations, the program's until `UnloadModelAnimations`.
 
   A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call. In a page it can't be: the load logs why and gives no animations, as raylib's load of a missing file does. See `LoadModelAnimationsAsync` for loading them asynchronously.

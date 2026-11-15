@@ -1621,9 +1621,9 @@ class RModels {
 		`LoadModelAnimationsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
-		@param animCount  Receives how many, in its first element.
+		@param animCount  Optional. Receives how many, in its first element: the returned array's length.
 		@return  The animations, the program's until `UnloadModelAnimations`. */
-	static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation> {
+	static function LoadModelAnimations(fileName:String, ?animCount:Array<Int>):Array<ModelAnimation> {
 		var path = normalize(fileName);
 		var file = Runtime.gltfFiles.get(path);
 		var animations:Array<ModelAnimation> = SyncLoads.load(path, file != null, () -> {

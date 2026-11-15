@@ -6136,9 +6136,9 @@ class Raylib {
 		`LoadModelAnimationsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
-		@param animCount  Receives how many, in its first element.
+		@param animCount  Optional. Receives how many, in its first element: the returned array's length.
 		@return  The animations, the program's until `UnloadModelAnimations`. */
-	public static inline function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
+	public static inline function LoadModelAnimations(fileName:String, ?animCount:Array<Int>):Array<ModelAnimation>
 		return RModels.LoadModelAnimations(fileName, animCount);
 
 	/** Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See
