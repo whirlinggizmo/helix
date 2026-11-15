@@ -684,7 +684,7 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `emscripten_run_script_string`: Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system.
 - `emscripten_get_now`: Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
 - `emscripten_sleep`: Doesn't compile. See `WaitTime` for waiting.
-- `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.
+- `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`.
 - `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
 - `LoadImageFromMemory`: Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
 - `LoadImageAnimFromMemory`: Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
@@ -907,7 +907,7 @@ static macro function CompileShaderFile(vsFileName:Null<String>, fsFileName:Null
 static macro function LoadAutomationEventList(fileName:Null<String>):AutomationEventList
 ```
 
-- `CompileShaderFile`: A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShaderAsync` to load. Typically called from the build's hxml, one line a shader:
+- `CompileShaderFile`: A macro that compiles a shader's two stages, raylib's GLSL, to the file `compiledShaderFileName`, for `LoadCompiledShader` to load. Typically called from the build's hxml, one line a shader:
   - `vsFileName`: The vertex stage's file, or null for raylib's default.
   - `fsFileName`: The fragment stage's file, or null for raylib's default.
   - `compiledShaderFileName`: The file to write.

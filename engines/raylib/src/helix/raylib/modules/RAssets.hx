@@ -44,7 +44,7 @@ class RAssets {
 		there, and decodes it into memory by its kind, so raylib's load of it answers at once on every target. An image is decoded to its
 		pixels, a sound file to its wave, a glTF, GLB or OBJ file to its model (its images decoded) and a glTF file's animations
 		read, an .mtl file to its materials, a TrueType or OpenType font opened to be rasterized at any size, a BMFont read with its
-		pages.
+		pages, a compiled shader (a .shader file, as `CompileShaderFile` writes it) read. Any other file is kept as its bytes.
 
 		A file already ensured is ensured at once, though `ensured` is still called after the call returns. Several calls made in a row
 		fetch and decode their files together, never one after another. See `EnsureAssetsAsync` for several files at once.
@@ -134,6 +134,7 @@ class RAssets {
 		Runtime.waves.remove(path);
 		Runtime.gltfFiles.remove(path);
 		Runtime.bmFonts.remove(path);
+		Runtime.compiledShaders.remove(path);
 		var font = Runtime.openFonts.get(path);
 		if (font != null) {
 			Runtime.openFonts.remove(path);
@@ -233,6 +234,24 @@ class RAssets {
 				Runtime.bmFonts.set(path, font);
 				done(null);
 			}, done);
+			return;
+		}
+		if (type == "shader") {
+			// Read to what a load makes each shader of, its bytes let go.
+			Runtime.fetch(path, error -> {
+				if (error != null) {
+					done(error);
+					return;
+				}
+				var value = RCompiledShaders.read(Runtime.files.get(path));
+				if (value == null) {
+					done('$path isn\'t a compiled shader');
+					return;
+				}
+				Runtime.files.remove(path);
+				Runtime.compiledShaders.set(path, value);
+				done(null);
+			});
 			return;
 		}
 		if (type == "mtl") {

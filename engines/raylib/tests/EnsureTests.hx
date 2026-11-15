@@ -15,7 +15,9 @@ import helix.services.time.Time;
 	`EnsureAssetsAsync` or by `EnsureAssetAsync` calls in a row; the progress counted; a file that can't be ensured failing once while
 	the others stay ensured; a file already ensured answered after the call, not during it; `IsAssetEnsured`; an image ensured, loaded at once by `LoadImage`, `LoadTexture` and
 	`LoadImageRaw`, and one not ensured loaded during the call natively and failing in a page; a font ensured, opened, loaded by
-	`LoadFontEx` and `LoadFont` during the call, and closed as it's released; and the asset host's order,
+	`LoadFontEx` and `LoadFont` during the call, and closed as it's released; a compiled shader ensured (tests/shaders' glow, embedded
+	by the build), loaded at once by `LoadCompiledShader`, one not ensured loaded during the call natively and empty in a page, and a
+	.shader file that isn't a compiled shader failing its ensure; and the asset host's order,
 	the option first, then `SetAssetHost`, then the build's define, then the default. On a source of the test's own that answers only
 	once as many fetches as it waits for have been asked. */
 @:access(helix.raylib.internal.Runtime)
@@ -118,6 +120,32 @@ class EnsureTests {
 		check(small.baseSize == 32 && small.glyphCount == 95 && small.texture.id != 0, 'LoadFont of an ensured font, at once: ${small.baseSize}');
 		ReleaseAsset("title.ttf");
 		check(rasterizer.open.length == 0 && !IsAssetEnsured("title.ttf"), "a font released is closed");
+
+		// A compiled shader ensured is read, and its load makes the shader at once, each load a shader of its own.
+		gate.files.set("glow.shader", haxe.Resource.getString("glow.shader"));
+		gate.files.set("late.shader", haxe.Resource.getString("glow.shader"));
+		gate.files.set("notes.shader", "not a shader");
+		var shaderEnsured = false, notShader:Array<String> = [];
+		EnsureAssetAsync("glow.shader", () -> shaderEnsured = true, error -> throw error);
+		EnsureAssetAsync("notes.shader", () -> throw "ensured", error -> notShader.push(error));
+		poll();
+		check(shaderEnsured && !Runtime.files.exists("glow.shader"), "a compiled shader ensured, read, its bytes let go");
+		check(notShader.length == 1
+			&& notShader[0].indexOf("notes.shader isn't a compiled shader") >= 0
+			&& !IsAssetEnsured("notes.shader"),
+			'a .shader file that isn\'t a compiled shader fails its ensure: $notShader');
+		var glow = LoadCompiledShader("glow.shader"),
+			glowAgain = LoadCompiledShader("./glow.shader");
+		check(IsShaderValid(glow) && GetShaderLocation(glow, "glow") >= 0, 'LoadCompiledShader of an ensured file, at once: ${glow.id}');
+		check(IsShaderValid(glowAgain) && glowAgain.id != glow.id, "a second load of it a shader of its own");
+		var lateShader = LoadCompiledShader("late.shader");
+		#if js
+		check(!IsShaderValid(lateShader), 'in a page, a shader not ensured is empty: ${lateShader.id}');
+		#else
+		check(IsShaderValid(lateShader), 'natively, a shader not ensured is loaded during the call: ${lateShader.id}');
+		#end
+		ReleaseAsset("glow.shader");
+		check(!IsAssetEnsured("glow.shader") && !Runtime.compiledShaders.exists("glow.shader"), "a compiled shader released");
 
 		// A file released is no longer ensured, and a load of it is one of a file never ensured.
 		ReleaseAssets(["pixels.raw"]);

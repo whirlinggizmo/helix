@@ -298,6 +298,10 @@ class Runtime {
 		each. */
 	public static final bmFonts = new Map<String, helix.services.fonts.Font2D>();
 
+	/** The compiled shaders ensures read (`EnsureAssetAsync`), by their .shader files' normalized paths: each the value a load makes a
+		shader of, until the file is released. */
+	public static final compiledShaders = new Map<String, Dynamic>();
+
 	/** The materials ensures loaded from .mtl files (`EnsureAssetAsync`), by their normalized paths, until the first load takes them. */
 	public static final materials = new Map<String, Array<helix.raylib.Material>>();
 

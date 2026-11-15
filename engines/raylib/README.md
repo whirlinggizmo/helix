@@ -28,7 +28,7 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
   later frame. `IsWindowFullscreen` and the other window reads report the window as it is. A refusal is logged.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
   `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
-- Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShaderAsync`) or its data
+- Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShader`, `LoadCompiledShaderAsync`) or its data
   (`LoadCompiledShaderFromData`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
 - A lost GPU context is recovered automatically. Render textures are cleared.
