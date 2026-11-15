@@ -91,6 +91,7 @@ static function Vector3Max(v1:Vector3, v2:Vector3):Vector3
 static function Vector3Barycenter(p:Vector3, a:Vector3, b:Vector3, c:Vector3):Vector3
 static function Vector3Unproject(source:Vector3, projection:Matrix, view:Matrix):Vector3
 static function Vector3ToFloatV(v:Vector3):Array<Float>
+static function Vector3ToFloat(vec:Vector3):Array<Float>
 static function Vector3Invert(v:Vector3):Vector3
 static function Vector3Clamp(v:Vector3, min:Vector3, max:Vector3):Vector3
 static function Vector3ClampValue(v:Vector3, min:Float, max:Float):Vector3
@@ -139,6 +140,7 @@ static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, far
 static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix
 static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix
 static function MatrixToFloatV(mat:Matrix):Array<Float>
+static function MatrixToFloat(mat:Matrix):Array<Float>
 static function QuaternionAdd(q1:Quaternion, q2:Quaternion):Quaternion
 static function QuaternionAddValue(q:Quaternion, add:Float):Quaternion
 static function QuaternionSubtract(q1:Quaternion, q2:Quaternion):Quaternion
@@ -457,6 +459,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 - `Vector3ToFloatV`: Returns a vector's components as an array: x, y, z.
   - `v`: The vector.
   - returns: The array.
+- `Vector3ToFloat`: Returns a vector's components as an array: x, y, z. raymath's macro for `Vector3ToFloatV`'s array, the same here.
+  - `vec`: The vector.
+  - returns: The array.
 - `Vector3Invert`: Returns 1 divided by each of a vector's components.
   - `v`: The vector.
   - returns: The inverted vector.
@@ -647,6 +652,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `up`: Up.
   - returns: The matrix.
 - `MatrixToFloatV`: Returns a matrix's values as an array, by columns: m0 to m15, as a shader takes them.
+  - `mat`: The matrix.
+  - returns: The array.
+- `MatrixToFloat`: Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` take them. raymath's macro for `MatrixToFloatV`'s array, the same here.
   - `mat`: The matrix.
   - returns: The array.
 - `QuaternionAdd`: Returns the sum of two quaternions.

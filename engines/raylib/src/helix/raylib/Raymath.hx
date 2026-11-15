@@ -608,6 +608,13 @@ class Raymath {
 	public static inline function Vector3ToFloatV(v:Vector3):Array<Float>
 		return RMath.Vector3ToFloatV(v);
 
+	/** Returns a vector's components as an array: x, y, z. raymath's macro for `Vector3ToFloatV`'s array, the same here.
+
+		@param vec  The vector.
+		@return  The array. */
+	public static inline function Vector3ToFloat(vec:Vector3):Array<Float>
+		return RMath.Vector3ToFloat(vec);
+
 	/** Returns 1 divided by each of a vector's components.
 
 		@param v  The vector.
@@ -992,6 +999,14 @@ class Raymath {
 		@return  The array. */
 	public static inline function MatrixToFloatV(mat:Matrix):Array<Float>
 		return RMath.MatrixToFloatV(mat);
+
+	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` take them. raymath's macro for
+		`MatrixToFloatV`'s array, the same here.
+
+		@param mat  The matrix.
+		@return  The array. */
+	public static inline function MatrixToFloat(mat:Matrix):Array<Float>
+		return RMath.MatrixToFloat(mat);
 
 	/** Returns the sum of two quaternions.
 
