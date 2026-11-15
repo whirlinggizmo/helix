@@ -60,3 +60,20 @@ Each program was built for the page as it stood and run in headless Chromium on 
 title and in play. Each was also run natively for 1,200 frames at 200 enemies on a private display (`score_frames.py`), and each
 recorded its frames. page.002's program ignores `WindowShouldClose` past its loading screen, so it ran on after the stats closed the
 window and was stopped by hand.
+
+## Frame times
+
+At 200 enemies, measured as [the runs with the extras](../2026-11-13-wardens-extras) were: each program's own option to start
+playing, with god mode where it has one, in headless Chromium on coinspinner's GPU (ANGLE over Vulkan) with its frame rate cap
+lifted and `SetTargetFPS` taking no effect, the mean and 95th percentile of 600 frames after 120, from 5 seconds into play. Two runs
+each, docs.014 beside them.
+
+| run | mean | p95 |
+|---|---:|---:|
+| page.001 | 3.32, 3.87 ms | 3.7, 4.5 |
+| page.003 | 3.49, 3.76 ms | 3.8, 4.3 |
+| page.002 | 4.28, 4.41 ms | 4.7, 4.9 |
+| docs.014 | 3.50, 3.53 ms | 3.9, 3.9 |
+
+They draw 1.2 to 1.3 million triangles in 250 to 277 draws a frame. On the display, with vsync, each ran at the display's 60
+frames a second natively and in a page (16.7 to 17.1 ms).
