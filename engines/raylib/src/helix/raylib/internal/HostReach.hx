@@ -5,9 +5,6 @@ import haxe.macro.Context;
 import haxe.macro.Expr.Position;
 import haxe.macro.Type;
 import haxe.macro.TypedExprTools;
-import sys.FileSystem;
-
-using StringTools;
 #end
 
 /** Warns, as the program builds, where the program's own code reaches the page for something `Raylib` answers
@@ -50,8 +47,6 @@ class HostReach {
 	];
 
 	static var done = false;
-	static var libraries:Array<String>;
-	static final files = new Map<String, Bool>();
 
 	/** Looks at the program's code once it is typed. */
 	public static function register():Void {
@@ -61,38 +56,15 @@ class HostReach {
 			if (done)
 				return;
 			done = true;
-			libraries = libraryPaths();
-			for (type in types)
-				switch type {
-					case TClassDecl(_.get() => c):
-						look(c);
-					case TAbstract(_.get() => a) if (a.impl != null):
-						look(a.impl.get());
-					case _:
-				}
-		});
-	}
-
-	// Looks at a class of the program's: each field's code, its constructor's and its static initialization's.
-	static function look(c:ClassType):Void {
-		if (c.isExtern || !own(c.pos))
-			return;
-		var fields = c.statics.get().concat(c.fields.get());
-		if (c.constructor != null)
-			fields.push(c.constructor.get());
-		for (f in fields) {
-			var e = f.expr();
-			if (e != null)
+			for (e in ProgramCode.bodies(types))
 				walk(e, e.pos);
-		}
-		if (c.init != null)
-			walk(c.init, c.init.pos);
+		});
 	}
 
 	// Looks at an expression and those in it; site is where the nearest of them in the program's own code is, where a shortcut the
 	// standard library inlines (js.Browser.location) is reported.
 	static function walk(e:TypedExpr, site:Position):Void {
-		if (own(e.pos))
+		if (ProgramCode.own(e.pos))
 			site = e.pos;
 		switch e.expr {
 			case TCall({expr: TField(_, FStatic(_.get() => {pack: ["js"], name: "Syntax"}, _.get() => {name: "code"}))}, args) if (args.length > 0):
@@ -123,7 +95,7 @@ class HostReach {
 	// Warns at a site in the program's own code, as a refusal reads: what was reached, the one target it works on, and the call to use
 	// instead. One inlined from a library's isn't the program's.
 	static function warn(reached:String, call:String, pos:Position):Void {
-		if (!own(pos))
+		if (!ProgramCode.own(pos))
 			return;
 		var note = NOTES.exists(call) ? " " + NOTES.get(call) : "";
 		Context.warning('$reached: Works only in a browser. See $call.$note', pos);
@@ -131,37 +103,5 @@ class HostReach {
 
 	static function path(c:ClassType):String
 		return c.pack.concat([c.name]).join(".");
-
-	// Whether a position is in the program's own code: in a file under none of the libraries' class paths.
-	static function own(pos:Position):Bool {
-		var file = Context.getPosInfos(pos).file;
-		var known = files.get(file);
-		if (known == null) {
-			var full = try FileSystem.fullPath(file) catch (_:Dynamic) null;
-			known = full != null && FileSystem.exists(full) && !Lambda.exists(libraries, l -> full.startsWith(l));
-			files.set(file, known);
-		}
-		return known;
-	}
-
-	// The class paths that are libraries' (a haxelib library's, with its haxelib.json there or a directory up) or the standard
-	// library's (StdTypes.hx there, or one or two directories up, as std/js/_std is), each a full path ending in a separator.
-	static function libraryPaths():Array<String> {
-		var out = [];
-		for (cp in Context.getClassPath()) {
-			var full = try FileSystem.fullPath(cp == "" ? "." : cp) catch (_:Dynamic) null;
-			if (full == null || !FileSystem.isDirectory(full))
-				continue;
-			full = haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(full));
-			var up = full + "../", upTwo = full + "../../";
-			if (FileSystem.exists(full + "haxelib.json")
-				|| FileSystem.exists(up + "haxelib.json")
-				|| FileSystem.exists(full + "StdTypes.hx")
-				|| FileSystem.exists(up + "StdTypes.hx")
-				|| FileSystem.exists(upTwo + "StdTypes.hx"))
-				out.push(full);
-		}
-		return out;
-	}
 	#end
 }

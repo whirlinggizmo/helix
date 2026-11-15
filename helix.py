@@ -93,6 +93,9 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String)
     'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShaderAsync('),
     'GuessedCalls':('GuessedCalls.hx:9: characters 16-42 : LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(','GuessedCalls.hx:10: characters 16-37 : LoadShader: Not supported. Use LoadCompiledShaderAsync(',
     'GuessedCalls.hx:11: characters 15-40 : GetMonitorPhysicalWidth: A monitor','GuessedCalls.hx:12: characters 3-26 : TextCopy: A String can\'t be written into'),
+    'ObjectCasts':('ObjectCasts.hx:11: characters 16-71 : cast: Not supported from an object to VirtualButtonOptions, a class. Write the object in braces where a VirtualButtonOptions is expected, without cast.',
+    'ObjectCasts.hx:12: characters 20-41 : cast: Not supported from an object to Vector2, a class. Write the object in braces where a Vector2 is expected, without cast.',
+    'ObjectCasts.hx:13: characters 21-47 : cast: Not supported from an object to Image, a class. Make one with new Image().'),
     'WaitCalls':("WaitCalls.hx:10: characters 21-45 : LoadFileText: Not supported in a constructor or a variable's initial value.",
     "WaitCalls.hx:39: characters 11-33 : FileExists: Not supported in a constructor or a variable's initial value.",
     'WaitCalls.hx:19: characters 19-31 : EndDrawing: Not supported in a function used as a value.',
@@ -131,7 +134,7 @@ def refused(base):
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
     base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
-    base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','--macro','helix.raylib.internal.SysCalls.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
+    base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','--macro','helix.raylib.internal.SysCalls.register()','--macro','helix.raylib.internal.ObjectCasts.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
     def path(name,folder):return 'null' if name is None else json.dumps(f'{folder}/{name}')
     run(['haxe',*base,*[a for vs,fs,out in TEST_SHADERS for a in ('--macro',f'helix.raylib.Raylib.CompileShaderFile({path(vs,"engines/raylib/tests/shaders")}, {path(fs,"engines/raylib/tests/shaders")}, {path(out,"build/tests")})')]])
     extra=[a for _,_,out in TEST_SHADERS for a in ('-resource',f'build/tests/{out}@{out}')]
