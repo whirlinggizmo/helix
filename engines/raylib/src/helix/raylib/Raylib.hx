@@ -6205,8 +6205,8 @@ class Raylib {
 	/** Frees animations' frames, each as `UnloadModelAnimation` frees one.
 
 		@param animations  The animations.
-		@param animCount  How many of them. */
-	public static inline function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
+		@param animCount  Optional. How many of them, from the first: all of them when omitted. */
+	public static inline function UnloadModelAnimations(animations:Array<ModelAnimation>, ?animCount:Int):Void
 		RModels.UnloadModelAnimations(animations, animCount);
 
 	/** Returns whether an animation moves a model's skeleton, by whether they have as many bones, as raylib 6.2 checks.

@@ -61,7 +61,7 @@ static function LoadModelAnimations(fileName:String, ?animCount:Array<Int>):Arra
 static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
 static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
 static function UnloadModelAnimation(anim:ModelAnimation):Void
-static function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void
+static function UnloadModelAnimations(animations:Array<ModelAnimation>, ?animCount:Int):Void
 static function IsModelAnimationValid(model:Model, anim:ModelAnimation):Bool
 static function LoadMaterialDefault():Material
 static function IsMaterialValid(material:Material):Bool
@@ -477,7 +477,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `anim`: The animation.
 - `UnloadModelAnimations`: Frees animations' frames, each as `UnloadModelAnimation` frees one.
   - `animations`: The animations.
-  - `animCount`: How many of them.
+  - `animCount`: Optional. How many of them, from the first: all of them when omitted.
 - `IsModelAnimationValid`: Returns whether an animation moves a model's skeleton, by whether they have as many bones, as raylib 6.2 checks.
   - `model`: The model.
   - `anim`: The animation.

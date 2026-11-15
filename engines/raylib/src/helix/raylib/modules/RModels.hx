@@ -1718,11 +1718,12 @@ class RModels {
 	/** Frees animations' frames, each as `UnloadModelAnimation` frees one.
 
 		@param animations  The animations.
-		@param animCount  How many of them. */
-	static function UnloadModelAnimations(animations:Array<ModelAnimation>, animCount:Int):Void {
+		@param animCount  Optional. How many of them, from the first: all of them when omitted. */
+	static function UnloadModelAnimations(animations:Array<ModelAnimation>, ?animCount:Int):Void {
 		if (animations == null)
 			return;
-		for (i in 0...animCount)
+		var count = animCount == null ? animations.length : animCount;
+		for (i in 0...count)
 			if (i < animations.length)
 				UnloadModelAnimation(animations[i]);
 	}
