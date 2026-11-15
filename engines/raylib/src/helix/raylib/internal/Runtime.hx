@@ -184,44 +184,114 @@ class Runtime {
 		main();
 	}
 
-	/** Natively, where the program's files are, relative to the program's directory (`-D helix-raylib-native-root`). */
-	public static var root = "../web";
+	/** The asset host the build gives (`-D helix-raylib-asset-host`), null without one. Set as the program starts. */
+	public static var builtHost:Null<String> = null;
 
-	/** Makes what loads the program's files, once: the assets over a page's server and its cache, or natively over the files' directory.
-		What decodes images is `imaging`'s, so a program loading only sounds or text never links an image decoder. */
+	/** The asset host the program sets (`SetAssetHost`), null until it does. */
+	public static var programHost:Null<String> = null;
+
+	/** Returns the asset host in use, the first given of: the option `asset_host`, the program's (`SetAssetHost`), the build's
+		(`-D helix-raylib-asset-host`), and the default, natively `../web` beside the program's directory, in a page the page's own.
+
+		@return  The host: a URL, or a directory relative to the program's. */
+	public static function assetHost():String {
+		var option = system == null ? null : system.getOption("asset_host");
+		if (option != null && option != "")
+			return option;
+		if (programHost != null)
+			return programHost;
+		if (builtHost != null)
+			return builtHost;
+		#if js
+		return "";
+		#else
+		return "../web";
+		#end
+	}
+
+	/** Returns whether an asset host is a URL, fetched over HTTP, rather than a directory.
+
+		@param host  The host.
+		@return  True for `http://...` and `https://...`. */
+	public static function isUrlHost(host:String):Bool
+		return host.startsWith("http://") || host.startsWith("https://");
+
+	// What loading made and polls, apart from what later services add: forgotten when the host changes.
+	static final assetPolled:Array<helix.platform.IPollable> = [];
+
+	/** Makes what loads the program's files, once, over the asset host (`assetHost`): files dropped on the window and handed in first, then
+		the host, a URL's files fetched and kept in the program's cache, a directory's read in place. What decodes images is `imaging`'s,
+		so a program loading only sounds or text never links an image decoder. */
 	public static function loading():Void {
 		if (assets != null)
 			return;
+		var host = assetHost();
+		var callback = new CallbackFiles();
+		memory = new MemoryFiles();
+		assetPolled.push(callback);
+		assetPolled.push(memory);
+		var hostSource:helix.services.assets.AssetSource;
 		#if js
 		var http = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
 		var cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
-		polled.push(http);
-		var callback = new CallbackFiles();
-		polled.push(callback);
-		memory = new MemoryFiles();
-		polled.push(memory);
-		assets = new Assets([
-			new FileSystemSource(memory),
-			new FileSystemSource(callback),
-			new ServerSource(system.getProgramDirectory(), http, new RevalidateCache(cache))
-		]);
+		assetPolled.push(http);
+		assetPolled.push(cache);
+		hostSource = new ServerSource(isUrlHost(host) ? host : system.getProgramDirectory() + host, http, new RevalidateCache(cache));
 		#else
-		var directory = haxe.io.Path.join([system.getProgramDirectory(), root]);
-		var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
-		shipped = cache;
-		var callback = new CallbackFiles();
-		polled.push(callback);
-		memory = new MemoryFiles();
-		polled.push(memory);
-		assets = new Assets([
-			new FileSystemSource(memory),
-			new FileSystemSource(callback),
-			new FileSystemSource(cache)
-		]);
+		if (isUrlHost(host)) {
+			var http = new helix.platform.adapters.http.haxehttp.HaxeHttpAdapter();
+			var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getCacheDirectory()});
+			assetPolled.push(http);
+			assetPolled.push(cache);
+			shipped = cache;
+			hostSource = new ServerSource(host, http, new RevalidateCache(cache));
+		} else {
+			var directory = haxe.io.Path.isAbsolute(host) ? host : haxe.io.Path.join([system.getProgramDirectory(), host]);
+			var files = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
+			assetPolled.push(files);
+			shipped = files;
+			hostSource = new FileSystemSource(files);
+		}
 		#end
-		polled.push(cache);
-		polled.push(assets);
+		assets = new Assets([new FileSystemSource(memory), new FileSystemSource(callback), hostSource]);
+		assetPolled.push(assets);
+		for (p in assetPolled)
+			polled.push(p);
 	}
+
+	/** Sets the program's asset host (`SetAssetHost`). What loading made over the old host is let go, and made again over the new one at
+		the next load: files already ensured stay in memory.
+
+		@param host  The host: a URL, or a directory relative to the program's. */
+	public static function setAssetHost(host:String):Void {
+		programHost = host;
+		if (assets == null)
+			return;
+		for (p in assetPolled)
+			polled.remove(p);
+		assetPolled.resize(0);
+		assets = null;
+		if (decoding != null)
+			polled.remove(decoding);
+		decoding = null;
+		models = null;
+	}
+
+	/** The files ensured in this run (`EnsureAssetAsync`), by their normalized paths: each in memory as its kind needs, a load of it
+		answering at once. */
+	public static final ensured = new Map<String, Bool>();
+
+	/** The waves sound files' ensures decoded (`EnsureAssetAsync`), by their files' normalized paths, until a load takes or copies them. */
+	public static final waves = new Map<String, helix.raylib.Wave>();
+
+	/** The models ensures loaded (`EnsureAssetAsync`), by their files' normalized paths, until the first load takes each. */
+	public static final models3d = new Map<String, helix.raylib.Model>();
+
+	/** The glTF files ensures read (`EnsureAssetAsync`), by their normalized paths, for their animations' loads. */
+	public static final gltfFiles = new Map<String, helix.formats.gltf.GltfFile>();
+
+	/** The materials ensures loaded from .mtl files (`EnsureAssetAsync`), by their normalized paths, until the first load takes them. */
+	public static final materials = new Map<String, Array<helix.raylib.Material>>();
 
 	/** Makes what decodes the program's images, once, over the assets (`loading`): the platform's image decoder and the images over it.
 		What reads models is `modelling`'s. */
@@ -229,15 +299,20 @@ class Runtime {
 		loading();
 		if (decoding != null)
 			return;
-		#if js
-		var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
-		#else
-		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
-		#end
-		polled.push(imageDecoder);
+		if (imageDecoder == null) {
+			#if js
+			imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
+			#else
+			imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
+			#end
+			polled.push(imageDecoder);
+		}
 		decoding = new helix.services.images.Images(imageDecoder, assets);
 		polled.push(decoding);
 	}
+
+	// The platform's image decoder, made once: the images over it are made again when the asset host changes.
+	static var imageDecoder:Null<helix.platform.IImageDecoder> = null;
 
 	/** Makes what reads the program's models, once, over the assets and the images (`modelling`). */
 	public static function modelling():Void {

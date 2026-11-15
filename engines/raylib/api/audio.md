@@ -9,6 +9,7 @@ static function CloseAudioDevice():Void
 static function IsAudioDeviceReady():Bool
 static function SetMasterVolume(volume:Float):Void
 static function GetMasterVolume():Float
+static function LoadWave(fileName:String):Wave
 static function IsWaveValid(wave:Wave):Bool
 static function UnloadWave(wave:Wave):Void
 static function WaveCopy(wave:Wave):Wave
@@ -16,6 +17,7 @@ static function WaveCrop(wave:Wave, initFrame:Int, finalFrame:Int):Void
 static function WaveFormat(wave:Wave, sampleRate:Int, sampleSize:Int, channels:Int):Void
 static function LoadWaveSamples(wave:Wave):Array<Float>
 static function UnloadWaveSamples(samples:Array<Float>):Void
+static function LoadSound(fileName:String):Sound
 static function LoadSoundFromWave(wave:Wave):Sound
 static function LoadSoundAlias(source:Sound):Sound
 static function UnloadSound(sound:Sound):Void
@@ -30,6 +32,7 @@ static function IsSoundPlaying(sound:Sound):Bool
 static function SetSoundVolume(sound:Sound, volume:Float):Void
 static function SetSoundPitch(sound:Sound, pitch:Float):Void
 static function SetSoundPan(sound:Sound, pan:Float):Void
+static function LoadMusicStream(fileName:String):Music
 static function LoadMusicStreamFromMemory(fileType:String, data:haxe.io.Bytes, dataSize:Int):Music
 static function IsMusicValid(music:Music):Bool
 static function UnloadMusicStream(music:Music):Void
@@ -80,6 +83,11 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   Ignored before `InitAudioDevice`.
 - `GetMasterVolume`: Returns the volume of every sound.
   - returns: 0 (silent) to 1, or 1 before `InitAudioDevice`.
+- `LoadWave`: Loads a wave from a sound file: WAV, Ogg Vorbis, MP3 or QOA.
+  - `fileName`: The file.
+  - returns: The wave, the program's until `UnloadWave`.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, a copy of the wave its ensure decoded. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
 - `IsWaveValid`: Returns whether a wave holds samples.
   - `wave`: The wave.
   - returns: True when it has data, frames, a rate, a sample size and channels.
@@ -116,6 +124,11 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `samples`: The samples.
 
   Does nothing, as there is nothing to free.
+- `LoadSound`: Loads and decodes a sound file, ready to play: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
+  - `fileName`: The file.
+  - returns: The sound, the program's until `UnloadSound`.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a sound that doesn't play, as raylib's load of a missing file does. See `LoadSoundAsync` for loading it asynchronously.
 - `LoadSoundFromWave`: Returns a sound made from a wave, ready to play at once.
   - `wave`: The wave. It is unchanged, and may be unloaded after.
   - returns: The sound, or one that isn't valid (`IsSoundValid`) when the wave has no samples or can't be converted.
@@ -177,6 +190,11 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `pan`: 0 for left, 0.5 the middle, 1 for right.
 
   The range is raylib 5.5's, 0 to 1 with 0.5 the middle and 1 the right.
+- `LoadMusicStream`: Opens a music file to play as it is read: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
+  - `fileName`: The file.
+  - returns: The music, the program's until `UnloadMusicStream`.
+
+  Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once it has. A file not ensured logs why and gives music that doesn't play, as raylib's load of a missing file does. See `LoadMusicStreamAsync` for opening it asynchronously.
 - `LoadMusicStreamFromMemory`: Returns music opened from a file's bytes, to be played as it is read.
   - `fileType`: The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV.
   - `data`: The file's bytes; they are kept until the music is unloaded.

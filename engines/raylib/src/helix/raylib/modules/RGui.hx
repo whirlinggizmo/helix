@@ -9,6 +9,7 @@ import helix.raylib.modules.RTextures.*;
 import helix.raylib.modules.RText.*;
 import helix.raylib.Raygui.*;
 import helix.raylib.internal.Answers;
+import helix.raylib.internal.Runtime;
 import helix.raylib.internal.GuiIcons;
 import helix.raylib.modules.RGuiControls.*;
 #end
@@ -149,12 +150,27 @@ class RGui {
 		return at >= 0 && at < guiStyle.length ? guiStyle[at] : 0;
 	}
 
-	/** Doesn't compile. See `GuiLoadStyleAsync` for loading a style file.
+	/** Loads a style file, as raygui's `GuiLoadStyle` does: a text `.rgs` file's properties and font, or a binary one's.
 
-		@param fileName  The style file (.rgs). */
-	@:unsupported("GuiLoadStyle: Not supported. Use GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.")
+		Natively the file, and a font it names, are read during the call. In a page, a file ensured (`EnsureAssetAsync`,
+		`helix.raylib.extras.Assets`) is applied at once, a font it names once that font is made, within a frame or two; ensure that font
+		too. A file not ensured logs why and leaves the style as it was. See `GuiLoadStyleAsync` for loading it asynchronously.
+
+		@param fileName  The style file. */
 	static function GuiLoadStyle(fileName:String):Void {
-		throw "GuiLoadStyle is unimplemented";
+		var path = RCore.normalize(fileName);
+		#if js
+		if (!Runtime.files.exists(path)) {
+			Runtime.log(4, 'FILEIO: [$path] Failed to load: not ensured. See EnsureAssetsAsync');
+			return;
+		}
+		RGuiAsync.GuiLoadStyleAsync(path, null, error -> Runtime.log(4, error));
+		#else
+		Runtime.answered((done:Bool->Void) -> RGuiAsync.GuiLoadStyleAsync(path, () -> done(true), error -> {
+			Runtime.log(4, error);
+			done(false);
+		}));
+		#end
 	}
 
 	/** Loads raygui's default style, its light theme, over every control's colors, borders, text and sizes.

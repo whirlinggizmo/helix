@@ -11,6 +11,7 @@ import helix.raylib.internal.Models;
 import helix.raylib.internal.Mipmaps;
 import helix.raylib.internal.Pixels;
 import helix.raylib.internal.Runtime;
+import helix.raylib.internal.SyncLoads;
 import helix.raylib.internal.Textures;
 import helix.raylib.modules.RCore.*;
 import helix.raylib.modules.RShapes.*;
@@ -30,13 +31,26 @@ class RTextures {
 		helix.raylib.internal.Sprites.register();
 	}
 
-	/** Doesn't compile. See `LoadTextureAsync` for loading a texture from a file.
+	/** Loads a texture from an image file: PNG, JPEG, BMP, TGA, QOI or GIF (its first frame).
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
+		load logs why and gives a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it
+		asynchronously.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadTexture: Not supported. Use LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) instead.")
+		@return  The texture, the program's until `UnloadTexture`. */
 	static function LoadTexture(fileName:String):Texture2D {
-		throw "LoadTexture is unimplemented";
+		var path = normalize(fileName);
+		return SyncLoads.load(path, imageReady(path), () -> loadTexture(path), (loaded, failed) -> RTexturesAsync.loadTextureFile(path, loaded, failed),
+			() -> new Texture2D());
+	}
+
+	// Whether an image file is in memory as a load builds from it: its pixels or its picture, or a QOI file's bytes.
+	static function imageReady(path:String):Bool {
+		if (haxe.io.Path.extension(path).toLowerCase() == "qoi")
+			return Runtime.files.exists(path);
+		return Runtime.images.exists(path) || Runtime.pictures.exists(path) || Textures.hasPath(path);
 	}
 
 	#if !macro
@@ -561,28 +575,60 @@ class RTextures {
 		Runtime.log(LOG_INFO, 'TEXTURE: [ID ${texture.id}] Mipmaps generated automatically, total: ${texture.mipmaps}');
 	}
 
-	/** Doesn't compile. See `LoadImageAsync` for loading an image from a file.
+	/** Loads an image from a file: PNG, JPEG, BMP, TGA, QOI or GIF (its first frame), in RGBA, a QOI file's in its own channels.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
+		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it
+		asynchronously.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImage: Not supported. Use LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) instead.")
+		@return  The image. */
 	static function LoadImage(fileName:String):Image {
-		throw "LoadImage is unimplemented";
+		var path = normalize(fileName);
+		var ready = haxe.io.Path.extension(path).toLowerCase() == "qoi" ? Runtime.files.exists(path) : Runtime.image(path) != null;
+		return SyncLoads.load(path, ready, () -> {
+			var image:Null<Image> = null;
+			if (haxe.io.Path.extension(path).toLowerCase() == "qoi")
+				RTexturesAsync.decoded("LoadImage", ".qoi", Runtime.files.get(path), loaded -> image = loaded, error -> Runtime.log(LOG_WARNING, error));
+			else {
+				var pixels = Runtime.image(path);
+				image = RTexturesAsync.rgba(pixels.pixels.sub(0, pixels.pixels.length), pixels.width, pixels.height);
+			}
+			image == null ? new Image() : image;
+		}, (loaded, failed) -> RTexturesAsync.loadImage(path, loaded, failed),
+			() -> new Image());
 	}
 
 	// ---- Images: loading and exporting ----
 
-	/** Doesn't compile. See `LoadImageRawAsync` for loading raw pixels from a file.
+	/** Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need gives an empty image, and one too small for
+		the header and the pixels is read from its first byte.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the
+		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it
+		asynchronously.
 
 		@param fileName  The file.
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
 		@param format  The pixel format (`PIXELFORMAT_*`).
-		@param headerSize  The bytes before the pixels.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageRaw: Not supported. Use LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void) instead.")
+		@param headerSize  The bytes before the pixels, skipped when the file holds them and the pixels.
+		@return  The image. */
 	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image {
-		throw "LoadImageRaw is unimplemented";
+		var path = normalize(fileName);
+		return SyncLoads.load(path, Runtime.files.exists(path), () -> {
+			var bytes = Runtime.files.get(path),
+				size = GetPixelDataSize(width, height, format);
+			if (size > bytes.length) {
+				Runtime.log(LOG_WARNING, 'LoadImageRaw: $path: ${bytes.length} bytes, too few for $width x $height pixels');
+				return new Image();
+			}
+			var start = headerSize > 0 && headerSize + size <= bytes.length ? headerSize : 0;
+			return new Image(bytes.sub(start, size), width, height, 1, format);
+		},
+			(loaded, failed) -> RTexturesAsync.LoadImageRawAsync(path, width, height, format, headerSize, loaded, failed), () -> new Image());
 	}
 
 	/** Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
@@ -596,14 +642,35 @@ class RTextures {
 		throw "LoadImageFromMemory is unimplemented";
 	}
 
-	/** Doesn't compile. See `LoadImageAnimAsync` for loading an animated image's frames from a file.
+	/** Loads an animated image's frames from a file: a GIF's every frame, one under the next, their count in `frames[0]`; any other
+		image one frame.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
+		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it
+		asynchronously.
 
 		@param fileName  The file.
-		@param frames  Would be set to how many frames.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageAnim: Not supported. Use LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.")
+		@param frames  Receives the frames' count, in its first element.
+		@return  The image, the frames one under the next. */
 	static function LoadImageAnim(fileName:String, frames:Array<Int>):Image {
-		throw "LoadImageAnim is unimplemented";
+		var path = normalize(fileName);
+		var gif = haxe.io.Path.extension(path).toLowerCase() == "gif";
+		var ready = gif ? Runtime.files.exists(path) : Runtime.image(path) != null
+			|| Runtime.files.exists(path)
+			&& haxe.io.Path.extension(path).toLowerCase() == "qoi";
+		return SyncLoads.load(path, ready, () -> {
+			var image:Null<Image> = null;
+			if (gif)
+				RTexturesAsync.gifAnim("LoadImageAnim", path, Runtime.files.get(path), frames, loaded -> image = loaded,
+					error -> Runtime.log(LOG_WARNING, error));
+			else {
+				image = LoadImage(path);
+				frames[0] = 1;
+			}
+			image == null ? new Image() : image;
+		},
+			(loaded, failed) -> RTexturesAsync.loadImageAnim(path, frames, loaded, failed), () -> new Image());
 	}
 
 	/** Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.

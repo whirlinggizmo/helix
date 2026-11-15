@@ -1187,6 +1187,16 @@ class Raygui {
 	public static inline function GuiGetStyle(control:Int, property:Int):Int
 		return RGui.GuiGetStyle(control, property);
 
+	/** Loads a style file, as raygui's `GuiLoadStyle` does: a text `.rgs` file's properties and font, or a binary one's.
+
+		Natively the file, and a font it names, are read during the call. In a page, a file ensured (`EnsureAssetAsync`,
+		`helix.raylib.extras.Assets`) is applied at once, a font it names once that font is made, within a frame or two; ensure that font
+		too. A file not ensured logs why and leaves the style as it was. See `GuiLoadStyleAsync` for loading it asynchronously.
+
+		@param fileName  The style file. */
+	public static inline function GuiLoadStyle(fileName:String):Void
+		RGui.GuiLoadStyle(fileName);
+
 	/** Loads raygui's default style, its light theme, over every control's colors, borders, text and sizes.
 
 		Sets the font back to raylib's default font and unloads the font set before.
@@ -1725,11 +1735,6 @@ class Raygui {
 	#end
 
 	// ---- raygui.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
-
-	/** Doesn't compile. See `GuiLoadStyleAsync` for loading a style file. */
-	public static macro function GuiLoadStyle(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("GuiLoadStyle: Not supported. Use GuiLoadStyleAsync(fileName:String, ?done:Void->Void, ?failed:String->Void) instead.",
-			macro {});
 
 	/** Doesn't compile. See `GuiLoadIconsAsync` for loading an icon file. */
 	public static macro function GuiLoadIcons(args:Array<Expr>):ExprOf<Array<String>>

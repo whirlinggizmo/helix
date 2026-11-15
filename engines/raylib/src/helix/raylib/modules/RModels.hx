@@ -11,6 +11,7 @@ import helix.raylib.internal.Animations;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.ParShapes;
 import helix.raylib.internal.Runtime;
+import helix.raylib.internal.SyncLoads;
 import helix.raylib.internal.Textures;
 import helix.raylib.modules.RCore.*;
 import helix.raylib.modules.RShapes.*;
@@ -680,25 +681,48 @@ class RModels {
 		rlSetTexture(0);
 	}
 
-	/** Doesn't compile. See `LoadModelAsync` for loading a model.
+	/** Loads a model from a glTF, GLB or OBJ file, with the files it points to, as `LoadModelAsync` reads it. A file loaded again, while
+		a load of it lives, shares its meshes' GPU buffers and its textures.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before and still loaded, loads at once. Natively any
+		other file is read, with its images, during the call. In a page it can't be, as the browser decodes images only asynchronously:
+		the load logs why and gives a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it
+		asynchronously.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadModel: Not supported. Use LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void) instead.")
+		@return  The model, the program's until `UnloadModel`. */
 	static function LoadModel(fileName:String):Model {
-		throw "LoadModel is unimplemented";
+		var path = normalize(fileName);
+		var ensured = Runtime.models3d.get(path);
+		if (ensured != null) {
+			// The ensure's model is the first load's.
+			Runtime.models3d.remove(path);
+			return ensured;
+		}
+		return SyncLoads.load(path, Models.isKept(path), () -> loadModel(path),
+			(loaded, failed) -> helix.raylib.modules.RModelsAsync.loadModel(path, loaded, failed), () -> new Model([], [], []));
 	}
 
 	// ---- Models and meshes ----
 
-	/** Doesn't compile. See `LoadMaterialsAsync` for loading a file's materials.
+	/** Loads an .mtl file's materials with the textures they name, as `LoadMaterialsAsync` reads them.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read, with its
+		textures, during the call. In a page it can't be: the load logs why and gives no materials, as raylib's load of a missing file
+		does. See `LoadMaterialsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
-		@param materialCount  Receives how many.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadMaterials: Not supported. Use LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void) instead.")
+		@param materialCount  Receives how many, in its first element.
+		@return  The materials, each the program's until `UnloadMaterial`. */
 	static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material> {
-		throw "LoadMaterials is unimplemented";
+		var path = normalize(fileName);
+		var ensured = Runtime.materials.get(path);
+		Runtime.materials.remove(path);
+		var materials:Array<Material> = ensured != null ? ensured : SyncLoads.load(path, false, () -> [],
+			(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadMaterialsAsync(path, loaded, failed), () -> []);
+		if (materialCount != null)
+			materialCount[0] = materials.length;
+		return materials;
 	}
 
 	// The model of a glTF, GLB or OBJ file `LoadModelAsync` brought in: its meshes, their materials and its images. A file loaded again shares
@@ -1590,14 +1614,30 @@ class RModels {
 	// As raylib 6.2 has them (raylib.h's 5.5 names and signatures, its frame a float as 6.2's): its glTF animations read, its frames mixed,
 	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader is given them as it draws.
 
-	/** Doesn't compile. See `LoadModelAnimationsAsync` for loading a file's animations.
+	/** Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` reads them.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call.
+		In a page it can't be: the load logs why and gives no animations, as raylib's load of a missing file does. See
+		`LoadModelAnimationsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
-		@param animCount  Would be set to how many.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadModelAnimations: Not supported. Use LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void) instead.")
+		@param animCount  Receives how many, in its first element.
+		@return  The animations, the program's until `UnloadModelAnimations`. */
 	static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation> {
-		throw "LoadModelAnimations is unimplemented";
+		var path = normalize(fileName);
+		var file = Runtime.gltfFiles.get(path);
+		var animations:Array<ModelAnimation> = SyncLoads.load(path, file != null, () -> {
+			try
+				Animations.fromGltf(file, path)
+			catch (e:Dynamic) {
+				Runtime.log(LOG_WARNING, 'LoadModelAnimations: $path: $e');
+				[];
+			}
+		},
+			(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadModelAnimationsAsync(path, loaded, failed), () -> []);
+		if (animCount != null)
+			animCount[0] = animations.length;
+		return animations;
 	}
 
 	/** Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See

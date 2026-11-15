@@ -108,7 +108,7 @@ speed where docs/benchmarks.md records them.
 - **Libraries apart from engines (done):** the libraries in `libs/` know no consumer, and the engines over them in `engines/` may own
   the loop and keep statics (docs/PLAN.md); `check_layers` refuses a library that reaches an engine, and the engines' tests run on every
   library change. helix-ray is helix-raylib: `engines/raylib/`, `-lib helix-raylib`, `import helix.raylib.Raylib.*;`, its defines
-  `helix-raylib-native-root` and `helix-raylib-custom-frame-control`. Next, separate repositories, each engine
+  `helix-raylib-asset-host` and `helix-raylib-custom-frame-control`. Next, separate repositories, each engine
   pinning a library version, once the platform has held through a second consumer and is versioned.
 - **Audio effects, low priority:** the API is agreed and committed (`IAudioEffects`, `AudioEffect`, PLATFORM.md's plan, and helix-services'
   `AudioEffects`, `Effect` and `Analyser` with their bodies unimplemented). Still to build: the two adapters (`WebAudioEffectsAdapter`,

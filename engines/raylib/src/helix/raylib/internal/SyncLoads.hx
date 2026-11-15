@@ -1,0 +1,57 @@
+package helix.raylib.internal;
+
+#if !macro
+/** Answers raylib's synchronous loads (`LoadTexture`, `LoadImage`, `LoadSound` and the rest) the one way: a file in memory, ensured
+	(`EnsureAssetAsync`) or brought in by an async load this run, is built at once. Natively one that isn't is brought in during the call,
+	the load waiting for its async form. In a page it can't be, the browser reading its cache and decoding only asynchronously: the load
+	logs why and gives raylib's empty result, as raylib's load of a missing file does. */
+@:noCompletion
+class SyncLoads {
+	/** Returns what a synchronous load gives.
+
+		@param path  The file, normalized.
+		@param ready  Whether the file is in memory as the build needs it.
+		@param build  Builds the result from what is in memory.
+		@param async  The load's async form, natively waited for when the file isn't ready.
+		@param empty  raylib's empty result, for a file that can't be loaded.
+		@return  The result, or the empty one. */
+	public static function load<T>(path:String, ready:Bool, build:Void->T, async:(T->Void, String->Void)->Void, empty:Void->T):T {
+		if (ready)
+			return build();
+		#if js
+		Runtime.log(4, 'FILEIO: [$path] Failed to load: not ensured. See EnsureAssetsAsync');
+		return empty();
+		#else
+		return Runtime.answered(answer -> async(answer, error -> {
+			Runtime.log(4, error);
+			answer(empty());
+		}));
+		#end
+	}
+
+	/** Returns what a synchronous load gives whose last step a page can only take asynchronously (a font rasterized at the size asked,
+		a music stream opened): natively as `load`; in a page, for a file in memory, its result at once, filled in once that step is done,
+		within a frame or two; for any other, the empty result, logging why.
+
+		@param path  The file, normalized.
+		@param ready  Whether the file is in memory.
+		@param made  Makes the result to fill in.
+		@param fill  Fills the result in from what the async form gives.
+		@param async  The load's async form.
+		@param empty  raylib's empty result, for a file that can't be loaded.
+		@return  The result, or the empty one. */
+	public static function fillLater<T>(path:String, ready:Bool, made:Void->T, fill:(T, T) -> Void, async:(T->Void, String->Void)->Void, empty:Void->T):T {
+		#if js
+		if (!ready) {
+			Runtime.log(4, 'FILEIO: [$path] Failed to load: not ensured. See EnsureAssetsAsync');
+			return empty();
+		}
+		var result = made();
+		async(loaded -> fill(result, loaded), error -> Runtime.log(4, error));
+		return result;
+		#else
+		return load(path, false, made, async, empty);
+		#end
+	}
+}
+#end

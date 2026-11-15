@@ -4,6 +4,7 @@
 
 
 ```haxe
+static function LoadTexture(fileName:String):Texture2D
 static function UnloadTexture(texture:Texture2D):Void
 static function IsTextureValid(texture:Texture2D):Bool
 static function DrawTexture(texture:Texture2D, posX:Int, posY:Int, tint:Color):Void
@@ -33,6 +34,9 @@ static function BeginTextureMode(target:RenderTexture2D):Void
 static function EndTextureMode():Void
 static function SetTextureFilter(texture:Texture2D, filter:Int):Void
 static function GenTextureMipmaps(texture:Texture2D):Void
+static function LoadImage(fileName:String):Image
+static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image
+static function LoadImageAnim(fileName:String, frames:Array<Int>):Image
 static function IsImageValid(image:Image):Bool
 static function UnloadImage(image:Image):Void
 static function ExportImageToMemory(image:Image, fileType:String, fileSize:Array<Int>):haxe.io.Bytes
@@ -120,6 +124,11 @@ static macro function LoadImageAnimAsync(fileName:String, frames:Array<Int>, loa
 static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image -> Void, ?failed:String -> Void):Void
 ```
 
+- `LoadTexture`: Loads a texture from an image file: PNG, JPEG, BMP, TGA, QOI or GIF (its first frame).
+  - `fileName`: The file.
+  - returns: The texture, the program's until `UnloadTexture`.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it asynchronously.
 - `UnloadTexture`: Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
   - `texture`: The texture.
 
@@ -258,6 +267,26 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   A texture already drawn gets its mipmaps from its pixels read back from the GPU. Draws asked for before the call this frame don't use them.
 
   Skipped for a render texture or a cubemap, with a warning.
+- `LoadImage`: Loads an image from a file: PNG, JPEG, BMP, TGA, QOI or GIF (its first frame), in RGBA, a QOI file's in its own channels.
+  - `fileName`: The file.
+  - returns: The image.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it asynchronously.
+- `LoadImageRaw`: Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need gives an empty image, and one too small for the header and the pixels is read from its first byte.
+  - `fileName`: The file.
+  - `width`: The width, in pixels.
+  - `height`: The height, in pixels.
+  - `format`: The pixel format (`PIXELFORMAT_*`).
+  - `headerSize`: The bytes before the pixels, skipped when the file holds them and the pixels.
+  - returns: The image.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it asynchronously.
+- `LoadImageAnim`: Loads an animated image's frames from a file: a GIF's every frame, one under the next, their count in `frames[0]`; any other image one frame.
+  - `fileName`: The file.
+  - `frames`: Receives the frames' count, in its first element.
+  - returns: The image, the frames one under the next.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it asynchronously.
 - `IsImageValid`: Returns whether an image holds pixels: data, a size, a format and a mipmap level.
   - `image`: The image.
   - returns: True when it does.

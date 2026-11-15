@@ -20,7 +20,7 @@ import helix.raylib.extras.Textures.*;
 	"helix.raylib.modules.RLighting", "helix.raylib.internal.LitProgram", "helix.raylib.modules.RDevice", "helix.platform.adapters.tilt.dom",
 	"helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.raylib.modules.RDebug", "helix.raylib.modules.RGuiSkins",
 	"helix.raylib.modules.RSprites", "helix.raylib.modules.RTextureDraws", "helix.raylib.modules.RTextureFills", "helix.raylib.modules.RTextureAtlases",
-	"helix.raylib.modules.RRenderTextureFit", "helix.raylib.extras.TextureAtlas")
+	"helix.raylib.modules.RRenderTextureFit", "helix.raylib.extras.TextureAtlas", "helix.raylib.internal.SyncLoads")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

@@ -3716,6 +3716,18 @@ class Raylib {
 
 	// ---- rtextures: textures, render textures and colors (raylib/RTextures.hx) ----
 
+	/** Loads a texture from an image file: PNG, JPEG, BMP, TGA, QOI or GIF (its first frame).
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
+		load logs why and gives a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it
+		asynchronously.
+
+		@param fileName  The file.
+		@return  The texture, the program's until `UnloadTexture`. */
+	public static inline function LoadTexture(fileName:String):Texture2D
+		return RTextures.LoadTexture(fileName);
+
 	/** Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
 
 		The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map given it, keeps it
@@ -3978,6 +3990,49 @@ class Raylib {
 		@param texture  The texture. */
 	public static inline function GenTextureMipmaps(texture:Texture2D):Void
 		RTextures.GenTextureMipmaps(texture);
+
+	/** Loads an image from a file: PNG, JPEG, BMP, TGA, QOI or GIF (its first frame), in RGBA, a QOI file's in its own channels.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
+		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it
+		asynchronously.
+
+		@param fileName  The file.
+		@return  The image. */
+	public static inline function LoadImage(fileName:String):Image
+		return RTextures.LoadImage(fileName);
+
+	/** Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need gives an empty image, and one too small for
+		the header and the pixels is read from its first byte.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the
+		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it
+		asynchronously.
+
+		@param fileName  The file.
+		@param width  The width, in pixels.
+		@param height  The height, in pixels.
+		@param format  The pixel format (`PIXELFORMAT_*`).
+		@param headerSize  The bytes before the pixels, skipped when the file holds them and the pixels.
+		@return  The image. */
+	public static inline function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image
+		return RTextures.LoadImageRaw(fileName, width, height, format, headerSize);
+
+	/** Loads an animated image's frames from a file: a GIF's every frame, one under the next, their count in `frames[0]`; any other
+		image one frame.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
+		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
+		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it
+		asynchronously.
+
+		@param fileName  The file.
+		@param frames  Receives the frames' count, in its first element.
+		@return  The image, the frames one under the next. */
+	public static inline function LoadImageAnim(fileName:String, frames:Array<Int>):Image
+		return RTextures.LoadImageAnim(fileName, frames);
 
 	/** Returns whether an image holds pixels: data, a size, a format and a mipmap level.
 
@@ -5104,6 +5159,34 @@ class Raylib {
 	public static inline function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font
 		return RText.LoadFontFromImage(image, key, firstChar);
 
+	/** Loads a font from a file: TrueType or OpenType at 32 pixels with the printable ASCII characters, an AngelCode BMFont file, or an
+		image of glyphs (PNG, BMP, TGA, JPEG or GIF) as raylib reads one.
+
+		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
+		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
+		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
+		load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
+
+		@param fileName  The file.
+		@return  The font, the program's until `UnloadFont`. */
+	public static inline function LoadFont(fileName:String):Font
+		return RText.LoadFont(fileName);
+
+	/** Loads a TrueType or OpenType font at a size, with the characters asked for.
+
+		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
+		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
+		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
+		load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
+
+		@param fileName  The file.
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+		@return  The font, the program's until `UnloadFont`. */
+	public static inline function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
+		return RText.LoadFontEx(fileName, fontSize, codepoints, codepointCount);
+
 	/** Draws the frames a second as "60 FPS", 20 pixels high in the default font.
 
 		Green at 30 or more, orange under 30, red under 15.
@@ -5696,6 +5779,31 @@ class Raylib {
 			origin:Vector2, rotation:Float, tint:Color):Void
 		RModels.DrawBillboardPro(camera, texture, source, position, up, size, origin, rotation, tint);
 
+	/** Loads a model from a glTF, GLB or OBJ file, with the files it points to, as `LoadModelAsync` reads it. A file loaded again, while
+		a load of it lives, shares its meshes' GPU buffers and its textures.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before and still loaded, loads at once. Natively any
+		other file is read, with its images, during the call. In a page it can't be, as the browser decodes images only asynchronously:
+		the load logs why and gives a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it
+		asynchronously.
+
+		@param fileName  The file.
+		@return  The model, the program's until `UnloadModel`. */
+	public static inline function LoadModel(fileName:String):Model
+		return RModels.LoadModel(fileName);
+
+	/** Loads an .mtl file's materials with the textures they name, as `LoadMaterialsAsync` reads them.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read, with its
+		textures, during the call. In a page it can't be: the load logs why and gives no materials, as raylib's load of a missing file
+		does. See `LoadMaterialsAsync` for loading them asynchronously.
+
+		@param fileName  The file.
+		@param materialCount  Receives how many, in its first element.
+		@return  The materials, each the program's until `UnloadMaterial`. */
+	public static inline function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material>
+		return RModels.LoadMaterials(fileName, materialCount);
+
 	/** Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
 
 		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
@@ -6020,6 +6128,18 @@ class Raylib {
 		@param mesh  The mesh. One without positions, texture coordinates or normals is unchanged. */
 	public static inline function GenMeshTangents(mesh:Mesh):Void
 		RModels.GenMeshTangents(mesh);
+
+	/** Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` reads them.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call.
+		In a page it can't be: the load logs why and gives no animations, as raylib's load of a missing file does. See
+		`LoadModelAnimationsAsync` for loading them asynchronously.
+
+		@param fileName  The file.
+		@param animCount  Receives how many, in its first element.
+		@return  The animations, the program's until `UnloadModelAnimations`. */
+	public static inline function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
+		return RModels.LoadModelAnimations(fileName, animCount);
 
 	/** Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See
 		`UpdateModelAnimation` for posing the meshes under any shader.
@@ -6364,6 +6484,17 @@ class Raylib {
 	public static inline function GetMasterVolume():Float
 		return RAudio.GetMasterVolume();
 
+	/** Loads a wave from a sound file: WAV, Ogg Vorbis, MP3 or QOA.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, a copy of the wave its ensure decoded. Natively any
+		other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs
+		why and gives an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
+
+		@param fileName  The file.
+		@return  The wave, the program's until `UnloadWave`. */
+	public static inline function LoadWave(fileName:String):Wave
+		return RAudio.LoadWave(fileName);
+
 	/** Returns whether a wave holds samples.
 
 		@param wave  The wave.
@@ -6432,6 +6563,17 @@ class Raylib {
 		@param samples  The samples. */
 	public static inline function UnloadWaveSamples(samples:Array<Float>):Void
 		RAudio.UnloadWaveSamples(samples);
+
+	/** Loads and decodes a sound file, ready to play: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before, loads at once. Natively any other file is read
+		and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a
+		sound that doesn't play, as raylib's load of a missing file does. See `LoadSoundAsync` for loading it asynchronously.
+
+		@param fileName  The file.
+		@return  The sound, the program's until `UnloadSound`. */
+	public static inline function LoadSound(fileName:String):Sound
+		return RAudio.LoadSound(fileName);
 
 	/** Returns a sound made from a wave, ready to play at once.
 
@@ -6553,6 +6695,18 @@ class Raylib {
 		@param pan  0 for left, 0.5 the middle, 1 for right. */
 	public static inline function SetSoundPan(sound:Sound, pan:Float):Void
 		RAudio.SetSoundPan(sound, pan);
+
+	/** Opens a music file to play as it is read: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
+
+		Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its
+		music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once it has. A file
+		not ensured logs why and gives music that doesn't play, as raylib's load of a missing file does. See `LoadMusicStreamAsync` for
+		opening it asynchronously.
+
+		@param fileName  The file.
+		@return  The music, the program's until `UnloadMusicStream`. */
+	public static inline function LoadMusicStream(fileName:String):Music
+		return RAudio.LoadMusicStream(fileName);
 
 	/** Returns music opened from a file's bytes, to be played as it is read.
 
@@ -7164,29 +7318,9 @@ class Raylib {
 		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void), or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
-	/** Doesn't compile. See `LoadTextureAsync` for loading a texture from a file. */
-	public static macro function LoadTexture(args:Array<Expr>):ExprOf<Texture2D>
-		return helix.platform.macros.Build.unsupported("LoadTexture: Not supported. Use LoadTextureAsync(fileName:String, loaded:Texture2D->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Texture2D));
-
-	/** Doesn't compile. See `LoadImageAsync` for loading an image from a file. */
-	public static macro function LoadImage(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImage: Not supported. Use LoadImageAsync(fileName:String, loaded:Image->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Image));
-
-	/** Doesn't compile. See `LoadImageRawAsync` for loading raw pixels from a file. */
-	public static macro function LoadImageRaw(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageRaw: Not supported. Use LoadImageRawAsync(fileName:String, width:Int, height:Int, format:Int, headerSize:Int, loaded:Image->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Image));
-
 	/** Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. */
 	public static macro function LoadImageFromMemory(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Not supported. Use LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Image));
-
-	/** Doesn't compile. See `LoadImageAnimAsync` for loading an animated image's frames from a file. */
-	public static macro function LoadImageAnim(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageAnim: Not supported. Use LoadImageAnimAsync(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
 
 	/** Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. */
@@ -7203,16 +7337,6 @@ class Raylib {
 	public static macro function LoadImageFromScreen(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: Not supported. Use LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
-
-	/** Doesn't compile. See `LoadFontAsync` for loading a font. */
-	public static macro function LoadFont(args:Array<Expr>):ExprOf<Font>
-		return helix.platform.macros.Build.unsupported("LoadFont: Not supported. Use LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Font));
-
-	/** Doesn't compile. See `LoadFontExAsync` for loading a font at a size. */
-	public static macro function LoadFontEx(args:Array<Expr>):ExprOf<Font>
-		return helix.platform.macros.Build.unsupported("LoadFontEx: Not supported. Use LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Font));
 
 	/** Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes. */
 	public static macro function LoadFontFromMemory(args:Array<Expr>):ExprOf<Font>
@@ -7232,40 +7356,10 @@ class Raylib {
 	public static macro function TextAppend(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("TextAppend: A String can't be written into. Join the text instead: text += append", macro {});
 
-	/** Doesn't compile. See `LoadModelAsync` for loading a model. */
-	public static macro function LoadModel(args:Array<Expr>):ExprOf<Model>
-		return helix.platform.macros.Build.unsupported("LoadModel: Not supported. Use LoadModelAsync(fileName:String, loaded:Model->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Model));
-
-	/** Doesn't compile. See `LoadMaterialsAsync` for loading a file's materials. */
-	public static macro function LoadMaterials(args:Array<Expr>):ExprOf<Array<Material>>
-		return helix.platform.macros.Build.unsupported("LoadMaterials: Not supported. Use LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void) instead.",
-			macro(null : Array<helix.raylib.Material>));
-
-	/** Doesn't compile. See `LoadModelAnimationsAsync` for loading a file's animations. */
-	public static macro function LoadModelAnimations(args:Array<Expr>):ExprOf<Array<ModelAnimation>>
-		return helix.platform.macros.Build.unsupported("LoadModelAnimations: Not supported. Use LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void) instead.",
-			macro(null : Array<helix.raylib.ModelAnimation>));
-
-	/** Doesn't compile. See `LoadWaveAsync` for loading a wave file. */
-	public static macro function LoadWave(args:Array<Expr>):ExprOf<Wave>
-		return helix.platform.macros.Build.unsupported("LoadWave: Not supported. Use LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Wave));
-
 	/** Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. */
 	public static macro function LoadWaveFromMemory(args:Array<Expr>):ExprOf<Wave>
 		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Not supported. Use LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Wave));
-
-	/** Doesn't compile. See `LoadSoundAsync` for loading a sound file. */
-	public static macro function LoadSound(args:Array<Expr>):ExprOf<Sound>
-		return helix.platform.macros.Build.unsupported("LoadSound: Not supported. Use LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Sound));
-
-	/** Doesn't compile. See `LoadMusicStreamAsync` for opening a music file. */
-	public static macro function LoadMusicStream(args:Array<Expr>):ExprOf<Music>
-		return helix.platform.macros.Build.unsupported("LoadMusicStream: Not supported. Use LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Music));
 
 	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run. */
 	public static macro function AttachAudioStreamProcessor(args:Array<Expr>):ExprOf<Void>

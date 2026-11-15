@@ -1557,10 +1557,13 @@ class RCore {
 
 		@return  The directory, with a slash at its end. */
 	static function GetApplicationDirectory():String {
+		var host = Runtime.assetHost();
 		#if js
-		return "./";
+		return Runtime.isUrlHost(host) ? haxe.io.Path.addTrailingSlash(host) : "./";
 		#else
-		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(haxe.io.Path.join([Runtime.system.getProgramDirectory(), Runtime.root])));
+		if (Runtime.isUrlHost(host))
+			return haxe.io.Path.addTrailingSlash(host);
+		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(haxe.io.Path.join([Runtime.system.getProgramDirectory(), host])));
 		#end
 	}
 
@@ -2490,13 +2493,11 @@ class RCore {
 	// A file's name as the loads and saves read it: relative to the program's files, a leading `GetApplicationDirectory()` and "./"
 	// taken off.
 	static function normalize(path:String):String {
-		#if !js
 		if (Runtime.system != null) {
 			var application = GetApplicationDirectory();
-			if (StringTools.startsWith(path, application))
+			if (application != "./" && StringTools.startsWith(path, application))
 				path = path.substr(application.length);
 		}
-		#end
 		while (StringTools.startsWith(path, "./"))
 			path = path.substr(2);
 		return path;

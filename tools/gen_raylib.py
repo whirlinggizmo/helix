@@ -10,7 +10,7 @@ the raylib module it serves, so a program's import of raylib's header brings the
 file calls (RFilesAsync) and the compiled shaders (RCompiledShaders) after RCore, RTexturesAsync after RTextures, RTextAsync after
 RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAsync after RGui.
 What a program opts into that raylib has no call for is in the package helix.raylib.extras, a module and a section of its own each
-(extras.Lighting from RLighting, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.GuiSkins from
+(extras.Lighting from RLighting, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.Assets from RAssets, extras.GuiSkins from
 RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, a model's posed bounds, merge and masked blend in extras.Models from
 RModelsPosed, RModelsMerged and RModelsMasked, and the fills, tiled and patched draws, atlases and fitted render texture in
 extras.Textures from RTextureFills, RTextureDraws, RTextureAtlases and RRenderTextureFit).
@@ -95,6 +95,7 @@ TARGETS = {
     'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders rlights' lights light")], None, 'Lighting'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
     'extras/Device.hx': ([('RDevice', "device: the safe area, the device, the window's abilities, orientation and tilt")], None, 'Device'),
+    'extras/Assets.hx': ([('RAssets', "assets: the asset host, and files ensured ahead of raylib's loads")], None, 'Assets'),
     'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
     'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),
     'extras/Sprites.hx': ([('RSprites', "sprites: many copies of one part of a texture, each placed by a matrix, in one call")], None, 'Sprites'),

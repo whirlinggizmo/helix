@@ -21,6 +21,8 @@ static function UnloadFont(font:Font):Void
 static function UnloadFontData(glyphs:Array<GlyphInfo>, glyphCount:Int):Void
 static function GenImageFontAtlas(glyphs:Array<GlyphInfo>, glyphRecs:Array<Rectangle>, glyphCount:Int, fontSize:Int, padding:Int, packMethod:Int):Image
 static function LoadFontFromImage(image:Image, key:Color, firstChar:Int):Font
+static function LoadFont(fileName:String):Font
+static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font
 static function DrawFPS(posX:Int, posY:Int):Void
 static function TextFormat(text:String, args:haxe.extern.Rest<Dynamic>):String
 static function TextIsEqual(text1:String, text2:String):Bool
@@ -176,6 +178,19 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   A glyph's height stops at the image's bottom and its width at the image's right edge.
 
   At most 256 glyphs are read.
+- `LoadFont`: Loads a font from a file: TrueType or OpenType at 32 pixels with the printable ASCII characters, an AngelCode BMFont file, or an image of glyphs (PNG, BMP, TGA, JPEG or GIF) as raylib reads one.
+  - `fileName`: The file.
+  - returns: The font, the program's until `UnloadFont`.
+
+  Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid` is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
+- `LoadFontEx`: Loads a TrueType or OpenType font at a size, with the characters asked for.
+  - `fileName`: The file.
+  - `fontSize`: The glyphs' size: the height of a line, in pixels.
+  - `codepoints`: The characters, or null for those from the space on.
+  - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+  - returns: The font, the program's until `UnloadFont`.
+
+  Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid` is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 - `DrawFPS`: Draws the frames a second as "60 FPS", 20 pixels high in the default font.
   - `posX`: The left edge.
   - `posY`: The top edge.

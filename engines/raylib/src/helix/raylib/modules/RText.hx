@@ -8,6 +8,7 @@ import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
+import helix.raylib.internal.SyncLoads;
 import helix.raylib.internal.Textures;
 import helix.raylib.modules.RCore.*;
 import helix.raylib.modules.RShapes.*;
@@ -638,25 +639,48 @@ class RText {
 		return font;
 	}
 
-	/** Doesn't compile. See `LoadFontAsync` for loading a font.
+	/** Loads a font from a file: TrueType or OpenType at 32 pixels with the printable ASCII characters, an AngelCode BMFont file, or an
+		image of glyphs (PNG, BMP, TGA, JPEG or GIF) as raylib reads one.
+
+		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
+		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
+		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
+		load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFont: Not supported. Use LoadFontAsync(fileName:String, loaded:Font->Void, ?failed:String->Void) instead.")
+		@return  The font, the program's until `UnloadFont`. */
 	static function LoadFont(fileName:String):Font {
-		throw "LoadFont is unimplemented";
+		var path = normalize(fileName);
+		return SyncLoads.fillLater(path, Runtime.files.exists(path) || Runtime.image(path) != null, () -> new Font(), fillFont,
+			(loaded, failed) -> RTextAsync.loadFont(path, loaded, failed), GetFontDefault);
 	}
 
-	/** Doesn't compile. See `LoadFontExAsync` for loading a font at a size.
+	// A font given in place of one made later: its fields set from it.
+	static function fillFont(font:Font, made:Font):Void {
+		font.baseSize = made.baseSize;
+		font.glyphCount = made.glyphCount;
+		font.glyphPadding = made.glyphPadding;
+		font.texture = made.texture;
+		font.recs = made.recs;
+		font.glyphs = made.glyphs;
+	}
+
+	/** Loads a TrueType or OpenType font at a size, with the characters asked for.
+
+		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
+		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
+		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
+		load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 
 		@param fileName  The file.
-		@param fontSize  The size.
-		@param codepoints  The characters.
-		@param codepointCount  How many of them.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontEx: Not supported. Use LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.")
+		@param fontSize  The glyphs' size: the height of a line, in pixels.
+		@param codepoints  The characters, or null for those from the space on.
+		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
+		@return  The font, the program's until `UnloadFont`. */
 	static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
-		throw "LoadFontEx is unimplemented";
+		var path = normalize(fileName);
+		return SyncLoads.fillLater(path, Runtime.files.exists(path), () -> new Font(), fillFont,
+			(loaded, failed) -> RTextAsync.LoadFontExAsync(path, fontSize, codepoints, codepointCount, loaded, failed), GetFontDefault);
 	}
 
 	/** Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.

@@ -29,6 +29,8 @@ static function DrawBoundingBox(box:BoundingBox, color:Color):Void
 static function DrawBillboard(camera:Camera, texture:Texture2D, position:Vector3, scale:Float, tint:Color):Void
 static function DrawBillboardRec(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, size:Vector2, tint:Color):Void
 static function DrawBillboardPro(camera:Camera, texture:Texture2D, source:Rectangle, position:Vector3, up:Vector3, size:Vector2, origin:Vector2, rotation:Float, tint:Color):Void
+static function LoadModel(fileName:String):Model
+static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material>
 static function LoadModelFromMesh(mesh:Mesh):Model
 static function IsModelValid(model:Model):Bool
 static function UnloadModel(model:Model):Void
@@ -55,6 +57,7 @@ static function GenMeshKnot(radius:Float, size:Float, radSeg:Int, sides:Int):Mes
 static function GenMeshHeightmap(heightmap:Image, size:Vector3):Mesh
 static function GenMeshCubicmap(cubicmap:Image, cubeSize:Vector3):Mesh
 static function GenMeshTangents(mesh:Mesh):Void
+static function LoadModelAnimations(fileName:String, animCount:Array<Int>):Array<ModelAnimation>
 static function UpdateModelAnimationBones(model:Model, anim:ModelAnimation, frame:Float):Void
 static function UpdateModelAnimation(model:Model, anim:ModelAnimation, frame:Float):Void
 static function UnloadModelAnimation(anim:ModelAnimation):Void
@@ -216,6 +219,17 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `origin`: The point of it at the position, from its bottom left, in the size's units.
   - `rotation`: How far it turns about its origin, in degrees.
   - `tint`: The tint.
+- `LoadModel`: Loads a model from a glTF, GLB or OBJ file, with the files it points to, as `LoadModelAsync` reads it. A file loaded again, while a load of it lives, shares its meshes' GPU buffers and its textures.
+  - `fileName`: The file.
+  - returns: The model, the program's until `UnloadModel`.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before and still loaded, loads at once. Natively any other file is read, with its images, during the call. In a page it can't be, as the browser decodes images only asynchronously: the load logs why and gives a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it asynchronously.
+- `LoadMaterials`: Loads an .mtl file's materials with the textures they name, as `LoadMaterialsAsync` reads them.
+  - `fileName`: The file.
+  - `materialCount`: Receives how many, in its first element.
+  - returns: The materials, each the program's until `UnloadMaterial`.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read, with its textures, during the call. In a page it can't be: the load logs why and gives no materials, as raylib's load of a missing file does. See `LoadMaterialsAsync` for loading them asynchronously.
 - `LoadModelFromMesh`: Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
   - `mesh`: The mesh.
   - returns: The model.
@@ -417,6 +431,12 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   Sums each triangle's direction of u at each of its vertices, by its indices when the mesh has them. Then makes each sum square to the vertex's normal and of length 1, with w the side the summed direction of v is on.
 
   Gives a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is mostly z, else (-y, x, 0) of the normal, with w 1.
+- `LoadModelAnimations`: Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` reads them.
+  - `fileName`: The file.
+  - `animCount`: Receives how many, in its first element.
+  - returns: The animations, the program's until `UnloadModelAnimations`.
+
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call. In a page it can't be: the load logs why and gives no animations, as raylib's load of a missing file does. See `LoadModelAnimationsAsync` for loading them asynchronously.
 - `UpdateModelAnimationBones`: Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See `UpdateModelAnimation` for posing the meshes under any shader.
   - `model`: The model.
   - `anim`: The animation, of the model's skeleton (`IsModelAnimationValid`).

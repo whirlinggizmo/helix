@@ -650,27 +650,15 @@ static macro function emscripten_get_now(...args):Float
 static macro function emscripten_sleep(...args):Void
 static macro function LoadShader(...args):Shader
 static macro function LoadShaderFromMemory(...args):Shader
-static macro function LoadTexture(...args):Texture2D
-static macro function LoadImage(...args):Image
-static macro function LoadImageRaw(...args):Image
 static macro function LoadImageFromMemory(...args):Image
-static macro function LoadImageAnim(...args):Image
 static macro function LoadImageAnimFromMemory(...args):Image
 static macro function LoadImageFromTexture(...args):Image
 static macro function LoadImageFromScreen(...args):Image
-static macro function LoadFont(...args):Font
-static macro function LoadFontEx(...args):Font
 static macro function LoadFontFromMemory(...args):Font
 static macro function LoadFontData(...args):Array<GlyphInfo>
 static macro function TextCopy(...args):Int
 static macro function TextAppend(...args):Void
-static macro function LoadModel(...args):Model
-static macro function LoadMaterials(...args):Array<Material>
-static macro function LoadModelAnimations(...args):Array<ModelAnimation>
-static macro function LoadWave(...args):Wave
 static macro function LoadWaveFromMemory(...args):Wave
-static macro function LoadSound(...args):Sound
-static macro function LoadMusicStream(...args):Music
 static macro function AttachAudioStreamProcessor(...args):Void
 static macro function DetachAudioStreamProcessor(...args):Void
 static macro function AttachAudioMixedProcessor(...args):Void
@@ -698,27 +686,15 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `emscripten_sleep`: Doesn't compile. See `WaitTime` for waiting.
 - `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShaderAsync` for loading a shader compiled ahead of time by `CompileShaderFile`.
 - `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
-- `LoadTexture`: Doesn't compile. See `LoadTextureAsync` for loading a texture from a file.
-- `LoadImage`: Doesn't compile. See `LoadImageAsync` for loading an image from a file.
-- `LoadImageRaw`: Doesn't compile. See `LoadImageRawAsync` for loading raw pixels from a file.
 - `LoadImageFromMemory`: Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
-- `LoadImageAnim`: Doesn't compile. See `LoadImageAnimAsync` for loading an animated image's frames from a file.
 - `LoadImageAnimFromMemory`: Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
 - `LoadImageFromTexture`: Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image.
 - `LoadImageFromScreen`: Doesn't compile. See `LoadImageFromScreenAsync` for reading the screen into an image.
-- `LoadFont`: Doesn't compile. See `LoadFontAsync` for loading a font.
-- `LoadFontEx`: Doesn't compile. See `LoadFontExAsync` for loading a font at a size.
 - `LoadFontFromMemory`: Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
 - `LoadFontData`: Doesn't compile. See `LoadFontDataAsync` for rasterizing glyphs.
 - `TextCopy`: Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text.
 - `TextAppend`: Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining `text += append` appends the text.
-- `LoadModel`: Doesn't compile. See `LoadModelAsync` for loading a model.
-- `LoadMaterials`: Doesn't compile. See `LoadMaterialsAsync` for loading a file's materials.
-- `LoadModelAnimations`: Doesn't compile. See `LoadModelAnimationsAsync` for loading a file's animations.
-- `LoadWave`: Doesn't compile. See `LoadWaveAsync` for loading a wave file.
 - `LoadWaveFromMemory`: Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
-- `LoadSound`: Doesn't compile. See `LoadSoundAsync` for loading a sound file.
-- `LoadMusicStream`: Doesn't compile. See `LoadMusicStreamAsync` for opening a music file.
 - `AttachAudioStreamProcessor`: Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run.
 - `DetachAudioStreamProcessor`: Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`).
 - `AttachAudioMixedProcessor`: Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run.

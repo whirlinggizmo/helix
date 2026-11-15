@@ -10,6 +10,7 @@ import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.FrameConverter;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
+import helix.raylib.internal.SyncLoads;
 import helix.raylib.internal.Textures;
 import helix.raylib.modules.RCore.*;
 import helix.raylib.modules.RShapes.*;
@@ -110,13 +111,18 @@ class RAudio {
 		return Runtime.audioDecoder;
 	}
 
-	/** Doesn't compile. See `LoadWaveAsync` for loading a wave file.
+	/** Loads a wave from a sound file: WAV, Ogg Vorbis, MP3 or QOA.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, a copy of the wave its ensure decoded. Natively any
+		other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs
+		why and gives an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWave: Not supported. Use LoadWaveAsync(fileName:String, loaded:Wave->Void, ?failed:String->Void) instead.")
+		@return  The wave, the program's until `UnloadWave`. */
 	static function LoadWave(fileName:String):Wave {
-		throw "LoadWave is unimplemented";
+		var path = normalize(fileName);
+		return SyncLoads.load(path, Runtime.waves.exists(path), () -> WaveCopy(Runtime.waves.get(path)),
+			(loaded, failed) -> RAudioAsync.loadWave(path, RAudioAsync.readWave, loaded, failed), () -> new Wave());
 	}
 
 	/** Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
@@ -349,13 +355,31 @@ class RAudio {
 
 	// ---- Sounds ----
 
-	/** Doesn't compile. See `LoadSoundAsync` for loading a sound file.
+	/** Loads and decodes a sound file, ready to play: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
+
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before, loads at once. Natively any other file is read
+		and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a
+		sound that doesn't play, as raylib's load of a missing file does. See `LoadSoundAsync` for loading it asynchronously.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadSound: Not supported. Use LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void) instead.")
+		@return  The sound, the program's until `UnloadSound`. */
 	static function LoadSound(fileName:String):Sound {
-		throw "LoadSound is unimplemented";
+		var path = normalize(fileName);
+		if (Runtime.audio == null) {
+			Runtime.log(4, 'LoadSound: $path: InitAudioDevice first');
+			return new Sound();
+		}
+		var entry = sounds.get(path);
+		if (entry != null && entry.loaded != null)
+			return loadSound(path);
+		return SyncLoads.load(path, Runtime.waves.exists(path), () -> {
+			var sound = LoadSoundFromWave(Runtime.waves.get(path));
+			// The wave is the sound's now: a second load of the file reads it again, natively, or needs another ensure.
+			Runtime.waves.remove(path);
+			Runtime.ensured.remove(path);
+			sound;
+		}, (loaded, failed) -> RAudioAsync.LoadSoundAsync(path, loaded, failed),
+			() -> new Sound());
 	}
 
 	/** Returns a sound made from a wave, ready to play at once.
@@ -692,13 +716,32 @@ class RAudio {
 
 	// ---- Music ----
 
-	/** Doesn't compile. See `LoadMusicStreamAsync` for opening a music file.
+	/** Opens a music file to play as it is read: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
+
+		Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its
+		music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once it has. A file
+		not ensured logs why and gives music that doesn't play, as raylib's load of a missing file does. See `LoadMusicStreamAsync` for
+		opening it asynchronously.
 
 		@param fileName  The file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadMusicStream: Not supported. Use LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void) instead.")
+		@return  The music, the program's until `UnloadMusicStream`. */
 	static function LoadMusicStream(fileName:String):Music {
-		throw "LoadMusicStream is unimplemented";
+		var path = normalize(fileName);
+		if (Runtime.audio == null) {
+			Runtime.log(4, 'LoadMusicStream: $path: InitAudioDevice first');
+			return new Music();
+		}
+		#if js
+		if (!Runtime.ensured.exists(path)) {
+			Runtime.log(4, 'FILEIO: [$path] Failed to load: not ensured. See EnsureAssetsAsync');
+			return new Music();
+		}
+		var music = new Music();
+		open(music, path, "LoadMusicStream", () -> {}, error -> Runtime.log(4, 'LoadMusicStream: $error'));
+		return music;
+		#else
+		return SyncLoads.load(path, false, () -> new Music(), (loaded, failed) -> RAudioAsync.LoadMusicStreamAsync(path, loaded, failed), () -> new Music());
+		#end
 	}
 
 	/** Returns music opened from a file's bytes, to be played as it is read.

@@ -3,5 +3,5 @@
 -main Main
 -dce full
 -cpp native
--D helix-raylib-native-root=..
+-D helix-raylib-asset-host=..
 -D helix-raylib-portable-sys

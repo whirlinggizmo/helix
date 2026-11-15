@@ -1,0 +1,6 @@
+{
+  "what": "the ensured panel loaded by LoadTexture and drawn across the window's middle: its light face at the centre.",
+  "points": [
+    {"x": 400, "y": 225, "color": [218, 220, 231], "tolerance": 6}
+  ]
+}

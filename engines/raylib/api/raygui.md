@@ -842,6 +842,7 @@ static function GuiSetFont(font:Font):Void
 static function GuiGetFont():Font
 static function GuiSetStyle(control:Int, property:Int, value:Int):Void
 static function GuiGetStyle(control:Int, property:Int):Int
+static function GuiLoadStyle(fileName:String):Void
 static function GuiLoadStyleDefault():Void
 static function GuiEnableTooltip():Void
 static function GuiDisableTooltip():Void
@@ -896,6 +897,10 @@ static function GuiDrawIcon(iconId:Int, posX:Int, posY:Int, pixelSize:Int, color
   - returns: Its value: a color as 0xRRGGBBAA, a size in pixels, or one of the property's values.
 
   Loads the default style first when no style is loaded yet.
+- `GuiLoadStyle`: Loads a style file, as raygui's `GuiLoadStyle` does: a text `.rgs` file's properties and font, or a binary one's.
+  - `fileName`: The style file.
+
+  Natively the file, and a font it names, are read during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) is applied at once, a font it names once that font is made, within a frame or two; ensure that font too. A file not ensured logs why and leaves the style as it was. See `GuiLoadStyleAsync` for loading it asynchronously.
 - `GuiLoadStyleDefault`: Loads raygui's default style, its light theme, over every control's colors, borders, text and sizes.
   Sets the font back to raylib's default font and unloads the font set before.
 
@@ -1271,9 +1276,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - returns: 0.
 
 ```haxe
-static macro function GuiLoadStyle(...args):Void
 static macro function GuiLoadIcons(...args):Array<String>
 ```
 
-- `GuiLoadStyle`: Doesn't compile. See `GuiLoadStyleAsync` for loading a style file.
 - `GuiLoadIcons`: Doesn't compile. See `GuiLoadIconsAsync` for loading an icon file.

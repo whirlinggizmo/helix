@@ -1,0 +1,171 @@
+import haxe.io.Bytes;
+import helix.raylib.Raylib.*;
+import helix.raylib.extras.Assets.*;
+import helix.raylib.internal.Runtime;
+import helix.services.assets.AssetRequest;
+import helix.services.assets.AssetSource;
+import helix.services.assets.Assets;
+import helix.platform.StreamSource;
+import helix.services.time.Time;
+
+/** Checks the Assets extra: files ensured together, their fetches all asked for before any is answered, whether by one
+	`EnsureAssetsAsync` or by `EnsureAssetAsync` calls in a row; the progress counted; a file that can't be ensured failing once while
+	the others stay ensured; a file already ensured answered after the call, not during it; `IsAssetEnsured`; an image ensured, loaded at once by `LoadImage`, `LoadTexture` and
+	`LoadImageRaw`, and one not ensured loaded during the call natively and failing in a page; and the asset host's order,
+	the option first, then `SetAssetHost`, then the build's define, then the default. On a source of the test's own that answers only
+	once as many fetches as it waits for have been asked. */
+@:access(helix.raylib.internal.Runtime)
+class EnsureTests {
+	static var checks = 0;
+
+	static function check(value:Bool, message:String):Void {
+		if (!value)
+			throw message;
+		checks++;
+	}
+
+	static function main():Void {
+		SetTraceLogLevel(LOG_NONE);
+		var system = new FakeSystem();
+		Runtime.system = system;
+		Runtime.time = new Time(system);
+		var gate = new GatedSource(["a.txt" => "A", "b.txt" => "B", "c.txt" => "C", "d.txt" => "D", "e.txt" => "E"]);
+		Runtime.assets = new Assets([gate]);
+		Runtime.polled.push(Runtime.assets);
+
+		// Three files ensured together: answered only as the third is asked, which fetches one after another would never reach.
+		gate.waitFor = 3;
+		var ensured = false, counted:Array<String> = [];
+		EnsureAssetsAsync(["a.txt", "./b.txt", "c.txt", "a.txt"], () -> ensured = true, error -> throw error, (done, total) -> counted.push('$done/$total'));
+		check(gate.asked.length == 3, 'every fetch asked for in the call, a name given twice once: ${gate.asked}');
+		check(!ensured, "ensured later, not during the call");
+		poll();
+		check(ensured && counted.join(",") == "1/3,2/3,3/3", 'ensured, its progress counted: $ensured $counted');
+		check(IsAssetEnsured("a.txt") && IsAssetEnsured("b.txt") && IsAssetEnsured("./c.txt") && !IsAssetEnsured("d.txt"), "each ensured");
+		check(Runtime.files.get("b.txt").toString() == "B", "an ensured file's bytes in memory");
+
+		// EnsureAssetAsync calls in a row are fetched together too.
+		gate.waitFor = 2;
+		var ones = 0;
+		EnsureAssetAsync("d.txt", () -> ones++);
+		EnsureAssetAsync("e.txt", () -> ones++);
+		poll();
+		check(ones == 2, 'calls in a row fetched together: $ones');
+
+		// A file already ensured: answered after the call, with nothing fetched.
+		var asked = gate.asked.length, again = false;
+		EnsureAssetAsync("a.txt", () -> again = true);
+		check(!again, "an ensured file answered after the call");
+		poll();
+		check(again && gate.asked.length == asked, "and not fetched again");
+
+		// A file that isn't there fails once; the others ensured with it stay ensured.
+		gate.waitFor = 1;
+		var failures:Array<String> = [], whole = false;
+		EnsureAssetsAsync(["missing.txt", "a.txt"], () -> whole = true, error -> failures.push(error));
+		poll();
+		check(failures.length == 1 && !whole, 'failed once, not ensured: $failures');
+		check(IsAssetEnsured("a.txt") && !IsAssetEnsured("missing.txt"), "the other file still ensured");
+
+		// An image ensured is decoded to its pixels, and raylib's loads of it answer at once.
+		var graphics = new CountingGraphics();
+		Runtime.graphics = graphics;
+		Runtime.frame = new helix.raylib.internal.Frame(graphics);
+		var decoder = new FakeImageDecoder();
+		Runtime.polled.push(decoder);
+		Runtime.decoding = new helix.services.images.Images(decoder, Runtime.assets);
+		Runtime.polled.push(Runtime.decoding);
+		gate.files.set("hero.png", "4x2");
+		gate.files.set("late.png", "2x3");
+		gate.files.set("pixels.raw", "abcdefghijklmnop");
+		var images = false;
+		EnsureAssetsAsync(["hero.png", "pixels.raw"], () -> images = true, error -> throw error);
+		poll();
+		check(images, "an image and a raw file ensured");
+		var image = LoadImage("hero.png");
+		check(image.width == 4 && image.height == 2 && image.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 && image.data.get(0) == 7,
+			'LoadImage of an ensured file: ${image.width} x ${image.height}');
+		var texture = LoadTexture("hero.png");
+		check(texture.id != 0 && texture.width == 4 && texture.height == 2, 'LoadTexture of an ensured file: ${texture.id}');
+		var raw = LoadImageRaw("pixels.raw", 2, 2, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, 0);
+		check(raw.width == 2 && raw.data.getString(0, 4) == "abcd", "LoadImageRaw of an ensured file");
+		// A file not ensured: natively the load waits for it, in a page it fails as a missing file does.
+		var late = LoadTexture("late.png");
+		#if js
+		check(late.id == 0, 'in a page, a texture not ensured is texture 0: ${late.id}');
+		#else
+		check(late.id != 0 && late.width == 2 && late.height == 3, 'natively, a texture not ensured is loaded during the call: ${late.id}');
+		#end
+
+		// A file released is no longer ensured, and a load of it is one of a file never ensured.
+		ReleaseAssets(["pixels.raw"]);
+		check(!IsAssetEnsured("pixels.raw"), "a released file isn't ensured");
+		#if js
+		check(LoadImageRaw("pixels.raw", 2, 2, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, 0).data == null, "in a page, a released file doesn't load");
+		#end
+
+		// The host: the option, then the program's, then the build's define, then the default.
+		#if js
+		check(GetAssetHost() == "", 'the default in a page: ${GetAssetHost()}');
+		#else
+		check(GetAssetHost() == "../web", 'the default natively: ${GetAssetHost()}');
+		#end
+		Runtime.builtHost = "https://built.example/";
+		check(GetAssetHost() == "https://built.example/", "the build's define over the default");
+		SetAssetHost("files/");
+		check(GetAssetHost() == "files/", "the program's over the build's");
+		system.options.set("asset_host", "https://option.example/");
+		check(GetAssetHost() == "https://option.example/", "the option over the program's");
+		check(IsAssetEnsured("b.txt"), "files ensured stay ensured as the host changes");
+
+		var report = haxe.Json.stringify({passed: true, checks: checks});
+		#if js
+		js.Syntax.code("console.log({0})", report);
+		#else
+		Sys.println(report);
+		#end
+	}
+
+	static function poll():Void {
+		for (_ in 0...20)
+			Runtime.pollAnswers();
+	}
+}
+
+// A source answering its loads only once as many as it waits for have been asked, at a later poll as a real source does, from files of
+// its own; a name it hasn't is missing.
+
+@:access(helix.raylib.internal.Runtime)
+private class GatedSource extends AssetSource {
+	/** The files it has, by path. */
+	public final files:Map<String, String>;
+
+	final pending:Array<Void->Void> = [];
+
+	/** The fetches it waits for before answering any. */
+	public var waitFor = 1;
+
+	/** Every path it was asked for, in order. */
+	public final asked:Array<String> = [];
+
+	public function new(files:Map<String, String>) {
+		super();
+		this.files = files;
+	}
+
+	public function load(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
+		asked.push(path);
+		pending.push(() -> files.exists(path) ? loaded(Bytes.ofString(files.get(path))) : missing());
+		if (pending.length >= waitFor) {
+			var now = pending.splice(0, pending.length);
+			for (answer in now)
+				Runtime.later(answer);
+		}
+	}
+
+	public function refetch(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void
+		load(path, request, loaded, missing, failed);
+
+	public function locate(path:String, request:AssetRequest, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
+		missing();
+}
