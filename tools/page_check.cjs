@@ -1,5 +1,5 @@
 // Serves a directory (SITE), or takes a page already served (SITE an http or https URL), opens its page in Chromium (headless, or with --headed in its window) with the query given, waits for the page's frames to settle and saves a
-// screenshot of the 800 x 600 viewport, printing {errors, result} as JSON: the page's errors and console errors, and what a test page
+// screenshot of the viewport (800 x 600, or --viewport=WIDTHxHEIGHT), printing {errors, result} as JSON: the page's errors and console errors, and what a test page
 // leaves in window.helixResult (null for a page that has none). A page that sets window.helixResult to null is waited on, up to 30
 // seconds (--wait=SECONDS for longer, as a page timing many frames needs), until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
 // BROWSER is a Chromium to run, or "" for Playwright's own (the repository's, build/tools, or the one HELIX_PLAYWRIGHT names). The page
@@ -8,8 +8,9 @@
 // report those as the page's env(safe-area-inset-*), as a phone with a notch would. --headed opens the browser's window on the display,
 // paced by it, for a page timed or seen as a person would see it, on ANGLE over GL on Linux, as a visible window over Vulkan loses its
 // WebGL context at startup there (docs/benchmarks.md); --headless, the default, runs it off screen.
-const given=require('./cli.cjs').args(__filename,['browser','site','query','output'],['--headed','--headless','--wait=']);
+const given=require('./cli.cjs').args(__filename,['browser','site','query','output'],['--headed','--headless','--wait=','--viewport=']);
 const WAIT=Number(given.values.get('--wait')||30);
+const [WIDTH,HEIGHT]=(given.values.get('--viewport')||'800x600').split('x').map(Number);
 const [browserPath,site,query,output]=given;
 const path=require('path');
 const {chromium}=require(process.env.HELIX_PLAYWRIGHT||path.join(__dirname,'../build/tools/node_modules/playwright'));
@@ -30,7 +31,7 @@ function serve(directory){
 
 async function run(address,args){
  const browser=await chromium.launch({executablePath:browserPath||undefined,headless:!given.flags.has('--headed'),args:['--no-sandbox','--mute-audio','--autoplay-policy=no-user-gesture-required',...args]});const errors=[];
- try{const page=await browser.newPage({viewport:{width:800,height:600}});
+ try{const page=await browser.newPage({viewport:{width:WIDTH,height:HEIGHT}});
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
   const safeArea=new URLSearchParams(query).get('safeArea');
   if(safeArea){const [top,right,bottom,left]=safeArea.split(',').map(Number);
