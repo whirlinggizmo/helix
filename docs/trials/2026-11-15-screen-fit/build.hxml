@@ -1,0 +1,6 @@
+-lib helix-raylib
+-cp docs/api
+-cp .
+-main Main
+-dce full
+-js main.js

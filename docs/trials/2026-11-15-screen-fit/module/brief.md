@@ -1,0 +1,8 @@
+Write the program in `{DIR}/task.md` in Haxe, using **raylib 5.5's API**.
+
+- **How raylib looks here.** This is raylib 5.5 in Haxe. Each raylib header is a class in package `helix.raylib`: `raylib.h` is `helix.raylib.Raylib`, and `import helix.raylib.Raylib.*;` brings its functions, constants and colors in unqualified, as raylib names them. `raymath.h` is `Raymath`, `rlgl.h` is `Rlgl`, and the examples' `rlights.h` is `Rlights`. raylib's structs are classes of the same names and fields in `helix.raylib` (`import helix.raylib.*;`). Write it as you would write a raylib program.
+- **The Screen extra.** helix-raylib's screen fitting is in `helix.raylib.extras.Screen` (`import helix.raylib.extras.Screen.*;`). Its doc comments are in `{DIR}/docs/api/helix/raylib/extras/Screen.hx`: learn it from them. It isn't built yet, so the program is compiled, not run.
+- **Docs:** raylib 5.5's own headers are in `{DIR}/docs/include/` and its C examples in `{DIR}/docs/examples/`. Read them as you need. Read nothing else about the library: no library sources, no other documentation, no web.
+- **Building:** in `{DIR}`, `haxe build.hxml` compiles it to JavaScript. Don't change `build.hxml`.
+- **Writing:** write to `{DIR}` only: `Main.hx` and what it imports, then `NOTES.md` with each compile error you hit and what you changed for it; each place you guessed or weren't sure what a Screen call does (what it changes, which pixels a value is in, when to call it); and anything you'd change in that API.
+- **Budget:** stop at 30 minutes or when it compiles, whichever comes first, and reply with one line saying which.
