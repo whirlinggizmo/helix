@@ -5,13 +5,17 @@ import helix.raylib.internal.Runtime;
 import helix.services.assets.AssetRequest;
 import helix.services.assets.AssetSource;
 import helix.services.assets.Assets;
+import helix.platform.IFontRasterizer;
+import helix.platform.RasterFont;
+import helix.platform.RasterGlyph;
 import helix.platform.StreamSource;
 import helix.services.time.Time;
 
 /** Checks the Assets extra: files ensured together, their fetches all asked for before any is answered, whether by one
 	`EnsureAssetsAsync` or by `EnsureAssetAsync` calls in a row; the progress counted; a file that can't be ensured failing once while
 	the others stay ensured; a file already ensured answered after the call, not during it; `IsAssetEnsured`; an image ensured, loaded at once by `LoadImage`, `LoadTexture` and
-	`LoadImageRaw`, and one not ensured loaded during the call natively and failing in a page; and the asset host's order,
+	`LoadImageRaw`, and one not ensured loaded during the call natively and failing in a page; a font ensured, opened, loaded by
+	`LoadFontEx` and `LoadFont` during the call, and closed as it's released; and the asset host's order,
 	the option first, then `SetAssetHost`, then the build's define, then the default. On a source of the test's own that answers only
 	once as many fetches as it waits for have been asked. */
 @:access(helix.raylib.internal.Runtime)
@@ -97,6 +101,24 @@ class EnsureTests {
 		check(late.id != 0 && late.width == 2 && late.height == 3, 'natively, a texture not ensured is loaded during the call: ${late.id}');
 		#end
 
+		// A font ensured is opened, and raylib's loads of it rasterize it during the call, at the size each asks for.
+		var rasterizer = new OpenedRasterizer();
+		Runtime.fontRasterizer = rasterizer;
+		Runtime.polled.push(rasterizer);
+		gate.files.set("title.ttf", "font");
+		var fontEnsured = false;
+		EnsureAssetAsync("title.ttf", () -> fontEnsured = true, error -> throw error);
+		poll();
+		check(fontEnsured && rasterizer.open.length == 1, "a font ensured is opened");
+		var font = LoadFontEx("title.ttf", 40, null, 0);
+		check(font.baseSize == 40 && font.glyphCount == 95 && font.texture.id != 0,
+			'LoadFontEx of an ensured font, at once: ${font.baseSize} ${font.glyphCount}');
+		SetTextureFilter(font.texture, TEXTURE_FILTER_BILINEAR);
+		var small = LoadFont("title.ttf");
+		check(small.baseSize == 32 && small.glyphCount == 95 && small.texture.id != 0, 'LoadFont of an ensured font, at once: ${small.baseSize}');
+		ReleaseAsset("title.ttf");
+		check(rasterizer.open.length == 0 && !IsAssetEnsured("title.ttf"), "a font released is closed");
+
 		// A file released is no longer ensured, and a load of it is one of a file never ensured.
 		ReleaseAssets(["pixels.raw"]);
 		check(!IsAssetEnsured("pixels.raw"), "a released file isn't ensured");
@@ -168,4 +190,62 @@ private class GatedSource extends AssetSource {
 
 	public function locate(path:String, request:AssetRequest, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
 		missing();
+}
+
+// Opens "font" bytes at a later poll, and rasterizes an opened font during the call: each glyph a 2 by size box.
+private class OpenedRasterizer implements IFontRasterizer {
+	/** The fonts open, by id. */
+	public final open:Array<Int> = [];
+
+	final pending:Array<Void->Void> = [];
+	var next = 1;
+
+	public function new() {}
+
+	public function rasterize(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		pending.push(() -> failed("rasterized only when opened"));
+
+	public function rasterizeDistanceField(encoded:Bytes, size:Float, codepoints:Array<Int>,
+			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
+		pending.push(() -> failed("rasterized only when opened"));
+
+	public function openFont(encoded:Bytes, opened:(font:Int) -> Void, failed:String->Void):Void {
+		var id = next++, font = encoded.toString() == "font";
+		pending.push(() -> if (!font) failed("not a font") else {
+			open.push(id);
+			opened(id);
+		});
+	}
+
+	public function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont {
+		if (open.indexOf(font) < 0)
+			throw 'font $font isn\'t open';
+		var h = Std.int(size);
+		return {
+			glyphs: [
+				for (c in codepoints)
+					({
+						codepoint:c, found:true, width:2, height:h, offsetX:0, offsetY: -h, advance:3, pixels:Bytes.alloc(2 * h)
+					} : RasterGlyph)
+			],
+			ascent: size * .75,
+			descent: -size * .25,
+			lineGap: 0
+		};
+	}
+
+	public function rasterizeDistanceFieldOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+		return rasterizeOpened(font, size, codepoints);
+
+	public function closeFont(font:Int):Void
+		open.remove(font);
+
+	public function poll():Void {
+		var now = pending.splice(0, pending.length);
+		for (f in now)
+			f();
+	}
+
+	public function dispose():Void {}
 }

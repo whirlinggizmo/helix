@@ -929,6 +929,10 @@ Sizes and metrics are stb_truetype's: the size is the font's pixel height (its a
 ```haxe
 function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
 function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function openFont(encoded:haxe.io.Bytes, opened:(font:Int) -> Void, failed:String -> Void):Void
+function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function rasterizeDistanceFieldOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function closeFont(font:Int):Void
 function poll():Void
 function dispose():Void
 ```
@@ -949,6 +953,24 @@ function dispose():Void
   - `failed`: Receives why the font can't be read.
 
   A glyph has 4 pixels of padding around its outline; a pixel on the outline is 128, and each pixel inside is 64 more, each outside 64 less, clamped to 0 and 255. One of `rasterized` or `failed` is called once, on the main thread, never during this call.
+- `openFont`: Opens a font, so its glyphs are rasterized during a call (`rasterizeOpened`, `rasterizeDistanceFieldOpened`) at any size. Opening is what a page does only asynchronously, the browser loading the font as a face.
+  - `encoded`: The font file's bytes, TTF or OTF; the first font of a collection is not read.
+  - `opened`: Receives the opened font, until `closeFont`.
+  - `failed`: Receives why the font can't be read.
+
+  One of `opened` or `failed` is called once, on the main thread, never during this call.
+- `rasterizeOpened`: Returns an opened font's glyphs as 8-bit coverage, rasterized on the main thread during the call, as `rasterize` gives them.
+  - `font`: The font, from `openFont`.
+  - `size`: The pixel height.
+  - `codepoints`: The glyphs wanted.
+  - returns: A glyph for each codepoint, in their order, and the font's metrics at the size.
+- `rasterizeDistanceFieldOpened`: Returns an opened font's glyphs as signed distances to their outlines, rasterized on the main thread during the call, as `rasterizeDistanceField` gives them.
+  - `font`: The font, from `openFont`.
+  - `size`: The pixel height.
+  - `codepoints`: The glyphs wanted.
+  - returns: A glyph for each codepoint, in their order, and the font's metrics at the size.
+- `closeFont`: Closes a font `openFont` opened. Its id is then no font's.
+  - `font`: The font.
 - `poll`: Delivers what finished on the platform's threads since the last poll. The program calls it once a frame.
 - `dispose`: Closes the rasterizer. A rasterize still running finishes without calling back.
 
@@ -1873,6 +1895,17 @@ function toString():String
 ```
 
 - `toString`: Returns the value's name as written (Triangles, Lines): what Std.string, interpolation and trace show.
+
+## RasterFont
+
+*typedef* in [`libs/platform/src/helix/platform/RasterFont.hx`](../src/helix/platform/RasterFont.hx), `import helix.platform.RasterFont;`
+
+Represents the glyphs `IFontRasterizer.rasterizeOpened` gives, with the font's metrics at their size.
+
+- `lineGap:Float`: The gap between one line's descent and the next line's ascent, in pixels.
+- `glyphs:Array<RasterGlyph>`: A glyph for each codepoint asked for, in their order.
+- `descent:Float`: The font's descent, in pixels below the baseline, negative.
+- `ascent:Float`: The font's ascent, in pixels above the baseline.
 
 ## RasterGlyph
 

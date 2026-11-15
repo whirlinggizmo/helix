@@ -173,6 +173,30 @@ class FontsTests {
 		pump();
 		check(refused == "not a font", "what isn't a font fails");
 
+		// An opened font: answered at a poll, then rasterized during each call, at any size, until closed.
+		var opened = -1;
+		fonts.openFont(Bytes.ofString("font"), font -> opened = font);
+		check(opened == -1, "opened: not answered during the call");
+		pump();
+		check(opened > 0 && rasterizer.openFonts.indexOf(opened) >= 0, "opened at a poll");
+		var now = fonts.rasterizeOpened(opened, 8, [65, 66]);
+		check(now.glyphs.length == 2 && now.glyphs[1].height == 8 && now.ascent == 6 && !rasterizer.sdf, "an opened font rasterized during the call");
+		check(fonts.rasterizeOpened(opened, 16, [65]).glyphs[0].height == 16, "and again at another size");
+		var hardNow = fonts.rasterizeBitmapOpened(opened, 4, [65, 66]);
+		check(hardNow.glyphs[1].pixels.get(0) == 255 && hardNow.glyphs[1].pixels.get(7) == 0, "an opened font hard-edged");
+		fonts.rasterizeDistanceFieldOpened(opened, 4, [65]);
+		check(rasterizer.sdf, "an opened font's signed distances asked of the platform");
+		fonts.closeFont(opened);
+		check(rasterizer.openFonts.indexOf(opened) < 0, "closed");
+		var late = -1;
+		fonts.openFont(Bytes.ofString("font"), font -> late = font)();
+		pump();
+		check(late == -1 && rasterizer.openFonts.length == 0, "an aborted open calls nothing, and its font is closed");
+		var notOpened = "";
+		fonts.openFont(Bytes.ofString("junk"), _ -> throw "opened what isn't a font", m -> notOpened = m);
+		pump();
+		check(notOpened == "not a font", "what isn't a font isn't opened");
+
 		var abortedLoad = false;
 		fonts.load("ui.ttf", 4, [65], _ -> abortedLoad = true, _ -> abortedLoad = true)();
 		pump();

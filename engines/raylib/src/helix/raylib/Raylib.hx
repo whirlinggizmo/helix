@@ -5162,10 +5162,9 @@ class Raylib {
 	/** Loads a font from a file: TrueType or OpenType at 32 pixels with the printable ASCII characters, an AngelCode BMFont file, or an
 		image of glyphs (PNG, BMP, TGA, JPEG or GIF) as raylib reads one.
 
-		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
-		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
-		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
-		load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
 
 		@param fileName  The file.
 		@return  The font, the program's until `UnloadFont`. */
@@ -5174,10 +5173,9 @@ class Raylib {
 
 	/** Loads a TrueType or OpenType font at a size, with the characters asked for.
 
-		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
-		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
-		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
-		load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 
 		@param fileName  The file.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.

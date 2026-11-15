@@ -104,6 +104,11 @@ function loadDistanceField(path:String, size:Float, codepoints:Array<Int>, loade
 function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
 function rasterizeBitmap(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
 function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, ?failed:String -> Void):() -> Void
+function openFont(encoded:haxe.io.Bytes, opened:(font:Int) -> Void, ?failed:String -> Void):() -> Void
+function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function rasterizeBitmapOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function rasterizeDistanceFieldOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function closeFont(font:Int):Void
 function loadBmFont(path:String, loaded:Font2D -> Void, ?failed:String -> Void):() -> Void
 function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:Float, lineGap:Float, glyphs:Array<RasterGlyph>, ?kernings:Array<Kerning2D>):Font2D
 ```
@@ -159,6 +164,30 @@ function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:
   - `rasterized`: Receives a glyph for each codepoint, in their order, and the font's ascent, descent and line gap.
   - `failed`: Optional. Receives why the font can't be read. When omitted, the failure is logged.
   - returns: A function that aborts it; neither callback is called after it, and once one was, it does nothing.
+- `openFont`: Opens a TrueType or OpenType font from the file's bytes, so its glyphs are rasterized during a call (`rasterizeOpened`, `rasterizeBitmapOpened`, `rasterizeDistanceFieldOpened`) at any size: for a font a program readies ahead, then rasterizes at once as it's asked for.
+  - `encoded`: The font file's bytes, TTF or OTF.
+  - `opened`: Receives the opened font, until `closeFont`.
+  - `failed`: Optional. Receives why the font can't be read. When omitted, the failure is logged.
+  - returns: A function that aborts it; neither callback is called after it, and once one was, it does nothing. A font opened after it is closed.
+
+  One of `opened` or `failed` is called once, at a later poll, never during this call.
+- `rasterizeOpened`: Returns an opened font's glyphs as antialiased coverage, rasterized during the call, as `rasterize` gives them.
+  - `font`: The font, from `openFont`.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted.
+  - returns: A glyph for each codepoint, in their order (one the font lacks isn't `found`, and is empty), and the font's ascent, descent and line gap, in pixels.
+- `rasterizeBitmapOpened`: Returns an opened font's glyphs as `rasterizeOpened` does, their coverage made hard-edged: each texel covered or not.
+  - `font`: The font, from `openFont`.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted.
+  - returns: A glyph for each codepoint, in their order, and the font's ascent, descent and line gap.
+- `rasterizeDistanceFieldOpened`: Returns an opened font's glyphs as signed distances to their outlines, rasterized during the call, as `rasterizeDistanceField` gives them.
+  - `font`: The font, from `openFont`.
+  - `size`: The pixel height: the font's ascent to its descent.
+  - `codepoints`: The characters wanted.
+  - returns: A glyph for each codepoint, in their order, and the font's ascent, descent and line gap.
+- `closeFont`: Closes a font `openFont` opened.
+  - `font`: The font.
 - `loadBmFont`: Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose texels are gray is coverage, so it becomes white with the gray as alpha, as raylib takes it.
   - `path`: The .fnt file, as the assets name it.
   - `loaded`: Receives the font: its size the .fnt's line height, its ascent its base.

@@ -43,7 +43,8 @@ class RAssets {
 	/** Asynchronously ensures a file: makes it local, fetching it from the asset host and keeping it in the program's cache when it isn't
 		there, and decodes it into memory by its kind, so raylib's load of it answers at once on every target. An image is decoded to its
 		pixels, a sound file to its wave, a glTF, GLB or OBJ file to its model (its images decoded) and a glTF file's animations
-		read, an .mtl file to its materials.
+		read, an .mtl file to its materials, a TrueType or OpenType font opened to be rasterized at any size, a BMFont read with its
+		pages.
 
 		A file already ensured is ensured at once, though `ensured` is still called after the call returns. Several calls made in a row
 		fetch and decode their files together, never one after another. See `EnsureAssetsAsync` for several files at once.
@@ -132,6 +133,12 @@ class RAssets {
 		Runtime.images.remove(path);
 		Runtime.waves.remove(path);
 		Runtime.gltfFiles.remove(path);
+		Runtime.bmFonts.remove(path);
+		var font = Runtime.openFonts.get(path);
+		if (font != null) {
+			Runtime.openFonts.remove(path);
+			Runtime.fonts().closeFont(font);
+		}
 		var model = Runtime.models3d.get(path);
 		if (model != null) {
 			Runtime.models3d.remove(path);
@@ -154,8 +161,8 @@ class RAssets {
 			ReleaseAsset(name);
 	}
 
-	// Brings a file into memory as its kind needs, then calls done with null, or why it couldn't be: an image decoded to its pixels (a
-	// GIF's first frame as raylib's LoadImage reads it), anything else as its bytes.
+	// Brings a file into memory as its kind needs, as EnsureAssetAsync lists them (a GIF's first frame as raylib's LoadImage reads it),
+	// anything else as its bytes, then calls done with null, or why it couldn't be.
 	static function prepare(path:String, done:Null<String>->Void):Void {
 		var type = haxe.io.Path.extension(path).toLowerCase();
 		if (type == "gif") {
@@ -203,6 +210,27 @@ class RAssets {
 		if (type == "obj") {
 			RModelsAsync.loadModel(path, model -> {
 				Runtime.models3d.set(path, model);
+				done(null);
+			}, done);
+			return;
+		}
+		if (type == "ttf" || type == "otf") {
+			// Its bytes, and the font opened, so a load rasterizes it at once at the size it asks for.
+			Runtime.fetch(path, error -> {
+				if (error != null) {
+					done(error);
+					return;
+				}
+				Runtime.fonts().openFont(Runtime.files.get(path), font -> {
+					Runtime.openFonts.set(path, font);
+					done(null);
+				}, message -> done('$path: $message'));
+			});
+			return;
+		}
+		if (type == "fnt") {
+			Runtime.fonts().loadBmFont(path, font -> {
+				Runtime.bmFonts.set(path, font);
 				done(null);
 			}, done);
 			return;

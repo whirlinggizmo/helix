@@ -58,7 +58,8 @@ class Assets {
 	/** Asynchronously ensures a file: makes it local, fetching it from the asset host and keeping it in the program's cache when it isn't
 		there, and decodes it into memory by its kind, so raylib's load of it answers at once on every target. An image is decoded to its
 		pixels, a sound file to its wave, a glTF, GLB or OBJ file to its model (its images decoded) and a glTF file's animations
-		read, an .mtl file to its materials.
+		read, an .mtl file to its materials, a TrueType or OpenType font opened to be rasterized at any size, a BMFont read with its
+		pages.
 
 		A file already ensured is ensured at once, though `ensured` is still called after the call returns. Several calls made in a row
 		fetch and decode their files together, never one after another. See `EnsureAssetsAsync` for several files at once.

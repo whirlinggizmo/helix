@@ -507,7 +507,10 @@ so a partly transparent pixel may come back a level or two from the file's value
 
 `IFontRasterizer`: `rasterize(encoded, size, codepoints, rasterized(glyphs, ascent, descent, lineGap), failed(message))` for coverage,
 `rasterizeDistanceField` with the same arguments for signed distances, so a program rasterizing coverage carries no distance
-transform; `poll`; `dispose`. It reads **TrueType and OpenType** fonts (not a collection's) and gives each codepoint's glyph (`RasterGlyph`): whether the font
+transform; `openFont(encoded, opened(font), failed(message))`, then `rasterizeOpened(font, size, codepoints)` and
+`rasterizeDistanceFieldOpened` returning the glyphs and metrics (`RasterFont`) during the call, on the main thread, until
+`closeFont(font)`, for a font readied ahead and rasterized at once at any size (in a page, opening is the browser loading the font as a
+face, which it does only asynchronously); `poll`; `dispose`, which closes the fonts still open. It reads **TrueType and OpenType** fonts (not a collection's) and gives each codepoint's glyph (`RasterGlyph`): whether the font
 has it, its bitmap (8-bit coverage, or signed distances: 4 pixels of padding, 128 on the outline, 64 a pixel), its offset from the pen and
 the baseline, and its advance, with the font's ascent, descent and line gap. Sizes and lengths are stb_truetype's: the size is the pixel
 height, ascent minus descent. Natively, `fontrasterizer/stb` (`StbFontRasterizerAdapter`): stb_truetype 1.26 (`libs/platform/vendor/stb`) on

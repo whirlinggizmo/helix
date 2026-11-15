@@ -50,6 +50,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Orientation](types.md#orientation)
   - [PipelineDesc](types.md#pipelinedesc)
   - [Primitive](types.md#primitive)
+  - [RasterFont](types.md#rasterfont)
   - [RasterGlyph](types.md#rasterglyph)
   - [Sampling](types.md#sampling)
   - [SdlGpuStages](types.md#sdlgpustages)

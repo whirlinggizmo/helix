@@ -182,7 +182,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `fileName`: The file.
   - returns: The font, the program's until `UnloadFont`.
 
-  Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid` is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
 - `LoadFontEx`: Loads a TrueType or OpenType font at a size, with the characters asked for.
   - `fileName`: The file.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
@@ -190,7 +190,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
   - returns: The font, the program's until `UnloadFont`.
 
-  Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid` is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 - `DrawFPS`: Draws the frames a second as "60 FPS", 20 pixels high in the default font.
   - `posX`: The left edge.
   - `posY`: The top edge.

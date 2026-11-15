@@ -359,12 +359,17 @@ What stb_truetype reads from the font's tables is read here the same way (helix-
 function new()
 function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
 function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function openFont(encoded:haxe.io.Bytes, opened:(font:Int) -> Void, failed:String -> Void):Void
+function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function rasterizeDistanceFieldOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function closeFont(font:Int):Void
 function poll():Void
 function dispose():Void
 ```
 
 - `new`: Creates the rasterizer.
 - `poll`: Does nothing: the page's promises already resolve on the main thread.
+- `dispose`: Closes the rasterizer and every font it opened.
 
 ## StbFontRasterizerAdapter
 
@@ -376,12 +381,16 @@ Provides `IFontRasterizer` natively over stb_truetype, each rasterize on a worke
 function new()
 function rasterize(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
 function rasterizeDistanceField(encoded:haxe.io.Bytes, size:Float, codepoints:Array<Int>, rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String -> Void):Void
+function openFont(encoded:haxe.io.Bytes, opened:(font:Int) -> Void, failed:String -> Void):Void
+function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function rasterizeDistanceFieldOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+function closeFont(font:Int):Void
 function poll():Void
 function dispose():Void
 ```
 
 - `new`: Creates the rasterizer.
-- `dispose`: Closes the rasterizer: a rasterize still running on its worker finishes, and its answer is dropped.
+- `dispose`: Closes the rasterizer and every font it opened: a rasterize still running on its worker finishes, and its answer is dropped.
 
 ## DomGamepadsAdapter
 

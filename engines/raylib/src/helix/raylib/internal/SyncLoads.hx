@@ -28,30 +28,5 @@ class SyncLoads {
 		}));
 		#end
 	}
-
-	/** Returns what a synchronous load gives whose last step a page can only take asynchronously (a font rasterized at the size asked,
-		a music stream opened): natively as `load`; in a page, for a file in memory, its result at once, filled in once that step is done,
-		within a frame or two; for any other, the empty result, logging why.
-
-		@param path  The file, normalized.
-		@param ready  Whether the file is in memory.
-		@param made  Makes the result to fill in.
-		@param fill  Fills the result in from what the async form gives.
-		@param async  The load's async form.
-		@param empty  raylib's empty result, for a file that can't be loaded.
-		@return  The result, or the empty one. */
-	public static function fillLater<T>(path:String, ready:Bool, made:Void->T, fill:(T, T) -> Void, async:(T->Void, String->Void)->Void, empty:Void->T):T {
-		#if js
-		if (!ready) {
-			Runtime.log(4, 'FILEIO: [$path] Failed to load: not ensured. See EnsureAssetsAsync');
-			return empty();
-		}
-		var result = made();
-		async(loaded -> fill(result, loaded), error -> Runtime.log(4, error));
-		return result;
-		#else
-		return load(path, false, made, async, empty);
-		#end
-	}
 }
 #end

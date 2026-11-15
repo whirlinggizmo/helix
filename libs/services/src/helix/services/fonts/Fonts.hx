@@ -7,6 +7,7 @@ import helix.formats.truetype.TrueTypeTables;
 import helix.log.Log;
 import helix.math.RectanglePacker;
 import helix.platform.IFontRasterizer;
+import helix.platform.RasterFont;
 import helix.platform.RasterGlyph;
 import helix.services.assets.Assets;
 import helix.services.images.Image;
@@ -134,6 +135,62 @@ class Fonts {
 			(glyphs, ascent, descent, lineGap) -> if (!aborted) rasterized(glyphs, ascent, descent, lineGap), message -> if (!aborted) fail(failed, message));
 		return () -> aborted = true;
 	}
+
+	/** Opens a TrueType or OpenType font from the file's bytes, so its glyphs are rasterized during a call (`rasterizeOpened`,
+		`rasterizeBitmapOpened`, `rasterizeDistanceFieldOpened`) at any size: for a font a program readies ahead, then rasterizes at once
+		as it's asked for.
+
+		One of `opened` or `failed` is called once, at a later poll, never during this call.
+		@param encoded  The font file's bytes, TTF or OTF.
+		@param opened  Receives the opened font, until `closeFont`.
+		@param failed  Optional. Receives why the font can't be read. When omitted, the failure is logged.
+		@return  A function that aborts it; neither callback is called after it, and once one was, it does nothing. A font opened after
+			it is closed. */
+	public function openFont(encoded:Bytes, opened:(font:Int) -> Void, ?failed:String->Void):Void->Void {
+		var aborted = false;
+		rasterizer.openFont(encoded, font -> if (aborted) rasterizer.closeFont(font) else opened(font), message -> if (!aborted) fail(failed, message));
+		return () -> aborted = true;
+	}
+
+	/** Returns an opened font's glyphs as antialiased coverage, rasterized during the call, as `rasterize` gives them.
+
+		@param font  The font, from `openFont`.
+		@param size  The pixel height: the font's ascent to its descent.
+		@param codepoints  The characters wanted.
+		@return  A glyph for each codepoint, in their order (one the font lacks isn't `found`, and is empty), and the font's ascent,
+			descent and line gap, in pixels. */
+	public function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+		return rasterizer.rasterizeOpened(font, size, codepoints);
+
+	/** Returns an opened font's glyphs as `rasterizeOpened` does, their coverage made hard-edged: each texel covered or not.
+
+		@param font  The font, from `openFont`.
+		@param size  The pixel height: the font's ascent to its descent.
+		@param codepoints  The characters wanted.
+		@return  A glyph for each codepoint, in their order, and the font's ascent, descent and line gap. */
+	public function rasterizeBitmapOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont {
+		var raster = rasterizer.rasterizeOpened(font, size, codepoints);
+		for (g in raster.glyphs)
+			for (i in 0...g.pixels.length)
+				g.pixels.set(i, g.pixels.get(i) < 80 ? 0 : 255);
+		return raster;
+	}
+
+	/** Returns an opened font's glyphs as signed distances to their outlines, rasterized during the call, as `rasterizeDistanceField`
+		gives them.
+
+		@param font  The font, from `openFont`.
+		@param size  The pixel height: the font's ascent to its descent.
+		@param codepoints  The characters wanted.
+		@return  A glyph for each codepoint, in their order, and the font's ascent, descent and line gap. */
+	public function rasterizeDistanceFieldOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+		return rasterizer.rasterizeDistanceFieldOpened(font, size, codepoints);
+
+	/** Closes a font `openFont` opened.
+
+		@param font  The font. */
+	public function closeFont(font:Int):Void
+		rasterizer.closeFont(font);
 
 	// A font loaded and rasterized by one of the rasterize calls, packed onto one atlas.
 	function loadWith(raster:(Bytes, Float, Array<Int>, (Array<RasterGlyph>, Float, Float, Float) -> Void, ? (String->Void)) -> (Void->Void), kind:FontKind,

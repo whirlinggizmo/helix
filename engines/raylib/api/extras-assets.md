@@ -44,7 +44,7 @@ static function ReleaseAssets(fileNames:Array<String>):Void
   A URL's files are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.
 - `GetAssetHost`: Returns the asset host in use: the option's, `SetAssetHost`'s, the build's define's, or the default.
   - returns: The host.
-- `EnsureAssetAsync`: Asynchronously ensures a file: makes it local, fetching it from the asset host and keeping it in the program's cache when it isn't there, and decodes it into memory by its kind, so raylib's load of it answers at once on every target. An image is decoded to its pixels, a sound file to its wave, a glTF, GLB or OBJ file to its model (its images decoded) and a glTF file's animations read, an .mtl file to its materials.
+- `EnsureAssetAsync`: Asynchronously ensures a file: makes it local, fetching it from the asset host and keeping it in the program's cache when it isn't there, and decodes it into memory by its kind, so raylib's load of it answers at once on every target. An image is decoded to its pixels, a sound file to its wave, a glTF, GLB or OBJ file to its model (its images decoded) and a glTF file's animations read, an .mtl file to its materials, a TrueType or OpenType font opened to be rasterized at any size, a BMFont read with its pages.
   - `fileName`: The file's name, relative to the asset host.
   - `ensured`: Called once the file is ensured.
   - `failed`: Optional. Called with why the file can't be ensured, in place of `ensured`; when omitted, it is logged.

@@ -4,10 +4,18 @@ import haxe.io.Bytes;
 import helix.formats.truetype.TrueTypeTables;
 import helix.math.DistanceField2D;
 import helix.platform.IFontRasterizer;
+import helix.platform.RasterFont;
 import helix.platform.RasterGlyph;
 
 /** A glyph's pixels: its text drawn with its pen at (x, y) on a width by height canvas, as coverage or distances. */
 private typedef Pixels = (family:String, em:Float, text:String, x:Float, y:Float, width:Int, height:Int) -> Bytes;
+
+/** A font `openFont` opened: its tables, and its face, loaded and in the page's fonts under its family. */
+private typedef OpenedFace = {
+	final tables:TrueTypeTables;
+	final family:String;
+	final face:Dynamic;
+}
 
 /** Provides `IFontRasterizer` in a page: the font loaded as a `FontFace` and its glyphs drawn with `fillText` on an `OffscreenCanvas`.
 
@@ -25,6 +33,8 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 	static var faces = 0;
 
 	var closed = false;
+	final openFaces = new Map<Int, OpenedFace>();
+	var nextFont = 1;
 
 	/** Creates the rasterizer. */
 	public function new() {}
@@ -36,6 +46,52 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 	public function rasterizeDistanceField(encoded:Bytes, size:Float, codepoints:Array<Int>,
 			rasterized:(glyphs:Array<RasterGlyph>, ascent:Float, descent:Float, lineGap:Float) -> Void, failed:String->Void):Void
 		run(encoded, size, codepoints, SDF_PADDING, distances, rasterized, failed);
+
+	public function openFont(encoded:Bytes, opened:(font:Int) -> Void, failed:String->Void):Void {
+		var tables = try new TrueTypeTables(encoded) catch (e:String) {
+			js.Browser.window.setTimeout(() -> if (!closed) failed('Font open failed: $e'), 0);
+			return;
+		}
+		var family = 'helix-font-${faces++}';
+		var face:Dynamic = js.Syntax.code("new FontFace({0}, {1})", family, encoded.getData());
+		face.load().then(_ -> {
+			if (closed)
+				return;
+			js.Syntax.code("document.fonts").add(face);
+			var id = nextFont++;
+			openFaces.set(id, {tables: tables, family: family, face: face});
+			opened(id);
+		},
+			(error:Dynamic) -> if (!closed) failed("Font open failed: " + Std.string(error)));
+	}
+
+	public function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+		return drawn(openFaces.get(font), size, codepoints, 0, coverage);
+
+	public function rasterizeDistanceFieldOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont
+		return drawn(openFaces.get(font), size, codepoints, SDF_PADDING, distances);
+
+	public function closeFont(font:Int):Void {
+		var face = openFaces.get(font);
+		if (face == null)
+			return;
+		openFaces.remove(font);
+		js.Syntax.code("document.fonts").delete(face.face);
+	}
+
+	// Each glyph of a face loaded and added to the page's fonts, with the font's metrics at the size.
+	function drawn(font:OpenedFace, size:Float, codepoints:Array<Int>, padding:Int, pixels:Pixels):RasterFont {
+		var scale = font.tables.scaleFor(size);
+		return {
+			glyphs: [
+				for (codepoint in codepoints)
+					glyph(font.tables, font.family, size, codepoint, padding, pixels)
+			],
+			ascent: font.tables.ascent * scale,
+			descent: font.tables.descent * scale,
+			lineGap: font.tables.lineGap * scale
+		};
+	}
 
 	// The font loaded as a FontFace and each glyph drawn, its box padded and its pixels made by pixels (coverage or distances).
 	function run(encoded:Bytes, size:Float, codepoints:Array<Int>, padding:Int, pixels:Pixels,
@@ -172,6 +228,10 @@ class CanvasFontRasterizerAdapter implements IFontRasterizer {
 	/** Does nothing: the page's promises already resolve on the main thread. */
 	public function poll():Void {}
 
-	public function dispose():Void
+	/** Closes the rasterizer and every font it opened. */
+	public function dispose():Void {
 		closed = true;
+		for (font in [for (id in openFaces.keys()) id])
+			closeFont(font);
+	}
 }

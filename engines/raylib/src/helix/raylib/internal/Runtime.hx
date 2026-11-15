@@ -290,6 +290,14 @@ class Runtime {
 	/** The glTF files ensures read (`EnsureAssetAsync`), by their normalized paths, for their animations' loads. */
 	public static final gltfFiles = new Map<String, helix.formats.gltf.GltfFile>();
 
+	/** The TrueType and OpenType fonts ensures opened (`EnsureAssetAsync`), by their files' normalized paths: each the fonts service's
+		opened font, rasterized during a load at the size it asks for, until the file is released. */
+	public static final openFonts = new Map<String, Int>();
+
+	/** The BMFonts ensures read with their pages (`EnsureAssetAsync`), by their .fnt files' normalized paths, until the first load takes
+		each. */
+	public static final bmFonts = new Map<String, helix.services.fonts.Font2D>();
+
 	/** The materials ensures loaded from .mtl files (`EnsureAssetAsync`), by their normalized paths, until the first load takes them. */
 	public static final materials = new Map<String, Array<helix.raylib.Material>>();
 
@@ -624,22 +632,28 @@ class Runtime {
 		return gesturesService;
 	}
 
-	/** Gets the fonts service, made when first asked for, over the platform's font rasterizer, the assets and the images. */
+	/** Gets the fonts service, made when first asked for and again after the asset host changes, over the platform's font rasterizer,
+		the assets and the images. The rasterizer is made once, so the fonts it opened stay open as the host changes. */
 	public static function fonts():helix.services.fonts.Fonts {
-		if (fontsService == null) {
-			imaging();
-			#if js
-			var rasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
-			#else
-			var rasterizer = new helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter();
-			#end
-			polled.push(rasterizer);
-			fontsService = new helix.services.fonts.Fonts(rasterizer, assets, decoding);
+		imaging();
+		if (fontsService == null || fontsAssets != assets) {
+			if (fontRasterizer == null) {
+				#if js
+				fontRasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
+				#else
+				fontRasterizer = new helix.platform.adapters.fontrasterizer.stb.StbFontRasterizerAdapter();
+				#end
+				polled.push(fontRasterizer);
+			}
+			fontsService = new helix.services.fonts.Fonts(fontRasterizer, assets, decoding);
+			fontsAssets = assets;
 		}
 		return fontsService;
 	}
 
 	static var fontsService:Null<helix.services.fonts.Fonts> = null;
+	static var fontsAssets:Null<Assets> = null;
+	static var fontRasterizer:Null<helix.platform.IFontRasterizer> = null;
 
 	/** Gets the screenshots, made over the graphics when first asked for: the frame reads them back as each frame ends (`Frame.ended`). */
 	public static function screenshots():helix.services.screenshots.Screenshots {

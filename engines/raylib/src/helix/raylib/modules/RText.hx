@@ -642,35 +642,31 @@ class RText {
 	/** Loads a font from a file: TrueType or OpenType at 32 pixels with the printable ASCII characters, an AngelCode BMFont file, or an
 		image of glyphs (PNG, BMP, TGA, JPEG or GIF) as raylib reads one.
 
-		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
-		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
-		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
-		load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
 
 		@param fileName  The file.
 		@return  The font, the program's until `UnloadFont`. */
 	static function LoadFont(fileName:String):Font {
 		var path = normalize(fileName);
-		return SyncLoads.fillLater(path, Runtime.files.exists(path) || Runtime.image(path) != null, () -> new Font(), fillFont,
-			(loaded, failed) -> RTextAsync.loadFont(path, loaded, failed), GetFontDefault);
-	}
-
-	// A font given in place of one made later: its fields set from it.
-	static function fillFont(font:Font, made:Font):Void {
-		font.baseSize = made.baseSize;
-		font.glyphCount = made.glyphCount;
-		font.glyphPadding = made.glyphPadding;
-		font.texture = made.texture;
-		font.recs = made.recs;
-		font.glyphs = made.glyphs;
+		var opened = Runtime.openFonts.get(path),
+			bmFont = Runtime.bmFonts.get(path);
+		return SyncLoads.load(path, opened != null || bmFont != null || RTextures.imageReady(path), () -> {
+			if (opened == null && bmFont == null)
+				return RTextAsync.imageFont(RTextures.LoadImage(path));
+			Runtime.bmFonts.remove(path);
+			var font = opened != null ? openedFont(opened, 32, null, 95) : fromBmFont(bmFont);
+			SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
+			return font;
+		}, (loaded, failed) -> RTextAsync.loadFont(path, loaded, failed), GetFontDefault);
 	}
 
 	/** Loads a TrueType or OpenType font at a size, with the characters asked for.
 
-		Natively the file is read and its glyphs made during the call. In a page, a file ensured (`EnsureAssetAsync`,
-		`helix.raylib.extras.Assets`) gives its font at once, its glyphs filled in once they are made, within a frame or two: `IsFontValid`
-		is true once they are, and until then it draws nothing. A file not ensured logs why and gives raylib's default font, as raylib's
-		load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
+		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 
 		@param fileName  The file.
 		@param fontSize  The glyphs' size: the height of a line, in pixels.
@@ -679,8 +675,17 @@ class RText {
 		@return  The font, the program's until `UnloadFont`. */
 	static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
 		var path = normalize(fileName);
-		return SyncLoads.fillLater(path, Runtime.files.exists(path), () -> new Font(), fillFont,
+		var opened = Runtime.openFonts.get(path);
+		return SyncLoads.load(path, opened != null, () -> openedFont(opened, fontSize, codepoints, codepointCount),
 			(loaded, failed) -> RTextAsync.LoadFontExAsync(path, fontSize, codepoints, codepointCount, loaded, failed), GetFontDefault);
+	}
+
+	// A font an ensure opened, its glyphs rasterized during the call, as LoadFontFromMemoryAsync makes one.
+	static function openedFont(opened:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
+		var count = codepointCount > 0 ? codepointCount : 95;
+		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
+		var raster = Runtime.fonts().rasterizeOpened(opened, fontSize, wanted);
+		return fontOf(foundGlyphs(raster.glyphs, raster.ascent, fontSize), fontSize);
 	}
 
 	/** Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
