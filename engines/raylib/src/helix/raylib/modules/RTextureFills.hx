@@ -149,10 +149,8 @@ class RTextureFills {
 			var n = Std.int(points.length / 2);
 			inline function u(i:Int):Float
 				return u0 + (u1 - u0) * points[i * 2] / w;
-			inline function v(i:Int):Float {
-				var t = v0 + (v1 - v0) * points[i * 2 + 1] / h;
-				return texture.flipped ? 1 - t : t;
-			}
+			inline function v(i:Int):Float
+				return v0 + (v1 - v0) * points[i * 2 + 1] / h;
 			for (i in 1...n - 1)
 				RTextureDraws.triangle(handle, dest.x
 					+ points[0], dest.y

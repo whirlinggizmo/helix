@@ -359,8 +359,6 @@ class RTexturesAsync {
 			var during = true;
 			Runtime.graphics.readPixels(gpu, (pixels, width, height) -> {
 				var image = rgba(pixels, width, height);
-				if (texture.flipped)
-					ImageFlipVertical(image);
 				Runtime.log(LOG_INFO, 'TEXTURE: [ID ${texture.id}] Pixel data retrieved successfully');
 				during ? Runtime.later(() -> loaded(image)) : loaded(image);
 			},

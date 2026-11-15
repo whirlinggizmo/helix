@@ -1336,24 +1336,26 @@ class Frame {
 		return edges;
 	}
 
-	// The render state a pipeline is made for, as part of its key: made again only when the state changes.
+	// The render state a pipeline is made for, as part of its key: made again only when the state changes. Its face culled is the one
+	// cullFace gives, which a render texture's pass swaps.
 	function states():String {
 		var text = stateText;
+		var front = cullFront != (pass.target != 0);
 		if (text == null
 			|| depthTest != stateDepthTest
 			|| depthMask != stateDepthMask
 			|| cull != stateCull
-			|| cullFront != stateCullFront
+			|| front != stateCullFront
 			|| colorBlend != stateColorBlend
 			|| (blend : Int) != stateBlend || (colorMask : Int) != stateColorMask) {
 			stateDepthTest = depthTest;
 			stateDepthMask = depthMask;
 			stateCull = cull;
-			stateCullFront = cullFront;
+			stateCullFront = front;
 			stateColorBlend = colorBlend;
 			stateBlend = blend;
 			stateColorMask = colorMask;
-			stateText = text = '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (cullFront ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}c${(colorMask : Int)}';
+			stateText = text = '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (front ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}c${(colorMask : Int)}';
 		}
 		return text;
 	}
@@ -1368,17 +1370,31 @@ class Frame {
 	var stateBlend = 0;
 	var stateColorMask = 0;
 
+	// The face culled. A render texture's pass draws upside down (see values), which turns its triangles over, so its faces swap.
 	function cullFace():helix.platform.CullFace
-		return cull ? (cullFront ? Front : Back) : None;
+		return cull ? (cullFront != (pass.target != 0) ? Front : Back) : None;
 
 	// The program's blocks as they are now, with raylib's own values set: the matrices and the diffuse color.
+	//
+	// A render texture's pass draws upside down: its projection is followed by a flip of clip space's y. The platform stores a target
+	// top row first, and raylib's GL stores it bottom row first, so the flip puts the rows where raylib's are, and a shader sampling the
+	// texture reads it as raylib's does. Shadows a platform change (a ClipFlip storing a target bottom row first), and goes with it.
 	function values(p:Program, model:Matrix4, diffuse:Array<Float>):Array<Null<Bytes>> {
 		var snapshot = snapshotCount < snapshots.length ? snapshots[snapshotCount] : null;
 		if (snapshot == null)
 			snapshots[snapshotCount] = snapshot = new helix.services.shaders.ShaderSnapshot();
 		snapshotCount++;
-		return p.capture(snapshot, model, view, projection, diffuse, meshView, meshProjection);
+		if (pass.target == 0)
+			return p.capture(snapshot, model, view, projection, diffuse, meshView, meshProjection);
+		return p.capture(snapshot, model, view, Matrix4.compose(projection, FLIP_Y, flippedProjection), diffuse, meshView,
+			meshProjection == null ? null : Matrix4.compose(meshProjection, FLIP_Y, flippedMeshProjection));
 	}
+
+	// Clip space's y negated, and the flipped projections values makes with it.
+	static final FLIP_Y = Matrix4.fromScale(1, -1, 1);
+
+	final flippedProjection = new Matrix4();
+	final flippedMeshProjection = new Matrix4();
 
 	/** Draws the frame: each render texture's pass, then the screen's, then shows it unless told to wait for `present`. A frame ended
 		and not shown yet is shown first.
@@ -1421,15 +1437,18 @@ class Frame {
 					port = d.viewport;
 					if (port == null)
 						graphics.applyViewport(0, 0, width, height);
-					else
+					else if (p.target == 0)
 						graphics.applyViewport(port[0], port[1], port[2] < 1 ? 1 : port[2], port[3] < 1 ? 1 : port[3]);
+					else
+						// Drawn upside down (values), a render texture's viewport is measured from its other edge.
+						graphics.applyViewport(port[0], height - port[1] - port[3], port[2] < 1 ? 1 : port[2], port[3] < 1 ? 1 : port[3]);
 				}
 				if (d.scissor != clipped) {
 					clipped = d.scissor;
 					if (clipped == null)
 						graphics.resetScissor();
 					else
-						clip(clipped, width / p.width, height / p.height, width, height);
+						clip(clipped, width / p.width, height / p.height, width, height, p.target != 0);
 				}
 				var count = d.primitive == Points ? d.count : d.primitive == Lines ? d.count - d.count % 2 : d.count - d.count % 3;
 				// A texture binds only to a sampler of its kind, a cubemap to a samplerCube; any other reads the platform's clear texture.
@@ -1494,12 +1513,13 @@ class Frame {
 	// Whether the screen's pass ended without being shown.
 	var unshown = false;
 
-	// A scissor in the pass's pixels from its top left, as the framebuffer's from its bottom left, within it.
-	function clip(r:Array<Float>, scaleX:Float, scaleY:Float, width:Int, height:Int):Void {
+	// A scissor in the pass's pixels from its top left, as the framebuffer's from its bottom left, within it; in a pass drawn upside
+	// down (values), a render texture's, from its top left.
+	function clip(r:Array<Float>, scaleX:Float, scaleY:Float, width:Int, height:Int, upsideDown:Bool):Void {
 		var left = Math.round(r[0] * scaleX),
 			right = Math.round((r[0] + r[2]) * scaleX);
-		var bottom = height - Math.round((r[1] + r[3]) * scaleY),
-			top = height - Math.round(r[1] * scaleY);
+		var bottom = upsideDown ? Math.round(r[1] * scaleY) : height - Math.round((r[1] + r[3]) * scaleY),
+			top = upsideDown ? Math.round((r[1] + r[3]) * scaleY) : height - Math.round(r[1] * scaleY);
 		left = left < 0 ? 0 : left > width ? width : left;
 		right = right < left ? left : right > width ? width : right;
 		bottom = bottom < 0 ? 0 : bottom > height ? height : bottom;

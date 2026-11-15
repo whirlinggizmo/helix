@@ -46,10 +46,6 @@ class RSprites {
 			v0 = v1;
 			v1 = t;
 		}
-		if (texture.flipped) {
-			v0 = 1 - v0;
-			v1 = 1 - v1;
-		}
 		var handle = Textures.handle(texture.id);
 		for (m in transforms) {
 			// The corners (0, 0), (0, h), (w, h) and (w, 0) through the matrix, in DrawTexturePro's order.

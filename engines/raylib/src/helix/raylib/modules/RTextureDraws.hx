@@ -85,12 +85,10 @@ class RTextureDraws {
 			return;
 		var count = Std.int(Math.min(pointCount, Math.min(points.length, texcoords.length)));
 		var handle = helix.raylib.internal.Textures.handle(texture.id);
-		inline function v(t:Float):Float
-			return texture.flipped ? 1 - t : t;
 		for (i in 0...count) {
 			var a = points[i], b = points[(i + 1) % count];
 			var ta = texcoords[i], tb = texcoords[(i + 1) % count];
-			triangle(handle, center.x, center.y, 0.5, v(0.5), a.x, a.y, ta.x, v(ta.y), b.x, b.y, tb.x, v(tb.y), tint);
+			triangle(handle, center.x, center.y, 0.5, 0.5, a.x, a.y, ta.x, ta.y, b.x, b.y, tb.x, tb.y, tint);
 		}
 	}
 
@@ -228,7 +226,6 @@ class RTextureDraws {
 
 	// Where cell puts its quads (place): dest's top-left, turned about an origin, with a texture's handle and flip and the tint.
 	static var placeHandle:Int;
-	static var placeFlipped:Bool;
 	static var placeX:Float;
 	static var placeY:Float;
 	static var placeOriginX:Float;
@@ -243,7 +240,6 @@ class RTextureDraws {
 	// Sets where cell puts its quads.
 	static function place(texture:Texture2D, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void {
 		placeHandle = helix.raylib.internal.Textures.handle(texture.id);
-		placeFlipped = texture.flipped;
 		placeX = dest.x;
 		placeY = dest.y;
 		placeOriginX = origin.x;
@@ -260,10 +256,6 @@ class RTextureDraws {
 
 	// A quad from (x0, y0) to (x1, y1) in dest's pixels, from its top-left, showing the texture from (u0, v0) to (u1, v1), as place set.
 	static function cell(x0:Float, y0:Float, x1:Float, y1:Float, u0:Float, v0:Float, u1:Float, v1:Float):Void {
-		if (placeFlipped) {
-			v0 = 1 - v0;
-			v1 = 1 - v1;
-		}
 		var c = placeCos, s = placeSin, x = placeX, y = placeY;
 		var ax = x0 - placeOriginX,
 			ay = y0 - placeOriginY,

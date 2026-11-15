@@ -23,9 +23,9 @@ class Texture2D {
 		The pixels are RGBA on the GPU whatever the format. */
 	public var format:Int;
 
-	// A render texture's color, which raylib stores bottom row first, so it draws upside down unless flipped as raylib's programs do.
+	// Whether it is a render texture's color, which is drawn into rather than updated, and isn't mipmapped.
 	@:allow(helix.raylib)
-	var flipped = false;
+	var rendered = false;
 
 	// A material map's copy (`MaterialMap.texture`), which holds the map's count: `UnloadTexture` given it lets go of one of the program's
 	// holds when there is one, else of the map's (`spent`), and leaves its id while the texture lives, as the map still draws it.

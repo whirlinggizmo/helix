@@ -33,7 +33,7 @@ class MaterialMap {
 		if (t == texture)
 			return t;
 		var kept = new Texture2D(t.id, t.width, t.height, t.mipmaps, t.format);
-		kept.flipped = t.flipped;
+		kept.rendered = t.rendered;
 		kept.mapped = true;
 		helix.raylib.internal.Textures.retain(kept.id);
 		var old = texture;

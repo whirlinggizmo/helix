@@ -102,9 +102,8 @@ class RTextures {
 		// The whole texture unturned: the corners and rectangle quad works out for it, the same numbers without its arithmetic. The frame's
 		// quad and the handle are inlined here alone, as this is the draw a program makes most often.
 		var x:Float = posX, y:Float = posY;
-		var v0 = texture.flipped ? 1. : 0., v1 = texture.flipped ? 0. : 1.;
 		var handle = inline Textures.handle(texture.id);
-		inline Runtime.frame.quad(handle, x, y, x, y + h, x + w, y + h, x + w, y, 0, v0, 1, v1, tint);
+		inline Runtime.frame.quad(handle, x, y, x, y + h, x + w, y + h, x + w, y, 0, 0, 1, 1, tint);
 	}
 
 	/** Draws a texture, its top-left corner at a point.
@@ -170,10 +169,6 @@ class RTextures {
 			var t = v0;
 			v0 = v1;
 			v1 = t;
-		}
-		if (texture.flipped) {
-			v0 = 1 - v0;
-			v1 = 1 - v1;
 		}
 		// The corners from the origin, turned: unturned, the sine and cosine aren't computed.
 		var x0 = -ox, x1 = dw - ox, y0 = -oy, y1 = dh - oy;
@@ -465,7 +460,7 @@ class RTextures {
 		// raylib 5.5's render textures: a depth buffer and one sample, however the window is multisampled.
 		var target = Runtime.graphics.createRenderTarget(width, height, helix.platform.TextureFormat.Rgba8, true, 1);
 		var texture = new Texture2D(Textures.fromHandle(target), width, height);
-		texture.flipped = true;
+		texture.rendered = true;
 		return new RenderTexture(target, texture, new Texture2D(0, width, height));
 	}
 
@@ -556,7 +551,7 @@ class RTextures {
 	static function GenTextureMipmaps(texture:Texture2D):Void {
 		if (texture.id <= 0)
 			return;
-		if (texture.flipped || Textures.isCube(texture.id)) {
+		if (texture.rendered || Textures.isCube(texture.id)) {
 			Runtime.log(LOG_WARNING, 'TEXTURE: [ID ${texture.id}] Failed to generate mipmaps');
 			return;
 		}
@@ -2745,7 +2740,7 @@ class RTextures {
 	static function updateRectangle(texture:Texture2D, x:Int, y:Int, width:Int, height:Int, pixels:Dynamic):Void {
 		if (texture.id <= 0 || pixels == null)
 			return;
-		if (texture.flipped
+		if (texture.rendered
 			|| Textures.isCube(texture.id)
 			|| texture.format >= Pixels.COMPRESSED
 			|| texture.format < PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
@@ -2851,8 +2846,6 @@ class RTextures {
 			(sourceY + source.height - bottomBorder) / height,
 			(sourceY + source.height) / height
 		];
-		if (texture.flipped)
-			vs = [for (v in vs) 1 - v];
 		var angle = rotation * Math.PI / 180,
 			c = Math.cos(angle),
 			s = Math.sin(angle);
