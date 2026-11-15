@@ -1,7 +1,7 @@
 import helix.raylib.*;
 
 /** Checks the structs' `copy`: a copy is separate from what it copies, a struct holding others copies them too, and a copy into an
-	out fills that one and makes none; and `Color` as a value, copied when assigned. */
+	out fills that one and makes none; and `Color` as a value, copied when assigned, and written in braces. */
 class StructTests {
 	static var checks = 0;
 
@@ -30,6 +30,13 @@ class StructTests {
 		var red = new Color(230, 41, 55, 255), faded = red;
 		faded.a = 128;
 		check(red.a == 255 && faded.a == 128 && faded.r == 230, "a color is a value: assigned, then changed alone");
+		var braced:Color = {r: 230, g: 41, b: 55}, clear:Color = {
+			r: 1,
+			g: 2,
+			b: 3,
+			a: 0
+		};
+		check(braced == red && clear.r == 1 && clear.g == 2 && clear.b == 3 && clear.a == 0, "a color in braces, its alpha 255 when left out");
 		var map = new MaterialMap(null, Raylib.RED);
 		map.color.a = 9;
 		check(Raylib.RED.a == 255 && map.color.a == 9 && map.color.r == 230, "a field's color changed in place, the constant untouched");

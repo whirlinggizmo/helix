@@ -26,6 +26,18 @@ abstract Color(Int) {
 	public inline function new(r:Int = 0, g:Int = 0, b:Int = 0, a:Int = 255)
 		this = (r & 255) | (g & 255) << 8 | (b & 255) << 16 | (a & 255) << 24;
 
+	/** Creates a color from an object in braces, where a color is expected: `var red:Color = {r: 230, g: 41, b: 55};`. The alpha
+		defaults to 255.
+
+		@param color  The red, green, blue and alpha, each 0 to 255. */
+	@:from public static inline function fromObject(color:{
+		r:Int,
+		g:Int,
+		b:Int,
+		?a:Int
+	}):Color
+		return new Color(color.r, color.g, color.b, color.a == null ? 255 : color.a);
+
 	inline function get_r():Int
 		return this & 255;
 

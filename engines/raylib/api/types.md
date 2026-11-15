@@ -193,6 +193,7 @@ var r(get, set):Int
 var g(get, set):Int
 var b(get, set):Int
 var a(get, set):Int
+static function fromObject(color:{r:Int, g:Int, b:Int, a:Null<Int>}):Color
 ```
 
 - `new`: Creates a color.
@@ -204,6 +205,8 @@ var a(get, set):Int
 - `g`: Gets or sets the green, 0 to 255.
 - `b`: Gets or sets the blue, 0 to 255.
 - `a`: Gets or sets the alpha, 0 (clear) to 255 (opaque).
+- `fromObject`: Creates a color from an object in braces, where a color is expected: `var red:Color = {r: 230, g: 41, b: 55};`. The alpha defaults to 255.
+  - `color`: The red, green, blue and alpha, each 0 to 255.
 
 ## FilePathList
 
