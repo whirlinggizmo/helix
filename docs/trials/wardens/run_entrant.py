@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Runs one entrant of the native blind trial (../README.md): claude -p in its own directory, on a private display, with no sound.
 
-    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c|three] [--extras] [--trial <variant>] [--model sonnet]
-        [--hours 3] [--command CMD]
+    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c|three] [--extras] [--trial <variant>] [--game <folder>]
+        [--model sonnet] [--hours 3] [--command CMD]
 
 The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
 (docs/examples), with the engine's own files:
@@ -39,6 +39,9 @@ and each extra's example program in docs/extras/examples/.
 ../2026-11-13-masked-blend/module: the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
 beside it (task.md, build.hxml; not its record, README.md), the assets its assets.txt lists from Wardens' assets/, and raylib 5.5's headers and C examples.
 
+--game names another game's folder to build in place of Wardens, as ../lanternholm: its spec.md, its assets/ and reference/ when it has
+them, and each engine's brief from its native/, native-c/ or three/ when it has one there; the build files are always Wardens' own.
+
 --command runs a shell command in the entrant's environment in place of claude, to check the harness."""
 import argparse
 import os
@@ -59,18 +62,29 @@ def log(entrant, line):
     with open(entrant / 'run.log', 'a', encoding='utf-8') as f:
         f.write(datetime.now().astimezone().isoformat(timespec='seconds') + ' ' + line + '\n')
 
-def make(entrant, engine, trial=None, extras=None):
-    """Makes the entrant's directory from the trial's files and raylib 5.5's, or from another trial's variant."""
+def brief_of(game, own, name):
+    """An engine's brief: the game's own (game/<own>/<name>) when it has one, else Wardens'."""
+    mine = game / own / name
+    return (mine if mine.exists() else HERE / own / name).read_text(encoding='utf-8')
+
+def game_files(entrant, game):
+    """Copies a game's spec, and its assets and reference screenshots when it has them."""
+    shutil.copy(game / 'spec.md', entrant / 'spec.md')
+    for folder in ('assets', 'reference'):
+        if (game / folder).is_dir():
+            shutil.copytree(game / folder, entrant / folder)
+
+def make(entrant, engine, trial=None, extras=None, game=HERE):
+    """Makes the entrant's directory from the game's files and raylib 5.5's, or from another trial's variant."""
     if engine == 'three':
         entrant.mkdir(parents=True)
-        brief = (HERE / 'three/brief.md').read_text(encoding='utf-8')
+        brief = brief_of(game, 'three', 'brief.md')
         (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
         for name in ('index.html', 'run.cjs', 'package.json', 'package-lock.json'):
             shutil.copy(HERE / 'three' / name, entrant / name)
         (entrant / 'src').mkdir()
         subprocess.run(['npm', 'ci', '--no-audit', '--no-fund'], cwd=entrant, check=True)
-        shutil.copy(HERE / 'spec.md', entrant / 'spec.md')
-        shutil.copytree(HERE / 'assets', entrant / 'assets')
+        game_files(entrant, game)
         return
     import raylib_parity
     raylib = raylib_parity.raylib('5.5')
@@ -93,15 +107,14 @@ def make(entrant, engine, trial=None, extras=None):
         return
     entrant.mkdir(parents=True)
     own = HERE / ('native' if engine == 'helix' else 'native-c')
-    brief = (own / ('brief-extras.md' if extras else 'brief.md')).read_text(encoding='utf-8')
+    brief = brief_of(game, own.name, 'brief-extras.md' if extras else 'brief.md')
     (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
     for name in ('build.hxml',) if engine == 'helix' else ('CMakeLists.txt',):
         shutil.copy(own / name, entrant / name)
     if engine == 'helix':
         with open(entrant / 'build.hxml', 'a', encoding='utf-8') as f:
             f.write(f'-D helix-company=helix-trials\n-D helix-product={entrant.name}\n')
-    shutil.copy(HERE / 'spec.md', entrant / 'spec.md')
-    shutil.copytree(HERE / 'assets', entrant / 'assets')
+    game_files(entrant, game)
     include = entrant / ('docs/include' if engine == 'helix' else 'include')
     include.mkdir(parents=True)
     for header in ('src/raylib.h', 'src/raymath.h', 'src/rlgl.h', 'examples/shapes/raygui.h', 'examples/shaders/rlights.h'):
@@ -175,6 +188,7 @@ def main():
     parser.add_argument('--hours', type=float, default=3)
     parser.add_argument('--trial', type=Path)
     parser.add_argument('--extras', action='store_true')
+    parser.add_argument('--game', type=Path, default=HERE)
     parser.add_argument('--command')
     args = parser.parse_args()
     entrant = args.entrant.resolve()
@@ -189,8 +203,10 @@ def main():
     if not entrant.exists():
         if args.extras and args.engine != 'helix':
             sys.exit('run_entrant: --extras is for a helix-raylib entrant')
+        if not (args.game / 'spec.md').exists():
+            sys.exit(f'run_entrant: {args.game} has no spec.md')
         make(entrant, args.engine, args.trial.resolve() if args.trial else None,
-             helix / 'engines/raylib/api' if args.extras else None)
+             helix / 'engines/raylib/api' if args.extras else None, args.game.resolve())
     elif not args.command:
         sys.exit(f'run_entrant: {entrant} is there already; an entrant starts from a directory of its own')
 
