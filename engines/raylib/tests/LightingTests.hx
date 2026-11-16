@@ -85,8 +85,8 @@ class LightingTests {
 		check(lit(p).join(",") == "1,3,5,7,9,11,13,15", "the 8 lamps reaching the cube most light it, the nearest first");
 		check(drawnFloat(p, "lights.range", 0) == 100 && drawnFloat(p, "lights.intensity", 0) == 1,
 			"a lamp's range and intensity written into the draw's lights");
-		check(lamps[0].intensity == 1 && lamps[0].range == 100 && lamps[0].innerAngle == 0 && lamps[0].outerAngle == 0,
-			"a light's intensity 1 and cone 0 by default");
+		check(lamps[0].intensity == 1 && lamps[0].range == 100 && lamps[0].innerAngle == 30 && lamps[0].outerAngle == 45,
+			"a light's intensity 1 and cone of 30 and 45 degrees by default");
 
 		// A brighter lamp further off wins a place: the score is its brightness through its falloff.
 		lamps[9].intensity = 10000;
@@ -155,9 +155,9 @@ class LightingTests {
 		var spot = CreateLight(LIGHT_SPOT, new Vector3(0, 5, 0), new Vector3(0, 0, 0), WHITE, shader);
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(drawnInt(p, "lights.type", 1) == LIGHT_SPOT
-			&& drawnFloat(p, "lights.innerCosine", 1) == 1
-			&& drawnFloat(p, "lights.outerCosine", 1) == 1,
-			"a spot light with no cone set: both angles 0, a cone of no width");
+			&& Math.abs(drawnFloat(p, "lights.innerCosine", 1) - Math.cos(30 * DEG2RAD)) < 1e-6
+			&& Math.abs(drawnFloat(p, "lights.outerCosine", 1) - Math.cos(45 * DEG2RAD)) < 1e-6,
+			"a spot light with no cone set: its default cone, 30 and 45 degrees");
 		spot.innerAngle = 10;
 		spot.outerAngle = 20;
 		DrawModel(cube, Vector3Zero(), 1, WHITE);

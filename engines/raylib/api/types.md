@@ -372,8 +372,8 @@ var shadows(get, never):ShadowOptions
 - `attenuationLoc`: Gets or sets the location of `attenuation`, which rlights never finds.
 - `intensity`: Gets or sets how bright the light is (the Lighting extra's): its color times the intensity. Clamped to 0 or more; 1 by default. 0 gives no light, as `enabled` false does.
 - `range`: Gets or sets how far a point or spot light reaches, in world units (the Lighting extra's). The light dims with distance, fading to nothing at the range, and lights no draw whose bounds lie past it. Clamped to 0 or more; 0 by default, for no falloff and no limit. A directional light has no range.
-- `innerAngle`: Gets or sets a spot light's inner angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone is full inside it and fades toward `outerAngle`. Clamped to 0 to `outerAngle`; 0 by default, the fade starting at the cone's middle.
-- `outerAngle`: Gets or sets a spot light's outer angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone fades to nothing there. Clamped to 0 to 89.9; 0 by default, a cone of no width.
+- `innerAngle`: Gets or sets a spot light's inner angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone is full inside it and fades toward `outerAngle`. Clamped to 0 to `outerAngle`; 30 by default.
+- `outerAngle`: Gets or sets a spot light's outer angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone fades to nothing there. Clamped to 0 to 89.9; 45 by default.
 - `shadows`: Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See `SetLightShadowCasting` for turning the light's shadows on.
 
 ## Material

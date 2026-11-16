@@ -50,12 +50,12 @@ class Light {
 	public var range:Float = 0;
 
 	/** Gets or sets a spot light's inner angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone is full
-		inside it and fades toward `outerAngle`. Clamped to 0 to `outerAngle`; 0 by default, the fade starting at the cone's middle. */
-	public var innerAngle:Float = 0;
+		inside it and fades toward `outerAngle`. Clamped to 0 to `outerAngle`; 30 by default. */
+	public var innerAngle:Float = 30;
 
 	/** Gets or sets a spot light's outer angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone fades to
-		nothing there. Clamped to 0 to 89.9; 0 by default, a cone of no width. */
-	public var outerAngle:Float = 0;
+		nothing there. Clamped to 0 to 89.9; 45 by default. */
+	public var outerAngle:Float = 45;
 
 	/** Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow
 		pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See
