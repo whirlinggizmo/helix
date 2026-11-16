@@ -45,6 +45,10 @@ speed where docs/benchmarks.md records them.
 - **Extras drafted and tried, to build:** the Lighting extra's shadows, emissive and alpha cutoff, shadowmaps for a program's own
   shaders, and the Screen extra's fits (docs/trials/2026-11-15-lighting-shadows, -shadowmaps, -screen-fit), each record's findings
   answered in the API before it is built. The Materials extra's draft is tried next, the same way.
+- **The screen reads wait, as the file calls do (DECISIONS 72):** `LoadImageFromTexture` submits what was drawn into the texture and
+  reads it back, and `LoadImageFromScreen` submits the frame drawn so far, reads it back and resumes the frame where it stopped,
+  each returning raylib's `Image`, in a page as an `await` the program doesn't write and natively by blocking. Their `...Async` forms
+  stay. No trial: it moves helix-raylib toward raylib.
 - **The services' `Screen` named `Window`,** as helix's own libraries use the accurate word; helix-raylib keeps raylib's.
 - **What an engine costs agents, against raylib C:** Wardens built from its spec costs $2.40 a run in C and $2.51 on helix-raylib
   (docs/trials/2026-11-15-wardens-baseline). A page build's ensure and the shaders compiled at build time cost nothing once a brief
