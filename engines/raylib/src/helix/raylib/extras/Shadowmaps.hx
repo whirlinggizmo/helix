@@ -11,7 +11,7 @@ import helix.raylib.modules.RShadowmaps;
 
 /** Provides raylib's shadowmap example's render texture: a depth buffer a shader can sample, which `BeginTextureMode` draws into. See
 	`Lighting.BeginShadowMode` for shadows the lit shaders receive without a shader of the program's own. Imported apart:
-	`import helix.raylib.extras.Shadowmaps.*;`. The parity suite `engines/raylib/parity/shadowmap` ports the example.
+	`import helix.raylib.extras.Shadowmaps.*;`. The example `engines/raylib/examples/extras/shadowmaps` is raylib's, written with it.
 
 	```haxe
 	import helix.raylib.Rlgl.*; // rlGetMatrixModelview, rlGetMatrixProjection

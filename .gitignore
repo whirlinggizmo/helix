@@ -28,3 +28,4 @@ libs/render/examples/*/native-gpu/
 libs/render/tests/pixels/web/app.js
 libs/render/tests/pixels/native/
 libs/render/tests/pixels/native-gpu/
+engines/raylib/examples/**/web/assets/*.shader

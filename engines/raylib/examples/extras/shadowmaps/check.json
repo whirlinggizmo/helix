@@ -1,0 +1,7 @@
+{
+  "what": "raylib's white background in the top right corner; the floor's lit blue right of the cube, in the light.",
+  "points": [
+    {"x": 780, "y": 60, "color": [245, 245, 245], "tolerance": 3},
+    {"x": 560, "y": 300, "color": [5, 174, 238], "tolerance": 12}
+  ]
+}

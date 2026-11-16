@@ -10,7 +10,7 @@
 | `helix.raylib.Raygui` | raygui 4.5-dev |
 | `helix.raylib.Raylib6` | the calls raylib 6.0 adds, ahead of the move to raylib 6: `UpdateModelAnimationEx`, two animations blended |
 | `helix.raylib.Rlights` | rlights, from raylib's lighting examples |
-| `helix.raylib.extras` | what a program opts into that raylib has no call for: lit and PBR shaders, a light's range, intensity and cone, and its shadows, what a material gives off and where it is cut out, a virtual gamepad, a model's bounds as posed, models merged into one, the device (safe area, touch, orientation, tilt), raygui skins from images, debug drawing and frame stats, many copies of a sprite in one call |
+| `helix.raylib.extras` | what a program opts into that raylib has no call for: lit and PBR shaders, a light's range, intensity and cone, and its shadows, what a material gives off and where it is cut out, a virtual gamepad, a model's bounds as posed, models merged into one, the device (safe area, touch, orientation, tilt), raygui skins from images, debug drawing and frame stats, many copies of a sprite in one call, raylib's shadowmap example's render texture of depth |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
 Each raylib header is a class, imported as C includes the header: `import helix.raylib.Raylib.*;` brings `raylib.h`'s functions,
