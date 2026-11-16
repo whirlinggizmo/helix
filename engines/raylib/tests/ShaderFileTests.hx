@@ -8,7 +8,7 @@ import helix.raylib.internal.Runtime;
 /** Checks the loads of a shader compiled ahead of time by `CompileShaderFile` (helix.py compiles tests/shaders' glow into
 	build/tests/glow.shader first, and the build embeds it): `LoadCompiledShaderAsync` answers at a later poll with the shader, its
 	locations raylib's and its uniform's initializer written, and a draw through it uses it; a shader including lights.glsl
-	(tests/shaders' own_lights) starts each light at intensity 1; `LoadCompiledShaderFromData` makes the
+	(tests/shaders' own_lights) starts each light at intensity 1; `LoadCompiledShaderFromMemory` makes the
 	same shader at once; and a file or data that isn't a compiled shader, or a file that isn't there, is refused with why. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
@@ -63,7 +63,7 @@ class ShaderFileTests {
 		var loaded = load("glow.shader");
 		check(loaded.shader != null, "a compiled shader: loaded");
 		var shader = loaded.shader,
-			made = LoadCompiledShaderFromData(haxe.Resource.getBytes("glow.shader"));
+			made = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("glow.shader"));
 		check(made.id != 0
 			&& haxe.Json.stringify(made.program.shader.source) == haxe.Json.stringify(shader.program.shader.source)
 			&& made.locs.join(",") == shader.locs.join(","),
@@ -87,7 +87,7 @@ class ShaderFileTests {
 		check([for (_ => id in p.pipelines) id].indexOf(draw.pipeline) >= 0, "a draw through it: its pipeline");
 
 		// A program's own shader including lights.glsl: each light starts at intensity 1, as the built-in lit shaders' do.
-		var lit = LoadCompiledShaderFromData(haxe.Resource.getBytes("own_lights.shader"));
+		var lit = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("own_lights.shader"));
 		var intensities = [for (i in 0...4) lit.program.written[lit.program.locate('lights[$i].intensity')]];
 		check([for (v in intensities) if (v != null && v[0] == 1) v].length == 4, "an own shader including lights.glsl: each light at intensity 1");
 		check(shader.program.locate("lights[0].intensity") < 0, "a shader without lights.glsl: no intensity");
@@ -97,7 +97,7 @@ class ShaderFileTests {
 		check(wrong.shader == null && wrong.error.indexOf("isn't a compiled shader") >= 0, "a file that isn't a compiled shader: refused");
 		var missing = load("none.shader");
 		check(missing.shader == null && missing.error != null, "a file that isn't there: refused");
-		check(LoadCompiledShaderFromData(Bytes.ofString("not a shader")).id == 0, "data that isn't a compiled shader: an empty shader");
+		check(LoadCompiledShaderFromMemory(Bytes.ofString("not a shader")).id == 0, "data that isn't a compiled shader: an empty shader");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

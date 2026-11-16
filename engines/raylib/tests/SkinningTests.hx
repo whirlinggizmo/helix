@@ -74,7 +74,7 @@ class SkinningTests {
 
 		// A program's own shader skinning from the palette (tests/shaders/own_skinning.vs, compiled ahead of time by helix.py): the bind pose
 		// until posed, and again for a draw after the posed one.
-		var own = LoadCompiledShaderFromData(haxe.Resource.getBytes("own_skinning.shader"));
+		var own = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("own_skinning.shader"));
 		var still = skinned(own), moving = skinned(own);
 		DrawModel(still, new Vector3(0, 0, 0), 1, WHITE);
 		check(lastOffset(own.program) == 0, "a draw before any pose reads no bones");

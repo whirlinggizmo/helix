@@ -1326,10 +1326,10 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 ```haxe
 static function LoadCompiledShader(compiledShaderFileName:String):Shader
 static function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader -> Void, ?failed:String -> Void):Void
-static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Shader
+static function LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes):Shader
 ```
 
-- `LoadCompiledShader`: Loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
+- `LoadCompiledShader`: Loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromMemory` for making one from compiled data in memory.
   - `compiledShaderFileName`: The compiled shader's file.
   - returns: The shader, the program's until `UnloadShader`, or an empty one (id 0) when the file isn't a compiled shader, with a warning.
 
@@ -1340,7 +1340,7 @@ static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Sha
   ```
 
   A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the load logs why and gives an empty shader (id 0). See `LoadCompiledShaderAsync` for loading it asynchronously.
-- `LoadCompiledShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromData` for making one from compiled data in memory.
+- `LoadCompiledShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromMemory` for making one from compiled data in memory.
   - `compiledShaderFileName`: The compiled shader's file.
   - `loaded`: Receives the shader.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
@@ -1352,6 +1352,6 @@ static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Sha
   ```
 
   An asynchronously loaded shader is invalid until `loaded` is called.
-- `LoadCompiledShaderFromData`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShader` for loading one from a file.
+- `LoadCompiledShaderFromMemory`: Returns a shader made from a compiled shader's data, replacing raylib's `LoadShaderFromMemory`. See `LoadCompiledShader` for loading one from a file.
   - `compiledShaderData`: The compiled shader, as `CompileShaderFile` writes it.
   - returns: The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning.

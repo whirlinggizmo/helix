@@ -8,7 +8,7 @@ class ShaderCalls {
 		InitWindow(320, 200, "refused");
 		var lit = LoadShader("lit.vs", "lit.fs");
 		var glow = LoadShaderFromMemory("void main() {}", "void main() {}");
-		var compiled = LoadCompiledShaderFromData(CompileShaderFile(null, null, "build/tests/ShaderCalls.shader"));
+		var compiled = LoadCompiledShaderFromMemory(CompileShaderFile(null, null, "build/tests/ShaderCalls.shader"));
 		CloseWindow();
 	}
 }

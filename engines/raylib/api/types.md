@@ -918,7 +918,7 @@ Its members are on their own page: [rlights.md](rlights.md).
 
 Represents raylib's `Shader`: a program and the locations of what it declares.
 
-Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromData`, or by helix-raylib's own, such as `LoadPbrShader` (`helix.raylib.extras.Lighting`).
+Made by `LoadCompiledShaderAsync` or `LoadCompiledShaderFromMemory`, or by helix-raylib's own, such as `LoadPbrShader` (`helix.raylib.extras.Lighting`).
 
 ```haxe
 var id(default, null):Int

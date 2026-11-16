@@ -96,7 +96,7 @@ class RestoreTests {
 			metalGpu = Textures.handle(metal);
 		check(albedoGpu != 0 && roughGpu != 0 && metalGpu != 0 && albedo != rough && rough != metal, "before: a model's textures on the GPU");
 		// A texture set on a shader's own sampler, bound by its handle at each draw.
-		var emissive = LoadCompiledShaderFromData(haxe.Resource.getBytes("emissive.shader"));
+		var emissive = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("emissive.shader"));
 		SetShaderValueTexture(emissive, GetShaderLocation(emissive, "emissiveMap"), file);
 		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
 		cube.materials[0].shader = emissive;

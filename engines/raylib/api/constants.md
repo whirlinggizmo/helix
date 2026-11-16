@@ -685,7 +685,7 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `emscripten_get_now`: Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
 - `emscripten_sleep`: Doesn't compile. See `WaitTime` for waiting.
 - `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`.
-- `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader from compiled data in memory.
+- `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory.
 - `LoadImageFromMemory`: Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
 - `LoadImageAnimFromMemory`: Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
 - `LoadImageFromTexture`: Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image.

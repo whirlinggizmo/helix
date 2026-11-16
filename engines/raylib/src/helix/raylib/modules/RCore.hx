@@ -3098,13 +3098,13 @@ class RCore {
 		throw "LoadShader is unimplemented";
 	}
 
-	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromData` for making a shader
+	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromMemory` for making a shader
 		from compiled data in memory.
 
 		@param vsCode  The vertex stage's text.
 		@param fsCode  The fragment stage's text.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
+	@:unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
 	static function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader {
 		throw "LoadShaderFromMemory is unimplemented";
 	}

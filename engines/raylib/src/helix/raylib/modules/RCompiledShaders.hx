@@ -16,7 +16,7 @@ import helix.raylib.internal.Answers.*;
 @:allow(helix.raylib)
 class RCompiledShaders {
 	#if !macro
-	/** Loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromData`
+	/** Loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromMemory`
 		for making one from compiled data in memory.
 
 		Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
@@ -46,7 +46,7 @@ class RCompiledShaders {
 	}
 
 	/** Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See
-		`LoadCompiledShaderFromData` for making one from compiled data in memory.
+		`LoadCompiledShaderFromMemory` for making one from compiled data in memory.
 
 		Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
 		`<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
@@ -81,7 +81,7 @@ class RCompiledShaders {
 
 		@param compiledShaderData  The compiled shader, as `CompileShaderFile` writes it.
 		@return  The shader, or an empty one (id 0) when the data isn't a compiled shader, with a warning. */
-	static function LoadCompiledShaderFromData(compiledShaderData:haxe.io.Bytes):Shader {
+	static function LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes):Shader {
 		var value = read(compiledShaderData);
 		if (value != null)
 			return make(value, "compiled shader data");

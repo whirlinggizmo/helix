@@ -216,7 +216,7 @@ Code is written to be read, by people and agents, not packed.
       as .NET's do, and when and with what its callback answers goes on the callback's `@param` line.
     - What to call instead when this member isn't it follows as a sentence of its own, "See `X` for doing Y.", Y what X does as a
       gerund or a "whether" clause so it can't read as this member's result, never a clause after a colon or comma
-      (`LoadCompiledShaderAsync`: "See `LoadCompiledShaderFromData` for making one from compiled data in memory.").
+      (`LoadCompiledShaderAsync`: "See `LoadCompiledShaderFromMemory` for making one from compiled data in memory.").
     - The remarks are short paragraphs, one fact each, the one most callers need first. A fact is cause then effect, in the order it
       happens, with the call as the subject, in the active voice: "In a page, reading a file that hasn't been saved yet asks the
       server for it and logs a 404 in the browser's console before `failed` answers", not "a file nobody saved yet is asked of the
@@ -237,7 +237,7 @@ Code is written to be read, by people and agents, not packed.
     first paragraph is what every caller does, and the example is the build step's shape:
 
         /** Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See
-            `LoadCompiledShaderFromData` for making one from compiled data in memory.
+            `LoadCompiledShaderFromMemory` for making one from compiled data in memory.
 
             Its stages are raylib's GLSL (`#version 330`), and may include helix-raylib's shader includes, such as
             `<helix/raylib/shaders/skinning.glsl>`. Compile each shader with a line in the build's hxml:
