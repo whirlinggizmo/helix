@@ -30,7 +30,6 @@
 /* A draw's uniforms by stage and slot: the vertex stage's 0 to 3, the fragment stage's 4 to 7. */
 #define MAX_BLOCK_INDICES 8
 #define MAX_TEXTURES 12
-#define MAX_RENAMES 8
 #define MAX_SHADOW_LAYERS 24
 
 static SDL_GPUDevice *device;
@@ -75,7 +74,8 @@ static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*fl
    variant drawing into it), or a shadow map (a depth array). */
 enum{PLAIN,DATA,TARGET,SHADOW};
 static struct{uint32_t generation;int live,kind,width,height,layers,variant,format,cleared,sample_count;SDL_GPUTexture *texture,*samples,*depth;
- SDL_GPUTexture *versions[MAX_RENAMES];int current,bound[MAX_RENAMES];double bytes;}textures[SLOTS];
+ SDL_GPUTexture **versions;int *bound;int version_count,current;double bytes;}textures[SLOTS];
+static int more_versions(int slot);
 
 /* Samplers by Sampling value (helix.platform.Sampling: bit 0 linear, bits 1-2 wrap u, bits 3-4 wrap v, bits 5-6 the mipmap filter, bits
    7-9 the anisotropy's power of two), made when first used, and the comparison sampler shadow maps are read through. */
@@ -300,11 +300,24 @@ uint32_t helix_data_texture(int w,int h){
  if(slot<0||w<=0||h<=0||w>16384||h>16384)return 0;
  SDL_GPUTexture *texture=data_version(w,h);
  if(!texture)return 0;
- memset(textures[slot].versions,0,sizeof textures[slot].versions);memset(textures[slot].bound,0,sizeof textures[slot].bound);
+ if(!more_versions(slot)){SDL_ReleaseGPUTexture(device,texture);return 0;}
  textures[slot].versions[0]=textures[slot].texture=texture;textures[slot].current=0;textures[slot].bytes=(double)w*h*16;
  return take_texture(slot,DATA,w,h);
 }
 static int texture_live(uint32_t handle){const int s=slot_of(handle);return s>=0&&s<SLOTS&&textures[s].live&&(handle>>16)==(textures[s].generation&GENERATION_MASK);}
+/* Doubles a data texture's versions (8 at first), the new ones empty and unread: 0 when memory runs out. A data texture rewritten after a
+   draw read it takes its next version, so a frame writes it any number of times. */
+static int more_versions(int slot){
+ const int had=textures[slot].version_count,n=had?had*2:8;
+ SDL_GPUTexture **versions=realloc(textures[slot].versions,(size_t)n*sizeof *versions);
+ if(!versions)return 0;
+ textures[slot].versions=versions;
+ int *bound=realloc(textures[slot].bound,(size_t)n*sizeof *bound);
+ if(!bound)return 0;
+ textures[slot].bound=bound;
+ memset(versions+had,0,(size_t)(n-had)*sizeof *versions);memset(bound+had,0,(size_t)(n-had)*sizeof *bound);
+ textures[slot].version_count=n;return 1;
+}
 /* Rewrites a data texture whole. Its current version, unless a draw read it this frame: then the next it hasn't, made when first needed.
    Staged for the pass's copy, or uploaded at once outside a pass. */
 static int update_data(int slot,const void *data,int bytes){
@@ -312,8 +325,8 @@ static int update_data(int slot,const void *data,int bytes){
  if((size_t)bytes<size)return 0;
  int v=textures[slot].current;
  if(textures[slot].bound[v]){
-  for(v=0;v<MAX_RENAMES&&textures[slot].bound[v];v++){}
-  if(v==MAX_RENAMES)return 0;
+  for(v=0;v<textures[slot].version_count&&textures[slot].bound[v];v++){}
+  if(v==textures[slot].version_count&&!more_versions(slot))return 0;
   if(!textures[slot].versions[v]){
    if(!(textures[slot].versions[v]=data_version(textures[slot].width,textures[slot].height)))return 0;
    textures[slot].bytes+=(double)size;
@@ -905,7 +918,7 @@ void helix_end(void){
  for(int i=0;i<retired_count;i++)SDL_ReleaseGPUBuffer(device,retired[i]);
  retired_count=0;arena_used=0;arena_cycled=0;
  /* Stream buffers start each frame empty; data textures' versions are free again. */
- for(int i=0;i<SLOTS;i++){if(buffers[i].live&&buffers[i].stream){buffers[i].used=0;buffers[i].appended=0;buffers[i].buffer=NULL;}if(textures[i].kind==DATA)memset(textures[i].bound,0,sizeof textures[i].bound);}
+ for(int i=0;i<SLOTS;i++){if(buffers[i].live&&buffers[i].stream){buffers[i].used=0;buffers[i].appended=0;buffers[i].buffer=NULL;}if(textures[i].kind==DATA)memset(textures[i].bound,0,(size_t)textures[i].version_count*sizeof(int));}
 }
 
 /* What handle 0 (the frame just ended), an RGBA8 render target or an RGBA8 2D texture of helix_texture reads back as: its width and
@@ -950,7 +963,10 @@ int helix_read_pixels(uint32_t target,unsigned char *out){
 
 /* Releases a texture's GPU textures and frees its slot. */
 static void release_texture(int slot){
- if(textures[slot].kind==DATA){for(int i=0;i<MAX_RENAMES;i++)if(textures[slot].versions[i])SDL_ReleaseGPUTexture(device,textures[slot].versions[i]);}
+ if(textures[slot].kind==DATA){
+  for(int i=0;i<textures[slot].version_count;i++)if(textures[slot].versions[i])SDL_ReleaseGPUTexture(device,textures[slot].versions[i]);
+  free(textures[slot].versions);free(textures[slot].bound);textures[slot].versions=NULL;textures[slot].bound=NULL;textures[slot].version_count=0;
+ }
  else if(textures[slot].texture)SDL_ReleaseGPUTexture(device,textures[slot].texture);
  if(textures[slot].samples)SDL_ReleaseGPUTexture(device,textures[slot].samples);
  if(textures[slot].depth)SDL_ReleaseGPUTexture(device,textures[slot].depth);

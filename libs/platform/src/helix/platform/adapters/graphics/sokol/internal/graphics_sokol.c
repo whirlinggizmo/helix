@@ -117,9 +117,18 @@ static uint32_t pass_texture;
 /* The screen's size this frame, and whether helix_end has ended it (so it can be read back). */
 static int screen_width,screen_height,frame_ended;
 /* A stream buffer written again after a draw bound it this frame takes another sokol buffer of the same size, as sokol allows writes only
-   before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write. */
-#define MAX_RENAMES 8
-static sg_buffer extras[SLOTS][MAX_RENAMES];static int renamed[SLOTS],bound[SLOTS];
+   before a bind: renamed[slot] is how many of its extras are in use this frame, bound[slot] whether the current one was bound since its write.
+   Its extras, extra_count[slot] of them, grow as a frame needs more, so a buffer is written any number of times a frame. */
+static sg_buffer *extras[SLOTS];static int extra_count[SLOTS],renamed[SLOTS],bound[SLOTS];
+/* Grows an array of count items of size bytes each to hold one past used, doubling from 8, the new items zeroed: 0 when memory runs out. */
+static int grow_spares(void **items,int *count,int used,size_t size){
+ if(used<*count)return 1;
+ const int n=*count?*count*2:8;
+ char *grown=realloc(*items,(size_t)n*size);
+ if(!grown)return 0;
+ memset(grown+(size_t)*count*size,0,(size_t)(n-*count)*size);
+ *items=grown;*count=n;return 1;
+}
 /* Whether a stream buffer was appended to this frame (helix_append), so it isn't updated too. */
 static char appended[SLOTS];
 /* Render targets, by texture view slot: their color and depth attachment views (no depth view without depth), depth image and size, the
@@ -133,7 +142,7 @@ static struct{sg_image image;sg_view layers[MAX_SHADOW_LAYERS];int size,count;}s
    the frame alone, and take writes only until they're bound, so the adapter keeps the contents (copy) and writes them at the first bind of a
    frame without a write of its own; and a write after a bind goes to a spare of the same size (made the first time it's needed): renamed is
    how many are in use this frame, and the texture's draws read the latest. */
-static struct{sg_image image;int width,height,written,bound,renamed;float *copy;sg_image extra_images[MAX_RENAMES];sg_view extra_views[MAX_RENAMES];}data_textures[SLOTS];
+static struct{sg_image image;int width,height,written,bound,renamed;float *copy;sg_image *extra_images;sg_view *extra_views;int extra_count;}data_textures[SLOTS];
 /* Per buffer slot: whether it is a stream buffer (createBuffer's), rewritten each frame. */
 static int stream_buffers[SLOTS];
 /* The samples a pixel the window's framebuffer got (GL's count: what the window asked for, or fewer), read at setup. */
@@ -263,8 +272,9 @@ static int update_data(int slot,const void *data,int bytes){
  if((size_t)bytes<size)return 0;
  if(data_textures[slot].bound){
   /* Bound since its last write: the write goes to the next spare. */
-  const int r=data_textures[slot].renamed;
-  if(r==MAX_RENAMES)return 0;
+  const int r=data_textures[slot].renamed;int views=data_textures[slot].extra_count;
+  if(!grow_spares((void **)&data_textures[slot].extra_views,&views,r,sizeof(sg_view)))return 0;
+  if(!grow_spares((void **)&data_textures[slot].extra_images,&data_textures[slot].extra_count,r,sizeof(sg_image)))return 0;
   if(!data_textures[slot].extra_images[r].id){
    data_textures[slot].extra_images[r]=data_image(data_textures[slot].width,data_textures[slot].height);
    if(sg_query_image_state(data_textures[slot].extra_images[r])!=SG_RESOURCESTATE_VALID)return 0;
@@ -304,7 +314,7 @@ uint32_t helix_buffer(int capacity){
  if(capacity<=0||capacity%4)return 0;
  sg_buffer buffer=sg_make_buffer(&(sg_buffer_desc){.size=(size_t)capacity,.usage={.vertex_buffer=true,.write_transient=true}});
  if((buffer.id&0xffff)<SLOTS){int slot=buffer.id&0xffff;used[slot]=0;appended[slot]=0;index_buffers[slot]=0;stream_buffers[slot]=1;
-  renamed[slot]=bound[slot]=0;memset(extras[slot],0,sizeof extras[slot]);}return held_handle(BUFFER_IDS,buffer.id,capacity);
+  renamed[slot]=bound[slot]=0;free(extras[slot]);extras[slot]=NULL;extra_count[slot]=0;}return held_handle(BUFFER_IDS,buffer.id,capacity);
 }
 /* The sokol buffer a stream buffer's draws read now: itself, or the extra its latest write went to. */
 static sg_buffer current_buffer(uint32_t id){int slot=id&0xffff;return slot<SLOTS&&renamed[slot]?extras[slot][renamed[slot]-1]:(sg_buffer){id};}
@@ -412,7 +422,7 @@ int helix_update(uint32_t handle,const void *data,int bytes){
  if(!active||!data||bytes<0||bytes%4||slot>=SLOTS||sg_query_buffer_state(buffer)!=SG_RESOURCESTATE_VALID||(size_t)bytes>sg_query_buffer_size(buffer)||!stream_buffers[slot]||appended[slot])return 0;
  if(bound[slot]){
   /* Bound since its last write: the write goes to the next extra, made the first time it's needed. */
-  if(renamed[slot]==MAX_RENAMES)return 0;
+  if(!grow_spares((void **)&extras[slot],&extra_count[slot],renamed[slot],sizeof(sg_buffer)))return 0;
   sg_buffer *extra=&extras[slot][renamed[slot]];
   if(!extra->id){
    *extra=sg_make_buffer(&(sg_buffer_desc){.size=sg_query_buffer_size(buffer),.usage={.vertex_buffer=true,.write_transient=true}});
@@ -881,7 +891,7 @@ int helix_dispose_resource(int kind,uint32_t handle){
  const uint32_t id=id_of(kind,handle);int slot=id&0xffff;
  if(kind==0&&sg_query_buffer_state((sg_buffer){id})==SG_RESOURCESTATE_VALID){
   sg_destroy_buffer((sg_buffer){id});
-  if(slot<SLOTS){stream_buffers[slot]=0;held[BUFFER_IDS][slot]=0;for(int i=0;i<MAX_RENAMES;i++)if(extras[slot][i].id)sg_destroy_buffer(extras[slot][i]);memset(extras[slot],0,sizeof extras[slot]);}
+  if(slot<SLOTS){stream_buffers[slot]=0;held[BUFFER_IDS][slot]=0;for(int i=0;i<extra_count[slot];i++)if(extras[slot][i].id)sg_destroy_buffer(extras[slot][i]);free(extras[slot]);extras[slot]=NULL;extra_count[slot]=0;}
   return 1;
  }
  if(kind==1&&sg_query_view_state((sg_view){id})==SG_RESOURCESTATE_VALID){
@@ -892,8 +902,8 @@ int helix_dispose_resource(int kind,uint32_t handle){
    memset(&shadow_maps[slot],0,sizeof shadow_maps[slot]);
   }
   if(slot<SLOTS&&data_textures[slot].image.id){
-   for(int i=0;i<MAX_RENAMES;i++)if(data_textures[slot].extra_images[i].id){sg_destroy_view(data_textures[slot].extra_views[i]);sg_destroy_image(data_textures[slot].extra_images[i]);}
-   free(data_textures[slot].copy);memset(&data_textures[slot],0,sizeof data_textures[slot]);
+   for(int i=0;i<data_textures[slot].extra_count;i++)if(data_textures[slot].extra_images[i].id){sg_destroy_view(data_textures[slot].extra_views[i]);sg_destroy_image(data_textures[slot].extra_images[i]);}
+   free(data_textures[slot].extra_images);free(data_textures[slot].extra_views);free(data_textures[slot].copy);memset(&data_textures[slot],0,sizeof data_textures[slot]);
   }
   if(slot<SLOTS&&targets[slot].color.id){
    sg_destroy_view(targets[slot].color);if(targets[slot].depth.id){sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);}

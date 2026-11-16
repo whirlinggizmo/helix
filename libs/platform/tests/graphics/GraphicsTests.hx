@@ -1478,6 +1478,27 @@ class GraphicsTests {
 				}
 			},
 			{
+				// A pass drawn by many render passes a frame writes its stream buffer again after each draw, as helix-raylib's does.
+				name: "a stream buffer written again after each of twenty draws",
+				before: into(0, 0, 0, 1, () -> for (_ in 0...20) {
+					graphics.updateBuffer(appendedDots, floatBytes(dotFloats), dotFloats.length * 4);
+					draw(dotted, appendedDots, 5);
+				}),
+				target: target,
+				check: p -> for (i => s in spots)
+					expectSpot(p, s, spotColors[i].concat([1]))
+			},
+			{
+				name: "a data texture written again after each of twenty draws",
+				before: into(0, 0, 0, 0, () -> for (_ in 0...20) {
+					graphics.updateTexture(table, 0, 0, 4, 1, floatBytes(floats));
+					draw(fetched, uvQuad, 6, [table], [Sampling.LINEAR]);
+				}),
+				target: target,
+				check: p -> for (i in 0...4)
+					p.expect(i * 4 + 2, 8, [floats[i * 4] / 8, -floats[i * 4 + 1], floats[i * 4 + 2], 1], 1)
+			},
+			{
 				name: "a stream buffer appended to, each range drawn from its offset",
 				before: into(0, 0, 0, 1, () -> {
 					var at = graphics.appendBuffer(appendedDots, floatBytes(dotFloats.slice(0, 12)), 48);
