@@ -973,10 +973,11 @@ Why things are the way they are, numbered, in order.
     `EndDrawing` returning once the file is written. `CloseWindow` refuses such a screenshot with no `EndDrawing` called after it,
     logging "TakeScreenshot: <file>: Screenshot could not be saved: Screenshots are generated during EndDrawing()".
 
-    Why: every entrant writing its own program met the refusal (the Wardens runs, the null font's six), and three of the null font's
-    saved a black `shot.png` first, its frame drawn empty while `TakeScreenshotAsync` waited. `TakeScreenshotAsync` waits no less: the
-    frame is read back and the file written as the frame is shown, on every target. Its one extra was a callback when the file is
-    written or refused, which raylib's `TakeScreenshot` never had.
+    Why: raylib's `TakeScreenshot` reads the screen when called, and a C program calls it mid-frame or after `EndDrawing`, saving
+    what the screen holds then. With the frames kept (75), both are there to read: the frame drawn so far, or the frame last shown. Only
+    a first call with nothing drawn and no frame kept has nothing to save, so it saves the next frame rather than a black one. Every
+    entrant writing its own program met 72's refusal (the Wardens runs, the null font's six), and a screenshot waited for as a file call
+    is waited for needs no callback, which raylib's `TakeScreenshot` never had.
 
     Tried: docs/trials/2026-11-14-take-screenshot, nine Sonnet entrants. The three with the pages called it as they give it. The
     three without called it after the last `EndDrawing`, as a C program does, read `CloseWindow`'s refusal and moved it. The three
@@ -1003,11 +1004,10 @@ Why things are the way they are, numbered, in order.
     far is what rlgl does as it flushes. No trial, as it moves helix-raylib toward raylib (AGENTS.md).
 
     Checked: the render parity suite reads a texture drawn and updated in the frame, and the screen part way through its saved frame, a
-    part of it drawn on top. SDL_GPU's copy matches the cells it was cut from. The target is stored bottom row first, so GL draws into it
-    unflipped, as into the screen. A frame drawn into it still differs a little from one drawn on GL's screen: render's GL frame by 72
-    pixels, at most 4 apart in its anisotropic cell, and scene2d's by 49, at most 1 apart in its gradients but for a few edge pixels.
-    Their GL allowances are 90 and 60. From the first read on, each frame costs one more draw, the copy, and the program a target of
-    the framebuffer's size. A program calling neither read
+    part of it drawn on top, its frames kept from then on. GL's frame matches raylib's in every pixel, and SDL_GPU's copy matches the
+    cells it was cut from. The target is stored top row first, so GL draws into it flipped: stored bottom row first, unflipped, render's
+    GL frame differed from raylib's by 72 pixels in its anisotropic cell. From the first read on, each frame costs one more draw, the
+    copy, and the program a target of the framebuffer's size. A program calling neither read
     builds to the same JavaScript as before (the size ladder's rungs 1 to 7, byte for byte): what the reads do is in
     `helix.raylib.internal.Frame.FrameReads`, which only they reach, hooked into the frame's drawing at the first read.
 

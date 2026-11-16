@@ -5,7 +5,7 @@
   "generated": true,
   "frames": 5,
   "backends": {
-    "gl": 60,
+    "gl": 15,
     "sdl_gpu": 1100
   }
 }

@@ -1611,9 +1611,9 @@ private class Run {
 	public var count:Int;
 }
 
-/** Reads what a frame has drawn part way through it, for `LoadImageFromTexture`, `LoadImageFromScreen` and `TakeScreenshot`: the passes recorded so far
-	drawn (`submit`), and the screen's passes kept in a render target from the first screen read on (`readScreen`), so a read between
-	frames finds the frame last shown. Only those calls reach it, so a program calling neither links none of it. */
+/** Reads what a frame has drawn part way through it, for `LoadImageFromTexture`, `LoadImageFromScreen` and `TakeScreenshot`: the
+	passes recorded so far drawn (`submit`), and the screen's passes kept in a render target from the first screen read on
+	(`readScreen`), so a read between frames finds the frame last shown. Only those calls reach it, so a program calling neither links none of it. */
 @:noCompletion
 @:allow(helix.raylib)
 @:access(helix.raylib.internal.Frame)
@@ -1701,7 +1701,7 @@ class FrameReads {
 			holding = true;
 		}
 		submit(frame, framebufferWidth, framebufferHeight);
-		frame.graphics.readPixels(held, (pixels, width, height) -> read(topFirst(pixels, width, height), width, height), failed);
+		frame.graphics.readPixels(held, read, failed);
 	}
 
 	/** Returns whether the screen has a frame to read now: a frame kept since the first read, or one cleared or drawn into on the
@@ -1727,22 +1727,10 @@ class FrameReads {
 		keep(frame);
 		frame.afterDraw(() -> {
 			if (owner == frame && held != 0)
-				frame.graphics.readPixels(held, (pixels, width, height) -> read(topFirst(pixels, width, height), width, height), failed);
+				frame.graphics.readPixels(held, read, failed);
 			else
 				failed("the window was closed");
 		});
-	}
-
-	// The kept target's pixels, read bottom row first, as rows top first, in place.
-	static function topFirst(pixels:Bytes, width:Int, height:Int):Bytes {
-		var row = width * 4, swap = Bytes.alloc(row);
-		for (y in 0...height >> 1) {
-			var top = y * row, bottom = (height - 1 - y) * row;
-			swap.blit(0, pixels, top, row);
-			pixels.blit(top, pixels, bottom, row);
-			pixels.blit(bottom, swap, 0, row);
-		}
-		return pixels;
 	}
 
 	// Keeps the frames from now on: each frame's screen pass drawn into the kept target (drawHeld), copied to the screen.
@@ -1782,8 +1770,7 @@ class FrameReads {
 					graphics.disposeTexture(held);
 				held = 0;
 			});
-		// Stored bottom row first, as the screen is on GL, so GL draws into it as into the screen, unflipped.
-		held = graphics.createRenderTarget(framebufferWidth, framebufferHeight, helix.platform.TextureFormat.Rgba8, true, 0, true);
+		held = graphics.createRenderTarget(framebufferWidth, framebufferHeight);
 		heldWidth = framebufferWidth;
 		heldHeight = framebufferHeight;
 		if (screen.clear == null)
@@ -1863,7 +1850,7 @@ class FrameReads {
 		}
 	}
 
-	// A draw of the held target over the whole screen, its texels as they are, its bottom row first: an immediate quad through the default program, without
+	// A draw of the held target over the whole screen, its texels as they are: an immediate quad through the default program, without
 	// blending, depth or culling, written after the batch's vertices.
 	static function copyDraw(frame:Frame, width:Float, height:Float):Draw {
 		frame.vertices = (frame.vertices + 3) & ~3;
@@ -1875,7 +1862,7 @@ class FrameReads {
 			frame.put(at + 4, bottom ? height : 0);
 			frame.put(at + 8, 0);
 			frame.put(at + 12, right ? 1 : 0);
-			frame.put(at + 16, bottom ? 0 : 1);
+			frame.put(at + 16, bottom ? 1 : 0);
 			frame.put(at + 20, 0);
 			frame.put(at + 24, 0);
 			frame.put(at + 28, 1);

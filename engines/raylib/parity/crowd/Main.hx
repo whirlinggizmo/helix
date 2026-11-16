@@ -40,9 +40,8 @@ class Main {
 			if (ready)
 				DrawModel(models[3], new Vector3(0, 0, 9), 0.6, WHITE);
 			EndMode3D();
-			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
-				TakeScreenshot("helix.png");
+				LoadImageFromScreenAsync(shot -> sys.io.File.saveBytes("helix.png", ExportImageToMemory(shot, ".png", [0])));
 			EndDrawing();
 			if (frame >= 0)
 				frame++;

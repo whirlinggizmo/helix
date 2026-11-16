@@ -59,9 +59,8 @@ class Main {
 			BeginShaderMode(distortion);
 			DrawTexturePro(target.texture, sourceRec, destRec, new Vector2(0, 0), 0, WHITE);
 			EndShaderMode();
-			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
-				TakeScreenshot("helix.png");
+				LoadImageFromScreenAsync(shot -> sys.io.File.saveBytes("helix.png", ExportImageToMemory(shot, ".png", [0])));
 			EndDrawing();
 			frame++;
 		}

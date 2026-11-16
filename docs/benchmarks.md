@@ -152,7 +152,7 @@ before, so a rung's increment is what the feature costs. Every rung is a release
 JavaScript unminified, as Haxe alone writes it; sizes in KB.
 
 <!-- gen_sizes -->
-Measured from 42ae613 2026-11-16 with Haxe 4.3.7.
+Measured from 132a43c 2026-11-16 with Haxe 4.3.7.
 
 ### helix-platform
 
@@ -312,7 +312,7 @@ Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each
 | 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight | 452.0 | 94.7 (76.5) | +1.4 |
 | 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 476.9 | 99.9 (80.6) | +5.2 |
 | 10-game | a game: what a real game uses, its file formats one of each | 669.3 | 135.8 (109.5) | +36.0 |
-| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1818.4 | 323.1 (250.5) | +187.3 |
+| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1817.8 | 323.0 (250.4) | +187.1 |
 
 Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
 
@@ -325,7 +325,7 @@ Each rung's JavaScript by package, raw KB, from its source map, a line's start (
 | raylib/RCore | 1.9 | 1.9 | 1.9 | 2.6 | 3.8 | 3.8 | 3.8 | 4.7 | 4.7 | 17.3 | 83.5 |
 | raylib/RModels | 0.0 | 0.0 | 0.0 | 0.0 | 7.5 | 8.1 | 8.4 | 10.2 | 10.3 | 13.1 | 80.7 |
 | raylib/RShapes | 0.0 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 4.5 | 63.7 |
-| raylib/Frame | 26.2 | 30.8 | 31.8 | 31.8 | 39.2 | 39.2 | 39.2 | 39.2 | 39.2 | 39.6 | 57.0 |
+| raylib/Frame | 26.2 | 30.8 | 31.8 | 31.8 | 39.2 | 39.2 | 39.2 | 39.2 | 39.2 | 39.6 | 56.4 |
 | raylib/RText | 0.0 | 0.0 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 16.9 | 53.5 |
 | platform/graphics | 45.1 | 45.9 | 45.9 | 45.9 | 45.9 | 45.9 | 46.4 | 46.4 | 46.4 | 47.1 | 49.9 |
 | math | 8.6 | 9.1 | 9.1 | 9.1 | 23.2 | 30.2 | 30.2 | 30.2 | 30.2 | 36.0 | 45.2 |
