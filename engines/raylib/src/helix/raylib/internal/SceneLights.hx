@@ -46,7 +46,7 @@ class SceneLights {
 	];
 	static final NONE:Array<Null<ShaderUniform>> = [];
 
-	/** Writes the shadows into a program its draw's lights are written into (`Shadows`): set by the first `SetLightShadows`, null in a
+	/** Writes the shadows into a program its draw's lights are written into (`Shadows`): set by the first `SetLightShadowCasting`, null in a
 		program casting none. It has no initial value, as `Frame.spriteShader` has none. */
 	public static var receiving:Null<Program->Void>;
 
@@ -236,6 +236,7 @@ class SceneLights {
 		@param light  The light. */
 	static function score(light:helix.raylib.Light):Float {
 		var c = light.color;
+		// An intensity under 0 scores under 0, as 0 does, and the light isn't chosen: the intensity is held to 0 or more.
 		var s = (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255 * light.intensity;
 		if (s <= 0 || (light.type != helix.raylib.Rlights.LIGHT_POINT && light.type != SPOT))
 			return s;
@@ -245,6 +246,7 @@ class SceneLights {
 		var nx = clamp(px, box[0], box[3]) - px,
 			ny = clamp(py, box[1], box[4]) - py,
 			nz = clamp(pz, box[2], box[5]) - pz;
+		// A range under 0 is none, as 0 is.
 		var d2 = nx * nx + ny * ny + nz * nz, range = light.range;
 		if (range > 0) {
 			if (d2 >= range * range)
@@ -271,7 +273,7 @@ class SceneLights {
 				var dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
 				var cosine = dl > 0 ? (tx * dx + ty * dy + tz * dz) / (tl * dl) : 1;
 				var angle = Math.acos(clamp(cosine, -1, 1)) - Math.asin(radius / tl);
-				s *= cone(angle > 0 ? Math.cos(angle) : 1, light.innerCosine, light.outerCosine);
+				s *= cone(angle > 0 ? Math.cos(angle) : 1, coneCosine(light, true), coneCosine(light, false));
 			}
 		}
 		return s;
@@ -290,6 +292,17 @@ class SceneLights {
 	}
 
 	static inline final SPOT = 2;
+
+	/** Returns the cosine of a spot light's inner or outer angle, its `outerAngle` held to 0 to 89.9 degrees and its `innerAngle` to 0
+		to the outer angle.
+
+		@param light  The light.
+		@param inner  true for the inner angle, false for the outer. */
+	public static function coneCosine(light:helix.raylib.Light, inner:Bool):Float {
+		var outer = light.outerAngle > 0 ? (light.outerAngle < 89.9 ? light.outerAngle : 89.9) : 0;
+		var angle = inner && light.innerAngle < outer ? light.innerAngle : outer;
+		return Math.cos((angle > 0 ? angle : 0) * Math.PI / 180);
+	}
 
 	static inline function clamp(x:Float, low:Float, high:Float):Float
 		return x < low ? low : x > high ? high : x;
@@ -320,14 +333,15 @@ class SceneLights {
 				else
 					values.writeVector3(f[4], c.r / 255, c.g / 255, c.b / 255, i);
 			}
+			// The chosen lights' intensities are over 0 (score).
 			if (f[5] != null)
-				values.writeFloat(f[5], light.range, i);
+				values.writeFloat(f[5], light.range > 0 ? light.range : 0, i);
 			if (f[6] != null)
 				values.writeFloat(f[6], light.intensity, i);
 			if (f[7] != null)
-				values.writeFloat(f[7], light.innerCosine, i);
+				values.writeFloat(f[7], coneCosine(light, true), i);
 			if (f[8] != null)
-				values.writeFloat(f[8], light.outerCosine, i);
+				values.writeFloat(f[8], coneCosine(light, false), i);
 			if (f[9] != null)
 				values.writeInt(f[9], light.shadowIndex, i);
 		}

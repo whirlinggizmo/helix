@@ -20,15 +20,16 @@ class Main {
 		var lamps = [
 			for (color in colors) {
 				var lamp = CreateLight(LIGHT_POINT, Vector3Zero(), Vector3Zero(), color, shader);
-				SetLightRange(lamp, 3);
-				SetLightIntensity(lamp, 2);
+				lamp.range = 3;
+				lamp.intensity = 2;
 				lamp;
 			}
 		];
-		var spot = CreateLight(LIGHT_POINT, new Vector3(0, 1.5, 3), new Vector3(0, -1.5, 3), WHITE, shader);
-		SetLightCone(spot, 15, 25);
-		SetLightRange(spot, 6);
-		SetLightIntensity(spot, 10);
+		var spot = CreateLight(LIGHT_SPOT, new Vector3(0, 1.5, 3), new Vector3(0, -1.5, 3), WHITE, shader);
+		spot.innerAngle = 15;
+		spot.outerAngle = 25;
+		spot.range = 6;
+		spot.intensity = 10;
 		var floor = LoadModelFromMesh(GenMeshPlane(14, 10, 1, 1));
 		floor.materials[0].shader = shader;
 		floor.materials[0].maps[MATERIAL_MAP_ALBEDO].color = new Color(90, 90, 90, 255);

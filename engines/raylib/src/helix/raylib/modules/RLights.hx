@@ -18,12 +18,12 @@ class RLights {
 		raylib's examples' `lighting.fs` or one including `<helix/raylib/shaders/lights.glsl>`. A program makes as many lights as it needs.
 
 		Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at
-		each draw, so the light moves or changes by setting them. The Lighting extra sets its intensity, range and cone, and `UnloadLight`
-		takes it out of the scene.
+		each draw, so the light moves or changes by setting them, the Lighting extra's `intensity`, `range` and spot cone among them.
+		`UnloadLight` takes the light out of the scene.
 
-		@param type  `LIGHT_DIRECTIONAL` or `LIGHT_POINT`.
+		@param type  `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, or the Lighting extra's `LIGHT_SPOT`.
 		@param position  Where it is.
-		@param target  Where it points, for a directional light.
+		@param target  Where it points, for a directional or spot light.
 		@param color  Its color.
 		@param shader  The shader it is made with, as rlights takes one.
 		@return  The light. */

@@ -6,18 +6,18 @@ import helix.raylib.Rlights.*;
 import helix.raylib.Rlgl.*;
 import helix.raylib.extras.Lighting.*;
 import helix.raylib.extras.Materials.*;
-import helix.raylib.extras.ShadowOptions;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Program;
 import helix.raylib.internal.Runtime;
 
 /** Checks the Lighting extra's shadows on graphics that count what is live: casting off until `SetLightShadowCasting` turns it on, and
-	`SetLightShadows` alone casting nothing; `GetLightShadows`' defaults filled, set or not, and kept in range; a pass made for each map
+	a light's `shadows` set alone casting nothing; the shadows' defaults filled, out-of-range fields clamped where the pass reads them,
+	and a field written after casting is on taking effect at the next pass; a pass made for each map
 	of each light casting (a directional light's cascades, a spot light's one map, a point light's six faces) into one shadow map of
 	their layers, as large as the largest asked, each pass the whole layer; the casters drawn into the maps their bounds reach and
 	nowhere else, through a depth-only pipeline, a cut-out material's alpha cutoff and a program's own vertex stage's uniforms reaching
 	its shadow draw, a posed model cast through its caster's skinned twin, the batch cast too; a fifth light's shadows refused with a
-	warning, a light turned off freeing its place and keeping its options; the lit draws after the pass given the shadows (their
+	warning and `SetLightShadowCasting` returning false, a light turned off freeing its place and keeping its options; the lit draws after the pass given the shadows (their
 	lights' shadow, the matrices, the strengths, the map), and `shadowed` false written for a material shadows don't fall on; a frame
 	without the pass keeping the last one's shadows. */
 @:access(helix.raylib.internal.Runtime)
@@ -84,42 +84,66 @@ class ShadowsTests {
 		cube.materials[0].shader = shader;
 		var camera = new Camera3D(new Vector3(0, 5, 10), Vector3Zero(), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 
-		// Casting off until SetLightShadowCasting; GetLightShadows every option filled, set or not, each kept in its range.
+		// Casting off until SetLightShadowCasting; a light's shadows every default, the same options at each read.
 		var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(-4, 8, 0), Vector3Zero(), WHITE, shader);
 		check(!IsLightShadowCasting(sun), "a light casts no shadows until SetLightShadowCasting");
-		var o = GetLightShadows(sun);
-		var defaults = (o:ShadowOptions) -> o.mapSize == 2048 && o.distance == 50 && o.cascades == 1 && o.bias == 1 && o.slopeBias == 4
-			&& o.normalOffset == 1 && o.softness == 1 && o.strength == 1 && o.bounds == null;
-		check(o != null && defaults(o), "GetLightShadows of a light never given options: every default, filled");
-		SetLightShadows(sun);
-		o = GetLightShadows(sun);
-		check(defaults(o), "SetLightShadows without options: every default, filled");
-		check(!IsLightShadowCasting(sun), "SetLightShadows alone casts nothing");
+		var o = sun.shadows;
+		check(o != null && o == sun.shadows && o.mapSize == 2048 && o.distance == 50 && o.cascadeCount == 1 && o.bias == 1 && o.slopeBias == 4
+			&& o.normalOffset == 1 && o.softness == 1 && o.strength == 1 && o.bounds == null,
+			"a light's shadows: every default, the same options at each read");
+		o.cascadeCount = 2;
+		check(!IsLightShadowCasting(sun), "a light's shadows set alone cast nothing");
 		BeginShadowMode(camera);
-		check(shadowPasses().length == 0, "no shadow pass for a light SetLightShadows alone set");
+		check(shadowPasses().length == 0, "no shadow pass for a light whose shadows are set but off");
 		EndShadowMode();
-		SetLightShadows(sun, {
-			mapSize: 3000,
-			cascades: 9,
-			strength: 2,
-			softness: -1
-		});
-		var out = GetLightShadows(sun, o);
-		check(out == o && o.mapSize == 2048 && o.cascades == 4 && o.strength == 1 && o.softness == 0,
-			"options out of range kept in it, into the options given");
-		SetLightShadows(sun, {mapSize: 100});
-		check(GetLightShadows(sun).mapSize == 256, "a map size under 256 made 256");
+		frame.draw(800, 450, true);
+
+		// Out of range: each option clamped where the pass reads it, the field kept as written.
+		o.mapSize = 3000;
+		o.cascadeCount = 9;
+		o.strength = 2;
+		o.softness = -1;
+		o.bias = -1;
+		check(SetLightShadowCasting(sun, true) && IsLightShadowCasting(sun), "SetLightShadowCasting turns casting on, returning true");
+		BeginShadowMode(camera);
+		check(shadowPasses().length == 4 && shadowPasses()[0].width == 2048, "a map size of 3000 read as 2048, 9 cascades as 4");
+		check(helix.raylib.internal.Shadows.strengths[0] == 1
+			&& helix.raylib.internal.Shadows.params[0] == 32 * 4
+			&& helix.raylib.internal.Shadows.params[1] == 0,
+			"a strength of 2 read as 1, a softness and a bias of -1 as 0");
+		check(o.mapSize == 3000 && o.cascadeCount == 9 && o.strength == 2 && o.softness == -1, "the fields kept as written");
+		EndShadowMode();
+		frame.draw(800, 450, true);
+		o.mapSize = 100;
+		BeginShadowMode(camera);
+		check(shadowPasses()[0].width == 256, "a map size under 256 read as 256");
+		EndShadowMode();
+		frame.draw(800, 450, true);
+
+		// A field written after casting is on: taken at the next pass.
+		o.mapSize = 1024;
+		o.cascadeCount = 2;
+		o.distance = 30;
+		o.strength = 0.75;
+		o.softness = 1;
+		o.bias = 1;
+		BeginShadowMode(camera);
+		check(shadowPasses().length == 2 && shadowPasses()[0].width == 1024 && helix.raylib.internal.Shadows.strengths[0] == 0.75,
+			"the sun's map size, cascades and strength written while casting, read by the next pass");
+		o.strength = 1;
+		EndShadowMode();
+		frame.draw(800, 450, true);
+		graphics.shadowPasses.resize(0);
 
 		// A pass for each map: the sun's two cascades, a lamp's six faces, a spot's one map, all layers of one shadow map.
-		SetLightShadows(sun, {mapSize: 1024, cascades: 2, distance: 30});
-		SetLightShadowCasting(sun, true);
-		check(IsLightShadowCasting(sun), "SetLightShadowCasting turns casting on");
 		var lamp = CreateLight(LIGHT_POINT, new Vector3(2, 2, 0), Vector3Zero(), WHITE, shader);
-		SetLightRange(lamp, 6);
-		SetLightShadows(lamp, {mapSize: 512, strength: 0.5});
+		lamp.range = 6;
+		lamp.shadows.mapSize = 512;
+		lamp.shadows.strength = 0.5;
 		SetLightShadowCasting(lamp, true);
-		var spot = CreateLight(LIGHT_POINT, new Vector3(0, 4, 0), Vector3Zero(), WHITE, shader);
-		SetLightCone(spot, 10, 15);
+		var spot = CreateLight(LIGHT_SPOT, new Vector3(0, 4, 0), Vector3Zero(), WHITE, shader);
+		spot.innerAngle = 10;
+		spot.outerAngle = 15;
 		SetLightShadowCasting(spot, true);
 		BeginShadowMode(camera);
 		var passes = shadowPasses();
@@ -252,18 +276,18 @@ class ShadowsTests {
 		SetLightShadowCasting(fourth, true);
 		var fifth = CreateLight(LIGHT_DIRECTIONAL, new Vector3(0, 8, 4), Vector3Zero(), WHITE, shader);
 		warnings.resize(0);
-		SetLightShadowCasting(fifth, true);
+		check(!SetLightShadowCasting(fifth, true), "SetLightShadowCasting returns false for a fifth light");
 		check(!IsLightShadowCasting(fifth) && warnings.length == 1 && warnings[0].indexOf("4 lights cast shadows at most") >= 0,
 			"a fifth light's shadows off, with a warning");
 		SetLightShadowCasting(lamp, false);
 		check(!IsLightShadowCasting(lamp), "SetLightShadowCasting false turns casting off");
-		check(GetLightShadows(lamp).mapSize == 512 && GetLightShadows(lamp).strength == 0.5, "a light turned off keeps its options");
+		check(lamp.shadows.mapSize == 512 && lamp.shadows.strength == 0.5, "a light turned off keeps its options");
 		SetLightShadowCasting(fifth, true);
 		check(IsLightShadowCasting(fifth), "a light turned off frees its place for another");
 		UnloadLight(fourth);
 		check(!IsLightShadowCasting(fourth), "an unloaded light's shadows freed");
 		SetLightShadowCasting(lamp, true);
-		check(IsLightShadowCasting(lamp) && GetLightShadows(lamp).mapSize == 512 && GetLightShadows(lamp).strength == 0.5,
+		check(IsLightShadowCasting(lamp) && lamp.shadows.mapSize == 512 && lamp.shadows.strength == 0.5,
 			"a light turned on again once a fourth is unloaded, its options as they were");
 		BeginShadowMode(camera);
 		check(shadowPasses().length == 10, "10 shadow passes: the sun's 2 cascades, the spot's map, the fifth's map and the lamp's 6 faces");

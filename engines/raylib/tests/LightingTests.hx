@@ -13,8 +13,8 @@ import helix.raylib.internal.Runtime;
 	shader declaring `lights` is lit by the lights reaching its bounds most, 8 of more than 8, best first, the rest off; a range keeps a
 	far lamp off a draw; a spot light's cone keeps it off what it points away from; more than 4 lights light one draw; `UnloadLight`
 	takes a light out; a light moves by its fields alone; a shader of 4 lights gets the best 4; `DrawMeshInstanced` scores against all
-	its instances; immediate shapes drawn through a lit shader are lit by their vertices' bounds; and the light's values (intensity,
-	range, cone) reach the draw. */
+	its instances; immediate shapes drawn through a lit shader are lit by their vertices' bounds; and the light's fields (intensity,
+	range, cone) reach the next draw once assigned, each clamped to its range there. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
@@ -77,7 +77,7 @@ class LightingTests {
 		var lamps = [
 			for (i in 0...10) {
 				var lamp = CreateLight(LIGHT_POINT, new Vector3(1 + i * 2, 0, 0), Vector3Zero(), WHITE, shader);
-				SetLightRange(lamp, 100);
+				lamp.range = 100;
 				lamp;
 			}
 		];
@@ -85,18 +85,30 @@ class LightingTests {
 		check(lit(p).join(",") == "1,3,5,7,9,11,13,15", "the 8 lamps reaching the cube most light it, the nearest first");
 		check(drawnFloat(p, "lights.range", 0) == 100 && drawnFloat(p, "lights.intensity", 0) == 1,
 			"a lamp's range and intensity written into the draw's lights");
+		check(lamps[0].intensity == 1 && lamps[0].range == 100 && lamps[0].innerAngle == 0 && lamps[0].outerAngle == 0,
+			"a light's intensity 1 and cone 0 by default");
 
 		// A brighter lamp further off wins a place: the score is its brightness through its falloff.
-		SetLightIntensity(lamps[9], 10000);
+		lamps[9].intensity = 10000;
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(lit(p)[0] == 19
 			&& lit(p).length == 8
 			&& drawnFloat(p, "lights.intensity", 0) == 10000, "a lamp made brighter reaches the cube most, first");
-		SetLightIntensity(lamps[9], 1);
+		lamps[9].intensity = 1;
+
+		// Out of range: a negative intensity lights nothing and a negative range is none, each clamped to 0 where read, the field kept.
+		lamps[0].intensity = -5;
+		DrawModel(cube, Vector3Zero(), 1, WHITE);
+		check(lit(p).join(",") == "3,5,7,9,11,13,15,17"
+			&& lamps[0].intensity == -5, "a negative intensity clamped to 0: the lamp lights nothing");
+		lamps[0].intensity = 1;
+		lamps[0].range = -3;
+		DrawModel(cube, Vector3Zero(), 1, WHITE);
+		check(lit(p)[0] == 1 && drawnFloat(p, "lights.range", 0) == 0 && lamps[0].range == -3, "a negative range clamped to 0: no limit");
 
 		// A lamp's range keeps it off a draw past it.
 		for (i in 0...10)
-			SetLightRange(lamps[i], 3);
+			lamps[i].range = 3;
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(lit(p).join(",") == "1,3", "a range keeps the far lamps off the cube");
 		DrawModel(cube, new Vector3(20, 0, 0), 1, WHITE);
@@ -130,8 +142,8 @@ class LightingTests {
 		// A shader of 4 lights, as raylib's examples' lighting.fs: the best 4 of them.
 		var four = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("four_lights.shader"));
 		cube.materials[0].shader = four;
-		SetLightRange(six[5], 10);
-		SetLightIntensity(six[5], 50);
+		six[5].range = 10;
+		six[5].intensity = 50;
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(lit(four.program, 4).length == 4 && lit(four.program, 4)[0] == 5, "a shader of 4 lights gets the 4 reaching the draw most");
 		cube.materials[0].shader = shader;
@@ -140,15 +152,31 @@ class LightingTests {
 
 		// A directional light reaches everything, a spot light only what its cone takes in.
 		var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(0, 10, 0), Vector3Zero(), WHITE, shader);
-		var spot = CreateLight(LIGHT_POINT, new Vector3(0, 5, 0), new Vector3(0, 0, 0), WHITE, shader);
-		SetLightCone(spot, 10, 20);
-		check(spot.type == LIGHT_SPOT, "SetLightCone makes it a spot light");
+		var spot = CreateLight(LIGHT_SPOT, new Vector3(0, 5, 0), new Vector3(0, 0, 0), WHITE, shader);
+		DrawModel(cube, Vector3Zero(), 1, WHITE);
+		check(drawnInt(p, "lights.type", 1) == LIGHT_SPOT
+			&& drawnFloat(p, "lights.innerCosine", 1) == 1
+			&& drawnFloat(p, "lights.outerCosine", 1) == 1,
+			"a spot light with no cone set: both angles 0, a cone of no width");
+		spot.innerAngle = 10;
+		spot.outerAngle = 20;
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(lit(p).length == 2, "a spot light pointing at the cube lights it, with the sun");
 		check(drawnInt(p, "lights.type", 1) == LIGHT_SPOT
 			&& Math.abs(drawnFloat(p, "lights.innerCosine", 1) - Math.cos(10 * DEG2RAD)) < 1e-6
 			&& Math.abs(drawnFloat(p, "lights.outerCosine", 1) - Math.cos(20 * DEG2RAD)) < 1e-6,
 			"a spot light's cone written, its cosines");
+		// Out of range: the outer angle clamped to 89.9, the inner to 0 and to the outer.
+		spot.outerAngle = 120;
+		spot.innerAngle = -10;
+		DrawModel(cube, Vector3Zero(), 1, WHITE);
+		check(Math.abs(drawnFloat(p, "lights.outerCosine", 1) - Math.cos(89.9 * DEG2RAD)) < 1e-6
+			&& drawnFloat(p, "lights.innerCosine", 1) == 1,
+			"an outer angle over 89.9 clamped to 89.9, a negative inner angle to 0");
+		spot.outerAngle = 20;
+		spot.innerAngle = 30;
+		DrawModel(cube, Vector3Zero(), 1, WHITE);
+		check(Math.abs(drawnFloat(p, "lights.innerCosine", 1) - Math.cos(20 * DEG2RAD)) < 1e-6, "an inner angle past the outer clamped to the outer");
 		DrawModel(cube, new Vector3(6, 0, 0), 1, WHITE);
 		check(lit(p).join(",") == "0"
 			&& drawnInt(p, "lights.type", 0) == LIGHT_DIRECTIONAL, "a cube outside the spot's cone: the sun alone");
@@ -160,7 +188,7 @@ class LightingTests {
 		var material = LoadMaterialDefault();
 		material.shader = instanced;
 		var lamp = CreateLight(LIGHT_POINT, new Vector3(10, 0, 0), Vector3Zero(), WHITE, shader);
-		SetLightRange(lamp, 2);
+		lamp.range = 2;
 		var mesh = GenMeshCube(1, 1, 1);
 		DrawMeshInstanced(mesh, material, [MatrixTranslate(-10, 0, 0)], 1);
 		check(lit(instanced.program).join(",") == "0", "one instance far from the lamp: the sun alone");

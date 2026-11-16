@@ -179,8 +179,8 @@ class PbrTests {
 		var at = p.locate("lights[7].intensity");
 		check(at >= 0 && p.written[at][0] == 1, "each of the 8 lights starts at intensity 1");
 		var lamp = CreateLight(LIGHT_POINT, new Vector3(0, 2, 0), new Vector3(0, 0, 0), WHITE, pbr);
-		SetLightRange(lamp, 6);
-		SetLightIntensity(lamp, 9);
+		lamp.range = 6;
+		lamp.intensity = 9;
 		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
 		check(drawnInt(p, "lights.enabled") == 1 && drawnFloat(p, "lights.range") == 6 && drawnFloat(p, "lights.intensity") == 9,
 			"a light's range and intensity written into the draw's lights");

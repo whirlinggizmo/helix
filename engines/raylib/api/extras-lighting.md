@@ -17,13 +17,13 @@ for (m in model.materials)
 m.shader = pbr;
 var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(4, 10, 2), Vector3Zero(), WHITE, pbr);
 var lamp = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, pbr);
-SetLightRange(lamp, 6);
+lamp.range = 6;
 // each frame
 SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
 SHADER_UNIFORM_VEC3);
 ```
 
-**Lights.** rlights' `CreateLight` (`helix.raylib.Rlights`) makes a light of the scene, as many as the program makes. A light shines on every lit draw, whichever shader it was made with: `LoadPbrShader`'s, `LoadLightingShader`'s, and a program's own that includes `<helix/raylib/shaders/lights.glsl>` or `<helix/raylib/shaders/pbr.glsl>`. Its fields (`enabled`, `position`, `target`, `color`) are read at each draw, so a light moves by setting them, with no other call. `UnloadLight` takes it out of the scene.
+**Lights.** rlights' `CreateLight` (`helix.raylib.Rlights`) makes a light of the scene, as many as the program makes. A light shines on every lit draw, whichever shader it was made with: `LoadPbrShader`'s, `LoadLightingShader`'s, and a program's own that includes `<helix/raylib/shaders/lights.glsl>` or `<helix/raylib/shaders/pbr.glsl>`. Its fields (`enabled`, `position`, `target`, `color`, and the extra's `intensity`, `range`, `innerAngle` and `outerAngle`) are read at each draw, so a light moves or changes by setting them, with no other call. A spot light is made with `LIGHT_SPOT` and given a cone by its angles. `UnloadLight` takes it out of the scene.
 
 **Which lights reach a draw.** Each draw is lit by the 8 lights that reach it most, scored against its bounds: a light's brightness (its color times its intensity), times its falloff at the bounds' nearest point (none past its range), times a spot light's cone. A directional light reaches everything. A point or spot light without a range reaches everything too, so a scene of many lamps gives each one a range. `DrawMeshInstanced` scores its lights against the bounds of all its instances.
 
@@ -32,7 +32,8 @@ SHADER_UNIFORM_VEC3);
 **Shadows.**
 
 ```haxe
-SetLightShadows(sun, {mapSize: 2048, distance: 30, cascades: 2});
+sun.shadows.distance = 30;
+sun.shadows.cascadeCount = 2;
 SetLightShadowCasting(sun, true);
 SetLightShadowCasting(lamp, true);
 // each frame, before BeginDrawing or after it and before BeginMode3D
@@ -48,7 +49,7 @@ EndMode3D();
 EndDrawing();
 ```
 
-A light casts shadows once `SetLightShadowCasting` turns them on, 4 lights at most. `SetLightShadows` sets how they are made, and a light not given options has every default. The casting lights share one shadow map, as large as the largest `mapSize` asked for. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through `<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of `lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way from it.
+A light casts shadows once `SetLightShadowCasting` turns them on, 4 lights at most. The light's `shadows` say how they are made, each field read at each shadow pass. The casting lights share one shadow map, as large as the largest `mapSize` asked for. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through `<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of `lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way from it.
 
 A shader compiled by `CompileShaderFile` carries its shadow variant: its own vertex stage, with a fragment stage writing depth alone and cutting at the material's alpha cutoff (the Materials extra). The shadow pass draws through it.
 
@@ -56,20 +57,15 @@ A shader compiled by `CompileShaderFile` carries its shadow variant: its own ver
 static inline var LIGHT_SPOT:Int
 ```
 
-- `LIGHT_SPOT`: A light shining in a cone from its position toward its target, made by `SetLightCone`. Its `type` is this.
+- `LIGHT_SPOT`: A light shining in a cone from its position toward its target, between a light's `innerAngle` and `outerAngle`: a light's `type`, given to `CreateLight` or set.
 
-### lighting: the lit and PBR shaders, a light's intensity, range and cone, and its shadows
+### lighting: the lit and PBR shaders and a light's shadows
 
 ```haxe
 static function LoadLightingShader():Shader
 static function LoadPbrShader():Shader
-static function SetLightIntensity(light:Light, intensity:Float):Void
-static function SetLightRange(light:Light, range:Float):Void
-static function SetLightCone(light:Light, innerAngle:Float, outerAngle:Float):Void
 static function UnloadLight(light:Light):Void
-static function SetLightShadows(light:Light, ?options:ShadowOptions):Void
-static function GetLightShadows(light:Light, ?out:ShadowOptions):ShadowOptions
-static function SetLightShadowCasting(light:Light, casting:Bool):Void
+static function SetLightShadowCasting(light:Light, casting:Bool):Bool
 static function IsLightShadowCasting(light:Light):Bool
 static function BeginShadowMode(camera:Camera3D):Void
 static function EndShadowMode():Void
@@ -107,32 +103,14 @@ static function EndShadowMode():Void
   SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
   SHADER_UNIFORM_VEC3);
   ```
-- `SetLightIntensity`: Sets how bright a light is: its color times the intensity. 1 until set; 0 gives no light, as `enabled` false does.
-  - `light`: The light, from `CreateLight`.
-  - `intensity`: How bright, 0 or more.
-- `SetLightRange`: Sets how far a point or spot light reaches: it dims with distance, fading to nothing at the range, and lights no draw whose bounds lie past it. 0, the default, is no falloff and no limit. A directional light has no range.
-  - `light`: The light, from `CreateLight`.
-  - `range`: How far, in world units, 0 or more.
-- `SetLightCone`: Makes a light a spot light (`LIGHT_SPOT`), shining from its position toward its target in a cone: full inside `innerAngle`, fading to nothing at `outerAngle`, each measured from the cone's middle. A spot light dims with distance as a point light does.
-  - `light`: The light, from `CreateLight`.
-  - `innerAngle`: Where the fade starts, in degrees.
-  - `outerAngle`: Where it ends, in degrees, at least `innerAngle` and under 90.
 - `UnloadLight`: Takes a light out of the scene. It lights nothing after, and its shadows are freed.
   - `light`: The light, from `CreateLight`.
-- `SetLightShadows`: Sets how a light's shadows are made, whether or not it casts them. An option not given takes its default. It doesn't turn the light's shadows on: `SetLightShadowCasting` does.
-  - `light`: The light, from `CreateLight`.
-  - `options`: Optional. How its shadows are made; every default when omitted or null.
-
-  The casting lights share one shadow map, `mapSize` squared texels, as large as the largest any of them asks for. A light's shadows take a layer of it for each cascade of a directional light, six for a point light, and one for a spot light.
-- `GetLightShadows`: Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in. A light never given options has every default.
-  - `light`: The light, from `CreateLight`.
-  - `out`: Optional. The options filled; new ones when omitted.
-  - returns: out or the new options.
-- `SetLightShadowCasting`: Turns a light's shadows on or off. A light casts none until turned on. Its shadows are made as `SetLightShadows` set them, with every default when it wasn't called.
+- `SetLightShadowCasting`: Turns a light's shadows on or off. A light casts none until turned on. The light's `shadows` say how its shadows are made.
   - `light`: The light, from `CreateLight`.
   - `casting`: true to cast shadows, false to cast none.
+  - returns: False when turning the light's shadows on is refused, as 4 other lights cast shadows.
 
-  4 lights cast shadows at most. A fifth stays off, with a warning. Turning a light off frees its place for another and keeps its options. `UnloadLight` turns it off.
+  4 lights cast shadows at most. Turning a fifth on is refused, with a warning, and the fifth stays off. Turning a light off frees its place for another. `UnloadLight` turns it off.
 - `IsLightShadowCasting`: Returns whether a light casts shadows (`SetLightShadowCasting`).
   - `light`: The light, from `CreateLight`.
   - returns: true when it casts shadows.
@@ -143,37 +121,3 @@ static function EndShadowMode():Void
 
   - **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow. - **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage without it casts its whole shape. - **Cost:** every cascade and every face of a point light draws the casters again. A point light's shadows cost about six times a directional light's single map.
 - `EndShadowMode`: Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows.
-
-## ShadowOptions
-
-*class* in [`engines/raylib/src/helix/raylib/extras/ShadowOptions.hx`](../src/helix/raylib/extras/ShadowOptions.hx), `import helix.raylib.extras.ShadowOptions;`
-
-Represents how a light's shadows are made: the shadow map's size and reach, its bias against a surface shadowing itself, and how soft and dark its shadows are. Each field has a default. Biases, the normal offset and softness are in texels of the shadow map the casting lights share, so they hold whatever its size and reach.
-
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?mapSize:Int, ?distance:Float, ?bounds:BoundingBox, ?cascades:Int, ?bias:Float, ?slopeBias:Float, ?normalOffset:Float, ?softness:Float, ?strength:Float}
-```
-
-```haxe
-var mapSize:Null<Int>
-var distance:Null<Float>
-var bounds:Null<BoundingBox>
-var cascades:Null<Int>
-var bias:Null<Float>
-var slopeBias:Null<Float>
-var normalOffset:Null<Float>
-var softness:Null<Float>
-var strength:Null<Float>
-```
-
-- `mapSize`: Gets or sets the map's width and height, in texels: 2048 when not given. A power of two from 256 to 4096; another is rounded down to one. The lights casting shadows share one map, as large as the largest any of them asks for.
-- `distance`: Gets or sets how far from the camera a directional light's shadows reach, in world units: 50 when not given. A point light's reach is its range, or this when it has none. Shorter is sharper.
-- `bounds`: Gets or sets the box a directional light's map covers, in place of what the camera sees out to `distance`: none when not given, so the map follows the camera. A fixed box suits a small scene seen whole.
-- `cascades`: Gets or sets a directional light's number of cascades, 1 to 4: 1 when not given. Each covers a farther part of `distance`, near shadows sharp and far ones still there.
-- `bias`: Gets or sets the constant bias, in texels: 1 when not given. Too little and a lit surface speckles with its own shadow; too much and shadows lift off their casters' feet.
-- `slopeBias`: Gets or sets the bias added where the light grazes the surface, in texels: 4 when not given.
-- `normalOffset`: Gets or sets how far the lookup moves off the surface along its normal, in texels: 1 when not given.
-- `softness`: Gets or sets how soft a shadow's edge is, in texels: 1 when not given. 0 is hard.
-- `strength`: Gets or sets how much of the light a shadow takes away, 0 to 1: 1 when not given.

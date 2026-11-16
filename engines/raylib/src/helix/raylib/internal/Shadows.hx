@@ -8,7 +8,8 @@ import helix.services.shaders.ShaderUniform;
 
 /** Holds the scene's shadows (the Lighting extra's `SetLightShadowCasting`, `BeginShadowMode` and `EndShadowMode`): the lights casting
 	them, 4 at most, in the order turned on, and the shadow map their maps are layers of. The map is as large as the largest `mapSize` a
-	casting light asks for, and each light's maps are whole layers of it.
+	casting light asks for, and each light's maps are whole layers of it. Each pass reads the casting lights' `shadows`, each field held
+	to its range there.
 
 	`BeginShadowMode` fits each casting light's maps (a directional light's cascades to the camera's view out to its distance, snapped to
 	its texels, or one map over its box; a spot light's cone; a point light's six faces), adds a depth-only pass for each, and until
@@ -101,20 +102,23 @@ class Shadows {
 	static final points:Array<Float> = [];
 	static final ends = [0., 0, 0, 0];
 
-	/** Turns a light's shadows on, made as its options say (`Light.shadow`, set before). A fifth light's stay off, with a warning.
+	/** Turns a light's shadows on, made as its options say (`Light.shadows`, read at each pass). A fifth light's stay off, with a
+		warning.
 
-		@param light  The light. */
-	public static function addCaster(light:helix.raylib.Light):Void {
+		@param light  The light.
+		@return  False for a fifth light, whose shadows stay off. */
+	public static function addCaster(light:helix.raylib.Light):Bool {
 		purge();
 		if (!light.shadowCasting) {
 			if (casters.length >= MOST_LIGHTS) {
 				Runtime.log(helix.raylib.Raylib.LOG_WARNING, 'LIGHTING: A light\'s shadows are off: $MOST_LIGHTS lights cast shadows at most');
-				return;
+				return false;
 			}
 			light.shadowCasting = true;
 			casters.push(light);
 		}
 		SceneLights.receiving = receive;
+		return true;
 	}
 
 	// Drops the lights turned off or out of the scene (UnloadLight turns them off).
@@ -159,14 +163,19 @@ class Shadows {
 		castCount = 0;
 		// The map's size, the largest a light casting asks for, which each of its maps fills.
 		var size = 0;
-		for (light in casters)
-			if (light.enabled && light.shadow.mapSize > size)
-				size = light.shadow.mapSize;
+		for (light in casters) {
+			var asked = mapSizeOf(light.shadows);
+			if (light.enabled && asked > size)
+				size = asked;
+		}
 		for (light in casters) {
 			light.shadowIndex = 0;
 			if (!light.enabled)
 				continue;
-			var s = light.shadow, c = castCount;
+			// The light's options, read now and each held to its range.
+			var s = light.shadows, c = castCount;
+			var distance = s.distance > 1e-6 ? s.distance : 1e-6;
+			var softness = clamp(s.softness, 0, 8);
 			var first = mapCount, kind = 0;
 			if (light.type == helix.raylib.Rlights.LIGHT_DIRECTIONAL) {
 				lookAlong(light.target.x - light.position.x, light.target.y - light.position.y, light.target.z - light.position.z);
@@ -174,16 +183,16 @@ class Shadows {
 					kind = 1;
 					fitBox(s.bounds);
 				} else
-					fitCascades(s, c, size);
+					fitCascades(s.cascadeCount < 1 ? 1 : s.cascadeCount > 4 ? 4 : s.cascadeCount, distance, c, size);
 			} else {
-				var reach = light.range > 0 ? light.range : s.distance;
-				var margin = 1 + 2 * (s.softness + 2) / size;
+				var reach = light.range > 0 ? light.range : distance;
+				var margin = 1 + 2 * (softness + 2) / size;
 				var x = light.position.x,
 					y = light.position.y,
 					z = light.position.z;
 				if (light.type == SPOT) {
 					kind = 2;
-					var outer = Math.acos(Math.max(-1, Math.min(1, light.outerCosine)));
+					var outer = Math.acos(SceneLights.coneCosine(light, false));
 					var half = Math.min(Math.atan(Math.tan(outer) * margin), 1.5);
 					var dx = light.target.x - x,
 						dy = light.target.y - y,
@@ -207,11 +216,11 @@ class Shadows {
 				}
 			}
 			var count = mapCount - first;
-			params[c * 4] = first + 32 * count + 256 * kind + 1024 * Math.round(s.softness * 16);
-			params[c * 4 + 1] = s.bias;
-			params[c * 4 + 2] = s.slopeBias;
-			params[c * 4 + 3] = s.normalOffset;
-			strengths[c] = s.strength;
+			params[c * 4] = first + 32 * count + 256 * kind + 1024 * Math.round(softness * 16);
+			params[c * 4 + 1] = clamp(s.bias, 0, 1e30);
+			params[c * 4 + 2] = clamp(s.slopeBias, 0, 1e30);
+			params[c * 4 + 3] = clamp(s.normalOffset, 0, 1e30);
+			strengths[c] = clamp(s.strength, 0, 1);
 			castCount++;
 			light.shadowIndex = castCount;
 		}
@@ -266,6 +275,17 @@ class Shadows {
 
 	static inline final SPOT = 2;
 
+	static inline function clamp(x:Float, low:Float, high:Float):Float
+		return x > low ? (x < high ? x : high) : low;
+
+	// A light's map size: what its options ask for, rounded down to a power of two from 256 to 4096.
+	static function mapSizeOf(s:helix.raylib.extras.ShadowOptions):Int {
+		var size = 256;
+		while (size * 2 <= s.mapSize && size < 4096)
+			size *= 2;
+		return size;
+	}
+
 	// Sets view to look along a direction from the origin.
 	static function lookAlong(dx:Float, dy:Float, dz:Float):Void {
 		var l = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -302,13 +322,12 @@ class Shadows {
 		addMap(view, projection);
 	}
 
-	// A directional light's cascades over the camera's view out to its distance, each a square around its slice's sphere snapped to the
-	// texels of a map of a size, reaching back toward the light; their ends written to the light's splits.
-	static function fitCascades(s:helix.raylib.extras.ShadowOptions, c:Int, size:Int):Void {
-		var count:Int = s.cascades;
+	// A directional light's cascades, a number of them over the camera's view out to a distance, each a square around its slice's sphere
+	// snapped to the texels of a map of a size, reaching back toward the light; their ends written to the light's splits.
+	static function fitCascades(count:Int, distance:Float, c:Int, size:Int):Void {
 		slice();
 		var near = corners[24], far = corners[25];
-		var reach = Math.max(Math.min(s.distance, far), near + 1e-3);
+		var reach = Math.max(Math.min(distance, far), near + 1e-3);
 		var logNear = Math.max(near, .01);
 		for (i in 0...4) {
 			var t = Math.min(i + 1, count) / count;
@@ -350,7 +369,7 @@ class Shadows {
 			var texel = radius * 2 / size;
 			var cx = Math.floor(moved.x / texel) * texel,
 				cy = Math.floor(moved.y / texel) * texel;
-			var back = 2 * Math.max(radius, s.distance);
+			var back = 2 * Math.max(radius, distance);
 			Matrix4.fromOrthographic(cx - radius, cx + radius, cy - radius, cy + radius, -moved.z - radius - back, -moved.z + radius, projection);
 			addMap(view, projection);
 		}

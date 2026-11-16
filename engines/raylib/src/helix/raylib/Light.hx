@@ -40,21 +40,30 @@ class Light {
 	/** Gets or sets the location of `attenuation`, which rlights never finds. */
 	public var attenuationLoc:Int = 0;
 
-	// The Lighting extra's values: how bright (its color times this), how far it reaches (0 for no limit), and a spot light's cone, the
-	// cosines of its inner and outer angles.
-	@:allow(helix.raylib)
-	var intensity = 1.;
-	@:allow(helix.raylib)
-	var range = 0.;
-	@:allow(helix.raylib)
-	var innerCosine = 1.;
-	@:allow(helix.raylib)
-	var outerCosine = 1.;
+	/** Gets or sets how bright the light is (the Lighting extra's): its color times the intensity. Clamped to 0 or more; 1 by
+		default. 0 gives no light, as `enabled` false does. */
+	public var intensity:Float = 1;
 
-	// How its shadows are made (the Lighting extra's SetLightShadows), each option filled, null until set; whether it casts them
-	// (SetLightShadowCasting); and its shadows' index in the frame's shadows plus 1, 0 while it casts none (Shadows).
-	@:allow(helix.raylib)
-	var shadow:Null<helix.raylib.extras.ShadowOptions> = null;
+	/** Gets or sets how far a point or spot light reaches, in world units (the Lighting extra's). The light dims with distance, fading
+		to nothing at the range, and lights no draw whose bounds lie past it. Clamped to 0 or more; 0 by default, for no falloff and no
+		limit. A directional light has no range. */
+	public var range:Float = 0;
+
+	/** Gets or sets a spot light's inner angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone is full
+		inside it and fades toward `outerAngle`. Clamped to 0 to `outerAngle`; 0 by default, the fade starting at the cone's middle. */
+	public var innerAngle:Float = 0;
+
+	/** Gets or sets a spot light's outer angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone fades to
+		nothing there. Clamped to 0 to 89.9; 0 by default, a cone of no width. */
+	public var outerAngle:Float = 0;
+
+	/** Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow
+		pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See
+		`SetLightShadowCasting` for turning the light's shadows on. */
+	public var shadows(get, null):helix.raylib.extras.ShadowOptions;
+
+	// Whether it casts shadows (SetLightShadowCasting), and its shadows' index in the frame's shadows plus 1, 0 while it casts none
+	// (Shadows).
 	@:allow(helix.raylib)
 	var shadowCasting = false;
 	@:allow(helix.raylib)
@@ -62,4 +71,11 @@ class Light {
 
 	/** Creates a light that is off, each of rlights' fields 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light of the scene. */
 	public function new() {}
+
+	// The shadow options, made when first read, so a program that never reads them links none of them.
+	function get_shadows():helix.raylib.extras.ShadowOptions {
+		if (shadows == null)
+			shadows = new helix.raylib.extras.ShadowOptions();
+		return shadows;
+	}
 }

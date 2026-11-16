@@ -7,8 +7,8 @@ import helix.raylib.modules.RCore.*;
 import helix.raylib.internal.Defaults;
 #end
 
-/** Holds helix-raylib's lit and PBR shaders, lit by the scene's lights (rlights' `CreateLight`), the shadow pass, and what the Lighting extra sets on a
-	light. Each is written here, and `helix.raylib.extras.Lighting` forwards to each (`tools/gen_raylib.py`). */
+/** Holds helix-raylib's lit and PBR shaders, lit by the scene's lights (rlights' `CreateLight`), the shadow pass, and turning a light's
+	shadows on and off. Each is written here, and `helix.raylib.extras.Lighting` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RLighting {
@@ -104,101 +104,30 @@ class RLighting {
 		return shader;
 	}
 
-	/** Sets how bright a light is: its color times the intensity. 1 until set; 0 gives no light, as `enabled` false does.
-
-		@param light  The light, from `CreateLight`.
-		@param intensity  How bright, 0 or more. */
-	static function SetLightIntensity(light:Light, intensity:Float):Void {
-		@:privateAccess light.intensity = intensity > 0 ? intensity : 0;
-	}
-
-	/** Sets how far a point or spot light reaches: it dims with distance, fading to nothing at the range, and lights no draw whose
-		bounds lie past it. 0, the default, is no falloff and no limit. A directional light has no range.
-
-		@param light  The light, from `CreateLight`.
-		@param range  How far, in world units, 0 or more. */
-	static function SetLightRange(light:Light, range:Float):Void {
-		@:privateAccess light.range = range > 0 ? range : 0;
-	}
-
-	/** Makes a light a spot light (`LIGHT_SPOT`), shining from its position toward its target in a cone: full inside `innerAngle`,
-		fading to nothing at `outerAngle`, each measured from the cone's middle. A spot light dims with distance as a point light does.
-
-		@param light  The light, from `CreateLight`.
-		@param innerAngle  Where the fade starts, in degrees.
-		@param outerAngle  Where it ends, in degrees, at least `innerAngle` and under 90. */
-	static function SetLightCone(light:Light, innerAngle:Float, outerAngle:Float):Void {
-		var outer = outerAngle < 0 ? 0 : outerAngle > 89.9 ? 89.9 : outerAngle;
-		var inner = innerAngle < 0 ? 0 : innerAngle > outer ? outer : innerAngle;
-		light.type = helix.raylib.extras.Lighting.LIGHT_SPOT;
-		@:privateAccess light.innerCosine = Math.cos(inner * DEG2RAD);
-		@:privateAccess light.outerCosine = Math.cos(outer * DEG2RAD);
-	}
-
 	/** Takes a light out of the scene. It lights nothing after, and its shadows are freed.
 
 		@param light  The light, from `CreateLight`. */
 	static function UnloadLight(light:Light):Void {
 		helix.raylib.internal.SceneLights.remove(light);
 		// Its place among the lights casting shadows is let go of by the next shadow pass (Shadows).
-		@:privateAccess light.shadow = null;
 		@:privateAccess light.shadowCasting = false;
 		@:privateAccess light.shadowIndex = 0;
 	}
 
-	/** Sets how a light's shadows are made, whether or not it casts them. An option not given takes its default. It doesn't turn the
-		light's shadows on: `SetLightShadowCasting` does.
+	/** Turns a light's shadows on or off. A light casts none until turned on. The light's `shadows` say how its shadows are made.
 
-		The casting lights share one shadow map, `mapSize` squared texels, as large as the largest any of them asks for. A light's shadows
-		take a layer of it for each cascade of a directional light, six for a point light, and one for a spot light.
-
-		@param light  The light, from `CreateLight`.
-		@param options  Optional. How its shadows are made; every default when omitted or null. */
-	static function SetLightShadows(light:Light, ?options:helix.raylib.extras.ShadowOptions):Void {
-		@:privateAccess light.shadow = filledShadows(options == null ? {} : options, @:privateAccess light.shadow);
-	}
-
-	/** Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in. A light never given options has
-		every default.
+		4 lights cast shadows at most. Turning a fifth on is refused, with a warning, and the fifth stays off. Turning a light off frees
+		its place for another. `UnloadLight` turns it off.
 
 		@param light  The light, from `CreateLight`.
-		@param out  Optional. The options filled; new ones when omitted.
-		@return  out or the new options. */
-	static function GetLightShadows(light:Light, ?out:helix.raylib.extras.ShadowOptions):helix.raylib.extras.ShadowOptions {
-		if (out == null)
-			out = {};
-		var s = @:privateAccess light.shadow;
-		if (s == null)
-			return filledShadows({}, out);
-		out.mapSize = s.mapSize;
-		out.distance = s.distance;
-		out.bounds = s.bounds == null ? null : s.bounds.copy();
-		out.cascades = s.cascades;
-		out.bias = s.bias;
-		out.slopeBias = s.slopeBias;
-		out.normalOffset = s.normalOffset;
-		out.softness = s.softness;
-		out.strength = s.strength;
-		return out;
-	}
-
-	/** Turns a light's shadows on or off. A light casts none until turned on. Its shadows are made as `SetLightShadows` set them, with
-		every default when it wasn't called.
-
-		4 lights cast shadows at most. A fifth stays off, with a warning. Turning a light off frees its place for another and keeps its
-		options. `UnloadLight` turns it off.
-
-		@param light  The light, from `CreateLight`.
-		@param casting  true to cast shadows, false to cast none. */
-	static function SetLightShadowCasting(light:Light, casting:Bool):Void {
-		if (!casting) {
-			@:privateAccess light.shadowCasting = false;
-			@:privateAccess light.shadowIndex = 0;
-			return;
-		}
-		if (@:privateAccess light.shadow == null)
-			SetLightShadows(light);
-		helix.raylib.internal.Shadows.addCaster(light);
+		@param casting  true to cast shadows, false to cast none.
+		@return  False when turning the light's shadows on is refused, as 4 other lights cast shadows. */
+	static function SetLightShadowCasting(light:Light, casting:Bool):Bool {
+		if (casting)
+			return helix.raylib.internal.Shadows.addCaster(light);
+		@:privateAccess light.shadowCasting = false;
+		@:privateAccess light.shadowIndex = 0;
+		return true;
 	}
 
 	/** Returns whether a light casts shadows (`SetLightShadowCasting`).
@@ -232,25 +161,6 @@ class RLighting {
 	/** Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows. */
 	static function EndShadowMode():Void {
 		helix.raylib.internal.Shadows.end();
-	}
-
-	// Shadow options with each default filled and each value kept in its range, into the light's own when it has them.
-	static function filledShadows(o:helix.raylib.extras.ShadowOptions, into:Null<helix.raylib.extras.ShadowOptions>):helix.raylib.extras.ShadowOptions {
-		var f:helix.raylib.extras.ShadowOptions = into == null ? {} : into;
-		var asked = o.mapSize == null ? 2048 : o.mapSize, size = 256;
-		while (size * 2 <= asked && size < 4096)
-			size *= 2;
-		f.mapSize = size;
-		f.distance = o.distance == null ? 50 : Math.max(1e-6, o.distance);
-		f.bounds = o.bounds == null ? null : o.bounds.copy();
-		var cascades = o.cascades == null ? 1 : o.cascades;
-		f.cascades = cascades < 1 ? 1 : cascades > 4 ? 4 : cascades;
-		f.bias = o.bias == null ? 1 : Math.max(0, o.bias);
-		f.slopeBias = o.slopeBias == null ? 4 : Math.max(0, o.slopeBias);
-		f.normalOffset = o.normalOffset == null ? 1 : Math.max(0, o.normalOffset);
-		f.softness = o.softness == null ? 1 : Math.max(0, Math.min(8, o.softness));
-		f.strength = o.strength == null ? 1 : Math.max(0, Math.min(1, o.strength));
-		return f;
 	}
 
 	// Starts each of a lit shader's lights at intensity 1, as lights.glsl's lights are until set: its MAX_LIGHTS, 8.
