@@ -32,32 +32,30 @@ any other, then load it with `LoadCompiledShader("shaders/flash.shader")` in pla
 
 ## Runs
 
-| run | cost | time | turns | lines | page runs | `...Async` calls | output | cache read |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| base.001 | $2.14 | 23.9 min | 78 | 1,576 | 31 | 7 | 75k | 7.1M |
-| base.002 | $2.23 | 27.2 min | 80 | 1,822 | 32 | 17 | 79k | 7.5M |
-| base.003 | $2.20 | 25.8 min | 69 | 1,766 | 33 | 18 | 84k | 6.4M |
-| ensure.001 | $1.82 | 16.5 min | 54 | 1,471 | 17 | 2 | 67k | 5.6M |
-| ensure.002 | $2.39 | 29.4 min | 82 | 1,599 | 34 | 2 | 82k | 8.2M |
-| ensure.003 | $1.82 | 23.5 min | 51 | 1,679 | 15 | 4 | 71k | 5.1M |
-| ensure.004 | $1.66 | 20.3 min | 47 | 1,547 | 18 | 3 | 66k | 4.0M |
-| ensure.005 | $2.19 | 20.8 min | 66 | 1,684 | 23 | 3 | 80k | 6.8M |
-| ensure.006 | $2.42 | 21.1 min | 76 | 1,647 | 35 | 2 | 89k | 7.5M |
-| base.004 | $2.13 | 25.5 min | 53 | 1,861 | 15 | 16 | 78k | 6.6M |
-| base.005 | $1.88 | 20.8 min | 51 | 1,742 | 16 | 16 | 70k | 5.4M |
-| base.006 | $1.56 | 17.8 min | about 42 | 1,573 | 12 | 11 | 62k | 3.7M |
-| ensure.007 | $1.69 | 16.4 min | 51 | 1,501 | 15 | 0 | 65k | 4.2M |
-| ensure.008 | $2.09 | 26.0 min | 67 | 1,739 | 23 | 0 | 77k | 6.3M |
-| ensure.009 | $1.91 | 19.6 min | 53 | 1,562 | 16 | 0 | 74k | 5.1M |
+| run | cost | time | turns | lines | page runs | `...Async` calls | input | cache write | cache read | output |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| base.001 | $2.14 | 23.9 min | 78 | 1,576 | 31 | 7 | 120 | 167k | 7.1M | 76k |
+| base.002 | $2.23 | 27.2 min | 80 | 1,822 | 32 | 17 | 122 | 172k | 7.5M | 80k |
+| base.003 | $2.20 | 25.8 min | 69 | 1,766 | 33 | 18 | 102 | 178k | 6.4M | 85k |
+| ensure.001 | $1.82 | 16.5 min | 54 | 1,471 | 17 | 2 | 100 | 147k | 5.6M | 68k |
+| ensure.002 | $2.39 | 29.4 min | 82 | 1,599 | 34 | 2 | 124 | 184k | 8.2M | 83k |
+| ensure.003 | $1.82 | 23.5 min | 51 | 1,679 | 15 | 4 | 90 | 150k | 5.1M | 71k |
+| ensure.004 | $1.66 | 20.3 min | 47 | 1,547 | 18 | 3 | 74 | 148k | 4.0M | 67k |
+| ensure.005 | $2.19 | 20.8 min | 66 | 1,684 | 23 | 3 | 104 | 176k | 6.8M | 81k |
+| ensure.006 | $2.42 | 21.1 min | 76 | 1,647 | 35 | 2 | 108 | 197k | 7.5M | 89k |
+| base.004 | $2.13 | 25.5 min | 53 | 1,861 | 15 | 16 | 98 | 173k | 6.6M | 78k |
+| base.005 | $1.88 | 20.8 min | 51 | 1,742 | 16 | 16 | 90 | 159k | 5.4M | 71k |
+| base.006 | $1.56 | 17.8 min | about 42 | 1,573 | 12 | 11 | 72 | 141k | 3.7M | 63k |
+| ensure.007 | $1.69 | 16.4 min | 51 | 1,501 | 15 | 0 | 76 | 152k | 4.2M | 66k |
+| ensure.008 | $2.09 | 26.0 min | 67 | 1,739 | 23 | 0 | 98 | 171k | 6.3M | 78k |
+| ensure.009 | $1.91 | 19.6 min | 53 | 1,562 | 16 | 0 | 88 | 164k | 5.1M | 74k |
 
-Lines are the program's Haxe. Page runs are its `node run.cjs` commands. Output and cache read are tokens. base.006's
-`result.json` holds only a turn after its end, when a background run it had already read finished. Its turns are its 41 tool uses and
-one, and its time is its `run.log`'s.
+Lines are the program's Haxe. Page runs are its `node run.cjs` commands. Input (uncached), cache write, cache read and output are
+tokens, from `result.json`. base.006's `result.json` holds only a turn after its end, when a background run it had already read
+finished. Its turns are its 41 tool uses and one, and its time is its `run.log`'s.
 
 | | cost | time | turns |
 |---|---:|---:|---:|
-| main, rounds 1 and 3 (six runs) | $2.02 | 23.5 min | 62 |
-| ensure, rounds 1 to 3 (nine runs) | $2.00 | 21.5 min | 61 |
 | main, round 1 | $2.19 | 25.6 min | 76 |
 | ensure, round 1 | $2.01 | 23.1 min | 62 |
 | ensure, round 2 | $2.09 | 20.7 min | 63 |
@@ -66,13 +64,19 @@ one, and its time is its `run.log`'s.
 
 ## What it found
 
-**The two cost the same to build with.** Over all the runs, main's mean is $2.02 and ensure's $2.00. Runs of one group differ by up
-to $0.76 (ensure.004 and ensure.006, the same brief and commit), so three runs a round tell no two groups apart.
+**Round 1 is the one round comparing the two as a program meets them.** main's three entrants wrote raylib's loads, met their
+refusals at their first compile (tool step 11 to 14) and changed every load to its `...Async` call behind a loading screen (7 to 18
+calls a program). ensure's ensured every file with one `EnsureAssetsAsync` and loaded them with raylib's own calls in its callback.
+None met "not ensured" in a run: each read of it was the Assets extra's page. ensure's cost $2.01 against main's $2.19, in 62 turns
+against 76, but its runs spread from $1.82 to $2.39 against main's $2.14 to $2.23, so three runs a side show a lean, not a result.
 
-**Each learned its loads once, early.** main's entrants wrote raylib's loads, read the refusals at their first compile and changed
-every load to its `...Async` call behind a loading screen (7 to 18 calls a program). ensure's entrants ensured every file with one
-`EnsureAssetsAsync` and loaded them with raylib's own calls in its callback. None met "not ensured" in a run: each read of it was
-the Assets extra's page.
+**In round 3 both briefs said how to load.** main's Shaders line names `LoadCompiledShaderAsync("shaders/flash.shader", loaded)`, and
+its three entrants wrote every load as an `...Async` call from the start and met no load refusal. ensure's wrote raylib's loads after
+one `EnsureAssetsAsync`. The two cost the same, $1.86 and $1.89, so once a program knows how its loads go, an `...Async` call and an
+ensured synchronous load cost alike. main's fall from round 1 (76 turns to 49, failed builds from 4 to 6 a run to 0 to 2, page runs
+from 31 to 33 to 12 to 16, the rounds not overlapping) goes with the load refusals it no longer met and the shader refusal. What
+round 1 cost main is learning at its first compile that its loads differ from raylib's. ensure's fall over the rounds (62 turns to
+57) is within its runs' spread.
 
 **A font ensured must be whole at once** (round 1). An ensured font was given empty and filled a frame or two later. ensure.001's
 `SetTextureFilter` on the font it had just loaded threw in the page, and ensure.003 saw the empty font and turned to
@@ -86,9 +90,7 @@ programs beside ensure.003's font. base.002 and ensure.006 also met `CompileShad
 
 **With the line, none wrote `LoadShader`.** All six of round 3 wrote their shaders as files and their `CompileShaderFile` lines
 first, with no shader error in a build. main's loaded them with `LoadCompiledShaderAsync`. ensure's ensured the `.shader` files with
-the rest and loaded them with `LoadCompiledShader`, and their programs have no `...Async` call. Round 3 cost less than round 1 in
-both groups, in fewer turns and page runs. The line took away one refusal and the edit after it, which doesn't account for that, and
-the trial doesn't show what does.
+the rest and loaded them with `LoadCompiledShader`, and their programs have no `...Async` call.
 
 **What both met, in every round.** Fourteen of the fifteen wrote a skinning vertex shader of their own for the hit flash, as the lit
 shaders' vertex stage isn't a program's to use. Seven first used `VirtualButtonOptions` without its import. Seven compared an
