@@ -54,6 +54,8 @@ static function ClearEmitter2D(emitter:Emitter2D):Void
 - `LoadEmitter3D`: Returns a 3D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the most alive takes the oldest one's place.
   - `maxParticles`: The most alive at once, 1 or more.
   - returns: The emitter, the program's until `UnloadEmitter3D`.
+
+  A `maxParticles` over 524288 is held to 524288.
 - `UnloadEmitter3D`: Frees a 3D emitter and its particles.
   - `emitter`: The emitter.
 - `UpdateEmitter3D`: Advances a 3D emitter by the frame's time. The particles its rate owes are born along the way from where it was to its `position`, so a fast emitter leaves an even trail. Call it once a frame, before `DrawEmitter3D`. An emitter not updated holds still.

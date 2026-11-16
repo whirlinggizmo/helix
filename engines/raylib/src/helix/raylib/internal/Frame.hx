@@ -723,7 +723,8 @@ class Frame {
 
 	/** Adds a draw of instances of one quad through a program of its own (the Particles extra's 3D emitters), after the batch, which is
 		flushed first: the quad's two triangles, its corners 0, 1, 2 then 0, 2, 3, numbered 0 to 3 in its first buffer, drawn once an
-		instance with the current matrices and state.
+		instance with the current matrices and state. Through `eyes` while they're on, as a mesh is: once an eye in stereo, and nothing
+		in a shadow pass, as the quads cast no shadow.
 
 		@param p  The program.
 		@param layout  Its buffers' layouts, the corner numbers' first: one float each, not instanced.
@@ -768,8 +769,15 @@ class Frame {
 		var bound = ints();
 		for (t in textures)
 			bound.push(t);
-		addMesh(pipeline, buffers, spriteIndices, 6, Triangles, bound, p, model, diffuse, instanceCount);
+		if (eyes != null)
+			quadsEyes(pipeline, buffers, bound, p, model, diffuse, instanceCount);
+		else
+			addMesh(pipeline, buffers, spriteIndices, 6, Triangles, bound, p, model, diffuse, instanceCount);
 	}
+
+	// A draw of quads once for each eye, as a mesh's (meshEyes); none in a shadow pass, as the quads cast no shadow.
+	function quadsEyes(pipeline:Int, buffers:Array<Int>, bound:Array<Int>, p:Program, model:Matrix4, diffuse:Array<Float>, instanceCount:Int):Void
+		eyes(() -> if (pass.target > -2) addMesh(pipeline, buffers, spriteIndices, 6, Triangles, bound, p, model, diffuse, instanceCount), true);
 
 	// The frame's own GPU things: the white texture and the constants' record (an identity matrix for the attributes no buffer feeds).
 	function makeOwn():Void {

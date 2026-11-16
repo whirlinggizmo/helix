@@ -18,6 +18,8 @@ class RParticles {
 	/** Returns a 3D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the
 		most alive takes the oldest one's place.
 
+		A `maxParticles` over 524288 is held to 524288.
+
 		@param maxParticles  The most alive at once, 1 or more.
 		@return  The emitter, the program's until `UnloadEmitter3D`. */
 	static function LoadEmitter3D(maxParticles:Int):Emitter3D {

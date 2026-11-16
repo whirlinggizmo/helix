@@ -1,5 +1,5 @@
 {
- "commit": "a0a6571 2026-11-16",
+ "commit": "8b55487 2026-11-16",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -1123,9 +1123,9 @@
    },
    "11-everything": {
     "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader",
-    "raw": 2018544,
-    "gzip": 355232,
-    "brotli": 271466,
+    "raw": 2018934,
+    "gzip": 355293,
+    "brotli": 271416,
     "packages": {
      "formats": 132130,
      "raylib/RTextures": 116394,
@@ -1139,7 +1139,7 @@
      "platform/graphics": 51614,
      "haxe metadata": 48991,
      "math": 47754,
-     "raylib/Frame": 46738,
+     "raylib/Frame": 47128,
      "raylib/RMath": 45393,
      "raylib/EmitterDraws": 39152,
      "raylib/Shadows": 36613,

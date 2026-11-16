@@ -30,6 +30,28 @@ class ParticlesTests {
 		checks++;
 	}
 
+	// The hashes of the seeded runs, the same on every target.
+	static inline final SEEDED_3D = 1009943929;
+	static inline final SEEDED_2D = -1744048027;
+
+	// A hash of numbers' bits, by shifts and exclusive ors alone, which every target computes alike.
+	static function hashOf(rows:Array<Array<Float>>, h:Int):Int {
+		for (row in rows)
+			for (x in row) {
+				var b = haxe.io.FPHelper.doubleToI64(x);
+				h = scramble(h ^ b.low);
+				h = scramble(h ^ b.high);
+			}
+		return h;
+	}
+
+	static inline function scramble(h:Int):Int {
+		h ^= h << 13;
+		h ^= h >>> 17;
+		h ^= h << 5;
+		return h;
+	}
+
 	static inline function bits(c:Color):Int
 		return cast c;
 
@@ -299,6 +321,86 @@ class ParticlesTests {
 		EmitParticles2D(tinted, 60);
 		check([for (p in alive(tinted)) if ((Std.int(p[Emitters.SLOT]) & 255) >= 8) p].length == 0, "8 palette colors at most");
 
+		// The same seed gives the same particles on every target: hashes of a seeded run's births and particles, written here, the same on
+		// Node and in hxcpp. The fields reach every random number and every transcendental of the simulation.
+		var seeded3 = LoadEmitter3D(256);
+		seeded3.seed = 1234;
+		seeded3.spawnShape = Sphere;
+		seeded3.spawnRadius = 1.5;
+		seeded3.spread = 60;
+		seeded3.velocity = new Vector3(0.3, 2, -0.4);
+		seeded3.speedVariance = 0.4;
+		seeded3.sizeVariance = 0.3;
+		seeded3.minLife = 0.5;
+		seeded3.maxLife = 2;
+		seeded3.minSpin = -120;
+		seeded3.maxSpin = 200;
+		seeded3.inheritVelocity = 0.5;
+		seeded3.palette = [RED, GREEN, BLUE];
+		seeded3.rate = 37;
+		for (i in 0...30) {
+			seeded3.position.x = i * 0.1;
+			UpdateEmitter3D(seeded3, 1 / 60);
+		}
+		EmitParticles3D(seeded3, 9);
+		var boxed = LoadEmitter3D(64);
+		boxed.seed = 99;
+		boxed.spawnShape = Box;
+		boxed.spawnHalfSize = new Vector3(1, 2, 3);
+		boxed.spread = 180;
+		EmitParticles3D(boxed, 20);
+		var hash3 = hashOf(alive(seeded3), hashOf(alive(boxed), 17));
+		check(hash3 == SEEDED_3D, 'a seeded 3D emitter\'s births: hash $hash3, not $SEEDED_3D');
+		var seeded2 = LoadEmitter2D(256);
+		seeded2.seed = 4321;
+		seeded2.spawnShape = Circle;
+		seeded2.spawnRadius = 20;
+		seeded2.spread = 75;
+		seeded2.speedVariance = 0.5;
+		seeded2.sizeVariance = 0.25;
+		seeded2.drag = 0.7;
+		seeded2.wanderDistance = 6;
+		seeded2.wanderRate = 1.3;
+		seeded2.minSpin = -90;
+		seeded2.maxSpin = 270;
+		seeded2.gravity = new Vector2(10, 120);
+		seeded2.inheritVelocity = 0.3;
+		seeded2.palette = [ORANGE, SKYBLUE];
+		seeded2.minLife = 0.4;
+		seeded2.maxLife = 1.5;
+		seeded2.startSize = 4;
+		seeded2.endSize = 12;
+		seeded2.sizeKeys = [{at: 0.3, size: 9}];
+		seeded2.colorKeys = [{at: 0.6, color: new Color(30, 200, 90, 180)}];
+		seeded2.rate = 53;
+		for (i in 0...40) {
+			seeded2.position.y = 100 + i * 2;
+			UpdateEmitter2D(seeded2, 1 / 60);
+		}
+		EmitParticles2D(seeded2, 7);
+		var rectangle = LoadEmitter2D(64);
+		rectangle.seed = 5;
+		rectangle.spawnShape = EmitterShape2D.Rectangle;
+		rectangle.spawnHalfSize = new Vector2(30, 10);
+		EmitParticles2D(rectangle, 20);
+		// Each particle's simulation, then where it's drawn, how big and its color: its wander, size and color curves at its age.
+		Emitters.readCurves(seeded2);
+		var drawn2:Array<Array<Float>> = [];
+		for (p in alive(seeded2)) {
+			var age = seeded2.clock - p[Emitters.BORN],
+				t = age / p[Emitters.LIFE];
+			var turn = 6.283185307179586 * seeded2.wanderRate * age;
+			drawn2.push(p.concat([
+				p[Emitters.X] + seeded2.wanderDistance * Emitters.wander(p[Emitters.RANDOM], 0, turn),
+				p[Emitters.Y] + seeded2.wanderDistance * Emitters.wander(p[Emitters.RANDOM], 1, turn),
+				Emitters.sizeAt(t) * p[Emitters.SCALE],
+				Emitters.colorAt(t),
+				p[Emitters.SPIN] * age
+			]));
+		}
+		var hash2 = hashOf(drawn2, hashOf(alive(rectangle), 17));
+		check(hash2 == SEEDED_2D, 'a seeded 2D emitter\'s particles: hash $hash2, not $SEEDED_2D');
+
 		// A 2D emitter's draws: the quads of its particles in the batch, in a run with a DrawTexture of its texture.
 		next();
 		var image = GenImageColor(64, 16, WHITE);
@@ -445,6 +547,18 @@ class ParticlesTests {
 		DrawEmitter3D(cloud);
 		check(lightOn() == 1, "a light made lights it");
 		cloud.lit = false;
+		next();
+		// In stereo, as DrawCube: once an eye; once with stereo off.
+		helix.raylib.Rlgl.rlSetFramebufferWidth(64);
+		helix.raylib.Rlgl.rlSetFramebufferHeight(64);
+		helix.raylib.Rlgl.rlEnableStereoRender();
+		var before = frame.pass.draws.length;
+		DrawEmitter3D(cloud);
+		check(frame.pass.draws.length == before + 2, 'once an eye in stereo: ${frame.pass.draws.length - before}');
+		helix.raylib.Rlgl.rlDisableStereoRender();
+		before = frame.pass.draws.length;
+		DrawEmitter3D(cloud);
+		check(frame.pass.draws.length == before + 1, "once with stereo off");
 		next();
 		// An unload frees the records and numbers once the frame is drawn.
 		var textures = Lambda.count(graphics.dataTextures),
