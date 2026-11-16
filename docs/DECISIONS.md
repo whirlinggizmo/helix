@@ -986,7 +986,7 @@ Why things are the way they are, numbered, in order.
     copy of every frame, or a page's `preserveDrawingBuffer`. Drawing the last frame again when asked was rejected too, as the frame
     keeps no draws once shown.
 
-74. **The screen reads wait, as the file calls do, and read the frame as drawn so far.** It revises 72's and 73's "stay refused".
+75. **The screen reads wait, as the file calls do, and read the frame as drawn so far.** It revises 72's and 73's "stay refused".
     `LoadImageFromTexture` and `LoadImageFromScreen` are waiting calls (72): in a page an `await` the program doesn't write, natively
     a call that blocks, each returning raylib's `Image`. `LoadImageFromTexture` draws the frame's render texture passes and texture
     updates recorded up to the call, then reads the texture back. `LoadImageFromScreen` draws the frame up to the call, its screen pass
@@ -1002,7 +1002,9 @@ Why things are the way they are, numbered, in order.
 
     Checked: the render parity suite reads a texture drawn and updated in the frame, and the screen part way through its saved frame, a
     part of it drawn on top. GL's frame matches raylib's in every pixel, and SDL_GPU's copy matches the cells it was cut from. A frame
-    with a read costs one more draw and a target of the framebuffer's size, kept from the first read on.
+    with a read costs one more draw and a target of the framebuffer's size, kept from the first read on. A program calling neither read
+    builds to the same JavaScript as before (the size ladder's rungs 1 to 7, byte for byte): what the reads do is in
+    `helix.raylib.internal.Frame.FrameReads`, which only they reach, hooked into the frame's drawing at the first read.
 
     Rejected: drawing the screen's pass on the screen part way and beginning it again, as `beginFrame` clears the framebuffer and its
     depth, and in a page the canvas would show the frame half drawn while the read waits. A platform call resuming the screen's pass,

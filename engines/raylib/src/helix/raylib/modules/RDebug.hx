@@ -59,14 +59,6 @@ class RDebug {
 
 	static var changes = 0;
 
-	// The draws, triangles and state changes of the frame's passes drawn part way through it (`Frame.submit`), added to the frame's as
-	// its drawing starts.
-	static var partDraws = 0;
-
-	static var partTriangles = 0;
-
-	static var partChanges = 0;
-
 	// The frame whose drawing records each frame's time, once a program draws or reads the stats (a frame made again is hooked again).
 	static var hooked:Null<Frame> = null;
 
@@ -390,9 +382,8 @@ class RDebug {
 			return;
 		hooked = frame;
 		last = -1;
-		frame.submitting.push(() -> tally(frame, true));
 		frame.drawing.push(() -> {
-			tally(frame, false);
+			tally(frame);
 			var now = Runtime.system.getTime();
 			if (last >= 0)
 				record(now - last);
@@ -406,12 +397,11 @@ class RDebug {
 	// change from the draw before it when its pipeline or any texture differs.
 
 	@:access(helix.raylib.internal.Frame)
-	static function tally(frame:Frame, part:Bool):Void {
+	static function tally(frame:Frame):Void {
 		var drawn = 0, tris = 0, switched = 0, pipeline = -1;
 		var before:Null<Array<Int>> = null;
 		for (p in frame.passes) {
-			// Part way through a frame, the screen's pass is drawn only once the screen is read.
-			if (p.target == -1 || part && p.target == 0 && !frame.holding)
+			if (p.target == -1)
 				continue;
 			for (d in p.draws) {
 				if (d.count == 0)
@@ -433,16 +423,9 @@ class RDebug {
 				before = d.textures;
 			}
 		}
-		if (part) {
-			partDraws += drawn;
-			partTriangles += tris;
-			partChanges += switched;
-			return;
-		}
-		draws = drawn + partDraws;
-		triangles = tris + partTriangles;
-		changes = switched + partChanges;
-		partDraws = partTriangles = partChanges = 0;
+		draws = drawn;
+		triangles = tris;
+		changes = switched;
 	}
 
 	// Adds a frame's time to the ring over the oldest, and what `keeping` keeps of it.

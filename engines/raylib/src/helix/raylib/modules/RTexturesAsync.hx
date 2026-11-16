@@ -372,7 +372,7 @@ class RTexturesAsync {
 			during = false;
 		}
 		if (now) {
-			Runtime.frame.submit(Runtime.window.framebufferWidth, Runtime.window.framebufferHeight);
+			helix.raylib.internal.Frame.FrameReads.submit(Runtime.frame, Runtime.window.framebufferWidth, Runtime.window.framebufferHeight);
 			read();
 		} else if (Runtime.frame.isUpdating(gpu))
 			Runtime.frame.afterDraw(read);
@@ -399,16 +399,17 @@ class RTexturesAsync {
 				error -> refuse("LoadImageFromScreenAsync", error, failed));
 	}
 
-	// Reads the screen for LoadImageFromScreen: the frame as drawn so far (Frame.readScreen), answered at a later poll.
+	// Reads the screen for LoadImageFromScreen: the frame as drawn so far (FrameReads.readScreen), answered at a later poll.
 	static function readScreen(name:String, loaded:Image->Void, failed:String->Void):Void {
 		if (Runtime.frame == null) {
 			Runtime.later(() -> refuse(name, "InitWindow first", failed));
 			return;
 		}
-		Runtime.frame.readScreen(Runtime.window.framebufferWidth, Runtime.window.framebufferHeight, (pixels, width, height) -> {
-			var image = opaque(pixels, width, height);
-			Runtime.later(() -> loaded(image));
-		}, error -> Runtime.later(() -> refuse(name, error, failed)));
+		helix.raylib.internal.Frame.FrameReads.readScreen(Runtime.frame, Runtime.window.framebufferWidth, Runtime.window.framebufferHeight,
+			(pixels, width, height) -> {
+				var image = opaque(pixels, width, height);
+				Runtime.later(() -> loaded(image));
+			}, error -> Runtime.later(() -> refuse(name, error, failed)));
 	}
 
 	// The screen's pixels as an RGBA image, its alpha opaque, as raylib reads the screen.

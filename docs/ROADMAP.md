@@ -34,9 +34,9 @@ speed where docs/benchmarks.md records them.
   beside its helix-legacy build. Whether Gyre keeps helix-legacy's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
   transitions, the autopilot) into a three.js-style engine on the same scene is the jam's question (DECISIONS 40). Whatever of the
   scene proves engine-neutral moves down into a library of its own once a second engine wants it, as `Images` did.
-- **helix-raylib (DECISIONS 16, 19, 20, 21, 38, 72, 74):** raylib's API over the services, merged to `main`. Every raylib 5.5 function
+- **helix-raylib (DECISIONS 16, 19, 20, 21, 38, 72, 75):** raylib's API over the services, merged to `main`. Every raylib 5.5 function
   is in. A page waits where the program calls `EndDrawing`, `WaitTime`, the file calls, the clipboard's and the screen reads, as a
-  native build does (DECISIONS 72, 74). raylib's loads are synchronous: natively they read the file during the call, and in a page they read a file the
+  native build does (DECISIONS 72, 75). raylib's loads are synchronous: natively they read the file during the call, and in a page they read a file the
   Assets extra ensured first (`EnsureAssetsAsync`), any other failing as a missing file does. Shaders are compiled as the program
   builds (`CompileShaderFile`) and loaded with `LoadCompiledShader`. What refuses to compile does so on purpose, naming itself: the
   loads from memory, `LoadShader` from GLSL, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's
