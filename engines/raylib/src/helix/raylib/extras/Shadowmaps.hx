@@ -56,7 +56,8 @@ class Shadowmaps {
 	public static inline function LoadShadowmapRenderTexture(width:Int, height:Int):RenderTexture2D
 		return RShadowmaps.LoadShadowmapRenderTexture(width, height);
 
-	/** Frees a render texture `LoadShadowmapRenderTexture` made, raylib's shadowmap example's `UnloadShadowmapRenderTexture`.
+	/** Frees a render texture `LoadShadowmapRenderTexture` made, raylib's shadowmap example's `UnloadShadowmapRenderTexture`, its depth
+		with it, as `UnloadRenderTexture` does.
 
 		@param target  The render texture. */
 	public static inline function UnloadShadowmapRenderTexture(target:RenderTexture2D):Void

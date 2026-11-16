@@ -3939,7 +3939,7 @@ class Raylib {
 	public static inline function IsRenderTextureValid(target:RenderTexture2D):Bool
 		return RTextures.IsRenderTextureValid(target);
 
-	/** Frees a render texture.
+	/** Frees a render texture, a shadowmap one's depth with it (`LoadShadowmapRenderTexture`, `helix.raylib.extras.Shadowmaps`).
 
 		@param target  The render texture. */
 	public static inline function UnloadRenderTexture(target:RenderTexture2D):Void

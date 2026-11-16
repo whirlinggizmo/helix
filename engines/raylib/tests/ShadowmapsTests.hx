@@ -1,5 +1,8 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.Raymath.*;
+import helix.raylib.Rlights.*;
+import helix.raylib.extras.Lighting.*;
 import helix.raylib.extras.Shadowmaps.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
@@ -8,7 +11,8 @@ import helix.services.time.Time;
 
 /** Checks `extras.Shadowmaps`: `LoadShadowmapRenderTexture` makes a render target whose depth is a texture, its `depth` that texture and
 	its `texture` empty; a shader given the depth by `SetShaderValueTexture` binds it in the screen's draws and the white texture in the
-	draws into the render texture itself; `UnloadShadowmapRenderTexture` frees the target and its depth once. Run by helix.py test on the
+	draws into the render texture itself, a light casting the Lighting extra's shadows or not; `UnloadShadowmapRenderTexture` and
+	`UnloadRenderTexture` free the target and its depth once, either called again doing nothing. Run by helix.py test on the
 	interpreter and Node. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
@@ -72,6 +76,58 @@ class ShadowmapsTests {
 		check(Textures.handle(depthId) == 0, "its depth's id is gone");
 		UnloadShadowmapRenderTexture(shadowMap);
 		check(graphics.doubles == 0, 'nothing freed twice, ${graphics.doubles} were');
+
+		// With the Lighting extra's shadows too, a lit shader loaded and a light casting after the shadowmap: a draw into a shadowmap
+		// with its own depth bound still binds the white texture there, and the screen's the depth.
+		var second = LoadShadowmapRenderTexture(32, 32);
+		var secondDepth = graphics.targetDepths.get(second.id);
+		var lit = LoadLightingShader();
+		var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(-4, 8, 0), Vector3Zero(), WHITE, lit);
+		EnableLightShadows(sun);
+		check(IsLightCastingShadows(sun), "the light casts");
+		var floor = LoadModelFromMesh(GenMeshCube(4, 0.1, 4));
+		floor.materials[0].shader = lit;
+		BeginShadowMode(camera);
+		DrawModel(floor, new Vector3(0, 0, 0), 1, WHITE);
+		EndShadowMode();
+		SetShaderValueTexture(shader, GetShaderLocation(shader, "emissiveMap"), second.depth);
+		graphics.drawnTextures.resize(0);
+		BeginTextureMode(second);
+		ClearBackground(WHITE);
+		BeginMode3D(camera);
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		EndMode3D();
+		EndTextureMode();
+		BeginMode3D(camera);
+		DrawModel(floor, new Vector3(0, 0, 0), 1, WHITE);
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		EndMode3D();
+		Runtime.frame.draw(64, 64, true);
+		var own = [for (t in graphics.drawnTextures) if (t.indexOf(secondDepth) >= 0) t];
+		check(own.length == 1, 'with a light casting, the depth bound by the screen\'s cube alone, not ${own.length} draws');
+		check(graphics.drawnTextures.length >= 3, 'the shadow, the shadowmap\'s and the screen\'s draws made, ${graphics.drawnTextures.length}');
+
+		// UnloadRenderTexture frees a shadowmap render texture, its depth with it, once; either call again does nothing.
+		var target2 = second.id, depthId2 = second.depth.id;
+		UnloadRenderTexture(second);
+		check(!graphics.textures.exists(target2), "UnloadRenderTexture frees the shadowmap's render target");
+		check(second.id == 0 && second.depth.id == 0 && Textures.handle(depthId2) == 0, "UnloadRenderTexture: its ids are 0, its depth's gone");
+		UnloadRenderTexture(second);
+		UnloadShadowmapRenderTexture(second);
+		var third = LoadShadowmapRenderTexture(16, 16), target3 = third.id;
+		UnloadShadowmapRenderTexture(third);
+		UnloadRenderTexture(third);
+		UnloadShadowmapRenderTexture(third);
+		check(!graphics.textures.exists(target3), "the third shadowmap freed");
+		// A plain render texture still frees as it did, the shadowmap's unload in place.
+		var plain = LoadRenderTexture(8, 8), plainTarget = plain.id;
+		UnloadRenderTexture(plain);
+		check(!graphics.textures.exists(plainTarget), "a plain render texture freed");
+		UnloadRenderTexture(plain);
+		check(graphics.doubles == 0, 'unloads by either call, twice: nothing freed twice, ${graphics.doubles} were');
+		UnloadModel(floor);
+		UnloadLight(sun);
+		UnloadShader(lit);
 		UnloadModel(cube);
 		UnloadShader(shader);
 

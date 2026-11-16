@@ -152,7 +152,7 @@ before, so a rung's increment is what the feature costs. Every rung is a release
 JavaScript unminified, as Haxe alone writes it; sizes in KB.
 
 <!-- gen_sizes -->
-Measured from 8054b11 2026-11-16 with Haxe 4.3.7.
+Measured from 3f860e4 2026-11-16 with Haxe 4.3.7.
 
 ### helix-platform
 
@@ -310,16 +310,16 @@ Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each
 | 6-model | a glTF model loaded with LoadModelAsync and drawn beside the cube | 403.0 | 85.6 (69.4) | +17.5 |
 | 7-skinned | the model's animations loaded with LoadModelAnimationsAsync and one played | 447.6 | 93.8 (75.8) | +8.2 |
 | 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight | 468.2 | 97.7 (78.8) | +3.9 |
-| 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 493.1 | 102.8 (83.0) | +5.1 |
-| 10-game | a game: what a real game uses, its file formats one of each | 687.8 | 139.4 (112.3) | +36.6 |
-| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1910.2 | 336.2 (258.4) | +196.8 |
+| 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 493.2 | 102.8 (83.0) | +5.1 |
+| 10-game | a game: what a real game uses, its file formats one of each | 688.0 | 139.4 (112.2) | +36.6 |
+| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1910.4 | 336.2 (258.4) | +196.8 |
 
 Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
 
 | package | 1-window | 2-shapes | 3-text | 4-texture | 5-cube | 6-model | 7-skinned | 8-lit | 9-audio | 10-game | 11-everything |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | formats | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 25.8 | 25.8 | 25.8 | 25.8 | 43.7 | 129.0 |
-| raylib/RTextures | 0.0 | 0.0 | 6.2 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 12.4 | 113.7 |
+| raylib/RTextures | 0.0 | 0.0 | 6.2 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 12.5 | 113.8 |
 | program | 0.6 | 1.0 | 1.1 | 1.4 | 1.8 | 2.1 | 2.5 | 2.9 | 3.2 | 8.2 | 102.3 |
 | raylib/RGuiControls | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 86.7 |
 | raylib/RCore | 1.9 | 1.9 | 1.9 | 2.9 | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 | 17.6 | 83.7 |

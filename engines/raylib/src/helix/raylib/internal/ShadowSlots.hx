@@ -36,7 +36,9 @@ class ShadowSlots {
 			}
 			id = empty;
 		}
-		Program.resolve = Textures.handle;
+		// Set when unset: the Shadowmaps extra's resolver, set first, finds the textures as Textures.handle does.
+		if (Program.resolve == null)
+			Program.resolve = Textures.handle;
 		p.setTexture(slot, id);
 	}
 }

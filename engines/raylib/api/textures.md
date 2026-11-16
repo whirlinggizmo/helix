@@ -241,7 +241,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 - `IsRenderTextureValid`: Returns whether a render texture was made.
   - `target`: The render texture.
   - returns: True when it was.
-- `UnloadRenderTexture`: Frees a render texture.
+- `UnloadRenderTexture`: Frees a render texture, a shadowmap one's depth with it (`LoadShadowmapRenderTexture`, `helix.raylib.extras.Shadowmaps`).
   - `target`: The render texture.
 - `BeginTextureMode`: Draws into a render texture until `EndTextureMode`, over what it holds.
   - `target`: The render texture.

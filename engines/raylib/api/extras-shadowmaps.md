@@ -42,5 +42,5 @@ static function UnloadShadowmapRenderTexture(target:RenderTexture2D):Void
   Bind `depth` to a shader with `SetShaderValueTexture`, which takes the place of the example's `rlEnableTexture` and `rlSetUniform`: it binds `depth` to the sampler the location names, a texture unit of its own, so the example's unit 10 isn't needed. It stays bound to the shader for every draw after, frame after frame, until `SetShaderValueTexture` sets another. A draw into this render texture reads the white texture in place of its `depth` set so, as a pass can't read the depth it draws.
 
   `depth` is read point-sampled whatever `SetTextureFilter` sets, and clamped at its edges until `SetTextureWrap` sets another wrap.
-- `UnloadShadowmapRenderTexture`: Frees a render texture `LoadShadowmapRenderTexture` made, raylib's shadowmap example's `UnloadShadowmapRenderTexture`.
+- `UnloadShadowmapRenderTexture`: Frees a render texture `LoadShadowmapRenderTexture` made, raylib's shadowmap example's `UnloadShadowmapRenderTexture`, its depth with it, as `UnloadRenderTexture` does.
   - `target`: The render texture.

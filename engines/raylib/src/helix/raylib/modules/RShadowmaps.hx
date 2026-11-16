@@ -36,14 +36,14 @@ class RShadowmaps {
 		if (depths == null) {
 			depths = new Map();
 			// A shader's texture is found as SetShaderValueTexture finds it, but for the depth of the render texture drawn into, which
-			// is none, read as the white texture: the platform refuses a pass's own depth. The Lighting extra's shadows set
-			// Program.resolve back as a lit shader loads or a light casts (ShadowSlots), so a program with both binds a render
-			// texture's depth only where it doesn't draw into that render texture.
+			// is none, read as the white texture: the platform refuses a pass's own depth. SetShaderValueTexture and the Lighting
+			// extra's shadows (ShadowSlots) set Program.resolve only when it's unset, so they keep this one.
 			Program.resolve = id -> {
 				var gpu = Textures.handle(id),
 					own = depths.get(Runtime.frame.pass.target);
 				return own != null && gpu == own ? 0 : gpu;
 			};
+			RTextures.unloadShadowmap = UnloadShadowmapRenderTexture;
 		}
 		depths.set(target, gpu);
 		var depth = new Texture2D(Textures.fromHandle(gpu), width, height);
@@ -51,7 +51,8 @@ class RShadowmaps {
 		return new RenderTexture(target, new Texture2D(0, width, height), depth);
 	}
 
-	/** Frees a render texture `LoadShadowmapRenderTexture` made, raylib's shadowmap example's `UnloadShadowmapRenderTexture`.
+	/** Frees a render texture `LoadShadowmapRenderTexture` made, raylib's shadowmap example's `UnloadShadowmapRenderTexture`, its depth
+		with it, as `UnloadRenderTexture` does.
 
 		@param target  The render texture. */
 	static function UnloadShadowmapRenderTexture(target:RenderTexture2D):Void {

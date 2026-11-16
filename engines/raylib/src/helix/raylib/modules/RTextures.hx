@@ -487,14 +487,21 @@ class RTextures {
 		return target.id != 0;
 	}
 
-	/** Frees a render texture.
+	/** Frees a render texture, a shadowmap one's depth with it (`LoadShadowmapRenderTexture`, `helix.raylib.extras.Shadowmaps`).
 
 		@param target  The render texture. */
 	static function UnloadRenderTexture(target:RenderTexture2D):Void {
+		if (unloadShadowmap != null)
+			unloadShadowmap(target);
 		Models.unloadTexture(target.texture);
 		target.id = 0;
 		target.texture.id = 0;
 	}
+
+	// Frees a shadowmap render texture and its depth (RShadowmaps.UnloadShadowmapRenderTexture), set by the first
+	// LoadShadowmapRenderTexture, null in a program making none, so it links none of it; it skips any other render texture. No initial
+	// value, as Frame.beginShadow has none.
+	static var unloadShadowmap:Null<RenderTexture2D->Void>;
 
 	/** Draws into a render texture until `EndTextureMode`, over what it holds.
 
