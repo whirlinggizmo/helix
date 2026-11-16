@@ -1261,37 +1261,37 @@ class Rlgl {
 
 	/** Refuses to compile on every target, replacing rlgl's `rlActiveTextureSlot` (choosing a texture slot). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlActiveTextureSlot(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlActiveTextureSlot: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlActiveTextureSlot: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlEnableTexture` (binding a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlEnableTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlEnableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlDisableTexture` (unbinding the texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlDisableTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlDisableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlEnableTextureCubemap` (binding a cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlEnableTextureCubemap(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlEnableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlDisableTextureCubemap` (unbinding the cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlDisableTextureCubemap(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlDisableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlTextureParameters` (setting a texture's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlTextureParameters(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlTextureParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlTextureParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlCubemapParameters` (setting a cubemap's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlCubemapParameters(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlCubemapParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlCubemapParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
@@ -1361,7 +1361,7 @@ class Rlgl {
 
 	/** Refuses to compile on every target, replacing rlgl's `rlGetTextureIdDefault` (getting the default texture's id). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlGetTextureIdDefault(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetTextureIdDefault: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlGetTextureIdDefault: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
@@ -1466,42 +1466,42 @@ class Rlgl {
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadTexture` (making a texture from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlLoadTexture(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlLoadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlLoadTextureDepth(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlLoadTextureCubemap(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlLoadTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlUpdateTexture` (updating a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlUpdateTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUpdateTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlUpdateTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlGetGlTextureFormats` (getting a format's OpenGL formats). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlGetGlTextureFormats(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlGetGlTextureFormats: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlGetGlTextureFormats: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlUnloadTexture` (unloading a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlUnloadTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlUnloadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlGenTextureMipmaps` (making a texture's mipmaps). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlGenTextureMipmaps(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlGenTextureMipmaps: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlGenTextureMipmaps: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlReadTexturePixels` (reading a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlReadTexturePixels(args:Array<Expr>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unsupported("rlReadTexturePixels: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlReadTexturePixels: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(null : Dynamic));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlReadScreenPixels` (reading the screen's pixels). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
@@ -1631,7 +1631,7 @@ class Rlgl {
 
 	/** Refuses to compile on every target, replacing rlgl's `rlBindImageTexture` (binding an image texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlBindImageTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlBindImageTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTextureAsync,, or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlBindImageTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadDrawCube` (drawing a cube). See `InitWindow` for setting up what helix-raylib draws with. */
