@@ -6,8 +6,9 @@ import helix.math.Matrix4;
 import helix.math.Vector3;
 import helix.services.shaders.ShaderUniform;
 
-/** Holds the scene's shadows (the Lighting extra's `SetLightShadows`, `BeginShadowMode` and `EndShadowMode`): the lights casting them,
-	4 at most, in the order turned on, and the shadow map their maps are layers of.
+/** Holds the scene's shadows (the Lighting extra's `SetLightShadowCasting`, `BeginShadowMode` and `EndShadowMode`): the lights casting
+	them, 4 at most, in the order turned on, and the shadow map their maps are layers of. The map is as large as the largest `mapSize` a
+	casting light asks for, and each light's maps are whole layers of it.
 
 	`BeginShadowMode` fits each casting light's maps (a directional light's cascades to the camera's view out to its distance, snapped to
 	its texels, or one map over its box; a spot light's cone; a point light's six faces), adds a depth-only pass for each, and until
@@ -15,7 +16,7 @@ import helix.services.shaders.ShaderUniform;
 	its own vertex stage writing depth alone), the batch through its program's. Every lit draw after it reads the maps, written into its
 	program once a pass (`receive`).
 
-	Linked only by a program calling `SetLightShadows` or `BeginShadowMode`. */
+	Linked only by a program calling `SetLightShadowCasting` or `BeginShadowMode`. */
 @:noCompletion
 @:access(helix.raylib.Light)
 @:access(helix.raylib.Material)
@@ -37,27 +38,25 @@ class Shadows {
 	static final FIELDS = [
 		"helixShadowMatrices",
 		"helixShadowParams",
-		"helixShadowSizes",
+		"helixShadowStrengths",
 		"helixShadowSplits",
 		"helixShadowView"
 	];
 
 	// The lights casting shadows, in the order turned on.
 	static final casters:Array<helix.raylib.Light> = [];
-	// The last pass's maps: each one's view and projection, both composed, the volume it covers, its viewport within the layer (null for
-	// the whole layer) and its pass in the frame being made; and how many.
+	// The last pass's maps: each one's view and projection, both composed, the volume it covers and its pass in the frame being made;
+	// and how many.
 	static final views = [for (_ in 0...MOST_MAPS) new Matrix4()];
 	static final projections = [for (_ in 0...MOST_MAPS) new Matrix4()];
 	static final matrices = [for (_ in 0...MOST_MAPS) new Matrix4()];
 	static final volumes = [for (_ in 0...MOST_MAPS) new Frustum()];
-	static final ports:Array<Null<Array<Int>>> = [for (_ in 0...MOST_MAPS) null];
-	static final rectangles = [for (_ in 0...MOST_MAPS) [0, 0, 0, 0]];
 	static final passes:Array<Any> = [];
 	static var mapCount = 0;
-	// Each casting light's values, as shadows.glsl reads them (helixShadowParams, helixShadowSizes, helixShadowSplits), four floats each,
-	// and how many lights; the camera's forward direction and w (helixShadowView).
+	// Each casting light's values, as shadows.glsl reads them (helixShadowParams and helixShadowSplits, four floats each;
+	// helixShadowStrengths, one each), and how many lights; the camera's forward direction and w (helixShadowView).
 	static final params:Array<Float> = [for (_ in 0...MOST_LIGHTS * 4) 0.];
-	static final sizes:Array<Float> = [for (_ in 0...MOST_LIGHTS * 4) 0.];
+	static final strengths:Array<Float> = [for (_ in 0...MOST_LIGHTS) 0.];
 	static final splits:Array<Float> = [for (_ in 0...MOST_LIGHTS * 4) 0.];
 	static final forward:Array<Float> = [0, 0, -1, 0];
 	static var castCount = 0;
@@ -101,80 +100,32 @@ class Shadows {
 	static final corners:Array<Float> = [for (_ in 0...26) 0.];
 	static final points:Array<Float> = [];
 	static final ends = [0., 0, 0, 0];
-	static final lightSizes:Array<Int> = [for (_ in 0...MOST_LIGHTS) 0];
 
-	/** Turns a light's shadows on, made as the options say, or off for null options. A fifth light's stay off, with a warning.
+	/** Turns a light's shadows on, made as its options say (`Light.shadow`, set before). A fifth light's stay off, with a warning.
 
-		@param light  The light.
-		@param options  How its shadows are made, or null for none. */
-	public static function set(light:helix.raylib.Light, options:Null<helix.raylib.extras.ShadowOptions>):Void {
+		@param light  The light. */
+	public static function addCaster(light:helix.raylib.Light):Void {
 		purge();
-		if (options == null) {
-			casters.remove(light);
-			light.shadow = null;
-			light.shadowIndex = 0;
-			return;
-		}
-		if (casters.indexOf(light) < 0) {
+		if (!light.shadowCasting) {
 			if (casters.length >= MOST_LIGHTS) {
 				Runtime.log(helix.raylib.Raylib.LOG_WARNING, 'LIGHTING: A light\'s shadows are off: $MOST_LIGHTS lights cast shadows at most');
 				return;
 			}
+			light.shadowCasting = true;
 			casters.push(light);
 		}
-		light.shadow = filled(options, light.shadow);
 		SceneLights.receiving = receive;
 	}
 
-	/** Returns a light's shadows' options, each filled, copied into out; null when it casts none.
-
-		@param light  The light.
-		@param out  The options filled, or null for new ones. */
-	public static function get(light:helix.raylib.Light, out:Null<helix.raylib.extras.ShadowOptions>):Null<helix.raylib.extras.ShadowOptions> {
-		var s = light.shadow;
-		if (s == null)
-			return null;
-		if (out == null)
-			out = {};
-		out.mapSize = s.mapSize;
-		out.distance = s.distance;
-		out.bounds = s.bounds == null ? null : s.bounds.copy();
-		out.cascades = s.cascades;
-		out.bias = s.bias;
-		out.slopeBias = s.slopeBias;
-		out.normalOffset = s.normalOffset;
-		out.softness = s.softness;
-		out.strength = s.strength;
-		return out;
-	}
-
-	// Drops the lights unloaded (UnloadLight clears their shadows) or out of the scene.
+	// Drops the lights turned off or out of the scene (UnloadLight turns them off).
 	static function purge():Void {
 		var i = casters.length;
 		while (i-- > 0)
-			if (casters[i].shadow == null || !SceneLights.has(casters[i])) {
+			if (!casters[i].shadowCasting || !SceneLights.has(casters[i])) {
+				casters[i].shadowCasting = false;
 				casters[i].shadowIndex = 0;
 				casters.splice(i, 1);
 			}
-	}
-
-	// Options with each default filled and each value kept in its range, into the light's own when it has them.
-	static function filled(o:helix.raylib.extras.ShadowOptions, into:Null<helix.raylib.extras.ShadowOptions>):helix.raylib.extras.ShadowOptions {
-		var f:helix.raylib.extras.ShadowOptions = into == null ? {} : into;
-		var asked = o.mapSize == null ? 2048 : o.mapSize, size = 256;
-		while (size * 2 <= asked && size < 4096)
-			size *= 2;
-		f.mapSize = size;
-		f.distance = o.distance == null ? 50 : Math.max(1e-6, o.distance);
-		f.bounds = o.bounds == null ? null : o.bounds.copy();
-		var cascades = o.cascades == null ? 1 : o.cascades;
-		f.cascades = cascades < 1 ? 1 : cascades > 4 ? 4 : cascades;
-		f.bias = o.bias == null ? 1 : Math.max(0, o.bias);
-		f.slopeBias = o.slopeBias == null ? 4 : Math.max(0, o.slopeBias);
-		f.normalOffset = o.normalOffset == null ? 1 : Math.max(0, o.normalOffset);
-		f.softness = o.softness == null ? 1 : Math.max(0, Math.min(8, o.softness));
-		f.strength = o.strength == null ? 1 : Math.max(0, Math.min(1, o.strength));
-		return f;
 	}
 
 	/** Starts the shadow pass from a camera: the casting lights' maps fitted and a pass added for each, and the frame's draws cast into
@@ -206,7 +157,11 @@ class Shadows {
 		forward[3] = -(forward[0] * p.x + forward[1] * p.y + forward[2] * p.z);
 		mapCount = 0;
 		castCount = 0;
+		// The map's size, the largest a light casting asks for, which each of its maps fills.
 		var size = 0;
+		for (light in casters)
+			if (light.enabled && light.shadow.mapSize > size)
+				size = light.shadow.mapSize;
 		for (light in casters) {
 			light.shadowIndex = 0;
 			if (!light.enabled)
@@ -219,10 +174,10 @@ class Shadows {
 					kind = 1;
 					fitBox(s.bounds);
 				} else
-					fitCascades(s, c);
+					fitCascades(s, c, size);
 			} else {
 				var reach = light.range > 0 ? light.range : s.distance;
-				var margin = 1 + 2 * (s.softness + 2) / s.mapSize;
+				var margin = 1 + 2 * (s.softness + 2) / size;
 				var x = light.position.x,
 					y = light.position.y,
 					z = light.position.z;
@@ -256,26 +211,13 @@ class Shadows {
 			params[c * 4 + 1] = s.bias;
 			params[c * 4 + 2] = s.slopeBias;
 			params[c * 4 + 3] = s.normalOffset;
-			sizes[c * 4 + 1] = s.mapSize;
-			sizes[c * 4 + 2] = s.strength;
-			lightSizes[c] = s.mapSize;
-			for (k in first...mapCount) {
-				ports[k] = rectangles[k];
-				ports[k][2] = ports[k][3] = s.mapSize;
-			}
-			if (s.mapSize > size)
-				size = s.mapSize;
+			strengths[c] = s.strength;
 			castCount++;
 			light.shadowIndex = castCount;
 		}
 		stamp++;
 		active = true;
 		if (castCount > 0) {
-			for (c in 0...castCount)
-				sizes[c * 4] = lightSizes[c] / size;
-			for (k in 0...mapCount)
-				if (ports[k][2] == size)
-					ports[k] = null;
 			mapFor(size, mapCount);
 			passes.resize(0);
 			for (k in 0...mapCount)
@@ -361,8 +303,8 @@ class Shadows {
 	}
 
 	// A directional light's cascades over the camera's view out to its distance, each a square around its slice's sphere snapped to the
-	// map's texels, reaching back toward the light; their ends written to the light's splits.
-	static function fitCascades(s:helix.raylib.extras.ShadowOptions, c:Int):Void {
+	// texels of a map of a size, reaching back toward the light; their ends written to the light's splits.
+	static function fitCascades(s:helix.raylib.extras.ShadowOptions, c:Int, size:Int):Void {
 		var count:Int = s.cascades;
 		slice();
 		var near = corners[24], far = corners[25];
@@ -405,7 +347,7 @@ class Shadows {
 			radius = Math.ceil(radius * 64 + 1) / 64;
 			// The middle in the light's space, snapped to a texel there.
 			view.transformPoint(mx, my, mz, moved);
-			var texel = radius * 2 / s.mapSize;
+			var texel = radius * 2 / size;
 			var cx = Math.floor(moved.x / texel) * texel,
 				cy = Math.floor(moved.y / texel) * texel;
 			var back = 2 * Math.max(radius, s.distance);
@@ -473,7 +415,7 @@ class Shadows {
 			frame.drawInto(passes[k]);
 			frame.view = views[k];
 			frame.projection = projections[k];
-			frame.viewport = ports[k];
+			frame.viewport = null;
 			frame.scissor = null;
 			add();
 		}
@@ -565,12 +507,12 @@ class Shadows {
 		var values = p.values;
 		for (k in 0...mapCount)
 			values.writeMatrix(f[0], matrices[k], k);
+		if (f[2] != null)
+			values.writeVector(f[2], strengths[0], strengths[1], strengths[2], strengths[3]);
 		for (c in 0...castCount) {
 			var at = c * 4;
 			if (f[1] != null)
 				values.writeVector(f[1], params[at], params[at + 1], params[at + 2], params[at + 3], c);
-			if (f[2] != null)
-				values.writeVector(f[2], sizes[at], sizes[at + 1], sizes[at + 2], sizes[at + 3], c);
 			if (f[3] != null)
 				values.writeVector(f[3], splits[at], splits[at + 1], splits[at + 2], splits[at + 3], c);
 		}

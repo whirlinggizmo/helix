@@ -33,7 +33,8 @@ SHADER_UNIFORM_VEC3);
 
 ```haxe
 SetLightShadows(sun, {mapSize: 2048, distance: 30, cascades: 2});
-SetLightShadows(lamp);
+SetLightShadowCasting(sun, true);
+SetLightShadowCasting(lamp, true);
 // each frame, before BeginDrawing or after it and before BeginMode3D
 BeginShadowMode(camera);
 DrawModel(island, Vector3Zero(), 1, WHITE);
@@ -47,7 +48,7 @@ EndMode3D();
 EndDrawing();
 ```
 
-A light casts shadows once `SetLightShadows` turns them on, 4 lights at most. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through `<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of `lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way from it.
+A light casts shadows once `SetLightShadowCasting` turns them on, 4 lights at most. `SetLightShadows` sets how they are made, and a light not given options has every default. The casting lights share one shadow map, as large as the largest `mapSize` asked for. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through `<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of `lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way from it.
 
 A shader compiled by `CompileShaderFile` carries its shadow variant: its own vertex stage, with a fragment stage writing depth alone and cutting at the material's alpha cutoff (the Materials extra). The shadow pass draws through it.
 
@@ -67,7 +68,9 @@ static function SetLightRange(light:Light, range:Float):Void
 static function SetLightCone(light:Light, innerAngle:Float, outerAngle:Float):Void
 static function UnloadLight(light:Light):Void
 static function SetLightShadows(light:Light, ?options:ShadowOptions):Void
-static function GetLightShadows(light:Light, ?out:ShadowOptions):Null<ShadowOptions>
+static function GetLightShadows(light:Light, ?out:ShadowOptions):ShadowOptions
+static function SetLightShadowCasting(light:Light, casting:Bool):Void
+static function IsLightShadowCasting(light:Light):Bool
 static function BeginShadowMode(camera:Camera3D):Void
 static function EndShadowMode():Void
 ```
@@ -116,13 +119,23 @@ static function EndShadowMode():Void
   - `outerAngle`: Where it ends, in degrees, at least `innerAngle` and under 90.
 - `UnloadLight`: Takes a light out of the scene. It lights nothing after, and its shadows are freed.
   - `light`: The light, from `CreateLight`.
-- `SetLightShadows`: Makes a light cast shadows, made as the options say. Its shadows take a map of `mapSize` squared texels: one for each cascade of a directional light, six for a point light, one for a spot light. 4 lights cast shadows at most: a fifth's are off, with a warning. `UnloadLight` frees a light's shadows.
+- `SetLightShadows`: Sets how a light's shadows are made, whether or not it casts them. An option not given takes its default. It doesn't turn the light's shadows on: `SetLightShadowCasting` does.
   - `light`: The light, from `CreateLight`.
-  - `options`: Optional. How its shadows are made; the defaults when omitted or null.
-- `GetLightShadows`: Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in; null when it casts none.
+  - `options`: Optional. How its shadows are made; every default when omitted or null.
+
+  The casting lights share one shadow map, `mapSize` squared texels, as large as the largest any of them asks for. A light's shadows take a layer of it for each cascade of a directional light, six for a point light, and one for a spot light.
+- `GetLightShadows`: Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in. A light never given options has every default.
   - `light`: The light, from `CreateLight`.
   - `out`: Optional. The options filled; new ones when omitted.
-  - returns: out or the new options, or null when the light casts no shadows.
+  - returns: out or the new options.
+- `SetLightShadowCasting`: Turns a light's shadows on or off. A light casts none until turned on. Its shadows are made as `SetLightShadows` set them, with every default when it wasn't called.
+  - `light`: The light, from `CreateLight`.
+  - `casting`: true to cast shadows, false to cast none.
+
+  4 lights cast shadows at most. A fifth stays off, with a warning. Turning a light off frees its place for another and keeps its options. `UnloadLight` turns it off.
+- `IsLightShadowCasting`: Returns whether a light casts shadows (`SetLightShadowCasting`).
+  - `light`: The light, from `CreateLight`.
+  - returns: true when it casts shadows.
 - `BeginShadowMode`: Starts the frame's shadow pass, until `EndShadowMode`: what is drawn casts shadows, from every light that casts them, and is drawn nowhere else. Call it before `BeginDrawing`, or after it and before `BeginMode3D`, not within a 3D or texture mode.
   - `camera`: The camera the frame is drawn from, which a directional light's shadows follow.
 
@@ -135,7 +148,7 @@ static function EndShadowMode():Void
 
 *class* in [`engines/raylib/src/helix/raylib/extras/ShadowOptions.hx`](../src/helix/raylib/extras/ShadowOptions.hx), `import helix.raylib.extras.ShadowOptions;`
 
-Represents how a light's shadows are made: the shadow map's size and reach, its bias against a surface shadowing itself, and how soft and dark its shadows are. Each field has a default. Sizes and biases are in shadow-map texels, so they hold whatever the map's size and reach.
+Represents how a light's shadows are made: the shadow map's size and reach, its bias against a surface shadowing itself, and how soft and dark its shadows are. Each field has a default. Biases, the normal offset and softness are in texels of the shadow map the casting lights share, so they hold whatever its size and reach.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -155,7 +168,7 @@ var softness:Null<Float>
 var strength:Null<Float>
 ```
 
-- `mapSize`: Gets or sets the map's width and height, in texels: 2048 when not given. A power of two from 256 to 4096; another is rounded down to one.
+- `mapSize`: Gets or sets the map's width and height, in texels: 2048 when not given. A power of two from 256 to 4096; another is rounded down to one. The lights casting shadows share one map, as large as the largest any of them asks for.
 - `distance`: Gets or sets how far from the camera a directional light's shadows reach, in world units: 50 when not given. A point light's reach is its range, or this when it has none. Shorter is sharper.
 - `bounds`: Gets or sets the box a directional light's map covers, in place of what the camera sees out to `distance`: none when not given, so the map follows the camera. A fixed box suits a small scene seen whole.
 - `cascades`: Gets or sets a directional light's number of cascades, 1 to 4: 1 when not given. Each covers a farther part of `distance`, near shadows sharp and far ones still there.

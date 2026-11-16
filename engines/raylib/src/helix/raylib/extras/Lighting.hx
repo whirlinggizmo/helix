@@ -49,7 +49,8 @@ import helix.raylib.modules.RLighting;
 
 	```haxe
 	SetLightShadows(sun, {mapSize: 2048, distance: 30, cascades: 2});
-	SetLightShadows(lamp);
+	SetLightShadowCasting(sun, true);
+	SetLightShadowCasting(lamp, true);
 	// each frame, before BeginDrawing or after it and before BeginMode3D
 	BeginShadowMode(camera);
 	DrawModel(island, Vector3Zero(), 1, WHITE);
@@ -63,9 +64,10 @@ import helix.raylib.modules.RLighting;
 	EndDrawing();
 	```
 
-	A light casts shadows once `SetLightShadows` turns them on, 4 lights at most. One shadow pass a frame, between `BeginShadowMode`
-	and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame
-	without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through
+	A light casts shadows once `SetLightShadowCasting` turns them on, 4 lights at most. `SetLightShadows` sets how they are made, and
+	a light not given options has every default. The casting lights share one shadow map, as large as the largest `mapSize` asked
+	for. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters
+	are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through
 	`<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of
 	`lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way
 	from it.
@@ -164,22 +166,43 @@ class Lighting {
 	public static inline function UnloadLight(light:Light):Void
 		RLighting.UnloadLight(light);
 
-	/** Makes a light cast shadows, made as the options say. Its shadows take a map of `mapSize` squared texels: one for each cascade
-		of a directional light, six for a point light, one for a spot light. 4 lights cast shadows at most: a fifth's are off, with a
-		warning. `UnloadLight` frees a light's shadows.
+	/** Sets how a light's shadows are made, whether or not it casts them. An option not given takes its default. It doesn't turn the
+		light's shadows on: `SetLightShadowCasting` does.
+
+		The casting lights share one shadow map, `mapSize` squared texels, as large as the largest any of them asks for. A light's shadows
+		take a layer of it for each cascade of a directional light, six for a point light, and one for a spot light.
 
 		@param light  The light, from `CreateLight`.
-		@param options  Optional. How its shadows are made; the defaults when omitted or null. */
+		@param options  Optional. How its shadows are made; every default when omitted or null. */
 	public static inline function SetLightShadows(light:Light, ?options:ShadowOptions):Void
 		RLighting.SetLightShadows(light, options);
 
-	/** Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in; null when it casts none.
+	/** Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in. A light never given options has
+		every default.
 
 		@param light  The light, from `CreateLight`.
 		@param out  Optional. The options filled; new ones when omitted.
-		@return  out or the new options, or null when the light casts no shadows. */
-	public static inline function GetLightShadows(light:Light, ?out:ShadowOptions):Null<ShadowOptions>
+		@return  out or the new options. */
+	public static inline function GetLightShadows(light:Light, ?out:ShadowOptions):ShadowOptions
 		return RLighting.GetLightShadows(light, out);
+
+	/** Turns a light's shadows on or off. A light casts none until turned on. Its shadows are made as `SetLightShadows` set them, with
+		every default when it wasn't called.
+
+		4 lights cast shadows at most. A fifth stays off, with a warning. Turning a light off frees its place for another and keeps its
+		options. `UnloadLight` turns it off.
+
+		@param light  The light, from `CreateLight`.
+		@param casting  true to cast shadows, false to cast none. */
+	public static inline function SetLightShadowCasting(light:Light, casting:Bool):Void
+		RLighting.SetLightShadowCasting(light, casting);
+
+	/** Returns whether a light casts shadows (`SetLightShadowCasting`).
+
+		@param light  The light, from `CreateLight`.
+		@return  true when it casts shadows. */
+	public static inline function IsLightShadowCasting(light:Light):Bool
+		return RLighting.IsLightShadowCasting(light);
 
 	/** Starts the frame's shadow pass, until `EndShadowMode`: what is drawn casts shadows, from every light that casts them, and is
 		drawn nowhere else. Call it before `BeginDrawing`, or after it and before `BeginMode3D`, not within a 3D or texture mode.

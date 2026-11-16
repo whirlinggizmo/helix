@@ -1,5 +1,5 @@
-// <helix/raylib/shaders/shadows.glsl>: the shadows of the scene's lights (the Lighting extra's SetLightShadows and BeginShadowMode), for
-// a fragment stage.
+// <helix/raylib/shaders/shadows.glsl>: the shadows of the scene's lights (the Lighting extra's SetLightShadowCasting and
+// BeginShadowMode), for a fragment stage.
 //
 // It includes <helix/raylib/shaders/lights.glsl>, which includes it too, so helixLight and helixPbr receive the shadows as well.
 //
@@ -32,14 +32,15 @@ uniform highp sampler2DArrayShadow helixShadowMap;
 // - helixShadowParams: x its first map, plus 32 times its map count, plus 256 times its kind (0 a directional light's cascades, picked
 //   by the fragment's depth from the camera; 1 a directional light over a fixed box; 2 a spot light; 3 a point light, a map a cube
 //   face), plus 1024 times its softness in sixteenths of a texel; y its bias, z its slope bias and w its normal offset, in texels.
-// - helixShadowSizes: x its maps' share of the shadow map's width, y their width in texels, z its strength.
+// - helixShadowStrengths: how much of the light its shadows take away.
 // - helixShadowSplits: where a directional light's cascades end, in world units from the camera.
+// Each map is a whole layer of helixShadowMap, all of one size.
 // helixShadowView is the camera's forward direction, and w less its distance along it from the origin, so a fragment's depth from the
 // camera is dot(xyz, fragPosition) + w.
 uniform HelixShadows {
     mat4 helixShadowMatrices[24];
     vec4 helixShadowParams[4];
-    vec4 helixShadowSizes[4];
+    vec4 helixShadowStrengths;
     vec4 helixShadowSplits[4];
     vec4 helixShadowView;
 };
@@ -74,7 +75,7 @@ float helixShadow(int light, vec3 fragPosition, vec3 fragNormal) {
         return 1.0;
     int index = lights[light].shadow - 1;
     vec4 params = helixShadowParams[index];
-    vec4 sizes = helixShadowSizes[index];
+    float width = float(textureSize(helixShadowMap, 0).x);
     float packed = params.x;
     int first = int(mod(packed, 32.0));
     int count = int(mod(floor(packed/32.0), 8.0));
@@ -114,7 +115,7 @@ float helixShadow(int light, vec3 fragPosition, vec3 fragNormal) {
     vec3 normal = normalize(fragNormal);
     vec3 toLight = helixLightDirection(light, fragPosition);
     // A texel's width in the world at the fragment: 2 over the map's width in texels, over how fast x across the map grows there.
-    float texel = 2.0*clip.w/(sizes.y*length(vec3(m[0][0], m[1][0], m[2][0])));
+    float texel = 2.0*clip.w/(width*length(vec3(m[0][0], m[1][0], m[2][0])));
     float cosine = clamp(dot(normal, toLight), -1.0, 1.0);
     float sine = sqrt(max(1.0 - cosine*cosine, 0.0));
     float slope = min(sine/max(abs(cosine), 1e-3), 3.0);
@@ -123,9 +124,8 @@ float helixShadow(int light, vec3 fragPosition, vec3 fragNormal) {
     vec3 at = c.xyz/c.w*0.5 + 0.5;
     if (at.z >= 1.0)
         return 1.0;
-    at.xy *= sizes.x;
-    float lit = helixShadowFilter(at, float(first + k), radius, 1.0/float(textureSize(helixShadowMap, 0).x));
-    return 1.0 - sizes.z*(1.0 - lit)*(1.0 - fade);
+    float lit = helixShadowFilter(at, float(first + k), radius, 1.0/width);
+    return 1.0 - helixShadowStrengths[index]*(1.0 - lit)*(1.0 - fade);
 }
 
 #endif

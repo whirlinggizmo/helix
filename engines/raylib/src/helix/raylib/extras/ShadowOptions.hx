@@ -3,11 +3,11 @@ package helix.raylib.extras;
 import helix.raylib.*;
 
 /** Represents how a light's shadows are made: the shadow map's size and reach, its bias against a surface shadowing itself, and how
-	soft and dark its shadows are. Each field has a default. Sizes and biases are in shadow-map texels, so they hold whatever the map's
-	size and reach. */
+	soft and dark its shadows are. Each field has a default. Biases, the normal offset and softness are in texels of the shadow map
+	the casting lights share, so they hold whatever its size and reach. */
 @:structInit class ShadowOptions {
 	/** Gets or sets the map's width and height, in texels: 2048 when not given. A power of two from 256 to 4096; another is rounded down
-		to one. */
+		to one. The lights casting shadows share one map, as large as the largest any of them asks for. */
 	@:optional public var mapSize:Null<Int>;
 
 	/** Gets or sets how far from the camera a directional light's shadows reach, in world units: 50 when not given. A point light's reach

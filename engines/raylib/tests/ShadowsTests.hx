@@ -6,17 +6,20 @@ import helix.raylib.Rlights.*;
 import helix.raylib.Rlgl.*;
 import helix.raylib.extras.Lighting.*;
 import helix.raylib.extras.Materials.*;
+import helix.raylib.extras.ShadowOptions;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Program;
 import helix.raylib.internal.Runtime;
 
-/** Checks the Lighting extra's shadows on graphics that count what is live: `GetLightShadows`' defaults filled and kept in range; a pass
-	made for each map of each light casting (a directional light's cascades, a spot light's one map, a point light's six faces) into one
-	shadow map of their layers; the casters drawn into the maps their bounds reach and nowhere else, through a depth-only pipeline, a cut-out
-	material's alpha cutoff and a program's own vertex stage's uniforms reaching its shadow draw, a posed model cast through its caster's
-	skinned twin, the batch cast too; a fifth light's shadows refused with a warning; the lit draws after the pass given the shadows (their
-	lights' shadow, the matrices, the map), and `shadowed` false written for a material shadows don't fall on; a frame without the pass
-	keeping the last one's shadows. */
+/** Checks the Lighting extra's shadows on graphics that count what is live: casting off until `SetLightShadowCasting` turns it on, and
+	`SetLightShadows` alone casting nothing; `GetLightShadows`' defaults filled, set or not, and kept in range; a pass made for each map
+	of each light casting (a directional light's cascades, a spot light's one map, a point light's six faces) into one shadow map of
+	their layers, as large as the largest asked, each pass the whole layer; the casters drawn into the maps their bounds reach and
+	nowhere else, through a depth-only pipeline, a cut-out material's alpha cutoff and a program's own vertex stage's uniforms reaching
+	its shadow draw, a posed model cast through its caster's skinned twin, the batch cast too; a fifth light's shadows refused with a
+	warning, a light turned off freeing its place and keeping its options; the lit draws after the pass given the shadows (their
+	lights' shadow, the matrices, the strengths, the map), and `shadowed` false written for a material shadows don't fall on; a frame
+	without the pass keeping the last one's shadows. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
@@ -81,14 +84,20 @@ class ShadowsTests {
 		cube.materials[0].shader = shader;
 		var camera = new Camera3D(new Vector3(0, 5, 10), Vector3Zero(), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 
-		// GetLightShadows: null until SetLightShadows, then every option filled, each kept in its range.
+		// Casting off until SetLightShadowCasting; GetLightShadows every option filled, set or not, each kept in its range.
 		var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(-4, 8, 0), Vector3Zero(), WHITE, shader);
-		check(GetLightShadows(sun) == null, "a light casts no shadows until SetLightShadows");
-		SetLightShadows(sun);
+		check(!IsLightShadowCasting(sun), "a light casts no shadows until SetLightShadowCasting");
 		var o = GetLightShadows(sun);
-		check(o.mapSize == 2048 && o.distance == 50 && o.cascades == 1 && o.bias == 1 && o.slopeBias == 4 && o.normalOffset == 1 && o.softness == 1
-			&& o.strength == 1 && o.bounds == null,
-			"SetLightShadows without options: every default, filled");
+		var defaults = (o:ShadowOptions) -> o.mapSize == 2048 && o.distance == 50 && o.cascades == 1 && o.bias == 1 && o.slopeBias == 4
+			&& o.normalOffset == 1 && o.softness == 1 && o.strength == 1 && o.bounds == null;
+		check(o != null && defaults(o), "GetLightShadows of a light never given options: every default, filled");
+		SetLightShadows(sun);
+		o = GetLightShadows(sun);
+		check(defaults(o), "SetLightShadows without options: every default, filled");
+		check(!IsLightShadowCasting(sun), "SetLightShadows alone casts nothing");
+		BeginShadowMode(camera);
+		check(shadowPasses().length == 0, "no shadow pass for a light SetLightShadows alone set");
+		EndShadowMode();
 		SetLightShadows(sun, {
 			mapSize: 3000,
 			cascades: 9,
@@ -103,12 +112,15 @@ class ShadowsTests {
 
 		// A pass for each map: the sun's two cascades, a lamp's six faces, a spot's one map, all layers of one shadow map.
 		SetLightShadows(sun, {mapSize: 1024, cascades: 2, distance: 30});
+		SetLightShadowCasting(sun, true);
+		check(IsLightShadowCasting(sun), "SetLightShadowCasting turns casting on");
 		var lamp = CreateLight(LIGHT_POINT, new Vector3(2, 2, 0), Vector3Zero(), WHITE, shader);
 		SetLightRange(lamp, 6);
-		SetLightShadows(lamp, {mapSize: 512});
+		SetLightShadows(lamp, {mapSize: 512, strength: 0.5});
+		SetLightShadowCasting(lamp, true);
 		var spot = CreateLight(LIGHT_POINT, new Vector3(0, 4, 0), Vector3Zero(), WHITE, shader);
 		SetLightCone(spot, 10, 15);
-		SetLightShadows(spot);
+		SetLightShadowCasting(spot, true);
 		BeginShadowMode(camera);
 		var passes = shadowPasses();
 		check(passes.length == 9, "9 shadow passes: 2 cascades, 6 faces and a spot's map");
@@ -127,8 +139,13 @@ class ShadowsTests {
 		var shadowDraw:Dynamic = passes[8].draws[0];
 		var desc = graphics.pipelines.get(shadowDraw.pipeline);
 		check(desc.depthOnly && desc.depthTest == LessEqual && desc.depthWrite, "cast through a depth-only pipeline, depth tested and written");
-		check(passes[2].draws.length == 0
-			&& passes[3].draws[0].viewport.join(",") == "0,0,512,512", "the lamp's 512 texels in the 2048's layer");
+		check([for (q in passes) if (q.width != 2048 || q.height != 2048) q].length == 0 && [
+			for (q in passes)
+				for (d in (q.draws : Array<Dynamic>))
+					if (d.viewport != null)
+						d
+		].length == 0,
+			"every casting light's passes the whole 2048 map, the lamp's 512 and the sun's 1024 asked for too");
 		// A cube far from every map's view isn't cast.
 		var before = [for (q in passes) q.draws.length];
 		DrawModel(cube, new Vector3(0, 0, 200), 1, WHITE);
@@ -157,8 +174,8 @@ class ShadowsTests {
 		check(near(drawnFloat(p, lit, "helixShadowMatrices", 0, 0), m[0])
 			&& near(drawnFloat(p, lit, "helixShadowMatrices", 8, 15), @:privateAccess helix.raylib.internal.Shadows.matrices[8].values[15]),
 			"the maps' matrices written");
-		check(Math.abs(drawnFloat(p, lit, "helixShadowSizes", 1, 0) - 0.25) < 1e-6 && drawnFloat(p, lit, "helixShadowSizes", 1, 1) == 512,
-			"the lamp's maps a quarter of the shadow map's width, 512 texels");
+		check(drawnFloat(p, lit, "helixShadowStrengths", 0, 0) == 1 && drawnFloat(p, lit, "helixShadowStrengths", 0, 1) == 0.5,
+			"each light's strength written, the lamp's 0.5");
 		check(lit.textures[helix.raylib.internal.ShadowSlots.slotOf(p)] == map, "the shadow map bound to the lit draw");
 		SetMaterialShadowed(cube.materials[0], false);
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
@@ -230,18 +247,28 @@ class ShadowsTests {
 		EndShadowMode();
 		frame.draw(800, 450, true);
 
-		// A fifth light's shadows refused with a warning; one light's let go of, another's taken.
+		// A fifth light's shadows refused with a warning; one light turned off, another taking its place; an unloaded light's let go of.
 		var fourth = CreateLight(LIGHT_DIRECTIONAL, new Vector3(4, 8, 0), Vector3Zero(), WHITE, shader);
-		SetLightShadows(fourth);
+		SetLightShadowCasting(fourth, true);
 		var fifth = CreateLight(LIGHT_DIRECTIONAL, new Vector3(0, 8, 4), Vector3Zero(), WHITE, shader);
 		warnings.resize(0);
-		SetLightShadows(fifth);
-		check(GetLightShadows(fifth) == null && warnings.length == 1 && warnings[0].indexOf("4 lights cast shadows at most") >= 0,
+		SetLightShadowCasting(fifth, true);
+		check(!IsLightShadowCasting(fifth) && warnings.length == 1 && warnings[0].indexOf("4 lights cast shadows at most") >= 0,
 			"a fifth light's shadows off, with a warning");
+		SetLightShadowCasting(lamp, false);
+		check(!IsLightShadowCasting(lamp), "SetLightShadowCasting false turns casting off");
+		check(GetLightShadows(lamp).mapSize == 512 && GetLightShadows(lamp).strength == 0.5, "a light turned off keeps its options");
+		SetLightShadowCasting(fifth, true);
+		check(IsLightShadowCasting(fifth), "a light turned off frees its place for another");
 		UnloadLight(fourth);
-		check(GetLightShadows(fourth) == null, "an unloaded light's shadows freed");
-		SetLightShadows(fifth);
-		check(GetLightShadows(fifth) != null, "a fifth light casts once a fourth is unloaded");
+		check(!IsLightShadowCasting(fourth), "an unloaded light's shadows freed");
+		SetLightShadowCasting(lamp, true);
+		check(IsLightShadowCasting(lamp) && GetLightShadows(lamp).mapSize == 512 && GetLightShadows(lamp).strength == 0.5,
+			"a light turned on again once a fourth is unloaded, its options as they were");
+		BeginShadowMode(camera);
+		check(shadowPasses().length == 10, "10 shadow passes: the sun's 2 cascades, the spot's map, the fifth's map and the lamp's 6 faces");
+		EndShadowMode();
+		frame.draw(800, 450, true);
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

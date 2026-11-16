@@ -152,7 +152,7 @@ before, so a rung's increment is what the feature costs. Every rung is a release
 JavaScript unminified, as Haxe alone writes it; sizes in KB.
 
 <!-- gen_sizes -->
-Measured from 10a495d 2026-11-16 with Haxe 4.3.7.
+Measured from c4b79cf 2026-11-16 with Haxe 4.3.7.
 
 ### helix-platform
 
@@ -312,7 +312,7 @@ Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each
 | 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight | 467.1 | 97.5 (78.7) | +3.9 |
 | 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 492.1 | 102.6 (82.9) | +5.1 |
 | 10-game | a game: what a real game uses, its file formats one of each | 686.5 | 139.2 (112.1) | +36.6 |
-| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1910.8 | 334.9 (258.4) | +195.7 |
+| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1908.8 | 335.9 (258.3) | +196.8 |
 
 Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
 
@@ -320,11 +320,11 @@ Each rung's JavaScript by package, raw KB, from its source map, a line's start (
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | formats | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 25.8 | 25.8 | 25.8 | 25.8 | 43.7 | 129.0 |
 | raylib/RTextures | 0.0 | 0.0 | 6.2 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 12.4 | 113.7 |
-| program | 0.6 | 1.0 | 1.1 | 1.4 | 1.8 | 2.1 | 2.5 | 2.9 | 3.2 | 8.2 | 102.2 |
+| program | 0.6 | 1.0 | 1.1 | 1.4 | 1.8 | 2.1 | 2.5 | 2.9 | 3.2 | 8.2 | 102.3 |
 | raylib/RGuiControls | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 86.7 |
 | raylib/RCore | 1.9 | 1.9 | 1.9 | 2.9 | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 | 17.6 | 83.7 |
+| raylib/RLighting | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 82.0 |
 | raylib/RModels | 0.0 | 0.0 | 0.0 | 0.0 | 7.9 | 8.5 | 8.8 | 9.1 | 9.1 | 13.5 | 81.0 |
-| raylib/RLighting | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 80.6 |
 | raylib/RShapes | 0.0 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 4.5 | 63.7 |
 | raylib/RText | 0.0 | 0.0 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 16.9 | 53.4 |
 | platform/graphics | 45.1 | 45.9 | 45.9 | 45.9 | 45.9 | 45.9 | 46.4 | 46.4 | 46.4 | 47.1 | 50.4 |
@@ -332,7 +332,7 @@ Each rung's JavaScript by package, raw KB, from its source map, a line's start (
 | math | 8.6 | 9.1 | 9.1 | 9.1 | 23.2 | 30.2 | 30.2 | 30.2 | 30.2 | 36.0 | 46.6 |
 | raylib/RMath | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 7.0 | 14.4 | 14.4 | 14.4 | 15.1 | 44.3 |
 | raylib/Frame | 26.4 | 31.0 | 32.1 | 32.1 | 39.4 | 39.4 | 39.4 | 39.4 | 39.4 | 39.8 | 44.2 |
-| raylib/Shadows | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 38.8 |
+| raylib/Shadows | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 35.2 |
 | services/images | 0.0 | 0.2 | 0.2 | 1.9 | 1.9 | 1.9 | 1.9 | 1.9 | 1.9 | 3.2 | 34.7 |
 | services/input | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 15.5 | 33.0 |
 | raylib/RGui | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 31.1 |
