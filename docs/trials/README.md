@@ -47,6 +47,7 @@ A trial gives part of helix to fresh agents who know nothing of it, and reads wh
 | [2026-11-15-lighting-shadows](2026-11-15-lighting-shadows/results.md) | The Lighting extra's shadows, emissive and alpha cutoff, as a draft | Shadows drew the scene twice a light; a program's own lit shader got no lights |
 | [2026-11-15-shadowmaps](2026-11-15-shadowmaps/results.md) | Porting raylib's shadowmap example, as a draft | Both ported it unchanged, asking only which texture unit the depth binds to |
 | [2026-11-15-screen-fit](2026-11-15-screen-fit/results.md) | The Screen extra's fits, as a draft | Both fitted as meant; asked where the design sits when a fit grows the screen |
+| [2026-11-14-lanternholm-port](2026-11-14-lanternholm-port/results.md) | What a three.js-shaped program needs that helix-raylib lacks | 21 of 35 met; it wrote shadows, particles, bloom and meshes itself, and met a render-pass failure |
 
 Retired, their findings acted on. Each record is in the commit named:
 
