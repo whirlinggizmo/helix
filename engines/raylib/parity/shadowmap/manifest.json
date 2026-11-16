@@ -1,0 +1,27 @@
+{
+  "oracle": "6.2",
+  "covers": "raylib's shadowmap example (shaders_shadowmap.c, its shadowmap.vs and shadowmap.fs compiled ahead of time): its LoadShadowmapRenderTexture (the Shadowmaps extra), a cube floor, a cube and the animated robot drawn into the shadow map from an orthographic light camera, the map's depth bound with SetShaderValueTexture and read by the scene's draws through the example's 3x3 percentage-closer filtering, over three frames, the camera turned as CAMERA_ORBITAL turns it and the light as the arrow keys turn it",
+  "kind": "pixels",
+  "reference": "scene.c",
+  "harness": [
+    "Main.hx"
+  ],
+  "assets": {
+    "web/robot.glb": "../assets/robot.glb",
+    "web/shadowmap.vs": "raylib:examples/shaders/resources/shaders/glsl330/shadowmap.vs",
+    "web/shadowmap.fs": "raylib:examples/shaders/resources/shaders/glsl330/shadowmap.fs"
+  },
+  "shaders": [
+    [
+      "web/shadowmap.vs",
+      "web/shadowmap.fs",
+      "web/shadowmap.shader"
+    ]
+  ],
+  "frames": 40,
+  "backends": {
+    "gl": 10500,
+    "sdl_gpu": 15000
+  },
+  "notes": "Every pixel that differs on GL is the robot's: the floor's and the cube's lighting and shadows, the robot's shadow on the floor among them, match raylib's pixel for pixel. On the robot about 9,100 differ by 1 to 4 levels, its CPU skinning's and lighting's rounding made large by the shader's gamma on its dark red, and about 800 by more, where its surfaces meet their own depth in the shadow map within the example's small bias and the rounding tips the comparison (shadow acne). SDL_GPU (Vulkan on lavapipe) differs by a level on about 3,000 more across the floor. Its oracle is 6.2, UpdateModelAnimation's; 6.2's copies of the example's shaders differ from 5.5's in spacing and comments alone. No multisampling, which the example asks for: its edges would differ by the rasterizers' coverage."
+}

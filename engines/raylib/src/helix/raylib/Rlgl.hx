@@ -1469,9 +1469,9 @@ class Rlgl {
 		return helix.platform.macros.Build.unsupported("rlLoadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making a render texture whose depth a shader samples. */
 	public static macro function rlLoadTextureDepth(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a render texture whose depth a shader samples is made with LoadShadowmapRenderTexture (import helix.raylib.extras.Shadowmaps.*;), its depth bound with SetShaderValueTexture.",
 			macro(0 : Int));
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */

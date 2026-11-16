@@ -25,7 +25,8 @@ class Program {
 	public final textures:Array<Int> = [];
 
 	/** Finds a texture's GPU handle by its id (`Textures.handle`), set by `SetShaderValueTexture` with the first texture it sets, so a
-		program that sets none links nothing of the textures' sending. */
+		program that sets none links nothing of the textures' sending; or by the first `LoadShadowmapRenderTexture`, which answers 0 for a
+		render texture's own depth while it is drawn into. */
 	public static var resolve:Null<Int->Int>;
 
 	/** Writes the GPU handle of the texture at each slot (`resolve`), 0 for a slot with none, for a draw's own textures.

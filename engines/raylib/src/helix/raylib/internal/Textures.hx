@@ -211,6 +211,19 @@ class Textures {
 		return id;
 	}
 
+	/** Forgets a texture `fromHandle` made without freeing its GPU handle, which its owner frees: a render target's depth texture
+		(`LoadShadowmapRenderTexture`), freed with its target.
+
+		@param id  The texture's id. */
+	public static function forgetHandle(id:Int):Void {
+		var e = entries.get(id);
+		if (e == null)
+			return;
+		samplings.remove(e.gpu);
+		entries.remove(id);
+		forget(id);
+	}
+
 	// Whether graphicsRestored is in Runtime.restoring: put there as the first texture is made.
 	static var restoring = false;
 

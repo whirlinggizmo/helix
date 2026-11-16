@@ -1290,13 +1290,13 @@ class RRlgl {
 	}
 
 	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See
-		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+		`LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making a render texture whose depth a shader samples.
 
 		@param width  As rlgl takes it.
 		@param height  As rlgl takes it.
 		@param useRenderBuffer  As rlgl takes it.
 		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a render texture whose depth a shader samples is made with LoadShadowmapRenderTexture (import helix.raylib.extras.Shadowmaps.*;), its depth bound with SetShaderValueTexture.")
 	static function rlLoadTextureDepth(width:Int, height:Int, useRenderBuffer:Bool):Int {
 		throw "rlLoadTextureDepth is unsupported";
 	}

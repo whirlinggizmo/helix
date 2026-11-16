@@ -3258,7 +3258,8 @@ class RCore {
 		var slot = shader.program.textureSlot(locIndex);
 		if (slot >= 0) {
 			Runtime.frame.cut();
-			helix.raylib.internal.Program.resolve = Textures.handle;
+			if (helix.raylib.internal.Program.resolve == null)
+				helix.raylib.internal.Program.resolve = Textures.handle;
 			shader.program.setTexture(slot, texture.id);
 		}
 	}

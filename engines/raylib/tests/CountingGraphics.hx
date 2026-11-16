@@ -213,8 +213,12 @@ class CountingGraphics implements IGraphics {
 
 	public function resetScissor():Void {}
 
+	/** The textures each draw bound, by slot, in order. */
+	public final drawnTextures:Array<Array<Int>> = [];
+
 	public function draw(pipeline:Int, buffers:Array<Int>, bufferOffsets:Null<Array<Int>>, indexBuffer:Int, firstElementIndex:Int, elementCount:Int,
-		firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void {}
+			firstInstanceIndex:Int, instanceCount:Int, textures:Array<Int>, samplings:Array<Sampling>, uniforms:Array<Null<Bytes>>):Void
+		drawnTextures.push(textures.copy());
 
 	public function endFrame():Void {}
 

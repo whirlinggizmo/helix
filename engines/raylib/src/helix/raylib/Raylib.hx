@@ -3919,7 +3919,8 @@ class Raylib {
 	public static inline function GetPixelDataSize(width:Int, height:Int, format:Int):Int
 		return RTextures.GetPixelDataSize(width, height, format);
 
-	/** Makes a texture to draw into, with depth, 8-bit RGBA.
+	/** Makes a texture to draw into, with depth, 8-bit RGBA. See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for
+		making one whose depth a shader samples.
 
 		What is drawn into the render texture stays from frame to frame.
 

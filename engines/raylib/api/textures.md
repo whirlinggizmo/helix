@@ -230,7 +230,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `height`: The height.
   - `format`: The format (`PIXELFORMAT_*`).
   - returns: The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes. An unknown format, a width or height of 0 or less, and a size of 2 GB or more (with a warning) give 0.
-- `LoadRenderTexture`: Makes a texture to draw into, with depth, 8-bit RGBA.
+- `LoadRenderTexture`: Makes a texture to draw into, with depth, 8-bit RGBA. See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making one whose depth a shader samples.
   - `width`: Its width, in pixels.
   - `height`: Its height.
   - returns: The render texture.

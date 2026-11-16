@@ -74,6 +74,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `lighting` | 6.2 | pixels | raylib's lighting example (rlights.h, lighting.vs and lighting.fs, compiled ahead of time): point and directional lights, one off; greenman lit and posed twice in a frame (on the CPU, as raylib skins it), and lit by a program's own vertex stage over `<helix/raylib/shaders/skinning.glsl>` (on the GPU, raylib's CPU skinning its oracle), both shaders lit by the same lights |
 | `modular_scene` | 6.2 | pixels | the modular woman dressed and holding the sword, CPU-skinned |
 | `waves` | 5.5 | values | `LoadWave` on WAV, Ogg Vorbis, MP3 (with a LAME tag and without), QOA and FLAC (refused): frames, rate, sample size, channels and every sample, natively and in a page; FLAC music refused |
+| `shadowmap` | 6.2 | pixels | raylib's shadowmap example: `LoadShadowmapRenderTexture` (the Shadowmaps extra), its depth bound with `SetShaderValueTexture` and read by the example's own shaders, over a cube floor, a cube and the animated robot |
 | `cubemaps_62` | 6.2 | pixels | `LoadTextureCubemap` in each layout, raylib's skybox example, and cubes sampling cubemaps through their material |
 | `vr` | 5.5 | pixels | raylib's VR simulator: both eyes drawn into a render texture (shapes and a model), drawn through its distortion shader |
 | `raygui` | 5.5 | pixels | raygui 4.5-dev's controls in each state `GuiSetState` sets, its C built against raylib 5.5 |
