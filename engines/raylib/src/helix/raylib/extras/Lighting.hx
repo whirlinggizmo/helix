@@ -52,8 +52,8 @@ import helix.raylib.modules.RLighting;
 	```haxe
 	sun.shadows.distance = 30;
 	sun.shadows.cascadeCount = 2;
-	SetLightShadowCasting(sun, true);
-	SetLightShadowCasting(lamp, true);
+	EnableLightShadows(sun);
+	EnableLightShadows(lamp);
 	// each frame, before BeginDrawing or after it and before BeginMode3D
 	BeginShadowMode(camera);
 	DrawModel(island, Vector3Zero(), 1, WHITE);
@@ -67,7 +67,7 @@ import helix.raylib.modules.RLighting;
 	EndDrawing();
 	```
 
-	A light casts shadows once `SetLightShadowCasting` turns them on, 4 lights at most. The light's `shadows` say how they are made, each
+	A light casts shadows once `EnableLightShadows` turns them on, 4 lights at most. The light's `shadows` say how they are made, each
 	field read at each shadow pass. The casting lights share one shadow map, as large as the largest `mapSize` asked
 	for. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters
 	are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through
@@ -146,23 +146,28 @@ class Lighting {
 	public static inline function UnloadLight(light:Light):Void
 		RLighting.UnloadLight(light);
 
-	/** Turns a light's shadows on or off. A light casts none until turned on. The light's `shadows` say how its shadows are made.
+	/** Turns a light's shadows on. A light casts none until then. The light's `shadows` say how its shadows are made.
 
-		4 lights cast shadows at most. Turning a fifth on is refused, with a warning, and the fifth stays off. Turning a light off frees
-		its place for another. `UnloadLight` turns it off.
+		4 lights cast shadows at most. Enabling a fifth's is refused, with a warning, and the fifth casts none. `DisableLightShadows` and
+		`UnloadLight` free a light's place for another.
 
 		@param light  The light, from `CreateLight`.
-		@param casting  true to cast shadows, false to cast none.
-		@return  False when turning the light's shadows on is refused, as 4 other lights cast shadows. */
-	public static inline function SetLightShadowCasting(light:Light, casting:Bool):Bool
-		return RLighting.SetLightShadowCasting(light, casting);
+		@return  False when refused, as 4 other lights cast shadows. */
+	public static inline function EnableLightShadows(light:Light):Bool
+		return RLighting.EnableLightShadows(light);
 
-	/** Returns whether a light casts shadows (`SetLightShadowCasting`).
+	/** Turns a light's shadows off, freeing its place among the 4 lights that may cast them. Its `shadows` are kept.
+
+		@param light  The light, from `CreateLight`. */
+	public static inline function DisableLightShadows(light:Light):Void
+		RLighting.DisableLightShadows(light);
+
+	/** Returns whether a light casts shadows (`EnableLightShadows`).
 
 		@param light  The light, from `CreateLight`.
 		@return  true when it casts shadows. */
-	public static inline function IsLightShadowCasting(light:Light):Bool
-		return RLighting.IsLightShadowCasting(light);
+	public static inline function IsLightCastingShadows(light:Light):Bool
+		return RLighting.IsLightCastingShadows(light);
 
 	/** Starts the frame's shadow pass, until `EndShadowMode`: what is drawn casts shadows, from every light that casts them, and is
 		drawn nowhere else. Call it before `BeginDrawing`, or after it and before `BeginMode3D`, not within a 3D or texture mode.

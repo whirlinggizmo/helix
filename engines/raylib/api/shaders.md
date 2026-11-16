@@ -39,9 +39,9 @@ raylib's lighting from its examples' rlights.h and lighting.fs, lit by the scene
 
 It declares rlights' uniforms: lights[MAX_LIGHTS] (MAX_LIGHTS is 8), ambient and viewPos. Each draw's lights are the scene's lights reaching it most (CreateLight), written before the draw, the rest off. The program sets viewPos, the camera's position, each frame at shader.locs[SHADER_LOC_VECTOR_VIEW].
 
-Each light also has helix-raylib's range, intensity and a spot light's cone (a Light's range, intensity, innerAngle and outerAngle, the Lighting extra's): lights[i].range, lights[i].intensity, and lights[i].innerCosine and lights[i].outerCosine, the cosines of the cone's angles. lights[i].shadow is its shadows' index plus 1, 0 for a light that casts none (SetLightShadowCasting).
+Each light also has helix-raylib's range, intensity and a spot light's cone (a Light's range, intensity, innerAngle and outerAngle, the Lighting extra's): lights[i].range, lights[i].intensity, and lights[i].innerCosine and lights[i].outerCosine, the cosines of the cone's angles. lights[i].shadow is its shadows' index plus 1, 0 for a light that casts none (EnableLightShadows).
 
-It includes <helix/raylib/shaders/shadows.glsl>, so a light casting shadows (SetLightShadowCasting, BeginShadowMode) is shadowed in helixLight, and helixShadow is there for the program's own lighting.
+It includes <helix/raylib/shaders/shadows.glsl>, so a light casting shadows (EnableLightShadows, BeginShadowMode) is shadowed in helixLight, and helixShadow is there for the program's own lighting.
 
 It also declares the material's values (the Materials extra's), written by each draw: emissiveColor, the light the material gives off, its color times its intensity; modelEmissiveColor, the light its model gives off (SetModelEmissive), 0 for a mesh drawn alone; and alphaCutoff, 0 for none.
 

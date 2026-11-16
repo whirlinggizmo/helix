@@ -24,11 +24,11 @@ class Main {
 		var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(-6, 8, 0), Vector3Zero(), WHITE, shader);
 		sun.shadows.distance = 30;
 		sun.shadows.cascadeCount = 2;
-		SetLightShadowCasting(sun, true);
+		EnableLightShadows(sun);
 		var lamp = CreateLight(LIGHT_POINT, new Vector3(3, 2.5, 3), Vector3Zero(), new Color(255, 190, 120, 255), shader);
 		lamp.range = 6;
 		lamp.intensity = 4;
-		SetLightShadowCasting(lamp, true);
+		EnableLightShadows(lamp);
 		floor = shaded(GenMeshPlane(14, 14, 1, 1), new Color(200, 200, 200, 255), shader);
 		pillar = shaded(GenMeshCube(1, 4, 1), new Color(180, 70, 60, 255), shader);
 		cube = shaded(GenMeshCube(1.2, 1.2, 1.2), new Color(70, 110, 190, 255), shader);

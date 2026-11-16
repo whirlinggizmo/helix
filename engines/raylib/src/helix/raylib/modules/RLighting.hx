@@ -114,27 +114,30 @@ class RLighting {
 		@:privateAccess light.shadowIndex = 0;
 	}
 
-	/** Turns a light's shadows on or off. A light casts none until turned on. The light's `shadows` say how its shadows are made.
+	/** Turns a light's shadows on. A light casts none until then. The light's `shadows` say how its shadows are made.
 
-		4 lights cast shadows at most. Turning a fifth on is refused, with a warning, and the fifth stays off. Turning a light off frees
-		its place for another. `UnloadLight` turns it off.
+		4 lights cast shadows at most. Enabling a fifth's is refused, with a warning, and the fifth casts none. `DisableLightShadows` and
+		`UnloadLight` free a light's place for another.
 
 		@param light  The light, from `CreateLight`.
-		@param casting  true to cast shadows, false to cast none.
-		@return  False when turning the light's shadows on is refused, as 4 other lights cast shadows. */
-	static function SetLightShadowCasting(light:Light, casting:Bool):Bool {
-		if (casting)
-			return helix.raylib.internal.Shadows.addCaster(light);
-		@:privateAccess light.shadowCasting = false;
-		@:privateAccess light.shadowIndex = 0;
-		return true;
+		@return  False when refused, as 4 other lights cast shadows. */
+	static function EnableLightShadows(light:Light):Bool {
+		return helix.raylib.internal.Shadows.addCaster(light);
 	}
 
-	/** Returns whether a light casts shadows (`SetLightShadowCasting`).
+	/** Turns a light's shadows off, freeing its place among the 4 lights that may cast them. Its `shadows` are kept.
+
+		@param light  The light, from `CreateLight`. */
+	static function DisableLightShadows(light:Light):Void {
+		@:privateAccess light.shadowCasting = false;
+		@:privateAccess light.shadowIndex = 0;
+	}
+
+	/** Returns whether a light casts shadows (`EnableLightShadows`).
 
 		@param light  The light, from `CreateLight`.
 		@return  true when it casts shadows. */
-	static function IsLightShadowCasting(light:Light):Bool {
+	static function IsLightCastingShadows(light:Light):Bool {
 		return @:privateAccess light.shadowCasting;
 	}
 

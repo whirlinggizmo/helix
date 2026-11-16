@@ -34,8 +34,8 @@ SHADER_UNIFORM_VEC3);
 ```haxe
 sun.shadows.distance = 30;
 sun.shadows.cascadeCount = 2;
-SetLightShadowCasting(sun, true);
-SetLightShadowCasting(lamp, true);
+EnableLightShadows(sun);
+EnableLightShadows(lamp);
 // each frame, before BeginDrawing or after it and before BeginMode3D
 BeginShadowMode(camera);
 DrawModel(island, Vector3Zero(), 1, WHITE);
@@ -49,7 +49,7 @@ EndMode3D();
 EndDrawing();
 ```
 
-A light casts shadows once `SetLightShadowCasting` turns them on, 4 lights at most. The light's `shadows` say how they are made, each field read at each shadow pass. The casting lights share one shadow map, as large as the largest `mapSize` asked for. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through `<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of `lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way from it.
+A light casts shadows once `EnableLightShadows` turns them on, 4 lights at most. The light's `shadows` say how they are made, each field read at each shadow pass. The casting lights share one shadow map, as large as the largest `mapSize` asked for. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through `<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of `lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way from it.
 
 A shader compiled by `CompileShaderFile` carries its shadow variant: its own vertex stage, with a fragment stage writing depth alone and cutting at the material's alpha cutoff (the Materials extra). The shadow pass draws through it.
 
@@ -65,8 +65,9 @@ static inline var LIGHT_SPOT:Int
 static function LoadLightingShader():Shader
 static function LoadPbrShader():Shader
 static function UnloadLight(light:Light):Void
-static function SetLightShadowCasting(light:Light, casting:Bool):Bool
-static function IsLightShadowCasting(light:Light):Bool
+static function EnableLightShadows(light:Light):Bool
+static function DisableLightShadows(light:Light):Void
+static function IsLightCastingShadows(light:Light):Bool
 static function BeginShadowMode(camera:Camera3D):Void
 static function EndShadowMode():Void
 ```
@@ -105,13 +106,14 @@ static function EndShadowMode():Void
   ```
 - `UnloadLight`: Takes a light out of the scene. It lights nothing after, and its shadows are freed.
   - `light`: The light, from `CreateLight`.
-- `SetLightShadowCasting`: Turns a light's shadows on or off. A light casts none until turned on. The light's `shadows` say how its shadows are made.
+- `EnableLightShadows`: Turns a light's shadows on. A light casts none until then. The light's `shadows` say how its shadows are made.
   - `light`: The light, from `CreateLight`.
-  - `casting`: true to cast shadows, false to cast none.
-  - returns: False when turning the light's shadows on is refused, as 4 other lights cast shadows.
+  - returns: False when refused, as 4 other lights cast shadows.
 
-  4 lights cast shadows at most. Turning a fifth on is refused, with a warning, and the fifth stays off. Turning a light off frees its place for another. `UnloadLight` turns it off.
-- `IsLightShadowCasting`: Returns whether a light casts shadows (`SetLightShadowCasting`).
+  4 lights cast shadows at most. Enabling a fifth's is refused, with a warning, and the fifth casts none. `DisableLightShadows` and `UnloadLight` free a light's place for another.
+- `DisableLightShadows`: Turns a light's shadows off, freeing its place among the 4 lights that may cast them. Its `shadows` are kept.
+  - `light`: The light, from `CreateLight`.
+- `IsLightCastingShadows`: Returns whether a light casts shadows (`EnableLightShadows`).
   - `light`: The light, from `CreateLight`.
   - returns: true when it casts shadows.
 - `BeginShadowMode`: Starts the frame's shadow pass, until `EndShadowMode`: what is drawn casts shadows, from every light that casts them, and is drawn nowhere else. Call it before `BeginDrawing`, or after it and before `BeginMode3D`, not within a 3D or texture mode.

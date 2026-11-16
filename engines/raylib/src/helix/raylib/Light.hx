@@ -59,10 +59,10 @@ class Light {
 
 	/** Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow
 		pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See
-		`SetLightShadowCasting` for turning the light's shadows on. */
+		`EnableLightShadows` for turning the light's shadows on. */
 	public var shadows(get, null):helix.raylib.extras.ShadowOptions;
 
-	// Whether it casts shadows (SetLightShadowCasting), and its shadows' index in the frame's shadows plus 1, 0 while it casts none
+	// Whether it casts shadows (EnableLightShadows), and its shadows' index in the frame's shadows plus 1, 0 while it casts none
 	// (Shadows).
 	@:allow(helix.raylib)
 	var shadowCasting = false;

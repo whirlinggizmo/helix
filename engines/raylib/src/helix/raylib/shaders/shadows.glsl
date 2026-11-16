@@ -1,4 +1,4 @@
-// <helix/raylib/shaders/shadows.glsl>: the shadows of the scene's lights (the Lighting extra's SetLightShadowCasting and
+// <helix/raylib/shaders/shadows.glsl>: the shadows of the scene's lights (the Lighting extra's EnableLightShadows and
 // BeginShadowMode), for a fragment stage.
 //
 // It includes <helix/raylib/shaders/lights.glsl>, which includes it too, so helixLight and helixPbr receive the shadows as well.

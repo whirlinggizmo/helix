@@ -6,7 +6,7 @@ import helix.math.Matrix4;
 import helix.math.Vector3;
 import helix.services.shaders.ShaderUniform;
 
-/** Holds the scene's shadows (the Lighting extra's `SetLightShadowCasting`, `BeginShadowMode` and `EndShadowMode`): the lights casting
+/** Holds the scene's shadows (the Lighting extra's `EnableLightShadows`, `BeginShadowMode` and `EndShadowMode`): the lights casting
 	them, 4 at most, in the order turned on, and the shadow map their maps are layers of. The map is as large as the largest `mapSize` a
 	casting light asks for, and each light's maps are whole layers of it. Each pass reads the casting lights' `shadows`, each field held
 	to its range there.
@@ -17,7 +17,7 @@ import helix.services.shaders.ShaderUniform;
 	its own vertex stage writing depth alone), the batch through its program's. Every lit draw after it reads the maps, written into its
 	program once a pass (`receive`).
 
-	Linked only by a program calling `SetLightShadowCasting` or `BeginShadowMode`. */
+	Linked only by a program calling `EnableLightShadows` or `BeginShadowMode`. */
 @:noCompletion
 @:access(helix.raylib.Light)
 @:access(helix.raylib.Material)

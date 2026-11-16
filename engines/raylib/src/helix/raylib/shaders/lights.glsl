@@ -7,9 +7,9 @@
 //
 // Each light also has helix-raylib's range, intensity and a spot light's cone (a Light's range, intensity, innerAngle and outerAngle,
 // the Lighting extra's): lights[i].range, lights[i].intensity, and lights[i].innerCosine and lights[i].outerCosine, the cosines of the
-// cone's angles. lights[i].shadow is its shadows' index plus 1, 0 for a light that casts none (SetLightShadowCasting).
+// cone's angles. lights[i].shadow is its shadows' index plus 1, 0 for a light that casts none (EnableLightShadows).
 //
-// It includes <helix/raylib/shaders/shadows.glsl>, so a light casting shadows (SetLightShadowCasting, BeginShadowMode) is shadowed in
+// It includes <helix/raylib/shaders/shadows.glsl>, so a light casting shadows (EnableLightShadows, BeginShadowMode) is shadowed in
 // helixLight, and helixShadow is there for the program's own lighting.
 //
 // It also declares the material's values (the Materials extra's), written by each draw: emissiveColor, the light the material gives

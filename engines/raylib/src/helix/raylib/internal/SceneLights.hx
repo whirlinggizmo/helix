@@ -46,7 +46,7 @@ class SceneLights {
 	];
 	static final NONE:Array<Null<ShaderUniform>> = [];
 
-	/** Writes the shadows into a program its draw's lights are written into (`Shadows`): set by the first `SetLightShadowCasting`, null in a
+	/** Writes the shadows into a program its draw's lights are written into (`Shadows`): set by the first `EnableLightShadows`, null in a
 		program casting none. It has no initial value, as `Frame.spriteShader` has none. */
 	public static var receiving:Null<Program->Void>;
 
