@@ -10,7 +10,7 @@ the raylib module it serves, so a program's import of raylib's header brings the
 file calls (RFilesAsync) and the compiled shaders (RCompiledShaders) after RCore, RTexturesAsync after RTextures, RTextAsync after
 RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAsync after RGui.
 What a program opts into that raylib has no call for is in the package helix.raylib.extras, a module and a section of its own each
-(extras.Lighting from RLighting, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.Assets from RAssets, extras.GuiSkins from
+(extras.Lighting from RLighting, extras.Materials from RMaterials, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.Assets from RAssets, extras.GuiSkins from
 RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, a model's posed bounds, merge and masked blend in extras.Models from
 RModelsPosed, RModelsMerged and RModelsMasked, and the fills, tiled and patched draws, atlases and fitted render texture in
 extras.Textures from RTextureFills, RTextureDraws, RTextureAtlases and RRenderTextureFit).
@@ -92,7 +92,8 @@ TARGETS = {
         ('RModelsMerged', "models: models merged into one"),
         ('RModelsMasked', "models: two animations blended bone by bone"),
     ], None, 'Models'),
-    'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders rlights' lights light")], None, 'Lighting'),
+    'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders, and a light's intensity, range and cone")], None, 'Lighting'),
+    'extras/Materials.hx': ([('RMaterials', "materials: what a material gives off, where it is cut out, and whether light and shadows fall on it")], None, 'Materials'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
     'extras/Device.hx': ([('RDevice', "device: the safe area, the device, the window's abilities, orientation and tilt")], None, 'Device'),
     'extras/Assets.hx': ([('RAssets', "assets: the asset host, and files ensured ahead of raylib's loads")], None, 'Assets'),

@@ -332,11 +332,9 @@ var format:Int
 
 *class* in [`engines/raylib/src/helix/raylib/Light.hx`](../src/helix/raylib/Light.hx), `import helix.raylib.Light;`
 
-Represents rlights' `Light` (raylib's examples' `rlights.h`): one light of a lit shader.
+Represents rlights' `Light` (raylib's examples' `rlights.h`): one light of the scene.
 
-Made by `CreateLight`.
-
-`UpdateLightValues` (`helix.raylib.Rlights`) sends a changed field to the shader.
+Made by `CreateLight`. Its fields are read at each draw, so a light changes by setting them.
 
 ```haxe
 function new()
@@ -354,18 +352,18 @@ var colorLoc:Int
 var attenuationLoc:Int
 ```
 
-- `new`: Creates a light that is off, every field 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light that shines.
-- `type`: Gets or sets the light's type: `LIGHT_DIRECTIONAL` or `LIGHT_POINT`.
+- `new`: Creates a light that is off, each of rlights' fields 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light of the scene.
+- `type`: Gets or sets the light's type: `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, or the Lighting extra's `LIGHT_SPOT`.
 - `enabled`: Gets or sets a value indicating whether the light shines.
 - `position`: Gets or sets the light's position.
-- `target`: Gets or sets the target, the point setting a directional light's direction.
+- `target`: Gets or sets the target: the point a directional or spot light shines toward.
 - `color`: Gets or sets the light's color.
 - `attenuation`: Gets or sets the attenuation, which rlights keeps and its shader ignores.
-- `enabledLoc`: Gets or sets the location of `enabled` in the light's shader.
-- `typeLoc`: Gets or sets the location of `type`.
-- `positionLoc`: Gets or sets the location of `position`.
-- `targetLoc`: Gets or sets the location of `target`.
-- `colorLoc`: Gets or sets the location of `color`.
+- `enabledLoc`: Gets or sets rlights' location of `enabled` in its shader. helix-raylib reads the light's fields at each draw instead.
+- `typeLoc`: Gets or sets rlights' location of `type`.
+- `positionLoc`: Gets or sets rlights' location of `position`.
+- `targetLoc`: Gets or sets rlights' location of `target`.
+- `colorLoc`: Gets or sets rlights' location of `color`.
 - `attenuationLoc`: Gets or sets the location of `attenuation`, which rlights never finds.
 
 ## Material
@@ -383,7 +381,6 @@ function new(shader:Shader, maps:Array<MaterialMap>, ?params:Array<Float>)
 var shader(default, set):Shader
 var maps:Array<MaterialMap>
 var params:Array<Float>
-var unlit:Bool
 ```
 
 - `new`: Creates a material. See `Raylib.LoadMaterialDefault` for making raylib's default material, and `LoadModelAsync` for loading a model's materials.
@@ -396,10 +393,6 @@ var unlit:Bool
   A freed material lets go of its shader. The default shader is never freed.
 - `maps`: Gets the maps, `MAX_MATERIAL_MAPS` of them, by `MATERIAL_MAP_*`.
 - `params`: Gets four values for a shader's own use.
-- `unlit`: Gets or sets a value indicating whether the material is unlit (a glTF's `KHR_materials_unlit`), showing its base color lit by nothing.
-  `LoadModel` sets it from the file.
-
-  `LoadPbrShader` draws an unlit material's base color and no light. raylib's own shaders ignore it.
 
 ## MaterialMap
 
@@ -908,7 +901,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.Rlights.*;
 ```
 
-A light is set in a shader that declares rlights' uniforms, such as the examples' `lighting.fs`. The light's type, `Light`, is `helix.raylib`'s.
+A light is one of the scene's, shining on every draw through a shader that declares rlights' uniforms, such as the examples' `lighting.fs`. The light's type, `Light`, is `helix.raylib`'s.
 
 Its members are on their own page: [rlights.md](rlights.md).
 

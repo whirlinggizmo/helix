@@ -13,55 +13,36 @@ import helix.raylib.Rlights.*;
 @:allow(helix.raylib)
 class RLights {
 	#if !macro
-	// The lights made, as rlights counts them: each takes the next of a shader's lights, MAX_LIGHTS at most.
-	static var lightsCount:Null<Int>;
+	/** Makes a light of the scene, as rlights' `CreateLight` makes one of a shader. The light shines on every lit draw, whichever shader
+		it was made with: the Lighting extra's `LoadLightingShader` and `LoadPbrShader`, and a shader declaring rlights' `lights`, such as
+		raylib's examples' `lighting.fs` or one including `<helix/raylib/shaders/lights.glsl>`. A program makes as many lights as it needs.
 
-	/** Makes a light and sets it in a shader, as rlights' `CreateLight`: the next of the shader's `lights`, its locations found by name
-		(`lights[0].enabled` and the rest). Past `MAX_LIGHTS` lights it makes a light that is off and sets nothing. The count is the
-		program's, as rlights' is, not the shader's.
+		Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at
+		each draw, so the light moves or changes by setting them. The Lighting extra sets its intensity, range and cone, and `UnloadLight`
+		takes it out of the scene.
 
 		@param type  `LIGHT_DIRECTIONAL` or `LIGHT_POINT`.
 		@param position  Where it is.
 		@param target  Where it points, for a directional light.
 		@param color  Its color.
-		@param shader  The shader.
+		@param shader  The shader it is made with, as rlights takes one.
 		@return  The light. */
 	static function CreateLight(type:Int, position:Vector3, target:Vector3, color:Color, shader:Shader):Light {
 		var light = new Light();
-		var count = lightsCount == null ? 0 : lightsCount;
-		if (count < MAX_LIGHTS) {
-			light.enabled = true;
-			light.type = type;
-			light.position = position;
-			light.target = target;
-			light.color = color;
-			light.enabledLoc = GetShaderLocation(shader, 'lights[$count].enabled');
-			light.typeLoc = GetShaderLocation(shader, 'lights[$count].type');
-			light.positionLoc = GetShaderLocation(shader, 'lights[$count].position');
-			light.targetLoc = GetShaderLocation(shader, 'lights[$count].target');
-			light.colorLoc = GetShaderLocation(shader, 'lights[$count].color');
-			UpdateLightValues(shader, light);
-			lightsCount = count + 1;
-		}
+		light.enabled = true;
+		light.type = type;
+		light.position = position;
+		light.target = target;
+		light.color = color;
+		helix.raylib.internal.SceneLights.add(light);
 		return light;
 	}
 
-	/** Sets a light's values in a shader, as rlights' `UpdateLightValues`: whether it is on, its type, position, target and color, for
-		the draws after it.
+	/** Kept as rlights' `UpdateLightValues`, for a program written for rlights. A light's fields are read at each draw, so the draws
+		after a change show it with or without this call.
 
 		@param shader  The shader.
 		@param light  The light. */
-	static function UpdateLightValues(shader:Shader, light:Light):Void {
-		SetShaderValue(shader, light.enabledLoc, light.enabled ? 1 : 0, SHADER_UNIFORM_INT);
-		SetShaderValue(shader, light.typeLoc, light.type, SHADER_UNIFORM_INT);
-		SetShaderValue(shader, light.positionLoc, [light.position.x, light.position.y, light.position.z], SHADER_UNIFORM_VEC3);
-		SetShaderValue(shader, light.targetLoc, [light.target.x, light.target.y, light.target.z], SHADER_UNIFORM_VEC3);
-		SetShaderValue(shader, light.colorLoc, [
-			light.color.r / 255,
-			light.color.g / 255,
-			light.color.b / 255,
-			light.color.a / 255
-		], SHADER_UNIFORM_VEC4);
-	}
+	static function UpdateLightValues(shader:Shader, light:Light):Void {}
 	#end
 }

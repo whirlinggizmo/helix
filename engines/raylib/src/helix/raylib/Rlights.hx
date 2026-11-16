@@ -17,10 +17,10 @@ import helix.raylib.modules.RLights;
 	import helix.raylib.Rlights.*;
 	```
 
-	A light is set in a shader that declares rlights' uniforms, such as the examples' `lighting.fs`. The light's type, `Light`, is
-	`helix.raylib`'s. */
+	A light is one of the scene's, shining on every draw through a shader that declares rlights' uniforms, such as the examples'
+	`lighting.fs`. The light's type, `Light`, is `helix.raylib`'s. */
 class Rlights {
-	/** The most lights a shader holds, rlights' `MAX_LIGHTS`. */
+	/** The lights raylib's lighting examples make room for, rlights' `MAX_LIGHTS`. A program makes as many as it needs (`CreateLight`). */
 	public static inline final MAX_LIGHTS = 4;
 
 	/** A light shining one way from far off, from its position toward its target, rlights' `LIGHT_DIRECTIONAL`. */
@@ -35,21 +35,25 @@ class Rlights {
 	#if !macro
 	// ---- rlights: the lights of raylib's lighting examples (raylib/RLights.hx) ----
 
-	/** Makes a light and sets it in a shader, as rlights' `CreateLight`: the next of the shader's `lights`, its locations found by name
-		(`lights[0].enabled` and the rest). Past `MAX_LIGHTS` lights it makes a light that is off and sets nothing. The count is the
-		program's, as rlights' is, not the shader's.
+	/** Makes a light of the scene, as rlights' `CreateLight` makes one of a shader. The light shines on every lit draw, whichever shader
+		it was made with: the Lighting extra's `LoadLightingShader` and `LoadPbrShader`, and a shader declaring rlights' `lights`, such as
+		raylib's examples' `lighting.fs` or one including `<helix/raylib/shaders/lights.glsl>`. A program makes as many lights as it needs.
+
+		Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at
+		each draw, so the light moves or changes by setting them. The Lighting extra sets its intensity, range and cone, and `UnloadLight`
+		takes it out of the scene.
 
 		@param type  `LIGHT_DIRECTIONAL` or `LIGHT_POINT`.
 		@param position  Where it is.
 		@param target  Where it points, for a directional light.
 		@param color  Its color.
-		@param shader  The shader.
+		@param shader  The shader it is made with, as rlights takes one.
 		@return  The light. */
 	public static inline function CreateLight(type:Int, position:Vector3, target:Vector3, color:Color, shader:Shader):Light
 		return RLights.CreateLight(type, position, target, color, shader);
 
-	/** Sets a light's values in a shader, as rlights' `UpdateLightValues`: whether it is on, its type, position, target and color, for
-		the draws after it.
+	/** Kept as rlights' `UpdateLightValues`, for a program written for rlights. A light's fields are read at each draw, so the draws
+		after a change show it with or without this call.
 
 		@param shader  The shader.
 		@param light  The light. */

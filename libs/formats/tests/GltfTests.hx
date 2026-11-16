@@ -99,7 +99,7 @@ class GltfTests {
 			"nodes":[{"name":"root","translation":[1,2,3],"scale":[2,2,2],"children":[1]},
 				{"name":"child","mesh":0,"matrix":[1,0,0,0, 0,1,0,0, 0,0,1,0, 5,6,7,1]}],
 			"meshes":[{"name":"triangle","primitives":[{"attributes":{"POSITION":0,"TEXCOORD_0":1,"COLOR_0":2},"indices":3,"material":0}]}],
-			"materials":[{"name":"paint","pbrMetallicRoughness":{"baseColorFactor":[1,0.5,0.25,1],"baseColorTexture":{"index":0},"metallicFactor":0}},{"name":"sign","extensions":{"KHR_materials_unlit":{}}}],
+			"materials":[{"name":"paint","pbrMetallicRoughness":{"baseColorFactor":[1,0.5,0.25,1],"baseColorTexture":{"index":0},"metallicFactor":0}},{"name":"sign","alphaMode":"MASK","alphaCutoff":0.25,"extensions":{"KHR_materials_unlit":{}}}],
 			"textures":[{"source":0}],
 			"images":[{"bufferView":4,"mimeType":"image/png"}],
 			"buffers":[{"byteLength":88}],
@@ -136,6 +136,11 @@ class GltfTests {
 		check(model.materials.length == 2 && material.name == "paint" && same(material.baseColorFactor, [1, 0.5, 0.25, 1]),
 			"GLB: a material's name and base color");
 		check(!material.unlit && model.materials[1].unlit && !model.materials[1].hasPbrMetallicRoughness, "GLB: KHR_materials_unlit read");
+		check(material.alphaMode == "OPAQUE"
+			&& material.alphaCutoff == 0.5
+			&& model.materials[1].alphaMode == "MASK"
+			&& model.materials[1].alphaCutoff == 0.25,
+			"GLB: alphaMode and alphaCutoff read, OPAQUE and 0.5 when the file gives none");
 		check(material.baseColorImageIndex == 0 && material.metallic == 0 && material.roughness == 1, "GLB: its texture's image, its factors");
 		check(material.normalImageIndex == -1 && material.emissiveImageIndex == -1 && same(material.emissiveFactor, [0, 0, 0]),
 			"GLB: no normal or emissive image, black emission");

@@ -1,17 +1,20 @@
 // <helix/raylib/shaders/pbr.glsl>: a metallic-roughness surface lit by rlights' lights, for a fragment stage.
 //
-// It includes <helix/raylib/shaders/lights.glsl>, so it declares the same uniforms, set the same way.
+// It includes <helix/raylib/shaders/lights.glsl>, so it declares the same uniforms, set the same way: the lights, and the material's
+// emissiveColor, modelEmissiveColor and alphaCutoff.
 //
 // vec3 helixDecodeSrgb(vec3 color) converts sRGB to linear. vec3 helixEncodeSrgb(vec3 linear) converts back.
 //
 // vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal)
 // returns the fragment's lit color, tone mapped (Khronos PBR Neutral) and encoded to sRGB. Its alpha is baseColor's. Colors in the usual
-// range come out as authored, and brighter light rolls off toward white instead of clipping.
+// range come out as authored, and brighter light rolls off toward white instead of clipping. emissive is the light the material gives
+// off (emissiveColor, times an emission map's texels when the shader has one), and helixPbr adds modelEmissiveColor to it. A fragment
+// whose baseColor alpha is below alphaCutoff is discarded.
 //
 // Its inputs are linear, as a glTF's factors are. Decode a texel from an sRGB image first. fragPosition is in world space. normal
 // needn't be normalized.
 //
-// A point light dims with distance as in lights.glsl.
+// A point or spot light dims with distance, and a spot light fades across its cone, as in lights.glsl.
 //
 // vec3 helixToneMap(vec3 color) tone maps a linear color, as helixPbr does.
 //
@@ -29,7 +32,7 @@
 //     void main() {
 //         vec4 texel = texture(texture0, fragTexCoord);
 //         vec4 base = vec4(helixDecodeSrgb(texel.rgb), texel.a)*colDiffuse*fragColor;
-//         finalColor = helixPbr(base, 0.0, 0.5, 1.0, vec3(0.0), fragPosition, fragNormal);
+//         finalColor = helixPbr(base, 0.0, 0.5, 1.0, emissiveColor, fragPosition, fragNormal);
 //     }
 #ifndef HELIX_RAYLIB_SHADERS_PBR_GLSL
 #define HELIX_RAYLIB_SHADERS_PBR_GLSL
@@ -82,6 +85,8 @@ vec3 helixToneMap(vec3 color) {
 }
 
 vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal) {
+    if (baseColor.a < alphaCutoff)
+        discard;
     vec3 n = normalize(normal);
     vec3 v = normalize(viewPos - fragPosition);
     metallic = clamp(metallic, 0.0, 1.0);
@@ -91,17 +96,13 @@ vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, 
     vec3 color = (ambient.rgb/10.0)*(diffuseColor + f0)*occlusion;
     for (int i = 0; i < MAX_LIGHTS; i++) {
         if (lights[i].enabled == 1) {
-            vec3 l = vec3(0.0);
-            if (lights[i].type == LIGHT_DIRECTIONAL)
-                l = -normalize(lights[i].target - lights[i].position);
-            if (lights[i].type == LIGHT_POINT)
-                l = normalize(lights[i].position - fragPosition);
+            vec3 l = helixLightDirection(i, fragPosition);
             // A white surface facing the light shows its color: the BRDF scaled by pi.
             vec3 irradiance = lights[i].color.rgb*clamp(dot(n, l), 0.0, 1.0)*helixLightStrength(i, fragPosition);
             color += irradiance*(diffuseColor + HELIX_PI*helixGgx(l, v, n, f0, roughness));
         }
     }
-    color += emissive;
+    color += emissive + modelEmissiveColor;
     return vec4(helixEncodeSrgb(clamp(helixToneMap(color), 0.0, 1.0)), baseColor.a);
 }
 

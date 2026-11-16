@@ -59,6 +59,14 @@ class Program {
 	/** The draw's first bone in the palette, as that include declares it; null for a shader without it. */
 	public var boneOffset:Null<ShaderUniform> = null;
 
+	/** The uniforms of rlights' `lights` the scene's lights are written into (`SceneLights`), found by its first lit draw; empty for a
+		shader declaring none, null until looked for. */
+	public var lightFields:Null<Array<Null<ShaderUniform>>>;
+
+	/** The uniforms of a material's values each draw writes (`Surfaces`), found by its first draw once they're written; empty for a
+		shader declaring none, null until looked for. */
+	public var surfaceFields:Null<Array<Null<ShaderUniform>>>;
+
 	/** The platform's program handle. */
 	public final handle:Int;
 

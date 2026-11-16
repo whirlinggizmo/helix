@@ -3,6 +3,7 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Rlights.*;
 import helix.raylib.extras.Lighting.*;
+import helix.raylib.extras.Materials.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Program;
@@ -12,8 +13,8 @@ import helix.raylib.internal.Textures;
 /** Checks `LoadPbrShader`'s draws, on graphics that count what is live: its locations name its samplers, each set to its map's unit, so a
 	material's map with a texture is bound at it, one without reads white and a missing normal map a flat normal; each draw writes the
 	material's metalness, roughness and emissive values, and gives a normal-mapped mesh its tangents; a material marked unlit writes
-	unlitValue 1; a posed model's draw, through the skinned twin, binds and writes the same; and each light starts at
-	intensity 1, its range and intensity set by `SetShaderValue`. */
+	unlitValue 1; a posed model's draw, through the skinned twin, binds and writes the same; each light starts at intensity 1, and a
+	light's range and intensity (the Lighting extra's) are written into the draw's lights. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)
@@ -113,7 +114,7 @@ class PbrTests {
 		material.shader = pbr;
 		material.maps[MATERIAL_MAP_METALNESS].value = 0.25;
 		material.maps[MATERIAL_MAP_ROUGHNESS].value = 0.75;
-		material.maps[MATERIAL_MAP_EMISSION].color = new Color(255, 0, 51, 255);
+		SetMaterialEmissive(material, new Color(255, 0, 51, 255), 1);
 		var albedo = LoadTextureFromImage(GenImageColor(2, 2, RED)),
 			normal = LoadTextureFromImage(GenImageColor(2, 2, BLUE));
 		material.maps[MATERIAL_MAP_ALBEDO].texture = albedo;
@@ -121,7 +122,10 @@ class PbrTests {
 		check(drawnFloat(p, "metallicValue") == 0.25
 			&& drawnFloat(p, "roughnessValue") == 0.75, "the metalness and roughness values written");
 		check(drawnFloat(p, "emissiveColor") == 1
-			&& Math.abs(drawnFloat(p, "emissiveColor", 2) - 0.2) < 1e-6, "the emissive color written, linear");
+			&& drawnFloat(p, "emissiveColor", 1) == 0
+			&& Math.abs(drawnFloat(p, "emissiveColor", 2) - 0.2) < 1e-6,
+			"the material's emission written, linear");
+		check(drawnFloat(p, "alphaCutoff") == 0 && drawnFloat(p, "modelEmissiveColor") == 0, "no cutoff, and no model emission");
 		check(drawnTexture(p, "albedoMap") == Textures.handle(albedo.id), "the albedo map bound at its sampler");
 		check(drawnTexture(p, "roughnessMap") == Runtime.frame.white, "a map without a texture reads white");
 		var flat = drawnTexture(p, "normalMap");
@@ -134,11 +138,11 @@ class PbrTests {
 			"a mesh without tangents gets them for its normal map");
 
 		// A material marked unlit: drawn through the same program, its unlitValue 1, and 0 again once it isn't.
-		material.unlit = true;
+		SetMaterialUnlit(material, true);
 		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
 		check(drawnFloat(p, "unlitValue") == 1 && [for (_ => id in p.pipelines) id].indexOf(lastDraw().pipeline) >= 0,
 			"an unlit material's draw writes unlitValue 1, through the PBR shader");
-		material.unlit = false;
+		SetMaterialUnlit(material, false);
 		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
 		check(drawnFloat(p, "unlitValue") == 0, "a lit material's draw writes unlitValue 0");
 
@@ -157,7 +161,7 @@ class PbrTests {
 		check(twin.slotOf("bonePalette") >= 0 && drawnTexture(twin, "bonePalette") != 0, "the twin reads the bone palette");
 
 		// A posed model marked unlit: through the skinned twin, its unlitValue 1.
-		dancer.materials[0].unlit = true;
+		SetMaterialUnlit(dancer.materials[0], true);
 		DrawModel(dancer, new Vector3(0, 0, 0), 1, WHITE);
 		check(drawnFloat(twin, "unlitValue") == 1 && [for (_ => id in twin.pipelines) id].indexOf(lastDraw().pipeline) >= 0,
 			"an unlit posed draw writes unlitValue 1, through the skinned twin");
@@ -171,18 +175,16 @@ class PbrTests {
 		check(drawnTexture(p, "emissiveMap") == Textures.handle(normal.id) && p.textures[p.slotOf("emissiveMap")] == normal.id,
 			"a texture set on the shader, kept by its id and bound by its handle");
 
-		// A light's range and intensity: each light starts at intensity 1, and both are set as any uniform is.
-		var at = p.locate("lights[0].intensity");
-		check(at >= 0 && p.written[at][0] == 1, "each light starts at intensity 1");
-		CreateLight(LIGHT_POINT, new Vector3(0, 2, 0), new Vector3(0, 0, 0), WHITE, pbr);
-		var range = GetShaderLocation(pbr, "lights[0].range"),
-			intensity = GetShaderLocation(pbr, "lights[0].intensity");
-		SetShaderValue(pbr, range, 6.0, SHADER_UNIFORM_FLOAT);
-		SetShaderValue(pbr, intensity, 9.0, SHADER_UNIFORM_FLOAT);
-		check(range >= 0
-			&& intensity >= 0
-			&& p.written[p.locate("lights[0].range")][0] == 6
-			&& p.written[at][0] == 9, "a light's range and intensity written");
+		// Each light starts at intensity 1; a light's range and intensity are written into the draw's lights.
+		var at = p.locate("lights[7].intensity");
+		check(at >= 0 && p.written[at][0] == 1, "each of the 8 lights starts at intensity 1");
+		var lamp = CreateLight(LIGHT_POINT, new Vector3(0, 2, 0), new Vector3(0, 0, 0), WHITE, pbr);
+		SetLightRange(lamp, 6);
+		SetLightIntensity(lamp, 9);
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		check(drawnInt(p, "lights.enabled") == 1 && drawnFloat(p, "lights.range") == 6 && drawnFloat(p, "lights.intensity") == 9,
+			"a light's range and intensity written into the draw's lights");
+		UnloadLight(lamp);
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

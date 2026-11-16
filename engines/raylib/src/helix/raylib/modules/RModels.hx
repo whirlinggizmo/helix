@@ -812,12 +812,14 @@ class RModels {
 		Matrix4.compose(m, Matrix4.fromRotation(axisX, axisY, axisZ, angle * DEG2RAD, placing), m);
 		Matrix4.compose(m, Matrix4.fromTranslation(x, y, z, placing), m);
 		var transform = Matrix4.compose(toMatrix4(model.transform, placing), m, placing);
+		modelEmissive = model.emissive;
 		for (i in 0...model.meshCount) {
 			var material = model.materials[model.meshMaterial[i]];
 			if (material == null)
 				material = model.materials[0];
 			drawMesh(model.meshes[i], material, transform, tint);
 		}
+		modelEmissive = null;
 	}
 
 	// The matrices drawModelAt composes in: the placement, and what is composed into it, then the model's transform placed.
@@ -943,7 +945,7 @@ class RModels {
 				bytes.setFloat((i * 16 + k) * 4, v);
 		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
 		Runtime.frame.retire(buffer);
-		drawMesh(mesh, material, new Matrix4(), WHITE, buffer, count);
+		drawMesh(mesh, material, new Matrix4(), WHITE, buffer, count, transforms);
 	}
 
 	/** Sends a mesh's vertices to the GPU, so the mesh can be drawn.
@@ -2217,12 +2219,29 @@ class RModels {
 	// a program without one links none of it.
 	static var boneWriter:Null<(mesh:Mesh, shader:Shader) -> Void>;
 
-	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix4, tint:Color, instances:Int = 0, instanceCount:Int = 1):Void {
+	// Writes a material's values (the Materials extra's) for its draw, and gives the shader it is drawn with: set by the first lit or
+	// PBR shader, a compiled shader declaring them, or the Materials extra, which also draws through a variant of the default shader a
+	// material giving off light or cut out (Surfaces). Null in a program using none, whose draws are raylib's.
+	static var surfacing:Null<(shader:Shader, material:Material, modelEmissive:Null<Array<Float>>) -> Shader>;
+
+	// Writes the scene's lights reaching a draw into its program's lights (SceneLights): set by the first CreateLight, null in a program
+	// making no light. Receives the program, the mesh, its transform, and the instances' transforms and count for DrawMeshInstanced.
+	static var lighting:Null<(p:helix.raylib.internal.Program, mesh:Mesh, model:Matrix4, transforms:Null<Array<Matrix>>, count:Int) -> Void>;
+
+	// The light the model being drawn gives off (SetModelEmissive), for its meshes' draws; null outside DrawModel.
+	static var modelEmissive:Null<Array<Float>>;
+
+	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix4, tint:Color, instances:Int = 0, instanceCount:Int = 1,
+			?transforms:Array<Matrix>):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);
 		if (mesh.gpu.buffers == null)
 			return;
 		var shader = material.shader == null || material.shader.program == null ? defaultShader() : material.shader;
+		if (surfacing != null)
+			shader = surfacing(shader, material, modelEmissive);
+		if (lighting != null)
+			lighting(shader.program, mesh, transform, transforms, instanceCount);
 		var c = material.maps[MATERIAL_MAP_DIFFUSE].color;
 		// Read as the draw is recorded, so one array serves every draw.
 		var diffuse = diffuseScratch;

@@ -25,13 +25,20 @@ class Material {
 	/** Gets four values for a shader's own use. */
 	public var params:Array<Float>;
 
-	/** Gets or sets a value indicating whether the material is unlit (a glTF's `KHR_materials_unlit`), showing its base color lit by
-		nothing.
-
-		`LoadModel` sets it from the file.
-
-		`LoadPbrShader` draws an unlit material's base color and no light. raylib's own shaders ignore it. */
-	public var unlit = false;
+	// The Materials extra's values (helix.raylib.extras.Materials), each draw's: the alpha cutoff, 0 for none; the light given off, red,
+	// green and blue, its color times its intensity; whether it is unlit; whether shadows fall on it. A glTF file's are loaded into them.
+	@:allow(helix.raylib)
+	var alphaCutoff = 0.;
+	@:allow(helix.raylib)
+	var emissiveRed = 0.;
+	@:allow(helix.raylib)
+	var emissiveGreen = 0.;
+	@:allow(helix.raylib)
+	var emissiveBlue = 0.;
+	@:allow(helix.raylib)
+	var unlit = false;
+	@:allow(helix.raylib)
+	var shadowed = true;
 
 	/** Creates a material. See `Raylib.LoadMaterialDefault` for making raylib's default material, and `LoadModelAsync` for
 		loading a model's materials.

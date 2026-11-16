@@ -6,7 +6,7 @@ import haxe.macro.Expr;
 #end
 
 /** Holds helix-raylib's model shaders, compiled as the program builds from its files in `helix/raylib/shaders/`: raylib's default
-	(unlit), the lit one, the PBR one, each one's skinned twin, and the sprite shader. */
+	(unlit), its variant reading a material's values, the lit one, the PBR one, each one's skinned twin, and the sprite shader. */
 @:noCompletion
 class Defaults {
 	/** Returns raylib's default shader. */
@@ -26,6 +26,22 @@ class Defaults {
 	public static macro function skinnedShader():ExprOf<helix.services.shaders.Shader> {
 		return ShaderMacro.program("raylib default vertex shader, skinned", ShaderMacro.builtIn("unlit_skinned.vs", Context.currentPos()),
 			"raylib default fragment shader", null, Context.currentPos());
+	}
+
+	/** Returns raylib's default shader reading a material's values (the Materials extra's): its fragment stage cutting the material out
+		below its alpha cutoff and adding the light it and its model give off. The Materials extra draws through it a material drawn with
+		the default shader that is cut out or gives off light, so a program not using the extra links none of it. */
+	public static macro function materialShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("raylib default vertex shader", null, "helix-raylib material fragment shader",
+			ShaderMacro.builtIn("unlit_material.fs", pos), pos);
+	}
+
+	/** Returns the material shader skinned: its vertex stage the default's skinned one, its fragment stage the material one's. */
+	public static macro function materialSkinnedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("raylib default vertex shader, skinned", ShaderMacro.builtIn("unlit_skinned.vs", pos),
+			"helix-raylib material fragment shader", ShaderMacro.builtIn("unlit_material.fs", pos), pos);
 	}
 
 	/** Returns helix-raylib's lit shader, raylib's examples' lighting (`LoadLightingShader`). */

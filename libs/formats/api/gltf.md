@@ -126,6 +126,8 @@ final occlusionImageIndex:Int
 final emissiveFactor:Array<Float>
 final emissiveImageIndex:Int
 final unlit:Bool
+final alphaMode:String
+final alphaCutoff:Float
 ```
 
 - `name`: Gets the material's name: empty when the file gives none.
@@ -140,6 +142,8 @@ final unlit:Bool
 - `emissiveFactor`: Gets the emissive factor: red, green and blue, each 0 to 1, multiplying the emissive image. Defaults to 0, 0, 0.
 - `emissiveImageIndex`: Gets the index of the emissive image in `GltfFile.images`, or -1 when there is none.
 - `unlit`: Gets whether the material is unlit, the `KHR_materials_unlit` extension: its base color is what it shows, and the rest is unused.
+- `alphaMode`: Gets how the base color's alpha is read, glTF's `alphaMode`: `OPAQUE` (alpha ignored), `MASK` (cut out below `alphaCutoff`) or `BLEND` (blended). Defaults to `OPAQUE`.
+- `alphaCutoff`: Gets the alpha below which a `MASK` material is cut out, 0 to 1. Defaults to 0.5; read only when `alphaMode` is `MASK`.
 
 ## GltfMesh
 

@@ -11,7 +11,8 @@ import helix.raylib.Vector3;
 
 /** A program written in raylib on helix-raylib, as a game in raylib would be. Its image is docs/trials/templates/assets/player.png,
 	its model and animations engines/raylib/parity/assets/robot.glb. */
-@:adds("helix.raylib.Light", "helix.raylib.modules.RLights", "helix.raylib.modules.RCompiledShaders")
+@:adds("helix.raylib.Light", "helix.raylib.modules.RLights", "helix.raylib.modules.RCompiledShaders", "helix.raylib.internal.SceneLights",
+	"helix.raylib.internal.Surfaces")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

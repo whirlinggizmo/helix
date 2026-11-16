@@ -1,7 +1,8 @@
 #version 330
 // helix-raylib's PBR shader's fragment stage (LoadPbrShader), over <helix/raylib/shaders/pbr.glsl>: a material's maps and values as
 // LoadModel reads a glTF's (albedo, metalness, roughness, normal, occlusion, emission), the values written by each draw, and unlitValue,
-// 1 for a material marked unlit. A map the material lacks reads white, the normal map a flat normal.
+// 1 for a material marked unlit. A map the material lacks reads white, the normal map a flat normal. The emission map's texels times
+// emissiveColor are the material's emission.
 #include <helix/raylib/shaders/pbr.glsl>
 in vec3 fragPosition;
 in vec2 fragTexCoord;
@@ -17,21 +18,23 @@ uniform sampler2D emissiveMap;
 uniform vec4 colDiffuse;
 uniform float metallicValue;
 uniform float roughnessValue;
-uniform vec4 emissiveColor;
 uniform float unlitValue;
 out vec4 finalColor;
 void main() {
     vec4 albedo = texture(albedoMap, fragTexCoord);
     vec4 base = vec4(helixDecodeSrgb(albedo.rgb), albedo.a)*colDiffuse*fragColor;
-    // A material marked unlit (glTF's KHR_materials_unlit): its base color as authored, encoded back, and no light.
+    vec3 emissive = helixDecodeSrgb(texture(emissiveMap, fragTexCoord).rgb)*emissiveColor;
+    // A material marked unlit (glTF's KHR_materials_unlit): its base color as authored and the light it gives off, encoded back, and
+    // no light.
     if (unlitValue > 0.5) {
-        finalColor = vec4(helixEncodeSrgb(base.rgb), base.a);
+        if (base.a < alphaCutoff)
+            discard;
+        finalColor = vec4(helixEncodeSrgb(clamp(base.rgb + emissive + modelEmissiveColor, 0.0, 1.0)), base.a);
         return;
     }
     float metallic = metallicValue*texture(metalnessMap, fragTexCoord).r;
     float roughness = roughnessValue*texture(roughnessMap, fragTexCoord).r;
     float occlusion = texture(occlusionMap, fragTexCoord).r;
-    vec3 emissive = helixDecodeSrgb(texture(emissiveMap, fragTexCoord).rgb)*emissiveColor.rgb;
     vec3 n = normalize(fragNormal);
     vec3 t = normalize(fragTangent.xyz - dot(fragTangent.xyz, n)*n);
     vec3 b = cross(n, t)*fragTangent.w;

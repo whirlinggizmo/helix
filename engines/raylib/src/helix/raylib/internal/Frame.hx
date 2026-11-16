@@ -110,6 +110,11 @@ class Frame {
 		the classes in its order) never resets what the module set. */
 	public static var spriteShader:Null<Void->helix.services.shaders.Shader>;
 
+	/** Lights a run of immediate vertices drawn through a program (`SceneLights`), set by the first `CreateLight`, null in a program
+		making no light. Receives the program, the batch's bytes, the run's first vertex, its vertex count and a vertex's bytes. It has no
+		initial value, as `spriteShader` has none. */
+	public static var lighting:Null<(p:Program, data:Bytes, first:Int, count:Int, stride:Int) -> Void>;
+
 	// The sprite shader's program, made when first drawn through.
 	var spriteProgram:Null<Program> = null;
 	// A quad's corners as they arrive through `vertex`, kept until the fourth decides whether they are a sprite: how many so far, and
@@ -510,6 +515,8 @@ class Frame {
 			var count = quads ? run.count - run.count % 4 : run.count;
 			if (count == 0)
 				continue;
+			if (lighting != null)
+				lighting(program, data, run.first, count, STRIDE);
 			// GL's point mode: each triangle's corners, as points.
 			if (pointRun != null && !lines) {
 				var points = pointRun(run.first, count, quads);

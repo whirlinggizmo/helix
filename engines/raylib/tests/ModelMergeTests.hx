@@ -1,6 +1,7 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
+import helix.raylib.extras.Materials.*;
 import helix.raylib.extras.Models.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
@@ -72,10 +73,16 @@ class ModelMergeTests {
 		var valued = part(red);
 		valued.materials[0].maps[MATERIAL_MAP_METALNESS].value = .5;
 		var unlit = part(red);
-		unlit.materials[0].unlit = true;
-		var apart = LoadModelFromModels([part(gray), valued, unlit, part(red)]);
-		check(apart.meshCount == 3 && apart.materialCount == 3 && apart.meshMaterial[2] == 2, "a map's value and unlit keep meshes apart");
-		check(apart.meshes[0].vertexCount == 48 && apart.materials[1].maps[MATERIAL_MAP_METALNESS].value == .5 && apart.materials[2].unlit,
+		SetMaterialUnlit(unlit.materials[0], true);
+		var glowing = part(red);
+		SetMaterialEmissive(glowing.materials[0], new Color(255, 0, 0, 255), 2);
+		var apart = LoadModelFromModels([part(gray), valued, unlit, glowing, part(red)]);
+		check(apart.meshCount == 4 && apart.materialCount == 4 && apart.meshMaterial[2] == 2 && apart.meshMaterial[3] == 3,
+			"a map's value, unlit and emission keep meshes apart");
+		check(apart.meshes[0].vertexCount == 48
+			&& apart.materials[1].maps[MATERIAL_MAP_METALNESS].value == .5
+			&& IsMaterialUnlit(apart.materials[2])
+			&& GetMaterialEmissive(apart.materials[3]).x == 2,
 			"the kept materials as they were");
 
 		// A mesh without normals, merged with a mesh with them: raylib's default.

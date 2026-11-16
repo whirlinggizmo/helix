@@ -5,8 +5,8 @@ import helix.raylib.Rlights.*;
 
 // scene.c drawn by helix-raylib: its lighting shader is raylib's example's lighting.vs and lighting.fs, compiled ahead of time into
 // lighting.shader, and its second a program's own (own.vs, over <helix/raylib/shaders/skinning.glsl>, with lighting.fs, compiled into
-// own.shader). greenman is skinned on the CPU under the first, as raylib skins it, and on the GPU under the second. The third frame
-// after its loads saved as helix.png.
+// own.shader), lit by the same lights, the scene's. greenman is skinned on the CPU under the first, as raylib skins it, and on the GPU
+// under the second. The third frame after its loads saved as helix.png.
 class Main {
 	static function main():Void {
 		InitWindow(640, 360, "lighting");
@@ -37,12 +37,6 @@ class Main {
 					CreateLight(LIGHT_POINT, new Vector3(-2, 1, 2), Vector3Zero(), GREEN, shader),
 					CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 3, -2), Vector3Zero(), BLUE, shader)
 				];
-				// The fifth is past MAX_LIGHTS: off, setting nothing. The second shader's lights are set by hand.
-				CreateLight(LIGHT_POINT, new Vector3(0, 3, 0), Vector3Zero(), WHITE, own);
-				SetShaderValue(own, GetShaderLocation(own, "lights[0].enabled"), 1, SHADER_UNIFORM_INT);
-				SetShaderValue(own, GetShaderLocation(own, "lights[0].type"), LIGHT_POINT, SHADER_UNIFORM_INT);
-				SetShaderValue(own, GetShaderLocation(own, "lights[0].position"), [1, 2, 2], SHADER_UNIFORM_VEC3);
-				SetShaderValue(own, GetShaderLocation(own, "lights[0].color"), [1, 0.8, 0.6, 1], SHADER_UNIFORM_VEC4);
 				plane.materials[0].shader = shader;
 				cube.materials[0].shader = shader;
 				for (m in models[0].materials)

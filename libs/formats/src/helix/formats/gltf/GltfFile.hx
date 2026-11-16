@@ -137,7 +137,8 @@ class GltfFile {
 				new GltfMaterial(text(m, "name"), pbr != null, numbers(field(pbr, "baseColorFactor"), [1, 1, 1, 1]), image(field(pbr, "baseColorTexture")),
 					number(pbr, "metallicFactor", 1), number(pbr, "roughnessFactor", 1), image(field(pbr, "metallicRoughnessTexture")),
 					image(field(m, "normalTexture")), image(field(m, "occlusionTexture")), numbers(field(m, "emissiveFactor"), [0, 0, 0]),
-					image(field(m, "emissiveTexture")), field(field(m, "extensions"), "KHR_materials_unlit") != null);
+					image(field(m, "emissiveTexture")), field(field(m, "extensions"), "KHR_materials_unlit") != null,
+					field(m, "alphaMode") == null ? "OPAQUE" : text(m, "alphaMode"), number(m, "alphaCutoff", 0.5));
 			}
 		];
 		nodes = [

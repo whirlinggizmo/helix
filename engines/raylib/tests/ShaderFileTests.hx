@@ -88,8 +88,8 @@ class ShaderFileTests {
 
 		// A program's own shader including lights.glsl: each light starts at intensity 1, as the built-in lit shaders' do.
 		var lit = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("own_lights.shader"));
-		var intensities = [for (i in 0...4) lit.program.written[lit.program.locate('lights[$i].intensity')]];
-		check([for (v in intensities) if (v != null && v[0] == 1) v].length == 4, "an own shader including lights.glsl: each light at intensity 1");
+		var intensities = [for (i in 0...8) lit.program.written[lit.program.locate('lights[$i].intensity')]];
+		check([for (v in intensities) if (v != null && v[0] == 1) v].length == 8, "an own shader including lights.glsl: each of its 8 lights at intensity 1");
 		check(shader.program.locate("lights[0].intensity") < 0, "a shader without lights.glsl: no intensity");
 
 		// Refused, with why.

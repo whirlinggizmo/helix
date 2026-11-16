@@ -108,6 +108,9 @@ class RCompiledShaders {
 		var initials:Array<Dynamic> = Std.isOfType(value.initials, Array) ? value.initials : [];
 		for (i in initials)
 			shader.program.writeNamed(i.name, [for (n in (i.numbers : Array<Dynamic>)) (n : Float)]);
+		// A shader reading a material's values (lights.glsl's, pbr.glsl's) has them written by each draw.
+		if (helix.raylib.internal.Surfaces.declares(shader.program.shader))
+			helix.raylib.internal.Surfaces.install();
 		return shader;
 	}
 	#end

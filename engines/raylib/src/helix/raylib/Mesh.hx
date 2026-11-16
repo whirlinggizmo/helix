@@ -103,6 +103,13 @@ class Mesh {
 		return animNormals;
 	}
 
+	// Its vertices' bounds, the least x, y and z then the most, and the positions they were found from: worked out by the first lit
+	// draw (SceneLights) and again once `vertices` is another array.
+	@:allow(helix.raylib)
+	var bounds:Null<Array<Float>>;
+	@:allow(helix.raylib)
+	var boundsOf:Null<Array<Float>>;
+
 	// Its GPU buffers, shared with the copies of the same mesh when its model is loaded again.
 	@:allow(helix.raylib)
 	var gpu = new helix.raylib.internal.MeshGpu();

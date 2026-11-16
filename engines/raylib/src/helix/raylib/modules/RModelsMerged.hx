@@ -20,7 +20,7 @@ class RModelsMerged {
 
 		Meshes whose materials differ only in diffuse color are merged into one mesh. Each material's diffuse color is multiplied into the
 		vertex colors, and the merged mesh has one material, the same material with a white diffuse color. Meshes whose materials differ in
-		anything else (the shader, a texture, `unlit`, or another map's color or value) stay separate meshes.
+		anything else (the shader, a texture, another map's color or value, or the Materials extra's values) stay separate meshes.
 
 		A shader that ignores the vertex color draws a merged mesh without the materials' colors.
 
@@ -132,7 +132,8 @@ class RModelsMerged {
 	static function sameButDiffuse(a:Material, b:Material):Bool {
 		if (a == b)
 			return true;
-		if (a.shader.id != b.shader.id || a.unlit != b.unlit || a.maps.length != b.maps.length)
+		if (a.shader.id != b.shader.id || a.unlit != b.unlit || a.shadowed != b.shadowed || a.alphaCutoff != b.alphaCutoff
+			|| a.emissiveRed != b.emissiveRed || a.emissiveGreen != b.emissiveGreen || a.emissiveBlue != b.emissiveBlue || a.maps.length != b.maps.length)
 			return false;
 		for (i in 0...a.params.length)
 			if (a.params[i] != b.params[i])
@@ -153,6 +154,11 @@ class RModelsMerged {
 		maps[MATERIAL_MAP_ALBEDO].color = new Color(255, 255, 255, 255);
 		var copy = new Material(material.shader, maps, material.params.copy());
 		copy.unlit = material.unlit;
+		copy.shadowed = material.shadowed;
+		copy.alphaCutoff = material.alphaCutoff;
+		copy.emissiveRed = material.emissiveRed;
+		copy.emissiveGreen = material.emissiveGreen;
+		copy.emissiveBlue = material.emissiveBlue;
 		return copy;
 	}
 

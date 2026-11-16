@@ -47,7 +47,7 @@ class Models {
 
 		Meshes whose materials differ only in diffuse color are merged into one mesh. Each material's diffuse color is multiplied into the
 		vertex colors, and the merged mesh has one material, the same material with a white diffuse color. Meshes whose materials differ in
-		anything else (the shader, a texture, `unlit`, or another map's color or value) stay separate meshes.
+		anything else (the shader, a texture, another map's color or value, or the Materials extra's values) stay separate meshes.
 
 		A shader that ignores the vertex color draws a merged mesh without the materials' colors.
 

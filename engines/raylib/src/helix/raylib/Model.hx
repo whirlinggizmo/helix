@@ -56,6 +56,11 @@ class Model {
 	@:allow(helix.raylib)
 	var inverseBindKeys:Array<Float> = [];
 
+	// The light the whole model gives off, red, green and blue, added to its materials' at each DrawModel (the Materials extra's
+	// SetModelEmissive); null until set.
+	@:allow(helix.raylib)
+	var emissive:Null<Array<Float>>;
+
 	// The file it was loaded from, sharing its GPU data with the file's other loads, or "" for a model of a mesh.
 	@:allow(helix.raylib)
 	var path = "";

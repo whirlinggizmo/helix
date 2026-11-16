@@ -6,32 +6,50 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Lighting.hx`](../src/helix/raylib/extras/Lighting.hx), `import helix.raylib.extras.Lighting;`
 
-Provides lit shaders, built in, that rlights' lights light (`helix.raylib.Rlights`): `LoadLightingShader`, raylib's lighting examples' `lighting.vs` and `lighting.fs`, which shine every material alike, and `LoadPbrShader`, which draws a glTF's materials as authored, metallic-roughness. Imported apart: `import helix.raylib.extras.Lighting.*;`. The example `engines/raylib/examples/extras/lighting` uses it.
+Provides the scene's lights and lit shaders, built in: `LoadLightingShader`, raylib's lighting examples' `lighting.vs` and `lighting.fs`, which shine every material alike, and `LoadPbrShader`, which draws a glTF's materials as authored, metallic-roughness. Imported apart: `import helix.raylib.extras.Lighting.*;`.
+
+The example `engines/raylib/examples/extras/lighting` uses it.
 
 ```haxe
-var shader = LoadLightingShader();
-SetShaderValue(shader, GetShaderLocation(shader, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
-var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
-model.materials[0].shader = shader;
+var pbr = LoadPbrShader();
+SetShaderValue(pbr, GetShaderLocation(pbr, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
+for (m in model.materials)
+m.shader = pbr;
+var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(4, 10, 2), Vector3Zero(), WHITE, pbr);
+var lamp = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, pbr);
+SetLightRange(lamp, 6);
 // each frame
-SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
+SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
 SHADER_UNIFORM_VEC3);
-UpdateLightValues(shader, light);
 ```
 
-A model posed by `UpdateModelAnimation` under either is skinned on the GPU. A program's own shader lights as the lit one does by including `<helix/raylib/shaders/lights.glsl>`: rlights' uniforms and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal)`, called as `helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor, fragPosition, fragNormal)`; and as the PBR one does by including `<helix/raylib/shaders/pbr.glsl>`, `vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal)`. A program that calls none of this links none of it.
+**Lights.** rlights' `CreateLight` (`helix.raylib.Rlights`) makes a light of the scene, as many as the program makes. A light shines on every lit draw, whichever shader it was made with: `LoadPbrShader`'s, `LoadLightingShader`'s, and a program's own that includes `<helix/raylib/shaders/lights.glsl>` or `<helix/raylib/shaders/pbr.glsl>`. Its fields (`enabled`, `position`, `target`, `color`) are read at each draw, so a light moves by setting them, with no other call. `UnloadLight` takes it out of the scene.
 
-### lighting: the lit and PBR shaders rlights' lights light
+**Which lights reach a draw.** Each draw is lit by the 8 lights that reach it most, scored against its bounds: a light's brightness (its color times its intensity), times its falloff at the bounds' nearest point (none past its range), times a spot light's cone. A directional light reaches everything. A point or spot light without a range reaches everything too, so a scene of many lamps gives each one a range. `DrawMeshInstanced` scores its lights against the bounds of all its instances.
+
+**A program's own shader.** Including `<helix/raylib/shaders/lights.glsl>` gives `lights[MAX_LIGHTS]`, the draw's own lights (8), `ambient` and `viewPos`, and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal)`, called as `helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor, fragPosition, fragNormal)`. Including `<helix/raylib/shaders/pbr.glsl>` gives `vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal)`, and the material's `emissiveColor` and `alphaCutoff` (the Materials extra). Both take the world position and normal as raylib's `lighting.vs` passes them: `fragPosition` is `vec3(matModel*vec4(vertexPosition, 1.0))` and `fragNormal` is `normalize(vec3(matNormal*vec4(vertexNormal, 1.0)))`. A model posed by `UpdateModelAnimation` under a lit shader is skinned on the GPU. A program that calls none of this links none of it.
+
+```haxe
+static inline var LIGHT_SPOT:Int
+```
+
+- `LIGHT_SPOT`: A light shining in a cone from its position toward its target, made by `SetLightCone`. Its `type` is this.
+
+### lighting: the lit and PBR shaders, and a light's intensity, range and cone
 
 ```haxe
 static function LoadLightingShader():Shader
 static function LoadPbrShader():Shader
+static function SetLightIntensity(light:Light, intensity:Float):Void
+static function SetLightRange(light:Light, range:Float):Void
+static function SetLightCone(light:Light, innerAngle:Float, outerAngle:Float):Void
+static function UnloadLight(light:Light):Void
 ```
 
 - `LoadLightingShader`: Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one Phong highlight whatever the material says. See `LoadPbrShader` for drawing a glTF's materials as authored.
   - returns: The shader, the program's until `UnloadShader`.
 
-  Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from rlights' `CreateLight`. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. A program's own shader lights the same way by including `<helix/raylib/shaders/lights.glsl>`.
+  Set up as raylib's lighting example does: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color. The scene's lights light it (see the class).
 
   ```haxe
   var shader = LoadLightingShader();
@@ -39,18 +57,16 @@ static function LoadPbrShader():Shader
   model.materials[0].shader = shader;
   var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
   ```
-- `LoadPbrShader`: Returns helix-raylib's PBR shader, built in: a glTF's materials drawn as authored, metallic-roughness under the same lights as `LoadLightingShader`, which shines every material alike.
+- `LoadPbrShader`: Returns helix-raylib's PBR shader, built in: a glTF's materials drawn as authored, metallic-roughness under the scene's lights, where `LoadLightingShader` shines every material alike.
   - returns: The shader, the program's until `UnloadShader`.
 
-  Set up as that one: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color; lights come from rlights' `CreateLight`, a light's color what a white surface facing it shows. A model posed by `UpdateModelAnimation` under it is skinned on the GPU. A material marked `unlit` (glTF's `KHR_materials_unlit`) draws its base color and no light.
-
-  Each light also has a range and an intensity, set with `SetShaderValue` at `GetShaderLocation(shader, "lights[0].range")` and `"lights[0].intensity"` (and the next light's at `lights[1]`). A point light with a range dims with distance, fading to nothing at the range, and 0, the default, is no falloff. Intensity is a multiple of the light's color, 1 until set. Light brighter than white rolls off toward white instead of clipping, and colors in the usual range come out as authored.
+  Set up as that one: `locs[SHADER_LOC_VECTOR_VIEW]` is `viewPos`, set to the camera's position each frame; `GetShaderLocation(shader, "ambient")` finds the ambient color. A light's color is what a white surface facing it shows at intensity 1. Light brighter than white rolls off toward white instead of clipping, and colors in the usual range come out as authored. A material marked `unlit` (glTF's `KHR_materials_unlit`) draws its base color and no light.
 
   Each draw reads the material's maps `MATERIAL_MAP_ALBEDO`, `MATERIAL_MAP_METALNESS`, `MATERIAL_MAP_ROUGHNESS`, `MATERIAL_MAP_NORMAL`, `MATERIAL_MAP_OCCLUSION` and `MATERIAL_MAP_EMISSION`. Their samplers are `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and `emissiveMap`, found at `locs[SHADER_LOC_MAP_ALBEDO]` and the five after it. A missing map reads white, and a missing normal map reads a flat normal.
 
-  Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`. `maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`, and `maps[MATERIAL_MAP_EMISSION].color` is `emissiveColor`. Colors are taken as linear, as a glTF's factors are. An image's texels are decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
+  Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`. `maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, and `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`. Its emission and alpha cutoff are the Materials extra's. Colors are taken as linear, as a glTF's factors are. An image's texels are decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
 
-  A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`). A program's own shader draws the same way by including `<helix/raylib/shaders/pbr.glsl>`.
+  A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`).
 
   ```haxe
   var pbr = LoadPbrShader();
@@ -62,3 +78,15 @@ static function LoadPbrShader():Shader
   SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
   SHADER_UNIFORM_VEC3);
   ```
+- `SetLightIntensity`: Sets how bright a light is: its color times the intensity. 1 until set; 0 gives no light, as `enabled` false does.
+  - `light`: The light, from `CreateLight`.
+  - `intensity`: How bright, 0 or more.
+- `SetLightRange`: Sets how far a point or spot light reaches: it dims with distance, fading to nothing at the range, and lights no draw whose bounds lie past it. 0, the default, is no falloff and no limit. A directional light has no range.
+  - `light`: The light, from `CreateLight`.
+  - `range`: How far, in world units, 0 or more.
+- `SetLightCone`: Makes a light a spot light (`LIGHT_SPOT`), shining from its position toward its target in a cone: full inside `innerAngle`, fading to nothing at `outerAngle`, each measured from the cone's middle. A spot light dims with distance as a point light does.
+  - `light`: The light, from `CreateLight`.
+  - `innerAngle`: Where the fade starts, in degrees.
+  - `outerAngle`: Where it ends, in degrees, at least `innerAngle` and under 90.
+- `UnloadLight`: Takes a light out of the scene. It lights nothing after.
+  - `light`: The light, from `CreateLight`.

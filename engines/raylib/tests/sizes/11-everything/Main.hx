@@ -17,10 +17,10 @@ import helix.raylib.extras.Textures.*;
 	"helix.raylib.extras.VirtualButtonOptions", "helix.raylib.extras.FrameStats", "helix.raylib.extras.FrameStatsStyle", "helix.raylib.extras.GuiSkin",
 	"helix.services.input.VirtualButton", "helix.services.input.VirtualButtonOptions", "helix.services.input.VirtualGamepad",
 	"helix.services.input.VirtualGamepadOptions", "helix.services.input.VirtualStick", "helix.services.input.VirtualStickOptions",
-	"helix.raylib.modules.RLighting", "helix.raylib.internal.LitProgram", "helix.raylib.modules.RDevice", "helix.platform.adapters.tilt.dom",
-	"helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.raylib.modules.RDebug", "helix.raylib.modules.RGuiSkins",
-	"helix.raylib.modules.RSprites", "helix.raylib.modules.RTextureDraws", "helix.raylib.modules.RTextureFills", "helix.raylib.modules.RTextureAtlases",
-	"helix.raylib.modules.RRenderTextureFit", "helix.raylib.extras.TextureAtlas", "helix.raylib.internal.SyncLoads")
+	"helix.raylib.modules.RLighting", "helix.raylib.modules.RMaterials", "helix.raylib.internal.LitProgram", "helix.raylib.modules.RDevice",
+	"helix.platform.adapters.tilt.dom", "helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.raylib.modules.RDebug",
+	"helix.raylib.modules.RGuiSkins", "helix.raylib.modules.RSprites", "helix.raylib.modules.RTextureDraws", "helix.raylib.modules.RTextureFills",
+	"helix.raylib.modules.RTextureAtlases", "helix.raylib.modules.RRenderTextureFit", "helix.raylib.extras.TextureAtlas", "helix.raylib.internal.SyncLoads")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

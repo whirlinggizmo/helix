@@ -1,12 +1,22 @@
 // raylib 6.2's lighting example's setup (rlights.h, lighting.vs and lighting.fs): a plane and a cube lit by four point lights, the
 // lights drawn as spheres; and greenman under the same shader, posed by UpdateModelAnimation (skinned on the CPU, as raylib skins a
-// mesh whose shader doesn't read the bones) and drawn in three poses, the third through a second load of the same shader. Its third
-// frame saved as ref.png.
+// mesh whose shader doesn't read the bones) and drawn in three poses, the third through a second load of the same shader, lit by the
+// same lights, as helix-raylib's lights light every lit draw (rlights counts its lights per program, so the second's are set by name).
+// Its third frame saved as ref.png.
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
 #define RLIGHTS_IMPLEMENTATION
 #include "rlights.h"
+// Sets the second shader's light i to a light's values, as UpdateLightValues sets the first's.
+static void SetOwnLight(Shader own, int i, Light light) {
+    int enabled = light.enabled, type = light.type;
+    SetShaderValue(own, GetShaderLocation(own, TextFormat("lights[%i].enabled", i)), &enabled, SHADER_UNIFORM_INT);
+    SetShaderValue(own, GetShaderLocation(own, TextFormat("lights[%i].type", i)), &type, SHADER_UNIFORM_INT);
+    SetShaderValue(own, GetShaderLocation(own, TextFormat("lights[%i].position", i)), (float[3]){ light.position.x, light.position.y, light.position.z }, SHADER_UNIFORM_VEC3);
+    SetShaderValue(own, GetShaderLocation(own, TextFormat("lights[%i].target", i)), (float[3]){ light.target.x, light.target.y, light.target.z }, SHADER_UNIFORM_VEC3);
+    SetShaderValue(own, GetShaderLocation(own, TextFormat("lights[%i].color", i)), (float[4]){ light.color.r/255.0f, light.color.g/255.0f, light.color.b/255.0f, light.color.a/255.0f }, SHADER_UNIFORM_VEC4);
+}
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(640, 360, "lighting");
@@ -23,14 +33,6 @@ int main(void) {
     lights[1] = CreateLight(LIGHT_POINT, (Vector3){ 2, 1, 2 }, Vector3Zero(), RED, shader);
     lights[2] = CreateLight(LIGHT_POINT, (Vector3){ -2, 1, 2 }, Vector3Zero(), GREEN, shader);
     lights[3] = CreateLight(LIGHT_DIRECTIONAL, (Vector3){ 2, 3, -2 }, Vector3Zero(), BLUE, shader);
-    // The fifth is past MAX_LIGHTS: off, setting nothing. The second shader's lights are set by hand, as rlights counts per program.
-    Light none = CreateLight(LIGHT_POINT, (Vector3){ 0, 3, 0 }, Vector3Zero(), WHITE, own);
-    (void)none;
-    int on = 1, point = LIGHT_POINT;
-    SetShaderValue(own, GetShaderLocation(own, "lights[0].enabled"), &on, SHADER_UNIFORM_INT);
-    SetShaderValue(own, GetShaderLocation(own, "lights[0].type"), &point, SHADER_UNIFORM_INT);
-    SetShaderValue(own, GetShaderLocation(own, "lights[0].position"), (float[3]){ 1, 2, 2 }, SHADER_UNIFORM_VEC3);
-    SetShaderValue(own, GetShaderLocation(own, "lights[0].color"), (float[4]){ 1, 0.8f, 0.6f, 1 }, SHADER_UNIFORM_VEC4);
     Model plane = LoadModelFromMesh(GenMeshPlane(10, 10, 1, 1)), cube = LoadModelFromMesh(GenMeshCube(2, 4, 2));
     plane.materials[0].shader = shader;
     cube.materials[0].shader = shader;
@@ -45,6 +47,7 @@ int main(void) {
         SetShaderValue(own, own.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
         lights[2].enabled = frame != 1;
         for (int i = 0; i < MAX_LIGHTS; i++) UpdateLightValues(shader, lights[i]);
+        for (int i = 0; i < MAX_LIGHTS; i++) SetOwnLight(own, i, lights[i]);
         BeginDrawing();
         ClearBackground(RAYWHITE);
         BeginMode3D(camera);

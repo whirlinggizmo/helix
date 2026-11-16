@@ -1,6 +1,6 @@
 {
-  "what": "the dark background below the spheres.",
+  "what": "the dark background above the spheres.",
   "points": [
-    {"x": 400, "y": 590, "color": [30, 32, 40], "tolerance": 3}
+    {"x": 400, "y": 120, "color": [30, 32, 40], "tolerance": 3}
   ]
 }

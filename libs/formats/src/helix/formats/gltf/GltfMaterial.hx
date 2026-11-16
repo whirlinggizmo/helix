@@ -44,11 +44,21 @@ class GltfMaterial {
 	/** Gets whether the material is unlit, the `KHR_materials_unlit` extension: its base color is what it shows, and the rest is unused. */
 	public final unlit:Bool;
 
+	/** Gets how the base color's alpha is read, glTF's `alphaMode`: `OPAQUE` (alpha ignored), `MASK` (cut out below `alphaCutoff`) or
+		`BLEND` (blended). Defaults to `OPAQUE`. */
+	public final alphaMode:String;
+
+	/** Gets the alpha below which a `MASK` material is cut out, 0 to 1. Defaults to 0.5; read only when `alphaMode` is `MASK`. */
+	public final alphaCutoff:Float;
+
 	@:allow(helix.formats.gltf)
 	function new(name:String, hasPbrMetallicRoughness:Bool, baseColorFactor:Array<Float>, baseColorImageIndex:Int, metallic:Float, roughness:Float,
-			metallicRoughnessImageIndex:Int, normalImageIndex:Int, occlusionImageIndex:Int, emissiveFactor:Array<Float>, emissiveImageIndex:Int, unlit:Bool) {
+			metallicRoughnessImageIndex:Int, normalImageIndex:Int, occlusionImageIndex:Int, emissiveFactor:Array<Float>, emissiveImageIndex:Int, unlit:Bool,
+			alphaMode:String, alphaCutoff:Float) {
 		this.name = name;
 		this.unlit = unlit;
+		this.alphaMode = alphaMode;
+		this.alphaCutoff = alphaCutoff;
 		this.hasPbrMetallicRoughness = hasPbrMetallicRoughness;
 		this.baseColorFactor = baseColorFactor;
 		this.baseColorImageIndex = baseColorImageIndex;
