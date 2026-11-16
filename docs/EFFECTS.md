@@ -125,7 +125,7 @@ tone mapping), then display effects.
 
 ## Wardens uses
 
-From the Effects section of `docs/trials/wardens/spec.md`.
+From the Effects section of `docs/trials/templates/wardens/spec.md`.
 
 | Wardens effect | Entries it would exercise |
 |---|---|

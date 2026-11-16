@@ -1,9 +1,0 @@
-characters/Adventurer_Body.glb
-characters/Adventurer_Head.glb
-characters/Adventurer_Legs.glb
-characters/Adventurer_Feet.glb
-characters/Animations.glb
-ui/panel.png
-ui/font.ttf
-sound/music.ogg
-sound/slash.wav

@@ -1,5 +1,0 @@
--lib raylib-hx
--cp .
--main Main
--dce full
--cpp native

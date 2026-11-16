@@ -1,2 +1,0 @@
-ui/font.ttf
-ui/panel.png

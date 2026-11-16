@@ -1,0 +1,12 @@
+# A trial's folder keeps what its entrants were given and what it found: its README.md, results.md, spec.md or task.md, briefs,
+# build files, assets.txt, and each variant's brief.md, docs/ and starting Main.hx. Entrants' source and folders (<name>.NNN) stay out,
+# and so do assets, which live in templates/.
+/20*/**
+!/20*/**/
+!/20*/**/*.md
+!/20*/**/*.hxml
+!/20*/assets.txt
+!/20*/*/docs/**
+!/20*/*/Main.hx
+/20*/*.[0-9][0-9][0-9]/
+/20*/**/assets/

@@ -6,7 +6,7 @@ import helix.raylib.Texture2D;
 import helix.raylib.Vector2;
 import helix.raylib.Vector3;
 
-/** A program written in raylib on helix-raylib, as a game in raylib would be. Its image is docs/trials/2026-10-30-async/assets/player.png,
+/** A program written in raylib on helix-raylib, as a game in raylib would be. Its image is docs/trials/templates/assets/player.png,
 	its model engines/raylib/parity/assets/robot.glb. */
 @:adds("helix.formats.gltf", "helix.formats.text", "helix.geometry.Animation3D", "helix.geometry.AnimationProperty3D", "helix.geometry.AnimationTrack3D",
 	"helix.geometry.Bone3D", "helix.geometry.KeyInterpolation", "helix.geometry.Mesh3D", "helix.geometry.Skeleton3D", "helix.geometry.Skin3D",

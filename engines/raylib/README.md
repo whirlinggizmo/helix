@@ -113,6 +113,7 @@ MIT license, `vendor/par_shapes/LICENSE`.
 `Raygui` is a port of raygui 4.5-dev, the `raygui.h` raylib 5.5 ships, by Ramon Santamaria (@raysan5) and its contributors: its
 controls, default style and built-in icons, altered; its API description, `vendor/raygui/raygui_api.json`, is made from `raygui.h` by
 raylib's parser; zlib license, `vendor/raygui/LICENSE`.
-The bunnymark's texture, `tests/bunnymark/wabbit_alpha.png`, is raylib 5.5's `textures_bunnymark` resource, under the same zlib license.
+The speed comparison's bunnymark (`tools/gen_speed.py`) takes its texture, `wabbit_alpha.png`, from raylib 5.5's release (its
+`textures_bunnymark` resource), under the same zlib license; it isn't kept here.
 The `text` example's font is [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) Regular, Copyright 2020 The JetBrains Mono
 Project Authors, under the SIL Open Font License 1.1 (`examples/text/web/assets/OFL.txt`).

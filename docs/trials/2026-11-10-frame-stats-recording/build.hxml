@@ -1,8 +1,0 @@
--lib helix-raylib
--cp api
--cp .
--main Main
--dce full
--D helix-company=trial
--D helix-product=bench
--js main.js

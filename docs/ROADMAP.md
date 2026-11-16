@@ -27,7 +27,7 @@ speed where docs/benchmarks.md records them.
   hierarchy, the walk that culls, gathers lights and sorts, picking), ported from helix-legacy's scene code rather than designed anew, issues
   raylib's calls each frame as three.js does under its graph: the speed and size measured for `DrawTexturePro` and `DrawMesh` are
   its, raylib's holders are its GPU handles, and what raylib lacks is the engine's own (DECISIONS 60). The sketch is done
-  (docs/trials/2026-11-06-retained-sketch): a thin graph issuing raylib's calls, and nine gaps, unbuilt. Timed
+  (commit 02e9c1b): a thin graph issuing raylib's calls, and nine gaps, unbuilt. Timed
   against the robots contender, the tree, cull and sort cost 6 to 8% at 400 robots with helix-math's matrices, 30 to 43% with raymath's
   allocating ones, so the graph keeps helix-math's. Gyre is helix-legacy's game-level API (app, loader, UI, transitions, animator, autopilot) on that
   scene and the services, so its users keep the API they know; the test is one of helix-legacy's games ported, its effort and its size
