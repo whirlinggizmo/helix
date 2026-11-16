@@ -6,7 +6,8 @@ import haxe.macro.Expr;
 #end
 
 /** Holds helix-raylib's model shaders, compiled as the program builds from its files in `helix/raylib/shaders/`: raylib's default
-	(unlit), its variant reading a material's values, the lit one, the PBR one, each one's skinned twin, and the sprite shader. */
+	(unlit), its variant reading a material's values, the lit one, the PBR one, each one's skinned twin, the shadow pass's, and the sprite
+	shader. */
 @:noCompletion
 class Defaults {
 	/** Returns raylib's default shader. */
@@ -42,6 +43,22 @@ class Defaults {
 		var pos = Context.currentPos();
 		return ShaderMacro.program("raylib default vertex shader, skinned", ShaderMacro.builtIn("unlit_skinned.vs", pos),
 			"helix-raylib material fragment shader", ShaderMacro.builtIn("unlit_material.fs", pos), pos);
+	}
+
+	/** Returns the shadow pass's shader for helix-raylib's own shaders (`Shadows`): raylib's default vertex stage, which places a vertex
+		as the lit and PBR ones do, and a fragment stage writing depth alone, cut at the material's alpha cutoff. Only a program casting
+		shadows links it. */
+	public static macro function shadowShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("raylib default vertex shader", null, "helix-raylib shadow fragment shader", ShaderMacro.builtIn("shadow_cut.fs", pos), pos);
+	}
+
+	/** Returns the shadow pass's shader for helix-raylib's own skinned shaders: the default's skinned vertex stage, which skins as the
+		lit and PBR ones do, and the shadow fragment stage. */
+	public static macro function shadowSkinnedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("raylib default vertex shader, skinned", ShaderMacro.builtIn("unlit_skinned.vs", pos),
+			"helix-raylib shadow fragment shader", ShaderMacro.builtIn("shadow_cut.fs", pos), pos);
 	}
 
 	/** Returns helix-raylib's lit shader, raylib's examples' lighting (`LoadLightingShader`). */

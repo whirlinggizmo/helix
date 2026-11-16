@@ -36,6 +36,8 @@ class Program {
 		out.resize(textures.length);
 		for (slot => id in textures)
 			out[slot] = id > 0 && resolve != null ? resolve(id) : 0;
+		if (shadowSlot >= 0)
+			out[shadowSlot] = shadowMap;
 		return out;
 	}
 
@@ -59,6 +61,9 @@ class Program {
 	/** The draw's first bone in the palette, as that include declares it; null for a shader without it. */
 	public var boneOffset:Null<ShaderUniform> = null;
 
+	/** The value `boneOffset` holds for the draw being made, the draw's first bone plus one, 0 for none (`Skinning`). */
+	public var boneFirst = 0;
+
 	/** The uniforms of rlights' `lights` the scene's lights are written into (`SceneLights`), found by its first lit draw; empty for a
 		shader declaring none, null until looked for. */
 	public var lightFields:Null<Array<Null<ShaderUniform>>>;
@@ -66,6 +71,26 @@ class Program {
 	/** The uniforms of a material's values each draw writes (`Surfaces`), found by its first draw once they're written; empty for a
 		shader declaring none, null until looked for. */
 	public var surfaceFields:Null<Array<Null<ShaderUniform>>>;
+
+	/** The slot of the shadow map a shader including `<helix/raylib/shaders/shadows.glsl>` reads, -1 for one that doesn't: a draw binds
+		`shadowMap` there, and nothing else. */
+	public var shadowSlot(default, null) = -1;
+
+	/** The shadow map bound at `shadowSlot`, a GPU handle (`Shadows`): 0, the platform's empty one, until a light casts shadows. */
+	public var shadowMap = 0;
+
+	/** The shadow pass's shadows written into the program last (`Shadows`), so each is written once; 0 for none. */
+	public var shadowStamp = 0;
+
+	/** The uniforms of the shadows `Shadows` writes, found by the first draw receiving them; null until then. */
+	public var shadowFields:Null<Array<Null<ShaderUniform>>>;
+
+	/** The shadow variant of a compiled shader (`CompileShaderFile`): its vertex stage writing depth alone, null for a built-in shader. */
+	public var casterSource:Null<helix.platform.ShaderSource>;
+
+	/** The program the shadow pass draws through in this one's place, a twin of it (`mirror`) made by the pass's first draw through it
+		(`Shadows`); null until then. */
+	public var caster:Null<Program>;
 
 	/** The platform's program handle. */
 	public final handle:Int;
@@ -112,6 +137,8 @@ class Program {
 				units.push(-1);
 			}
 			cubes[s.slot] = s.kind == Cube;
+			if (s.kind == Shadow)
+				shadowSlot = s.slot;
 		}
 		texture0 = slotOf("texture0");
 		texture1 = slotOf("texture1");
@@ -187,13 +214,14 @@ class Program {
 			t.write(t.locate(l.name), numbers);
 	}
 
-	/** Makes a program a twin of this one (a skinned version of a built-in shader, `Skinning`, `LoadLightingShader` and `LoadPbrShader`): every
-		uniform written here, and every one written after, is written there by name, and every texture and unit set here is set there,
-		so a draw through the twin reads what the program set on this one. The skinned twin is `twin`.
+	/** Makes a program a twin of this one (a skinned version of a built-in shader, `Skinning`, `LoadLightingShader` and `LoadPbrShader`;
+		the shadow pass's, `caster`): every uniform written here, and every one written after, is written there by name, and every texture
+		and unit set here is set there, so a draw through the twin reads what the program set on this one. The skinned twin is `twin`.
 
-		@param program  The twin. */
-	public function mirror(program:Program):Void {
-		if (program.shader.findSampler("bonePalette") != null)
+		@param program  The twin.
+		@param skinned  Optional. Whether a program reading the bone palette is the skinned twin; true when omitted, false for a caster. */
+	public function mirror(program:Program, skinned = true):Void {
+		if (skinned && program.shader.findSampler("bonePalette") != null)
 			twin = program;
 		twins.push(program);
 		for (location => numbers in written)

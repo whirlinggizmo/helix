@@ -105,6 +105,8 @@ class RCompiledShaders {
 	// A shader of a compiled shader's value (`read`), its uniforms' initializers written as GL sets them when it links.
 	static function make(value:Dynamic, name:String):Shader {
 		var shader = RModels.makeShader(new helix.services.shaders.Shader(value.source, name));
+		// Its shadow variant, made a program by the shadow pass's first draw through it (Shadows).
+		shader.program.casterSource = value.shadow;
 		var initials:Array<Dynamic> = Std.isOfType(value.initials, Array) ? value.initials : [];
 		for (i in initials)
 			shader.program.writeNamed(i.name, [for (n in (i.numbers : Array<Dynamic>)) (n : Float)]);

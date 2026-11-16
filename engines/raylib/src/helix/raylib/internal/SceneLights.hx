@@ -25,8 +25,10 @@ class SceneLights {
 	// Each draw's choice, best first, and the scores they won with.
 	static final chosen:Array<Null<helix.raylib.Light>> = [for (_ in 0...DRAW_LIGHTS) null];
 	static final scores:Array<Float> = [for (_ in 0...DRAW_LIGHTS) 0.];
-	// The draw's bounds in the world: the least x, y and z, then the most.
-	static final box:Array<Float> = [0, 0, 0, 0, 0, 0];
+
+	/** The draw's bounds in the world: the least x, y and z, then the most. */
+	public static final box:Array<Float> = [0, 0, 0, 0, 0, 0];
+
 	// An instance's transform, column by column.
 	static final instance:Array<Float> = [for (_ in 0...16) 0.];
 	// A program's lights fields, by the indices below, as `lights` declares them: the uniforms `lights.enabled` and the rest.
@@ -39,9 +41,14 @@ class SceneLights {
 		"lights.range",
 		"lights.intensity",
 		"lights.innerCosine",
-		"lights.outerCosine"
+		"lights.outerCosine",
+		"lights.shadow"
 	];
 	static final NONE:Array<Null<ShaderUniform>> = [];
+
+	/** Writes the shadows into a program its draw's lights are written into (`Shadows`): set by the first `SetLightShadows`, null in a
+		program casting none. It has no initial value, as `Frame.spriteShader` has none. */
+	public static var receiving:Null<Program->Void>;
 
 	/** Adds a light to the scene, the draws' hooks set with the first.
 
@@ -81,10 +88,28 @@ class SceneLights {
 		var own = fields(p), twin = p.twin, twins = twin == null ? NONE : fields(twin);
 		if (own.length == 0 && twins.length == 0)
 			return;
+		if (!bound(mesh, model, transforms, count))
+			unbounded();
+		var n = choose();
+		if (own.length > 0)
+			write(p, own, n);
+		if (twins.length > 0)
+			write(twin, twins, n);
+	}
+
+	/** Finds a mesh's draw's bounds in the world, the least x, y and z then the most, into `box`: the mesh's moved by its transform, or
+		grown to hold them moved by each instance's.
+
+		@param mesh  The mesh.
+		@param model  Its transform.
+		@param transforms  The instances' transforms, `DrawMeshInstanced`'s; null for one draw.
+		@param count  How many instances.
+		@return  False for a mesh without positions, whose bounds aren't found. */
+	public static function bound(mesh:helix.raylib.Mesh, model:Matrix4, transforms:Null<Array<helix.raylib.Matrix>>, count:Int):Bool {
 		var local = meshBounds(mesh);
 		if (local == null)
-			unbounded();
-		else if (transforms != null)
+			return false;
+		if (transforms != null)
 			for (i in 0...count) {
 				var t = transforms[i];
 				instance[0] = t.m0;
@@ -107,11 +132,7 @@ class SceneLights {
 			}
 		else
 			place(local, model.values, false);
-		var n = choose();
-		if (own.length > 0)
-			write(p, own, n);
-		if (twins.length > 0)
-			write(twin, twins, n);
+		return true;
 	}
 
 	// Lights a run of immediate vertices (rlgl's, a shape's): its bounds those of the vertices' positions, as the batch holds them.
@@ -273,8 +294,10 @@ class SceneLights {
 	static inline function clamp(x:Float, low:Float, high:Float):Float
 		return x < low ? low : x > high ? high : x;
 
-	// Writes the draw's lights into a program's lights, its others off.
+	// Writes the draw's lights into a program's lights, its others off, and the shadows they cast.
 	static function write(p:Program, f:Array<Null<ShaderUniform>>, n:Int):Void {
+		if (receiving != null)
+			receiving(p);
 		var values = p.values;
 		var slots = f[0].elementCount < DRAW_LIGHTS ? f[0].elementCount : DRAW_LIGHTS;
 		for (i in 0...slots) {
@@ -305,6 +328,8 @@ class SceneLights {
 				values.writeFloat(f[7], light.innerCosine, i);
 			if (f[8] != null)
 				values.writeFloat(f[8], light.outerCosine, i);
+			if (f[9] != null)
+				values.writeInt(f[9], light.shadowIndex, i);
 		}
 	}
 }

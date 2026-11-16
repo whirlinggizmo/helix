@@ -39,11 +39,13 @@ raylib's lighting from its examples' rlights.h and lighting.fs, lit by the scene
 
 It declares rlights' uniforms: lights[MAX_LIGHTS] (MAX_LIGHTS is 8), ambient and viewPos. Each draw's lights are the scene's lights reaching it most (CreateLight), written before the draw, the rest off. The program sets viewPos, the camera's position, each frame at shader.locs[SHADER_LOC_VECTOR_VIEW].
 
-Each light also has helix-raylib's range, intensity and a spot light's cone (SetLightRange, SetLightIntensity and SetLightCone, the Lighting extra's): lights[i].range, lights[i].intensity, and lights[i].innerCosine and lights[i].outerCosine, the cosines of the cone's angles.
+Each light also has helix-raylib's range, intensity and a spot light's cone (SetLightRange, SetLightIntensity and SetLightCone, the Lighting extra's): lights[i].range, lights[i].intensity, and lights[i].innerCosine and lights[i].outerCosine, the cosines of the cone's angles. lights[i].shadow is its shadows' index plus 1, 0 for a light that casts none (SetLightShadows).
+
+It includes <helix/raylib/shaders/shadows.glsl>, so a light casting shadows (SetLightShadows, BeginShadowMode) is shadowed in helixLight, and helixShadow is there for the program's own lighting.
 
 It also declares the material's values (the Materials extra's), written by each draw: emissiveColor, the light the material gives off, its color times its intensity; modelEmissiveColor, the light its model gives off (SetModelEmissive), 0 for a mesh drawn alone; and alphaCutoff, 0 for none.
 
-vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) returns the fragment's lit color, gamma corrected, the material's and the model's light added. A fragment whose alpha, texelColor's times tint's, is below alphaCutoff is discarded. fragPosition is in world space. fragNormal needn't be normalized.
+vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) returns the fragment's lit color, gamma corrected, each light's shadow taken from it, the material's and the model's light added. A fragment whose alpha, texelColor's times tint's, is below alphaCutoff is discarded. fragPosition is in world space. fragNormal needn't be normalized.
 
 A point or spot light with a range dims with the square of the distance, to nothing at its range. Without one, it doesn't dim. A spot light shines from its position toward its target, full inside its inner angle and fading to nothing at its outer one.
 
@@ -80,7 +82,7 @@ vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, 
 
 Its inputs are linear, as a glTF's factors are. Decode a texel from an sRGB image first. fragPosition is in world space. normal needn't be normalized.
 
-A point or spot light dims with distance, and a spot light fades across its cone, as in lights.glsl.
+A point or spot light dims with distance, and a spot light fades across its cone, as in lights.glsl. A light casting shadows is shadowed (<helix/raylib/shaders/shadows.glsl>, which lights.glsl includes).
 
 vec3 helixToneMap(vec3 color) tone maps a linear color, as helixPbr does.
 

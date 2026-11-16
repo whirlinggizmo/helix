@@ -192,6 +192,14 @@ class Frame {
 		(0 for none: the vertices in order) and their count. */
 	public var pointMesh:Null<(mesh:helix.raylib.Mesh, model:Matrix4, instanced:Bool) -> Array<Int>> = null;
 
+	/** Whether the next draws write depth alone, into a shadow map (the Lighting extra's shadow pass, `Shadows`). */
+	public var depthOnly = false;
+
+	/** Gives the program a mesh's draw is drawn through in the shadow pass, in place of its own, or null to skip the draw: set by
+		`BeginShadowMode` (`Shadows`), null outside the pass, so a program casting no shadow links none of it. It receives the mesh, the
+		program and the textures by its slots, which it rewrites by the slots of the program it gives. */
+	public var casting:Null<(mesh:helix.raylib.Mesh, p:Program, textures:Array<Int>) -> Null<Program>> = null;
+
 	/** Whether the next draws blend as `blend` says, rlgl's `rlEnableColorBlend`; when not, they draw over what is there. */
 	public var colorBlend = true;
 
@@ -379,6 +387,39 @@ class Frame {
 		screen2D();
 	}
 
+	/** Adds a pass drawing depth alone into a layer of a shadow map (the Lighting extra's shadow pass, `Shadows`), after the render
+		texture passes begun so far and before the screen's; the draws go on into the pass they went into.
+
+		@param map  The shadow map's handle.
+		@param layer  The layer.
+		@param size  The layer's width and height, in texels.
+		@return  The pass, for `drawInto`. */
+	public function addShadowPass(map:Int, layer:Int, size:Int):Any {
+		var shadow:Pass = {
+			target: map,
+			begin: g -> g.beginShadowPass(map, layer),
+			clear: null,
+			width: size,
+			height: size,
+			draws: [],
+			updates: []
+		};
+		passes.insert(passes.length - 1, shadow);
+		return shadow;
+	}
+
+	/** Makes the next draws go into a pass, one `addShadowPass` gave or `currentPass` read, without flushing the batch.
+
+		@param target  The pass. */
+	public function drawInto(target:Any):Void
+		pass = target;
+
+	/** Gets the pass the draws go into now, for `drawInto`. */
+	public var currentPass(get, never):Any;
+
+	function get_currentPass():Any
+		return pass;
+
 	/** Goes back to drawing on the screen. */
 	public function toScreen():Void {
 		flush();
@@ -503,8 +544,8 @@ class Frame {
 			if (run.mode == SPRITES) {
 				if (run.count == 0)
 					continue;
-				// Wire and point modes read vertices: the sprites' written out as quads, drawn as a run of them.
-				if (pointRun == null && !wire) {
+				// Wire and point modes, and the shadow pass, read vertices: the sprites' written out as quads, drawn as a run of them.
+				if (pointRun == null && !wire && !depthOnly) {
 					pass.draws.push(spriteDraw(run.texture, run.first, run.count));
 					continue;
 				}
@@ -1061,7 +1102,7 @@ class Frame {
 			depthWrite: depthTest && depthMask,
 			cull: cullFace(),
 			clockwise: false,
-			depthOnly: false,
+			depthOnly: depthOnly,
 			flip: ClipScale,
 			flipBlockSlot: p.flipSlot,
 			flipOffset: p.flipOffset
@@ -1117,6 +1158,11 @@ class Frame {
 	public function mesh(mesh:helix.raylib.Mesh, p:Program, model:Matrix4, diffuse:Array<Float>, textures:Array<Int>, instances:Int = 0,
 			instanceCount:Int = 1):Void {
 		meshBuffers = null;
+		if (casting != null) {
+			p = casting(mesh, p, textures);
+			if (p == null)
+				return;
+		}
 		// In point mode, the mesh's triangles drawn as their corners: those culling leaves, found here, as GL's point mode culls the
 		// triangles whose corners it draws.
 		var points:Null<Array<Int>> = null;
@@ -1153,7 +1199,7 @@ class Frame {
 			if (t >= 0 && slot < bound.length)
 				bound[slot] = t;
 		for (i in 0...bound.length)
-			if (bound[i] == 0)
+			if (bound[i] == 0 && i != p.shadowSlot)
 				bound[i] = white;
 		// A buffer an attribute: the platform takes eight, as many as raylib's attributes.
 		var names = p.attributes, buffers = ints();
@@ -1163,6 +1209,7 @@ class Frame {
 			else if (name != "")
 				buffers.push(Models.buffer(mesh, MESH_BUFFERS.get(name)));
 		meshBuffers = buffers;
+		meshNames = names;
 		var indices = points != null ? points[0] : wire ? edges : mesh.gpu.indexBuffer,
 			count = points != null ? points[1] : wire ? edgeCount : indexed ? mesh.triangleCount * 3 : mesh.vertexCount;
 		if (eyes != null)
@@ -1246,7 +1293,7 @@ class Frame {
 				depthWrite: depthTest && depthMask,
 				cull: primitive == Triangles ? cullFace() : None,
 				clockwise: false,
-				depthOnly: false,
+				depthOnly: depthOnly,
 				flip: ClipScale,
 				flipBlockSlot: p.flipSlot,
 				flipOffset: p.flipOffset
@@ -1296,6 +1343,9 @@ class Frame {
 	/** The buffers, by the program's slot, of the draws the last `mesh` added, which a caller may change before the frame is drawn (a
 		mesh posed on the CPU, `Skinning`); null when it added none. */
 	public var meshBuffers:Null<Array<Int>> = null;
+
+	/** The attributes, by slot, of the program the draws the last `mesh` added are drawn through, which `meshBuffers` is by. */
+	public var meshNames:Null<Array<String>> = null;
 
 	// The view and projection together, reused.
 	final viewProjection = new Matrix4();
@@ -1353,15 +1403,17 @@ class Frame {
 			|| cull != stateCull
 			|| cullFront != stateCullFront
 			|| colorBlend != stateColorBlend
+			|| depthOnly != stateDepthOnly
 			|| (blend : Int) != stateBlend || (colorMask : Int) != stateColorMask) {
 			stateDepthTest = depthTest;
 			stateDepthMask = depthMask;
 			stateCull = cull;
 			stateCullFront = cullFront;
 			stateColorBlend = colorBlend;
+			stateDepthOnly = depthOnly;
 			stateBlend = blend;
 			stateColorMask = colorMask;
-			stateText = text = '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (cullFront ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}c${(colorMask : Int)}';
+			stateText = text = '${depthTest ? "d" : ""}${depthTest && depthMask ? "w" : ""}${cull ? (cullFront ? "f" : "b") : ""}${colorBlend ? (blend : Int) : -1}c${(colorMask : Int)}${depthOnly ? "z" : ""}';
 		}
 		return text;
 	}
@@ -1373,6 +1425,7 @@ class Frame {
 	var stateCull = false;
 	var stateCullFront = false;
 	var stateColorBlend = false;
+	var stateDepthOnly = false;
 	var stateBlend = 0;
 	var stateColorMask = 0;
 
@@ -1423,6 +1476,8 @@ class Frame {
 			var color:Int = p.clear == null ? 0xff000000 : p.clear;
 			if (targetOf(p.target, screen) == 0)
 				graphics.beginFrame(framebufferWidth, framebufferHeight, color);
+			else if (p.begin != null)
+				p.begin(graphics);
 			else if (p.clear == null)
 				graphics.resumeTargetPass(targetOf(p.target, screen));
 			else
@@ -1563,8 +1618,10 @@ class Frame {
 
 @:structInit
 private class Pass {
-	// The render target, 0 for the screen, or -1 for no pass: updates alone, between passes.
+	// The render target, 0 for the screen, or -1 for no pass: updates alone, between passes; a shadow map for a shadow pass.
 	public final target:Int;
+	// What begins a shadow pass, depth alone into a layer of the shadow map (Shadows); null for any other pass.
+	public var begin:Null<IGraphics->Void> = null;
 	// The color the pass is cleared to, 0xAARRGGBB, or null to keep what a render texture holds (the screen's black).
 	public var clear:Null<Int>;
 	public var width:Float;

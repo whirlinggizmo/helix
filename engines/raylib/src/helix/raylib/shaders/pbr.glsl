@@ -14,7 +14,8 @@
 // Its inputs are linear, as a glTF's factors are. Decode a texel from an sRGB image first. fragPosition is in world space. normal
 // needn't be normalized.
 //
-// A point or spot light dims with distance, and a spot light fades across its cone, as in lights.glsl.
+// A point or spot light dims with distance, and a spot light fades across its cone, as in lights.glsl. A light casting shadows is
+// shadowed (<helix/raylib/shaders/shadows.glsl>, which lights.glsl includes).
 //
 // vec3 helixToneMap(vec3 color) tone maps a linear color, as helixPbr does.
 //
@@ -98,7 +99,7 @@ vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, 
         if (lights[i].enabled == 1) {
             vec3 l = helixLightDirection(i, fragPosition);
             // A white surface facing the light shows its color: the BRDF scaled by pi.
-            vec3 irradiance = lights[i].color.rgb*clamp(dot(n, l), 0.0, 1.0)*helixLightStrength(i, fragPosition);
+            vec3 irradiance = lights[i].color.rgb*clamp(dot(n, l), 0.0, 1.0)*helixLightStrength(i, fragPosition)*helixShadow(i, fragPosition, n);
             color += irradiance*(diffuseColor + HELIX_PI*helixGgx(l, v, n, f0, roughness));
         }
     }

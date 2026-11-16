@@ -7649,6 +7649,10 @@ class Raylib {
 		--macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
 		```
 
+		The file also holds the shader's shadow variant, which the Lighting extra's shadow pass (`BeginShadowMode`) draws through: its
+		vertex stage, with a fragment stage writing depth alone and cutting at the material's alpha cutoff where the vertex stage passes
+		`fragTexCoord`.
+
 		@param vsFileName  The vertex stage's file, or null for raylib's default.
 		@param fsFileName  The fragment stage's file, or null for raylib's default.
 		@param compiledShaderFileName  The file to write. */

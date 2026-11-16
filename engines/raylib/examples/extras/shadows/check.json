@@ -1,0 +1,8 @@
+{
+  "what": "the floor east of the pillar, in the sun's shadow (lit by the lamp alone); the floor just south of that shadow, in the sun and the lamp; the floor north of it, in the sun.",
+  "points": [
+    {"x": 567, "y": 300, "color": [75, 61, 45], "tolerance": 6},
+    {"x": 589, "y": 363, "color": [237, 229, 219], "tolerance": 6},
+    {"x": 540, "y": 222, "color": [206, 206, 207], "tolerance": 6}
+  ]
+}

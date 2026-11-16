@@ -133,8 +133,11 @@ class CountingGraphics implements IGraphics {
 	public function canRender(format:TextureFormat):Bool
 		return true;
 
-	public function createShadowMap(size:Int, layerCount:Int):Int
-		return handle();
+	public function createShadowMap(size:Int, layerCount:Int):Int {
+		var h = handle();
+		shadowMaps.set(h, [size, layerCount]);
+		return h;
+	}
 
 	public function disposeTexture(handle:Int):Void
 		gone(textures, handle);
@@ -163,12 +166,25 @@ class CountingGraphics implements IGraphics {
 	public function disposeShader(handle:Int):Void
 		gone(shaders, handle);
 
-	public function createPipeline(desc:PipelineDesc):Int
-		return handle();
+	public function createPipeline(desc:PipelineDesc):Int {
+		var h = handle();
+		pipelines.set(h, desc);
+		return h;
+	}
+
+	/** Gets each pipeline made, by its handle: what it was made from. */
+	public final pipelines = new Map<Int, PipelineDesc>();
+
+	/** Gets each shadow map made, by its handle: its size and layers. */
+	public final shadowMaps = new Map<Int, Array<Int>>();
 
 	public function disposePipeline(handle:Int):Void {}
 
-	public function beginShadowPass(map:Int, layerIndex:Int):Void {}
+	public function beginShadowPass(map:Int, layerIndex:Int):Void
+		shadowPasses.push([map, layerIndex]);
+
+	/** Gets each shadow pass begun: its shadow map and layer. */
+	public final shadowPasses:Array<Array<Int>> = [];
 
 	public function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void {}
 

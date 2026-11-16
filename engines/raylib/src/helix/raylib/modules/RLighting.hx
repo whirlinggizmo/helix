@@ -7,7 +7,7 @@ import helix.raylib.modules.RCore.*;
 import helix.raylib.internal.Defaults;
 #end
 
-/** Holds helix-raylib's lit and PBR shaders, lit by the scene's lights (rlights' `CreateLight`), and what the Lighting extra sets on a
+/** Holds helix-raylib's lit and PBR shaders, lit by the scene's lights (rlights' `CreateLight`), the shadow pass, and what the Lighting extra sets on a
 	light. Each is written here, and `helix.raylib.extras.Lighting` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
@@ -133,11 +133,60 @@ class RLighting {
 		@:privateAccess light.outerCosine = Math.cos(outer * DEG2RAD);
 	}
 
-	/** Takes a light out of the scene. It lights nothing after.
+	/** Takes a light out of the scene. It lights nothing after, and its shadows are freed.
 
 		@param light  The light, from `CreateLight`. */
 	static function UnloadLight(light:Light):Void {
 		helix.raylib.internal.SceneLights.remove(light);
+		// Its place among the lights casting shadows is let go of by the next shadow pass (Shadows).
+		@:privateAccess light.shadow = null;
+		@:privateAccess light.shadowIndex = 0;
+	}
+
+	/** Makes a light cast shadows, made as the options say. Its shadows take a map of `mapSize` squared texels: one for each cascade
+		of a directional light, six for a point light, one for a spot light. 4 lights cast shadows at most: a fifth's are off, with a
+		warning. `UnloadLight` frees a light's shadows.
+
+		@param light  The light, from `CreateLight`.
+		@param options  Optional. How its shadows are made; the defaults when omitted or null. */
+	static function SetLightShadows(light:Light, ?options:helix.raylib.extras.ShadowOptions):Void {
+		if (options == null)
+			options = {};
+		helix.raylib.internal.Shadows.set(light, options);
+	}
+
+	/** Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in; null when it casts none.
+
+		@param light  The light, from `CreateLight`.
+		@param out  Optional. The options filled; new ones when omitted.
+		@return  out or the new options, or null when the light casts no shadows. */
+	static function GetLightShadows(light:Light, ?out:helix.raylib.extras.ShadowOptions):Null<helix.raylib.extras.ShadowOptions> {
+		return helix.raylib.internal.Shadows.get(light, out);
+	}
+
+	/** Starts the frame's shadow pass, until `EndShadowMode`: what is drawn casts shadows, from every light that casts them, and is
+		drawn nowhere else. Call it before `BeginDrawing`, or after it and before `BeginMode3D`, not within a 3D or texture mode.
+
+		Draw the casters as the frame draws them, models and meshes posed and placed the same. Each draw runs its own shader's vertex
+		stage, so a caster swaying, skinned or instanced there casts its shadow as it is drawn, and writes depth alone. A material with
+		an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps take what was
+		drawn once, less the draws whose bounds fall outside a map's view.
+
+		- **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the
+		  material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow.
+		- **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage
+		  without it casts its whole shape.
+		- **Cost:** every cascade and every face of a point light draws the casters again. A point light's shadows cost about six
+		  times a directional light's single map.
+
+		@param camera  The camera the frame is drawn from, which a directional light's shadows follow. */
+	static function BeginShadowMode(camera:Camera3D):Void {
+		helix.raylib.internal.Shadows.begin(camera);
+	}
+
+	/** Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows. */
+	static function EndShadowMode():Void {
+		helix.raylib.internal.Shadows.end();
 	}
 
 	// Starts each of a lit shader's lights at intensity 1, as lights.glsl's lights are until set: its MAX_LIGHTS, 8.

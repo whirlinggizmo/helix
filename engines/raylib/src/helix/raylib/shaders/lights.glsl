@@ -7,15 +7,18 @@
 //
 // Each light also has helix-raylib's range, intensity and a spot light's cone (SetLightRange, SetLightIntensity and SetLightCone, the
 // Lighting extra's): lights[i].range, lights[i].intensity, and lights[i].innerCosine and lights[i].outerCosine, the cosines of the cone's
-// angles.
+// angles. lights[i].shadow is its shadows' index plus 1, 0 for a light that casts none (SetLightShadows).
+//
+// It includes <helix/raylib/shaders/shadows.glsl>, so a light casting shadows (SetLightShadows, BeginShadowMode) is shadowed in
+// helixLight, and helixShadow is there for the program's own lighting.
 //
 // It also declares the material's values (the Materials extra's), written by each draw: emissiveColor, the light the material gives
 // off, its color times its intensity; modelEmissiveColor, the light its model gives off (SetModelEmissive), 0 for a mesh drawn alone;
 // and alphaCutoff, 0 for none.
 //
 // vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) returns the fragment's lit color, gamma corrected,
-// the material's and the model's light added. A fragment whose alpha, texelColor's times tint's, is below alphaCutoff is discarded.
-// fragPosition is in world space. fragNormal needn't be normalized.
+// each light's shadow taken from it, the material's and the model's light added. A fragment whose alpha, texelColor's times tint's, is
+// below alphaCutoff is discarded. fragPosition is in world space. fragNormal needn't be normalized.
 //
 // A point or spot light with a range dims with the square of the distance, to nothing at its range. Without one, it doesn't dim. A spot
 // light shines from its position toward its target, full inside its inner angle and fading to nothing at its outer one.
@@ -57,6 +60,7 @@ struct Light {
     float intensity;
     float innerCosine;
     float outerCosine;
+    int shadow;
 };
 
 uniform Light lights[MAX_LIGHTS];
@@ -91,6 +95,8 @@ vec3 helixLightDirection(int i, vec3 fragPosition) {
     return normalize(lights[i].position - fragPosition);
 }
 
+#include <helix/raylib/shaders/shadows.glsl>
+
 vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) {
     if (texelColor.a*tint.a < alphaCutoff)
         discard;
@@ -102,7 +108,7 @@ vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal) 
         if (lights[i].enabled == 1) {
             vec3 light = helixLightDirection(i, fragPosition);
             float NdotL = max(dot(normal, light), 0.0);
-            float strength = helixLightStrength(i, fragPosition);
+            float strength = helixLightStrength(i, fragPosition)*helixShadow(i, fragPosition, normal);
             lightDot += lights[i].color.rgb*NdotL*strength;
             float specCo = 0.0;
             if (NdotL > 0.0)

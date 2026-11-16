@@ -6,7 +6,7 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Lighting.hx`](../src/helix/raylib/extras/Lighting.hx), `import helix.raylib.extras.Lighting;`
 
-Provides the scene's lights and lit shaders, built in: `LoadLightingShader`, raylib's lighting examples' `lighting.vs` and `lighting.fs`, which shine every material alike, and `LoadPbrShader`, which draws a glTF's materials as authored, metallic-roughness. Imported apart: `import helix.raylib.extras.Lighting.*;`.
+Provides the scene's lights, their shadows, and lit shaders, built in: `LoadLightingShader`, raylib's lighting examples' `lighting.vs` and `lighting.fs`, which shine every material alike, and `LoadPbrShader`, which draws a glTF's materials as authored, metallic-roughness. Imported apart: `import helix.raylib.extras.Lighting.*;`.
 
 The example `engines/raylib/examples/extras/lighting` uses it.
 
@@ -29,13 +29,35 @@ SHADER_UNIFORM_VEC3);
 
 **A program's own shader.** Including `<helix/raylib/shaders/lights.glsl>` gives `lights[MAX_LIGHTS]`, the draw's own lights (8), `ambient` and `viewPos`, and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal)`, called as `helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor, fragPosition, fragNormal)`. Including `<helix/raylib/shaders/pbr.glsl>` gives `vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3 emissive, vec3 fragPosition, vec3 normal)`, and the material's `emissiveColor` and `alphaCutoff` (the Materials extra). Both take the world position and normal as raylib's `lighting.vs` passes them: `fragPosition` is `vec3(matModel*vec4(vertexPosition, 1.0))` and `fragNormal` is `normalize(vec3(matNormal*vec4(vertexNormal, 1.0)))`. A model posed by `UpdateModelAnimation` under a lit shader is skinned on the GPU. A program that calls none of this links none of it.
 
+**Shadows.**
+
+```haxe
+SetLightShadows(sun, {mapSize: 2048, distance: 30, cascades: 2});
+SetLightShadows(lamp);
+// each frame, before BeginDrawing or after it and before BeginMode3D
+BeginShadowMode(camera);
+DrawModel(island, Vector3Zero(), 1, WHITE);
+DrawModel(hut, hutPosition, 1, WHITE);
+EndShadowMode();
+BeginDrawing();
+BeginMode3D(camera);
+DrawModel(island, Vector3Zero(), 1, WHITE);
+DrawModel(hut, hutPosition, 1, WHITE);
+EndMode3D();
+EndDrawing();
+```
+
+A light casts shadows once `SetLightShadows` turns them on, 4 lights at most. One shadow pass a frame, between `BeginShadowMode` and `EndShadowMode`, makes the shadows of every such light: its casters are drawn once there and cast for each light. A frame without the pass keeps the shadows of the last one. Every lit draw receives them, and a program's own shader through `<helix/raylib/shaders/shadows.glsl>`: `float helixShadow(int light, vec3 fragPosition, vec3 fragNormal)`, its light an index of `lights`, 0 in full shadow to 1 in full light. A directional light's shadows follow the camera, and a point light's fall every way from it.
+
+A shader compiled by `CompileShaderFile` carries its shadow variant: its own vertex stage, with a fragment stage writing depth alone and cutting at the material's alpha cutoff (the Materials extra). The shadow pass draws through it.
+
 ```haxe
 static inline var LIGHT_SPOT:Int
 ```
 
 - `LIGHT_SPOT`: A light shining in a cone from its position toward its target, made by `SetLightCone`. Its `type` is this.
 
-### lighting: the lit and PBR shaders, and a light's intensity, range and cone
+### lighting: the lit and PBR shaders, a light's intensity, range and cone, and its shadows
 
 ```haxe
 static function LoadLightingShader():Shader
@@ -44,6 +66,10 @@ static function SetLightIntensity(light:Light, intensity:Float):Void
 static function SetLightRange(light:Light, range:Float):Void
 static function SetLightCone(light:Light, innerAngle:Float, outerAngle:Float):Void
 static function UnloadLight(light:Light):Void
+static function SetLightShadows(light:Light, ?options:ShadowOptions):Void
+static function GetLightShadows(light:Light, ?out:ShadowOptions):Null<ShadowOptions>
+static function BeginShadowMode(camera:Camera3D):Void
+static function EndShadowMode():Void
 ```
 
 - `LoadLightingShader`: Returns raylib's examples' lighting shader (`lighting.vs` and `lighting.fs`), built in. It shines every material alike, one Phong highlight whatever the material says. See `LoadPbrShader` for drawing a glTF's materials as authored.
@@ -88,5 +114,53 @@ static function UnloadLight(light:Light):Void
   - `light`: The light, from `CreateLight`.
   - `innerAngle`: Where the fade starts, in degrees.
   - `outerAngle`: Where it ends, in degrees, at least `innerAngle` and under 90.
-- `UnloadLight`: Takes a light out of the scene. It lights nothing after.
+- `UnloadLight`: Takes a light out of the scene. It lights nothing after, and its shadows are freed.
   - `light`: The light, from `CreateLight`.
+- `SetLightShadows`: Makes a light cast shadows, made as the options say. Its shadows take a map of `mapSize` squared texels: one for each cascade of a directional light, six for a point light, one for a spot light. 4 lights cast shadows at most: a fifth's are off, with a warning. `UnloadLight` frees a light's shadows.
+  - `light`: The light, from `CreateLight`.
+  - `options`: Optional. How its shadows are made; the defaults when omitted or null.
+- `GetLightShadows`: Returns how a light's shadows are made, as `SetLightShadows` set them, each default filled in; null when it casts none.
+  - `light`: The light, from `CreateLight`.
+  - `out`: Optional. The options filled; new ones when omitted.
+  - returns: out or the new options, or null when the light casts no shadows.
+- `BeginShadowMode`: Starts the frame's shadow pass, until `EndShadowMode`: what is drawn casts shadows, from every light that casts them, and is drawn nowhere else. Call it before `BeginDrawing`, or after it and before `BeginMode3D`, not within a 3D or texture mode.
+  - `camera`: The camera the frame is drawn from, which a directional light's shadows follow.
+
+  Draw the casters as the frame draws them, models and meshes posed and placed the same. Each draw runs its own shader's vertex stage, so a caster swaying, skinned or instanced there casts its shadow as it is drawn, and writes depth alone. A material with an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps take what was drawn once, less the draws whose bounds fall outside a map's view.
+
+  - **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow. - **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage without it casts its whole shape. - **Cost:** every cascade and every face of a point light draws the casters again. A point light's shadows cost about six times a directional light's single map.
+- `EndShadowMode`: Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows.
+
+## ShadowOptions
+
+*class* in [`engines/raylib/src/helix/raylib/extras/ShadowOptions.hx`](../src/helix/raylib/extras/ShadowOptions.hx), `import helix.raylib.extras.ShadowOptions;`
+
+Represents how a light's shadows are made: the shadow map's size and reach, its bias against a surface shadowing itself, and how soft and dark its shadows are. Each field has a default. Sizes and biases are in shadow-map texels, so they hold whatever the map's size and reach.
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{?mapSize:Int, ?distance:Float, ?bounds:BoundingBox, ?cascades:Int, ?bias:Float, ?slopeBias:Float, ?normalOffset:Float, ?softness:Float, ?strength:Float}
+```
+
+```haxe
+var mapSize:Null<Int>
+var distance:Null<Float>
+var bounds:Null<BoundingBox>
+var cascades:Null<Int>
+var bias:Null<Float>
+var slopeBias:Null<Float>
+var normalOffset:Null<Float>
+var softness:Null<Float>
+var strength:Null<Float>
+```
+
+- `mapSize`: Gets or sets the map's width and height, in texels: 2048 when not given. A power of two from 256 to 4096; another is rounded down to one.
+- `distance`: Gets or sets how far from the camera a directional light's shadows reach, in world units: 50 when not given. A point light's reach is its range, or this when it has none. Shorter is sharper.
+- `bounds`: Gets or sets the box a directional light's map covers, in place of what the camera sees out to `distance`: none when not given, so the map follows the camera. A fixed box suits a small scene seen whole.
+- `cascades`: Gets or sets a directional light's number of cascades, 1 to 4: 1 when not given. Each covers a farther part of `distance`, near shadows sharp and far ones still there.
+- `bias`: Gets or sets the constant bias, in texels: 1 when not given. Too little and a lit surface speckles with its own shadow; too much and shadows lift off their casters' feet.
+- `slopeBias`: Gets or sets the bias added where the light grazes the surface, in texels: 4 when not given.
+- `normalOffset`: Gets or sets how far the lookup moves off the surface along its normal, in texels: 1 when not given.
+- `softness`: Gets or sets how soft a shadow's edge is, in texels: 1 when not given. 0 is hard.
+- `strength`: Gets or sets how much of the light a shadow takes away, 0 to 1: 1 when not given.

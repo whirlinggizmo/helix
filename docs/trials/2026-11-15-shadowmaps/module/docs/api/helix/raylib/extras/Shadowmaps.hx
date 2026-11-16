@@ -6,6 +6,8 @@ import helix.raylib.*;
 	`Lighting.BeginShadowMode` for shadows the lit shaders receive without a shader of the program's own.
 
 	```haxe
+	import helix.raylib.Rlgl.*; // rlGetMatrixModelview, rlGetMatrixProjection
+
 	var shadowMap = LoadShadowmapRenderTexture(1024, 1024);
 	// each frame
 	BeginTextureMode(shadowMap);
@@ -27,7 +29,9 @@ class Shadowmaps {
 		are. Its `texture` is empty: what a draw colors is dropped.
 
 		Bind `depth` to a shader with `SetShaderValueTexture`, which takes the place of the example's `rlEnableTexture` and
-		`rlSetUniform`. It is read point-sampled, clamped at its edges, until `SetTextureFilter` and `SetTextureWrap` say otherwise.
+		`rlSetUniform`: it binds `depth` to the sampler the location names, a texture unit of its own, so the example's unit 10 isn't
+		needed. It stays bound to the shader for every draw after, frame after frame, until `SetShaderValueTexture` sets another. It is
+		read point-sampled, clamped at its edges, until `SetTextureFilter` and `SetTextureWrap` say otherwise.
 
 		@param width  The width, in texels.
 		@param height  The height, in texels.

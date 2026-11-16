@@ -65,7 +65,8 @@ class ShaderMacro {
 	}
 
 	/** Compiles a raylib shader's two stages into a file `LoadCompiledShader` loads (`CompileShaderFile`): the compiled program for
-		every target, and each uniform's initializer. In a build with no target, which has nothing else to compile, the run ends once every
+		every target, its shadow variant (its vertex stage writing depth alone, for the Lighting extra's shadow pass), and each uniform's
+		initializer. In a build with no target, which has nothing else to compile, the run ends once every
 		`--macro` has run.
 
 		@param vsFileName  The vertex stage's file, or null for raylib's default.
@@ -87,12 +88,24 @@ class ShaderMacro {
 					for (i in 0...member.elementCount)
 						if (![for (initial in initials) initial.name].contains('lights[$i].intensity'))
 							initials.push({name: 'lights[$i].intensity', numbers: [1.0]});
+		// Its shadow variant (the Lighting extra's BeginShadowMode): its own vertex stage with a fragment stage writing depth alone, cut at
+		// the material's alpha cutoff where the vertex stage passes fragTexCoord, which the cutoff samples the albedo at.
+		var vsName = vsFileName == null ? "default vertex" : vsFileName;
+		var cut = [
+			for (d in declarations(s.vertex.text))
+				if (d.kind == "out" && d.name == "fragTexCoord" && d.type == "vec2") d
+		].length > 0;
+		var fsShadow = cut ? "shadow_cut.fs" : "shadow.fs";
+		var shadowStages = stages(vsName, read(vsFileName), 'helix-raylib $fsShadow', builtIn(fsShadow, pos), pos, []);
+		var shadow = helix.services.shaders.ShaderMacros.compileProgram(shadowStages.vertex, shadowStages.fragment,
+			{clipScale: true, points: true, everyTarget: true}, [], pos);
 		var directory = Path.directory(compiledShaderFileName);
 		if (directory != "")
 			FileSystem.createDirectory(directory);
 		var text = haxe.Json.stringify({
 			kind: "shader",
 			source: source,
+			shadow: shadow,
 			shared: [],
 			initials: initials
 		});

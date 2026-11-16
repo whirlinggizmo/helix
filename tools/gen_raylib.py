@@ -92,7 +92,7 @@ TARGETS = {
         ('RModelsMerged', "models: models merged into one"),
         ('RModelsMasked', "models: two animations blended bone by bone"),
     ], None, 'Models'),
-    'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders, and a light's intensity, range and cone")], None, 'Lighting'),
+    'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders, a light's intensity, range and cone, and its shadows")], None, 'Lighting'),
     'extras/Materials.hx': ([('RMaterials', "materials: what a material gives off, where it is cut out, and whether light and shadows fall on it")], None, 'Materials'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
     'extras/Device.hx': ([('RDevice', "device: the safe area, the device, the window's abilities, orientation and tilt")], None, 'Device'),

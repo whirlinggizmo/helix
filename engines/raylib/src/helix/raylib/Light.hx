@@ -51,6 +51,13 @@ class Light {
 	@:allow(helix.raylib)
 	var outerCosine = 1.;
 
+	// Its shadows (the Lighting extra's SetLightShadows), each option filled, null for none; and its shadows' index in the frame's
+	// shadows plus 1, 0 while it casts none (Shadows).
+	@:allow(helix.raylib)
+	var shadow:Null<helix.raylib.extras.ShadowOptions> = null;
+	@:allow(helix.raylib)
+	var shadowIndex = 0;
+
 	/** Creates a light that is off, each of rlights' fields 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light of the scene. */
 	public function new() {}
 }
