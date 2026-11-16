@@ -538,7 +538,8 @@ function canRender(format:TextureFormat):Bool
 var textureBytes(get, never):Float
 var bufferBytes(get, never):Float
 function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
-function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?msaaSampleCount:Int = 0, ?bottomRowFirst:Bool = false):Int
+function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:RenderTargetDepth = Buffer, ?msaaSampleCount:Int = 0, ?bottomRowFirst:Bool = false):Int
+function getRenderTargetDepth(target:Int):Int
 function createShadowMap(size:Int, layerCount:Int):Int
 function beginShadowPass(map:Int, layerIndex:Int):Void
 function beginTargetPass(target:Int, red:Float, green:Float, blue:Float, alpha:Float):Void

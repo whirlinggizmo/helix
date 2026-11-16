@@ -1048,7 +1048,8 @@ var device(get, never):GraphicsDevice
 var textureBytes(get, never):Float
 var bufferBytes(get, never):Float
 function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
-function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:Bool = true, ?msaaSampleCount:Int = 0, ?bottomRowFirst:Bool = false):Int
+function createRenderTarget(width:Int, height:Int, ?format:TextureFormat = Rgba8, ?depth:RenderTargetDepth = Buffer, ?msaaSampleCount:Int = 0, ?bottomRowFirst:Bool = false):Int
+function getRenderTargetDepth(target:Int):Int
 function canRender(format:TextureFormat):Bool
 function createShadowMap(size:Int, layerCount:Int):Int
 function disposeTexture(handle:Int):Void
@@ -1113,7 +1114,7 @@ function dispose():Void
   - `width`: The rectangle's width, in texels.
   - `height`: The rectangle's height, in texels.
   - `data`: The rectangle's texels with rows top first, `format.levelBytes(width, height)` bytes of the texture's format, or 16 bytes a texel of little-endian floats for a data texture.
-  - throws `String`: An unknown handle, a cube, render target or shadow map, a compressed format, a call inside a pass for a `createTexture` texture, a rectangle that is empty or not inside the texture (not all of a data texture), or data that is too short.
+  - throws `String`: An unknown handle, a cube, render target, render target's depth texture or shadow map, a compressed format, a call inside a pass for a `createTexture` texture, a rectangle that is empty or not inside the texture (not all of a data texture), or data that is too short.
 
   A `createTexture` texture is updated outside a pass, any number of times a frame: draws in the passes before it read the old texels, and those after it the new. Only its top level changes; its mipmaps are left as they were. A data texture is rewritten whole, the rectangle all of it, any number of times a frame, inside a pass or outside: each draw reads the latest.
 - `canSample`: Returns whether this GPU samples textures of a format.
@@ -1139,13 +1140,21 @@ function dispose():Void
   - `width`: The width, in texels.
   - `height`: The height, in texels.
   - `format`: Optional. The texels' format; defaults to Rgba8.
-  - `depth`: Optional. Whether it has a depth buffer; defaults to true.
-  - `msaaSampleCount`: Optional. The multisampling samples per texel asked for: 1 for none, or 0, the default, for the screen's (`msaaSampleCount`).
+  - `depth`: Optional. Its depth: none, a buffer, or a texture sampled after its passes; defaults to a buffer.
+  - `msaaSampleCount`: Optional. The multisampling samples per texel asked for: 1 for none, or 0, the default, for the screen's (`msaaSampleCount`). It must be 1 with `RenderTargetDepth.Texture`.
   - `bottomRowFirst`: Optional. Whether it is stored bottom row first; defaults to false, top row first.
   - returns: The render target's handle.
-  - throws `String`: A size of 0 or less, a format this GPU cannot draw into (`canRender`), or a sample count below 0.
+  - throws `String`: A size of 0 or less, a format this GPU cannot draw into (`canRender`), a sample count below 0, or a sample count other than 1 with `RenderTargetDepth.Texture`.
 
-  The target is sampled like any texture and stored top row first, or bottom row first when asked, as GL stores its framebuffers: what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth buffer. Whether it has depth and how many samples it is drawn with are chosen apart. A target of more than one sample is drawn into its samples, which are resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`. A count the GPU can't give is never refused. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
+  The target is sampled like any texture and stored top row first, or bottom row first when asked, as GL stores its framebuffers: what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth buffer, or with `RenderTargetDepth.Texture` a depth texture a shader samples after its passes (`getRenderTargetDepth`). Its depth and how many samples it is drawn with are chosen apart, except that a target whose depth is a texture has one sample. A target of more than one sample is drawn into its samples, which are resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`. A count the GPU can't give is never refused. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
+- `getRenderTargetDepth`: Returns the depth texture of a render target made with `RenderTargetDepth.Texture`, for a shader to sample after the target's pass.
+  - `target`: The render target, as a `createRenderTarget` handle.
+  - returns: The depth texture's handle, the same each call.
+  - throws `String`: A handle that is not a render target made with `RenderTargetDepth.Texture`.
+
+  A program reads it through a `sampler2D`: the red channel holds the depth drawn, 0 nearest to 1 farthest, as GL's window depth holds it, on every adapter; the other channels are undefined. Its rows are stored as the target's are. It is read nearest, its sampling's filter, mipmaps and anisotropy ignored and its wrap used. A new target's depth texture holds the farthest depth.
+
+  A draw into the target refuses its depth texture, as it refuses the target. The depth texture is disposed with the target, and `disposeTexture` refuses it alone.
 - `canRender`: Returns whether this GPU draws into, blends over and filters render targets of a format.
   - `format`: The format.
   - returns: True when render targets of the format can be drawn into.
@@ -1160,7 +1169,9 @@ function dispose():Void
   A program that declares a shadow texture samples it through a comparison sampler that is linear, less or equal, and clamped to its edge. The slot's sampling is ignored. The map's rows are stored bottom first, as GL's are, so clip space's -1 to 1 is its 0 to 1.
 - `disposeTexture`: Frees a texture of any kind.
   - `handle`: The texture.
-  - throws `String`: An unknown handle.
+  - throws `String`: An unknown handle, or a render target's depth texture.
+
+  A render target's depth texture (`getRenderTargetDepth`) goes with its target.
 - `createBuffer`: Creates a stream vertex buffer, filled each frame by `updateBuffer`.
   - `capacityBytes`: The capacity, in bytes, which must be a positive multiple of 4.
   - returns: The buffer's handle.
@@ -1260,11 +1271,11 @@ function dispose():Void
   - `firstInstanceIndex`: The index of the first instance drawn: the first record of the instanced buffers.
   - `instanceCount`: The number of instances.
   - `textures`: The texture bound at each of the program's texture slots, by slot. A slot provided 0, or past the array's end, reads a clear 1x1 texture of its kind, for a texture the program declares and doesn't read.
-  - `samplings`: How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
+  - `samplings`: How each texture is sampled, by slot. A shadow map, data texture or render target's depth texture is sampled as its kind requires.
   - `uniforms`: The bytes of each uniform block at its declared size, by stage and slot: the vertex stage's slot n at index n, the fragment stage's at 4 + n, a block both stages read at both (`ShaderBlock`); null at an index the program has no block for.
   - throws `String`: Anything invalid, before drawing: a texture that is the pass's own target among them, or an offset out of range.
 
-  Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is three vertices. An attribute the program declares that no buffer feeds reads the pipeline's constant for its slot, or (0, 0, 0, 1) (`PipelineDesc.attributeConstants`). The uniform the pipeline names is flipped as its `ClipFlip` specifies, in the adapter's own copy of the block. A texture that is the open pass's own target (the render target drawn into, or the shadow map whose layer is drawn into) is refused, as sampling what a pass draws into is undefined.
+  Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is three vertices. An attribute the program declares that no buffer feeds reads the pipeline's constant for its slot, or (0, 0, 0, 1) (`PipelineDesc.attributeConstants`). The uniform the pipeline names is flipped as its `ClipFlip` specifies, in the adapter's own copy of the block. A texture that is the open pass's own target (the render target drawn into, its depth texture, or the shadow map whose layer is drawn into) is refused, as sampling what a pass draws into is undefined.
 - `endFrame`: Ends the screen's pass and the frame, and submits it.
   - throws `String`: No screen pass is open.
 
@@ -1921,6 +1932,22 @@ Represents one glyph from `IFontRasterizer.rasterize`: its bitmap, where it sits
 - `found:Bool`: Whether the font has a glyph for it. When it doesn't, the bitmap is empty and the advance 0.
 - `codepoint:Int`: The codepoint asked for.
 - `advance:Float`: How far the pen moves after the glyph, in pixels.
+
+## RenderTargetDepth
+
+*abstract* in [`libs/platform/src/helix/platform/RenderTargetDepth.hx`](../src/helix/platform/RenderTargetDepth.hx), `import helix.platform.RenderTargetDepth;`
+
+Specifies the depth a render target has (`IGraphics.createRenderTarget`).
+
+- `RenderTargetDepth.None`: No depth: for a pass that draws over the whole target, as a screen effect does, or 2D.
+- `RenderTargetDepth.Buffer`: A depth buffer its passes test and write, for 3D drawn into it.
+- `RenderTargetDepth.Texture`: A depth texture its passes test and write, which a shader samples after them (`IGraphics.getRenderTargetDepth`), for a shadow map or an effect that reads depth. The target has one sample.
+
+```haxe
+function toString():String
+```
+
+- `toString`: Returns the value's name as written (None, Buffer): what Std.string, interpolation and trace show.
 
 ## Sampling
 

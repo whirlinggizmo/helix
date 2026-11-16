@@ -1036,3 +1036,19 @@ Why things are the way they are, numbered, in order.
     which every adapter would need, where a render target owned by the layer above does it with the platform as it is. Drawing rlgl's
     batch before the read, which raylib doesn't. A read between frames giving the next frame, which has drawn nothing yet: a program
     saving its last frame after `EndDrawing`, as a C program can, would get black.
+76. **A render target's depth can be a texture a shader samples after its pass.** `createRenderTarget` takes a `RenderTargetDepth`
+    in place of a Bool: `None`, `Buffer` (a depth buffer its passes test against, as before) or `Texture`, whose handle
+    `getRenderTargetDepth(target)` gives. A program reads it through a plain `sampler2D`, the depth 0 to 1 as GL's window depth has it
+    in red, read nearest whatever the sampling's filter (WebGL2 filters no depth texture, and Vulkan needn't), its rows as the target's.
+    It goes with its target: `disposeTexture` refuses it alone, and a draw into its target refuses it as it refuses the target. A target
+    with a depth texture has one sample: `createRenderTarget` refuses `Texture` with any other count, 0 too, as SDL_GPU resolves no
+    depth. sokol and SDL_GPU sample the depth image their passes draw into; WebGL2 attaches a `DEPTH_COMPONENT24` texture in place of
+    its renderbuffer. helix-render's `TargetDepth.Texture` isn't built on it yet.
+
+    Why: raylib's shadowmap example and three.js' `DepthTexture` sample a render target's depth; the shadow maps (a depth array read
+    through a comparison sampler) can't stand in, as a program's shader declares a `sampler2D` and reads the depth itself. Its color stays
+    a target's, so a pass into it is a target pass like any other and every pipeline draws into it unchanged.
+
+    Rejected: a `createDepthTarget` of depth alone, which needs depth-only pipelines for every draw into it, as a shadow pass does; a
+    multisampled target's depth resolved, which SDL_GPU can't and WebGL2 does only by a blit of every pass; linear filtering where a
+    backend has it, which reads differently on each.

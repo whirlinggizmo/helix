@@ -121,10 +121,23 @@ class CountingGraphics implements IGraphics {
 	public function canSample(format:TextureFormat):Bool
 		return true;
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0,
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:RenderTargetDepth = Buffer, msaaSampleCount:Int = 0,
 			bottomRowFirst:Bool = false):Int {
 		targetCreations++;
-		return made(textures, width * height * 8.);
+		var target = made(textures, width * height * 8.);
+		// A depth texture goes with its target: its own handle, not a live texture of its own.
+		if (depth == Texture)
+			targetDepths.set(target, next++);
+		return target;
+	}
+
+	/** The depth texture of each render target made with `RenderTargetDepth.Texture`, by the target's handle. */
+	public final targetDepths = new Map<Int, Int>();
+
+	public function getRenderTargetDepth(target:Int):Int {
+		if (!targetDepths.exists(target))
+			throw "Invalid render target depth";
+		return targetDepths.get(target);
 	}
 
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int

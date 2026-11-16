@@ -65,7 +65,7 @@ The specification is docs/PLATFORM.md; this is the map.
 
 | Interface | Polled | Adapters | What it provides |
 | --- | --- | --- | --- |
-| `IGraphics` | | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1), `graphics/sdl3gpu` + C (native, SDL_GPU on Vulkan, Direct3D 12 or Metal) | Textures (2D, cube, data, render targets of RGBA8 or half floats with or without depth, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw, reading pixels back, `present`. |
+| `IGraphics` | | `graphics/webgl2` (browser), `graphics/sokol` + C (native, sokol_gfx on GL 4.1), `graphics/sdl3gpu` + C (native, SDL_GPU on Vulkan, Direct3D 12 or Metal) | Textures (2D, cube, data, render targets of RGBA8 or half floats with no depth, a depth buffer or a depth texture, depth arrays), buffers, programs built from a `ShaderSource`, pipelines made as a `PipelineDesc` says, passes, one draw, reading pixels back, `present`. |
 | `IWindow` | | `window/dom` (browser), `window/sdl3` + C (native) | The drawing surface (framebuffer size, pixel ratio), focus, title, sizes, position, fullscreen, displays and visibility where the platform has them, and closing. No loop: the program's owner calls each frame. |
 | `IEvents` | Yes | `events/dom` (browser), `events/sdl3` + `shared/sdl3` C (native) | The window's focus, visibility, size and close events and the first press as records at each `poll`, in one stream the devices add to. Edges, gestures and gamepad slots are a service's. |
 | `IKeyboard` | | `keyboard/dom`, `keyboard/sdl3` | Keys (`Key`) and typed text in the events' stream, built over the events adapter. |

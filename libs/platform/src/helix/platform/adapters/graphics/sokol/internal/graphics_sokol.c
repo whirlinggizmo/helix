@@ -112,8 +112,9 @@ static int index_buffers[SLOTS];
 /* active: 1 in the screen's pass, 2 in a target's; flipped: the pass is drawn flipped (GL, whose framebuffers' origin is the bottom left, into a
    target), so a target is stored top row first, as every texture is; pass_variant: the pipelines' variant the pass draws with. */
 static int active,flipped,pass_variant,used[SLOTS],frame_width,frame_height;
-/* The texture the open target or shadow pass draws into (its view), 0 for none: a draw may not sample it. */
-static uint32_t pass_texture;
+/* The texture the open target or shadow pass draws into (its view), and the target's depth texture (its view), 0 for none: a draw may
+   sample neither. */
+static uint32_t pass_texture,pass_depth;
 /* The screen's size this frame, and whether helix_end has ended it (so it can be read back). */
 static int screen_width,screen_height,frame_ended;
 /* A stream buffer written again after a draw bound it this frame takes another sokol buffer of the same size, as sokol allows writes only
@@ -132,8 +133,11 @@ static int grow_spares(void **items,int *count,int used,size_t size){
 /* Whether a stream buffer was appended to this frame (helix_append), so it isn't updated too. */
 static char appended[SLOTS];
 /* Render targets, by texture view slot: their color and depth attachment views (no depth view without depth), depth image and size, the
-   pipelines' variant drawing into them (unflipped), and whether a pass has cleared them yet. */
-static struct{sg_view color,depth,resolve;sg_image depth_image,samples_image;int width,height,variant,cleared,bottom;}targets[SLOTS];
+   view their depth is sampled through (RenderTargetDepth.Texture's, else none), the pipelines' variant drawing into them (unflipped), and
+   whether a pass has cleared them yet. */
+static struct{sg_view color,depth,resolve,sampled;sg_image depth_image,samples_image;int width,height,variant,cleared,bottom;}targets[SLOTS];
+/* Per texture view slot: whether it is a render target's sampled depth, which goes with its target and is read nearest. */
+static char depth_views[SLOTS];
 /* Shadow maps, by texture view slot: the depth array, an attachment view a layer, and their size; and the sampler they're read through
    (comparing, linear, clamped), made with the first. */
 #define MAX_SHADOW_LAYERS 24
@@ -195,6 +199,10 @@ void helix_setup(void){
  sg_setup(&(sg_desc){.environment=environment(),.logger.func=slog_func,.buffer_pool_size=SLOTS-1,.image_pool_size=SLOTS-1,.sampler_pool_size=SLOTS-1,
   .shader_pool_size=SLOTS-1,.pipeline_pool_size=SLOTS-1,.view_pool_size=SLOTS-1});
  sg_disable_stats();
+ /* A render target's depth texture is read through a program's sampler2D, a filtering slot to sokol, whose validation takes only a
+    format it marks filterable: GL filters a depth texture (its sampler compares nothing), though WebGL2 doesn't, which sokol marks for
+    both. The adapter samples it nearest. */
+ _sg.formats[SG_PIXELFORMAT_DEPTH].filter=true;
  memset(samplers,0,sizeof samplers);
  GLint n=0;glBindFramebuffer(GL_FRAMEBUFFER,0);glGetIntegerv(GL_SAMPLES,&n);window_samples=n>1?n:1;
  n=0;glGetIntegerv(GL_MAX_SAMPLES,&n);max_samples=n>=8?8:n>=4?4:n>=2?2:1;
@@ -203,7 +211,7 @@ void helix_dispose(void){
  for(int i=0;i<SAMPLINGS;i++)if(samplers[i].id)sg_destroy_sampler(samplers[i]);
  if(comparison.id)sg_destroy_sampler(comparison);
  sg_shutdown();
- memset(placeholders,0,sizeof placeholders);memset(ids,0,sizeof ids);memset(held,0,sizeof held);
+ memset(placeholders,0,sizeof placeholders);memset(ids,0,sizeof ids);memset(held,0,sizeof held);memset(depth_views,0,sizeof depth_views);
 }
 /* helix.platform.TextureFormat's values as sokol's: RGBA8, BC7, ASTC 4x4, ETC2 RGBA8, RGBA16F. */
 static sg_pixel_format format_of(int format){
@@ -590,9 +598,10 @@ int helix_can_render(int format){
 /* The most samples a render target of format takes: GL's most (max_samples) where sokol multisamples the format, else 1. */
 int helix_max_target_samples(int format){return helix_can_render(format)&&sg_query_pixelformat(format_of(format)).msaa?max_samples:1;}
 /* A render target: a color image of format sampled through the returned texture view, drawn with the samples asked for (at least 1) rounded
-   down to 1, 2, 4 or 8 and to helix_max_target_samples; with depth, a depth image of the same samples for its passes. */
+   down to 1, 2, 4 or 8 and to helix_max_target_samples; with depth (1, or 2 to sample it, which takes 1 sample), a depth image of the same
+   samples for its passes, and at 2 a texture view of it (helix_target_depth). */
 uint32_t helix_target(int w,int h,int format,int depth,int asked,int bottom){
- if(w<=0||h<=0||w>16384||h>16384||!helix_can_render(format)||asked<1)return 0;
+ if(w<=0||h<=0||w>16384||h>16384||!helix_can_render(format)||asked<1||depth<0||depth>2||(depth==2&&asked!=1))return 0;
  const int most=helix_max_target_samples(format),n=asked<most?asked:most,samples=n>=8?8:n>=4?4:n>=2?2:1;
  /* The screen's depth format (sokol's environment default). Multisampled, its passes draw into an image of its samples, resolved at the
     pass's end into the one sampled. */
@@ -615,11 +624,22 @@ uint32_t helix_target(int w,int h,int format,int depth,int asked,int bottom){
  targets[slot].color=sg_make_view(&(sg_view_desc){.color_attachment.image=drawn});
  if(samples>1){targets[slot].resolve=sg_make_view(&(sg_view_desc){.resolve_attachment.image=color});targets[slot].samples_image=drawn;}
  if(depth){targets[slot].depth=sg_make_view(&(sg_view_desc){.depth_stencil_attachment.image=depth_image});targets[slot].depth_image=depth_image;}
+ if(depth==2){
+  targets[slot].sampled=sg_make_view(&(sg_view_desc){.texture.image=depth_image});
+  const int dslot=targets[slot].sampled.id&0xffff;
+  if(dslot<SLOTS){depth_views[dslot]=1;held_handle(TEXTURE_IDS,targets[slot].sampled.id,0);}
+ }
  targets[slot].width=w;targets[slot].height=h;targets[slot].bottom=bottom!=0;
  targets[slot].variant=(format==4?1:0)|(depth?0:2)|((power_of(samples)^power_of(screen_samples()))<<2);
  /* The texture sampled, the image of its samples when multisampled, and its depth, 4 bytes a sample. */
  const double texel=format==4?8:4,area=(double)w*h;
  return held_handle(TEXTURE_IDS,texture.id,area*texel+(samples>1?area*texel*samples:0)+(depth?area*4*samples:0));
+}
+/* A render target's depth texture (its sampled view), 0 for a target made without one. */
+uint32_t helix_target_depth(uint32_t handle){
+ const uint32_t target=id_of(TEXTURE_IDS,handle);const int slot=target&0xffff;
+ if(slot>=SLOTS||!targets[slot].color.id||!targets[slot].sampled.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;
+ return handle_of(TEXTURE_IDS,targets[slot].sampled.id);
 }
 /* A shadow map: a depth array of layers layers, each size x size, sampled through the returned texture view, with an attachment view a layer. */
 uint32_t helix_shadow_map(int size,int layers){
@@ -645,7 +665,7 @@ int helix_begin_shadow(uint32_t handle,int layer){
  const uint32_t map=id_of(TEXTURE_IDS,handle);
  int slot=map&0xffff;
  if(active||slot>=SLOTS||!shadow_maps[slot].image.id||layer<0||layer>=shadow_maps[slot].count||sg_query_view_state((sg_view){map})!=SG_RESOURCESTATE_VALID)return 0;
- active=2;flipped=0;pass_variant=0;frame_width=frame_height=shadow_maps[slot].size;pass_texture=map;
+ active=2;flipped=0;pass_variant=0;frame_width=frame_height=shadow_maps[slot].size;pass_texture=map;pass_depth=0;
  sg_begin_pass(&(sg_pass){.action={.depth={.load_action=SG_LOADACTION_CLEAR,.store_action=SG_STOREACTION_STORE,.clear_value=1.0f},
   .stencil={.load_action=SG_LOADACTION_DONTCARE}},.attachments={.depth_stencil=shadow_maps[slot].layers[layer]},.label="helix-shadow-map"});
  return 1;
@@ -661,6 +681,7 @@ static int begin_target(uint32_t target,int clear,sg_color color){
  if(!targets[slot].cleared)clear=1;
  targets[slot].cleared=1;
  active=2;flipped=sg_query_features().origin_top_left==targets[slot].bottom;frame_width=targets[slot].width;frame_height=targets[slot].height;pass_texture=target;
+ pass_depth=targets[slot].sampled.id;
  pass_variant=targets[slot].variant|(flipped?16:0);
  const sg_load_action load=clear?SG_LOADACTION_CLEAR:SG_LOADACTION_LOAD;
  sg_begin_pass(&(sg_pass){.action={.colors[0]={.load_action=load,.store_action=SG_STOREACTION_STORE,.clear_value=color},
@@ -670,7 +691,7 @@ static int begin_target(uint32_t target,int clear,sg_color color){
 }
 int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(id_of(TEXTURE_IDS,target),1,(sg_color){red,green,blue,alpha});}
 int helix_resume_target(uint32_t target){return begin_target(id_of(TEXTURE_IDS,target),0,(sg_color){0,0,0,0});}
-int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;pass_texture=0;return 1;}
+int helix_end_target(void){if(active!=2)return 0;sg_end_pass();active=0;flipped=0;pass_texture=pass_depth=0;return 1;}
 int helix_begin(int width,int height,uint32_t color){
  if(active||width<=0||height<=0)return 0;
  active=1;flipped=0;pass_variant=0;frame_width=screen_width=width;frame_height=screen_height=height;frame_ended=0;
@@ -770,16 +791,17 @@ static int bind_program(int shader,sg_bindings *bindings,const uint32_t *texture
   /* A slot the draw leaves unbound reads a placeholder of its kind. */
   const uint32_t texture=i<texture_count&&textures[i]?id_of(TEXTURE_IDS,textures[i]):placeholder(programs[shader].kind[i]);
   /* Sampling what the pass draws into is undefined. */
-  if(texture==pass_texture)return -1;
+  if(texture==pass_texture||(pass_depth&&texture==pass_depth))return -1;
   const int sampling=i<texture_count?samplings[i]:0;
   if(sg_query_view_state((sg_view){texture})!=SG_RESOURCESTATE_VALID)return 0;
   const int vslot=texture&0xffff,data=vslot<SLOTS&&data_textures[vslot].image.id;
   /* A data texture not yet written this frame gets its contents first: sokol keeps them a frame. */
   if(data){if(!data_textures[vslot].written)write_data(vslot);data_textures[vslot].bound=1;}
   bindings->views[i]=current_view(texture);
-  /* A slot the program never filters (it only fetches texels) and a data texture are sampled nearest, whatever the draw's sampling. */
+  /* A slot the program never filters (it only fetches texels) and a data texture are sampled nearest, whatever the draw's sampling; a
+     target's depth nearest, its wraps kept (Sampling's bits 1-4). */
   const int unfiltered=data||programs[shader].unfiltered_mask&1<<i;
-  bindings->samplers[i]=vslot<SLOTS&&shadow_maps[vslot].image.id?comparison:sampler_of(unfiltered?0:sampling);
+  bindings->samplers[i]=vslot<SLOTS&&shadow_maps[vslot].image.id?comparison:sampler_of(unfiltered?0:vslot<SLOTS&&depth_views[vslot]?sampling&30:sampling);
  }
  return 1;
 }
@@ -895,6 +917,8 @@ int helix_dispose_resource(int kind,uint32_t handle){
   return 1;
  }
  if(kind==1&&sg_query_view_state((sg_view){id})==SG_RESOURCESTATE_VALID){
+  /* A target's depth texture goes with its target. */
+  if(slot<SLOTS&&depth_views[slot])return 0;
   sg_image image=sg_query_view_image((sg_view){id});sg_destroy_view((sg_view){id});sg_destroy_image(image);
   if(slot<SLOTS)held[TEXTURE_IDS][slot]=0;
   if(slot<SLOTS&&shadow_maps[slot].image.id){
@@ -906,6 +930,7 @@ int helix_dispose_resource(int kind,uint32_t handle){
    free(data_textures[slot].extra_images);free(data_textures[slot].extra_views);free(data_textures[slot].copy);memset(&data_textures[slot],0,sizeof data_textures[slot]);
   }
   if(slot<SLOTS&&targets[slot].color.id){
+   if(targets[slot].sampled.id){const int dslot=targets[slot].sampled.id&0xffff;if(dslot<SLOTS)depth_views[dslot]=0;sg_destroy_view(targets[slot].sampled);}
    sg_destroy_view(targets[slot].color);if(targets[slot].depth.id){sg_destroy_view(targets[slot].depth);sg_destroy_image(targets[slot].depth_image);}
    if(targets[slot].samples_image.id){sg_destroy_view(targets[slot].resolve);sg_destroy_image(targets[slot].samples_image);}
    memset(&targets[slot],0,sizeof targets[slot]);

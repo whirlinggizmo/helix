@@ -41,10 +41,11 @@ typedef Case = {
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
 	between passes, targets kept from pass to pass and frame to frame (their depth and samples too) and one never cleared, targets'
 	multisampling chosen apart from their depth (one sample with depth, the screen's, no depth and the most, a count rounded down
-	to the most and a negative one refused) on a window asking for 4 samples, textures read
+	to the most and a negative one refused) on a window asking for 4 samples, a target's depth texture sampled after its pass (refused in
+	it, with more than one sample, disposed alone and read back), textures read
 	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, declared textures left unbound reading clear, the GPU bytes counted (`textureBytes` and
-	`bufferBytes`: a texture's mipmaps, a cubemap, a data texture, a render target's samples and depth, a shadow map, a static and a
+	`bufferBytes`: a texture's mipmaps, a cubemap, a data texture, a render target's samples and depth (a depth texture too), a shadow map, a static and a
 	stream buffer, each added as made and gone as freed), and, in a page, the context lost and given back: frames taken while it is
 	lost, the bytes of what it dropped gone from the count, then a texture and a buffer made again drawn into a render target the adapter
 	remade, and that to the screen. The shaders are `shaders/*.vert` and `*.frag`,
@@ -226,13 +227,16 @@ class GraphicsTests {
 			samples = most < 4 ? most : 4;
 		var area = 8 * 4;
 		var target = added('a render target of $samples samples', true, area * 4 + (samples > 1 ? area * 4 * samples : 0) + area * 4 * samples,
-			graphics.createRenderTarget(8, 4, Rgba8, true, 4));
-		var plain = added("a render target of 1 sample without depth", true, area * 4, graphics.createRenderTarget(8, 4, Rgba8, false, 1));
+			graphics.createRenderTarget(8, 4, Rgba8, Buffer, 4));
+		var plain = added("a render target of 1 sample without depth", true, area * 4, graphics.createRenderTarget(8, 4, Rgba8, None, 1));
+		// A depth texture adds no bytes of its own: its target counts it.
+		var sampledDepth = added("a render target with a depth texture", true, area * 4 + area * 4, graphics.createRenderTarget(8, 4, Rgba8, Texture, 1));
+		added("its depth texture", true, 0, graphics.getRenderTargetDepth(sampledDepth));
 		var shadow = added("a shadow map of 2 layers", true, 4 * 4 * 4 * 2, graphics.createShadowMap(4, 2));
 		var fixed = added("a static buffer", false, 64, graphics.createStaticBuffer(Bytes.alloc(64), 64, false));
 		// With SDL_GPU, the stream buffers are written in one buffer for them all, counted as it grows.
 		var stream = added("a stream buffer", false, #if sdl_gpu 0 #else 256 #end, graphics.createBuffer(256));
-		for (t in [mipmapped, cube, data, target, plain, shadow])
+		for (t in [mipmapped, cube, data, target, plain, sampledDepth, shadow])
 			graphics.disposeTexture(t);
 		graphics.disposeBuffer(fixed);
 		graphics.disposeBuffer(stream);
@@ -242,6 +246,7 @@ class GraphicsTests {
 			- 96
 			- (area * 4 + (samples > 1 ? area * 4 * samples : 0) + area * 4 * samples)
 			- area * 4
+			- area * 8
 			- 128,
 			'freed, the textures count ${graphics.textureBytes}');
 		check(graphics.bufferBytes == buffers - 64 - #if sdl_gpu 0 #else 256 #end, 'freed, the buffers count ${graphics.bufferBytes}');
@@ -657,12 +662,12 @@ class GraphicsTests {
 		buffers.push(instanceColorBuffer);
 
 		// Single-sampled, so the cases' edges fall on whole texels.
-		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1),
-			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1);
+		var target = graphics.createRenderTarget(SIZE, SIZE, Rgba8, None, 1),
+			second = graphics.createRenderTarget(SIZE, SIZE, Rgba8, None, 1);
 		// With depth, multisampled as the screen is, kept from one frame to the next; one never cleared; and one stored bottom row first.
 		var kept = graphics.createRenderTarget(SIZE, SIZE),
-			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1),
-			upward = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1, true);
+			fresh = graphics.createRenderTarget(SIZE, SIZE, Rgba8, None, 1),
+			upward = graphics.createRenderTarget(SIZE, SIZE, Rgba8, None, 1, true);
 		for (t in [target, second, kept, fresh, upward]) {
 			textures.push(t);
 			surviving.push(t);
@@ -670,22 +675,27 @@ class GraphicsTests {
 		// Multisampling chosen apart from depth: depth and one sample (raylib's render textures), depth and the screen's samples, no depth
 		// and the most the format takes, and far more than any GPU takes, rounded down to that most.
 		var most = graphics.getMaxRenderTargetMsaaSampleCount(Rgba8);
-		var singleDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, true, 1),
-			screenDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, true),
-			mostFlat = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, most),
-			clamped = graphics.createRenderTarget(SIZE, SIZE, Rgba8, false, 1000);
+		var singleDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, Buffer, 1),
+			screenDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, Buffer),
+			mostFlat = graphics.createRenderTarget(SIZE, SIZE, Rgba8, None, most),
+			clamped = graphics.createRenderTarget(SIZE, SIZE, Rgba8, None, 1000);
 		for (t in [singleDepth, screenDepth, mostFlat, clamped]) {
 			textures.push(t);
 			surviving.push(t);
 		}
+		// Depth sampled after its pass: one sample, as a depth texture's target has.
+		var depthTarget = graphics.createRenderTarget(SIZE, SIZE, Rgba8, Texture, 1);
+		var depthTexture = graphics.getRenderTargetDepth(depthTarget);
+		textures.push(depthTarget);
+		surviving.push(depthTarget);
 		var mostHalf = graphics.getMaxRenderTargetMsaaSampleCount(Rgba16f);
 		if (graphics.canRender(Rgba16f)) {
-			var halfTarget = graphics.createRenderTarget(SIZE, SIZE, Rgba16f, true, 1000);
+			var halfTarget = graphics.createRenderTarget(SIZE, SIZE, Rgba16f, Buffer, 1000);
 			textures.push(halfTarget);
 			surviving.push(halfTarget);
 		}
 		var negativeRefused = try {
-			textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba8, true, -1));
+			textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba8, Buffer, -1));
 			false;
 		} catch (_:Dynamic)
 			true;
@@ -1289,6 +1299,59 @@ class GraphicsTests {
 					p.expect(3, 10, [1, 0, 0, 1], 1);
 					p.expect(3, 14, [0, 1, 0, 1], 1);
 					p.expect(12, 10, [0, 1, 0, 1], 1);
+				}
+			},
+			{
+				name: "a target's depth sampled after its pass",
+				// Drawn into the depth target: a band on the left half's middle at a depth of 0.25 and the top right quarter at 0.75, the
+				// rest cleared to the farthest, 1; then its depth texture drawn into the target, the depth in red, asked for linearly and
+				// read nearest. Inside its own pass the depth texture is refused, as are a multisampled or screen-sampled depth texture's
+				// target, the depth of a target made without one, disposing it alone, and reading it back.
+				before: () -> {
+					function refused(mistake:String, call:() -> Void):Void {
+						var threw = false;
+						try
+							call()
+						catch (_:Dynamic)
+							threw = true;
+						check(threw, '$mistake taken');
+					}
+					graphics.beginTargetPass(depthTarget, 0, 0, 0, 1);
+					draw(deep, half, 6, null, null, [
+						clip,
+						floatBytes([-.5, 0, -.5, 0]),
+						null,
+						null,
+						null,
+						null,
+						floatBytes([1, 0, 0, 1])
+					]);
+					draw(deep, half, 6, null, null, [
+						clip,
+						floatBytes([.5, .5, .5, 0]),
+						null,
+						null,
+						null,
+						null,
+						floatBytes([0, 1, 0, 1])
+					]);
+					refused("its own depth texture sampled in its pass", () -> draw(sampled, uvQuad, 6, [depthTexture], [Sampling.NEAREST]));
+					graphics.endTargetPass();
+					refused("a depth texture's target of 4 samples", () -> textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba8, Texture, 4)));
+					refused("a depth texture's target of the screen's samples", () -> textures.push(graphics.createRenderTarget(SIZE, SIZE, Rgba8, Texture)));
+					refused("the depth of a target with a depth buffer", () -> graphics.getRenderTargetDepth(kept));
+					refused("the depth texture disposed alone", () -> graphics.disposeTexture(depthTexture));
+					refused("the depth texture read back", () -> graphics.readPixels(depthTexture, (_, _, _) -> {}, _ -> {}));
+					check(graphics.getRenderTargetDepth(depthTarget) == depthTexture, "the depth texture's handle changed");
+					into(0, 0, 0, 1, () -> draw(sampled, uvQuad, 6, [depthTexture], [Sampling.LINEAR]))();
+				},
+				target: target,
+				check: p -> {
+					p.expect(3, 8, [.25], 1);
+					p.expect(12, 3, [.75], 1);
+					p.expect(12, 12, [1], 1);
+					p.expect(3, 1, [1], 1);
+					p.expect(3, 14, [1], 1);
 				}
 			},
 			{

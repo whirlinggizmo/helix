@@ -75,9 +75,9 @@ interface IGraphics {
 		@param height  The rectangle's height, in texels.
 		@param data  The rectangle's texels with rows top first, `format.levelBytes(width, height)` bytes of the texture's format, or 16
 			bytes a texel of little-endian floats for a data texture.
-		@throws String  An unknown handle, a cube, render target or shadow map, a compressed format, a call inside a pass for a
-			`createTexture` texture, a rectangle that is empty or not inside the texture (not all of a data texture), or data that is too
-			short. */
+		@throws String  An unknown handle, a cube, render target, render target's depth texture or shadow map, a compressed format, a
+			call inside a pass for a `createTexture` texture, a rectangle that is empty or not inside the texture (not all of a data
+			texture), or data that is too short. */
 	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void;
 
 	/** Returns whether this GPU samples textures of a format.
@@ -131,8 +131,9 @@ interface IGraphics {
 	/** Creates a render target, which is a texture that a target pass draws into.
 
 		The target is sampled like any texture and stored top row first, or bottom row first when asked, as GL stores its framebuffers:
-		what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth buffer. Whether it has depth
-		and how many samples it is drawn with are chosen apart. A target of more than one sample is drawn into its samples, which are
+		what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth
+		buffer, or with `RenderTargetDepth.Texture` a depth texture a shader samples after its passes (`getRenderTargetDepth`). Its depth
+		and how many samples it is drawn with are chosen apart, except that a target whose depth is a texture has one sample. A target of more than one sample is drawn into its samples, which are
 		resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is
 		rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`.
 		A count the GPU can't give is never refused.
@@ -141,14 +142,28 @@ interface IGraphics {
 		@param width  The width, in texels.
 		@param height  The height, in texels.
 		@param format  Optional. The texels' format; defaults to Rgba8.
-		@param depth  Optional. Whether it has a depth buffer; defaults to true.
+		@param depth  Optional. Its depth: none, a buffer, or a texture sampled after its passes; defaults to a buffer.
 		@param msaaSampleCount  Optional. The multisampling samples per texel asked for: 1 for none, or 0, the default, for the screen's
-			(`msaaSampleCount`).
+			(`msaaSampleCount`). It must be 1 with `RenderTargetDepth.Texture`.
 		@param bottomRowFirst  Optional. Whether it is stored bottom row first; defaults to false, top row first.
 		@return  The render target's handle.
-		@throws String  A size of 0 or less, a format this GPU cannot draw into (`canRender`), or a sample count below 0. */
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0,
+		@throws String  A size of 0 or less, a format this GPU cannot draw into (`canRender`), a sample count below 0, or a sample count
+			other than 1 with `RenderTargetDepth.Texture`. */
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:RenderTargetDepth = Buffer, msaaSampleCount:Int = 0,
 		bottomRowFirst:Bool = false):Int;
+
+	/** Returns the depth texture of a render target made with `RenderTargetDepth.Texture`, for a shader to sample after the target's pass.
+
+		A program reads it through a `sampler2D`: the red channel holds the depth drawn, 0 nearest to 1 farthest, as GL's window depth
+		holds it, on every adapter; the other channels are undefined. Its rows are stored as the target's are. It is read nearest, its
+		sampling's filter, mipmaps and anisotropy ignored and its wrap used. A new target's depth texture holds the farthest depth.
+
+		A draw into the target refuses its depth texture, as it refuses the target. The depth texture is disposed with the target, and
+		`disposeTexture` refuses it alone.
+		@param target  The render target, as a `createRenderTarget` handle.
+		@return  The depth texture's handle, the same each call.
+		@throws String  A handle that is not a render target made with `RenderTargetDepth.Texture`. */
+	public function getRenderTargetDepth(target:Int):Int;
 
 	/** Returns whether this GPU draws into, blends over and filters render targets of a format.
 
@@ -170,8 +185,9 @@ interface IGraphics {
 
 	/** Frees a texture of any kind.
 
+		A render target's depth texture (`getRenderTargetDepth`) goes with its target.
 		@param handle  The texture.
-		@throws String  An unknown handle. */
+		@throws String  An unknown handle, or a render target's depth texture. */
 	public function disposeTexture(handle:Int):Void;
 
 	/** Creates a stream vertex buffer, filled each frame by `updateBuffer`.
@@ -322,8 +338,8 @@ interface IGraphics {
 		Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is
 		three vertices. An attribute the program declares that no buffer feeds reads the pipeline's constant for its slot, or (0, 0, 0, 1)
 		(`PipelineDesc.attributeConstants`). The uniform the pipeline names is flipped as its `ClipFlip` specifies, in the adapter's own
-		copy of the block. A texture that is the open pass's own target (the render target drawn into, or the shadow map whose layer is
-		drawn into) is refused, as sampling what a pass draws into is undefined.
+		copy of the block. A texture that is the open pass's own target (the render target drawn into, its depth texture, or the shadow map
+		whose layer is drawn into) is refused, as sampling what a pass draws into is undefined.
 		@param pipeline  The pipeline.
 		@param buffers  The buffer for each of the pipeline's buffers, by index, or 0 for a gap. Each is a `createBuffer` handle as this
 			frame's upload left it, or a `createStaticBuffer` handle.
@@ -339,7 +355,8 @@ interface IGraphics {
 		@param instanceCount  The number of instances.
 		@param textures  The texture bound at each of the program's texture slots, by slot. A slot provided 0, or past the array's end,
 			reads a clear 1x1 texture of its kind, for a texture the program declares and doesn't read.
-		@param samplings  How each texture is sampled, by slot. A shadow map or data texture is sampled as its kind requires.
+		@param samplings  How each texture is sampled, by slot. A shadow map, data texture or render target's depth texture is sampled as
+			its kind requires.
 		@param uniforms  The bytes of each uniform block at its declared size, by stage and slot: the vertex stage's slot n at index n, the
 			fragment stage's at 4 + n, a block both stages read at both (`ShaderBlock`); null at an index the program has no block for.
 		@throws String  Anything invalid, before drawing: a texture that is the pass's own target among them, or an offset out of range. */

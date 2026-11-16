@@ -260,14 +260,23 @@ abstract class NativeGraphics implements IGraphics {
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
 		return GraphicsDeviceBridge.maxTargetSamples(format);
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0,
-			bottomRowFirst:Bool = false):Int {
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:helix.platform.RenderTargetDepth = Buffer,
+			msaaSampleCount:Int = 0, bottomRowFirst:Bool = false):Int {
 		if (msaaSampleCount < 0)
 			throw "Invalid native render target";
+		if (depth == Texture && msaaSampleCount != 1)
+			throw "Invalid native render target: a depth texture's target has 1 sample (msaaSampleCount 1)";
 		// The count asked (0: the screen's), which the C rounds down to one the GPU takes for the format.
 		return valid(GraphicsHandle.TEXTURE,
-			GraphicsDeviceBridge.target(width, height, format, depth ? 1 : 0, msaaSampleCount == 0 ? GraphicsDeviceBridge.msaaSamples() : msaaSampleCount,
+			GraphicsDeviceBridge.target(width, height, format, depth, msaaSampleCount == 0 ? GraphicsDeviceBridge.msaaSamples() : msaaSampleCount,
 				bottomRowFirst ? 1 : 0));
+	}
+
+	public function getRenderTargetDepth(target:Int):Int {
+		var depth = GraphicsDeviceBridge.targetDepth(GraphicsHandle.numberOf(target, GraphicsHandle.TEXTURE, "Invalid render target depth"));
+		if (depth == 0)
+			throw "Invalid render target depth: not a render target made with RenderTargetDepth.Texture";
+		return GraphicsHandle.make(GraphicsHandle.TEXTURE, depth);
 	}
 
 	public function canRender(format:TextureFormat):Bool

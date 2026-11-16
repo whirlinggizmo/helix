@@ -52,6 +52,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Primitive](types.md#primitive)
   - [RasterFont](types.md#rasterfont)
   - [RasterGlyph](types.md#rasterglyph)
+  - [RenderTargetDepth](types.md#rendertargetdepth)
   - [Sampling](types.md#sampling)
   - [SdlGpuStages](types.md#sdlgpustages)
   - [ShaderBlock](types.md#shaderblock)

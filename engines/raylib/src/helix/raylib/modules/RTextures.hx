@@ -472,7 +472,7 @@ class RTextures {
 		@return  The render texture. */
 	static function LoadRenderTexture(width:Int, height:Int):RenderTexture2D {
 		// raylib 5.5's render textures on GL: a depth buffer and one sample, however the window is multisampled, stored bottom row first.
-		var target = Runtime.graphics.createRenderTarget(width, height, helix.platform.TextureFormat.Rgba8, true, 1, true);
+		var target = Runtime.graphics.createRenderTarget(width, height, helix.platform.TextureFormat.Rgba8, Buffer, 1, true);
 		var texture = new Texture2D(Textures.fromHandle(target), width, height);
 		texture.rendered = true;
 		return new RenderTexture(target, texture, new Texture2D(0, width, height));

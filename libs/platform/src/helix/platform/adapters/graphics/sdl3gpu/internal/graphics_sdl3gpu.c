@@ -71,9 +71,10 @@ static struct{uint32_t generation;int live;SDL_GPUGraphicsPipeline *pipeline,*fl
 
 /* Textures by kind: sampled (a 2D image or a cube), a data texture (RGBA32F, its versions for writes after a read in a frame), a render
    target (a color texture sampled, drawn through a multisampled one when it has more than one sample, its depth or none, the pipelines'
-   variant drawing into it), or a shadow map (a depth array). */
-enum{PLAIN,DATA,TARGET,SHADOW};
-static struct{uint32_t generation;int live,kind,width,height,layers,variant,format,cleared,sample_count;SDL_GPUTexture *texture,*samples,*depth;
+   variant drawing into it, and the handle its depth is sampled through, RenderTargetDepth.Texture's, else 0), a shadow map (a depth array),
+   or a target's depth (its texture the target's depth, which goes with the target). */
+enum{PLAIN,DATA,TARGET,SHADOW,DEPTH};
+static struct{uint32_t generation,sampled;int live,kind,width,height,layers,variant,format,cleared,sample_count;SDL_GPUTexture *texture,*samples,*depth;
  SDL_GPUTexture **versions;int *bound;int version_count,current;double bytes;}textures[SLOTS];
 static int more_versions(int slot);
 
@@ -95,8 +96,8 @@ static SDL_GPUBuffer *arena,*retired[16];static int arena_size,arena_used,arena_
 /* The pass being recorded: 0 none, 1 the screen's, 2 a target's or shadow map's; whether it's drawn flipped; the pipelines' variant it
    draws with; its size; its targets. */
 static int active,flipped,pass_variant,pass_width,pass_height;
-/* The texture the open target or shadow pass draws into, which its draws may not sample; 0 for none. */
-static uint32_t pass_texture;
+/* The texture the open target or shadow pass draws into, and the target's depth texture, which its draws may not sample; 0 for none. */
+static uint32_t pass_texture,pass_depth_texture;
 static SDL_GPUColorTargetInfo pass_color;static SDL_GPUDepthStencilTargetInfo pass_depth;static int pass_has_color,pass_has_depth;
 
 /* What the pass stages: bytes to upload (staging), each to a buffer range or a texture region; and its commands, replayed in order. */
@@ -613,13 +614,15 @@ int helix_max_target_samples(int format){
   return n;
  return 1;
 }
+static void release_texture(int slot);
 /* A render target: a color texture of format sampled through the handle, drawn through a multisampled texture resolved into it, or with one
-   sample into it directly; with depth, a depth texture of the same samples for its passes. Its samples are the most the device takes for
-   both the format and depth (as helix_max_target_samples) up to the samples asked for (at least 1), which a device need not take for every
-   power of two (lavapipe takes 1 and 4). */
+   sample into it directly; with depth (1, or 2 to sample it, which takes 1 sample), a depth texture of the same samples for its passes,
+   at 2 sampled through a handle of its own (helix_target_depth). Its samples are the most the device takes for both the format and depth
+   (as helix_max_target_samples) up to the samples asked for (at least 1), which a device need not take for every power of two (lavapipe
+   takes 1 and 4). */
 uint32_t helix_target(int w,int h,int format,int depth,int asked,int bottom){
  const int slot=free_texture_slot();
- if(slot<0||w<=0||h<=0||w>16384||h>16384||!helix_can_render(format)||asked<1)return 0;
+ if(slot<0||w<=0||h<=0||w>16384||h>16384||!helix_can_render(format)||asked<1||depth<0||depth>2||(depth==2&&asked!=1))return 0;
  const SDL_GPUTextureFormat pixels=format_of(format);
  int samples=asked>=8?8:asked>=4?4:asked>=2?2:1;
  while(samples>1&&!(SDL_GPUTextureSupportsSampleCount(device,pixels,sample_count_of(samples))&&
@@ -633,7 +636,19 @@ uint32_t helix_target(int w,int h,int format,int depth,int asked,int bottom){
  /* The texture sampled, the texture of its samples when multisampled, and its depth, 4 bytes a sample. */
  const double texel=format==4?8:4,area=(double)w*h;
  textures[slot].bytes=area*texel+(samples>1?area*texel*samples:0)+(depth?area*4*samples:0);
- return take_texture(slot,TARGET,w,h);
+ const uint32_t handle=take_texture(slot,TARGET,w,h);
+ if(depth==2){
+  /* Its depth, sampled through a slot of its own. */
+  const int dslot=free_texture_slot();
+  if(dslot<0){release_texture(slot);return 0;}
+  textures[dslot].texture=depth_target;textures[dslot].layers=1;
+  textures[slot].sampled=take_texture(dslot,DEPTH,w,h);
+ }
+ return handle;
+}
+/* A render target's depth texture, 0 for a target made without one. */
+uint32_t helix_target_depth(uint32_t target){
+ return texture_live(target)&&textures[slot_of(target)].kind==TARGET?textures[slot_of(target)].sampled:0;
 }
 /* A shadow map: a depth array of layers layers, each size x size, sampled through the handle. Always an array, so its programs read it as one. */
 uint32_t helix_shadow_map(int size,int layers){
@@ -672,7 +687,7 @@ int helix_begin_shadow(uint32_t map,int layer){
  if(active||!texture_live(map))return 0;
  const int slot=slot_of(map);
  if(textures[slot].kind!=SHADOW||layer<0||layer>=textures[slot].layers||!frame_command(1))return 0;
- pass_has_color=0;pass_has_depth=1;pass_variant=0;
+ pass_has_color=0;pass_has_depth=1;pass_variant=0;pass_depth_texture=0;
  pass_depth=(SDL_GPUDepthStencilTargetInfo){.texture=textures[slot].texture,.clear_depth=1,.load_op=SDL_GPU_LOADOP_CLEAR,.store_op=SDL_GPU_STOREOP_STORE,
   .stencil_load_op=SDL_GPU_LOADOP_DONT_CARE,.stencil_store_op=SDL_GPU_STOREOP_DONT_CARE,.layer=(Uint8)layer};
  begin_recording(2,1,textures[slot].width,textures[slot].height);pass_texture=map;
@@ -700,7 +715,7 @@ static int begin_target(uint32_t target,int clear,SDL_FColor color){
  color_pass(textures[slot].texture,textures[slot].samples,textures[slot].depth,color,1);
  if(clear){pass_color.load_op=SDL_GPU_LOADOP_CLEAR;pass_depth.load_op=SDL_GPU_LOADOP_CLEAR;}
  begin_recording(2,(textures[slot].variant&16)!=0,textures[slot].width,textures[slot].height);pass_variant=textures[slot].variant;
- pass_texture=target;
+ pass_texture=target;pass_depth_texture=textures[slot].sampled;
  return 1;
 }
 int helix_begin_target(uint32_t target,float red,float green,float blue,float alpha){return begin_target(target,1,(SDL_FColor){red,green,blue,alpha});}
@@ -748,7 +763,7 @@ static int end_pass(void){
  SDL_EndGPURenderPass(pass);
  return 1;
 }
-int helix_end_target(void){if(active!=2)return 0;const int ok=end_pass();active=0;flipped=0;pass_texture=0;return ok;}
+int helix_end_target(void){if(active!=2)return 0;const int ok=end_pass();active=0;flipped=0;pass_texture=pass_depth_texture=0;return ok;}
 
 /* Clips to x, y, w, h from the bottom left (on), or to the whole pass (off); lasts the pass. */
 int helix_scissor(int x,int y,int w,int h,int on){
@@ -875,13 +890,14 @@ int helix_draw(uint32_t p,const uint32_t *buffer_handles,const int *offsets,int 
   const uint32_t handle=i<texture_count&&texture_handles[i]?texture_handles[i]:placeholder(programs[program].texture_kind[i]);
   const int sampling=i<texture_count?samplings[i]:0;
   if(!texture_live(handle))return 0;
-  if(handle==pass_texture)return -1;
+  if(handle==pass_texture||(pass_depth_texture&&handle==pass_depth_texture))return -1;
   const int ts=slot_of(handle),kind=textures[ts].kind;
   SDL_GPUTexture *texture=textures[ts].texture;
   if(kind==DATA){texture=textures[ts].versions[textures[ts].current];textures[ts].bound[textures[ts].current]=1;}
-  /* A slot the program never filters (it only fetches texels) and a data texture are sampled nearest, whatever the draw's sampling. */
+  /* A slot the program never filters (it only fetches texels) and a data texture are sampled nearest, whatever the draw's sampling; a
+     target's depth nearest, its wraps kept (Sampling's bits 1-4). */
   const int unfiltered=kind==DATA||programs[program].unfiltered_mask&1<<i;
-  const SDL_GPUTextureSamplerBinding binding={texture,kind==SHADOW?comparison:sampler_of(unfiltered?0:sampling)};
+  const SDL_GPUTextureSamplerBinding binding={texture,kind==SHADOW?comparison:sampler_of(unfiltered?0:kind==DEPTH?sampling&30:sampling)};
   if(programs[program].texture_stage[i])c.fragment_samplers[programs[program].texture_index[i]]=binding;
   else c.vertex_samplers[programs[program].texture_index[i]]=binding;
  }
@@ -961,13 +977,18 @@ int helix_read_pixels(uint32_t target,unsigned char *out){
  return ok;
 }
 
-/* Releases a texture's GPU textures and frees its slot. */
+/* Releases a texture's GPU textures and frees its slot, and a target's depth texture's slot with it (a target's depth texture holds its
+   target's). */
 static void release_texture(int slot){
+ if(textures[slot].kind==TARGET&&textures[slot].sampled){
+  const int dslot=slot_of(textures[slot].sampled);
+  const uint32_t generation=textures[dslot].generation;memset(&textures[dslot],0,sizeof textures[dslot]);textures[dslot].generation=generation;
+ }
  if(textures[slot].kind==DATA){
   for(int i=0;i<textures[slot].version_count;i++)if(textures[slot].versions[i])SDL_ReleaseGPUTexture(device,textures[slot].versions[i]);
   free(textures[slot].versions);free(textures[slot].bound);textures[slot].versions=NULL;textures[slot].bound=NULL;textures[slot].version_count=0;
  }
- else if(textures[slot].texture)SDL_ReleaseGPUTexture(device,textures[slot].texture);
+ else if(textures[slot].texture&&textures[slot].kind!=DEPTH)SDL_ReleaseGPUTexture(device,textures[slot].texture);
  if(textures[slot].samples)SDL_ReleaseGPUTexture(device,textures[slot].samples);
  if(textures[slot].depth)SDL_ReleaseGPUTexture(device,textures[slot].depth);
  const uint32_t generation=textures[slot].generation;memset(&textures[slot],0,sizeof textures[slot]);textures[slot].generation=generation;
@@ -1004,7 +1025,7 @@ double helix_gpu_bytes(int kind){
 int helix_dispose_resource(int kind,uint32_t handle){
  const int slot=slot_of(handle);
  if(kind==0&&buffer_live(handle)){if(!buffers[slot].stream)SDL_ReleaseGPUBuffer(device,buffers[slot].buffer);buffers[slot].live=0;buffers[slot].buffer=NULL;return 1;}
- if(kind==1&&texture_live(handle)){release_texture(slot);return 1;}
+ if(kind==1&&texture_live(handle)&&textures[slot].kind!=DEPTH){release_texture(slot);return 1;}
  if(kind==2&&pipeline_live(handle)){release_pipeline(slot);return 1;}
  if(kind==3&&program_live(handle)){
   for(int i=0;i<SLOTS;i++)if(pipelines[i].live&&pipelines[i].program==handle)release_pipeline(i);

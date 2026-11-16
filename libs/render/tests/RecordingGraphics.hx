@@ -109,10 +109,16 @@ class RecordingGraphics implements IGraphics {
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int
 		return 4;
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0,
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:RenderTargetDepth = Buffer, msaaSampleCount:Int = 0,
 			bottomRowFirst:Bool = false):Int {
 		textures.set(next, {width: width, height: height, target: true});
 		log.push('target $next $width $height samples $msaaSampleCount');
+		return next++;
+	}
+
+	public function getRenderTargetDepth(target:Int):Int {
+		var t = textures.get(target);
+		textures.set(next, {width: t.width, height: t.height, target: false});
 		return next++;
 	}
 

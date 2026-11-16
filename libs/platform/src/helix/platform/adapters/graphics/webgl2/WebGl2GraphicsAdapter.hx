@@ -8,6 +8,7 @@ import helix.platform.ColorChannels;
 import helix.math.Color;
 import helix.platform.IGraphics;
 import helix.platform.PipelineDesc;
+import helix.platform.RenderTargetDepth;
 import helix.platform.DepthTest;
 import helix.platform.ClipFlip;
 import helix.platform.Sampling;
@@ -20,18 +21,21 @@ import helix.platform.adapters.shared.dom.DomPage;
 import js.html.webgl.WebGL2RenderingContext;
 
 /** Represents a render target: the framebuffer of its texture and its depth buffer (null without), its size and whether it holds half
-	floats; when multisampled, the framebuffer drawn into and its color. */
+	floats; when multisampled, the framebuffer drawn into and its color; with `RenderTargetDepth.Texture`, its depth texture's handle in
+	place of the buffer. */
 private typedef Target = {
 	framebuffer:Dynamic,
 	cleared:Bool,
 	depth:Dynamic,
+	depthTexture:Dynamic,
+	depthHandle:Int,
 	half:Bool,
 	drawn:Dynamic,
 	color:Dynamic,
 	width:Int,
 	height:Int,
-	// What made it: whether it has depth, and the samples asked for, so a restore makes it again.
-	hasDepth:Bool,
+	// What made it: its depth, and the samples asked for, so a restore makes it again.
+	depthKind:RenderTargetDepth,
 	asked:Int,
 	// The samples it has.
 	samples:Int,
@@ -152,8 +156,11 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var poolDepth = 256;
 	var drawTurn = 0;
 	var frameDraws = 0;
-	// The texture the open target or shadow pass draws into, 0 for none: a draw may not sample it.
+	// The texture the open target or shadow pass draws into, and the target's depth texture, 0 for none: a draw may sample neither.
 	var passTexture = 0;
+	var passDepth = 0;
+	// Render targets' depth textures (RenderTargetDepth.Texture), by handle: their target's handle.
+	var depthTargets:Map<Int, Int> = [];
 	// The framebuffer a texture is read back through, made the first time.
 	var reading:Dynamic = null;
 	// Attribute slots enabled by the last draw: each draw enables its own and turns the rest off.
@@ -280,7 +287,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		placeholders = [0, 0, 0];
 		active = inTarget = flipped = frameEnded = false;
 		drawing = null;
-		passTexture = 0;
+		passTexture = passDepth = 0;
 		written = [];
 		for (id in [for (id in textures.keys()) if (plainTextures.exists(id) || cubes.exists(id)) id]) {
 			textures.remove(id);
@@ -299,10 +306,13 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		for (id => d in dataTextures)
 			textures[id] = dataTexture(d.width, d.height);
 		for (id => t in targets) {
-			var made = target(t.width, t.height, t.half, t.hasDepth, t.asked);
+			var made = target(t.width, t.height, t.half, t.depthKind, t.asked);
 			made.target.bottom = t.bottom;
 			textures[id] = made.texture;
 			targets[id] = made.target;
+			made.target.depthHandle = t.depthHandle;
+			if (t.depthHandle != 0)
+				textures[t.depthHandle] = made.target.depthTexture;
 		}
 		for (id => m in shadowMaps) {
 			var made = shadowMap(m.size, m.framebuffers.length);
@@ -787,7 +797,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		// The texture sampled, the samples drawn into when multisampled, and the depth, 4 bytes a sample.
 		for (t in targets) {
 			var area:Float = t.width * t.height, texel = t.half ? 8 : 4;
-			total += area * texel + (t.samples > 1 ? area * texel * t.samples : 0) + (t.hasDepth ? area * 4 * t.samples : 0);
+			total += area * texel + (t.samples > 1 ? area * texel * t.samples : 0) + (t.depthKind != None ? area * 4 * t.samples : 0);
 		}
 		for (m in shadowMaps)
 			total += m.size * m.size * 4. * m.framebuffers.length;
@@ -817,20 +827,33 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return most;
 	}
 
-	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:Bool = true, msaaSampleCount:Int = 0,
+	public function createRenderTarget(width:Int, height:Int, format:TextureFormat = Rgba8, depth:RenderTargetDepth = Buffer, msaaSampleCount:Int = 0,
 			bottomRowFirst:Bool = false):Int {
-		if (width <= 0 || height <= 0 || !canRender(format) || msaaSampleCount < 0)
+		if (width <= 0 || height <= 0 || !canRender(format) || msaaSampleCount < 0 || depth == Texture && msaaSampleCount != 1)
 			throw "Invalid render target";
 		var made = target(width, height, format == Rgba16f, depth, msaaSampleCount);
 		made.target.bottom = bottomRowFirst;
 		var id = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
 		textures[id] = made.texture;
 		targets[id] = made.target;
+		if (depth == Texture) {
+			var handle = made.target.depthHandle = GraphicsHandle.make(GraphicsHandle.TEXTURE, next++);
+			textures[handle] = made.target.depthTexture;
+			depthTargets[handle] = id;
+		}
 		return id;
 	}
 
-	// A render target width x height, of half floats or bytes, with or without depth, of the samples asked (0: the screen's).
-	function target(width:Int, height:Int, half:Bool, depth:Bool, msaaSampleCount:Int):{texture:Dynamic, target:Target} {
+	public function getRenderTargetDepth(target:Int):Int {
+		var t = targets[target];
+		if (t == null || t.depthHandle == 0)
+			throw "Invalid render target depth: not a render target made with RenderTargetDepth.Texture";
+		return t.depthHandle;
+	}
+
+	// A render target width x height, of half floats or bytes, with its depth, of the samples asked (0: the screen's): a depth texture
+	// (DEPTH_COMPONENT24, as the renderbuffer is) for one sampled.
+	function target(width:Int, height:Int, half:Bool, depth:RenderTargetDepth, msaaSampleCount:Int):{texture:Dynamic, target:Target} {
 		// Half floats draw only once their extension is asked for, which a context given back hasn't been yet.
 		if (half)
 			canRender(Rgba16f);
@@ -848,8 +871,12 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			for (n in taken)
 				if (n <= asked && n > count && (n == 2 || n == 4 || n == 8))
 					count = n;
-		var depthBuffer:Dynamic = null;
-		if (depth) {
+		var depthBuffer:Dynamic = null, depthTexture:Dynamic = null;
+		if (depth == Texture) {
+			depthTexture = gl.createTexture();
+			bindToChange(WebGL2RenderingContext.TEXTURE_2D, depthTexture);
+			gl.texStorage2D(WebGL2RenderingContext.TEXTURE_2D, 1, WebGL2RenderingContext.DEPTH_COMPONENT24, width, height);
+		} else if (depth != None) {
 			depthBuffer = gl.createRenderbuffer();
 			gl.bindRenderbuffer(WebGL2RenderingContext.RENDERBUFFER, depthBuffer);
 			if (count > 1)
@@ -860,7 +887,10 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		var framebuffer = gl.createFramebuffer();
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, framebuffer);
 		gl.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.COLOR_ATTACHMENT0, WebGL2RenderingContext.TEXTURE_2D, tex, 0);
-		if (depth && count <= 1)
+		if (depthTexture != null)
+			gl.framebufferTexture2D(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.TEXTURE_2D,
+				depthTexture, 0);
+		else if (depthBuffer != null && count <= 1)
 			gl.framebufferRenderbuffer(WebGL2RenderingContext.FRAMEBUFFER, WebGL2RenderingContext.DEPTH_ATTACHMENT, WebGL2RenderingContext.RENDERBUFFER,
 				depthBuffer);
 		var complete = gl.checkFramebufferStatus(WebGL2RenderingContext.FRAMEBUFFER) == WebGL2RenderingContext.FRAMEBUFFER_COMPLETE;
@@ -883,6 +913,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.deleteFramebuffer(framebuffer);
 			if (depthBuffer != null)
 				gl.deleteRenderbuffer(depthBuffer);
+			if (depthTexture != null)
+				gl.deleteTexture(depthTexture);
 			if (drawn != null) {
 				gl.deleteFramebuffer(drawn);
 				gl.deleteRenderbuffer(color);
@@ -896,12 +928,14 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				framebuffer: framebuffer,
 				cleared: false,
 				depth: depthBuffer,
+				depthTexture: depthTexture,
+				depthHandle: 0,
 				half: half,
 				drawn: drawn,
 				color: color,
 				width: width,
 				height: height,
-				hasDepth: depth,
+				depthKind: depth,
 				asked: msaaSampleCount,
 				samples: count,
 				bottom: false
@@ -974,6 +1008,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		inTarget = true;
 		flipped = false;
 		passTexture = map;
+		passDepth = 0;
 		open(m.size, m.size, true, 0, 0, 0, 0);
 	}
 
@@ -993,6 +1028,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, t.drawn != null ? t.drawn : t.framebuffer);
 		drawing = t;
 		passTexture = target;
+		passDepth = t.depthHandle;
 		inTarget = true;
 		flipped = !t.bottom;
 		open(t.width, t.height, clear || !t.cleared, red, green, blue, alpha);
@@ -1011,7 +1047,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			gl.blitFramebuffer(0, 0, t.width, t.height, 0, 0, t.width, t.height, WebGL2RenderingContext.COLOR_BUFFER_BIT, WebGL2RenderingContext.NEAREST);
 		}
 		drawing = null;
-		passTexture = 0;
+		passTexture = passDepth = 0;
 		gl.bindFramebuffer(WebGL2RenderingContext.FRAMEBUFFER, null);
 		active = inTarget = flipped = false;
 	}
@@ -1385,13 +1421,14 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				t = this.textures[handle];
 			if (t == null)
 				throw "Invalid draw texture";
-			if (handle == passTexture)
+			if (handle == passTexture || passDepth != 0 && handle == passDepth)
 				throw "Invalid draw texture: it is the pass's own target, which a draw into it can't sample";
 			var shadow = shadowMaps.exists(handle),
 				cube = !shadow && cubes.exists(handle);
+			// A target's depth texture is read nearest, its wraps kept (Sampling's bits 1-4): WebGL2 filters no depth texture.
 			var s = shadow ? comparisonSampler() : cube ? sampler(slot < samplings.length ? samplings[slot] : Sampling.LINEAR) : sampler(dataTextures.exists(handle)
 				|| shader.unfiltered[slot]
-				|| slot >= samplings.length ? Sampling.NEAREST : samplings[slot]);
+				|| slot >= samplings.length ? Sampling.NEAREST : depthTargets.exists(handle) ? cast((samplings[slot] : Int) & 30) : samplings[slot]);
 			var sameTexture = unitTextures[slot] == handle,
 				sameSampler = unitSamplers[slot] == s;
 			if (sameTexture && sameSampler)
@@ -1548,7 +1585,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function disposeTexture(handle:Int):Void {
 		GraphicsHandle.expect(handle, GraphicsHandle.TEXTURE, "Invalid texture");
 		var t = textures[handle];
-		if (t == null)
+		if (t == null || depthTargets.exists(handle))
 			throw "Invalid texture";
 		gl.deleteTexture(t);
 		// Deleted, it is unbound from every unit it was on.
@@ -1575,6 +1612,11 @@ class WebGl2GraphicsAdapter implements IGraphics {
 				gl.deleteRenderbuffer(target.color);
 			}
 			targets.remove(handle);
+			// Its depth texture goes with it.
+			if (target.depthHandle != 0) {
+				depthTargets.remove(target.depthHandle);
+				disposeTexture(target.depthHandle);
+			}
 		}
 	}
 

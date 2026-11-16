@@ -229,13 +229,20 @@ enum Event {
   reads them) (2D, with its mip levels), `createCubeTexture`, `createDataTexture` (floats read texel by texel),
   `updateTexture(handle, x, y, width, height, data)` (a rectangle of a texture's top level, RGBA8 or half floats, outside a pass, the
   passes before it reading the old texels; a data texture whole, at any time; sokol writes through GL directly, SDL_GPU copies in the
-  frame's command buffer, uncycled), `createRenderTarget(width, height, format, depth, msaaSampleCount)` (RGBA8 or half floats, with or
-  without depth, and multisampled apart from its depth: 1 for no multisampling, 0 for the screen's count, a count rounded down to the
+  frame's command buffer, uncycled), `createRenderTarget(width, height, format, depth, msaaSampleCount)` (RGBA8 or half floats; its depth a
+  `RenderTargetDepth`: none, a buffer its passes test against, or a texture a shader samples after them; and multisampled apart from its
+  depth: 1 for no multisampling, 0 for the screen's count, a count rounded down to the
   nearest the GPU draws the format with, 1, 2, 4 or 8 up to `getMaxRenderTargetMsaaSampleCount(format)` (a GPU need not take every
   one: lavapipe takes 1 and 4), 1 where it can't multisample the format; a multisampled target is resolved into its texture at each
   pass's end, WebGL2 blitting its multisampled renderbuffers, sokol and SDL_GPU through a resolve attachment; SDL_GPU submits the frame's
   passes so far before a pass of fewer samples than one already in its command buffer, as NVIDIA's Vulkan driver loses the device on
-  such a pair in one command buffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler, at least 24 layers on every backend), `disposeTexture`; `canSample(format)`
+  such a pair in one command buffer), `getRenderTargetDepth(target)` (a `RenderTargetDepth.Texture` target's depth as a texture of its own,
+  read through a plain `sampler2D` after the target's pass: the depth 0 nearest to 1 farthest in its red channel, as GL's window depth has
+  it on every backend, its rows stored as the target's are, read nearest whatever the sampling's filter, as WebGL2 filters no depth
+  texture and Vulkan needn't; disposed with its target, and refused by `disposeTexture` alone. Such a target has one sample:
+  `createRenderTarget` refuses `RenderTargetDepth.Texture` with any other `msaaSampleCount`, 0 too, as SDL_GPU resolves no depth; sokol
+  and SDL_GPU sample the depth texture their passes draw into, and WebGL2 attaches a `DEPTH_COMPONENT24` texture in place of its
+  renderbuffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler, at least 24 layers on every backend), `disposeTexture`; `canSample(format)`
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)`, `updateBuffer` (replaces a stream buffer's contents for the draws after it) and `appendBuffer`
   (adds bytes after the frame's earlier ones and returns their byte offset, the earlier bytes staying readable, so many draws' vertex data
@@ -281,8 +288,8 @@ enum Event {
   every backend takes the same layouts: WebGL2 and sokol set it as the attribute's current value, SDL_GPU reads it from a buffer of
   its own stepped per instance. sokol refuses a layout whose fed attributes leave a gap of slots, and without its validation enables
   none past the gap, so its adapter gives such a slot a stand-in from a fed buffer and unwires it once the pipeline is made. A draw refuses a texture that is the open
-  pass's own target (the render target drawn into, the shadow map whose layer is drawn into), as sampling what a pass draws into is
-  undefined on GL and an error on Vulkan.
+  pass's own target (the render target drawn into, its depth texture, the shadow map whose layer is drawn into), as sampling what a pass
+  draws into is undefined on GL and an error on Vulkan.
   A `Sampling` is a filter, each axis's wrap, a `MipmapFilter` (None: the top level alone; Nearest: the nearest mipmap; Linear: the two
   nearest blended; it follows the filter when omitted) and an anisotropy of 1 to 16, used with linear filtering and linear mipmaps only
   (sokol takes it so; WebGL2 through EXT_texture_filter_anisotropic where the browser has it), each adapter keeping a sampler a value.
