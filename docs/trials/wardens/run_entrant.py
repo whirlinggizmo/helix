@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Runs one entrant of the native blind trial (../README.md): claude -p in its own directory, on a private display, with no sound.
 
-    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c|three] [--extras] [--trial <variant>] [--game <folder>]
+    python3 run_entrant.py <entrant directory> --helix <checkout> [--engine helix|c|hx|three] [--haxelib <repository>] [--extras] [--page]
+        [--trial <variant>] [--game <folder>]
         [--model sonnet] [--hours 3] [--command CMD]
 
 The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
@@ -11,6 +12,9 @@ The entrant directory is made, and must not be there yet unless --command is giv
   in docs/include.
 - c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/CMakeLists.txt, raylib 5.5's headers in include/ and its desktop
   library as lib/libraylib.a.
+- hx (raylib 5.5 in Haxe through a plain binding, raylib-hx): native-hx/brief.md as brief.md, native-hx/build.hxml, and raylib 5.5's
+  headers in docs/include. --haxelib names the haxelib repository holding raylib-hx (as a dev path, its raylib at 5.5, with raygui and
+  rlights bound) and hxcpp; both are read-only in the sandbox, and the entrant builds against them.
 - three (three.js 0.187, in JavaScript or TypeScript, for the browser): three/brief.md as brief.md, three/index.html, three/run.cjs (it
   bundles the game with esbuild and runs it in headless Chromium, Playwright's own, on SwiftShader), an empty src/, and three/package.json
   and package-lock.json, three.js and esbuild installed from them (npm ci) into the entrant's own node_modules, to which it may add from
@@ -34,6 +38,11 @@ end to run.log.
 --extras gives a helix-raylib entrant the extras: native/brief-extras.md as its brief, and the checkout's generated API pages of the
 extras (engines/raylib/api/extras-*.md, their doc comments) in docs/extras/, with the extras' part of the API index as its README.md,
 and each extra's example program in docs/extras/examples/.
+
+--page gives a helix-raylib entrant the extras and a page to build and run its program in as it works: page/brief.md as its brief,
+page/build.hxml (native/'s), page/index.html and
+page/run.cjs, which type-checks the native build, builds the program for the page and runs it in headless Chromium, Playwright's own,
+on SwiftShader. The native build is the entrant's last step.
 
 --trial names another trial's variant to make the entrant from in place of Wardens (helix-raylib only), as
 ../2026-11-13-masked-blend/module: the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
@@ -74,7 +83,7 @@ def game_files(entrant, game):
         if (game / folder).is_dir():
             shutil.copytree(game / folder, entrant / folder)
 
-def make(entrant, engine, trial=None, extras=None, game=HERE):
+def make(entrant, engine, trial=None, extras=None, game=HERE, page=False):
     """Makes the entrant's directory from the game's files and raylib 5.5's, or from another trial's variant."""
     if engine == 'three':
         entrant.mkdir(parents=True)
@@ -106,16 +115,16 @@ def make(entrant, engine, trial=None, extras=None, game=HERE):
         shutil.copytree(raylib / 'examples', entrant / 'docs/examples')
         return
     entrant.mkdir(parents=True)
-    own = HERE / ('native' if engine == 'helix' else 'native-c')
-    brief = brief_of(game, own.name, 'brief-extras.md' if extras else 'brief.md')
+    own = HERE / ('page' if page else {'helix': 'native', 'c': 'native-c', 'hx': 'native-hx'}[engine])
+    brief = brief_of(game, own.name, 'brief-extras.md' if extras and not page else 'brief.md')
     (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
-    for name in ('build.hxml',) if engine == 'helix' else ('CMakeLists.txt',):
+    for name in ('build.hxml', 'index.html', 'run.cjs') if page else ('build.hxml',) if engine in ('helix', 'hx') else ('CMakeLists.txt',):
         shutil.copy(own / name, entrant / name)
     if engine == 'helix':
         with open(entrant / 'build.hxml', 'a', encoding='utf-8') as f:
             f.write(f'-D helix-company=helix-trials\n-D helix-product={entrant.name}\n')
     game_files(entrant, game)
-    include = entrant / ('docs/include' if engine == 'helix' else 'include')
+    include = entrant / ('include' if engine == 'c' else 'docs/include')
     include.mkdir(parents=True)
     for header in ('src/raylib.h', 'src/raymath.h', 'src/rlgl.h', 'examples/shapes/raygui.h', 'examples/shaders/rlights.h'):
         shutil.copy(raylib / header, include)
@@ -139,7 +148,13 @@ def playwright(helix):
     """Playwright's package: HELIX_PLAYWRIGHT's, else the checkout's tools'."""
     return Path(os.environ.get('HELIX_PLAYWRIGHT', helix / 'build/tools/node_modules/playwright'))
 
-def environment(entrant, helix, display):
+def dev_paths(haxelib):
+    """A haxelib repository and the directories its libraries name by dev path (each library's .dev file)."""
+    if not haxelib:
+        return ()
+    return (haxelib,) + tuple(Path(dev.read_text(encoding='utf-8').strip()) for dev in sorted(haxelib.glob('*/.dev')))
+
+def environment(entrant, helix, display, haxelib=None):
     """The entrant's environment: the private display's, with the native build's settings and no sound, D-Bus or parent session."""
     import native_build
     import sdl3
@@ -149,9 +164,9 @@ def environment(entrant, helix, display):
     for k in ('XAUTHORITY', 'WAYLAND_DISPLAY', 'DBUS_SESSION_BUS_ADDRESS', 'NODE_EXTRA_CA_CERTS') + CLAUDE_VARS:
         env.pop(k, None)
     home = entrant.parent / '.home' / entrant.name
-    # A three.js entrant's run.cjs: Playwright and its browsers, read-only in the sandbox.
+    # A run.cjs (a three.js entrant's, or --page's): Playwright and its browsers, read-only in the sandbox.
     env.update(HELIX_PLAYWRIGHT=str(playwright(helix)), PLAYWRIGHT_BROWSERS_PATH=str(PLAYWRIGHT_BROWSERS))
-    env.update(HAXELIB_PATH=str(helix / 'build/haxelib'), HXCPP_COMPILE_THREADS='4', SDL_AUDIO_DRIVER='dummy',
+    env.update(HAXELIB_PATH=str(haxelib or helix / 'build/haxelib'), HXCPP_COMPILE_THREADS='4', SDL_AUDIO_DRIVER='dummy',
                XDG_DATA_HOME=str(home / 'data'), XDG_CACHE_HOME=str(home / 'cache'))
     (home / 'data').mkdir(parents=True, exist_ok=True)
     # raylib C plays through miniaudio, which SDL's dummy driver doesn't reach: it finds no PulseAudio server, and ALSA's default is null.
@@ -165,13 +180,14 @@ def environment(entrant, helix, display):
         tools.symlink_to(Path(os.environ.get('XDG_CACHE_HOME', Path.home() / '.cache')) / 'helix/tools')
     return env
 
-def sandbox(entrant, helix, claude_json):
-    """bubblewrap's arguments for the entrant's sandbox; claude_json is ~/.claude.json open for reading, copied into its home."""
+def sandbox(entrant, helix, claude_json, haxelib=None):
+    """bubblewrap's arguments for the entrant's sandbox; claude_json is ~/.claude.json open for reading, copied into its home, and
+    haxelib a haxelib repository of its own (--haxelib), read-only with the libraries it names by dev path."""
     home = Path.home()
     args = ['bwrap', '--ro-bind', '/', '/', '--dev', '/dev', '--proc', '/proc', '--tmpfs', '/tmp', '--ro-bind', '/tmp/.X11-unix',
             '/tmp/.X11-unix', '--tmpfs', f'/run/user/{os.getuid()}', '--tmpfs', str(home)]
     for path in (home / '.local/bin', home / '.local/share/claude', home / 'toolchains', home / '.cache/helix/tools', PLAYWRIGHT_BROWSERS,
-                 playwright(helix).parent, helix):
+                 playwright(helix).parent, helix) + dev_paths(haxelib):
         if path.exists():
             args += ['--ro-bind', str(path), str(path)]
     for path in (home / '.claude', helix / 'build', entrant, entrant.parent / '.home' / entrant.name):
@@ -183,14 +199,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('entrant', type=Path)
     parser.add_argument('--helix', type=Path, required=True)
-    parser.add_argument('--engine', choices=('helix', 'c', 'three'), default='helix')
+    parser.add_argument('--engine', choices=('helix', 'c', 'hx', 'three'), default='helix')
+    parser.add_argument('--haxelib', type=Path)
     parser.add_argument('--model', default='sonnet')
     parser.add_argument('--hours', type=float, default=3)
     parser.add_argument('--trial', type=Path)
     parser.add_argument('--extras', action='store_true')
     parser.add_argument('--game', type=Path, default=HERE)
+    parser.add_argument('--page', action='store_true')
     parser.add_argument('--command')
     args = parser.parse_args()
+    if (args.engine == 'hx') != bool(args.haxelib):
+        sys.exit('run_entrant: --haxelib is for an hx entrant, and an hx entrant needs it')
+    haxelib = args.haxelib.resolve() if args.haxelib else None
     entrant = args.entrant.resolve()
     helix = args.helix.resolve()
     if not (helix / 'build/haxelib').is_dir():
@@ -205,15 +226,17 @@ def main():
             sys.exit('run_entrant: --extras is for a helix-raylib entrant')
         if not (args.game / 'spec.md').exists():
             sys.exit(f'run_entrant: {args.game} has no spec.md')
+        if args.page and (args.engine != 'helix' or args.trial):
+            sys.exit('run_entrant: --page is for a helix-raylib entrant of a game')
         make(entrant, args.engine, args.trial.resolve() if args.trial else None,
-             helix / 'engines/raylib/api' if args.extras else None, args.game.resolve())
+             helix / 'engines/raylib/api' if args.extras or args.page else None, args.game.resolve(), args.page)
     elif not args.command:
         sys.exit(f'run_entrant: {entrant} is there already; an entrant starts from a directory of its own')
 
     with private_display() as display:
-        env = environment(entrant, helix, display)
+        env = environment(entrant, helix, display, haxelib)
         with open(Path.home() / '.claude.json', 'rb') as claude_json:
-            wrap = sandbox(entrant, helix, claude_json)
+            wrap = sandbox(entrant, helix, claude_json, haxelib)
             fds = (claude_json.fileno(),)
             if args.command:
                 sys.exit(subprocess.run(wrap + ['bash', '-c', args.command], env=env, pass_fds=fds).returncode)

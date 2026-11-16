@@ -11,7 +11,7 @@ session, and it leans on what an engine is for (models, animation, attachments, 
 which would be the same on either side.
 
 The blind trials of helix-raylib ([../README.md](../README.md)) build the same game natively, from raylib's own headers: helix-raylib's
-brief and `build.hxml` are in `native/`, the C control's brief and `CMakeLists.txt` in `native-c/`, and `run_entrant.py` starts an entrant. The rest of this page is the jam's.
+brief and `build.hxml` are in `native/`, the C control's brief and `CMakeLists.txt` in `native-c/`, three.js's files in `three/`, and those of a helix-raylib entrant that builds and runs its program in a page as it works, building it natively at the end, in `page/`, and a raylib-hx entrant's (raylib in Haxe through a plain binding) in `native-hx/`. `run_entrant.py` starts an entrant. `grading.md` lists the spec's items a run is graded on, `take_screenshots.py` takes a native run's screenshots for it, and `review-brief.md` briefs the agent grading a run. The rest of this page is the jam's.
 
 ## Entrants
 
