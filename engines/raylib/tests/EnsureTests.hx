@@ -13,7 +13,8 @@ import helix.services.time.Time;
 
 /** Checks the Assets extra: files ensured together, their fetches all asked for before any is answered, whether by one
 	`EnsureAssetsAsync` or by `EnsureAssetAsync` calls in a row; the progress counted; a file that can't be ensured failing once while
-	the others stay ensured; a file already ensured answered after the call, not during it; `IsAssetEnsured`; an image ensured, loaded at once by `LoadImage`, `LoadTexture` and
+	the others stay ensured; a file already ensured answered after the call, not during it; `IsAssetEnsured`; a name read from the
+	host's root, `.` and `..` followed, and one climbing above it failing; an image ensured, loaded at once by `LoadImage`, `LoadTexture` and
 	`LoadImageRaw`, and one not ensured loaded during the call natively and failing in a page; a font ensured, opened, loaded by
 	`LoadFontEx` and `LoadFont` during the call, and closed as it's released; a compiled shader ensured (tests/shaders' glow, embedded
 	by the build), loaded at once by `LoadCompiledShader`, one not ensured loaded during the call natively and empty in a page, and a
@@ -73,6 +74,17 @@ class EnsureTests {
 		poll();
 		check(failures.length == 1 && !whole, 'failed once, not ensured: $failures');
 		check(IsAssetEnsured("a.txt") && !IsAssetEnsured("missing.txt"), "the other file still ensured");
+
+		// A name is read from the host's root, `.` and `..` followed, never above it.
+		check(IsAssetEnsured("/b.txt")
+			&& IsAssetEnsured("x/../b.txt")
+			&& IsAssetEnsured("/x/./y/../../c.txt")
+			&& IsAssetEnsured("//b.txt"),
+			"a leading /, . and .. followed to the same file");
+		var escapes:Array<String> = [];
+		EnsureAssetsAsync(["../b.txt", "/x/../../b.txt"], () -> throw "a name above the host was ensured", error -> escapes.push(error));
+		poll();
+		check(escapes.length == 1 && !IsAssetEnsured("../b.txt"), 'a name climbing above the host fails: $escapes');
 
 		// An image ensured is decoded to its pixels, and raylib's loads of it answer at once.
 		var graphics = new CountingGraphics();

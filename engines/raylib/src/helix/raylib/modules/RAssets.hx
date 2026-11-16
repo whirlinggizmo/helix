@@ -26,6 +26,9 @@ class RAssets {
 
 		A URL's files are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.
 
+		Every file is read from the host, as a web server reads one from its own root: a name starting with `/` from the host's root,
+		`.` and `..` followed, and nothing above the host. A name whose `..` climbs above it fails as a missing file does.
+
 		@param host  A URL (`https://...`, `http://...`), or a directory, relative to the program's directory when relative. */
 	static function SetAssetHost(host:String):Void {
 		Runtime.setAssetHost(host);

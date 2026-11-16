@@ -42,6 +42,8 @@ static function ReleaseAssets(fileNames:Array<String>):Void
   The host is the first given of: the option `asset_host` (`--asset_host=https://example.com/game/` on the command line, the environment variable HELIX_ASSET_HOST, `?asset_host=...` in a page's query), this call, the build's define (`-D helix-raylib-asset-host=...`), and the default: natively `../web` beside the program's directory, in a page the page's own.
 
   A URL's files are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.
+
+  Every file is read from the host, as a web server reads one from its own root: a name starting with `/` from the host's root, `.` and `..` followed, and nothing above the host. A name whose `..` climbs above it fails as a missing file does.
 - `GetAssetHost`: Returns the asset host in use: the option's, `SetAssetHost`'s, the build's define's, or the default.
   - returns: The host.
 - `EnsureAssetAsync`: Asynchronously ensures a file: makes it local, fetching it from the asset host and keeping it in the program's cache when it isn't there, and decodes it into memory by its kind, so raylib's load of it answers at once on every target. An image is decoded to its pixels, a sound file to its wave, a glTF, GLB or OBJ file to its model (its images decoded) and a glTF file's animations read, an .mtl file to its materials, a TrueType or OpenType font opened to be rasterized at any size, a BMFont read with its pages, a compiled shader (a .shader file, as `CompileShaderFile` writes it) read. Any other file is kept as its bytes.

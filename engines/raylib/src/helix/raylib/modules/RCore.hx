@@ -2520,17 +2520,29 @@ class RCore {
 	static var warnedMouseRefused = false;
 	static var warnedVibration = false;
 
-	// A file's name as the loads and saves read it: relative to the program's files, a leading `GetApplicationDirectory()` and "./"
-	// taken off.
+	// A file's name as the loads and saves read it: relative to the asset host's root, a leading `GetApplicationDirectory()` taken off,
+	// and `/`, `.` and `..` followed as a web server follows them. A name climbing above the root keeps a leading `..`, which every file
+	// system refuses (`FilePath`), so it fails as a missing file does.
 	static function normalize(path:String):String {
 		if (Runtime.system != null) {
 			var application = GetApplicationDirectory();
 			if (application != "./" && StringTools.startsWith(path, application))
 				path = path.substr(application.length);
 		}
-		while (StringTools.startsWith(path, "./"))
-			path = path.substr(2);
-		return path;
+		if (path.indexOf(".") < 0 && !StringTools.startsWith(path, "/") && path.indexOf("//") < 0)
+			return path;
+		var parts:Array<String> = [];
+		for (part in path.split("/")) {
+			if (part == "" || part == ".")
+				continue;
+			if (part != "..")
+				parts.push(part);
+			else if (parts.length > 0)
+				parts.pop();
+			else
+				return "../" + path;
+		}
+		return parts.join("/");
 	}
 
 	// Whether a key is held, as the keyboard has it: false for a key that isn't the platform's own number (a right-hand modifier).
