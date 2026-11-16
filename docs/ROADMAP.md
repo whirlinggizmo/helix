@@ -36,10 +36,22 @@ speed where docs/benchmarks.md records them.
   scene proves engine-neutral moves down into a library of its own once a second engine wants it, as `Images` did.
 - **helix-raylib (DECISIONS 16, 19, 20, 21, 38, 72):** raylib's API over the services, merged to `main`. Every raylib 5.5 function
   is in. A page waits where the program calls `EndDrawing`, `WaitTime`, the file calls and the clipboard's, as a native build does
-  (DECISIONS 72). What refuses to compile does so on purpose, naming itself: the asset loads and the screen reads, each naming its
-  `...Async` call, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's own names (the assets,
-  resources and objects below). The `...Async` calls no refusal names stay in `Raylib`, and may move to the extras. A `Future` of our
-  own over the callbacks, cross-target, may serve the managed layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
+  (DECISIONS 72). raylib's loads are synchronous: natively they read the file during the call, and in a page they read a file the
+  Assets extra ensured first (`EnsureAssetsAsync`), any other failing as a missing file does. Shaders are compiled as the program
+  builds (`CompileShaderFile`) and loaded with `LoadCompiledShader`. What refuses to compile does so on purpose, naming itself: the
+  screen reads, `LoadShader` from GLSL, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's
+  own names (the assets, resources and objects below). A `Future` of our own over the callbacks, cross-target, may serve the managed
+  layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
+- **Extras drafted and tried, to build:** the Lighting extra's shadows, emissive and alpha cutoff, shadowmaps for a program's own
+  shaders, and the Screen extra's fits (docs/trials/2026-11-15-lighting-shadows, -shadowmaps, -screen-fit), each record's findings
+  answered in the API before it is built. The Materials extra's draft is tried next, the same way.
+- **The services' `Screen` named `Window`,** as helix's own libraries use the accurate word; helix-raylib keeps raylib's.
+- **What an engine costs agents, against raylib C:** Wardens built from its spec costs $2.40 a run in C and $2.51 on helix-raylib
+  (docs/trials/2026-11-15-wardens-baseline). Each departure from raylib is measured against that, on helix-raylib alone: next the
+  `...Async` loads (a trial build refusing raylib's loads for them) and shaders compiled at build time (one allowing `LoadShader`
+  natively).
+  Lanternholm (docs/trials/templates/lanternholm), a second game, three.js's shape, is tried on helix-raylib with the extras, its
+  port run graded first.
 - **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/benchmarks.md) against three.js's
   InstancedMesh at 3.84, both one instanced draw, so what is left is JavaScript a sprite, about 23 ns against 19: the record's twelve
   writes (about 2.5 ms for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)
