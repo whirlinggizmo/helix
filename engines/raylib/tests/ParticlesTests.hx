@@ -543,6 +543,20 @@ class ParticlesTests {
 		function lightOn():Int
 			return frame.pass.draws[frame.pass.draws.length - 1].uniforms[at.blockSlot].getInt32(at.offset);
 		check(lightOn() == 0, "no light made, none on");
+		// With no light, the particle's color times the ambient, a dim grey by default; another ambient reaches the next draw.
+		var ambient = lit.shader.findUniform("ambient"),
+			ambientAt = lit.shader.findUniformPlace(ambient);
+		function drawnAmbient(component:Int):Float
+			return frame.pass.draws[frame.pass.draws.length - 1].uniforms[ambientAt.blockSlot].getFloat(ambientAt.offset + component * 4);
+		check(bits(cloud.ambient) == bits(new Color(26, 26, 26, 255)), "a dim grey ambient by default");
+		near(drawnAmbient(0), 26 / 255, "the ambient drawn", 1e-6);
+		cloud.ambient = new Color(255, 128, 0, 7);
+		DrawEmitter3D(cloud);
+		near(drawnAmbient(0), 1, "a new ambient drawn: red", 1e-6);
+		near(drawnAmbient(1), 128 / 255, "green", 1e-6);
+		near(drawnAmbient(2), 0, "blue", 1e-6);
+		near(drawnAmbient(3), 1, "its alpha ignored", 1e-6);
+		cloud.ambient = new Color(26, 26, 26, 255);
 		helix.raylib.Rlights.CreateLight(helix.raylib.Rlights.LIGHT_POINT, new Vector3(0, 1, 0), new Vector3(0, 0, 0), WHITE, null);
 		DrawEmitter3D(cloud);
 		check(lightOn() == 1, "a light made lights it");

@@ -125,6 +125,7 @@ var gravity:Vector3
 var spawnShape:EmitterShape3D
 var spawnHalfSize:Vector3
 var lit:Bool
+var ambient:Color
 ```
 
 - `position`: Gets or sets where the emitter is, in world units. `UpdateEmitter3D` gives birth along the way from where it was.
@@ -133,6 +134,7 @@ var lit:Bool
 - `spawnShape`: Gets or sets where around the position particles are born: `Point` by default.
 - `spawnHalfSize`: Gets or sets the half width, height and depth of a `Box` spawn shape, in world units: 0 by default.
 - `lit`: Gets or sets whether the scene's lights (the Lighting extra) light the particles, each by the lights at its place: false by default.
+- `ambient`: Gets or sets the light a lit particle gets from all around, added to the scene lights': a dim grey by default. Its alpha is ignored. Ignored unless `lit`.
 
 ## EmitterShape2D
 

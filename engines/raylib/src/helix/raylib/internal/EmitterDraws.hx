@@ -32,6 +32,8 @@ class EmitterDraws {
 	static var unlitLayout:Array<VertexBuffer>;
 	static var litLayout:Array<VertexBuffer>;
 	static var programsGraphics:Null<helix.platform.IGraphics>;
+	// The lit program's ambient, which each lit draw writes from its emitter's.
+	static var litAmbient:Null<ShaderUniform>;
 
 	static final NAMES = [
 		"particleRight",
@@ -79,6 +81,7 @@ class EmitterDraws {
 				if (shadowed != null)
 					lit.values.writeInt(shadowed, 1);
 				ShadowSlots.bind(lit, 0);
+				litAmbient = lit.shader.findUniform("ambient");
 			}
 			p = lit;
 			fields = litFields;
@@ -101,8 +104,13 @@ class EmitterDraws {
 		var records = p.shader.findSampler("particleRecords");
 		if (records != null)
 			bound[records.slot] = e.records;
-		if (e.lit && Frame.lighting != null)
-			light(e, p);
+		if (e.lit) {
+			var c = e.ambient;
+			if (litAmbient != null)
+				p.values.writeVector(litAmbient, c.r / 255, c.g / 255, c.b / 255, 1);
+			if (Frame.lighting != null)
+				light(e, p);
+		}
 		var mode = frame.blendMode;
 		if (e.blendMode != mode)
 			@:privateAccess helix.raylib.modules.RCore.BeginBlendMode(e.blendMode);

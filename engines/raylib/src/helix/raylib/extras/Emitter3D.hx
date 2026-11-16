@@ -25,6 +25,10 @@ class Emitter3D extends Emitter {
 		default. */
 	public var lit:Bool = false;
 
+	/** Gets or sets the light a lit particle gets from all around, added to the scene lights': a dim grey by default. Its alpha is
+		ignored. Ignored unless `lit`. */
+	public var ambient:Color = new Color(26, 26, 26, 255);
+
 	// The particles' records on the GPU (helix.raylib.internal.EmitterDraws): a data texture of four texels a particle, the bytes it is
 	// written from, the instances' numbers (a static buffer of 0 to capacity - 1, one float each), the draw's buffers, the graphics they
 	// were made on, and the clock their birth times count from.

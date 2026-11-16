@@ -1068,7 +1068,8 @@ Why things are the way they are, numbered, in order.
     `helix.math.Trig` and their random numbers from the emitter's `helix.math.Random`, started from its `seed` at its first birth after
     a load or a clear, so a seed gives the same particles on every target. `lit` lights a 3D emitter's particles by the scene's lights at
     each particle's place, through `Frame.lighting`, which only `CreateLight` sets, so the Lighting extra stays out of a program that makes
-    no light.
+    no light. A lit emitter's `ambient`, a dim grey by default, is added to the lights' sum, as no shader of the program's sets an
+    ambient for the particles: without it, a lit cloud away from every light drew black.
 
     Why: the Lanternholm port wrote its own particles (billboards moved on the CPU, about 200 lines), as a three.js program writes them
     too; raylib has none. Its API was agreed with the user as doc comments first (AGENTS.md: the spec is the authority).
