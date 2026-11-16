@@ -5,7 +5,9 @@
      Python, cli.cjs's args in Node; a tool that doesn't is never run here, as it would do its work with --help ignored;
   2. answers --help with a usage line, exiting 0, within SECONDS;
   3. refuses an option no tool takes, exiting non-zero;
-  4. is named in CONTRIBUTING.md's table of tools, and the table names no tool that isn't there.
+  4. is named in CONTRIBUTING.md's table of tools, and the table names no tool that isn't there;
+  5. is named verb_noun with a verb of VERBS (CONTRIBUTING.md, "Tools are named for what they are"), unless the table calls it a module
+     or it is the front door (helix.py).
 
 The tools run in parallel, from the checkout. Run by helix.py test. Exits 1, listing each problem. Standard library only."""
 import re
@@ -20,6 +22,8 @@ import cli  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 SECONDS = 60
 NOT_AN_OPTION = '--not-an-option-of-any-tool'
+# The verbs a runnable tool's name starts with: check reads and reports, test builds, runs and judges, gen makes committed files.
+VERBS = ('check', 'test', 'gen', 'build', 'format', 'capture', 'watch', 'run')
 PARSES = {'.py': re.compile(r'\bcli\.(parser|module)\(|argparse\.ArgumentParser\('), '.cjs': re.compile(r"cli\.cjs'\)\.args\(|require\.main === module")}
 
 
@@ -52,9 +56,19 @@ def check(tool):
 
 
 def listed():
-    """The tools CONTRIBUTING.md's table names."""
+    """The tools CONTRIBUTING.md's table names, each with what the table says of it."""
     text = (ROOT / 'CONTRIBUTING.md').read_text(encoding='utf-8')
-    return set(re.findall(r'^\| `([\w./]+\.(?:py|cjs))` \|', text, re.M))
+    return dict(re.findall(r'^\| `([\w./]+\.(?:py|cjs))` \| (.*)$', text, re.M))
+
+
+def misnamed(tool, said):
+    """Why tool's name isn't verb_noun with a verb of VERBS, or None; a module (the table says so) and the front door keep a noun."""
+    if tool == 'helix.py' or '(a module' in said:
+        return None
+    words = Path(tool).stem.split('_')
+    if len(words) < 2 or words[0] not in VERBS:
+        return f'{tool}: a runnable tool is named verb_noun, its verb one of {", ".join(VERBS)} (CONTRIBUTING.md)'
+    return None
 
 
 def problems():
@@ -63,7 +77,8 @@ def problems():
         found = [p for ps in pool.map(check, every) for p in ps]
     named = listed()
     found += [f'{tool}: not named in CONTRIBUTING.md\'s table of tools' for tool in every if tool not in named]
-    found += [f'{tool}: named in CONTRIBUTING.md\'s table of tools, but there is no such tool' for tool in sorted(named - set(every))]
+    found += [f'{tool}: named in CONTRIBUTING.md\'s table of tools, but there is no such tool' for tool in sorted(set(named) - set(every))]
+    found += [why for why in (misnamed(tool, named[tool]) for tool in every if tool in named) if why]
     return found
 
 

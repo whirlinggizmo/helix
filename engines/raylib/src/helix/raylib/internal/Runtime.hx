@@ -176,7 +176,7 @@ class Runtime {
 			statsFrom = Std.parseInt(at[0]);
 			statsTo = Std.parseInt(at[1]);
 			#if js
-			// tools/page_check.cjs waits on a null result until it holds one.
+			// tools/capture_page.cjs waits on a null result until it holds one.
 			js.Syntax.code("window.helixResult = null");
 			#end
 		}

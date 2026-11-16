@@ -1,5 +1,5 @@
 // The C side of a value suite (engines/raylib/parity/README.md): what raylib's own C gives, printed a line at a time, each line led by its case's
-// name, as Parity.hx prints helix-raylib's. tools/raylib_parity.py compares the two.
+// name, as Parity.hx prints helix-raylib's. tools/test_raylib_parity.py compares the two.
 #ifndef PARITY_H
 #define PARITY_H
 #include "raylib.h"

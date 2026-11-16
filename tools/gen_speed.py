@@ -150,9 +150,9 @@ def legacy_checkout():
 
 
 def raylib_source():
-    """raylib's source for its pinned release, built, from tools/raylib_parity.py."""
-    import raylib_parity
-    return raylib_parity.raylib(RAYLIB)
+    """raylib's source for its pinned release, built, from tools/test_raylib_parity.py."""
+    import test_raylib_parity
+    return test_raylib_parity.raylib(RAYLIB)
 
 
 # ---- Building ----
@@ -209,7 +209,7 @@ def build_helix_raylib(programs, page, native):
 def build_raylib_c(programs, page, native):
     """raylib's own C programs: natively against the release's libraylib.a (its default -O1, the program -O2), and with Emscripten -O3 as
     raylib's web build is (WebGL1). Skipped for the page without Emscripten."""
-    import raylib_parity
+    import test_raylib_parity
     source = raylib_source()
     here = CONTENDERS_DIR / 'raylib-c'
     emsdk = emsdk_env() if page else None
@@ -243,7 +243,7 @@ def build_raylib_c(programs, page, native):
                 shutil.copy(asset, directory / asset_dir / asset_name)
                 say(f'building raylib-c {program} {variant} natively')
                 run(['cc', '-O2', '-std=c99', '-D_GNU_SOURCE', '-DPLATFORM_DESKTOP', *defines, '-I', source / 'src', here / file,
-                     source / 'src/libraylib.a', *raylib_parity.LINK, '-lm', '-o', directory / 'program'])
+                     source / 'src/libraylib.a', *test_raylib_parity.LINK, '-lm', '-o', directory / 'program'])
             if page and emsdk is not None:
                 directory = home / ('web-' + variant if variant else 'web')
                 work = directory / 'preload'

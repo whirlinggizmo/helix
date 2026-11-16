@@ -16,7 +16,7 @@ Each contender's are in `contenders/<name>/`.
   where w is the columns times 4, each robot posed at frame (frame + 1 + i * 5) % frameCount of the first animation, drawn unlit.
   Option: `count=N`.
 
-Both assets come from raylib's own release, which `tools/raylib_parity.py` fetches and pins, so no binary lives here.
+Both assets come from raylib's own release, which `tools/test_raylib_parity.py` fetches and pins, so no binary lives here.
 
 ## The measure
 

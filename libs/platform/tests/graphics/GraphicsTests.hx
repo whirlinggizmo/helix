@@ -53,7 +53,7 @@ typedef Case = {
 
 	Built from the hxml files beside it: in a page it runs on WebGL2, natively on GL, or SDL_GPU with `-D sdl_gpu`. It ends with
 	`{passed, checks, failures}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null until then.
-	Run by `tools/platform_checks.py`. */
+	Run by `tools/test_platform.py`. */
 class GraphicsTests {
 	// The render targets' size, in texels.
 	static inline final SIZE = 16;

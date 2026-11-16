@@ -166,7 +166,7 @@ def reaches():
         return violations
     named = re.compile(r'\bengines/|(?<![\w-])(?:' + '|'.join(map(re.escape, engines)) + r')(?![\w-])')
     # The files under libs/ a build could read: tracked, or new and not ignored (build output is ignored). A copy that isn't a checkout
-    # (remote_windows' holds just those files) is read whole.
+    # (test_windows' holds just those files) is read whole.
     if (ROOT / '.git').exists():
         listed = subprocess.run(['git', 'ls-files', '-co', '--exclude-standard', '-z', 'libs'], cwd=ROOT, capture_output=True, check=True)
         relatives = [n for n in listed.stdout.decode().split('\0') if n]

@@ -74,7 +74,7 @@
   },
   "speed": {
     "purpose": "tools/gen_speed.py, which measures helix-raylib against the others (docs/benchmarks.md); the toolchains are found, never fetched: Emscripten at EMSDK or HELIX_EMSDK or ~/toolchains/emsdk, Godot at HELIX_GODOT or on PATH or ~/toolchains/godot, helix-legacy at HELIX_LEGACY or ../helix-legacy, three.js, esbuild and Electron installed with npm into build/speed/three/npm",
-    "raylib": "5.5 (tools/raylib_parity.py's pinned release: its C programs, its web library, and the assets, wabbit_alpha.png and robot.glb)",
+    "raylib": "5.5 (tools/test_raylib_parity.py's pinned release: its C programs, its web library, and the assets, wabbit_alpha.png and robot.glb)",
     "godot": "4.7.2",
     "three": "0.187.0",
     "esbuild": "0.25.0",

@@ -3,7 +3,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 
-// helix-raylib's GIF images, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py. Where raylib gives an image of no frames or
+// helix-raylib's GIF images, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py. Where raylib gives an image of no frames or
 // no data, or a texture of id 0 (a file it can't read), helix-raylib's load fails: its failure is printed as 0 frames, or none.
 @:access(helix.raylib.internal.Runtime)
 class ImageBits {

@@ -3,7 +3,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 
-// helix-raylib's skeletal animation on Quaternius' Ultimate Modular Women, printed as ref.c prints raylib 6.2's, for tools/raylib_parity.py.
+// helix-raylib's skeletal animation on Quaternius' Ultimate Modular Women, printed as ref.c prints raylib 6.2's, for tools/test_raylib_parity.py.
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.Model)
 class ModularBits {

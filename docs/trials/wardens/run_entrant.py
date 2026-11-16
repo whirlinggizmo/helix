@@ -15,7 +15,7 @@ The entrant directory is made, and must not be there yet unless --command is giv
   bundles the game with esbuild and runs it in headless Chromium, Playwright's own, on SwiftShader), an empty src/, and three/package.json
   and package-lock.json, three.js and esbuild installed from them (npm ci) into the entrant's own node_modules, to which it may add from
   npm. No raylib files.
-raylib's files are copied from the release tools/raylib_parity.py fetches and builds. A directory inside a git repository is refused,
+raylib's files are copied from the release tools/test_raylib_parity.py fetches and builds. A directory inside a git repository is refused,
 as the entrant would see its commit messages.
 
 --helix names the checkout of helix the tools come from and, for helix-raylib, the entrant builds against: a worktree at the commit
@@ -86,8 +86,8 @@ def make(entrant, engine, trial=None, extras=None, game=HERE):
         subprocess.run(['npm', 'ci', '--no-audit', '--no-fund'], cwd=entrant, check=True)
         game_files(entrant, game)
         return
-    import raylib_parity
-    raylib = raylib_parity.raylib('5.5')
+    import test_raylib_parity
+    raylib = test_raylib_parity.raylib('5.5')
     if trial:
         shutil.copytree(trial, entrant)
         for path in trial.parent.iterdir():

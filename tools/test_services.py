@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Checks helix-services (or, with --library raylib, helix-raylib) on the platform's real adapters: its examples (libs/services/examples/<name>, or
 engines/raylib/examples/<name>), each built from its own hxml files, run
-natively on a private display (Linux, SDL3's dummy audio driver) and in headless Chromium by default, as tools/platform_checks.py runs the
+natively on a private display (Linux, SDL3's dummy audio driver) and in headless Chromium by default, as tools/test_platform.py runs the
 platform's. Each says in its check.json what its native run prints and what its page shows (points and the colors expected there, each
 within a tolerance per channel), and, where it waits on time, how many frames a native run lasts (nativeFrames, 60 by default), as the
 private display doesn't pace them: a frame there takes about a quarter of a millisecond. A native run's data and cache directories are
 under build/results/<library>/<name>/, never the user's own (XDG_DATA_HOME and XDG_CACHE_HOME; APPDATA and LOCALAPPDATA on Windows).
 Exits 1 on any failure.
 
-    python3 tools/services_checks.py --browser BROWSER [--native | --page] [--headless | --headed] [--library services|raylib] [NAME ...]
+    python3 tools/test_services.py --browser BROWSER [--native | --page] [--headless | --headed] [--library services|raylib] [NAME ...]
 
 BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples'; they default to all of them.
---native, --page, --headless and --headed are platform_checks': the kinds run, and the display they run on."""
+--native, --page, --headless and --headed are test_platform': the kinds run, and the display they run on."""
 import json
 import sys
 from pathlib import Path
@@ -19,8 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 import pins
-import platform_checks
-from platform_checks import FRAMES, check_pixels, run
+import test_platform
+from test_platform import FRAMES, check_pixels, run
 
 LIBRARY = 'services'
 EXAMPLES = ROOT / 'libs/services/examples'
@@ -38,7 +38,7 @@ def example(name, browser):
         missing = [line for line in expected.get('printed', []) if line not in ran.stdout]
         if missing:
             return [f'never printed {missing}\n{ran.stdout}{ran.stderr}']
-        ran_frames = min(frames, platform_checks.PACED_FRAMES) if platform_checks.HEADED else frames
+        ran_frames = min(frames, test_platform.PACED_FRAMES) if test_platform.HEADED else frames
         print(f'{name}: native {label} ran {ran_frames} frames and printed what it should', flush=True)
         return []
 
@@ -68,8 +68,8 @@ def main():
     global LIBRARY, EXAMPLES
     LIBRARY = a.library
     EXAMPLES = pins.LIBRARIES['helix-' + a.library] / 'examples'
-    platform_checks.HEADED = a.headed
-    platform_checks.NATIVE, platform_checks.PAGE = cli.targets(a)
+    test_platform.HEADED = a.headed
+    test_platform.NATIVE, test_platform.PAGE = cli.targets(a)
     names = a.names or sorted(p.parent.relative_to(EXAMPLES).as_posix() for p in EXAMPLES.glob('**/Main.hx') if 'native' not in p.parts)
     failed = False
     import screen_power

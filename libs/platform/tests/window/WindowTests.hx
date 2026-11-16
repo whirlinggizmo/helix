@@ -31,7 +31,7 @@ typedef Request = {
 
 	Built from the hxml files beside it: in a page, and natively over SDL3 on the display it is given (a private one in the checks). It
 	ends with `{passed, checks, failures, answers}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null
-	until then. Run by `tools/platform_checks.py`. */
+	until then. Run by `tools/test_platform.py`. */
 #if cpp
 @:cppFileCode("#include <SDL3/SDL.h>")
 // SDL's headers in this class's own .cpp alone (it pushes SDL's drop events), from the platform's vendored copy, as the adapters take
@@ -154,7 +154,7 @@ class WindowTests {
 	}
 
 	/** Checks the safe area: natively on a private display, the whole window; in a page, the viewport less the insets the page's query
-		names (`safeArea=top,right,bottom,left`, CSS pixels, which `tools/page_check.cjs` has Chromium emulate), or the whole viewport. */
+		names (`safeArea=top,right,bottom,left`, CSS pixels, which `tools/capture_page.cjs` has Chromium emulate), or the whole viewport. */
 	static function checkSafeArea():Void {
 		var top = 0, right = 0, bottom = 0, left = 0;
 		#if js

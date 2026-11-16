@@ -3,7 +3,7 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 
 /** The Haxe side of a value suite (engines/raylib/parity/README.md): what helix-raylib gives, a line at a time, each led by its case's name, as
-	shared/parity.h prints raylib's; `save` writes them to the file the command line names. tools/raylib_parity.py compares the two. */
+	shared/parity.h prints raylib's; `save` writes them to the file the command line names. tools/test_raylib_parity.py compares the two. */
 @:access(helix.raylib.internal.Frame)
 class Parity {
 	static final out = new StringBuf();

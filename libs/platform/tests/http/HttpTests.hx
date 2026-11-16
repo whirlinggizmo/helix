@@ -20,7 +20,7 @@ import helix.platform.IHttp;
 
 	Built from the hxml files beside it: in a page, over `fetch`, and natively over `sys.Http`. The server's URL is its `server` option
 	(`?server=` in a page, `HELIX_SERVER` natively), the other origin's `?other=`, a connection never taken `?unaccepted=` and
-	`HELIX_UNACCEPTED`; `tools/platform_checks.py` gives them from a server it starts, and serves the page from it. It ends with
+	`HELIX_UNACCEPTED`; `tools/test_platform.py` gives them from a server it starts, and serves the page from it. It ends with
 	`{passed, checks, failures, answers}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null
 	until then. */
 class HttpTests {

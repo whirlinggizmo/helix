@@ -1,4 +1,4 @@
-# The repository's site, deployed to GitHub Pages: the API reference from the doc comments (tools/pages.py, through tools/gen_apidoc.py's
+# The repository's site, deployed to GitHub Pages: the API reference from the doc comments (tools/build_pages.py, through tools/gen_apidoc.py's
 # dox). Daily and on demand (gh workflow run pages, or the Actions tab), not on every push.
 name: pages
 
@@ -44,7 +44,7 @@ jobs:
           path: ~/.cache/helix/tools
           key: helix-tools-${{ runner.os }}-${{ hashFiles('libs/platform/src/helix/platform/tools/ShaderTools.hx') }}
       - name: The site
-        run: python tools/pages.py
+        run: python tools/build_pages.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/site

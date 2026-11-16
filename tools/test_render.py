@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """Checks helix-render on the platform's real adapters: its examples (libs/render/examples/<name>) and its pixel tests (libs/render/tests/pixels),
 each built from its own hxml files, run natively on a private display (Linux) on each native build it has (GL, and SDL_GPU from
-build-native-gpu.hxml) and in Chromium (WebGL2), headless by default, as tools/platform_checks.py runs the platform's. An example's page is checked
+build-native-gpu.hxml) and in Chromium (WebGL2), headless by default, as tools/test_platform.py runs the platform's. An example's page is checked
 against its check.json (points and the colors expected there, each within a tolerance per channel), and so is each native run's last
 frame, which the example saves (`--screenshot`, libs/render/examples/Screenshot.hx);
 the pixel tests draw each stage-1 area through the renderer, read their pixels back and check them themselves, on each backend. Exits 1
 on any failure.
 
-    python3 tools/render_checks.py --browser BROWSER [--native | --page] [--headless | --headed] [NAME ...]
+    python3 tools/test_render.py --browser BROWSER [--native | --page] [--headless | --headed] [NAME ...]
 
 BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples' and "pixels"; they default to all of
-them. --native, --page, --headless and --headed are platform_checks': the kinds run, and the display they run on."""
+them. --native, --page, --headless and --headed are test_platform': the kinds run, and the display they run on."""
 import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
-import platform_checks
-from platform_checks import FRAMES, check_pixels, run, tests
+import test_platform
+from test_platform import FRAMES, check_pixels, run, tests
 
 EXAMPLES = ROOT / 'libs/render/examples'
 PIXELS = ROOT / 'libs/render/tests/pixels'
@@ -65,8 +65,8 @@ def main():
     cli.runs(parser)
     parser.add_argument('names', nargs='*')
     a = parser.parse_args()
-    platform_checks.HEADED = a.headed
-    platform_checks.NATIVE, platform_checks.PAGE = cli.targets(a)
+    test_platform.HEADED = a.headed
+    test_platform.NATIVE, test_platform.PAGE = cli.targets(a)
     names = a.names or sorted(p.parent.name for p in EXAMPLES.glob('*/Main.hx')) + ['pixels']
     failed = False
     import screen_power

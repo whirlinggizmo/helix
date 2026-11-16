@@ -1,7 +1,7 @@
 import helix.raylib.Raylib.*;
 import js.Browser;
 
-/** Checks `CloseWindow` in a page (tools/raylib_page_checks.py): with the keyboard, mouse, touch and gamepads read, a key, a wheel turn and
+/** Checks `CloseWindow` in a page (tools/test_raylib_pages.py): with the keyboard, mouse, touch and gamepads read, a key, a wheel turn and
 	a right click on the canvas are cancelled and the canvas takes no touch gestures; after it, each reaches a listener of the page's own
 	uncancelled, the canvas's style is the page's, `IsWindowReady` is false, and the code after the call runs. The canvas drawn red is
 	cleared after it, which the tool checks on the page's screenshot (CloseWindowPage.check.json). Leaves {passed, checks, failures} in `window.helixResult`. */

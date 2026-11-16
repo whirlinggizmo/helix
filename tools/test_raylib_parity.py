@@ -3,7 +3,7 @@
 raylib release its manifest names, its oracle (docs/DECISIONS.md 24: 6.2 where helix-raylib took a 6.2 fix, 5.5 elsewhere), and helix-raylib
 doing the same.
 
-    python3 tools/raylib_parity.py [--list] [SUITE ...]
+    python3 tools/test_raylib_parity.py [--list] [SUITE ...]
 
 For each suite (all by default, or the names given): raylib's release tarball for its oracle is fetched from GitHub, checked against its
 sha256 here (RELEASES), and built once (make PLATFORM=PLATFORM_DESKTOP) into build/raylib/<version>/. The suite's sources are written
@@ -11,7 +11,7 @@ into build/raylib-parity/<suite>/ (a generated suite's two sides from its one li
 and its C reference is built and run on a private display (tools/private_display.py), with SDL's dummy audio and no session bus.
 
 A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp), or the ones its manifest's targets name (page: the harness
-in a headless Chromium, Playwright's own, muted, through tools/page_check.cjs, for what only a browser has), and run, each
+in a headless Chromium, Playwright's own, muted, through tools/capture_page.cjs, for what only a browser has), and run, each
 printing what the reference prints, a line at a time. Each section's lines (by their first word, or as the manifest's sections say) are compared word by word: words and integers
 exactly, other numbers relative to max(1, |either|, the line's scale), within the section's bar (the manifest's bars, a target's own where it names one, else its
 tolerance). A pixel suite's helix-raylib program is built natively for each backend it names (gl, sdl_gpu), its shaders (the manifest's
@@ -72,7 +72,7 @@ def suites():
 def raylib(version):
     """raylib's source for a release, its libraylib.a built: fetched, checked and built the first time."""
     if version not in RELEASES:
-        raise SystemExit(f'raylib_parity: raylib {version} has no pinned tarball (RELEASES)')
+        raise SystemExit(f'test_raylib_parity: raylib {version} has no pinned tarball (RELEASES)')
     home = RAYLIB / version
     source = home / f'raylib-{version}'
     library = source / 'src/libraylib.a'
@@ -86,7 +86,7 @@ def raylib(version):
             data = response.read()
         found = hashlib.sha256(data).hexdigest()
         if found != RELEASES[version]:
-            raise SystemExit(f'raylib_parity: raylib {version}\'s tarball has sha256 {found}, not the pinned {RELEASES[version]}')
+            raise SystemExit(f'test_raylib_parity: raylib {version}\'s tarball has sha256 {found}, not the pinned {RELEASES[version]}')
         tarball.write_bytes(data)
     if source.exists():
         shutil.rmtree(source)
@@ -96,7 +96,7 @@ def raylib(version):
     made = subprocess.run(['make', '-C', str(source / 'src'), 'PLATFORM=PLATFORM_DESKTOP', f'-j{os.cpu_count() or 4}'], capture_output=True,
                           text=True)
     if made.returncode or not library.is_file():
-        raise SystemExit(f'raylib_parity: raylib {version}\'s build failed\n{made.stdout[-3000:]}{made.stderr[-3000:]}')
+        raise SystemExit(f'test_raylib_parity: raylib {version}\'s build failed\n{made.stdout[-3000:]}{made.stderr[-3000:]}')
     return source
 
 
@@ -287,7 +287,7 @@ def check_values(name, manifest, main, out, display, env):
         page = out / 'page'
         haxe(base + ['-js', str(page / 'harness.js'), '-D', 'js-es=6'], env)
         (page / 'index.html').write_text('<!doctype html><meta charset="utf-8"><script src="harness.js"></script>\n', encoding='utf-8')
-        ran = run(['node', str(ROOT / 'tools/page_check.cjs'), '', str(page), '', str(page / 'page.png')], {**os.environ, **display}, ROOT,
+        ran = run(['node', str(ROOT / 'tools/capture_page.cjs'), '', str(page), '', str(page / 'page.png')], {**os.environ, **display}, ROOT,
                   what='the page harness')
         printed = json.loads(ran.stdout)
         if printed['errors'] or not isinstance(printed['result'], str):
@@ -328,7 +328,7 @@ def check_values(name, manifest, main, out, display, env):
     return problems
 
 def png_pixels(path):
-    from platform_checks import png_pixels as read
+    from test_platform import png_pixels as read
     return read(path)
 
 
@@ -399,7 +399,7 @@ def main():
             print(f'{name} (raylib {m["oracle"]}, {m["kind"]}): {m["covers"]}')
         return 0
     if not sys.platform.startswith('linux'):
-        print('raylib_parity: Linux only (a private display runs the C references and native programs)')
+        print('test_raylib_parity: Linux only (a private display runs the C references and native programs)')
         return 1
     import pins
     import native_build

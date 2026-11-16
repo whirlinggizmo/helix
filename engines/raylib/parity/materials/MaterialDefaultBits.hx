@@ -4,7 +4,7 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 import helix.raylib.internal.Textures;
 
-// helix-raylib's materials, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py. Where ref.c sees a texture freed or kept by
+// helix-raylib's materials, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py. Where ref.c sees a texture freed or kept by
 // whether GL takes its name again, this sees its pixels gone or there (Textures.imageOf).
 @:access(helix.raylib.internal.Runtime)
 class MaterialDefaultBits {

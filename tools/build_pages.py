@@ -1,7 +1,7 @@
 """Build the repository's GitHub Pages site into build/site: the API reference from the doc comments (tools/gen_apidoc.py's HTML) at
 api/, its tree and first page grouped into libraries and engines, with tools/site/explorer.js opening it to the page shown, and an index at the root that opens it. The pages workflow (.github/workflows/pages.yml) deploys build/site.
 
-    python3 tools/pages.py
+    python3 tools/build_pages.py
 
 Open build/site/index.html to see the site as it's served. Standard library only, beside gen_apidoc's dox."""
 from pathlib import Path

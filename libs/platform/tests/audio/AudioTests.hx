@@ -32,7 +32,7 @@ typedef Step = {
 
 	Built from the hxml files beside it: in a page over Web Audio, natively over SDL3_mixer (with `SDL_AUDIO_DRIVER=dummy`, which still
 	mixes in time). It ends with `{passed, checks, failures}` as JSON: printed natively, exiting 1 on a failure, and in a page in
-	`window.helixResult`, null until then. Run by `tools/platform_checks.py`. */
+	`window.helixResult`, null until then. Run by `tools/test_platform.py`. */
 class AudioTests {
 	static inline final RATE = 44100;
 	// How long a step may wait for what it waits on, in seconds.

@@ -3,7 +3,7 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.internal.Runtime;
 
-// helix-raylib's waves, printed as ref.c prints raylib 5.5's, for tools/raylib_parity.py: each file read through LoadWaveFromMemoryAsync
+// helix-raylib's waves, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py: each file read through LoadWaveFromMemoryAsync
 // with its type a constant (its reader chosen as the program builds), the last through a type known only as it runs. The files are
 // compiled in (the manifest's resources), so the page needs no server. Natively the platform's decoder answers on its worker, in a
 // page through the browser's promises, so each wave is waited for across turns of the event loop.
@@ -105,7 +105,7 @@ class WaveBits {
 		out.add('music_flac_memory valid ${IsMusicValid(LoadMusicStreamFromMemory(".flac", file("tone48.flac"), file("tone48.flac").length)) ? 1 : 0}\n');
 	}
 
-	// The lines: in a page, left for tools/page_check.cjs as the page's result; natively, written to the file the command line names.
+	// The lines: in a page, left for tools/capture_page.cjs as the page's result; natively, written to the file the command line names.
 	static function save():Void {
 		#if js
 		js.Syntax.code("window.helixResult = {0}", out.toString());

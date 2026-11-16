@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build and check this checkout on a Windows machine over ssh, as it is, committed or not, and leave nothing behind there.
 
-    python3 tools/remote_windows.py HOST [--then "TOOL ARGS"]... [--env NAME=VALUE]... [--headed] [--keep]
+    python3 tools/test_windows.py HOST [--then "TOOL ARGS"]... [--env NAME=VALUE]... [--headed] [--keep]
 
 Packs the working tree (tracked files and new ones git doesn't ignore) with the node tools (build/tools/node_modules, plain JavaScript).
 It copies the archive with scp into a scratch directory in the remote user's profile and runs each --then there as `python TOOL ARGS` in
@@ -38,7 +38,7 @@ def working_tree():
     for generated in GENERATED:
         path = ROOT / generated
         if not path.exists():
-            raise SystemExit(f'remote_windows: {generated} is missing; make it here first')
+            raise SystemExit(f'test_windows: {generated} is missing; make it here first')
         names += [p.relative_to(ROOT).as_posix() for p in ([path] if path.is_file() else path.rglob('*')) if p.is_file()]
     for pattern in OPTIONAL:
         for directory in ROOT.glob(pattern):
@@ -51,7 +51,7 @@ def desktop(steps, env):
     """The .bat the desktop's scheduled task runs: env set, each step, its output in log.txt, and a done.txt saying whether all passed."""
     lines = ['@echo off', 'cd /d "%~dp0"', 'set FAILED=0'] + [f'set "{pair}"' for pair in env]
     for step in steps:
-        lines += [f'echo remote_windows: python {step} >> log.txt', f'python {step} >> log.txt 2>&1', 'if errorlevel 1 set FAILED=1']
+        lines += [f'echo test_windows: python {step} >> log.txt', f'python {step} >> log.txt 2>&1', 'if errorlevel 1 set FAILED=1']
     # Redirection first: "echo 0> f" would redirect stream 0. Renamed once written, so done.txt is never seen empty.
     lines += ['>status.txt echo %FAILED%', 'ren status.txt done.txt']
     return '\r\n'.join(lines) + '\r\n'
@@ -60,20 +60,20 @@ def desktop(steps, env):
 def script(directory, archive, steps, env, keep, on_desktop):
     """The .bat run there: unpack, each step (in the desktop session with on_desktop), clean up, and exit with whether every step passed."""
     lines = ['@echo off',
-             'rem written by helix tools/remote_windows.py; it deletes itself',
+             'rem written by helix tools/test_windows.py; it deletes itself',
              f'set ROOT=%USERPROFILE%\\{directory}',
              'set FAILED=0',
              'if exist "%ROOT%" rmdir /s /q "%ROOT%"',
              'mkdir "%ROOT%"',
              'cd /d "%ROOT%"',
              f'tar -xzf "%USERPROFILE%\\{archive}"',
-             'if errorlevel 1 (echo remote_windows: unpacking failed & set FAILED=1 & goto done)']
+             'if errorlevel 1 (echo test_windows: unpacking failed & set FAILED=1 & goto done)']
     if on_desktop:
         # schtasks /it: only when the user is logged on, in their session. The start time is required and unused; /run starts it now.
         task = directory
         lines += [f'schtasks /create /tn {task} /tr "%ROOT%\\desktop.bat" /sc once /st 00:00 /it /f /ru %USERNAME% >nul 2>&1',
                   f'schtasks /run /tn {task} >nul',
-                  'if errorlevel 1 (echo remote_windows: the desktop task did not start & set FAILED=1 & goto removetask)',
+                  'if errorlevel 1 (echo test_windows: the desktop task did not start & set FAILED=1 & goto removetask)',
                   ':wait',
                   'if not exist done.txt (python -c "import time;time.sleep(2)" & goto wait)',
                   'type log.txt',
@@ -84,7 +84,7 @@ def script(directory, archive, steps, env, keep, on_desktop):
     else:
         lines += [f'set "{pair}"' for pair in env]
         for step in steps:
-            lines += [f'echo remote_windows: python {step}', f'python {step}', 'if errorlevel 1 set FAILED=1']
+            lines += [f'echo test_windows: python {step}', f'python {step}', 'if errorlevel 1 set FAILED=1']
     lines += [':done', 'cd /d "%USERPROFILE%"']
     if not keep:
         lines += ['rmdir /s /q "%ROOT%"', f'del "%USERPROFILE%\\{archive}"']
@@ -114,14 +114,14 @@ def main():
                 inner.write_bytes(desktop(steps, args.env).encode())
                 tar.add(inner, arcname='desktop.bat')
         local_bat.write_bytes(script(tag, archive, steps, args.env, args.keep, args.headed).encode())
-        print(f'remote_windows: {len(steps)} step(s) on {args.host}', flush=True)
+        print(f'test_windows: {len(steps)} step(s) on {args.host}', flush=True)
         if subprocess.run(['scp', '-q', str(local_archive), str(local_bat), f'{args.host}:']).returncode != 0:
-            print('remote_windows: copying to the host failed')
+            print('test_windows: copying to the host failed')
             return 1
     ran = subprocess.run(['ssh', args.host, bat])
     if args.keep:
-        print(f'remote_windows: kept in %USERPROFILE%\\{tag} on {args.host}')
-    print('remote_windows: ' + ('PASS' if ran.returncode == 0 else 'FAIL'))
+        print(f'test_windows: kept in %USERPROFILE%\\{tag} on {args.host}')
+    print('test_windows: ' + ('PASS' if ran.returncode == 0 else 'FAIL'))
     return 0 if ran.returncode == 0 else 1
 
 

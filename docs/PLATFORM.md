@@ -54,7 +54,7 @@ The interfaces in `libs/platform/src/helix/platform/` are the authority; this is
   viewport meta tag has `viewport-fit=cover`, as the libraries' page templates do
   (`<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">`); without it the browser keeps the page
   inside the safe area, and the safe area is the whole viewport. The window tests check it natively (a private display's is the whole
-  window) and in Chromium with insets emulated (`tools/page_check.cjs`, a query's `safeArea`).
+  window) and in Chromium with insets emulated (`tools/capture_page.cjs`, a query's `safeArea`).
 - `visible`, `requestVisible(visible, ?done, ?failed)`; `requestSize(width, height, ?done, ?failed)`, `canMove`, `x`, `y`,
   `requestPosition(x, y, ?done, ?failed)`; `canFullscreen`, `fullscreen`, `requestFullscreen(enabled, ?done, ?failed)`;
   `orientation`, `requestOrientation(orientation, ?done, ?failed)`.
@@ -443,7 +443,7 @@ appended as it arrives, `done` or `failure` at the end, written by whoever downl
 clips, pan, pitch, the ramps, pause, stereo balance, positions read and moved, streams' lengths, streams from a file and from a download
 arriving slowly or stopping, looping, queues fed, run dry and fed again, and a render thread racing the main one;
 `native_sdl3mixer_device.c` plays silence on the real device (`helix.py test --native --audio-device`). `libs/platform/tests/audio`
-(`AudioTests`, run by `tools/platform_checks.py`) checks both adapters against the clock: natively on SDL3's dummy driver, which mixes in
+(`AudioTests`, run by `tools/test_platform.py`) checks both adapters against the clock: natively on SDL3's dummy driver, which mixes in
 time, and in a headless Chromium let start audio without a gesture: decoded channels, a stereo clip's position advancing and moved, a
 stream's length and position, and a queue's frames falling, running dry and resuming.
 

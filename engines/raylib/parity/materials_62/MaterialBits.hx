@@ -4,7 +4,7 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 import helix.raylib.internal.Textures;
 
-// helix-raylib's glTF materials, printed as ref.c prints raylib 6.2's, for tools/raylib_parity.py.
+// helix-raylib's glTF materials, printed as ref.c prints raylib 6.2's, for tools/test_raylib_parity.py.
 @:access(helix.raylib.internal.Runtime)
 class MaterialBits {
 	static function line(s:String)

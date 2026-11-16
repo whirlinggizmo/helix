@@ -1,4 +1,4 @@
-// Opens the API reference's tree down to the page shown and marks its type or package, and makes each folder a link to its page. Added to each page by tools/pages.py, after dox's index.js.
+// Opens the API reference's tree down to the page shown and marks its type or package, and makes each folder a link to its page. Added to each page by tools/build_pages.py, after dox's index.js.
 $(function () {
 	var root = new URL(dox.rootPath, location.href).href;
 	if (location.href.indexOf(root) != 0)
@@ -25,7 +25,7 @@ $(function () {
 			$(this).find("i").first().removeClass("fa-folder").addClass("fa-folder-open");
 		});
 	};
-	// The top package (helix) is the tree's root. Its packages are each a library's, under Libraries or Engines (tools/pages.py).
+	// The top package (helix) is the tree's root. Its packages are each a library's, under Libraries or Engines (tools/build_pages.py).
 	// The overview opens Libraries and Engines.
 	if (parts.length == 0)
 		open($("#nav > ul > li.expando"));

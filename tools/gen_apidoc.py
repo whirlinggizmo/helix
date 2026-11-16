@@ -591,7 +591,7 @@ def written():
 
 def generate(check=False):
     """Each library's api/ and the HTML in build/api from the doc comments; with check, writes nothing and fails when an api/ isn't what they give.
-    What another tool calls (tools/pages.py): main reads the command line, this doesn't."""
+    What another tool calls (tools/build_pages.py): main reads the command line, this doesn't."""
     version=json.loads((ROOT/'dependencies.json').read_text(encoding='utf-8'))['dox']
     env=dict(os.environ,HAXELIB_PATH=str(ROOT/'build/haxelib'));(ROOT/'build/haxelib').mkdir(parents=True,exist_ok=True)
     # dox makes the HTML alone: a check (the Markdown, from Haxe's own description) needs no install.

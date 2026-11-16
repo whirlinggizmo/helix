@@ -1,7 +1,7 @@
 // Serves a directory (SITE), or takes a page already served (SITE an http or https URL), opens its page in Chromium (headless, or with --headed in its window) with the query given, waits for the page's frames to settle and saves a
 // screenshot of the viewport (800 x 600, or --viewport=WIDTHxHEIGHT), printing {errors, result} as JSON: the page's errors and console errors, and what a test page
 // leaves in window.helixResult (null for a page that has none). A page that sets window.helixResult to null is waited on, up to 30
-// seconds (--wait=SECONDS for longer, as a page timing many frames needs), until it holds the result. Run by tools/platform_checks.py, which checks an example's screenshot and a test's result.
+// seconds (--wait=SECONDS for longer, as a page timing many frames needs), until it holds the result. Run by tools/test_platform.py, which checks an example's screenshot and a test's result.
 // BROWSER is a Chromium to run, or "" for Playwright's own (the repository's, build/tools, or the one HELIX_PLAYWRIGHT names). The page
 // runs on the GPU (Vulkan on Linux, Metal on macOS); where the page says it can't draw it runs again on SwiftShader. Audio is muted, and
 // allowed to start without a gesture so a test page can check it. A query naming safeArea=TOP,RIGHT,BOTTOM,LEFT (CSS pixels) has Chromium

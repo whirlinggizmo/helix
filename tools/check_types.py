@@ -21,7 +21,7 @@ def targets(web=False):
     for main in ('TrigTests','RandomTests','CurveTests','AabbTests','VectorTests','TrigBits'):found.append((f'math {main}',['-lib','helix-math','-cp','libs/math/tests','-main',main,'--interp']))
     for main in ('GltfTests','ObjTests','BmFontTests','TrueTypeTests'):found.append((f'formats {main}',['-lib','helix-formats','-cp','libs/formats/tests','-main',main,'--interp']))
     # Each platform example and the graphics, audio, window and HTTP tests, with the library alone, on both targets (their own hxml files build them:
-    # tools/platform_checks.py).
+    # tools/test_platform.py).
     for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'libs/platform/examples').glob('*/Main.hx'))]+[(ROOT/'libs/platform/tests/graphics','GraphicsTests'),(ROOT/'libs/platform/tests/audio','AudioTests'),(ROOT/'libs/platform/tests/window','WindowTests'),(ROOT/'libs/platform/tests/http','HttpTests')]:
         name=f'platform example {directory.name}' if main=='Main' else f'platform {directory.name} tests'
         found.append((f'{name} js',['-lib','helix-platform','-cp',str(directory.relative_to(ROOT)),'-main',main,'-js','build/check_types.js']))

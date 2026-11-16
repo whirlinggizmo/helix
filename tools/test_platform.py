@@ -6,12 +6,12 @@ each native build it has (GL, and SDL_GPU where it has build-native-gpu.hxml), a
 the page's screenshot is checked against what it says it draws (its check.json: points and the colors expected there, each within a
 tolerance per channel); the graphics and audio tests check their own results, and say how it went. Exits 1 on any failure.
 
-    python3 tools/platform_checks.py --browser BROWSER [--native | --page] [--headless | --headed] [NAME ...]
+    python3 tools/test_platform.py --browser BROWSER [--native | --page] [--headless | --headed] [NAME ...]
 
 BROWSER is a Chromium to run (Edge on Windows), or "" for Playwright's own. The names are examples', "graphics", "audio", "window" and "http"; they default
 to all of them. --native or --page runs that kind alone (both by default). --headed runs them on this machine's own display, the native
 programs' windows and the browser's, instead of a private display and headless Chromium, for a machine kept for checks (Windows over
-tools/remote_windows.py --headed): never on a display someone is using. --headless, the default, says so."""
+tools/test_windows.py --headed): never on a display someone is using. --headless, the default, says so."""
 import json
 import os
 import struct
@@ -29,7 +29,7 @@ WINDOW = ROOT / 'libs/platform/tests/window'
 HTTP = ROOT / 'libs/platform/tests/http'
 FRAMES = 60
 # Run on this machine's own display rather than a private display and headless Chromium (--headed): for a machine kept for checks, such
-# as Windows over tools/remote_windows.py --headed. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
+# as Windows over tools/test_windows.py --headed. A real display paces its frames, so a native run lasts at most PACED_FRAMES.
 HEADED = False
 
 # The kinds of program run (--native, --page): both by default.
@@ -102,8 +102,8 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     page_run(printed, screenshot) say what's wrong with each run, as a list of problems. native_frames is how many frames a native run
     lasts, which a private display doesn't pace; native_extra what a native run's environment adds; native_args(label) the arguments a
     native run adds; query what the page's query adds
-    (tools/page_check.cjs reads safeArea from it); expected_errors the console errors the page is meant to cause (each named by a part of it);
-    site the URL the page is opened at, or None to have tools/page_check.cjs serve its web directory; page_quits whether the page is
+    (tools/capture_page.cjs reads safeArea from it); expected_errors the console errors the page is meant to cause (each named by a part of it);
+    site the URL the page is opened at, or None to have tools/capture_page.cjs serve its web directory; page_quits whether the page is
     given quit_after_frame, which a program clearing its canvas as it quits (helix-raylib's CloseWindow) isn't, as the screenshot is
     taken after a second of frames. The problems found."""
     import pins
@@ -139,7 +139,7 @@ def run(name, directory, main, browser, native_run, page_run, native_frames=FRAM
     out.mkdir(parents=True, exist_ok=True)
     screenshot = out / 'web.png'
     browser_env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES')}
-    ran = subprocess.run(['node', ROOT / 'tools/page_check.cjs', '--headed' if HEADED else '--headless', browser, site or str(directory / 'web'), f'?quit_after_frame={FRAMES}{query}' if page_quits else '?' + query.lstrip('&'), str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
+    ran = subprocess.run(['node', ROOT / 'tools/capture_page.cjs', '--headed' if HEADED else '--headless', browser, site or str(directory / 'web'), f'?quit_after_frame={FRAMES}{query}' if page_quits else '?' + query.lstrip('&'), str(screenshot)], cwd=ROOT, env=browser_env, capture_output=True, text=True, encoding='utf-8')
     if ran.returncode:
         problems.append(f'browser run failed\n{ran.stdout}{ran.stderr}')
     else:

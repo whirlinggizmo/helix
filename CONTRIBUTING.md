@@ -42,22 +42,22 @@ build/             scratch: the repository's haxelib, SDL3, hxcpp's output (igno
 Fast ones with each step, the full ones at a milestone:
 
 - After an API change: `python3 tools/check_types.py --no-output`, every entry point of every library on its targets, in seconds.
-- Before a commit: `python3 helix.py test`, `python3 tools/format.py --check`, `python3 tools/check_docs.py`. A commit touching doc
+- Before a commit: `python3 helix.py test`, `python3 tools/format_source.py --check`, `python3 tools/check_docs.py`. A commit touching doc
   comments also runs `python3 tools/gen_apidoc.py` first, since the committed reference must match them.
 - A change touching helix-raylib's `Runtime`, `Frame` or what the native adapters are built over also gets one native parity suite,
-  `python3 tools/raylib_parity.py shapes2d`. The unit suite and a page run open no native window, so a native-only fault passes them.
-- At the end of a feature: the native builds, `tools/platform_checks.py`, `tools/services_checks.py`, `tools/render_checks.py` and
-  `tools/raylib_parity.py`.
+  `python3 tools/test_raylib_parity.py shapes2d`. The unit suite and a page run open no native window, so a native-only fault passes them.
+- At the end of a feature: the native builds, `tools/test_platform.py`, `tools/test_services.py`, `tools/test_render.py` and
+  `tools/test_raylib_parity.py`.
 
 ```console
 python3 helix.py test                       # the tools' checks, the size ladders, each library's tests, Trig's bits across targets
 python3 helix.py test --native              # also each library's tests in hxcpp and the platform's native C tests
 python3 tools/check_types.py --no-output    # type-check every entry point of every library on its targets
-python3 tools/platform_checks.py --browser <chromium>   # the platform's examples and GPU tests, natively on a private display and in Chromium
-python3 tools/services_checks.py --browser <chromium>   # the services' examples, natively on a private display and in Chromium
-python3 tools/render_checks.py --browser <chromium>     # helix-render's examples and pixel tests, on GL, SDL_GPU and WebGL2
-python3 tools/raylib_parity.py                 # helix-raylib against raylib's own C, each suite against its release (Linux)
-python3 tools/format.py --check             # layout
+python3 tools/test_platform.py --browser <chromium>   # the platform's examples and GPU tests, natively on a private display and in Chromium
+python3 tools/test_services.py --browser <chromium>   # the services' examples, natively on a private display and in Chromium
+python3 tools/test_render.py --browser <chromium>     # helix-render's examples and pixel tests, on GL, SDL_GPU and WebGL2
+python3 tools/test_raylib_parity.py                 # helix-raylib against raylib's own C, each suite against its release (Linux)
+python3 tools/format_source.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake each library's api/ after a doc comment changes (--check in the tests)
 python3 tools/gen_raylib.py                 # remake helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and extras/*.hx after a section changes (--check in the tests)
@@ -107,14 +107,17 @@ built and where it is (`tools/variants.py` holds the lists).
   reflection, and its includes from the compiler's include mechanism, never from matching the GLSL's text. A library naming its own
   blocks for every shader shares them where the compiled shader declares them (`ShaderSharedBlock.whereDeclared`).
 - **Tools are named for what they are:** a runnable tool is verb_noun, words apart by underscores (`check_types.py`,
-  `gen_sizes.py`). A `check_` tool only reports, a `gen_` tool makes files (committed ones), the rest do what they say. Every tool
+  `gen_sizes.py`). A `check_` tool reads source, docs or the compiler's output and reports, running no program it builds; a `test_`
+  tool builds programs and runs them, and passes or fails on what they did; both exit non-zero on a failure. A `gen_` tool makes
+  files (committed ones), and the rest do what they say. The verbs are `check`, `test`, `gen`, `build`, `format`, `capture`, `watch` and
+  `run`, and `tools/check_tools.py` refuses another in `tools/`. Every tool
   answers `--help` with its usage from its docstring (a Node tool's leading comment), does nothing else then, and refuses an argument
   it doesn't take (`tools/cli.py`). A module the tools import says so when it is run, and is named for what it holds, a plain noun that
   can't read as a verb (`variants.py`, `pins.py`). Front doors keep their noun (`helix.py`). This table names every tool, and
   `tools/check_tools.py` checks all of it.
 - **A tool that runs programs takes the same two choices** (`cli.runs`): what runs, `--native` or `--page` (each alone, both by
   default), and where, `--headless` (the default: a private display, headless Chromium) or `--headed` (this machine's display), so CI
-  and unattended runs need neither. A Node tool opening a page takes `--headed` and `--headless`. `raylib_parity.py` is the exception:
+  and unattended runs need neither. A Node tool opening a page takes `--headed` and `--headless`. `test_raylib_parity.py` is the exception:
   its runs are compared against raylib's C off screen. A headed run keeps the screen on while it runs (`tools/screen_power.py`): on
   Linux X's blanking and power management off, XFCE's power manager in presentation mode and GNOME's idle delay 0, each put back after
   it; on Windows the process's request to keep the display on; on macOS caffeinate. A locked session refuses it, as a blanked monitor
@@ -134,9 +137,9 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/check_types.py` | Every entry point type-checked on its targets (`--web`: the browser alone) |
 | `tools/cli.py` | The Python tools' argument parsing (a module) |
 | `tools/cli.cjs` | The Node tools' argument parsing (a module) |
-| `tools/format.py` | haxe-formatter over the libraries (`--check` only checks) |
+| `tools/format_source.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: each library's `api/` (committed) and `build/api` (`--check`) |
-| `tools/pages.py` | The GitHub Pages site in `build/site`: the API reference's HTML at `api/`. The pages workflow deploys it |
+| `tools/build_pages.py` | The GitHub Pages site in `build/site`: the API reference's HTML at `api/`. The pages workflow deploys it |
 | `tools/gen_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write` remakes it and `docs/benchmarks.md`'s web sizes, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/gen_speed.py` | helix-raylib's speed and size against raylib C, Godot, three.js (in a page and in Electron), Lime and helix-legacy on the same programs (`tools/speed/contenders`), when asked, never in CI: the contenders whose rows are stale, or `--all`; `--write` remakes `docs/speed.json`, `docs/benchmarks.md`'s speed tables and its charts, once the machine is quiet and the control steady |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by section (`--check`) |
@@ -144,13 +147,13 @@ built and where it is (`tools/variants.py` holds the lists).
 | `tools/watch_job.py` | A background job's status every ten minutes, with the Eastern time, and a line when it ends, stalls or runs past its deadline (`--exit-on-trouble` exits then) |
 | `tools/screen_power.py` | Keeps the screen on while a headed run uses it, on Linux, Windows and macOS, its settings put back after (a module) |
 | `tools/native_build.py` | hxcpp's environment for the adapters' C, and the platform's C-only tests built with CMake (a module) |
-| `tools/page_check.cjs` | A page in Chromium (headless, or `--headed`): its errors, its result and a screenshot (run by `platform_checks.py` and `raylib_page_checks.py`) |
+| `tools/capture_page.cjs` | A page in Chromium (headless, or `--headed`): its errors, its result and a screenshot (run by `test_platform.py` and `test_raylib_pages.py`) |
 | `tools/pins.py` | The repository's haxelib: dev links to the libraries and the pinned hxcpp (a module) |
-| `tools/platform_checks.py` | The platform's examples and graphics tests on the GPU, natively on a private display and in Chromium |
-| `tools/raylib_page_checks.py` | helix-raylib's page tests (`engines/raylib/tests/page`) in Chromium, headless by default, each its result and its screenshot's points |
-| `tools/render_checks.py` | helix-render's examples and pixel tests on the GPU, natively (GL and SDL_GPU) on a private display and in Chromium (WebGL2) |
-| `tools/services_checks.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
+| `tools/test_platform.py` | The platform's examples and graphics tests on the GPU, natively on a private display and in Chromium |
+| `tools/test_raylib_pages.py` | helix-raylib's page tests (`engines/raylib/tests/page`) in Chromium, headless by default, each its result and its screenshot's points |
+| `tools/test_render.py` | helix-render's examples and pixel tests on the GPU, natively (GL and SDL_GPU) on a private display and in Chromium (WebGL2) |
+| `tools/test_services.py` | The services' examples on the platform's real adapters, natively on a private display and in Chromium |
 | `tools/private_display.py` | A private X display for native windows in checks (a module) |
-| `tools/raylib_parity.py` | helix-raylib against raylib's own C (`engines/raylib/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display beside helix-raylib's |
-| `tools/remote_windows.py` | This checkout built and checked on a Windows machine over ssh |
-| `tools/sdl3.py` | The SDL3 library a native build links: the system's, or the pinned release made into `build/deps` |
+| `tools/test_raylib_parity.py` | helix-raylib against raylib's own C (`engines/raylib/parity`): each suite's C reference built against its raylib release (fetched, pinned by sha256, built into `build/raylib`), run on a private display beside helix-raylib's |
+| `tools/test_windows.py` | This checkout built and checked on a Windows machine over ssh |
+| `tools/sdl3.py` | The SDL3 library a native build links: the system's, or the pinned release made into `build/deps` (a module; run, it says which) |

@@ -4,7 +4,7 @@ import helix.raylib.Raylib6.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 
-// helix-raylib's skeletal animation, printed as ref.c prints raylib 6.2's, for tools/raylib_parity.py.
+// helix-raylib's skeletal animation, printed as ref.c prints raylib 6.2's, for tools/test_raylib_parity.py.
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.Model)
 class AnimBits {

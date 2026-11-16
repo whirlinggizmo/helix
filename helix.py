@@ -1,5 +1,5 @@
 """The front door for the checks: the tools, the libraries' tests, and the native tests. Python owns external tools; HXML owns Haxe
-settings. The platform's examples and graphics tests on the GPU are tools/platform_checks.py's; type checks alone tools/check_types.py's."""
+settings. The platform's examples and graphics tests on the GPU are tools/test_platform.py's; type checks alone tools/check_types.py's."""
 import argparse
 import json
 import os
@@ -69,7 +69,7 @@ def test(native,audio_device):
         print(subprocess.check_output([str(tool('native-sdl3-events-test'))],text=True,encoding='utf-8'),end='')
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
-# helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/raylib_parity.py).
+# helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/test_raylib_parity.py).
 RAYLIB_TESTS=('CountTests','EnsureTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','ScreenshotTests','SpritesTests','WaitTests','ShaderValueTests','AnimationMaskTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.

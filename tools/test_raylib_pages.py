@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Checks helix-raylib in a page, where only a browser answers: each page test in engines/raylib/tests/page (a main class of its own,
-built with helix-raylib for the page beside an index.html holding the canvas) runs in Chromium (tools/page_check.cjs), headless or with
+built with helix-raylib for the page beside an index.html holding the canvas) runs in Chromium (tools/capture_page.cjs), headless or with
 --headed in its window on this machine's display, and
 leaves {passed, checks, failures} in window.helixResult. A test's check.json, when there is one, names points of the page's screenshot
-and the colors expected there, each within a tolerance per channel, as tools/platform_checks.py checks an example's. Exits 1 on any
+and the colors expected there, each within a tolerance per channel, as tools/test_platform.py checks an example's. Exits 1 on any
 failure.
 
-    python3 tools/raylib_page_checks.py [--browser BROWSER] [--headless | --headed] [TEST ...]
+    python3 tools/test_raylib_pages.py [--browser BROWSER] [--headless | --headed] [TEST ...]
 
 BROWSER is a Chromium to run, or "" (the default) for Playwright's own. The tests default to all of them."""
 import json
@@ -30,7 +30,7 @@ PAGE = ('<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><st
 def run(name, browser):
     """Builds and runs one page test; the problems found."""
     import pins
-    from platform_checks import check_pixels
+    from test_platform import check_pixels
     env = pins.use_haxelib()
     web = OUT / name
     web.mkdir(parents=True, exist_ok=True)
@@ -41,7 +41,7 @@ def run(name, browser):
         return [f'build failed\n{built.stdout}{built.stderr}']
     browser_env = {k: v for k, v in os.environ.items() if k not in ('VK_DRIVER_FILES', 'VK_ICD_FILENAMES', 'DBUS_SESSION_BUS_ADDRESS')}
     screenshot = web / 'page.png'
-    ran = subprocess.run(['node', str(ROOT / 'tools/page_check.cjs'), '--headed' if HEADED else '--headless', browser, str(web), '', str(screenshot)], cwd=ROOT, env=browser_env,
+    ran = subprocess.run(['node', str(ROOT / 'tools/capture_page.cjs'), '--headed' if HEADED else '--headless', browser, str(web), '', str(screenshot)], cwd=ROOT, env=browser_env,
                          capture_output=True, text=True, encoding='utf-8')
     if ran.returncode:
         return [f'browser run failed\n{ran.stdout}{ran.stderr}']

@@ -2,7 +2,7 @@
 
 helix-raylib behaves as raylib does, and these suites check it against raylib's own C. Each suite is a C reference built against a raylib
 release and a Haxe harness or program doing the same with helix-raylib. raygui's suites build raygui's C (the `raygui.h` raylib 5.5 ships in its
-examples) into their reference. `tools/raylib_parity.py` builds and runs both and compares what they
+examples) into their reference. `tools/test_raylib_parity.py` builds and runs both and compares what they
 give: numbers line by line (value suites), or the frames they draw (pixel suites).
 
 ## The oracle
@@ -16,9 +16,9 @@ moved.
 ## Running
 
 ```console
-python3 tools/raylib_parity.py              # every suite
-python3 tools/raylib_parity.py shapes2d     # the suites named
-python3 tools/raylib_parity.py --list       # the suites, their oracles and what each covers
+python3 tools/test_raylib_parity.py              # every suite
+python3 tools/test_raylib_parity.py shapes2d     # the suites named
+python3 tools/test_raylib_parity.py --list       # the suites, their oracles and what each covers
 ```
 
 Linux only. The C references and native programs run on a private display (`tools/private_display.py`, Xvfb and Openbox), with SDL's dummy
@@ -98,7 +98,7 @@ Each suite's manifest says in full what it covers (`covers`), and `notes` say wh
 - `resources`: files compiled into the Haxe harness (`-resource`), by name.
 - `targets`: the targets a value suite's harness runs on, `js` and `cpp` unless it names others: `fontfile_62` runs in hxcpp alone, as its
   glyphs are rasterized by the native rasterizer, which Node hasn't; `waves` runs in hxcpp and `page`, the harness in a headless
-  Chromium (Playwright's, muted, through `tools/page_check.cjs`), as its sounds are decoded by Web Audio, which Node hasn't. A page
+  Chromium (Playwright's, muted, through `tools/capture_page.cjs`), as its sounds are decoded by Web Audio, which Node hasn't. A page
   harness leaves its lines in `window.helixResult`.
 - Value suites: `tolerance`, the largest difference allowed in a section (or one for each target, `{"cpp": 0, "page": 0}`), and `bars`,
   a section's own (`worst`, a target's own by its name, and `nonfinite`, how many numbers may be NaN or infinite where the other
