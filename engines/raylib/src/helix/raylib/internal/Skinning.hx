@@ -162,12 +162,12 @@ class Skinning {
 			var palette = write(pose);
 			// The draw's first bone plus one: 0, as every other draw through the program reads it, means no bones (the bind pose).
 			if (p.boneOffset != null)
-				offset(p, writtenOffset + 1);
+				p.values.writeInt(p.boneOffset, writtenOffset + 1);
 			var textures = p.mapTextures(mesh, locs, material);
 			textures[p.paletteSlot] = palette;
 			frame.mesh(mesh, p, transform, diffuse, textures, instances, instanceCount);
 			if (p.boneOffset != null)
-				offset(p, 0);
+				p.values.writeInt(p.boneOffset, 0);
 			return true;
 		}
 		if (shader.locs[Raylib.SHADER_LOC_VERTEX_BONEIDS] != -1)
@@ -177,18 +177,12 @@ class Skinning {
 		// Its positions and normals from the posed buffers, in the draws just added (both eyes', in stereo, share the array).
 		var buffers = frame.meshBuffers;
 		if (buffers != null)
-			for (i => name in frame.meshNames)
+			for (i => name in p.attributes)
 				if (name == "vertexPosition")
 					buffers[i] = pose.positionBuffer;
 				else if (name == "vertexNormal" && pose.normalBuffer != 0)
 					buffers[i] = pose.normalBuffer;
 		return true;
-	}
-
-	// Writes a draw's first bone (plus one) into a program, kept as its boneFirst for the shadow pass's draw in its place (Shadows).
-	static function offset(p:Program, value:Int):Void {
-		p.values.writeInt(p.boneOffset, value);
-		p.boneFirst = value;
 	}
 
 	// Whether any of a mesh's vertices has a bone of some weight, as raylib's CPU skinning moves only those meshes' buffers; read again

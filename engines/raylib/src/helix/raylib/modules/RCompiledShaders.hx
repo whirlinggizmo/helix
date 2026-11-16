@@ -113,6 +113,8 @@ class RCompiledShaders {
 		// A shader reading a material's values (lights.glsl's, pbr.glsl's) has them written by each draw.
 		if (helix.raylib.internal.Surfaces.declares(shader.program.shader))
 			helix.raylib.internal.Surfaces.install();
+		// A shader reading the shadows (shadows.glsl's) binds an empty shadow map until a light casts them.
+		helix.raylib.internal.ShadowSlots.bind(shader.program, 0);
 		return shader;
 	}
 	#end

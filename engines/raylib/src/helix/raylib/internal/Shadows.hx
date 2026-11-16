@@ -19,6 +19,8 @@ import helix.services.shaders.ShaderUniform;
 @:noCompletion
 @:access(helix.raylib.Light)
 @:access(helix.raylib.Material)
+@:access(helix.raylib.internal.Program)
+@:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.modules.RModels)
 @:access(helix.raylib.modules.RCore)
 class Shadows {
@@ -31,7 +33,7 @@ class Shadows {
 	static inline final NEAR = 1 / 512;
 	// How the cascades split the distance: 0 evenly, 1 by the ratio of their ends.
 	static inline final CASCADE_SPLIT = .6;
-	// The receivers' uniforms, by the indices of a program's shadowFields.
+	// The receivers' uniforms, by the indices of a receiver's fields.
 	static final FIELDS = [
 		"helixShadowMatrices",
 		"helixShadowParams",
@@ -39,7 +41,6 @@ class Shadows {
 		"helixShadowSplits",
 		"helixShadowView"
 	];
-	static final NONE:Array<Null<ShaderUniform>> = [];
 
 	// The lights casting shadows, in the order turned on.
 	static final casters:Array<helix.raylib.Light> = [];
@@ -63,14 +64,16 @@ class Shadows {
 	// Which maps the draw being cast reaches, found from its bounds (bound); all when none are found.
 	static final reached:Array<Bool> = [for (_ in 0...MOST_MAPS) true];
 	static var bounded = false;
-	// The material of the draw being cast (surface).
-	static var material:Null<helix.raylib.Material> = null;
 	// The shadow map, its size and layers, and the graphics it was made on; 0 until a pass.
 	static var map = 0;
 	static var mapSize = 0;
 	static var mapLayers = 0;
 	static var mapGraphics:Null<helix.platform.IGraphics> = null;
-	// Each pass's number, from 1, which a program's shadowStamp is checked against.
+	// The shadow map's texture id (Textures.fromHandle), bound to the receivers' shadow samplers (ShadowSlots).
+	static var mapId = 0;
+	// What each program a lit draw is drawn through was given: the pass it was given the shadows of, and its uniforms of them.
+	static final receivers = new Map<Program, Receiver>();
+	// Each pass's number, from 1, which a receiver's stamp is checked against.
 	static var stamp = 0;
 	// Whether between BeginShadowMode and EndShadowMode, and what the pass replaced, put back at its end.
 	static var active = false;
@@ -98,7 +101,6 @@ class Shadows {
 	static final corners:Array<Float> = [for (_ in 0...26) 0.];
 	static final points:Array<Float> = [];
 	static final ends = [0., 0, 0, 0];
-	static final castTextures:Array<Int> = [];
 	static final lightSizes:Array<Int> = [for (_ in 0...MOST_LIGHTS) 0];
 
 	/** Turns a light's shadows on, made as the options say, or off for null options. A fifth light's stay off, with a warning.
@@ -277,7 +279,8 @@ class Shadows {
 			mapFor(size, mapCount);
 			passes.resize(0);
 			for (k in 0...mapCount)
-				passes.push(frame.addShadowPass(map, k, size));
+				passes.push(frame.addShadowPass(k, size));
+			Frame.beginShadow = beginPass;
 		}
 		// The draws cast from here on, until end.
 		savedEyes = frame.eyes;
@@ -296,8 +299,6 @@ class Shadows {
 		Frame.lighting = null;
 		helix.raylib.modules.RModels.lighting = bound;
 		helix.raylib.modules.RModels.surfacing = surface;
-		frame.casting = castMesh;
-		frame.depthOnly = true;
 	}
 
 	/** Ends the shadow pass: the batch cast, and the frame drawing as before it. */
@@ -311,8 +312,6 @@ class Shadows {
 		Frame.lighting = savedRunLighting;
 		helix.raylib.modules.RModels.lighting = savedLighting;
 		helix.raylib.modules.RModels.surfacing = savedSurfacing;
-		frame.casting = null;
-		frame.depthOnly = false;
 		frame.drawInto(savedPass);
 		frame.view = savedView;
 		frame.projection = savedProjection;
@@ -321,7 +320,6 @@ class Shadows {
 		frame.depthTest = savedDepthTest;
 		frame.depthMask = savedDepthMask;
 		frame.colorBlend = savedColorBlend;
-		material = null;
 	}
 
 	static inline final SPOT = 2;
@@ -443,10 +441,11 @@ class Shadows {
 		if (map != 0 && mapGraphics == graphics && mapSize == size && mapLayers >= layers)
 			return;
 		if (map != 0 && mapGraphics == graphics) {
-			var old = map;
-			Runtime.frame.afterDraw(() -> graphics.disposeTexture(old));
+			var old = mapId;
+			Runtime.frame.afterDraw(() -> Textures.release(old));
 		}
 		map = graphics.createShadowMap(size, layers);
+		mapId = Textures.fromHandle(map);
 		mapSize = size;
 		mapLayers = layers;
 		mapGraphics = graphics;
@@ -458,13 +457,18 @@ class Shadows {
 		var frame = Runtime.frame;
 		var program = frame.program;
 		if (!mesh) {
-			var caster = casterOf(program);
-			write(caster, 0);
+			// The sprites written out as quads, which the casters draw.
+			var runs:Array<Dynamic> = frame.batch;
+			for (i in 0...runs.length)
+				if (runs[i].mode == Frame.SPRITES && runs[i].count > 0)
+					runs[i] = frame.expand(runs[i]);
+			var caster = casterOf(program).program;
+			cut(caster, 0);
 			frame.program = caster;
 		}
 		depthAlone(frame);
 		for (k in 0...mapCount) {
-			if (mesh && !reached[k])
+			if (mesh && bounded && !reached[k])
 				continue;
 			frame.drawInto(passes[k]);
 			frame.view = views[k];
@@ -476,6 +480,10 @@ class Shadows {
 		frame.program = program;
 		bounded = false;
 	}
+
+	// Begins a shadow pass (Frame.beginShadow): into its map's layer.
+	static function beginPass(target:Int):Void
+		Runtime.graphics.beginShadowPass(map, -2 - target);
 
 	// The state the casters are drawn in: depth tested and written, no color.
 	static function depthAlone(frame:Frame):Void {
@@ -498,83 +506,61 @@ class Shadows {
 			reached[k] = volumes[k].intersectsBounds(box);
 	}
 
-	// The draws' hook in the pass (RModels.surfacing): the draw's material kept, for its cutoff and albedo.
+	// The draws' hook in the pass (RModels.surfacing): the draw made through its shader's caster, cut at its material's alpha cutoff.
 	static function surface(shader:helix.raylib.Shader, m:helix.raylib.Material, modelEmissive:Null<Array<Float>>):helix.raylib.Shader {
-		material = m;
-		return savedSurfacing == null ? shader : savedSurfacing(shader, m, modelEmissive);
-	}
-
-	// The frame's hook in the pass (Frame.casting): a mesh's draw given its program's caster and the textures by the caster's slots, or
-	// skipped where its bounds reach no map.
-	static function castMesh(mesh:helix.raylib.Mesh, p:Program, textures:Array<Int>):Null<Program> {
-		var any = !bounded;
-		if (bounded)
-			for (k in 0...mapCount)
-				if (reached[k])
-					any = true;
-		if (!any || mapCount == 0) {
-			bounded = false;
-			return null;
-		}
-		if (!bounded)
-			for (k in 0...mapCount)
-				reached[k] = true;
-		var caster = casterOf(p);
-		// The caster's samplers read what the draw binds to the program's of the same names, its texture0 the material's albedo.
-		var out = castTextures;
-		out.resize(0);
-		for (s in caster.shader.samplers) {
-			while (out.length <= s.slot)
-				out.push(-1);
-			var from = p.shader.findSampler(s.name);
-			out[s.slot] = from != null ? (from.slot < textures.length ? textures[from.slot] : -1) : s.name == "texture0"
-				&& material != null ? Textures.handle(material.maps[helix.raylib.Raylib.MATERIAL_MAP_ALBEDO].texture.id) : -1;
-		}
-		textures.resize(out.length);
-		for (i => t in out)
-			textures[i] = t;
-		if (caster.boneOffset != null)
-			caster.values.writeInt(caster.boneOffset, p.boneFirst);
-		write(caster, material == null ? 0 : material.alphaCutoff);
+		if (savedSurfacing != null)
+			shader = savedSurfacing(shader, m, modelEmissive);
+		var caster = casterOf(shader.program);
+		cut(caster.program, m.alphaCutoff);
 		depthAlone(Runtime.frame);
 		return caster;
 	}
 
-	// The alpha cutoff a caster cuts at.
-	static function write(caster:Program, cutoff:Float):Void {
+	// The alpha cutoff a caster and its skinned twin cut at.
+	static function cut(caster:Program, cutoff:Float):Void {
 		var u = caster.shader.findUniform("alphaCutoff");
 		if (u != null)
 			caster.values.writeFloat(u, cutoff);
+		var twin = caster.twin;
+		if (twin != null && (u = twin.shader.findUniform("alphaCutoff")) != null)
+			twin.values.writeFloat(u, cutoff);
 	}
 
-	/** Returns the program the shadow pass draws through in a program's place, made with its first draw there: a compiled shader's
-		shadow variant, or for a built-in shader the default vertex stage's (skinned for a skinned one), which places a vertex as each of
-		them does.
+	/** Returns the shader the shadow pass draws through in a program's place, made with its first draw there: a compiled shader's
+		shadow variant, or for a built-in shader the default vertex stage's, with its skinned twin, which place a vertex as each of them
+		does. Its program is a twin of the program's (`Program.mirror`), given every uniform the program is, and writes depth alone.
 
 		@param p  The program. */
-	public static function casterOf(p:Program):Program {
+	public static function casterOf(p:Program):helix.raylib.Shader {
 		if (p.caster != null)
 			return p.caster;
-		var source = p.casterSource != null ? new helix.services.shaders.Shader(p.casterSource,
-			"shadow variant") : p.shader.findSampler("bonePalette") != null ? Defaults.shadowSkinnedShader() : Defaults.shadowShader();
-		var caster = new Program(Runtime.graphics, source);
-		caster.boneOffset = caster.shader.findUniform("boneOffset");
-		p.mirror(caster, false);
-		p.caster = caster;
-		return caster;
+		var graphics = Runtime.graphics;
+		var caster = new Program(graphics,
+			p.casterSource != null ? new helix.services.shaders.Shader(p.casterSource, "shadow variant") : Defaults.shadowShader());
+		caster.depthOnly = true;
+		if (p.casterSource == null) {
+			var skinned = new Program(graphics, Defaults.shadowSkinnedShader());
+			skinned.depthOnly = true;
+			caster.mirror(skinned);
+		}
+		// A twin, though not the program's skinned one.
+		var twin = p.twin;
+		p.mirror(caster);
+		p.twin = twin;
+		p.caster = new helix.raylib.Shader(caster.handle, helix.raylib.modules.RModels.locations(caster), caster);
+		return p.caster;
 	}
 
 	// The draws' hook (SceneLights.receiving): the last pass's shadows written into a program a lit draw is drawn through, once a pass.
 	static function receive(p:Program):Void {
-		if (p.shadowStamp == stamp)
+		var r = receivers.get(p);
+		if (r == null)
+			receivers.set(p, r = new Receiver([for (name in FIELDS) p.shader.findUniform(name)]));
+		if (r.stamp == stamp)
 			return;
-		p.shadowStamp = stamp;
-		if (p.shadowFields == null) {
-			var found = [for (name in FIELDS) p.shader.findUniform(name)];
-			p.shadowFields = found[0] == null ? NONE : found;
-		}
-		var f = p.shadowFields;
-		if (f.length == 0)
+		r.stamp = stamp;
+		var f = r.fields;
+		if (f[0] == null)
 			return;
 		var values = p.values;
 		for (k in 0...mapCount)
@@ -590,6 +576,15 @@ class Shadows {
 		}
 		if (f[4] != null)
 			values.writeVector(f[4], forward[0], forward[1], forward[2], forward[3]);
-		p.shadowMap = castCount > 0 ? map : 0;
+		ShadowSlots.bind(p, castCount > 0 ? mapId : 0);
 	}
+}
+
+// What a program receiving the shadows was given: the pass whose shadows it holds, and its uniforms of them, by the indices of FIELDS.
+private class Receiver {
+	public var stamp = 0;
+	public final fields:Array<Null<ShaderUniform>>;
+
+	public function new(fields:Array<Null<ShaderUniform>>)
+		this.fields = fields;
 }

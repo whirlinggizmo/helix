@@ -13,15 +13,18 @@ import helix.raylib.internal.Runtime;
 /** Checks the Lighting extra's shadows on graphics that count what is live: `GetLightShadows`' defaults filled and kept in range; a pass
 	made for each map of each light casting (a directional light's cascades, a spot light's one map, a point light's six faces) into one
 	shadow map of their layers; the casters drawn into the maps their bounds reach and nowhere else, through a depth-only pipeline, a cut-out
-	material's alpha cutoff and a program's own vertex stage's uniforms reaching its shadow draw, the batch cast too; a fifth light's
-	shadows refused with a warning; the lit draws after the pass given the shadows (their lights' shadow, the matrices, the map), and
-	`shadowed` false written for a material shadows don't fall on; a frame without the pass keeping the last one's shadows. */
+	material's alpha cutoff and a program's own vertex stage's uniforms reaching its shadow draw, a posed model cast through its caster's
+	skinned twin, the batch cast too; a fifth light's shadows refused with a warning; the lit draws after the pass given the shadows (their
+	lights' shadow, the matrices, the map), and `shadowed` false written for a material shadows don't fall on; a frame without the pass
+	keeping the last one's shadows. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
 @:access(helix.raylib.internal.Shadows)
 @:access(helix.raylib.Light)
 @:access(helix.raylib.Shader)
+@:access(helix.raylib.Model)
+@:access(helix.raylib.Mesh)
 @:access(helix.services.shaders)
 class ShadowsTests {
 	static var checks = 0;
@@ -34,7 +37,7 @@ class ShadowsTests {
 
 	// The frame's shadow passes, in their order.
 	static function shadowPasses():Array<Dynamic>
-		return [for (p in Runtime.frame.passes) if ((p : Dynamic).begin != null) p];
+		return [for (p in Runtime.frame.passes) if ((p : Dynamic).target < -1) p];
 
 	// Where a block member's element is in a draw's blocks: its bytes and offset.
 	static function member(p:Program, draw:Dynamic, name:String, elementIndex:Int):{bytes:Bytes, offset:Int} {
@@ -109,7 +112,7 @@ class ShadowsTests {
 		BeginShadowMode(camera);
 		var passes = shadowPasses();
 		check(passes.length == 9, "9 shadow passes: 2 cascades, 6 faces and a spot's map");
-		var map:Int = passes[0].target;
+		var map = @:privateAccess helix.raylib.internal.Shadows.map;
 		check(graphics.shadowMaps.get(map).join(",") == "2048,9", "one shadow map, as large as the largest asked for, of 9 layers");
 		check(passes[0].width == 2048 && passes[0].draws.length == 0, "a pass the size of the map, empty until a caster is drawn");
 
@@ -137,11 +140,12 @@ class ShadowsTests {
 		var batchDraw:Dynamic = passes[8].draws[1];
 		check(graphics.pipelines.get(batchDraw.pipeline).depthOnly, "the batch cast depth-only");
 		EndShadowMode();
-		check(frame.casting == null && !frame.depthOnly, "EndShadowMode ends the casting");
+		check(frame.eyes == null, "EndShadowMode ends the casting");
 
 		// A lit draw after the pass: its lights' shadows, the maps' matrices, the shadow map bound.
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		var lit = lastDraw();
+		check(lit != null && !graphics.pipelines.get(lit.pipeline).depthOnly, "a draw after the pass drawn on the screen, in color");
 		var shadows = [
 			for (i in 0...8)
 				if (drawnInt(p, lit, "lights.enabled", i) == 1) drawnInt(p, lit, "lights.shadow", i)
@@ -155,7 +159,7 @@ class ShadowsTests {
 			"the maps' matrices written");
 		check(Math.abs(drawnFloat(p, lit, "helixShadowSizes", 1, 0) - 0.25) < 1e-6 && drawnFloat(p, lit, "helixShadowSizes", 1, 1) == 512,
 			"the lamp's maps a quarter of the shadow map's width, 512 texels");
-		check(lit.textures[p.shadowSlot] == map, "the shadow map bound to the lit draw");
+		check(lit.textures[helix.raylib.internal.ShadowSlots.slotOf(p)] == map, "the shadow map bound to the lit draw");
 		SetMaterialShadowed(cube.materials[0], false);
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(drawnInt(p, lastDraw(), "shadowed") == 0, "shadowed false written for a material shadows don't fall on");
@@ -167,7 +171,7 @@ class ShadowsTests {
 			"each pass drawn into its layer of the shadow map, in order");
 		check(shadowPasses().length == 0, "a frame drawn: its shadow passes gone");
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
-		check(lastDraw().textures[p.shadowSlot] == map
+		check(lastDraw().textures[helix.raylib.internal.ShadowSlots.slotOf(p)] == map
 			&& near(drawnFloat(p, lastDraw(), "helixShadowMatrices", 0, 0), m[0])
 			&& drawnInt(p, lastDraw(), "lights.shadow", 0) > 0,
 			"a frame without the pass keeps the last one's shadows");
@@ -184,13 +188,13 @@ class ShadowsTests {
 		tree.materials[0].shader = sway;
 		BeginShadowMode(camera);
 		passes = shadowPasses();
-		check(passes.length == 9 && passes[0].target == map, "the next pass draws into the same shadow map");
+		check(passes.length == 9 && @:privateAccess helix.raylib.internal.Shadows.map == map, "the next pass draws into the same shadow map");
 		DrawModel(leaf, Vector3Zero(), 1, WHITE);
-		var caster = p.caster;
+		var caster = p.caster.program;
 		check(caster != null
 			&& drawnFloat(caster, passes[8].draws[0], "alphaCutoff") == 0.5, "the material's alpha cutoff in its shadow draw");
 		DrawModel(tree, Vector3Zero(), 1, WHITE);
-		var treeCaster = sway.program.caster;
+		var treeCaster = sway.program.caster.program;
 		check(treeCaster != null
 			&& treeCaster.shader.findUniform("sway") != null
 			&& drawnFloat(treeCaster, passes[8].draws[1], "sway") == 0.25,
@@ -198,6 +202,31 @@ class ShadowsTests {
 		SetShaderValue(sway, GetShaderLocation(sway, "sway"), 0.5, SHADER_UNIFORM_FLOAT);
 		DrawModel(tree, Vector3Zero(), 1, WHITE);
 		check(drawnFloat(treeCaster, passes[8].draws[2], "sway") == 0.5, "the uniform as it is at each draw");
+		// A model posed by UpdateModelAnimation casts through its caster's skinned twin, given its first bone.
+		var posed = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+		var bones = posed.meshes[0];
+		bones.boneIds = [for (k in 0...bones.vertexCount * 4) 0];
+		bones.boneWeights = [for (k in 0...bones.vertexCount * 4) k % 4 == 0 ? 1. : 0.];
+		posed.boneCount = 1;
+		posed.bones = [new BoneInfo("root", -1)];
+		posed.bindPose = [
+			new Transform(new Vector3(0, 0, 0), new Quaternion(0, 0, 0, 1), new Vector3(1, 1, 1))
+		];
+		posed.materials[0].shader = shader;
+		var raise = new ModelAnimation();
+		raise.boneCount = 1;
+		raise.bones = [new BoneInfo("root", -1)];
+		raise.frameCount = 1;
+		raise.framePoses = [
+			[
+				new Transform(new Vector3(0, 1, 0), new Quaternion(0, 0, 0, 1), new Vector3(1, 1, 1))
+			]
+		];
+		UpdateModelAnimation(posed, raise, 0);
+		DrawModel(posed, Vector3Zero(), 1, WHITE);
+		var skinnedCaster = caster.twin;
+		check(skinnedCaster != null && drawnInt(skinnedCaster, passes[8].draws[3], "boneOffset") >= 1,
+			"a posed model cast through its caster's skinned twin, given its first bone");
 		EndShadowMode();
 		frame.draw(800, 450, true);
 

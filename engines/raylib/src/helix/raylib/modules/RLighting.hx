@@ -36,6 +36,7 @@ class RLighting {
 		shader.program.mirror(new helix.raylib.internal.Program(helix.raylib.internal.Runtime.graphics, Defaults.litSkinnedShader()));
 		startIntensities(shader);
 		helix.raylib.internal.Surfaces.install();
+		helix.raylib.internal.ShadowSlots.bind(shader.program, 0);
 		return shader;
 	}
 
@@ -78,6 +79,7 @@ class RLighting {
 		p.mirror(new helix.raylib.internal.LitProgram(helix.raylib.internal.Runtime.graphics, Defaults.pbrSkinnedShader()));
 		startIntensities(shader);
 		helix.raylib.internal.Surfaces.install();
+		helix.raylib.internal.ShadowSlots.bind(shader.program, 0);
 		var samplers = [
 			MATERIAL_MAP_ALBEDO => "albedoMap",
 			MATERIAL_MAP_METALNESS => "metalnessMap",
