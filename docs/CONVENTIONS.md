@@ -80,6 +80,7 @@ dropped.
 - **A value is a property.** One that must act when assigned has a `set_` accessor; one read back from somewhere else has a `get_`;
   one nothing may assign is `(default, null)`. A record made whole and never changed after (`Touch`, a parsed header, a progress
   report) shows `final` fields. Nothing public is a bare `var` that something else keeps in step by hand.
+- **Settings reside on the object itself,** or on a part of it that's optional as a whole (a light's `shadows`).
 - **A property clamps; a method may refuse.** Assigning can't answer, so a property takes what it's given, held to its range, and its
   doc comment says the range. Whatever can be refused or decided later is a method returning `Bool`: `requestSize`, `add`, `load`'s
   result.
