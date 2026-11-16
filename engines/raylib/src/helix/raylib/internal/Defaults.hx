@@ -6,8 +6,8 @@ import haxe.macro.Expr;
 #end
 
 /** Holds helix-raylib's model shaders, compiled as the program builds from its files in `helix/raylib/shaders/`: raylib's default
-	(unlit), its variant reading a material's values, the lit one, the PBR one, each one's skinned twin, the shadow pass's, and the sprite
-	shader. */
+	(unlit), its variant reading a material's values, the lit one, the PBR one, each one's skinned twin, the shadow pass's, the sprite
+	shader, and the particle shaders. */
 @:noCompletion
 class Defaults {
 	/** Returns raylib's default shader. */
@@ -19,6 +19,19 @@ class Defaults {
 		instances of one quad (`Frame`'s sprite runs), each a record of its corners, texture rectangle and color. */
 	public static macro function spriteShader():ExprOf<helix.services.shaders.Shader> {
 		return ShaderMacro.sprites(Context.currentPos());
+	}
+
+	/** Returns helix-raylib's particle shader (the Particles extra's 3D emitters): a vertex stage working each particle out from its age
+		(`shaders/particle.vs`), whose attributes are a quad's corner and an instance's number, not raylib's, over a fragment stage tinting
+		the texture by the particle's color. */
+	public static macro function particleShader():ExprOf<helix.services.shaders.Shader> {
+		return ShaderMacro.particles("particle.fs", Context.currentPos());
+	}
+
+	/** Returns the particle shader lit (an `Emitter3D`'s `lit`): its fragment stage lighting the particle by the scene's lights at its
+		place. */
+	public static macro function particleLitShader():ExprOf<helix.services.shaders.Shader> {
+		return ShaderMacro.particles("particle_lit.fs", Context.currentPos());
 	}
 
 	/** Returns raylib's default shader skinned: its vertex stage moving each vertex by its bones from the frame's bone palette, its

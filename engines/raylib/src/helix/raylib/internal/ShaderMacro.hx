@@ -165,6 +165,17 @@ class ShaderMacro {
 			{name: fsName, text: adapt(builtIn("unlit.fs", pos), false, fsName, pos)}, {clipScale: true}, pos);
 	}
 
+	/** Returns the expression of helix-raylib's particle shader (the Particles extra's 3D emitters): its own vertex stage
+		(`shaders/particle.vs`, whose attributes are a quad's corner and an instance's number, not raylib's) over one of its fragment stages.
+
+		@param fsFile  The fragment stage's file: `particle.fs`, or `particle_lit.fs` for the lit one.
+		@param pos  Where errors point.
+		@return  An expression of type `helix.services.shaders.Shader`. */
+	public static function particles(fsFile:String, pos:Position):Expr {
+		return helix.services.shaders.Shader.makeExpr({name: "helix-raylib particle vertex shader", text: builtIn("particle.vs", pos)},
+			{name: 'helix-raylib $fsFile', text: builtIn(fsFile, pos)}, {clipScale: true}, pos);
+	}
+
 	// A stage with its uniforms' initializers taken out, each uniform's name and value added to initials. A value is a constant: numbers,
 	// true and false, and GLSL's constructors of them (float, int, vec2, ivec3, mat4 and the rest), as GL evaluates it.
 	static function initialize(text:String, name:String, pos:Position, initials:Array<{name:String, numbers:Array<Float>}>):String {

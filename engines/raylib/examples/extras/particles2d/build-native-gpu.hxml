@@ -1,0 +1,12 @@
+# The sparkler natively, SDL3 drawing with SDL_GPU: haxe build-native-gpu.hxml -> native-gpu/Main; hxcpp links the SDL3 library HELIX_SDL3_LIBRARY
+# names (BUILDING.md). --quit_after_frame=60 quits it after frame 60.
+-lib helix-raylib
+-D helix-company=helix
+-D helix-product=raylib-extras-particles2d
+-cp .
+-main Main
+-D helix-raylib-portable-sys
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-D sdl_gpu
+-cpp native-gpu

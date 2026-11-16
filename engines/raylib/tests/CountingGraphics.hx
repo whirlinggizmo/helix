@@ -30,6 +30,9 @@ class CountingGraphics implements IGraphics {
 	/** How many data textures were made. */
 	public var dataTextureCreations = 0;
 
+	/** The data textures made and not yet disposed. */
+	public final dataTextures = new Map<Int, Bool>();
+
 	// The bytes each texture and buffer live holds: its levels', a render target's at 8 a texel, a buffer's.
 	final bytes = new Map<Int, Float>();
 
@@ -113,7 +116,7 @@ class CountingGraphics implements IGraphics {
 
 	public function createDataTexture(width:Int, height:Int):Int {
 		dataTextureCreations++;
-		return handle();
+		return made(dataTextures, width * height * 16.);
 	}
 
 	public function updateTexture(handle:Int, x:Int, y:Int, width:Int, height:Int, data:Bytes):Void {}
@@ -153,7 +156,7 @@ class CountingGraphics implements IGraphics {
 	}
 
 	public function disposeTexture(handle:Int):Void
-		gone(textures, handle);
+		gone(dataTextures.exists(handle) ? dataTextures : textures, handle);
 
 	public function createBuffer(capacityBytes:Int):Int {
 		bufferCreations++;

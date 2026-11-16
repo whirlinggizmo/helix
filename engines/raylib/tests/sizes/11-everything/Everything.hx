@@ -36,6 +36,7 @@ class Everything {
 		"helix.raylib.extras.GuiSkins",
 		"helix.raylib.extras.Debug",
 		"helix.raylib.extras.Sprites",
+		"helix.raylib.extras.Particles",
 		"helix.raylib.extras.Textures"
 	];
 
@@ -59,6 +60,7 @@ class Everything {
 		"RModelsAsync",
 		"RModelsPosed",
 		"RModelsMerged",
+		"RParticles",
 		"RRenderTextureFit",
 		"RRlgl",
 		"RShapes",

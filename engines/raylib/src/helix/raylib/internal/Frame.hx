@@ -721,6 +721,56 @@ class Frame {
 		};
 	}
 
+	/** Adds a draw of instances of one quad through a program of its own (the Particles extra's 3D emitters), after the batch, which is
+		flushed first: the quad's two triangles, its corners 0, 1, 2 then 0, 2, 3, numbered 0 to 3 in its first buffer, drawn once an
+		instance with the current matrices and state.
+
+		@param p  The program.
+		@param layout  Its buffers' layouts, the corner numbers' first: one float each, not instanced.
+		@param buffers  The buffers, in the layout's order, read when the frame is drawn; the first is set here to the quad's corners.
+		@param instanceCount  How many instances.
+		@param textures  The texture at each of the program's slots, a GPU handle, 0 for none. Copied.
+		@param model  The model's matrix.
+		@param diffuse  The diffuse color, 0 to 1 each. */
+	public function quads(p:Program, layout:Array<helix.platform.VertexBuffer>, buffers:Array<Int>, instanceCount:Int, textures:Array<Int>, model:Matrix4,
+			diffuse:Array<Float>):Void {
+		flush();
+		if (spriteQuad == 0) {
+			var corners = Bytes.alloc(16);
+			for (c in 0...4)
+				corners.setFloat(c * 4, c);
+			spriteQuad = graphics.createStaticBuffer(corners, 16, false);
+			var indices = Bytes.alloc(24);
+			for (k => i in [0, 1, 2, 0, 2, 3])
+				indices.setInt32(k * 4, i);
+			spriteIndices = graphics.createStaticBuffer(indices, 24, true);
+		}
+		buffers[0] = spriteQuad;
+		var state = states();
+		var pipeline = p.cached(state);
+		if (pipeline == -1)
+			pipeline = p.pipeline(state, () -> graphics.createPipeline({
+				shader: p.handle,
+				buffers: layout,
+				primitive: Triangles,
+				indexed: true,
+				blend: colorBlend ? blend : Blend.OPAQUE,
+				colorWrite: colorMask,
+				depthTest: depthTest ? LessEqual : Off,
+				depthWrite: depthTest && depthMask,
+				cull: cullFace(),
+				clockwise: false,
+				depthOnly: false,
+				flip: ClipScale,
+				flipBlockSlot: p.flipSlot,
+				flipOffset: p.flipOffset
+			}));
+		var bound = ints();
+		for (t in textures)
+			bound.push(t);
+		addMesh(pipeline, buffers, spriteIndices, 6, Triangles, bound, p, model, diffuse, instanceCount);
+	}
+
 	// The frame's own GPU things: the white texture and the constants' record (an identity matrix for the attributes no buffer feeds).
 	function makeOwn():Void {
 		var texel = Bytes.alloc(4);

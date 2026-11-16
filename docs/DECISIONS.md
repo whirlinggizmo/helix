@@ -1052,3 +1052,28 @@ Why things are the way they are, numbered, in order.
     Rejected: a `createDepthTarget` of depth alone, which needs depth-only pipelines for every draw into it, as a shadow pass does; a
     multisampled target's depth resolved, which SDL_GPU can't and WebGL2 does only by a blit of every pass; linear filtering where a
     backend has it, which reads differently on each.
+77. **Particles are an extra of emitters, a 3D one drawn on the GPU and a 2D one in the sprite batch, their settings plain fields.**
+    `helix.raylib.extras.Particles` loads, updates, draws, bursts, prewarms, clears and unloads an `Emitter3D` and an `Emitter2D`, raylib's
+    way: a function per action, `LoadEmitter3D` returning the emitter and `UnloadEmitter3D` freeing it. Their settings (`Emitter`, the
+    two share) are public fields with their defaults, read where they're used and held to their ranges there, as the Lighting extra's
+    light fields are (CONVENTIONS: a property clamps). A field read at a particle's birth (life, spawn, velocity, size variance, spin,
+    palette) changes the particles born after it, and one read over a life (gravity, drag, wander, sizes, colors, texture, blend mode)
+    changes those alive. A new emitter gives off a small fountain of soft white dots that fade, so a program sees it work before it sets
+    anything.
+
+    A 3D emitter's particles are records written once at their birth, four texels each of a data texture, and the vertex stage works
+    each out from its age (gravity, drag, wander, size and color over its life, the flipbook), one instanced draw of a quad an emitter
+    (`Frame.quads`), its particles facing the camera and writing no depth. A 2D emitter's particles move on the CPU, and each is a quad
+    `Frame.quad` writes, as `DrawTexturePro` does, so they join the sprite batch and its runs. Births take their trigonometry from
+    `helix.math.Trig` and their random numbers from the emitter's `helix.math.Random`, started from its `seed` at its first birth after
+    a load or a clear, so a seed gives the same particles on every target. `lit` lights a 3D emitter's particles by the scene's lights at
+    each particle's place, through `Frame.lighting`, which only `CreateLight` sets, so the Lighting extra stays out of a program that makes
+    no light.
+
+    Why: the Lanternholm port wrote its own particles (billboards moved on the CPU, about 200 lines), as a three.js program writes them
+    too; raylib has none. Its API was agreed with the user as doc comments first (AGENTS.md: the spec is the authority).
+
+    Rejected: an options struct passed to the load, which a program would rebuild to change one setting each frame (wind, a trail's
+    color); setters, a method a setting, which the Lighting extra's light fields replaced for the same reason (`SetLightIntensity`
+    and its kind are gone); one emitter type for 2D and 3D, whose units, motion and draw differ (pixels in a batch on the CPU, world units on the
+    GPU), and which would leave half its fields meaning nothing in each, as CONVENTIONS names the two kinds apart.

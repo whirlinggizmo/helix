@@ -21,7 +21,9 @@ import helix.raylib.extras.Textures.*;
 	"helix.platform.adapters.tilt.dom", "helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.raylib.modules.RDebug",
 	"helix.raylib.modules.RGuiSkins", "helix.raylib.modules.RSprites", "helix.raylib.modules.RTextureDraws", "helix.raylib.modules.RTextureFills",
 	"helix.raylib.modules.RTextureAtlases", "helix.raylib.modules.RRenderTextureFit", "helix.raylib.extras.TextureAtlas", "helix.raylib.internal.SyncLoads",
-	"helix.raylib.internal.Shadows", "helix.raylib.extras.ShadowOptions", "helix.geometry.Frustum", "helix.math.Aabb3D")
+	"helix.raylib.internal.Shadows", "helix.raylib.extras.ShadowOptions", "helix.geometry.Frustum", "helix.math.Aabb3D", "helix.raylib.modules.RParticles",
+	"helix.raylib.internal.Emitters", "helix.raylib.internal.EmitterDraws", "helix.raylib.extras.Emitter", "helix.raylib.extras.Emitter2D",
+	"helix.raylib.extras.Emitter3D", "helix.raylib.extras.EmitterColorKey", "helix.raylib.extras.EmitterSizeKey")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

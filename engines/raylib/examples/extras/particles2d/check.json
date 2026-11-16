@@ -1,0 +1,7 @@
+{
+  "what": "the dark background in the corner; the sparkler's tip, where the sparks born there add up to white.",
+  "points": [
+    {"x": 780, "y": 430, "color": [16, 14, 22], "tolerance": 3},
+    {"x": 400, "y": 200, "color": [255, 255, 255], "tolerance": 6}
+  ]
+}

@@ -11,7 +11,7 @@ file calls (RFilesAsync) and the compiled shaders (RCompiledShaders) after RCore
 RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAsync after RGui.
 What a program opts into that raylib has no call for is in the package helix.raylib.extras, a module and a section of its own each
 (extras.Lighting from RLighting, extras.Materials from RMaterials, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.Assets from RAssets, extras.GuiSkins from
-RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, extras.Shadowmaps from RShadowmaps, a model's posed bounds, merge and masked blend in extras.Models from
+RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, extras.Shadowmaps from RShadowmaps, extras.Particles from RParticles, a model's posed bounds, merge and masked blend in extras.Models from
 RModelsPosed, RModelsMerged and RModelsMasked, and the fills, tiled and patched draws, atlases and fitted render texture in
 extras.Textures from RTextureFills, RTextureDraws, RTextureAtlases and RRenderTextureFit).
 The sections (engines/raylib/src/helix/raylib/modules/) are read as the compiler describes them (haxe -xml), never by matching their text
@@ -101,6 +101,7 @@ TARGETS = {
     'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),
     'extras/Sprites.hx': ([('RSprites', "sprites: many copies of one part of a texture, each placed by a matrix, in one call")], None, 'Sprites'),
     'extras/Shadowmaps.hx': ([('RShadowmaps', "shadowmaps: raylib's shadowmap example's render texture of depth alone")], None, 'Shadowmaps'),
+    'extras/Particles.hx': ([('RParticles', "particles: emitters in 3D, drawn on the GPU, and in 2D, drawn in the batch")], None, 'Particles'),
     'extras/Textures.hx': ([
         ('RTextureFills', "textures: part of a texture shown up to an amount, and the fill's edge"),
         ('RTextureDraws', "textures: tiled draws, nine-patches whose edges repeat, and textured polygons"),
