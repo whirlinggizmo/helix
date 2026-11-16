@@ -18,8 +18,8 @@ next is in [docs/ROADMAP.md](docs/ROADMAP.md).
   library's own written instead. helix-legacy's design (its runner, statics, profiles) is never a reason for this library's shape.
   DECISIONS and docs/trials keep the names they were written with, where "HeliX" means helix-legacy. Don't name libwgf in code or docs.
 - **The spec is the authority.** docs/PLATFORM.md for the platform. A library above starts as its API: its types and members with
-  their doc comments and no implementation, agreed with the user and tried by fresh agents before any of it is written; those doc
-  comments are its spec. A library changes when it doesn't do what its spec says, or when the spec changes first.
+  their doc comments and no implementation, agreed with the user before any of it is written, and tried by fresh agents when the
+  user asks; those doc comments are its spec. A helix-raylib extra is agreed the same way: a trial finds an extra only when handed it. A library changes when it doesn't do what its spec says, or when the spec changes first.
 - **No backward compatibility.** When an API changes, every caller changes in the same commit.
 - **Follow docs/CONVENTIONS.md** and docs/ARCHITECTURE.md (the adapter rule). Every public type and member has a doc comment. Run the
   formatter rather than laying code out by hand.
@@ -46,5 +46,5 @@ How an agent works here:
   stopped if it's stuck, and the work that doesn't need it carried on.
 - **Check the homework.** An agent's report is a claim: read its diff, run the checks it names, and when a task went to two agents,
   compare their branches.
-- **A departure from raylib gets a trial before it's pushed:** a change adding or moving a refusal, an extra or a build step in
-  helix-raylib. How a trial runs is [docs/trials/README.md](docs/trials/README.md).
+- **A departure from raylib gets a trial before it's pushed:** a change adding or moving a refusal or a build step in helix-raylib. A
+  change bringing helix-raylib back to raylib's own behaviour needs none. How a trial runs is [docs/trials/README.md](docs/trials/README.md).

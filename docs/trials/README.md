@@ -4,11 +4,11 @@ A trial gives part of helix to fresh agents who know nothing of it, and reads wh
 
 ## When
 
-- **A library's API, before it's written.** Fresh agents write against its types and doc comments alone (AGENTS.md). A guess one
-  makes is answered by changing the API, so the question can't come up again.
-- **A departure from raylib, before it's pushed.** A change adding or moving a refusal, an extra or a build step in helix-raylib gets a
-  trial. Each guess an entrant makes at the change is answered where the entrant met it: in the refusal's message, or in the doc of
-  the call it reached for.
+- **A library's API, when the user asks.** Fresh agents write against its types and doc comments alone (AGENTS.md). A guess one
+  makes is answered by changing the API, so the question can't come up again. An extra is found only when a brief hands it over.
+- **A departure from raylib, before it's pushed.** A change adding or moving a refusal or a build step in helix-raylib gets a trial.
+  Each guess an entrant makes at the change is answered where the entrant met it: in the refusal's message, or in the doc of the call
+  it reached for. A change bringing helix-raylib back to raylib's own behaviour needs none.
 - **What an engine costs to build with.** Fresh agents build a game from its spec, on helix-raylib and on raylib in C, the baseline.
 
 ## Layout
