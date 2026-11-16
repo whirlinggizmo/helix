@@ -986,6 +986,26 @@ Why things are the way they are, numbered, in order.
     Rejected: a page's `preserveDrawingBuffer` for the frame last shown, which every program would pay for. Drawing the last frame
     again when asked, as the frame keeps no draws once shown.
 
+74. **raylib's loads are synchronous, and a page reads what the Assets extra ensured.** It revises 72's refused asset loads.
+    `LoadTexture`, `LoadImage`, `LoadImageRaw`, `LoadImageAnim`, `LoadWave`, `LoadSound`, `LoadMusicStream`, `LoadFont`, `LoadFontEx`,
+    `GuiLoadStyle`, `LoadModel`, `LoadModelAnimations`, `LoadMaterials` and `LoadCompiledShader` are raylib's again. Natively each
+    reads and decodes its file during the call. In a page the browser reads its cache and decodes only asynchronously, so a load reads
+    a file `EnsureAssetAsync` or `EnsureAssetsAsync` made local and decoded first, and a load of any other fails as raylib's load of a
+    missing file does, logging "FILEIO: [path] Failed to load: not ensured. See EnsureAssetsAsync". The `...Async` loads stay.
+
+    What an ensure decoded stays until `ReleaseAsset`, and every load of the file makes its own texture, sound, model or materials from
+    it: a model's loads share its meshes' GPU buffers and textures, each counted (`Models.keep`), a sound's each copy the wave, an
+    .mtl file's each make materials. Nothing counts the ensure's own data: a program releases a level's files when it leaves the level.
+    The asset host is the option `asset_host`, then `SetAssetHost`, then `-D helix-raylib-asset-host`, then the default.
+
+    Why: agents who know raylib write its loads, and met the refusals at their first compile. In the cost trial
+    (docs/trials/2026-11-15-wardens-cost) the twelve entrants briefed with one line on the ensure each ensured every file with one
+    `EnsureAssetsAsync` and met no "not ensured" in a run; natively the baseline's helix-raylib entrants (2026-11-15-wardens-baseline)
+    used raylib's loads as written, at about raylib C's cost.
+
+    Rejected: a load's first taking what was ensured, which left a second load of a sound or a model failing in a page and an image's
+    pixels kept for the run; counting the ensure's data across loads and unloads, which gives raylib's unloads a side effect and keeps
+    everything for a program that never unloads; fetching every file ahead, which fetches what the program may never load (72).
 75. **The screen reads wait, as the file calls do, and read the frame as drawn so far.** It revises 72's "stay refused".
     `LoadImageFromTexture` and `LoadImageFromScreen` are waiting calls (72): in a page an `await` the program doesn't write, natively
     a call that blocks, each returning raylib's `Image`. `LoadImageFromTexture` draws the frame's render texture passes and texture

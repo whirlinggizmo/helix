@@ -373,11 +373,7 @@ class RAudio {
 		if (entry != null && entry.loaded != null)
 			return loadSound(path);
 		return SyncLoads.load(path, Runtime.waves.exists(path), () -> {
-			var sound = LoadSoundFromWave(Runtime.waves.get(path));
-			// The wave is the sound's now: a second load of the file reads it again, natively, or needs another ensure.
-			Runtime.waves.remove(path);
-			Runtime.ensured.remove(path);
-			sound;
+			LoadSoundFromWave(Runtime.waves.get(path));
 		}, (loaded, failed) -> RAudioAsync.LoadSoundAsync(path, loaded, failed),
 			() -> new Sound());
 	}

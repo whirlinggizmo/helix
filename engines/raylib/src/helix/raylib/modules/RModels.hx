@@ -9,6 +9,7 @@ import helix.raylib.internal.Answers;
 import helix.raylib.internal.DefaultFont;
 import helix.raylib.internal.Animations;
 import helix.raylib.internal.Models;
+import helix.raylib.internal.ObjModels;
 import helix.raylib.internal.ParShapes;
 import helix.raylib.internal.Runtime;
 import helix.raylib.internal.SyncLoads;
@@ -693,12 +694,9 @@ class RModels {
 		@return  The model, the program's until `UnloadModel`. */
 	static function LoadModel(fileName:String):Model {
 		var path = normalize(fileName);
-		var ensured = Runtime.models3d.get(path);
-		if (ensured != null) {
-			// The ensure's model is the first load's.
-			Runtime.models3d.remove(path);
-			return ensured;
-		}
+		// An ensured file's model is kept while the ensure's own load lives, and each load shares it.
+		if (Runtime.models3d.exists(path))
+			return Models.load(path);
 		return SyncLoads.load(path, Models.isKept(path), () -> loadModel(path),
 			(loaded, failed) -> helix.raylib.modules.RModelsAsync.loadModel(path, loaded, failed), () -> new Model([], [], []));
 	}
@@ -716,10 +714,10 @@ class RModels {
 		@return  The materials, each the program's until `UnloadMaterial`. */
 	static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material> {
 		var path = normalize(fileName);
-		var ensured = Runtime.materials.get(path);
-		Runtime.materials.remove(path);
-		var materials:Array<Material> = ensured != null ? ensured : SyncLoads.load(path, false, () -> [],
-			(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadMaterialsAsync(path, loaded, failed), () -> []);
+		var library = Runtime.materialLibraries.get(path);
+		var materials:Array<Material> = library != null ? ObjModels.materials(library,
+			defaultShader()) : SyncLoads.load(path, false, () -> [],
+				(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadMaterialsAsync(path, loaded, failed), () -> []);
 		if (materialCount != null)
 			materialCount[0] = materials.length;
 		return materials;

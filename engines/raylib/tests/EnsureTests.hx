@@ -17,7 +17,8 @@ import helix.services.time.Time;
 	`LoadImageRaw`, and one not ensured loaded during the call natively and failing in a page; a font ensured, opened, loaded by
 	`LoadFontEx` and `LoadFont` during the call, and closed as it's released; a compiled shader ensured (tests/shaders' glow, embedded
 	by the build), loaded at once by `LoadCompiledShader`, one not ensured loaded during the call natively and empty in a page, and a
-	.shader file that isn't a compiled shader failing its ensure; and the asset host's order,
+	.shader file that isn't a compiled shader failing its ensure; an .mtl file ensured, each `LoadMaterials` of it materials of its own,
+	until it's released; and the asset host's order,
 	the option first, then `SetAssetHost`, then the build's define, then the default. On a source of the test's own that answers only
 	once as many fetches as it waits for have been asked. */
 @:access(helix.raylib.internal.Runtime)
@@ -146,6 +147,21 @@ class EnsureTests {
 		#end
 		ReleaseAsset("glow.shader");
 		check(!IsAssetEnsured("glow.shader") && !Runtime.compiledShaders.exists("glow.shader"), "a compiled shader released");
+
+		// An .mtl file ensured stays for every load, each making materials of its own.
+		gate.files.set("crate.mtl", "newmtl wood\nKd 1 0.5 0\n");
+		var library = false;
+		EnsureAssetAsync("crate.mtl", () -> library = true, error -> throw error);
+		poll();
+		var count = [0];
+		var first = LoadMaterials("crate.mtl", count),
+			second = LoadMaterials("crate.mtl", count);
+		check(library && first.length == 1 && second.length == 1 && count[0] == 1 && first[0] != second[0],
+			'each load of an ensured .mtl file its own materials: ${first.length} ${second.length}');
+		first[0].maps[MATERIAL_MAP_ALBEDO].color = new helix.raylib.Color(0, 0, 255, 255);
+		check(second[0].maps[MATERIAL_MAP_ALBEDO].color.r == 255, "one load's material changed, not another's");
+		ReleaseAsset("crate.mtl");
+		check(!IsAssetEnsured("crate.mtl") && !Runtime.materialLibraries.exists("crate.mtl"), "an .mtl file released");
 
 		// A file released is no longer ensured, and a load of it is one of a file never ensured.
 		ReleaseAssets(["pixels.raw"]);

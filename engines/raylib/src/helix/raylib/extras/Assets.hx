@@ -96,8 +96,8 @@ class Assets {
 		never ensured. What a load already made from it (a texture, a sound) is the program's, let go of by raylib's unloads, and stays.
 		The program's cache keeps its copy of a fetched file, so ensuring it again needs no fetch.
 
-		A file's first load takes what was decoded from it, so a program only releases what it ensured and never loaded: a level's files
-		when the player leaves for the menu.
+		Each load of an ensured file makes its own texture, sound, model or materials from what was decoded, which stays until it is
+		released: a program releases a level's files when the player leaves for the menu.
 
 		@param fileName  The file's name, relative to the asset host. */
 	public static inline function ReleaseAsset(fileName:String):Void

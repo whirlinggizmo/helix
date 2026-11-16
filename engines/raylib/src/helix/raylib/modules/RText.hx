@@ -655,7 +655,6 @@ class RText {
 		return SyncLoads.load(path, opened != null || bmFont != null || RTextures.imageReady(path), () -> {
 			if (opened == null && bmFont == null)
 				return RTextAsync.imageFont(RTextures.LoadImage(path));
-			Runtime.bmFonts.remove(path);
 			var font = opened != null ? openedFont(opened, 32, null, 95) : fromBmFont(bmFont);
 			SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
 			return font;

@@ -281,10 +281,12 @@ class Runtime {
 		answering at once. */
 	public static final ensured = new Map<String, Bool>();
 
-	/** The waves sound files' ensures decoded (`EnsureAssetAsync`), by their files' normalized paths, until a load takes or copies them. */
+	/** The waves sound files' ensures decoded (`EnsureAssetAsync`), by their files' normalized paths, each load copying its own, until the
+		file is released. */
 	public static final waves = new Map<String, helix.raylib.Wave>();
 
-	/** The models ensures loaded (`EnsureAssetAsync`), by their files' normalized paths, until the first load takes each. */
+	/** The models ensures loaded (`EnsureAssetAsync`), by their files' normalized paths: each the ensure's own load of the file, which
+		keeps the file's model (`Models.keep`) for every load to share, until the file is released. */
 	public static final models3d = new Map<String, helix.raylib.Model>();
 
 	/** The glTF files ensures read (`EnsureAssetAsync`), by their normalized paths, for their animations' loads. */
@@ -294,16 +296,17 @@ class Runtime {
 		opened font, rasterized during a load at the size it asks for, until the file is released. */
 	public static final openFonts = new Map<String, Int>();
 
-	/** The BMFonts ensures read with their pages (`EnsureAssetAsync`), by their .fnt files' normalized paths, until the first load takes
-		each. */
+	/** The BMFonts ensures read with their pages (`EnsureAssetAsync`), by their .fnt files' normalized paths, each load making a font of
+		its own from it, until the file is released. */
 	public static final bmFonts = new Map<String, helix.services.fonts.Font2D>();
 
 	/** The compiled shaders ensures read (`EnsureAssetAsync`), by their .shader files' normalized paths: each the value a load makes a
 		shader of, until the file is released. */
 	public static final compiledShaders = new Map<String, Dynamic>();
 
-	/** The materials ensures loaded from .mtl files (`EnsureAssetAsync`), by their normalized paths, until the first load takes them. */
-	public static final materials = new Map<String, Array<helix.raylib.Material>>();
+	/** The .mtl files ensures read with their textures (`EnsureAssetAsync`), by their normalized paths, each load making materials of its
+		own from it, until the file is released. */
+	public static final materialLibraries = new Map<String, helix.formats.obj.MtlFile>();
 
 	/** Makes what decodes the program's images, once, over the assets (`loading`): the platform's image decoder and the images over it.
 		What reads models is `modelling`'s. */
