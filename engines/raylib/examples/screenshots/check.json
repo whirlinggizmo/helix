@@ -1,0 +1,12 @@
+{
+  "what": "Natively, the three screenshots read back: the first frame all DARKBLUE, the frame part way through all MAROON (its clear, not the gold drawn after), and the frame last shown GOLD at the left and MAROON at the right. The page shows the frames after them: GOLD at the left half, MAROON at the right.",
+  "printed": [
+    "first.png 800 x 450: 0 82 172 and 0 82 172",
+    "during.png 800 x 450: 190 33 55 and 190 33 55",
+    "between.png 800 x 450: 255 203 0 and 190 33 55"
+  ],
+  "points": [
+    {"x": 200, "y": 300, "color": [255, 203, 0], "tolerance": 3},
+    {"x": 600, "y": 300, "color": [190, 33, 55], "tolerance": 3}
+  ]
+}

@@ -1,0 +1,11 @@
+# Screenshots natively, SDL3 drawing with SDL_GPU (Vulkan, Direct3D 12 or Metal): haxe build-native-gpu.hxml -> native-gpu/Main; hxcpp
+# links the SDL3 library HELIX_SDL3_LIBRARY names (BUILDING.md). --quit_after_frame=60 quits it after frame 60.
+-lib helix-raylib
+-D helix-company=helix
+-D helix-product=raylib-screenshots
+-cp .
+-main Main
+-D sdl_gpu
+-dce full
+-D HXCPP_COMPILE_THREADS=4
+-cpp native-gpu
