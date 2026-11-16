@@ -30,9 +30,9 @@ import helix.raylib.modules.RWindowAsync;
 
 	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
-	`EndDrawing`, `WaitTime`, a file call (`LoadFileText`) and a clipboard call don't compile in a function used as a value, a
-	constructor or a variable's initial value. An asset load (`LoadModel`), `LoadImageFromScreen` and `LoadImageFromTexture`
-	don't compile, and each names its `...Async` call. */
+	`EndDrawing`, `WaitTime`, a file call (`LoadFileText`), a clipboard call and a screen read (`LoadImageFromScreen`) don't compile in a
+	function used as a value, a constructor or a variable's initial value. A load from memory (`LoadImageFromMemory`) doesn't compile,
+	and names its `...Async` call. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -4916,8 +4916,8 @@ class Raylib {
 			?failed:String->Void):Void
 		RTexturesAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, loaded, failed);
 
-	/** Asynchronously reads a texture's pixels into an RGBA image, replacing raylib's `LoadImageFromTexture`. See
-		`LoadImageFromScreenAsync` for the screen.
+	/** Asynchronously reads a texture's pixels into an RGBA image, as the frames drawn before this one left them. See
+		`LoadImageFromTexture` for reading what this frame has drawn into the texture so far.
 
 		The image is RGBA, whatever the texture's format.
 
@@ -4937,7 +4937,8 @@ class Raylib {
 	public static inline function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void):Void
 		RTexturesAsync.LoadImageFromTextureAsync(texture, loaded, failed);
 
-	/** Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshot` for saving the screen to a file.
+	/** Asynchronously reads the screen into an RGBA image as the next frame ends. See `LoadImageFromScreen` for reading the frame as
+		drawn so far, and `TakeScreenshot` for saving the screen to a file.
 
 		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
 
@@ -7190,6 +7191,42 @@ class Raylib {
 		return helix.raylib.internal.Wait.section("ExportAutomationEventList: Not supported in a function used as a value.",
 			macro helix.raylib.modules.RCore.ExportAutomationEventList, [list, fileName], false);
 
+	/** Reads a texture's pixels into an image, and returns once they are read. See `LoadImageFromScreen` for reading the screen.
+
+		What was drawn into the texture so far is read: the frame's render texture passes up to the call are drawn first, and its
+		updates (`UpdateTexture`) made. Inside `BeginTextureMode`, the draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`)
+		aren't read, as in raylib.
+
+		The image is RGBA, whatever the texture's format.
+
+		A render texture's rows come bottom first, as raylib's do, so its image is upside down.
+
+		A texture not drawn yet is read from memory. raylib's default texture is its white pixel.
+
+		A cubemap is read from the image it was made from while that is kept in memory. Its faces on the GPU aren't read.
+
+		@param texture  The texture.
+		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read. Why it couldn't is logged. */
+	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
+		return helix.raylib.internal.Wait.section("LoadImageFromTexture: Not supported in a function used as a value.",
+			macro helix.raylib.modules.RTextures.LoadImageFromTexture, [texture], false);
+
+	/** Reads the screen into an image as the frame has drawn it so far, and returns once it is read. See `TakeScreenshot` for saving the
+		frame to a file.
+
+		The frame's drawing up to the call is drawn first, and the frame goes on from there: the draws after the call are drawn over what
+		the image holds. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
+
+		Called between `EndDrawing` and `BeginDrawing`, the image is of the next frame, which has drawn nothing yet.
+
+		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
+
+		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read, as before `InitWindow`. Why it
+			couldn't is logged. */
+	public static macro function LoadImageFromScreen():ExprOf<Image>
+		return helix.raylib.internal.Wait.section("LoadImageFromScreen: Not supported in a function used as a value.",
+			macro helix.raylib.modules.RTextures.LoadImageFromScreen, [], false);
+
 	/** Writes an image to a PNG, QOI or raw file, and returns once it is written. See
 		`ExportImageAsCode` for writing a C header.
 
@@ -7344,16 +7381,6 @@ class Raylib {
 	/** Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. */
 	public static macro function LoadImageAnimFromMemory(args:Array<Expr>):ExprOf<Image>
 		return helix.platform.macros.Build.unsupported("LoadImageAnimFromMemory: Not supported. Use LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Image));
-
-	/** Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image. */
-	public static macro function LoadImageFromTexture(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void) instead.",
-			macro(null : helix.raylib.Image));
-
-	/** Doesn't compile. See `LoadImageFromScreenAsync` for reading the screen into an image. */
-	public static macro function LoadImageFromScreen(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageFromScreen: Not supported. Use LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
 
 	/** Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes. */

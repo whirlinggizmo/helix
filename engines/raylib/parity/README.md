@@ -65,7 +65,7 @@ from GitHub, checks it against its sha256 and builds `libraylib.a` into `build/r
 | `scene2d_62` | 6.2 | pixels | a 2D scene of the shapes 6.2 fixed |
 | `scene3d` | 5.5 | pixels | a 3D scene of the shapes, generated models and shaders |
 | `scene3d_62` | 6.2 | pixels | the spheres, capsules and billboards, and a mesh given tangents, in that scene |
-| `render` | 5.5 | pixels | rlgl's blend modes, custom factors and color mask, a render texture's alpha under them; texture updates, read back and mipmaps under raylib's filters; render textures kept across passes and frames; `DrawMeshInstanced` |
+| `render` | 5.5 | pixels | rlgl's blend modes, custom factors and color mask, a render texture's alpha under them; texture updates, read back and mipmaps under raylib's filters; the screen read part way through a frame; render textures kept across passes and frames; `DrawMeshInstanced` |
 | `wires` | 5.5 | pixels | rlgl's render state: wires, culling, wire mode, the depth mask and test |
 | `depth_mask` | 5.5 | pixels | the depth mask off and on around translucent decals and additive sparks, frame after frame, the ground hiding a cube below it |
 | `points` | 5.5 | pixels | rlgl's point mode: `DrawModelPoints` and `DrawModelPointsEx` (a cloud, indexed meshes), point mode with culling, the batch as points |

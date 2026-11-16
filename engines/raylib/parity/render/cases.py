@@ -54,11 +54,9 @@ CASES = [
     'LET(colors, Color *, LoadImageColors(tile)); UpdateTexture(second, red.data); UpdateTextureRec(second, R(8, 0, 8, 8), colors); '
     'BeginTextureMode(copy); DrawTexture(second, 0, 0, WHITE); rlDrawRenderBatchActive(); UpdateTextureRec(second, R(0, 0, 8, 8), tile.data); '
     'DrawTexture(second, 16, 16, WHITE); EndTextureMode(); DrawTextureRec(copy.texture, R(0, 0, 32, -32), V2(140, 290), WHITE);',
-    # A texture read back once drawn and updated (raylib's LoadImageFromTexture; helix-raylib's answers after the frame, its update in it),
-    # made a texture again and drawn.
+    # A texture read back once drawn and updated in the frame, made a texture again and drawn.
     {'c': 'if (frame == 1) readBack = LoadTextureFromImage(LoadImageFromTexture(patched)); if (readBack.id > 0) DrawTexture(readBack, 590, 290, WHITE);',
-     'hx': 'if (frame == 0) LoadImageFromTextureAsync(patched, image -> readBack = LoadTextureFromImage(image)); '
-           'if (readBack != null) DrawTexture(readBack, 590, 290, WHITE);'},
+     'hx': 'if (frame == 1) readBack = LoadTextureFromImage(LoadImageFromTexture(patched)); if (readBack != null) DrawTexture(readBack, 590, 290, WHITE);'},
     # Nine instances of a cube in one draw, each placed by its own transform, the last three left out.
     'BeginMode3D(camera); DrawMeshInstanced(cube, placed, transforms, 6); EndMode3D();',
     # Mipmaps under raylib's filters, drawn at 24 x 24 (level 1.4): its point, bilinear and trilinear tables, anisotropy; trilinear without
@@ -70,4 +68,9 @@ CASES = [
     # Mipmaps made after the texture's first draw, from its pixels on the GPU, then read trilinear.
     'DrawTexture(late, 230, 380, WHITE); if (frame == 0) { GenTextureMipmaps(OUT(late)); SetTextureFilter(late, TEXTURE_FILTER_TRILINEAR); } '
     'DrawTexturePro(late, R(0, 0, 64, 64), R(300, 380, 20, 20), V2(0, 0), 0, WHITE);',
+    # The screen read part way through the saved frame, the blend modes' first two cells cut from it and drawn on top, the frame going on.
+    {'c': 'rlDrawRenderBatchActive(); if (frame == 2) { Image shot = LoadImageFromScreen(); ImageCrop(&shot, R(10, 10, 156, 70)); '
+          'DrawTexture(LoadTextureFromImage(shot), 470, 400, WHITE); }',
+     'hx': 'rlDrawRenderBatchActive(); if (frame == 2) { var shot = LoadImageFromScreen(); ImageCrop(shot, R(10, 10, 156, 70)); '
+           'DrawTexture(LoadTextureFromImage(shot), 470, 400, WHITE); }'},
 ]

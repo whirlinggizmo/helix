@@ -1,0 +1,8 @@
+{
+  "what": "The page at 800 x 600 after five frames, each read part way: the canvas's top left quarter blue, drawn after the read over the red left half, the right half the green clear.",
+  "points": [
+    {"x": 200, "y": 150, "color": [0, 121, 241], "tolerance": 3},
+    {"x": 200, "y": 450, "color": [230, 41, 55], "tolerance": 3},
+    {"x": 600, "y": 300, "color": [0, 228, 48], "tolerance": 3}
+  ]
+}

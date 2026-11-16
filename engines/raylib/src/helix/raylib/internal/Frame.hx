@@ -248,6 +248,21 @@ class Frame {
 		writes, as the bone palette once a program poses a model (`Skinning`). */
 	public final drawing:Array<() -> Void> = [];
 
+	/** What runs before the passes recorded so far are drawn part way through a frame (`submit`), in the order added: what those passes
+		read, as the bone palette (`Skinning`), and what counts their draws (`RDebug`). */
+	public final submitting:Array<() -> Void> = [];
+
+	// The render target the screen's pass draws into once the screen is read part way through a frame (`readScreen`), at the
+	// framebuffer's size, 0 before the first read; whether this frame's screen pass draws into it, copied to the screen as the frame ends.
+	var held = 0;
+	var heldWidth = 0;
+	var heldHeight = 0;
+	var holding = false;
+
+	// Draws a frame whose screen was read part way through it (heldFrame): set by the first read, null before, so a program reading none
+	// links none of it.
+	var drawHeld:Null<(framebufferWidth:Int, framebufferHeight:Int, show:Bool) -> Void> = null;
+
 	/** Draws a mesh `UpdateModelAnimation` posed, skinned: set by the first call (`Skinning`), null before, so a program without one links
 		none of it. Receives the mesh, the shader, the material, the transform, the diffuse color, and the instances' buffer and count;
 		returns false for a draw it leaves to be drawn as it is. */
@@ -302,6 +317,7 @@ class Frame {
 
 	// After a frame is drawn: nothing recorded, the screen's pass alone.
 	function reset():Void {
+		holding = false;
 		snapshotCount = 0;
 		drawCount = 0;
 		intCount = 0;
@@ -1030,21 +1046,7 @@ class Frame {
 		var key = 'i${indexed ? "x" : ""}${(primitive : Int)}$state';
 		var pipeline = p.pipeline(key, () -> graphics.createPipeline({
 			shader: p.handle,
-			buffers: [
-				{
-					stride: STRIDE,
-					instanced: false,
-					attributes: [
-						for (i => name in p.attributes)
-							if (OFFSETS.exists(name)) {slot: i, format: FORMATS.get(name), offset: OFFSETS.get(name)}
-					]
-				},
-				{
-					stride: CONSTANT_BYTES,
-					instanced: true,
-					attributes: constantAttributes(p.attributes)
-				}
-			],
+			buffers: immediateBuffers(p),
 			primitive: primitive,
 			indexed: indexed,
 			blend: colorBlend ? blend : Blend.OPAQUE,
@@ -1077,6 +1079,25 @@ class Frame {
 			uniforms: values(p, model, [1, 1, 1, 1]),
 			instances: 1
 		};
+	}
+
+	// An immediate draw's buffers through a program: the batch's vertices, and the constants' one record.
+	static function immediateBuffers(p:Program):Array<helix.platform.VertexBuffer> {
+		return [
+			{
+				stride: STRIDE,
+				instanced: false,
+				attributes: [
+					for (i => name in p.attributes)
+						if (OFFSETS.exists(name)) {slot: i, format: FORMATS.get(name), offset: OFFSETS.get(name)}
+				]
+			},
+			{
+				stride: CONSTANT_BYTES,
+				instanced: true,
+				attributes: constantAttributes(p.attributes)
+			}
+		];
 	}
 
 	// The attributes the constants' one record feeds: those immediate vertices don't carry, and each matrix's columns.
@@ -1391,23 +1412,178 @@ class Frame {
 		present();
 		for (call in drawing)
 			call();
-		// The frame's vertices and sprites go up once, in its first pass: every pass draws from the same buffers, and a buffer written
-		// again after a pass drew from it takes another copy of the buffer on some graphics adapters, which run out of them.
-		var uploaded = false;
-		for (p in passes) {
+		if (holding)
+			drawHeld(framebufferWidth, framebufferHeight, show);
+		else
+			drawPasses(passes, framebufferWidth, framebufferHeight, show, true);
+		for (b in retired) {
+			graphics.disposeBuffer(b);
+		}
+		retired.resize(0);
+		reset();
+		var calls = drawn.copy();
+		drawn.resize(0);
+		for (call in calls)
+			call();
+	}
+
+	/** Draws the passes recorded so far part way through a frame, as rlgl draws into its framebuffers at once: each render texture's
+		pass and the textures' updates, and the screen's pass once the screen is read (`readScreen`). The batch waits, as rlgl's does
+		until it is flushed. The pass drawn into goes on from where it stopped, keeping what it drew.
+
+		@param framebufferWidth  The screen's framebuffer width.
+		@param framebufferHeight  Its height. */
+	public function submit(framebufferWidth:Int, framebufferHeight:Int):Void {
+		var screen = passes[passes.length - 1];
+		var submitted = holding ? passes.copy() : passes.slice(0, passes.length - 1);
+		if (submitted.length == 0)
+			return;
+		for (call in submitting)
+			call();
+		drawPasses(submitted, framebufferWidth, framebufferHeight, false, true);
+		passes.resize(0);
+		if (pass != screen) {
+			pass.clear = null;
+			pass.draws.resize(0);
+			pass.updates.resize(0);
+			passes.push(pass);
+		}
+		if (holding) {
+			screen.clear = null;
+			screen.draws.resize(0);
+		}
+		passes.push(screen);
+	}
+
+	/** Reads the screen as the frame has drawn it so far: the passes recorded so far drawn (`submit`), the screen's into a render target
+		of the framebuffer's size, and that target read back. The frame goes on drawing into the target, which is copied to the screen as
+		the frame ends.
+
+		@param framebufferWidth  The screen's framebuffer width.
+		@param framebufferHeight  Its height.
+		@param read  Receives the pixels, rows top first, and their width and height.
+		@param failed  Receives why they couldn't be read. */
+	public function readScreen(framebufferWidth:Int, framebufferHeight:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
+		drawHeld = heldFrame;
+		if (!holding) {
+			if (held == 0 || heldWidth != framebufferWidth || heldHeight != framebufferHeight) {
+				if (held != 0)
+					graphics.disposeTexture(held);
+				held = graphics.createRenderTarget(framebufferWidth, framebufferHeight);
+				heldWidth = framebufferWidth;
+				heldHeight = framebufferHeight;
+			}
+			holding = true;
+		}
+		submit(framebufferWidth, framebufferHeight);
+		graphics.readPixels(held, read, failed);
+	}
+
+	// Draws a frame whose screen is held: its screen's pass goes on in the held target, which is then copied to the screen.
+	function heldFrame(framebufferWidth:Int, framebufferHeight:Int, show:Bool):Void {
+		var screen = passes[passes.length - 1];
+		var copy = copyDraw(screen.width, screen.height);
+		drawPasses(passes, framebufferWidth, framebufferHeight, show, true);
+		holding = false;
+		drawPasses([
+			{
+				target: 0,
+				clear: 0xff000000,
+				width: screen.width,
+				height: screen.height,
+				draws: [copy],
+				updates: []
+			}
+		], framebufferWidth, framebufferHeight, show, false);
+	}
+
+	// A draw of the held target over the whole screen, its texels as they are: through the default program, without blending, depth or
+	// culling, its quad written after the batch's vertices.
+	function copyDraw(width:Float, height:Float):Draw {
+		vertices = (vertices + 3) & ~3;
+		var first = vertices;
+		for (c in 0...4) {
+			var right = c >= 2, bottom = c == 1 || c == 2;
+			var at = room();
+			put(at, right ? width : 0);
+			put(at + 4, bottom ? height : 0);
+			put(at + 8, 0);
+			put(at + 12, right ? 1 : 0);
+			put(at + 16, bottom ? 1 : 0);
+			put(at + 20, 0);
+			put(at + 24, 0);
+			put(at + 28, 1);
+			data.fill(at + 32, 4, 255);
+			vertices++;
+		}
+		var p = defaultProgram;
+		var pipeline = p.pipeline("copy", () -> graphics.createPipeline({
+			shader: p.handle,
+			buffers: immediateBuffers(p),
+			primitive: Triangles,
+			indexed: true,
+			blend: Blend.OPAQUE,
+			colorWrite: All,
+			depthTest: Off,
+			depthWrite: false,
+			cull: None,
+			clockwise: false,
+			depthOnly: false,
+			flip: ClipScale,
+			flipBlockSlot: p.flipSlot,
+			flipOffset: p.flipOffset
+		}));
+		var textures = p.bindTextures([]);
+		if (p.texture0 >= 0)
+			textures[p.texture0] = held;
+		var keptView = view,
+			keptProjection = projection,
+			keptMeshView = meshView,
+			keptMeshProjection = meshProjection;
+		view = new Matrix4();
+		projection = Matrix4.fromOrthographic(0, width, height, 0, 0, 1);
+		meshView = meshProjection = null;
+		var uniforms = values(p, new Matrix4(), [1, 1, 1, 1]);
+		view = keptView;
+		projection = keptProjection;
+		meshView = keptMeshView;
+		meshProjection = keptMeshProjection;
+		return {
+			pipeline: pipeline,
+			buffers: null,
+			indices: quadIndexBuffer(vertices),
+			first: Std.int(first / 4) * 6,
+			count: 6,
+			texture: held,
+			primitive: Triangles,
+			scissor: null,
+			viewport: null,
+			textures: textures,
+			cubes: p.cubes,
+			uniforms: uniforms,
+			instances: 1
+		};
+	}
+
+	// Draws passes: each one's updates, then its draws into its target (the held target for the screen's while the screen is held). The
+	// frame's vertices and sprites go up in the first pass drawn (upload): every pass draws from the same buffers.
+	function drawPasses(list:Array<Pass>, framebufferWidth:Int, framebufferHeight:Int, show:Bool, upload:Bool):Void {
+		var uploaded = !upload;
+		for (p in list) {
 			for (u in p.updates)
 				graphics.updateTexture(u.texture, u.x, u.y, u.width, u.height, u.rgba);
 			if (p.target == -1)
 				continue;
 			var color:Int = p.clear == null ? 0xff000000 : p.clear;
-			if (p.target == 0)
+			var target = p.target == 0 && holding ? held : p.target;
+			if (target == 0)
 				graphics.beginFrame(framebufferWidth, framebufferHeight, color);
 			else if (p.clear == null)
-				graphics.resumeTargetPass(p.target);
+				graphics.resumeTargetPass(target);
 			else
-				graphics.beginTargetPass(p.target, (color >> 16 & 255) / 255, (color >> 8 & 255) / 255, (color & 255) / 255, (color >>> 24) / 255);
+				graphics.beginTargetPass(target, (color >> 16 & 255) / 255, (color >> 8 & 255) / 255, (color & 255) / 255, (color >>> 24) / 255);
 			if (!uploaded) {
-				upload();
+				uploadBuffers();
 				uploaded = true;
 			}
 			var width = p.target == 0 ? framebufferWidth : Std.int(p.width),
@@ -1449,7 +1625,7 @@ class Frame {
 				}
 				graphics.draw(d.pipeline, buffers, null, d.indices, d.first, count, d.firstInstance, d.instances, textures, samplings, d.uniforms);
 			}
-			if (p.target == 0) {
+			if (target == 0) {
 				graphics.endFrame();
 				for (call in ended)
 					call();
@@ -1460,15 +1636,6 @@ class Frame {
 			} else
 				graphics.endTargetPass();
 		}
-		for (b in retired) {
-			graphics.disposeBuffer(b);
-		}
-		retired.resize(0);
-		reset();
-		var calls = drawn.copy();
-		drawn.resize(0);
-		for (call in calls)
-			call();
 	}
 
 	// What draw hands the graphics adapter a draw's textures, samplings and the frame's own buffers in.
@@ -1507,13 +1674,13 @@ class Frame {
 		graphics.applyScissor(left, bottom, right - left, top - bottom);
 	}
 
-	function upload():Void {
+	function uploadBuffers():Void {
 		if (vertices > 0) {
 			var bytes = vertices * STRIDE;
 			if (bytes > capacity) {
-				if (buffer != 0) {
-					graphics.disposeBuffer(buffer);
-				}
+				// Freed once the frame is drawn, as passes drawn part way through it (`submit`) may have read it.
+				if (buffer != 0)
+					retire(buffer);
 				capacity = data.length;
 				buffer = graphics.createBuffer(capacity);
 			}
@@ -1522,9 +1689,9 @@ class Frame {
 		if (sprites > 0) {
 			var bytes = sprites * SPRITE_BYTES;
 			if (bytes > spriteCapacity) {
-				if (spriteBuffer != 0) {
-					graphics.disposeBuffer(spriteBuffer);
-				}
+				// Freed once the frame is drawn, as passes drawn part way through it (`submit`) may have read it.
+				if (spriteBuffer != 0)
+					retire(spriteBuffer);
 				spriteCapacity = spriteData.length;
 				spriteBuffer = graphics.createBuffer(spriteCapacity);
 			}
@@ -1532,8 +1699,10 @@ class Frame {
 		}
 	}
 
-	/** Frees the buffers, the white texture and the default and sprite programs. */
+	/** Frees the buffers, the white texture, the held target and the default and sprite programs. */
 	public function dispose():Void {
+		if (held != 0)
+			graphics.disposeTexture(held);
 		for (b in [buffer, constants, quadIndices, spriteBuffer, spriteQuad, spriteIndices].concat(retired))
 			if (b != 0)
 				graphics.disposeBuffer(b);

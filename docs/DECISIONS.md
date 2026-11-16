@@ -985,3 +985,27 @@ Why things are the way they are, numbered, in order.
     (`rcore.c`'s `glReadPixels`, read, not run), whose contents OpenGL leaves undefined after the swap. Keeping the frame here means a
     copy of every frame, or a page's `preserveDrawingBuffer`. Drawing the last frame again when asked was rejected too, as the frame
     keeps no draws once shown.
+
+74. **The screen reads wait, as the file calls do, and read the frame as drawn so far.** It revises 72's and 73's "stay refused".
+    `LoadImageFromTexture` and `LoadImageFromScreen` are waiting calls (72): in a page an `await` the program doesn't write, natively
+    a call that blocks, each returning raylib's `Image`. `LoadImageFromTexture` draws the frame's render texture passes and texture
+    updates recorded up to the call, then reads the texture back. `LoadImageFromScreen` draws the frame up to the call, its screen pass
+    into a render target of the framebuffer's size, and reads the target back. The frame goes on in the target, whose color and depth
+    `resumeTargetPass` keeps, and the frame's end copies the target to the screen through the default shader without blending. A frame
+    with no read draws on the screen as before. Both leave the draws waiting in rlgl's batch undrawn, as raylib reads the framebuffer
+    without drawing its batch. The image is RGBA whatever the texture's format, as raylib's GLES build gives it. The `...Async` forms
+    stay: `LoadImageFromTextureAsync` reads the texture as the frames before left it, `LoadImageFromScreenAsync` the frame as it ends.
+
+    Why: raylib's programs read the screen part way through a frame (every parity reference saves its frame with `LoadImageFromScreen`
+    before `EndDrawing`), and 72's reason for the refusal holds no longer. The frame's draws are recorded, and drawing those recorded so
+    far is what rlgl does as it flushes. No trial, as it moves helix-raylib toward raylib (AGENTS.md).
+
+    Checked: the render parity suite reads a texture drawn and updated in the frame, and the screen part way through its saved frame, a
+    part of it drawn on top. GL's frame matches raylib's in every pixel, and SDL_GPU's copy matches the cells it was cut from. A frame
+    with a read costs one more draw and a target of the framebuffer's size, kept from the first read on.
+
+    Rejected: drawing the screen's pass on the screen part way and beginning it again, as `beginFrame` clears the framebuffer and its
+    depth, and in a page the canvas would show the frame half drawn while the read waits. A platform call resuming the screen's pass,
+    which every adapter would need, where a render target owned by the layer above does it with the platform as it is. Drawing rlgl's
+    batch before the read, which raylib doesn't. A read between frames giving the last frame shown, which needs a copy of every frame
+    (73).

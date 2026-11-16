@@ -770,7 +770,7 @@ Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them.
 
 A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
-`EndDrawing`, `WaitTime`, a file call (`LoadFileText`) and a clipboard call don't compile in a function used as a value, a constructor or a variable's initial value. An asset load (`LoadModel`), `LoadImageFromScreen` and `LoadImageFromTexture` don't compile, and each names its `...Async` call.
+`EndDrawing`, `WaitTime`, a file call (`LoadFileText`), a clipboard call and a screen read (`LoadImageFromScreen`) don't compile in a function used as a value, a constructor or a variable's initial value. A load from memory (`LoadImageFromMemory`) doesn't compile, and names its `...Async` call.
 
 Its members are on their own pages:
 
@@ -786,7 +786,7 @@ Its members are on their own pages:
 
 Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
 
-`GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `MemAlloc`, `MemRealloc`, `MemFree`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadShader`, `LoadShaderFromMemory`, `LoadImageFromMemory`, `LoadImageAnimFromMemory`, `LoadImageFromTexture`, `LoadImageFromScreen`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadWaveFromMemory`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
+`GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `MemAlloc`, `MemRealloc`, `MemFree`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadShader`, `LoadShaderFromMemory`, `LoadImageFromMemory`, `LoadImageAnimFromMemory`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadWaveFromMemory`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
 ## Raylib6
 

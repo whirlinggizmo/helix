@@ -115,6 +115,8 @@ static function SetTextureWrap(texture:Texture2D, wrap:Int):Void
 static function DrawTextureNPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
 static function GetPixelColor(srcPtr:haxe.io.Bytes, format:Int, ?offset:Int = 0):Color
 static function SetPixelColor(dstPtr:haxe.io.Bytes, color:Color, format:Int, ?offset:Int = 0):Void
+static macro function LoadImageFromTexture(texture:Texture2D):Image
+static macro function LoadImageFromScreen():Image
 static macro function ExportImage(image:Image, fileName:String):Bool
 static macro function ExportImageAsCode(image:Image, fileName:String):Bool
 static macro function LoadImageAsync(fileName:String, loaded:Image -> Void, ?failed:String -> Void):Void
@@ -790,6 +792,27 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
 
   Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
+- `LoadImageFromTexture`: Reads a texture's pixels into an image, and returns once they are read. See `LoadImageFromScreen` for reading the screen.
+  - `texture`: The texture.
+  - returns: The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read. Why it couldn't is logged.
+
+  What was drawn into the texture so far is read: the frame's render texture passes up to the call are drawn first, and its updates (`UpdateTexture`) made. Inside `BeginTextureMode`, the draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
+
+  The image is RGBA, whatever the texture's format.
+
+  A render texture's rows come bottom first, as raylib's do, so its image is upside down.
+
+  A texture not drawn yet is read from memory. raylib's default texture is its white pixel.
+
+  A cubemap is read from the image it was made from while that is kept in memory. Its faces on the GPU aren't read.
+- `LoadImageFromScreen`: Reads the screen into an image as the frame has drawn it so far, and returns once it is read. See `TakeScreenshot` for saving the frame to a file.
+  - returns: The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read, as before `InitWindow`. Why it couldn't is logged.
+
+  The frame's drawing up to the call is drawn first, and the frame goes on from there: the draws after the call are drawn over what the image holds. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
+
+  Called between `EndDrawing` and `BeginDrawing`, the image is of the next frame, which has drawn nothing yet.
+
+  The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
 - `ExportImage`: Writes an image to a PNG, QOI or raw file, and returns once it is written. See `ExportImageAsCode` for writing a C header.
   - `image`: The image.
   - `fileName`: The file; its extension chooses the format.
@@ -864,7 +887,7 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
   A file too small for the header and the pixels is read from its first byte.
 
   An asynchronously loaded image is invalid until `loaded` is called.
-- `LoadImageFromTextureAsync`: Asynchronously reads a texture's pixels into an RGBA image, replacing raylib's `LoadImageFromTexture`. See `LoadImageFromScreenAsync` for the screen.
+- `LoadImageFromTextureAsync`: Asynchronously reads a texture's pixels into an RGBA image, as the frames drawn before this one left them. See `LoadImageFromTexture` for reading what this frame has drawn into the texture so far.
   - `texture`: The texture.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
@@ -880,7 +903,7 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
   A texture not drawn yet is read from memory. raylib's default texture is its white pixel.
 
   A cubemap is read from the image it was made from while that is kept in memory. Its faces on the GPU aren't read.
-- `LoadImageFromScreenAsync`: Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshot` for saving the screen to a file.
+- `LoadImageFromScreenAsync`: Asynchronously reads the screen into an RGBA image as the next frame ends. See `LoadImageFromScreen` for reading the frame as drawn so far, and `TakeScreenshot` for saving the screen to a file.
   - `loaded`: Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 

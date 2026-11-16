@@ -652,8 +652,6 @@ static macro function LoadShader(...args):Shader
 static macro function LoadShaderFromMemory(...args):Shader
 static macro function LoadImageFromMemory(...args):Image
 static macro function LoadImageAnimFromMemory(...args):Image
-static macro function LoadImageFromTexture(...args):Image
-static macro function LoadImageFromScreen(...args):Image
 static macro function LoadFontFromMemory(...args):Font
 static macro function LoadFontData(...args):Array<GlyphInfo>
 static macro function TextCopy(...args):Int
@@ -688,8 +686,6 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory.
 - `LoadImageFromMemory`: Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
 - `LoadImageAnimFromMemory`: Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
-- `LoadImageFromTexture`: Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image.
-- `LoadImageFromScreen`: Doesn't compile. See `LoadImageFromScreenAsync` for reading the screen into an image.
 - `LoadFontFromMemory`: Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
 - `LoadFontData`: Doesn't compile. See `LoadFontDataAsync` for rasterizing glyphs.
 - `TextCopy`: Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text.

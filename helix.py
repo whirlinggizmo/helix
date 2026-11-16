@@ -70,7 +70,7 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
 # helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/test_raylib_parity.py).
-RAYLIB_TESTS=('CountTests','EnsureTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','ScreenshotTests','SpritesTests','WaitTests','ShaderValueTests','AnimationMaskTests')
+RAYLIB_TESTS=('CountTests','EnsureTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','ScreenshotTests','SpritesTests','WaitTests','ScreenReadTests','ShaderValueTests','AnimationMaskTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.
 TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader'),('own_lights.vs','own_lights.fs','own_lights.shader')]
@@ -91,7 +91,7 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String)
     'ShaderCalls':('LoadShader: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro',
     'LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader,','or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes',
     'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShader(compiledShaderFileName:String):Shader'),
-    'GuessedCalls':('GuessedCalls.hx:9: characters 16-42 : LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(','GuessedCalls.hx:10: characters 16-37 : LoadShader: Not supported. Use LoadCompiledShader(',
+    'GuessedCalls':('GuessedCalls.hx:9: characters 16-41 : LoadImageFromMemory: Not supported. Use LoadImageFromMemoryAsync(','GuessedCalls.hx:10: characters 16-37 : LoadShader: Not supported. Use LoadCompiledShader(',
     'GuessedCalls.hx:11: characters 15-40 : GetMonitorPhysicalWidth: A monitor','GuessedCalls.hx:12: characters 3-26 : TextCopy: A String can\'t be written into'),
     'ObjectCasts':('ObjectCasts.hx:11: characters 16-71 : cast: Not supported from an object to VirtualButtonOptions, a class. Write the object in braces where a VirtualButtonOptions is expected, without cast.',
     'ObjectCasts.hx:12: characters 20-41 : cast: Not supported from an object to Vector2, a class. Write the object in braces where a Vector2 is expected, without cast.',

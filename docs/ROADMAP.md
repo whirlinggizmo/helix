@@ -34,21 +34,17 @@ speed where docs/benchmarks.md records them.
   beside its helix-legacy build. Whether Gyre keeps helix-legacy's API or folds its useful parts (the app's lifecycle, a retained UI, tweens,
   transitions, the autopilot) into a three.js-style engine on the same scene is the jam's question (DECISIONS 40). Whatever of the
   scene proves engine-neutral moves down into a library of its own once a second engine wants it, as `Images` did.
-- **helix-raylib (DECISIONS 16, 19, 20, 21, 38, 72):** raylib's API over the services, merged to `main`. Every raylib 5.5 function
-  is in. A page waits where the program calls `EndDrawing`, `WaitTime`, the file calls and the clipboard's, as a native build does
-  (DECISIONS 72). raylib's loads are synchronous: natively they read the file during the call, and in a page they read a file the
+- **helix-raylib (DECISIONS 16, 19, 20, 21, 38, 72, 74):** raylib's API over the services, merged to `main`. Every raylib 5.5 function
+  is in. A page waits where the program calls `EndDrawing`, `WaitTime`, the file calls, the clipboard's and the screen reads, as a
+  native build does (DECISIONS 72, 74). raylib's loads are synchronous: natively they read the file during the call, and in a page they read a file the
   Assets extra ensured first (`EnsureAssetsAsync`), any other failing as a missing file does. Shaders are compiled as the program
   builds (`CompileShaderFile`) and loaded with `LoadCompiledShader`. What refuses to compile does so on purpose, naming itself: the
-  screen reads, `LoadShader` from GLSL, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's
+  loads from memory, `LoadShader` from GLSL, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's
   own names (the assets, resources and objects below). A `Future` of our own over the callbacks, cross-target, may serve the managed
   layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
 - **Extras drafted and tried, to build:** the Lighting extra's shadows, emissive and alpha cutoff, shadowmaps for a program's own
   shaders, and the Screen extra's fits (docs/trials/2026-11-15-lighting-shadows, -shadowmaps, -screen-fit), each record's findings
   answered in the API before it is built. The Materials extra's draft is tried next, the same way.
-- **The screen reads wait, as the file calls do (DECISIONS 72):** `LoadImageFromTexture` submits what was drawn into the texture and
-  reads it back, and `LoadImageFromScreen` submits the frame drawn so far, reads it back and resumes the frame where it stopped,
-  each returning raylib's `Image`, in a page as an `await` the program doesn't write and natively by blocking. Their `...Async` forms
-  stay. No trial: it moves helix-raylib toward raylib.
 - **The services' `Screen` named `Window`,** as helix's own libraries use the accurate word; helix-raylib keeps raylib's.
 - **What an engine costs agents, against raylib C:** Wardens built from its spec costs $2.40 a run in C and $2.51 on helix-raylib
   (docs/trials/2026-11-15-wardens-baseline). A page build's ensure and the shaders compiled at build time cost nothing once a brief

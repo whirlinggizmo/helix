@@ -329,8 +329,8 @@ class RTexturesAsync {
 		Runtime.fetchImage(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
 
-	/** Asynchronously reads a texture's pixels into an RGBA image, replacing raylib's `LoadImageFromTexture`. See
-		`LoadImageFromScreenAsync` for the screen.
+	/** Asynchronously reads a texture's pixels into an RGBA image, as the frames drawn before this one left them. See
+		`LoadImageFromTexture` for reading what this frame has drawn into the texture so far.
 
 		The image is RGBA, whatever the texture's format.
 
@@ -348,10 +348,16 @@ class RTexturesAsync {
 		@param loaded  Receives the image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void):Void {
+		readTexture("LoadImageFromTextureAsync", texture, false, loaded, failed);
+	}
+
+	// Reads a texture's pixels for LoadImageFromTexture (now: the frame's passes so far drawn first) and LoadImageFromTextureAsync (as the
+	// frames before left them, after this frame when it updates the texture). Answered at a later poll.
+	static function readTexture(name:String, texture:Texture2D, now:Bool, loaded:Image->Void, failed:Null<String->Void>):Void {
 		var gpu = Textures.isCube(texture.id) ? 0 : Textures.onGpu(texture.id);
 		if (gpu == 0) {
 			var image = Textures.imageOf(texture.id);
-			Runtime.later(() -> image == null ? refuse("LoadImageFromTextureAsync", 'TEXTURE: [ID ${texture.id}] Failed to retrieve pixel data',
+			Runtime.later(() -> image == null ? refuse(name, 'TEXTURE: [ID ${texture.id}] Failed to retrieve pixel data',
 				failed) : loaded(rgba(image.pixels.sub(0, image.pixels.length), image.width, image.height)));
 			return;
 		}
@@ -362,16 +368,20 @@ class RTexturesAsync {
 				Runtime.log(LOG_INFO, 'TEXTURE: [ID ${texture.id}] Pixel data retrieved successfully');
 				during ? Runtime.later(() -> loaded(image)) : loaded(image);
 			},
-				error -> during ? Runtime.later(() -> refuse("LoadImageFromTextureAsync", error, failed)) : refuse("LoadImageFromTextureAsync", error, failed));
+				error -> during ? Runtime.later(() -> refuse(name, error, failed)) : refuse(name, error, failed));
 			during = false;
 		}
-		if (Runtime.frame.isUpdating(gpu))
+		if (now) {
+			Runtime.frame.submit(Runtime.window.framebufferWidth, Runtime.window.framebufferHeight);
+			read();
+		} else if (Runtime.frame.isUpdating(gpu))
 			Runtime.frame.afterDraw(read);
 		else
 			read();
 	}
 
-	/** Asynchronously reads the screen into an RGBA image as the next frame ends, replacing raylib's `LoadImageFromScreen`. See `TakeScreenshot` for saving the screen to a file.
+	/** Asynchronously reads the screen into an RGBA image as the next frame ends. See `LoadImageFromScreen` for reading the frame as
+		drawn so far, and `TakeScreenshot` for saving the screen to a file.
 
 		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
 
@@ -384,12 +394,28 @@ class RTexturesAsync {
 			Runtime.later(() -> refuse("LoadImageFromScreenAsync", "InitWindow first", failed));
 			return;
 		}
-		Runtime.screenshots().captureFrame(captured -> {
-			var pixels = captured.pixels;
-			for (i in 0...captured.width * captured.height)
-				pixels.set(i * 4 + 3, 255);
-			loaded(rgba(pixels, captured.width, captured.height));
-		}, error -> refuse("LoadImageFromScreenAsync", error, failed));
+		Runtime.screenshots()
+			.captureFrame(captured -> loaded(opaque(captured.pixels, captured.width, captured.height)),
+				error -> refuse("LoadImageFromScreenAsync", error, failed));
+	}
+
+	// Reads the screen for LoadImageFromScreen: the frame as drawn so far (Frame.readScreen), answered at a later poll.
+	static function readScreen(name:String, loaded:Image->Void, failed:String->Void):Void {
+		if (Runtime.frame == null) {
+			Runtime.later(() -> refuse(name, "InitWindow first", failed));
+			return;
+		}
+		Runtime.frame.readScreen(Runtime.window.framebufferWidth, Runtime.window.framebufferHeight, (pixels, width, height) -> {
+			var image = opaque(pixels, width, height);
+			Runtime.later(() -> loaded(image));
+		}, error -> Runtime.later(() -> refuse(name, error, failed)));
+	}
+
+	// The screen's pixels as an RGBA image, its alpha opaque, as raylib reads the screen.
+	static function opaque(pixels:haxe.io.Bytes, width:Int, height:Int):Image {
+		for (i in 0...width * height)
+			pixels.set(i * 4 + 3, 255);
+		return rgba(pixels, width, height);
 	}
 
 	/** Asynchronously writes an image to a PNG, QOI or raw file through `SaveFileDataAsync`, replacing raylib's `ExportImage`. See `ExportImageAsCodeAsync` for writing a C header.

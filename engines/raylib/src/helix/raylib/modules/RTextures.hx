@@ -685,21 +685,42 @@ class RTextures {
 		throw "LoadImageAnimFromMemory is unimplemented";
 	}
 
-	/** Doesn't compile. See `LoadImageFromTextureAsync` for reading a texture's pixels into an image.
+	/** Reads a texture's pixels into an image, and returns once they are read. See `LoadImageFromScreen` for reading the screen.
+
+		What was drawn into the texture so far is read: the frame's render texture passes up to the call are drawn first, and its
+		updates (`UpdateTexture`) made. Inside `BeginTextureMode`, the draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`)
+		aren't read, as in raylib.
+
+		The image is RGBA, whatever the texture's format.
+
+		A render texture's rows come bottom first, as raylib's do, so its image is upside down.
+
+		A texture not drawn yet is read from memory. raylib's default texture is its white pixel.
+
+		A cubemap is read from the image it was made from while that is kept in memory. Its faces on the GPU aren't read.
 
 		@param texture  The texture.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromTexture: Not supported. Use LoadImageFromTextureAsync(texture:Texture2D, loaded:Image->Void, ?failed:String->Void) instead.")
-	static function LoadImageFromTexture(texture:Texture2D):Image {
-		throw "LoadImageFromTexture is unimplemented";
+		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read. Why it couldn't is logged. */
+	@:waits
+	static function LoadImageFromTexture(texture:Texture2D, answer:Image->Void):Void {
+		RTexturesAsync.readTexture("LoadImageFromTexture", texture, true, answer, Answers.failing("LoadImageFromTexture", answer, new Image()));
 	}
 
-	/** Doesn't compile. See `LoadImageFromScreenAsync` for reading the screen into an image.
+	/** Reads the screen into an image as the frame has drawn it so far, and returns once it is read. See `TakeScreenshot` for saving the
+		frame to a file.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadImageFromScreen: Not supported. Use LoadImageFromScreenAsync(loaded:Image->Void, ?failed:String->Void) instead.")
-	static function LoadImageFromScreen():Image {
-		throw "LoadImageFromScreen is unimplemented";
+		The frame's drawing up to the call is drawn first, and the frame goes on from there: the draws after the call are drawn over what
+		the image holds. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
+
+		Called between `EndDrawing` and `BeginDrawing`, the image is of the next frame, which has drawn nothing yet.
+
+		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
+
+		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read, as before `InitWindow`. Why it
+			couldn't is logged. */
+	@:waits
+	static function LoadImageFromScreen(answer:Image->Void):Void {
+		RTexturesAsync.readScreen("LoadImageFromScreen", answer, Answers.failing("LoadImageFromScreen", answer, new Image()));
 	}
 
 	/** Returns whether an image holds pixels: data, a size, a format and a mipmap level.

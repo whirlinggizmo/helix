@@ -65,6 +65,7 @@ class Skinning {
 			Mesh.posing = poseVertices;
 			installed.skinned = draw;
 			installed.drawing.push(upload);
+			installed.submitting.push(writeChunks);
 		}
 		stamp++;
 		var count = model.boneCount;
@@ -246,10 +247,18 @@ class Skinning {
 		frames++;
 		if (drawn)
 			return;
+		writeChunks();
+		drawn = true;
+	}
+
+	// Uploads the palette's chunks written this frame so far, before passes drawn part way through it (`Frame.submit`): the palette
+	// grows on from there, as draws not drawn yet may read what it holds.
+	static function writeChunks():Void {
+		if (drawn)
+			return;
 		for (c in chunks)
 			if (c.used > 0)
 				Runtime.graphics.updateTexture(c.handle, 0, 0, 256, c.rows, c.bytes);
-		drawn = true;
 	}
 
 	// The CPU path's buffers: a mesh's posed positions and normals, made once a frame while its pose holds and again when it changes, so

@@ -19,10 +19,11 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 ## Differences from raylib
 
-- `EndDrawing`, `WaitTime`, a file call (`LoadFileText`, `SaveFileText`) and a clipboard call don't compile in a function used as
-  a value, in a constructor or in a variable's initial value (see "Calls that wait").
-- An asset load (`LoadTexture`, `LoadModel`, `LoadSound`), `LoadImageFromScreen` and `LoadImageFromTexture` don't compile. Each names
-  its `...Async` call.
+- `EndDrawing`, `WaitTime`, a file call (`LoadFileText`, `SaveFileText`), a clipboard call and a screen read (`LoadImageFromScreen`,
+  `LoadImageFromTexture`) don't compile in a function used as a value, in a constructor or in a variable's initial value (see "Calls
+  that wait").
+- A load from memory (`LoadImageFromMemory`, `LoadFontFromMemory`, `LoadWaveFromMemory`) doesn't compile. Each names its `...Async`
+  call.
 - `TakeScreenshot` saves the frame the next `EndDrawing` ends, and that `EndDrawing` returns once the file is written.
 - A window or cursor request (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) returns at once, and the window changes at a
   later frame. `IsWindowFullscreen` and the other window reads report the window as it is. A refusal is logged.
@@ -38,8 +39,8 @@ See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/i
 
 ## Calls that wait
 
-In a page, each function of the program that calls `EndDrawing`, `WaitTime`, a file call or a clipboard call is built as an async
-function, and each call of it is awaited. So is a function calling one that does, and a function declared in a function and only ever called by its
+In a page, each function of the program that calls `EndDrawing`, `WaitTime`, a file call, a clipboard call or a screen read is built as
+an async function, and each call of it is awaited. So is a function calling one that does, and a function declared in a function and only ever called by its
 name. The program writes nothing for this. Natively the same calls block.
 
 These can't wait, and a call there doesn't compile, on every target:
