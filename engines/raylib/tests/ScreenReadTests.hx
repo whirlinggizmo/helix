@@ -12,8 +12,11 @@ import helix.services.time.Time;
 	in one color, counting the draws into it. A render texture drawn then read holds its clear and its draws, its frame's screen pass left
 	to the frame's end; drawn into again and read, it holds both passes' draws. The screen read part way through a frame holds the frame's
 	clear and the draws drawn so far, not those still in rlgl's batch, at the framebuffer's size; the frame goes on in the same target,
-	the later draws on top, and is copied to the screen without blending as it ends; the next frame draws on the screen. Before
-	`InitWindow`, the screen read logs why and gives an empty image. Run by helix.py test on Node and natively. */
+	the later draws on top, and is copied to the screen without blending as it ends. Every frame after draws into the target and is
+	copied to the screen, its scissors at the framebuffer's scale, so a read between frames holds the frame last shown; a frame drawn
+	without a clear or a read is black. Once the framebuffer's size changes, the target is made again at it, and a read before the next
+	frame is black. A new window's first read, between frames, is black. Before `InitWindow`, the screen read logs why and gives an empty
+	image. Run by helix.py test on Node and natively. */
 @:access(helix.raylib.internal.Runtime)
 class ScreenReadTests {
 	public static var checks = 0;
@@ -132,13 +135,44 @@ class ScreenReads {
 		ScreenReadTests.check(graphics.painted(0) == "30 40 2", 'the screen holds the frame, the later draws on top: ${graphics.painted(0)}');
 		ScreenReadTests.check(graphics.copyBlend == Blend.OPAQUE, "the copy doesn't blend");
 
-		// The next frame draws on the screen.
+		// The next frame draws into the target too, and is copied to the screen.
 		BeginDrawing();
 		ClearBackground(new Color(50, 60, 0, 255));
 		DrawRectangle(0, 0, 2, 2, red);
 		graphics.log.resize(0);
 		EndDrawing();
-		ScreenReadTests.check(graphics.log.join(",") == "frame,draw 0,endFrame", 'the next frame draws on the screen: ${graphics.log}');
+		ScreenReadTests.check(graphics.log.join(",") == 'clear $held,draw $held,end,frame,copy $held,endFrame',
+			'the next frame draws into the target, copied to the screen: ${graphics.log}');
+		ScreenReadTests.check(graphics.painted(0) == "50 60 1", 'the screen shows the next frame: ${graphics.painted(0)}');
+
+		// Read between frames: the frame last shown, the target resumed and nothing drawn.
+		graphics.log.resize(0);
+		shot = LoadImageFromScreen();
+		ScreenReadTests.check(graphics.log.join(",") == 'resume $held,end,read $held', 'between frames, the target read as it is: ${graphics.log}');
+		ScreenReadTests.check(shot.width == 16 && shot.height == 12 && pixel(shot, 3, 3) == "50 60 1 255",
+			'between frames, the frame last shown: ${shot.width} x ${shot.height}, ${pixel(shot, 3, 3)}');
+
+		// A frame drawn without a clear after that read goes on over the frame last shown, as raylib's screen keeps it.
+		BeginDrawing();
+		DrawRectangle(0, 0, 2, 2, red);
+		graphics.log.resize(0);
+		EndDrawing();
+		ScreenReadTests.check(graphics.log.join(",") == 'resume $held,draw $held,end,frame,copy $held,endFrame',
+			'the frame goes on over what was read: ${graphics.log}');
+		ScreenReadTests.check(graphics.painted(0) == "50 60 2", 'the screen: ${graphics.painted(0)}');
+
+		// A frame drawn without a clear or a read is black, as the screen's are; its scissor at the framebuffer's scale.
+		BeginDrawing();
+		BeginScissorMode(1, 1, 2, 2);
+		DrawRectangle(0, 0, 2, 2, red);
+		EndScissorMode();
+		graphics.log.resize(0);
+		graphics.scissors.resize(0);
+		EndDrawing();
+		ScreenReadTests.check(graphics.log.join(",") == 'clear $held,draw $held,end,frame,copy $held,endFrame',
+			'a frame not cleared clears the target: ${graphics.log}');
+		ScreenReadTests.check(graphics.painted(0) == "0 0 1", 'the screen, black: ${graphics.painted(0)}');
+		ScreenReadTests.check(graphics.scissors.join(",") == "2 6 4 4", 'the scissor in framebuffer pixels: ${graphics.scissors}');
 
 		// Read twice in a frame: the second read goes on in the same target.
 		BeginDrawing();
@@ -154,6 +188,55 @@ class ScreenReads {
 		ScreenReadTests.check(pixel(shot, 0, 0) == "70 80 2 255", 'both reads\' draws: ${pixel(shot, 0, 0)}');
 		EndDrawing();
 		ScreenReadTests.check(graphics.painted(0) == "70 80 2", 'the screen: ${graphics.painted(0)}');
+
+		// The framebuffer's size changed between frames: the target made again at it, the read black.
+		window.logicalWidth = 10;
+		graphics.log.resize(0);
+		shot = LoadImageFromScreen();
+		var resized = graphics.targets[graphics.targets.length - 1];
+		ScreenReadTests.check(resized != held && graphics.log.join(",") == 'target $resized 20 x 12,clear $resized,end,read $resized',
+			'a target of the new size, cleared, then read: ${graphics.log}');
+		ScreenReadTests.check(shot.width == 20 && shot.height == 12 && pixel(shot, 19, 11) == "0 0 0 255",
+			'the new size, black: ${shot.width} x ${shot.height}, ${pixel(shot, 19, 11)}');
+		BeginDrawing();
+		ClearBackground(new Color(90, 100, 0, 255));
+		DrawRectangle(0, 0, 2, 2, red);
+		graphics.log.resize(0);
+		EndDrawing();
+		ScreenReadTests.check(graphics.log.join(",") == 'clear $resized,draw $resized,end,frame,copy $resized,endFrame',
+			'the frame after draws into the new target: ${graphics.log}');
+		ScreenReadTests.check(graphics.painted(0) == "90 100 1", 'the screen: ${graphics.painted(0)}');
+
+		// Resized with no read: the frame's end makes the target again.
+		window.logicalWidth = 12;
+		BeginDrawing();
+		ClearBackground(new Color(110, 120, 0, 255));
+		graphics.log.resize(0);
+		EndDrawing();
+		var again = graphics.targets[graphics.targets.length - 1];
+		ScreenReadTests.check(again != resized
+			&& graphics.log.join(",") == 'target $again 24 x 12,clear $again,end,frame,copy $again,endFrame',
+			'a target of the new size, drawn into: ${graphics.log}');
+		ScreenReadTests.check(graphics.painted(0) == "110 120 0", 'the screen: ${graphics.painted(0)}');
+
+		// A new window's first read, between frames, before a frame was kept: black.
+		Runtime.frame = new Frame(graphics);
+		BeginDrawing();
+		ClearBackground(new Color(130, 140, 0, 255));
+		EndDrawing();
+		graphics.log.resize(0);
+		shot = LoadImageFromScreen();
+		var fresh = graphics.targets[graphics.targets.length - 1];
+		ScreenReadTests.check(graphics.log.join(",") == 'target $fresh 24 x 12,clear $fresh,end,read $fresh'
+			&& pixel(shot, 0, 0) == "0 0 0 255",
+			'the first read between frames, black: ${graphics.log}, ${pixel(shot, 0, 0)}');
+		BeginDrawing();
+		ClearBackground(new Color(150, 160, 0, 255));
+		graphics.log.resize(0);
+		EndDrawing();
+		ScreenReadTests.check(graphics.log.join(",") == 'clear $fresh,end,frame,copy $fresh,endFrame'
+			&& graphics.painted(0) == "150 160 0",
+			'the frame after draws into the target: ${graphics.log}, ${graphics.painted(0)}');
 		return ScreenReadTests.checks;
 	}
 
@@ -172,6 +255,9 @@ private class PaintingGraphics extends CountingGraphics {
 
 	/** The render targets made, in order. */
 	public final targets:Array<Int> = [];
+
+	/** The scissors applied, "x y width height" each. */
+	public final scissors:Array<String> = [];
 
 	/** The blending of the pipeline the last copy drew through. */
 	public var copyBlend:Null<Blend> = null;
@@ -251,6 +337,10 @@ private class PaintingGraphics extends CountingGraphics {
 			}
 		counts.set(current, counts.get(current) + 1);
 		log.push('draw $current');
+	}
+
+	override public function applyScissor(x:Int, y:Int, w:Int, h:Int):Void {
+		scissors.push('$x $y $w $h');
 	}
 
 	override public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {

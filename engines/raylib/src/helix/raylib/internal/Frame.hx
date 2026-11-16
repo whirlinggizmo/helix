@@ -1612,25 +1612,29 @@ private class Run {
 }
 
 /** Reads what a frame has drawn part way through it, for `LoadImageFromTexture` and `LoadImageFromScreen`: the passes recorded so far
-	drawn (`submit`), and the screen's pass held in a render target while the frame goes on (`readScreen`). Only those calls reach it, so
-	a program calling neither links none of it. */
+	drawn (`submit`), and the screen's passes kept in a render target from the first screen read on (`readScreen`), so a read between
+	frames finds the frame last shown. Only those calls reach it, so a program calling neither links none of it. */
 @:noCompletion
 @:allow(helix.raylib)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Skinning)
 @:access(helix.raylib.modules.RDebug)
 class FrameReads {
-	// The frame the held target and the counts are for, null before the first read.
+	// The frame the kept target and the counts are for, null before the first read.
 	static var owner:Null<Frame>;
 
 	// drawHeld as a hook of the frame's drawing, one object, so it can be moved to the end of the hooks.
 	static var hook:Null<Void->Void>;
 
-	// The render target the screen's pass draws into once the screen is read part way through a frame, at the framebuffer's size, 0
-	// before the first read; whether this frame's screen pass draws into it, copied to the screen as the frame ends.
+	// keptFrame as a call after the frame is drawn, one object.
+	static var after:Null<Void->Void>;
+
+	// The render target the screen's passes draw into from the first screen read on, at the framebuffer's size, 0 before; whether the
+	// frames draw into it (keeping), each copied to the screen as it ends; whether this frame's screen pass is drawn into it part way.
 	static var held = 0;
 	static var heldWidth = 0;
 	static var heldHeight = 0;
+	static var keeping = false;
 	static var holding = false;
 
 	// The draws, triangles and state changes drawn part way through the frame, added to the debug stats' as the frame is drawn (`counted`).
@@ -1679,9 +1683,9 @@ class FrameReads {
 		passes.push(screen);
 	}
 
-	/** Reads the screen as the frame has drawn it so far: the passes recorded so far drawn (`submit`), the screen's into a render target
-		of the framebuffer's size, and that target read back. The frame goes on drawing into the target, which is copied to the screen as
-		the frame ends.
+	/** Reads the screen as the frame has drawn it so far: the passes recorded so far drawn (`submit`), the screen's into the kept
+		render target, and that target read back. From the first read on, every frame draws into the target, which is copied to the
+		screen as the frame ends, so between frames it holds the frame last shown.
 
 		@param frame  The frame.
 		@param framebufferWidth  The screen's framebuffer width.
@@ -1691,32 +1695,18 @@ class FrameReads {
 	static function readScreen(frame:Frame, framebufferWidth:Int, framebufferHeight:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void,
 			failed:String->Void):Void {
 		own(frame);
-		// The held frame drawn after the frame's other hooks, the bone palette's and the debug stats' among them.
-		if (hook == null)
-			hook = drawHeld;
-		frame.drawing.remove(hook);
-		frame.drawing.push(hook);
-		var graphics = frame.graphics;
+		if (!keeping) {
+			keeping = true;
+			if (hook == null)
+				hook = drawHeld;
+			frame.drawing.push(hook);
+		}
 		if (!holding) {
-			if (held == 0 || heldWidth != framebufferWidth || heldHeight != framebufferHeight) {
-				if (held != 0)
-					graphics.disposeTexture(held);
-				else
-					Runtime.closing.push(() -> {
-						if (owner != frame)
-							return;
-						if (held != 0)
-							graphics.disposeTexture(held);
-						held = 0;
-					});
-				held = graphics.createRenderTarget(framebufferWidth, framebufferHeight);
-				heldWidth = framebufferWidth;
-				heldHeight = framebufferHeight;
-			}
+			fit(frame, framebufferWidth, framebufferHeight);
 			holding = true;
 		}
 		submit(frame, framebufferWidth, framebufferHeight);
-		graphics.readPixels(held, read, failed);
+		frame.graphics.readPixels(held, read, failed);
 	}
 
 	// Starts again for a frame of a window made again (CloseWindow, InitWindow), whose graphics are its own.
@@ -1725,31 +1715,92 @@ class FrameReads {
 			return;
 		owner = frame;
 		held = heldWidth = heldHeight = 0;
-		holding = counting = false;
+		keeping = holding = counting = false;
 		partDraws = partTriangles = partChanges = 0;
 	}
 
-	// Draws the frame's passes as its drawing starts while its screen is held (a hook of Frame.drawing): the screen's pass goes on in the
-	// held target, and the frame's passes are left as one, the screen's, copying the target to the screen.
+	// Makes the kept target the framebuffer's size, before the screen's pass draws into it from its start. A target made again holds
+	// nothing, so a screen pass keeping what the screen holds (a clear of null) is cleared black.
+	static function fit(frame:Frame, framebufferWidth:Int, framebufferHeight:Int):Void {
+		var screen = frame.passes[frame.passes.length - 1];
+		if (held != 0 && heldWidth == framebufferWidth && heldHeight == framebufferHeight)
+			return;
+		var graphics = frame.graphics;
+		if (held != 0)
+			graphics.disposeTexture(held);
+		else
+			Runtime.closing.push(() -> {
+				if (owner != frame)
+					return;
+				if (held != 0)
+					graphics.disposeTexture(held);
+				held = 0;
+			});
+		held = graphics.createRenderTarget(framebufferWidth, framebufferHeight);
+		heldWidth = framebufferWidth;
+		heldHeight = framebufferHeight;
+		if (screen.clear == null)
+			screen.clear = 0xff000000;
+	}
+
+	// Leads each frame's screen pass into the kept target as its drawing starts (a hook of Frame.drawing): the screen's pass made a pass
+	// of the target, at the framebuffer's size, and a pass after it copying the target to the screen. A frame not cleared and not read is
+	// cleared black, as the screen is.
 	static function drawHeld():Void {
 		var frame = owner;
-		if (!holding || frame == null)
+		if (!keeping || frame == null)
 			return;
-		holding = false;
+		var width = Runtime.window.framebufferWidth,
+			height = Runtime.window.framebufferHeight;
 		var passes = frame.passes;
 		var screen = passes[passes.length - 1];
-		var copy = copyDraw(frame, screen.width, screen.height);
-		frame.drawPasses(Runtime.window.framebufferWidth, Runtime.window.framebufferHeight, false, held);
-		freeBuffers(frame);
-		passes.resize(0);
+		if (!holding) {
+			fit(frame, width, height);
+			if (screen.clear == null)
+				screen.clear = 0xff000000;
+		}
+		holding = false;
+		// The scissors, in the screen's pixels, as the target's.
+		var scaleX = width / screen.width, scaleY = height / screen.height;
+		var from:Null<Array<Float>> = null, to:Null<Array<Float>> = null;
+		for (d in screen.draws)
+			if (d.scissor != null) {
+				if (d.scissor != from) {
+					from = d.scissor;
+					to = [from[0] * scaleX, from[1] * scaleY, from[2] * scaleX, from[3] * scaleY];
+				}
+				d.scissor = to;
+			}
+		passes[passes.length - 1] = {
+			target: held,
+			clear: screen.clear,
+			width: width,
+			height: height,
+			draws: screen.draws,
+			updates: screen.updates
+		};
 		passes.push({
 			target: 0,
 			clear: 0xff000000,
 			width: screen.width,
 			height: screen.height,
-			draws: [copy],
+			draws: [copyDraw(frame, screen.width, screen.height)],
 			updates: []
 		});
+		if (after == null)
+			after = keptFrame;
+		frame.afterDraw(after);
+	}
+
+	// After a frame is drawn into the kept target: the next screen pass keeps what the target holds (a clear of null) until it is
+	// cleared, so a read before then finds the frame last shown, and the held frame's hook is moved after any added since.
+	static function keptFrame():Void {
+		var frame = owner;
+		if (frame == null)
+			return;
+		frame.passes[frame.passes.length - 1].clear = null;
+		frame.drawing.remove(hook);
+		frame.drawing.push(hook);
 	}
 
 	// The frame's buffers, which the passes drawn part way read, freed once the frame is drawn and made again as the frame next uploads,

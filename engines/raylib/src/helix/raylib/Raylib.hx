@@ -7217,7 +7217,11 @@ class Raylib {
 		The frame's drawing up to the call is drawn first, and the frame goes on from there: the draws after the call are drawn over what
 		the image holds. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
 
-		Called between `EndDrawing` and `BeginDrawing`, the image is of the next frame, which has drawn nothing yet.
+		Called between `EndDrawing` and `BeginDrawing`, the image is the frame last shown, as in raylib. Frames are kept from the first
+		call on, so a first call there may be black. So may a call there after the framebuffer's size changed.
+
+		From the first call on, every frame is drawn into a texture of the framebuffer's size and copied to the screen as it ends: one
+		more full-screen draw a frame.
 
 		The image is the framebuffer's size, not the screen's, rows top first, its alpha opaque.
 

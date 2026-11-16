@@ -991,8 +991,11 @@ Why things are the way they are, numbered, in order.
     a call that blocks, each returning raylib's `Image`. `LoadImageFromTexture` draws the frame's render texture passes and texture
     updates recorded up to the call, then reads the texture back. `LoadImageFromScreen` draws the frame up to the call, its screen pass
     into a render target of the framebuffer's size, and reads the target back. The frame goes on in the target, whose color and depth
-    `resumeTargetPass` keeps, and the frame's end copies the target to the screen through the default shader without blending. A frame
-    with no read draws on the screen as before. Both leave the draws waiting in rlgl's batch undrawn, as raylib reads the framebuffer
+    `resumeTargetPass` keeps, and the frame's end copies the target to the screen through the default shader without blending. From
+    the first read on, every frame draws into the target and is copied so, and a read between frames gives the frame last shown, as
+    raylib's reads the back buffer with the last frame's pixels still in it. A first read between frames, before a frame was kept, may
+    be black, as may one after the framebuffer's size changed, the target made again at it. A program that never reads draws on the
+    screen as before. Both leave the draws waiting in rlgl's batch undrawn, as raylib reads the framebuffer
     without drawing its batch. The image is RGBA whatever the texture's format, as raylib's GLES build gives it. The `...Async` forms
     stay: `LoadImageFromTextureAsync` reads the texture as the frames before left it, `LoadImageFromScreenAsync` the frame as it ends.
 
@@ -1001,13 +1004,13 @@ Why things are the way they are, numbered, in order.
     far is what rlgl does as it flushes. No trial, as it moves helix-raylib toward raylib (AGENTS.md).
 
     Checked: the render parity suite reads a texture drawn and updated in the frame, and the screen part way through its saved frame, a
-    part of it drawn on top. GL's frame matches raylib's in every pixel, and SDL_GPU's copy matches the cells it was cut from. A frame
-    with a read costs one more draw and a target of the framebuffer's size, kept from the first read on. A program calling neither read
+    part of it drawn on top. GL's frame matches raylib's in every pixel, and SDL_GPU's copy matches the cells it was cut from. From the
+    first read on, each frame costs one more draw, the copy, and the program a target of the framebuffer's size. A program calling neither read
     builds to the same JavaScript as before (the size ladder's rungs 1 to 7, byte for byte): what the reads do is in
     `helix.raylib.internal.Frame.FrameReads`, which only they reach, hooked into the frame's drawing at the first read.
 
     Rejected: drawing the screen's pass on the screen part way and beginning it again, as `beginFrame` clears the framebuffer and its
     depth, and in a page the canvas would show the frame half drawn while the read waits. A platform call resuming the screen's pass,
     which every adapter would need, where a render target owned by the layer above does it with the platform as it is. Drawing rlgl's
-    batch before the read, which raylib doesn't. A read between frames giving the last frame shown, which needs a copy of every frame
-    (73).
+    batch before the read, which raylib doesn't. A read between frames giving the next frame, which has drawn nothing yet: a program
+    saving its last frame after `EndDrawing`, as a C program can, would get black.

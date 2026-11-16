@@ -6,8 +6,8 @@ import js.Browser;
 /** Checks the screen reads that wait in a page on WebGL2 (tools/test_raylib_pages.py): a render texture cleared blue with its left half
 	drawn red, read by `LoadImageFromTexture`, holds both; the screen read part way through each frame, its left half drawn red over a
 	green clear, holds both at the framebuffer's size, opaque; the frame goes on, its top left quarter drawn blue on top, which the tool
-	checks on the page's screenshot (ScreenReadPage.check.json) with the red and the green kept. Leaves {passed, checks, failures} in
-	`window.helixResult`. */
+	checks on the page's screenshot (ScreenReadPage.check.json) with the red and the green kept. The screen read after the last frame,
+	between frames, holds that frame: the blue over the red, and the green. Leaves {passed, checks, failures} in `window.helixResult`. */
 class ScreenReadPage {
 	static var checks = 0;
 	static final failures:Array<String> = [];
@@ -55,6 +55,13 @@ class ScreenReadPage {
 			EndDrawing();
 			frames++;
 		}
+		var last = LoadImageFromScreen();
+		var w = last.width, h = last.height;
+		check(w == GetRenderWidth() && h == GetRenderHeight(), 'between frames, the framebuffer\'s size: $w x $h');
+		check(pixel(last, Std.int(w / 4), Std.int(h / 4)) == "0 121 241 255"
+			&& pixel(last, Std.int(w / 4), Std.int(h * 3 / 4)) == "230 41 55 255"
+			&& pixel(last, Std.int(w * 3 / 4), Std.int(h / 2)) == "0 228 48 255",
+			'between frames, the frame last shown, blue and red over green: ${pixel(last, Std.int(w / 4), Std.int(h / 4))}, ${pixel(last, Std.int(w / 4), Std.int(h * 3 / 4))}, ${pixel(last, Std.int(w * 3 / 4), Std.int(h / 2))}');
 		var result:Dynamic = {passed: failures.length == 0, checks: checks, failures: failures};
 		Reflect.setField(Browser.window, "helixResult", result);
 	}
