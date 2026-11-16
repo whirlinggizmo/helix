@@ -47,11 +47,12 @@ speed where docs/benchmarks.md records them.
   answered in the API before it is built. The Materials extra's draft is tried next, the same way.
 - **The services' `Screen` named `Window`,** as helix's own libraries use the accurate word; helix-raylib keeps raylib's.
 - **What an engine costs agents, against raylib C:** Wardens built from its spec costs $2.40 a run in C and $2.51 on helix-raylib
-  (docs/trials/2026-11-15-wardens-baseline). Each departure from raylib is measured against that, on helix-raylib alone: next the
-  `...Async` loads (a trial build refusing raylib's loads for them) and shaders compiled at build time (one allowing `LoadShader`
-  natively).
-  Lanternholm (docs/trials/templates/lanternholm), a second game, three.js's shape, is tried on helix-raylib with the extras, its
-  port run graded first.
+  (docs/trials/2026-11-15-wardens-baseline). A page build's ensure and the shaders compiled at build time cost nothing once a brief
+  says so (docs/trials/2026-11-15-wardens-cost). Next is Lanternholm (docs/trials/templates/lanternholm), a second game, three.js's
+  shape. Its port to helix-raylib wrote its own shadows (depth packed into a colour target, about 110 lines) and particles
+  (billboards moved on the CPU, about 200), so in order: the Lighting extra's shadows and the shadowmaps built (above), an emitter
+  extra drafted and tried (Particles, below), the port run graded as the picture before, then Lanternholm built on helix-raylib with
+  the extras.
 - **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/benchmarks.md) against three.js's
   InstancedMesh at 3.84, both one instanced draw, so what is left is JavaScript a sprite, about 23 ns against 19: the record's twelve
   writes (about 2.5 ms for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)
@@ -159,9 +160,9 @@ speed where docs/benchmarks.md records them.
   through the binding, Recast building it from a level's geometry (ahead of time, or once at load) and Detour querying it (paths,
   raycasts, the nearest point, DetourCrowd steering many agents, their positions read back in bulk), C++ behind a C file of its own,
   as Jolt; hxDaedalus (Haxe, 2D) benchmarked against it first. The test: agents cross a level the same way on both targets.
-- **Particles, after the C binding:** emitters and their particles updated each frame and drawn instanced, judged against
-  docs/EFFECTS.md's inventory and the earlier projects'. Written in Haxe first; its update moves into C through the binding's pattern
-  only if measuring says it pays.
+- **Particles, before Lanternholm:** an emitter extra on helix-raylib, emitters and their particles updated each frame and drawn
+  instanced, judged against docs/EFFECTS.md's inventory and the earlier projects'. Written in Haxe first. Its update moves into C
+  through the binding's pattern only if measuring says it pays.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
