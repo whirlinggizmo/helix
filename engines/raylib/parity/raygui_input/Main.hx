@@ -122,6 +122,7 @@ class Main {
 			GuiSetIconScale(1);
 			GuiLabel(R(620, 530, 100, 20), "A label too long for its bounds");
 			GuiDropdownBox(R(780, 440, 140, 24), "One;Two;Three;Four", drop, true);
+			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 8)
 				TakeScreenshot("helix.png");
 			EndDrawing();

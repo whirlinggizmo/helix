@@ -30,7 +30,7 @@ import helix.raylib.modules.RModelsAsync.*;
 import helix.raylib.modules.RAudioAsync.*;
 #end
 
-/** Holds the async versions of rcore's window, cursor, clipboard and screenshot calls, which replace raylib's calls that wait for the
+/** Holds the async versions of rcore's window, cursor and clipboard calls, which replace raylib's calls that wait for the
 	window.
 
 	`helix.raylib.Raylib` forwards to each (`tools/gen_raylib.py`). */
@@ -281,34 +281,14 @@ class RWindowAsync {
 			.requestImage(png -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed), error -> refuse("GetClipboardImageAsync", error, failed));
 	}
 
-	/** Takes a screenshot of the frame the next `EndDrawing` ends, and saves it as a file. That `EndDrawing` returns once the file is
-		written or downloaded. See `LoadImageFromScreenAsync` for the screen as an `Image`.
-
-		Called while drawing a frame, the screenshot is of that frame. Called between frames, it is of the next frame, not of the frame
-		drawn last as raylib's is.
-
-		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
-
-		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
-		kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
-
-		The image's alpha is opaque, as raylib's is.
-
-		A screenshot that can't be saved is refused, with the reason logged. It is refused before `InitWindow`, and by `CloseWindow` when
-		no `EndDrawing` was called after `TakeScreenshot`.
-
-		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
-	static function TakeScreenshot(fileName:String):Void {
-		// The screenshot is among Runtime.screenshotsAsked until it is written or refused. Once CloseWindow refused it, nothing more is
-		// written or logged.
-		var asked = {fileName: fileName};
-		Runtime.screenshotsAsked.push(asked);
-		var dropped = () -> Runtime.screenshotsAsked.indexOf(asked) < 0;
+	// Takes a screenshot for TakeScreenshot, calling done once it is written or refused, at a later poll. With a frame to read
+	// (FrameReads.hasScreen), the screen as drawn so far, or between frames the frame last shown. With none yet, the next frame as it is
+	// shown: done is called at once, and the screenshot is among Runtime.screenshotsAsked until it is written or refused, so the next
+	// EndDrawing waits for it. Once CloseWindow refused it, nothing more is written or logged.
+	static function takeScreenshot(fileName:String, done:Void->Void):Void {
 		var refused = (error:String) -> {
-			if (dropped())
-				return;
-			Runtime.screenshotsAsked.remove(asked);
 			Runtime.log(LOG_WARNING, 'TakeScreenshot: $error');
+			done();
 		};
 		if (fileName.indexOf("'") >= 0) {
 			Runtime.later(() -> refused('$fileName: Provided fileName could be potentially malicious, avoid [\'] character'));
@@ -330,28 +310,49 @@ class RWindowAsync {
 			exporter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: directory});
 		}
 		#end
-		if (Runtime.frame == null) {
+		var frame = Runtime.frame;
+		if (frame == null) {
 			Runtime.later(() -> refused('$name: Screenshot could not be saved: InitWindow first'));
 			return;
 		}
-		Runtime.screenshots().captureFrame(captured -> {
-			if (dropped())
-				return;
-			var pixels = captured.pixels;
-			for (i in 0...captured.width * captured.height)
+		// Writes the pixels read, then calls saved, or failed with why not.
+		function save(pixels:haxe.io.Bytes, width:Int, height:Int, saved:Void->Void, failed:String->Void):Void {
+			for (i in 0...width * height)
 				pixels.set(i * 4 + 3, 255);
-			var file = RTextures.encodeImage(new Image(pixels, captured.width, captured.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8), name);
+			var file = RTextures.encodeImage(new Image(pixels, width, height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8), name);
 			if (file == null) {
-				refused('$name: Screenshot could not be saved: only .png, .qoi and .raw files are written');
+				failed('$name: Screenshot could not be saved: only .png, .qoi and .raw files are written');
 				return;
 			}
 			var type = IsFileExtension(name, ".png") ? "image/png" : IsFileExtension(name, ".qoi") ? "image/qoi" : "application/octet-stream";
 			exporter.export(name, type, file, where -> {
 				Runtime.log(LOG_INFO, 'FILEIO: [$where] Image exported successfully');
 				Runtime.log(LOG_INFO, 'SYSTEM: [$where] Screenshot taken successfully');
-				Runtime.screenshotsAsked.remove(asked);
-			}, error -> refused('$name: Screenshot could not be saved: $error'));
-		}, error -> refused('$name: Screenshot could not be saved: $error'));
+				saved();
+			}, error -> failed('$name: Screenshot could not be saved: $error'));
+		}
+		var framebufferWidth = Runtime.window.framebufferWidth,
+			framebufferHeight = Runtime.window.framebufferHeight;
+		if (helix.raylib.internal.Frame.FrameReads.hasScreen(frame)) {
+			helix.raylib.internal.Frame.FrameReads.readScreen(frame, framebufferWidth, framebufferHeight,
+				(pixels, width, height) -> Runtime.later(() -> save(pixels, width, height, done, refused)),
+				error -> Runtime.later(() -> refused('$name: Screenshot could not be saved: $error')));
+			return;
+		}
+		var asked = {fileName: fileName};
+		Runtime.screenshotsAsked.push(asked);
+		var dropped = () -> Runtime.screenshotsAsked.indexOf(asked) < 0;
+		var failed = (error:String) -> {
+			if (dropped())
+				return;
+			Runtime.screenshotsAsked.remove(asked);
+			Runtime.log(LOG_WARNING, 'TakeScreenshot: $error');
+		};
+		helix.raylib.internal.Frame.FrameReads.readNext(frame, (pixels, width, height) -> {
+			if (!dropped())
+				save(pixels, width, height, () -> Runtime.screenshotsAsked.remove(asked), failed);
+		}, error -> failed('$name: Screenshot could not be saved: $error'));
+		Runtime.later(done);
 	}
 	#end
 }

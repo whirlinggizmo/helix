@@ -770,7 +770,7 @@ Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them.
 
 A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
-`EndDrawing`, `WaitTime`, a file call (`LoadFileText`), a clipboard call and a screen read (`LoadImageFromScreen`) don't compile in a function used as a value, a constructor or a variable's initial value. A load from memory (`LoadImageFromMemory`) doesn't compile, and names its `...Async` call.
+`EndDrawing`, `WaitTime`, a file call (`LoadFileText`), a clipboard call, a screen read (`LoadImageFromScreen`) and `TakeScreenshot` don't compile in a function used as a value, a constructor or a variable's initial value. A load from memory (`LoadImageFromMemory`) doesn't compile, and names its `...Async` call.
 
 Its members are on their own pages:
 

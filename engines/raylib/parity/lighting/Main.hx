@@ -79,6 +79,7 @@ class Main {
 						DrawSphereWires(light.position, 0.2, 8, 8, ColorAlpha(light.color, 0.3));
 			DrawGrid(10, 1.0);
 			EndMode3D();
+			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
 				TakeScreenshot("helix.png");
 			EndDrawing();

@@ -18,6 +18,7 @@ class Main {
 			BeginMode3D(camera);
 			@CASES@
 			EndMode3D();
+			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
 				TakeScreenshot("helix.png");
 			EndDrawing();

@@ -5,21 +5,54 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 import helix.services.screen.Screen;
 
-/** Checks `TakeScreenshot` on graphics that read back a frame of two pixels, its files handed to the test: the screenshot is of the
-	frame that ends next and is written as that frame ends, a screenshot that can't be saved is refused with the reason logged, and
-	`CloseWindow` refuses a screenshot with no frame ended after `TakeScreenshot`, writing none. Run by helix.py test on Node and
-	natively. */
+/** Checks `TakeScreenshot` on graphics that read back two pixels, its files handed to the test. The first call with nothing drawn on
+	the screen returns at once, and its screenshot is of the next frame, written as that frame ends. From then on the frames are kept: a
+	call between frames writes the frame last shown, and one during a frame the frame drawn so far, each before it returns, read from
+	the kept target. A screenshot that can't be saved is refused with the reason logged, and `CloseWindow` refuses a first screenshot
+	left for a frame that never ended, writing none. Run by helix.py test on Node and natively. */
 @:access(helix.raylib.internal.Runtime)
 class ScreenshotTests {
-	static var checks = 0;
+	public static var checks = 0;
 
-	static function check(value:Bool, message:String):Void {
+	public static function check(value:Bool, message:String):Void {
 		if (!value)
 			throw message;
 		checks++;
 	}
 
+	static function report(_:Int):Void {
+		var report = haxe.Json.stringify({passed: true, checks: checks});
+		#if js
+		js.Syntax.code("console.log({0})", report);
+		#else
+		Sys.println(report);
+		#end
+	}
+
 	static function main():Void {
+		Runtime.exitKey = 0;
+		Runtime.system = new FakeSystem();
+		Runtime.time = new helix.services.time.Time(Runtime.system);
+		#if js
+		Runtime.requestFrame = f -> haxe.Timer.delay(() -> f(0), 0);
+		(Screenshots.all() : Dynamic).then(report, error -> {
+			js.Syntax.code("console.log({0})", Std.string(error));
+			js.Syntax.code("process.exit(1)");
+		});
+		#else
+		report(Screenshots.all());
+		#end
+	}
+}
+
+/** The screenshots, built as a program's classes are. */
+@:build(helix.raylib.internal.Wait.build())
+@:access(helix.raylib.internal.Runtime)
+class Screenshots {
+	/** Takes every screenshot and checks it.
+
+		@return  The checks made. */
+	public static function all():Int {
 		var warnings:Array<String> = [];
 		SetTraceLogLevel(LOG_WARNING);
 		SetTraceLogCallback((level, text) -> if (level == LOG_WARNING) warnings.push(text));
@@ -27,10 +60,10 @@ class ScreenshotTests {
 		Runtime.exportAdapter = written;
 
 		TakeScreenshot("early.png");
-		Runtime.pollAnswers();
-		check(warnings.length == 1 && warnings[0] == "TakeScreenshot: early.png: Screenshot could not be saved: InitWindow first",
+		ScreenshotTests.check(warnings.length == 1
+			&& warnings[0] == "TakeScreenshot: early.png: Screenshot could not be saved: InitWindow first",
 			'before InitWindow, refused: $warnings');
-		check(Runtime.screenshotsAsked.length == 0, "a refused screenshot isn't waited for");
+		ScreenshotTests.check(Runtime.screenshotsAsked.length == 0, "a refused screenshot isn't waited for");
 
 		var graphics = new ReadingGraphics();
 		Runtime.graphics = graphics;
@@ -40,58 +73,82 @@ class ScreenshotTests {
 		Runtime.events = new FakeEvents();
 		Runtime.screen = new Screen(window, Runtime.events);
 
-		Runtime.frame.begin(64, 64);
+		// The first, before the frame draws: of the frame as it ends.
+		BeginDrawing();
 		TakeScreenshot("shot.png");
-		check(written.names.length == 0 && Runtime.screenshotsAsked.length == 1, "TakeScreenshot returns before the file is written");
-		Runtime.showFrame();
-		check(written.names.join(",") == "shot.png" && written.types[0] == "image/png", 'written as the frame ends: ${written.names}');
+		ScreenshotTests.check(written.names.length == 0 && Runtime.screenshotsAsked.length == 1, "TakeScreenshot returns before the file is written");
+		ClearBackground(RED);
+		EndDrawing();
+		var kept = graphics.targets[0];
+		ScreenshotTests.check(graphics.targets.length == 1 && graphics.reads.join(",") == '$kept',
+			'the frame kept in a target, read as it ends: ${graphics.targets}, ${graphics.reads}');
+		ScreenshotTests.check(written.names.join(",") == "shot.png"
+			&& written.types[0] == "image/png", 'written as the frame ends: ${written.names}');
 		var png = written.files[0];
-		check(png.get(1) == "P".code && png.get(2) == "N".code && png.get(3) == "G".code, "a PNG file");
-		check(Runtime.screenshotsAsked.length == 0, "EndDrawing has no screenshot left to wait for");
+		ScreenshotTests.check(png.get(1) == "P".code && png.get(2) == "N".code && png.get(3) == "G".code, "a PNG file");
+		ScreenshotTests.check(Runtime.screenshotsAsked.length == 0, "EndDrawing has no screenshot left to wait for");
 
-		// Asked for between frames, the screenshot is of the next frame.
-		TakeScreenshot("next.qoi");
-		Runtime.frame.begin(64, 64);
-		check(written.names.length == 1, "nothing written until the frame ends");
-		Runtime.showFrame();
-		check(written.names.join(",") == "shot.png,next.qoi", 'the next frame, written: ${written.names}');
+		// Between frames: the frame last shown, from the kept target, written before the call returns.
+		TakeScreenshot("last.qoi");
+		ScreenshotTests.check(written.names.join(",") == "shot.png,last.qoi" && written.types[1] == "image/qoi",
+			'the frame last shown, written: ${written.names}');
+		ScreenshotTests.check(graphics.reads.join(",") == '$kept,$kept', 'read from the kept target: ${graphics.reads}');
+		ScreenshotTests.check(Runtime.screenshotsAsked.length == 0, "nothing left for EndDrawing");
 
-		Runtime.frame.begin(64, 64);
+		// During a frame: the frame drawn so far.
+		BeginDrawing();
+		ClearBackground(BLUE);
+		TakeScreenshot("now.raw");
+		ScreenshotTests.check(written.names.join(",") == "shot.png,last.qoi,now.raw"
+			&& graphics.reads.length == 3
+			&& graphics.reads[2] == kept,
+			'the frame drawn so far, written: ${written.names}, ${graphics.reads}');
+		ScreenshotTests.check(written.files[2].length == 8 && written.files[2].get(3) == 255, "the raw pixels, opaque");
+
 		TakeScreenshot("shot.jpg");
-		Runtime.showFrame();
-		check(warnings.length == 2
+		ScreenshotTests.check(warnings.length == 2
 			&& warnings[1] == "TakeScreenshot: shot.jpg: Screenshot could not be saved: only .png, .qoi and .raw files are written",
 			'a format that isn\'t written, refused: $warnings');
-		check(Runtime.screenshotsAsked.length == 0 && written.names.length == 2, "and not waited for");
+		ScreenshotTests.check(Runtime.screenshotsAsked.length == 0 && written.names.length == 3, "and not waited for");
+		EndDrawing();
 
 		TakeScreenshot("it's.png");
-		Runtime.pollAnswers();
-		check(warnings.length == 3
+		ScreenshotTests.check(warnings.length == 3
 			&& StringTools.startsWith(warnings[2], "TakeScreenshot: it's.png: Provided fileName could be potentially malicious"),
 			'a name with \' refused, as raylib\'s is: $warnings');
-		check(Runtime.screenshotsAsked.length == 0 && written.names.length == 2, "and not waited for");
+		ScreenshotTests.check(Runtime.screenshotsAsked.length == 0 && written.names.length == 3, "and not waited for");
 
-		// No frame ends after the last TakeScreenshot: CloseWindow refuses the screenshot, and the frame a page clears as it closes isn't
-		// written.
+		// A new window's first, between frames, with no frame ended after it: CloseWindow refuses it, and the frame a page clears as it
+		// closes isn't written.
+		Runtime.frame = new Frame(graphics);
 		TakeScreenshot("late.png");
+		ScreenshotTests.check(Runtime.screenshotsAsked.length == 1 && written.names.length == 3, "left for the next frame");
 		CloseWindow();
-		check(warnings.length == 4
+		ScreenshotTests.check(warnings.length == 4
 			&& warnings[3] == "TakeScreenshot: late.png: Screenshot could not be saved: Screenshots are generated during EndDrawing()",
 			'CloseWindow refuses a screenshot no frame ended after: $warnings');
-		check(written.names.length == 2 && Runtime.screenshotsAsked.length == 0, 'and writes none: ${written.names}');
-
-		var report = haxe.Json.stringify({passed: true, checks: checks});
-		#if js
-		js.Syntax.code("console.log({0})", report);
-		#else
-		Sys.println(report);
-		#end
+		ScreenshotTests.check(written.names.length == 3 && Runtime.screenshotsAsked.length == 0, 'and writes none: ${written.names}');
+		return ScreenshotTests.checks;
 	}
 }
 
-// Graphics reading a frame back as two pixels.
+// Graphics reading a frame back as two pixels, keeping the render targets made and the handles read.
 private class ReadingGraphics extends CountingGraphics {
+	/** The render targets made, in order. */
+	public final targets:Array<Int> = [];
+
+	/** The handles read, in order. */
+	public final reads:Array<Int> = [];
+
+	override public function createRenderTarget(width:Int, height:Int, format:helix.platform.TextureFormat = Rgba8, depth:Bool = true,
+			msaaSampleCount:Int = 0, bottomRowFirst:Bool = false):Int {
+		var handle = super.createRenderTarget(width, height, format, depth, msaaSampleCount, bottomRowFirst);
+		targets.push(handle);
+		return handle;
+	}
+
 	override public function readPixels(handle:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
+		reads.push(handle);
 		read(Bytes.alloc(8), 2, 1);
 	}
 }

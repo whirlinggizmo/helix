@@ -5,7 +5,7 @@
   "generated": true,
   "frames": 40,
   "backends": {
-    "gl": 10,
+    "gl": 90,
     "sdl_gpu": 13600
   },
   "notes": "SDL_GPU's frame (Vulkan on lavapipe) differs from Mesa's GL by one level in about 12,600 blended pixels, its blending rounding apart (1,000 of them in the screen read's copy of the first two blend cells, which matches the cells it was cut from exactly), and in about 830 of the mipmapped squares, lavapipe choosing levels a little apart from llvmpipe; GL's matches raylib's exactly, the mipmaps made on the CPU too.",

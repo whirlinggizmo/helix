@@ -94,6 +94,7 @@ class Main {
 					DrawText('${c.id > 0 ? 1 : 0} ${c.width} ${c.height} ${c.mipmaps} ${c.format}', 8 + 78 * i, 340, 10, BLACK);
 				}
 			}
+			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
 				TakeScreenshot("helix.png");
 			EndDrawing();

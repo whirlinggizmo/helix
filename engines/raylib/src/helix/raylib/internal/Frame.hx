@@ -1611,7 +1611,7 @@ private class Run {
 	public var count:Int;
 }
 
-/** Reads what a frame has drawn part way through it, for `LoadImageFromTexture` and `LoadImageFromScreen`: the passes recorded so far
+/** Reads what a frame has drawn part way through it, for `LoadImageFromTexture`, `LoadImageFromScreen` and `TakeScreenshot`: the passes recorded so far
 	drawn (`submit`), and the screen's passes kept in a render target from the first screen read on (`readScreen`), so a read between
 	frames finds the frame last shown. Only those calls reach it, so a program calling neither links none of it. */
 @:noCompletion
@@ -1695,18 +1695,64 @@ class FrameReads {
 	static function readScreen(frame:Frame, framebufferWidth:Int, framebufferHeight:Int, read:(pixels:Bytes, width:Int, height:Int) -> Void,
 			failed:String->Void):Void {
 		own(frame);
-		if (!keeping) {
-			keeping = true;
-			if (hook == null)
-				hook = drawHeld;
-			frame.drawing.push(hook);
-		}
+		keep(frame);
 		if (!holding) {
 			fit(frame, framebufferWidth, framebufferHeight);
 			holding = true;
 		}
 		submit(frame, framebufferWidth, framebufferHeight);
-		frame.graphics.readPixels(held, read, failed);
+		frame.graphics.readPixels(held, (pixels, width, height) -> read(topFirst(pixels, width, height), width, height), failed);
+	}
+
+	/** Returns whether the screen has a frame to read now: a frame kept since the first read, or one cleared or drawn into on the
+		screen so far. Before the first read, between frames and before a frame draws on the screen, there is none.
+
+		@param frame  The frame.
+		@return  True when there is one. */
+	static function hasScreen(frame:Frame):Bool {
+		if (owner == frame && keeping)
+			return true;
+		var screen = frame.passes[frame.passes.length - 1];
+		return screen.draws.length > 0 || screen.clear != 0xff000000;
+	}
+
+	/** Reads the screen once the next frame is drawn: the frames are kept from then on, as after `readScreen`, and the kept target read
+		as the frame is shown.
+
+		@param frame  The frame.
+		@param read  Receives the pixels, rows top first, and their width and height.
+		@param failed  Receives why they couldn't be read. */
+	static function readNext(frame:Frame, read:(pixels:Bytes, width:Int, height:Int) -> Void, failed:String->Void):Void {
+		own(frame);
+		keep(frame);
+		frame.afterDraw(() -> {
+			if (owner == frame && held != 0)
+				frame.graphics.readPixels(held, (pixels, width, height) -> read(topFirst(pixels, width, height), width, height), failed);
+			else
+				failed("the window was closed");
+		});
+	}
+
+	// The kept target's pixels, read bottom row first, as rows top first, in place.
+	static function topFirst(pixels:Bytes, width:Int, height:Int):Bytes {
+		var row = width * 4, swap = Bytes.alloc(row);
+		for (y in 0...height >> 1) {
+			var top = y * row, bottom = (height - 1 - y) * row;
+			swap.blit(0, pixels, top, row);
+			pixels.blit(top, pixels, bottom, row);
+			pixels.blit(bottom, swap, 0, row);
+		}
+		return pixels;
+	}
+
+	// Keeps the frames from now on: each frame's screen pass drawn into the kept target (drawHeld), copied to the screen.
+	static function keep(frame:Frame):Void {
+		if (keeping)
+			return;
+		keeping = true;
+		if (hook == null)
+			hook = drawHeld;
+		frame.drawing.push(hook);
 	}
 
 	// Starts again for a frame of a window made again (CloseWindow, InitWindow), whose graphics are its own.
@@ -1736,7 +1782,8 @@ class FrameReads {
 					graphics.disposeTexture(held);
 				held = 0;
 			});
-		held = graphics.createRenderTarget(framebufferWidth, framebufferHeight);
+		// Stored bottom row first, as the screen is on GL, so GL draws into it as into the screen, unflipped.
+		held = graphics.createRenderTarget(framebufferWidth, framebufferHeight, helix.platform.TextureFormat.Rgba8, true, 0, true);
 		heldWidth = framebufferWidth;
 		heldHeight = framebufferHeight;
 		if (screen.clear == null)
@@ -1816,7 +1863,7 @@ class FrameReads {
 		}
 	}
 
-	// A draw of the held target over the whole screen, its texels as they are: an immediate quad through the default program, without
+	// A draw of the held target over the whole screen, its texels as they are, its bottom row first: an immediate quad through the default program, without
 	// blending, depth or culling, written after the batch's vertices.
 	static function copyDraw(frame:Frame, width:Float, height:Float):Draw {
 		frame.vertices = (frame.vertices + 3) & ~3;
@@ -1828,7 +1875,7 @@ class FrameReads {
 			frame.put(at + 4, bottom ? height : 0);
 			frame.put(at + 8, 0);
 			frame.put(at + 12, right ? 1 : 0);
-			frame.put(at + 16, bottom ? 1 : 0);
+			frame.put(at + 16, bottom ? 0 : 1);
 			frame.put(at + 20, 0);
 			frame.put(at + 24, 0);
 			frame.put(at + 28, 1);

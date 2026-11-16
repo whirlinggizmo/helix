@@ -964,13 +964,14 @@ Why things are the way they are, numbered, in order.
     Rejected: marks the program writes (`@await`, the hxasync haxelib), on every function on the way to `EndDrawing`, natively too;
     Emscripten's Asyncify, which has no counterpart for Haxe's JavaScript.
 
-73. **`TakeScreenshot` saves the frame the next `EndDrawing` ends, and that `EndDrawing` returns once the file is written.** It
-    replaces 72's refusal of `TakeScreenshot` and 24's `TakeScreenshotAsync`, which is removed. The call returns at once. The next
-    `EndDrawing` reads the frame back as it ends, saves the file, and returns once the file is written, or in a page downloaded.
-    `EndDrawing` is already a waiting call (72), so the program writes nothing more. Called while a frame is drawn, the screenshot is
-    of that frame. Called between frames, it is of the next one. `CloseWindow` refuses a screenshot with no `EndDrawing` called after
-    `TakeScreenshot`, logging "TakeScreenshot: <file>: Screenshot could not be saved: Screenshots are generated during EndDrawing()".
-    `LoadImageFromScreen` and `LoadImageFromTexture` stay refused.
+73. **`TakeScreenshot` saves the screen as `LoadImageFromScreen` reads it (75), and returns once the file is written.** It replaces
+    72's refusal of `TakeScreenshot` and 24's `TakeScreenshotAsync`, which is removed. It is a waiting call (72): in a page an `await`
+    the program doesn't write, natively a call that blocks until the file is written, or in a page downloaded. Called while a frame is
+    drawn, the screenshot is of the frame drawn so far. Called between frames, it is of the frame last shown, from the target the frames
+    are kept in from the first screen read or screenshot on. The first call with nothing drawn on the screen yet (between frames, or
+    before the frame clears or draws), with no frame kept to save, returns at once and saves the next frame as it ends, that frame's
+    `EndDrawing` returning once the file is written. `CloseWindow` refuses such a screenshot with no `EndDrawing` called after it,
+    logging "TakeScreenshot: <file>: Screenshot could not be saved: Screenshots are generated during EndDrawing()".
 
     Why: every entrant writing its own program met the refusal (the Wardens runs, the null font's six), and three of the null font's
     saved a black `shot.png` first, its frame drawn empty while `TakeScreenshotAsync` waited. `TakeScreenshotAsync` waits no less: the
@@ -981,12 +982,10 @@ Why things are the way they are, numbered, in order.
     three without called it after the last `EndDrawing`, as a C program does, read `CloseWindow`'s refusal and moved it. The three
     given a program calling it late did the same.
 
-    Rejected: the frame drawn last, as a C program calling it after `EndDrawing` gets. raylib 5.5 reads the back buffer when called
-    (`rcore.c`'s `glReadPixels`, read, not run), whose contents OpenGL leaves undefined after the swap. Keeping the frame here means a
-    copy of every frame, or a page's `preserveDrawingBuffer`. Drawing the last frame again when asked was rejected too, as the frame
-    keeps no draws once shown.
+    Rejected: a page's `preserveDrawingBuffer` for the frame last shown, which every program would pay for. Drawing the last frame
+    again when asked, as the frame keeps no draws once shown.
 
-75. **The screen reads wait, as the file calls do, and read the frame as drawn so far.** It revises 72's and 73's "stay refused".
+75. **The screen reads wait, as the file calls do, and read the frame as drawn so far.** It revises 72's "stay refused".
     `LoadImageFromTexture` and `LoadImageFromScreen` are waiting calls (72): in a page an `await` the program doesn't write, natively
     a call that blocks, each returning raylib's `Image`. `LoadImageFromTexture` draws the frame's render texture passes and texture
     updates recorded up to the call, then reads the texture back. `LoadImageFromScreen` draws the frame up to the call, its screen pass
@@ -1004,8 +1003,11 @@ Why things are the way they are, numbered, in order.
     far is what rlgl does as it flushes. No trial, as it moves helix-raylib toward raylib (AGENTS.md).
 
     Checked: the render parity suite reads a texture drawn and updated in the frame, and the screen part way through its saved frame, a
-    part of it drawn on top. GL's frame matches raylib's in every pixel, and SDL_GPU's copy matches the cells it was cut from. From the
-    first read on, each frame costs one more draw, the copy, and the program a target of the framebuffer's size. A program calling neither read
+    part of it drawn on top. SDL_GPU's copy matches the cells it was cut from. The target is stored bottom row first, so GL draws into it
+    unflipped, as into the screen. A frame drawn into it still differs a little from one drawn on GL's screen: render's GL frame by 72
+    pixels, at most 4 apart in its anisotropic cell, and scene2d's by 49, at most 1 apart in its gradients but for a few edge pixels.
+    Their GL allowances are 90 and 60. From the first read on, each frame costs one more draw, the copy, and the program a target of
+    the framebuffer's size. A program calling neither read
     builds to the same JavaScript as before (the size ladder's rungs 1 to 7, byte for byte): what the reads do is in
     `helix.raylib.internal.Frame.FrameReads`, which only they reach, hooked into the frame's drawing at the first read.
 

@@ -19,12 +19,13 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 
 ## Differences from raylib
 
-- `EndDrawing`, `WaitTime`, a file call (`LoadFileText`, `SaveFileText`), a clipboard call and a screen read (`LoadImageFromScreen`,
-  `LoadImageFromTexture`) don't compile in a function used as a value, in a constructor or in a variable's initial value (see "Calls
-  that wait").
+- `EndDrawing`, `WaitTime`, a file call (`LoadFileText`, `SaveFileText`), a clipboard call, a screen read (`LoadImageFromScreen`,
+  `LoadImageFromTexture`) and `TakeScreenshot` don't compile in a function used as a value, in a constructor or in a variable's
+  initial value (see "Calls that wait").
 - A load from memory (`LoadImageFromMemory`, `LoadFontFromMemory`, `LoadWaveFromMemory`) doesn't compile. Each names its `...Async`
   call.
-- `TakeScreenshot` saves the frame the next `EndDrawing` ends, and that `EndDrawing` returns once the file is written.
+- The first `TakeScreenshot` made with nothing drawn on the screen yet, as between frames, saves the next frame, and that frame's
+  `EndDrawing` returns once the file is written. raylib's saves what the back buffer holds.
 - A window or cursor request (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) returns at once, and the window changes at a
   later frame. `IsWindowFullscreen` and the other window reads report the window as it is. A refusal is logged.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
@@ -39,7 +40,7 @@ See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/i
 
 ## Calls that wait
 
-In a page, each function of the program that calls `EndDrawing`, `WaitTime`, a file call, a clipboard call or a screen read is built as
+In a page, each function of the program that calls `EndDrawing`, `WaitTime`, a file call, a clipboard call, a screen read or `TakeScreenshot` is built as
 an async function, and each call of it is awaited. So is a function calling one that does, and a function declared in a function and only ever called by its
 name. The program writes nothing for this. Natively the same calls block.
 

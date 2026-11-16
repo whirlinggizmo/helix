@@ -254,6 +254,35 @@ class RCore {
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to open URL: $url');
 	}
 
+	/** Takes a screenshot of the screen and saves it as a file, and returns once the file is written or downloaded. See
+		`LoadImageFromScreen` for the screen as an `Image`.
+
+		Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it. The draws since
+		rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't in it, as in raylib. Called between frames, it is of the frame last
+		shown.
+
+		The first call, if nothing is drawn on the screen yet (between frames, or before the frame clears or draws), has no frame to save.
+		It returns at once, and its screenshot is of the next frame, written before that frame's `EndDrawing` returns. `CloseWindow`
+		refuses it when no `EndDrawing` is called after it.
+
+		From the first call on, every frame is drawn into a texture of the framebuffer's size and copied to the screen as it ends: one
+		more full-screen draw a frame.
+
+		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
+
+		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
+		kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
+
+		The image is the framebuffer's size, its alpha opaque, as raylib's is.
+
+		A screenshot that can't be saved is refused, with the reason logged. It is refused before `InitWindow`.
+
+		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
+	@:waits
+	static function TakeScreenshot(fileName:String, answer:Void->Void):Void {
+		RWindowAsync.takeScreenshot(fileName, answer);
+	}
+
 	/** Puts text on the system's clipboard, and returns once it is there. See `GetClipboardText` for reading it.
 
 		A page may refuse it unless it comes soon after a key press. A refusal is logged.
@@ -551,7 +580,8 @@ class RCore {
 
 	/** Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
 
-		A screenshot `TakeScreenshot` asked for is of this frame, and its file is written before `EndDrawing` returns.
+		A screenshot the first `TakeScreenshot` left for the next frame, with none to save yet, is of this frame, and its file is
+		written before `EndDrawing` returns.
 
 		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
 		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */

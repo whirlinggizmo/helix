@@ -36,6 +36,7 @@ class Main {
 				for (p in parts)
 					DrawModel(p, new Vector3(0, 0, 0), 1, WHITE);
 			EndMode3D();
+			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
 				TakeScreenshot("helix.png");
 			EndDrawing();

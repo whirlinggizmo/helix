@@ -40,6 +40,7 @@ class Main {
 				DrawModel(models[3], new Vector3(2.6, 0, -2.2), 1, WHITE);
 			}
 			EndMode3D();
+			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
 				TakeScreenshot("helix.png");
 			EndDrawing();

@@ -90,6 +90,7 @@ class Main {
 			Column(255, STATE_FOCUSED);
 			Column(490, STATE_PRESSED);
 			Column(725, STATE_DISABLED);
+			helix.raylib.Rlgl.rlDrawRenderBatchActive();
 			if (frame == 2)
 				TakeScreenshot("helix.png");
 			EndDrawing();
