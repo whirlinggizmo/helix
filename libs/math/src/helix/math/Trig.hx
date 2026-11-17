@@ -15,6 +15,9 @@ import haxe.io.FPHelper;
 class Trig {
 	static inline var PI = 3.14159265358979323846;
 
+	// 2/pi: an angle times it is the angle in quarter turns.
+	static inline var QUARTER_TURNS = 0.63661977236758134308;
+
 	// pi/2 in three parts (fdlibm's): k times each is exact for |k| <= 2^20 (about 1.6 million radians); past that, reduceLarge.
 	static inline var PIO2_1 = 1.57079632673412561417e+00;
 	static inline var PIO2_2 = 6.07710050630396597660e-11;
@@ -172,25 +175,40 @@ class Trig {
 	public static function acos(x:Float):Float {
 		if (!(x >= -1 && x <= 1))
 			return Math.NaN;
-		if (x > -0.5 && x < 0.5)
-			return PIO2_HI - (x - (PIO2_LO - arcRatio(x * x) * x));
-		if (x < 0) {
-			// acos(x) = pi - 2 asin(s), s the square root of (1 + x) / 2.
-			var z = (1 + x) * 0.5,
-				s = Math.sqrt(z),
-				w = arcRatio(z) * s - PIO2_LO;
-			return PI - 2 * (s + w);
-		}
-		if (x == 1)
-			return 0;
-		// acos(x) = 2 asin(s), s the square root of (1 - x) / 2, as its high part and the rest c.
-		var z = (1 - x) * 0.5,
-			s = Math.sqrt(z),
-			high = highPart(s),
-			c = (z - high * high) / (s + high);
-		var w = arcRatio(z) * s + c;
-		return 2 * (high + w);
+		if (x >= 0)
+			return x == 1 ? 0 : acosAcute(x);
+		if (x > -0.5)
+			return acosNearZero(x);
+		// acos(x) = pi - 2 asin(s), s the square root of (1 + x) / 2.
+		var z = (1 + x) * 0.5, s = Math.sqrt(z), w = arcRatio(z) * s - PIO2_LO;
+		return PI - 2 * (s + w);
 	}
+
+	// acos for an x from 0 up to 1, whose angle is from 0 to pi/2, without acos's checks.
+
+	@:allow(helix.math)
+	static inline function acosAcute(x:Float):Float {
+		if (x < 0.5)
+			return acosNearZero(x);
+		else {
+			// acos(x) = 2 asin(s), s the square root of (1 - x) / 2, as its high part and the rest c.
+			var z = (1 - x) * 0.5,
+				s = Math.sqrt(z),
+				high = highPart(s),
+				c = (z - high * high) / (s + high);
+			return 2 * (high + (arcRatio(z) * s + c));
+		}
+	}
+
+	// acos for an x between -1/2 and 1/2.
+	static inline function acosNearZero(x:Float):Float
+		return PIO2_HI - (x - (PIO2_LO - arcRatio(x * x) * x));
+
+	// sin for an angle from 0 to pi/2, reduced with one compare.
+
+	@:allow(helix.math)
+	static inline function sinAcute(x:Float):Float
+		return x * QUARTER_TURNS <= 0.5 ? sinReduced(x) : cosReduced(((x - PIO2_1) - PIO2_2) - PIO2_3);
 
 	// fdlibm's R for asin and acos (e_asin.c), a ratio of two polynomials: asin(x) is x + x R(x^2) for |x| <= 1/2, within an ulp.
 	static function arcRatio(z:Float):Float {
@@ -215,7 +233,7 @@ class Trig {
 	// of r, by k mod 4. These three are inline and keep nothing, so an angle within MAX_K quarter turns is reduced without a call.
 	// k: the whole number nearest x / (pi/2). Past MAX_K, or NaN, for an x that remainderLarge reduces.
 	static inline function quarterTurns(x:Float):Float
-		return (x * 0.63661977236758134308 + ROUND) - ROUND;
+		return (x * QUARTER_TURNS + ROUND) - ROUND;
 
 	// r, for x and its k.
 	static inline function remainder(x:Float, k:Float):Float

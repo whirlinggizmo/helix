@@ -211,9 +211,14 @@ class Quaternion {
 			return out.set(ax + (bx - ax) * amount, ay + (by - ay) * amount, az + (bz - az) * amount, aw + (bw - aw) * amount).normalize(out);
 		}
 		// The angle's sine is the square root of 1 less its cosine squared.
-		var angle = Trig.acos(cos), sin = Math.sqrt((1 - cos) * (1 + cos));
-		var a = Trig.sin((1 - amount) * angle) / sin,
-			b = Trig.sin(amount * angle) / sin;
+		var angle = Trig.acosAcute(cos),
+			sin = Math.sqrt((1 - cos) * (1 + cos));
+		// The angle is from 0 to pi/2, and so is each part of it between the two rotations.
+		var between = amount >= 0 && amount <= 1;
+		inline function sine(x:Float):Float
+			return between ? Trig.sinAcute(x) : Trig.sin(x);
+		var a = sine((1 - amount) * angle) / sin,
+			b = sine(amount * angle) / sin;
 		return result(out, ax * a + bx * b, ay * a + by * b, az * a + bz * b, aw * a + bw * b);
 	}
 
