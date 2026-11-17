@@ -42,6 +42,7 @@ A trial gives part of helix to fresh agents who know nothing of it, and reads wh
 
 | trial | asked | found |
 |---|---|---|
+| [2026-11-16-particles](2026-11-16-particles/results.md) | Whether agents make a camp at night's effects with the Particles extra from its page alone | 3 of 3 met the task, $0.32 to $0.63, no compile error; a shell spawn, a pulse, speed apart from direction and keys including the ends asked for |
 | [2026-11-15-wardens-baseline](2026-11-15-wardens-baseline/results.md) | What Wardens costs on helix-raylib, on raylib C and through a plain Haxe binding | helix-raylib $2.51 a run, C $2.40, raylib-hx $4.29; C's pointers and macros leak through a plain binding |
 | [2026-11-15-wardens-cost](2026-11-15-wardens-cost/results.md) | Whether raylib's loads after an ensure cost less than `...Async` loads, in a page | A lean in round 1 ($2.01 against $2.19); alike once the brief says how to load |
 | [2026-11-15-lighting-shadows](2026-11-15-lighting-shadows/results.md) | The Lighting extra's shadows, emissive and alpha cutoff, as a draft | Shadows drew the scene twice a light; a program's own lit shader got no lights |

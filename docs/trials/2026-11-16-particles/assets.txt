@@ -1,0 +1,5 @@
+models/floor_tile_large.glb
+models/barrel.glb
+models/crates.glb
+models/keg.glb
+ui/font.ttf
