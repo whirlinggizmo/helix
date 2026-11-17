@@ -4,16 +4,17 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.modules.RCore.*;
-import helix.raylib.Rlights.*;
+import helix.raylib.extras.*;
+import helix.raylib.extras.Lighting.*;
 #end
 
-/** Holds rlights, the lights raylib 5.5's lighting examples include (`examples/shaders/rlights.h`). Each is written here, and
-	`helix.raylib.Rlights` forwards to each (`tools/gen_raylib.py`). */
+/** Holds the scene's lights, made as raylib 5.5's lighting examples' `rlights.h` makes them. Each is written here, and
+	`helix.raylib.extras.Lighting` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RLights {
 	#if !macro
-	/** Makes a light of the scene, as rlights' `CreateLight` makes one of a shader. The light shines on every lit draw, whichever shader
+	/** Makes a light of the scene, as `CreateLight` in raylib's lighting examples' `rlights.h` makes one of a shader. The light shines on every lit draw, whichever shader
 		it was made with: the Lighting extra's `LoadLightingShader` and `LoadPbrShader`, and a shader declaring rlights' `lights`, such as
 		raylib's examples' `lighting.fs` or one including `<helix/raylib/shaders/lights.glsl>`. A program makes as many lights as it needs.
 
@@ -38,7 +39,7 @@ class RLights {
 		return light;
 	}
 
-	/** Kept as rlights' `UpdateLightValues`, for a program written for rlights. A light's fields are read at each draw, so the draws
+	/** Kept as `UpdateLightValues` in raylib's lighting examples' `rlights.h`, for a program written for it. A light's fields are read at each draw, so the draws
 		after a change show it with or without this call.
 
 		@param shader  The shader.

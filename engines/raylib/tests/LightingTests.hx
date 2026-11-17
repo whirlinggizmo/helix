@@ -3,13 +3,12 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.Rlgl.*;
-import helix.raylib.Rlights.*;
 import helix.raylib.extras.Lighting.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Program;
 import helix.raylib.internal.Runtime;
 
-/** Checks the scene's lights (rlights' `CreateLight`, the Lighting extra), on graphics that count what is live: each draw through a
+/** Checks the scene's lights (the Lighting extra's `CreateLight`), on graphics that count what is live: each draw through a
 	shader declaring `lights` is lit by the lights reaching its bounds most, 8 of more than 8, best first, the rest off; a range keeps a
 	far lamp off a draw; a spot light's cone keeps it off what it points away from; more than 4 lights light one draw; `UnloadLight`
 	takes a light out; a light moves by its fields alone; a shader of 4 lights gets the best 4; `DrawMeshInstanced` scores against all
@@ -18,7 +17,7 @@ import helix.raylib.internal.Runtime;
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
-@:access(helix.raylib.Light)
+@:access(helix.raylib.extras.Light)
 @:access(helix.raylib.Shader)
 @:access(helix.services.shaders)
 class LightingTests {

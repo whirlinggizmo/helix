@@ -1,7 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
-import helix.raylib.Rlights.*;
 import helix.raylib.extras.Lighting.*;
 import helix.raylib.extras.Materials.*;
 

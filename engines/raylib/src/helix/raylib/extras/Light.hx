@@ -1,6 +1,8 @@
-package helix.raylib;
+package helix.raylib.extras;
 
-/** Represents rlights' `Light` (raylib's examples' `rlights.h`): one light of the scene.
+import helix.raylib.*;
+
+/** Represents one light of the scene, the Lighting extra's, with the fields of `Light` in raylib's examples' `rlights.h`.
 
 	Made by `CreateLight`. Its fields are read at each draw, so a light changes by setting them. */
 class Light {
@@ -60,7 +62,7 @@ class Light {
 	/** Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow
 		pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See
 		`EnableLightShadows` for turning the light's shadows on. */
-	public var shadows(get, null):helix.raylib.extras.ShadowOptions;
+	public var shadows(get, null):ShadowOptions;
 
 	// Whether it casts shadows (EnableLightShadows), and its shadows' index in the frame's shadows plus 1, 0 while it casts none
 	// (Shadows).
@@ -73,9 +75,9 @@ class Light {
 	public function new() {}
 
 	// The shadow options, made when first read, so a program that never reads them links none of them.
-	function get_shadows():helix.raylib.extras.ShadowOptions {
+	function get_shadows():ShadowOptions {
 		if (shadows == null)
-			shadows = new helix.raylib.extras.ShadowOptions();
+			shadows = new ShadowOptions();
 		return shadows;
 	}
 }

@@ -1,7 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
-import helix.raylib.Rlights.*;
 import helix.raylib.extras.Lighting.*;
 
 /** Lights a floor and spheres with the PBR shader and the scene's lights (`helix.raylib.extras.Lighting`): a row of spheres from

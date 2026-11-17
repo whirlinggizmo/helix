@@ -19,7 +19,7 @@ import helix.services.shaders.ShaderUniform;
 
 	Linked only by a program calling `EnableLightShadows` or `BeginShadowMode`. */
 @:noCompletion
-@:access(helix.raylib.Light)
+@:access(helix.raylib.extras.Light)
 @:access(helix.raylib.Material)
 @:access(helix.raylib.internal.Program)
 @:access(helix.raylib.internal.Frame)
@@ -45,7 +45,7 @@ class Shadows {
 	];
 
 	// The lights casting shadows, in the order turned on.
-	static final casters:Array<helix.raylib.Light> = [];
+	static final casters:Array<helix.raylib.extras.Light> = [];
 	// The last pass's maps: each one's view and projection, both composed, the volume it covers and its pass in the frame being made;
 	// and how many.
 	static final views = [for (_ in 0...MOST_MAPS) new Matrix4()];
@@ -107,7 +107,7 @@ class Shadows {
 
 		@param light  The light.
 		@return  False for a fifth light, whose shadows stay off. */
-	public static function addCaster(light:helix.raylib.Light):Bool {
+	public static function addCaster(light:helix.raylib.extras.Light):Bool {
 		purge();
 		if (!light.shadowCasting) {
 			if (casters.length >= MOST_LIGHTS) {
@@ -177,7 +177,7 @@ class Shadows {
 			var distance = s.distance > 1e-6 ? s.distance : 1e-6;
 			var softness = clamp(s.softness, 0, 8);
 			var first = mapCount, kind = 0;
-			if (light.type == helix.raylib.Rlights.LIGHT_DIRECTIONAL) {
+			if (light.type == helix.raylib.extras.Lighting.LIGHT_DIRECTIONAL) {
 				lookAlong(light.target.x - light.position.x, light.target.y - light.position.y, light.target.z - light.position.z);
 				if (s.bounds != null) {
 					kind = 1;

@@ -90,8 +90,8 @@ speed where docs/benchmarks.md records them.
   style, icons and tooltips, held to raygui's C by the `raygui`, `raygui_input` and `raygui_values` suites. `.rgs` styles and `.rgi`
   icons load through `GuiLoadStyleAsync` and `GuiLoadIconsAsync` in `Raygui`. Left: rGuiLayout's `.rgl` layouts, and its code
   export through a Haxe code template for helix-raylib, if its custom templates allow one (to be checked). raygui styles only
-  colors, borders, text and its icons. Skins from images are helix-raylib's own, in `extras.GuiSkins` (done, DECISIONS 42, 63). rlights is `helix.raylib.Rlights` the same way. raylib's other companion headers agents know,
-  easings (`reasings.h`) and physics (`physac.h`), are each a module of their own the same way when wanted.
+  colors, borders, text and its icons. Skins from images are helix-raylib's own, in `extras.GuiSkins` (done, DECISIONS 42, 63). rlights is part of the Lighting extra (DECISIONS 78). raylib's other companion headers agents know,
+  easings (`reasings.h`, whose curves are `helix.math.Interpolate`'s) and physics (`physac.h`), are each an extra when wanted.
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a

@@ -152,7 +152,7 @@ before, so a rung's increment is what the feature costs. Every rung is a release
 JavaScript unminified, as Haxe alone writes it; sizes in KB.
 
 <!-- gen_sizes -->
-Measured from 8604224 2026-11-16 with Haxe 4.3.7.
+Measured from ee42ebd 2026-11-16 with Haxe 4.3.7.
 
 ### helix-platform
 
@@ -298,7 +298,7 @@ Each rung's JavaScript by package, raw KB, from its source map, a line's start (
 
 ### helix-raylib
 
-Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each adding one feature to the one before, from a window cleared each frame: what a feature costs through raylib's API is its row's increment, gzip; brotli in brackets. Against the services' ladder this is what the familiar API costs (DECISIONS 15): helix-raylib's window brings its time, the screen (with the saves it keeps its state in) and the keyboard, so its first rung holds them; the rest (the assets its files load through, the image decoder, the dropped files) comes with the functions that need it (DECISIONS 30). Each rung's `@:adds` names what it adds. Its 3D starts with a cube made in memory (GenMeshCube, LoadModelFromMesh), drawn unlit with a camera: the 3D drawing alone, so the glTF rung after it is the reader's own cost. helix-raylib's bytes are counted by source file: raylib's modules (R*) and its internals, its facade and structs as raylib. The last two rungs are its high-water marks. The game is what a real game uses, one file format of each kind (a skinned, blended glTF model, PNG textures, a TTF font, WAV sounds and Ogg music, every input, a save, a shader and a render texture). The kitchen sink calls every function of `Raylib`, `Raymath`, `Rlgl`, `Raygui`, `Raylib6`, `Rlights` and `helix.raylib.extras` that compiles, written as the program builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-raylib is left out: it is the comparison point for whole-library sizes, such as an Emscripten build of raylib exporting everything.
+Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each adding one feature to the one before, from a window cleared each frame: what a feature costs through raylib's API is its row's increment, gzip; brotli in brackets. Against the services' ladder this is what the familiar API costs (DECISIONS 15): helix-raylib's window brings its time, the screen (with the saves it keeps its state in) and the keyboard, so its first rung holds them; the rest (the assets its files load through, the image decoder, the dropped files) comes with the functions that need it (DECISIONS 30). Each rung's `@:adds` names what it adds. Its 3D starts with a cube made in memory (GenMeshCube, LoadModelFromMesh), drawn unlit with a camera: the 3D drawing alone, so the glTF rung after it is the reader's own cost. helix-raylib's bytes are counted by source file: raylib's modules (R*) and its internals, its facade and structs as raylib. The last two rungs are its high-water marks. The game is what a real game uses, one file format of each kind (a skinned, blended glTF model, PNG textures, a TTF font, WAV sounds and Ogg music, every input, a save, a shader and a render texture). The kitchen sink calls every function of `Raylib`, `Raymath`, `Rlgl`, `Raygui`, `Raylib6` and `helix.raylib.extras` that compiles, written as the program builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-raylib is left out: it is the comparison point for whole-library sizes, such as an Emscripten build of raylib exporting everything.
 
 | rung | adds | raw | gzip (brotli) | increment |
 |---|---|---:|---:|---:|
@@ -309,10 +309,10 @@ Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each
 | 5-cube | 3D: a cube made with GenMeshCube and LoadModelFromMesh, drawn with a camera | 321.5 | 68.0 (56.0) | +10.6 |
 | 6-model | a glTF model loaded with LoadModelAsync and drawn beside the cube | 403.0 | 85.6 (69.4) | +17.5 |
 | 7-skinned | the model's animations loaded with LoadModelAnimationsAsync and one played | 447.6 | 93.8 (75.8) | +8.2 |
-| 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight | 468.7 | 97.8 (78.9) | +4.0 |
-| 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 493.6 | 102.9 (83.0) | +5.1 |
-| 10-game | a game: what a real game uses, its file formats one of each | 688.5 | 139.5 (112.4) | +36.6 |
-| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader | 1990.2 | 350.1 (267.2) | +210.6 |
+| 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from the Lighting extra's CreateLight | 468.7 | 97.8 (78.9) | +4.0 |
+| 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 493.7 | 102.9 (83.1) | +5.1 |
+| 10-game | a game: what a real game uses, its file formats one of each | 688.5 | 139.6 (112.3) | +36.7 |
+| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6 and helix.raylib.extras a program can call, and every file reader | 1990.3 | 350.1 (267.3) | +210.5 |
 
 Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
 
@@ -329,7 +329,7 @@ Each rung's JavaScript by package, raw KB, from its source map, a line's start (
 | raylib/Frame | 26.4 | 31.0 | 32.1 | 32.1 | 39.4 | 39.4 | 39.4 | 39.4 | 39.4 | 39.8 | 58.9 |
 | raylib/RText | 0.0 | 0.0 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 16.9 | 53.4 |
 | platform/graphics | 46.1 | 47.0 | 47.0 | 47.0 | 47.0 | 47.0 | 47.5 | 47.5 | 47.5 | 48.4 | 51.7 |
-| haxe metadata | 13.0 | 13.8 | 14.5 | 19.2 | 20.2 | 23.3 | 23.8 | 24.3 | 26.5 | 33.7 | 47.9 |
+| haxe metadata | 13.0 | 13.8 | 14.5 | 19.2 | 20.2 | 23.3 | 23.8 | 24.3 | 26.5 | 33.7 | 48.0 |
 | math | 8.6 | 9.1 | 9.1 | 9.1 | 23.2 | 30.2 | 30.2 | 30.2 | 30.2 | 36.0 | 46.6 |
 | raylib/RMath | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 7.0 | 14.4 | 14.4 | 14.4 | 15.1 | 44.3 |
 | raylib/EmitterDraws | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 38.6 |

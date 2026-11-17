@@ -1078,3 +1078,13 @@ Why things are the way they are, numbered, in order.
     color); setters, a method a setting, which the Lighting extra's light fields replaced for the same reason (`SetLightIntensity`
     and its kind are gone); one emitter type for 2D and 3D, whose units, motion and draw differ (pixels in a batch on the CPU, world units on the
     GPU), and which would leave half its fields meaning nothing in each, as CONVENTIONS names the two kinds apart.
+
+78. **The lights of raylib's examples are part of the Lighting extra.** It revises 60's "with rlights". `CreateLight`,
+    `UpdateLightValues`, `MAX_LIGHTS`, `LIGHT_DIRECTIONAL` and `LIGHT_POINT` are `helix.raylib.extras.Lighting`'s, and `Light` is
+    `helix.raylib.extras.Light`. `helix.raylib.Rlights` is gone. What `rlights.h` has keeps its names and fields, so a raylib example
+    including it ports with one import, `import helix.raylib.extras.Lighting.*;`.
+
+    Why: `rlights.h` isn't raylib's. A C program copies it from the examples beside its source. In the example headers trial
+    (docs/trials/2026-11-16-example-headers), three agents writing a lit scene read the lighting example including it and none reached
+    for `Rlights`: each wrote its own uniforms, two calling it "a C helper". None looked for `reasings.h` either, so it gets no class: its
+    curves are `helix.math.Interpolate`'s.

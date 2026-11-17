@@ -1,7 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
-import helix.raylib.Rlights.*;
 import helix.raylib.extras.Lighting.*;
 
 /** Casts shadows with the Lighting extra (`helix.raylib.extras.Lighting`): a pillar, a cube and a sphere on a floor drawn with the PBR

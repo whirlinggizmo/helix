@@ -557,7 +557,7 @@ class ParticlesTests {
 		near(drawnAmbient(2), 0, "blue", 1e-6);
 		near(drawnAmbient(3), 1, "its alpha ignored", 1e-6);
 		cloud.ambient = new Color(26, 26, 26, 255);
-		helix.raylib.Rlights.CreateLight(helix.raylib.Rlights.LIGHT_POINT, new Vector3(0, 1, 0), new Vector3(0, 0, 0), WHITE, null);
+		helix.raylib.extras.Lighting.CreateLight(helix.raylib.extras.Lighting.LIGHT_POINT, new Vector3(0, 1, 0), new Vector3(0, 0, 0), WHITE, null);
 		DrawEmitter3D(cloud);
 		check(lightOn() == 1, "a light made lights it");
 		cloud.lit = false;

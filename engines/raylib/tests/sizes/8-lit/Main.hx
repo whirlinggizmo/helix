@@ -1,6 +1,6 @@
-// helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight.
+// helix-raylib's size ladder (tools/gen_sizes.py): each rung adds one thing to the one before; this one light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from the Lighting extra's CreateLight.
 import helix.raylib.Raylib.*;
-import helix.raylib.Rlights.*;
+import helix.raylib.extras.Lighting.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.ModelAnimation;
@@ -11,7 +11,7 @@ import helix.raylib.Vector3;
 
 /** A program written in raylib on helix-raylib, as a game in raylib would be. Its image is docs/trials/templates/assets/player.png,
 	its model and animations engines/raylib/parity/assets/robot.glb. */
-@:adds("helix.raylib.Light", "helix.raylib.modules.RLights", "helix.raylib.modules.RCompiledShaders", "helix.raylib.internal.SceneLights",
+@:adds("helix.raylib.extras.Light", "helix.raylib.modules.RLights", "helix.raylib.modules.RCompiledShaders", "helix.raylib.internal.SceneLights",
 	"helix.raylib.internal.Surfaces", "helix.raylib.internal.ShadowSlots")
 class Main {
 	static function main():Void {

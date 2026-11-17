@@ -23,7 +23,7 @@ SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera
 SHADER_UNIFORM_VEC3);
 ```
 
-**Lights.** rlights' `CreateLight` (`helix.raylib.Rlights`) makes a light of the scene, as many as the program makes. A light shines on every lit draw, whichever shader it was made with: `LoadPbrShader`'s, `LoadLightingShader`'s, and a program's own that includes `<helix/raylib/shaders/lights.glsl>` or `<helix/raylib/shaders/pbr.glsl>`. Its fields (`enabled`, `position`, `target`, `color`, and the extra's `intensity`, `range`, `innerAngle` and `outerAngle`) are read at each draw, so a light moves or changes by setting them, with no other call. A spot light is made with `LIGHT_SPOT` and given a cone by its angles. `UnloadLight` takes it out of the scene.
+**Lights.** `CreateLight` makes a light of the scene, as raylib's lighting examples' `rlights.h` does, as many as the program makes. A light shines on every lit draw, whichever shader it was made with: `LoadPbrShader`'s, `LoadLightingShader`'s, and a program's own that includes `<helix/raylib/shaders/lights.glsl>` or `<helix/raylib/shaders/pbr.glsl>`. Its fields (`enabled`, `position`, `target`, `color`, and the extra's `intensity`, `range`, `innerAngle` and `outerAngle`) are read at each draw, so a light moves or changes by setting them, with no other call. A spot light is made with `LIGHT_SPOT` and given a cone by its angles. `UnloadLight` takes it out of the scene.
 
 **Which lights reach a draw.** Each draw is lit by the 8 lights that reach it most, scored against its bounds: a light's brightness (its color times its intensity), times its falloff at the bounds' nearest point (none past its range), times a spot light's cone. A directional light reaches everything. A point or spot light without a range reaches everything too, so a scene of many lamps gives each one a range. `DrawMeshInstanced` scores its lights against the bounds of all its instances.
 
@@ -54,10 +54,36 @@ A light casts shadows once `EnableLightShadows` turns them on, 4 lights at most.
 A shader compiled by `CompileShaderFile` carries its shadow variant: its own vertex stage, with a fragment stage writing depth alone and cutting at the material's alpha cutoff (the Materials extra). The shadow pass draws through it.
 
 ```haxe
+static inline var MAX_LIGHTS:Int
+static inline var LIGHT_DIRECTIONAL:Int
+static inline var LIGHT_POINT:Int
 static inline var LIGHT_SPOT:Int
 ```
 
+- `MAX_LIGHTS`: The lights raylib's lighting examples make room for, `MAX_LIGHTS` in their `rlights.h`. A program makes as many as it needs (`CreateLight`).
+- `LIGHT_DIRECTIONAL`: A light shining one way from far off, from its position toward its target: a light's `type`, given to `CreateLight` or set.
+- `LIGHT_POINT`: A light shining every way from its position: a light's `type`, given to `CreateLight` or set.
 - `LIGHT_SPOT`: A light shining in a cone from its position toward its target, between a light's `innerAngle` and `outerAngle`: a light's `type`, given to `CreateLight` or set.
+
+### lights: the scene's lights, made as raylib's lighting examples' rlights.h makes them
+
+```haxe
+static function CreateLight(type:Int, position:Vector3, target:Vector3, color:Color, shader:Shader):Light
+static function UpdateLightValues(shader:Shader, light:Light):Void
+```
+
+- `CreateLight`: Makes a light of the scene, as `CreateLight` in raylib's lighting examples' `rlights.h` makes one of a shader. The light shines on every lit draw, whichever shader it was made with: the Lighting extra's `LoadLightingShader` and `LoadPbrShader`, and a shader declaring rlights' `lights`, such as raylib's examples' `lighting.fs` or one including `<helix/raylib/shaders/lights.glsl>`. A program makes as many lights as it needs.
+  - `type`: `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, or the Lighting extra's `LIGHT_SPOT`.
+  - `position`: Where it is.
+  - `target`: Where it points, for a directional or spot light.
+  - `color`: Its color.
+  - `shader`: The shader it is made with, as rlights takes one.
+  - returns: The light.
+
+  Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at each draw, so the light moves or changes by setting them, the Lighting extra's `intensity`, `range` and spot cone among them. `UnloadLight` takes the light out of the scene.
+- `UpdateLightValues`: Kept as `UpdateLightValues` in raylib's lighting examples' `rlights.h`, for a program written for it. A light's fields are read at each draw, so the draws after a change show it with or without this call.
+  - `shader`: The shader.
+  - `light`: The light.
 
 ### lighting: the lit and PBR shaders and a light's shadows
 
@@ -123,3 +149,79 @@ static function EndShadowMode():Void
 
   - **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow. - **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage without it casts its whole shape. - **Cost:** every cascade and every face of a point light draws the casters again. A point light's shadows cost about six times a directional light's single map.
 - `EndShadowMode`: Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows.
+
+## Light
+
+*class* in [`engines/raylib/src/helix/raylib/extras/Light.hx`](../src/helix/raylib/extras/Light.hx), `import helix.raylib.extras.Light;`
+
+Represents one light of the scene, the Lighting extra's, with the fields of `Light` in raylib's examples' `rlights.h`.
+
+Made by `CreateLight`. Its fields are read at each draw, so a light changes by setting them.
+
+```haxe
+function new()
+var type:Int
+var enabled:Bool
+var position:Vector3
+var target:Vector3
+var color:Color
+var attenuation:Float
+var enabledLoc:Int
+var typeLoc:Int
+var positionLoc:Int
+var targetLoc:Int
+var colorLoc:Int
+var attenuationLoc:Int
+var intensity:Float
+var range:Float
+var innerAngle:Float
+var outerAngle:Float
+var shadows(get, never):ShadowOptions
+```
+
+- `new`: Creates a light that is off, each of rlights' fields 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light of the scene.
+- `type`: Gets or sets the light's type: `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, or the Lighting extra's `LIGHT_SPOT`.
+- `enabled`: Gets or sets a value indicating whether the light shines.
+- `position`: Gets or sets the light's position.
+- `target`: Gets or sets the target: the point a directional or spot light shines toward.
+- `color`: Gets or sets the light's color.
+- `attenuation`: Gets or sets the attenuation, which rlights keeps and its shader ignores.
+- `enabledLoc`: Gets or sets rlights' location of `enabled` in its shader. helix-raylib reads the light's fields at each draw instead.
+- `typeLoc`: Gets or sets rlights' location of `type`.
+- `positionLoc`: Gets or sets rlights' location of `position`.
+- `targetLoc`: Gets or sets rlights' location of `target`.
+- `colorLoc`: Gets or sets rlights' location of `color`.
+- `attenuationLoc`: Gets or sets the location of `attenuation`, which rlights never finds.
+- `intensity`: Gets or sets how bright the light is (the Lighting extra's): its color times the intensity. Clamped to 0 or more; 1 by default. 0 gives no light, as `enabled` false does.
+- `range`: Gets or sets how far a point or spot light reaches, in world units (the Lighting extra's). The light dims with distance, fading to nothing at the range, and lights no draw whose bounds lie past it. Clamped to 0 or more; 0 by default, for no falloff and no limit. A directional light has no range.
+- `innerAngle`: Gets or sets a spot light's inner angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone is full inside it and fades toward `outerAngle`. Clamped to 0 to `outerAngle`; 30 by default.
+- `outerAngle`: Gets or sets a spot light's outer angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone fades to nothing there. Clamped to 0 to 89.9; 45 by default.
+- `shadows`: Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See `EnableLightShadows` for turning the light's shadows on.
+
+## ShadowOptions
+
+*class* in [`engines/raylib/src/helix/raylib/extras/ShadowOptions.hx`](../src/helix/raylib/extras/ShadowOptions.hx), `import helix.raylib.extras.ShadowOptions;`
+
+Represents how a light's shadows are made (a light's `shadows`): the shadow map's size and reach, its bias against a surface shadowing itself, and how soft and dark its shadows are. Each field has a default, and each shadow pass reads the fields, held to their ranges there. Biases, the normal offset and softness are in texels of the shadow map the casting lights share, so they hold whatever its size and reach.
+
+```haxe
+var mapSize:Int
+var distance:Float
+var bounds:Null<BoundingBox>
+var cascadeCount:Int
+var bias:Float
+var slopeBias:Float
+var normalOffset:Float
+var softness:Float
+var strength:Float
+```
+
+- `mapSize`: Gets or sets the map's width and height, in texels: 2048 by default. A power of two from 256 to 4096; another is rounded down to one, and one under 256 is 256. The lights casting shadows share one map, as large as the largest any of them asks for.
+- `distance`: Gets or sets how far from the camera a directional light's shadows reach, in world units: 50 by default. A point or spot light's reach is its range, or this when it has none. Shorter is sharper. Clamped to more than 0.
+- `bounds`: Gets or sets the box a directional light's map covers, in place of what the camera sees out to `distance`: null by default, the map following the camera. A fixed box suits a small scene seen whole. The box's corners are read at each shadow pass.
+- `cascadeCount`: Gets or sets a directional light's number of cascades: 1 by default. Clamped to 1 to 4. Each covers a farther part of `distance`, near shadows sharp and far ones still there.
+- `bias`: Gets or sets the constant bias, in texels: 1 by default. Clamped to 0 or more. Too little and a lit surface speckles with its own shadow; too much and shadows lift off their casters' feet.
+- `slopeBias`: Gets or sets the bias added where the light grazes the surface, in texels: 4 by default. Clamped to 0 or more.
+- `normalOffset`: Gets or sets how far the lookup moves off the surface along its normal, in texels: 1 by default. Clamped to 0 or more.
+- `softness`: Gets or sets how soft a shadow's edge is, in texels: 1 by default. Clamped to 0 to 8. 0 is hard.
+- `strength`: Gets or sets how much of the light a shadow takes away: 1 by default. Clamped to 0 to 1.

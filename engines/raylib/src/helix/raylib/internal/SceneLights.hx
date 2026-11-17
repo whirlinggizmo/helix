@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 import helix.math.Matrix4;
 import helix.services.shaders.ShaderUniform;
 
-/** Holds the scene's lights (rlights' `CreateLight`) and lights each draw through a shader declaring rlights' `lights`: the lights
+/** Holds the scene's lights (the Lighting extra's `CreateLight`) and lights each draw through a shader declaring rlights' `lights`: the lights
 	reaching the draw's bounds most, at most `DRAW_LIGHTS`, written into the shader's `lights` before the draw is recorded, the rest of
 	them off.
 
@@ -15,15 +15,15 @@ import helix.services.shaders.ShaderUniform;
 	Linked only by a program calling `CreateLight`, whose first call sets the draws' hooks (`RModels.lighting`, `Frame.lighting`). */
 @:noCompletion
 @:access(helix.raylib.Mesh)
-@:access(helix.raylib.Light)
+@:access(helix.raylib.extras.Light)
 class SceneLights {
 	/** The most lights a draw is lit by, `lights.glsl`'s `MAX_LIGHTS`. */
 	public static inline final DRAW_LIGHTS = 8;
 
 	// The scene's lights, in the order made.
-	static final lights:Array<helix.raylib.Light> = [];
+	static final lights:Array<helix.raylib.extras.Light> = [];
 	// Each draw's choice, best first, and the scores they won with.
-	static final chosen:Array<Null<helix.raylib.Light>> = [for (_ in 0...DRAW_LIGHTS) null];
+	static final chosen:Array<Null<helix.raylib.extras.Light>> = [for (_ in 0...DRAW_LIGHTS) null];
 	static final scores:Array<Float> = [for (_ in 0...DRAW_LIGHTS) 0.];
 
 	/** The draw's bounds in the world: the least x, y and z, then the most. */
@@ -53,7 +53,7 @@ class SceneLights {
 	/** Adds a light to the scene, the draws' hooks set with the first.
 
 		@param light  The light. */
-	public static function add(light:helix.raylib.Light):Void {
+	public static function add(light:helix.raylib.extras.Light):Void {
 		if (lights.length == 0) {
 			helix.raylib.modules.RModels.lighting = lightMesh;
 			Frame.lighting = lightRun;
@@ -65,13 +65,13 @@ class SceneLights {
 	/** Takes a light out of the scene.
 
 		@param light  The light. */
-	public static function remove(light:helix.raylib.Light):Void
+	public static function remove(light:helix.raylib.extras.Light):Void
 		lights.remove(light);
 
 	/** Returns whether a light is in the scene.
 
 		@param light  The light. */
-	public static function has(light:helix.raylib.Light):Bool
+	public static function has(light:helix.raylib.extras.Light):Bool
 		return lights.indexOf(light) >= 0;
 
 	// A program's lights fields, found once; NONE for a program whose shader declares no lights.
@@ -234,11 +234,11 @@ class SceneLights {
 		light's cone toward them; 0 for a light that can't reach them.
 
 		@param light  The light. */
-	static function score(light:helix.raylib.Light):Float {
+	static function score(light:helix.raylib.extras.Light):Float {
 		var c = light.color;
 		// An intensity under 0 scores under 0, as 0 does, and the light isn't chosen: the intensity is held to 0 or more.
 		var s = (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255 * light.intensity;
-		if (s <= 0 || (light.type != helix.raylib.Rlights.LIGHT_POINT && light.type != SPOT))
+		if (s <= 0 || (light.type != helix.raylib.extras.Lighting.LIGHT_POINT && light.type != SPOT))
 			return s;
 		var px = light.position.x,
 			py = light.position.y,
@@ -298,7 +298,7 @@ class SceneLights {
 
 		@param light  The light.
 		@param inner  true for the inner angle, false for the outer. */
-	public static function coneCosine(light:helix.raylib.Light, inner:Bool):Float {
+	public static function coneCosine(light:helix.raylib.extras.Light, inner:Bool):Float {
 		var outer = light.outerAngle > 0 ? (light.outerAngle < 89.9 ? light.outerAngle : 89.9) : 0;
 		var angle = inner && light.innerAngle < outer ? light.innerAngle : outer;
 		return Math.cos((angle > 0 ? angle : 0) * Math.PI / 180);

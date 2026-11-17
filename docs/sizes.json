@@ -1,5 +1,5 @@
 {
- "commit": "8604224 2026-11-16",
+ "commit": "ee42ebd 2026-11-16",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -912,17 +912,17 @@
     }
    },
    "8-lit": {
-    "adds": "light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from rlights' CreateLight",
-    "raw": 479927,
-    "gzip": 100109,
-    "brotli": 80762,
+    "adds": "light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from the Lighting extra's CreateLight",
+    "raw": 479948,
+    "gzip": 100161,
+    "brotli": 80752,
     "packages": {
      "platform/graphics": 48604,
      "raylib/Frame": 40349,
      "math": 30947,
      "services/shaders": 29778,
      "formats": 26432,
-     "haxe metadata": 24908,
+     "haxe metadata": 24915,
      "raylib/Models": 21692,
      "raylib/Animations": 19533,
      "raylib/Runtime": 15656,
@@ -937,7 +937,7 @@
      "raylib/RTextures": 8927,
      "raylib/RShapes": 8846,
      "raylib/Program": 8717,
-     "raylib": 7743,
+     "raylib": 7750,
      "geometry": 7670,
      "platform/shared": 6045,
      "platform/http": 5582,
@@ -969,21 +969,21 @@
      "platform/system": 450,
      "raylib/RTexturesAsync": 395,
      "raylib/MeshGpu": 339,
-     "raylib/RLights": 310,
+     "raylib/RLights": 317,
      "raylib/Answers": 189
     }
    },
    "9-audio": {
     "adds": "audio: a sound loaded with LoadSoundAsync and played once it is loaded",
-    "raw": 505490,
-    "gzip": 105350,
-    "brotli": 85011,
+    "raw": 505511,
+    "gzip": 105400,
+    "brotli": 85073,
     "packages": {
      "platform/graphics": 48604,
      "raylib/Frame": 40349,
      "math": 30947,
      "services/shaders": 29778,
-     "haxe metadata": 27089,
+     "haxe metadata": 27096,
      "formats": 26432,
      "raylib/Models": 21692,
      "raylib/Animations": 19533,
@@ -1000,7 +1000,7 @@
      "raylib/RTextures": 8927,
      "raylib/RShapes": 8846,
      "raylib/Program": 8717,
-     "raylib": 7980,
+     "raylib": 7987,
      "geometry": 7670,
      "services/audio": 7053,
      "platform/shared": 6047,
@@ -1036,21 +1036,21 @@
      "platform/system": 450,
      "raylib/RTexturesAsync": 395,
      "raylib/MeshGpu": 339,
-     "raylib/RLights": 310,
+     "raylib/RLights": 317,
      "raylib/Answers": 189
     }
    },
    "10-game": {
     "adds": "a game: what a real game uses, its file formats one of each",
-    "raw": 704976,
-    "gzip": 142858,
-    "brotli": 115049,
+    "raw": 704997,
+    "gzip": 142974,
+    "brotli": 114990,
     "packages": {
      "platform/graphics": 49610,
      "formats": 44761,
      "raylib/Frame": 40777,
      "math": 36855,
-     "haxe metadata": 34504,
+     "haxe metadata": 34511,
      "services/shaders": 29778,
      "platform/audio": 25344,
      "raylib/FrameConverter": 24862,
@@ -1069,7 +1069,7 @@
      "raylib/SceneLights": 12755,
      "std/js": 10929,
      "services/models": 10126,
-     "raylib": 9889,
+     "raylib": 9896,
      "services/audio": 9888,
      "geometry": 9067,
      "platform/shared": 8718,
@@ -1117,15 +1117,15 @@
      "platform/system": 545,
      "raylib/RModels6": 475,
      "raylib/MeshGpu": 339,
-     "raylib/RLights": 310,
+     "raylib/RLights": 317,
      "raylib/AudioStreams": 219
     }
    },
    "11-everything": {
-    "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6, Rlights and helix.raylib.extras a program can call, and every file reader",
-    "raw": 2037998,
-    "gzip": 358470,
-    "brotli": 273622,
+    "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6 and helix.raylib.extras a program can call, and every file reader",
+    "raw": 2038026,
+    "gzip": 358487,
+    "brotli": 273687,
     "packages": {
      "formats": 132130,
      "raylib/RTextures": 117033,
@@ -1138,7 +1138,7 @@
      "raylib/Frame": 60273,
      "raylib/RText": 54647,
      "platform/graphics": 52983,
-     "haxe metadata": 49096,
+     "haxe metadata": 49110,
      "math": 47754,
      "raylib/RMath": 45393,
      "raylib/EmitterDraws": 39508,
@@ -1154,7 +1154,7 @@
      "std/haxe": 25911,
      "raylib/FrameConverter": 25800,
      "raylib/Models": 24705,
-     "raylib": 23811,
+     "raylib": 23818,
      "raylib/Pixels": 19805,
      "geometry": 19254,
      "raylib/Automation": 19196,
@@ -1234,7 +1234,7 @@
      "platform/export": 704,
      "raylib/RModels6": 475,
      "raylib/MeshGpu": 339,
-     "raylib/RLights": 310,
+     "raylib/RLights": 317,
      "raylib/SyncLoads": 249,
      "raylib/AudioStreams": 219
     }

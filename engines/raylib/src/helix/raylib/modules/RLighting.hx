@@ -3,11 +3,12 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Light;
 import helix.raylib.modules.RCore.*;
 import helix.raylib.internal.Defaults;
 #end
 
-/** Holds helix-raylib's lit and PBR shaders, lit by the scene's lights (rlights' `CreateLight`), the shadow pass, and turning a light's
+/** Holds helix-raylib's lit and PBR shaders, lit by the scene's lights (`CreateLight`), the shadow pass, and turning a light's
 	shadows on and off. Each is written here, and `helix.raylib.extras.Lighting` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)

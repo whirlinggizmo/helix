@@ -328,54 +328,6 @@ var format:Int
 - `mipmaps`: Gets or sets the number of mipmap levels, 1 for the image alone.
 - `format`: Gets or sets the pixel format (`PIXELFORMAT_*`).
 
-## Light
-
-*class* in [`engines/raylib/src/helix/raylib/Light.hx`](../src/helix/raylib/Light.hx), `import helix.raylib.Light;`
-
-Represents rlights' `Light` (raylib's examples' `rlights.h`): one light of the scene.
-
-Made by `CreateLight`. Its fields are read at each draw, so a light changes by setting them.
-
-```haxe
-function new()
-var type:Int
-var enabled:Bool
-var position:Vector3
-var target:Vector3
-var color:Color
-var attenuation:Float
-var enabledLoc:Int
-var typeLoc:Int
-var positionLoc:Int
-var targetLoc:Int
-var colorLoc:Int
-var attenuationLoc:Int
-var intensity:Float
-var range:Float
-var innerAngle:Float
-var outerAngle:Float
-var shadows(get, never):ShadowOptions
-```
-
-- `new`: Creates a light that is off, each of rlights' fields 0, as C's `Light light = { 0 }`. See `CreateLight` for making a light of the scene.
-- `type`: Gets or sets the light's type: `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, or the Lighting extra's `LIGHT_SPOT`.
-- `enabled`: Gets or sets a value indicating whether the light shines.
-- `position`: Gets or sets the light's position.
-- `target`: Gets or sets the target: the point a directional or spot light shines toward.
-- `color`: Gets or sets the light's color.
-- `attenuation`: Gets or sets the attenuation, which rlights keeps and its shader ignores.
-- `enabledLoc`: Gets or sets rlights' location of `enabled` in its shader. helix-raylib reads the light's fields at each draw instead.
-- `typeLoc`: Gets or sets rlights' location of `type`.
-- `positionLoc`: Gets or sets rlights' location of `position`.
-- `targetLoc`: Gets or sets rlights' location of `target`.
-- `colorLoc`: Gets or sets rlights' location of `color`.
-- `attenuationLoc`: Gets or sets the location of `attenuation`, which rlights never finds.
-- `intensity`: Gets or sets how bright the light is (the Lighting extra's): its color times the intensity. Clamped to 0 or more; 1 by default. 0 gives no light, as `enabled` false does.
-- `range`: Gets or sets how far a point or spot light reaches, in world units (the Lighting extra's). The light dims with distance, fading to nothing at the range, and lights no draw whose bounds lie past it. Clamped to 0 or more; 0 by default, for no falloff and no limit. A directional light has no range.
-- `innerAngle`: Gets or sets a spot light's inner angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone is full inside it and fades toward `outerAngle`. Clamped to 0 to `outerAngle`; 30 by default.
-- `outerAngle`: Gets or sets a spot light's outer angle, in degrees from the cone's middle (the Lighting extra's `LIGHT_SPOT`): the cone fades to nothing there. Clamped to 0 to 89.9; 45 by default.
-- `shadows`: Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See `EnableLightShadows` for turning the light's shadows on.
-
 ## Material
 
 *class* in [`engines/raylib/src/helix/raylib/Material.hx`](../src/helix/raylib/Material.hx), `import helix.raylib.Material;`
@@ -899,21 +851,6 @@ Its members are on their own page: [rlgl.md](rlgl.md).
 Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
 
 `rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
-
-## Rlights
-
-*class* in [`engines/raylib/src/helix/raylib/Rlights.hx`](../src/helix/raylib/Rlights.hx), `import helix.raylib.Rlights;`
-
-Provides rlights, the lights raylib 5.5's lighting examples include (`examples/shaders/rlights.h`). As in raylib, it is imported apart from `Raylib`:
-
-```haxe
-import helix.raylib.Raylib.*;
-import helix.raylib.Rlights.*;
-```
-
-A light is one of the scene's, shining on every draw through a shader that declares rlights' uniforms, such as the examples' `lighting.fs`. The light's type, `Light`, is `helix.raylib`'s.
-
-Its members are on their own page: [rlights.md](rlights.md).
 
 ## Shader
 

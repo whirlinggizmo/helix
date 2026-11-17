@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx, Raygui.hx, Raylib6.hx, Rlights.hx and the modules of
+"""Writes the generated parts of helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx, Raygui.hx, Raylib6.hx and the modules of
 helix.raylib.extras, and the types helix-raylib doesn't have yet.
 
 Raylib.hx has RCore, RShapes, RTextures, RText, RModels and RAudio, in raylib's module order; Raymath.hx has RMath, Rlgl.hx RRlgl, and
 Raygui.hx RGui and RGuiControls, raygui's API apart as raylib's examples include it, Raylib6.hx RModels6, the calls raylib 6.0 adds
-that helix-raylib has before its version moves past 5.5, and Rlights.hx RLights, the rlights.h raylib's
-lighting examples include. The calls a refusal names in place of raylib's are in the file of the call they replace, each section after
+that helix-raylib has before its version moves past 5.5. The calls a refusal names in place of raylib's are in the file of the call they replace, each section after
 the raylib module it serves, so a program's import of raylib's header brings them: in Raylib.hx the window requests (RWindowAsync), the
 file calls (RFilesAsync) and the compiled shaders (RCompiledShaders) after RCore, RTexturesAsync after RTextures, RTextAsync after
 RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAsync after RGui.
@@ -85,14 +84,16 @@ TARGETS = {
         ('RGuiAsync', "raygui: the style and icon loads in place of raygui's that wait for a file"),
         ('RGuiControls', 'raygui: its controls'),
     ], 'raygui/raygui_api.json', 'raygui.h'),
-    'Rlights.hx': ([('RLights', "rlights: the lights of raylib's lighting examples")], None, 'rlights.h'),
     'Raylib6.hx': ([('RModels6', "rmodels: raylib 6.0's blend of two animations")], None, 'raylib 6.0'),
     'extras/Models.hx': ([
         ('RModelsPosed', "models: a skinned model's bounds as posed"),
         ('RModelsMerged', "models: models merged into one"),
         ('RModelsMasked', "models: two animations blended bone by bone"),
     ], None, 'Models'),
-    'extras/Lighting.hx': ([('RLighting', "lighting: the lit and PBR shaders and a light's shadows")], None, 'Lighting'),
+    'extras/Lighting.hx': ([
+        ('RLights', "lights: the scene's lights, made as raylib's lighting examples' rlights.h makes them"),
+        ('RLighting', "lighting: the lit and PBR shaders and a light's shadows"),
+    ], None, 'Lighting'),
     'extras/Materials.hx': ([('RMaterials', "materials: what a material gives off, where it is cut out, and whether light and shadows fall on it")], None, 'Materials'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
     'extras/Device.hx': ([('RDevice', "device: the safe area, the device, the window's abilities, orientation and tilt")], None, 'Device'),
@@ -372,7 +373,7 @@ def generated(file_sections, functions, api, header, written, by_hand=()):
     sections' functions, then the functions that wait (the sections' marked `@:waits`), then the functions a program can't call: the
     sections' marked `@:unsupported` or `@:unimplemented`, and the header's no section writes."""
     if api is None:
-        # A header without an API description (rlights.h) has its functions alone, as helix-raylib's own modules do.
+        # A header without an API description (raylib 6.0's calls) has its functions alone, as helix-raylib's own modules do.
         whose = f"{header}'s" if header.endswith('.h') or header.startswith('raylib ') else "helix-raylib's own"
         out = [BEGIN, f"\t// {whose} functions; edit a function in its section, then run python3 tools/gen_raylib.py."]
         api = {'functions': []}

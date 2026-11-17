@@ -2,7 +2,6 @@ import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
-import helix.raylib.Rlights.*;
 import helix.raylib.Rlgl.*;
 import helix.raylib.extras.Lighting.*;
 import helix.raylib.extras.Materials.*;
@@ -24,7 +23,7 @@ import helix.raylib.internal.Runtime;
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
 @:access(helix.raylib.internal.Shadows)
-@:access(helix.raylib.Light)
+@:access(helix.raylib.extras.Light)
 @:access(helix.raylib.Shader)
 @:access(helix.raylib.Model)
 @:access(helix.raylib.Mesh)
