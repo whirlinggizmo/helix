@@ -1130,10 +1130,11 @@ Why things are the way they are, numbered, in order.
 
     Cost: a forward is inlined, so a raymath call is helix-math's call. Timed against raylib's own bodies on Node and in hxcpp,
     the `Vector3` functions are level on both. A function taking an angle costs more, as `Trig` gives the same bits on every
-    target and the C library's and V8's functions don't: natively a `Trig` sine or cosine takes about 9 ns against 5.5 and an arc
-    cosine or `atan2` about 13 against 4.5 and 9, on Node 14 against 6 and 26 against 4 and 7. `Vector2Rotate` takes about 7 ns
-    longer natively and 8 to 15 on Node, its cosine and sine from one `Trig.cosSin`, and `QuaternionSlerp` about 20 ns longer natively
-    and none on Node. hxcpp builds a class in place only while none of its instance methods names another class, `Math` included,
+    target and the C library's and V8's functions don't: on Node a `Trig` sine or cosine takes about 8.5 ns against 6 and an arc
+    cosine or `atan2` about 14 and 16 against 4 and 7. Natively a `Trig` sine or cosine takes about 5 ns against 5.5, an arc cosine
+    7 against 4.5 and `atan2` 8 against 9. `Vector2Rotate`, its cosine and sine from one `Trig.cosSin`, is level on both. A loop
+    adding, rotating and normalizing a `Vector2` takes about 7 ns longer on Node, where V8 no longer keeps the loop's vectors off
+    the heap. `QuaternionSlerp` takes a third less time natively and half on Node, its angle's sine a square root. hxcpp builds a class in place only while none of its instance methods names another class, `Math` included,
     and a vector built by a call costs about 2 ns more. helix-math's vectors keep to that, reaching `Math`, `Trig` and
     `Interpolate` through statics of their own (`helix.py test --native` checks the generated C++). `Quaternion` can't, as its
     methods return a `Vector3`.

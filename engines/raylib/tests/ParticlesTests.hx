@@ -31,8 +31,8 @@ class ParticlesTests {
 	}
 
 	// The hashes of the seeded runs, the same on every target.
-	static inline final SEEDED_3D = 707118164;
-	static inline final SEEDED_2D = 980360975;
+	static inline final SEEDED_3D = 127556419;
+	static inline final SEEDED_2D = -1673772643;
 
 	// A hash of numbers' bits, by shifts and exclusive ors alone, which every target computes alike.
 	static function hashOf(rows:Array<Array<Float>>, h:Int):Int {

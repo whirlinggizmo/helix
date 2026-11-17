@@ -28,7 +28,8 @@ class TrigTests {
 			return seed / 1073741823.5 - 1;
 		}
 		var both = new Vector2();
-		for (range in [Math.PI, 100., 10000.]) {
+		// The last range reaches the largest angles the three-part reduction takes (about 1.6 million radians).
+		for (range in [Math.PI, 100., 10000., 1.6e6]) {
 			var ok = true, okTan = true, okAtan = true, okInverse = true, okBoth = true;
 			for (_ in 0...20000) {
 				var x = next() * range, y = next() * range, u = next();

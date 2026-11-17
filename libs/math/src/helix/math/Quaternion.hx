@@ -212,7 +212,8 @@ class Quaternion {
 				out = new Quaternion();
 			return out.set(ax + (bx - ax) * amount, ay + (by - ay) * amount, az + (bz - az) * amount, aw + (bw - aw) * amount).normalize(out);
 		}
-		var angle = Trig.acos(cos), sin = Trig.sin(angle);
+		// The angle's sine is the square root of 1 less its cosine squared.
+		var angle = Trig.acos(cos), sin = Math.sqrt((1 - cos) * (1 + cos));
 		var a = Trig.sin((1 - amount) * angle) / sin,
 			b = Trig.sin(amount * angle) / sin;
 		return result(out, ax * a + bx * b, ay * a + by * b, az * a + bz * b, aw * a + bw * b);

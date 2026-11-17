@@ -55,25 +55,22 @@ class Trig {
 	// reduceLarge's remainder.
 	static var largeR = 0.;
 
-	// reduce's k mod 4.
-	static var quadrant = 0;
+	// Adding this and taking it away rounds a number below 2^51 to the nearest whole number (1.5 * 2^52: a double that size holds no
+	// fraction), with no call.
+	static inline var ROUND = 6755399441055744.;
+
+	// remainderLarge's quarter turns mod 4.
+	static var largeQuadrant = 0.;
 
 	/** Returns the sine of an angle.
 
 		@param x  The angle, in radians.
 		@return  The sine. */
 	public static function sin(x:Float):Float {
-		if (!Math.isFinite(x))
-			return Math.NaN;
 		if (x == 0)
 			return x; // a zero keeps its sign, as Math's
-		var r = reduce(x);
-		return switch (quadrant) {
-			case 0: sinReduced(r);
-			case 1: cosReduced(r);
-			case 2: -sinReduced(r);
-			default: -cosReduced(r);
-		}
+		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
+		return quadrant == 0 ? sinReduced(r) : quadrant == 1 ? cosReduced(r) : quadrant == 2 ? -sinReduced(r) : -cosReduced(r);
 	}
 
 	/** Returns the cosine of an angle.
@@ -81,15 +78,8 @@ class Trig {
 		@param x  The angle, in radians.
 		@return  The cosine. */
 	public static function cos(x:Float):Float {
-		if (!Math.isFinite(x))
-			return Math.NaN;
-		var r = reduce(x);
-		return switch (quadrant) {
-			case 0: cosReduced(r);
-			case 1: -sinReduced(r);
-			case 2: -cosReduced(r);
-			default: sinReduced(r);
-		}
+		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
+		return quadrant == 0 ? cosReduced(r) : quadrant == 1 ? -sinReduced(r) : quadrant == 2 ? -cosReduced(r) : sinReduced(r);
 	}
 
 	/** Returns the tangent of an angle.
@@ -97,18 +87,11 @@ class Trig {
 		@param x  The angle, in radians.
 		@return  The tangent. */
 	public static function tan(x:Float):Float {
-		if (!Math.isFinite(x))
-			return Math.NaN;
 		if (x == 0)
 			return x; // a zero keeps its sign, as Math's
-		var r = reduce(x);
+		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
 		var s = sinReduced(r), c = cosReduced(r);
-		return switch (quadrant) {
-			case 0: s / c;
-			case 1: c / -s;
-			case 2: -s / -c;
-			default: -c / s;
-		}
+		return quadrant == 0 ? s / c : quadrant == 1 ? c / -s : quadrant == 2 ? -s / -c : -c / s;
 	}
 
 	/** Returns the cosine and the sine of an angle together, each as `cos` and `sin` give it, for less than the two calls cost.
@@ -119,18 +102,11 @@ class Trig {
 	public static function cosSin(x:Float, ?out:Vector2):Vector2 {
 		if (out == null)
 			out = new Vector2();
-		if (!Math.isFinite(x))
-			return out.set(Math.NaN, Math.NaN);
 		if (x == 0)
 			return out.set(1, x); // a zero keeps its sign, as sin's
-		var r = reduce(x);
+		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
 		var s = sinReduced(r), c = cosReduced(r);
-		return switch (quadrant) {
-			case 0: out.set(c, s);
-			case 1: out.set(-s, c);
-			case 2: out.set(-c, -s);
-			default: out.set(s, -c);
-		}
+		return quadrant == 0 ? out.set(c, s) : quadrant == 1 ? out.set(-s, c) : quadrant == 2 ? out.set(-c, -s) : out.set(s, -c);
 	}
 
 	/** Returns the angle of a point from the +x axis, as `Math.atan2` does.
@@ -185,21 +161,30 @@ class Trig {
 	static inline function negative(x:Float):Bool
 		return x < 0 || x == 0 && 1 / x < 0;
 
-	// x = k * pi/2 + r with |r| <= pi/4: returns r, and k mod 4 in quadrant. sin, cos and tan are sinReduced's and cosReduced's of r, by
-	// the quadrant.
-	static function reduce(x:Float):Float {
-		var k = Math.ffloor(x * 0.63661977236758134308 + 0.5);
-		var r:Float;
-		if (Math.abs(k) <= MAX_K) {
-			quadrant = Std.int(k - 4 * Math.ffloor(k * 0.25));
-			r = x - k * PIO2_1;
-			r = r - k * PIO2_2;
-			r = r - k * PIO2_3;
-		} else {
-			quadrant = reduceLarge(x);
-			r = largeR;
+	// An angle x is k quarter turns and a remainder r, |r| <= pi/4: x = k * pi/2 + r. sin, cos and tan are sinReduced's and cosReduced's
+	// of r, by k mod 4. These three are inline and keep nothing, so an angle within MAX_K quarter turns is reduced without a call.
+	// k: the whole number nearest x / (pi/2). Past MAX_K, or NaN, for an x that remainderLarge reduces.
+	static inline function quarterTurns(x:Float):Float
+		return (x * 0.63661977236758134308 + ROUND) - ROUND;
+
+	// r, for x and its k.
+	static inline function remainder(x:Float, k:Float):Float
+		return Math.abs(k) <= MAX_K ? ((x - k * PIO2_1) - k * PIO2_2) - k * PIO2_3 : remainderLarge(x);
+
+	// k mod 4, read after remainder. It is k less 4 times the whole part of k / 4, whose fraction is 0, 1/4, 1/2 or 3/4: 3/8 less rounds to
+	// the whole part.
+	static inline function quadrant(k:Float):Float
+		return Math.abs(k) <= MAX_K ? k - 4 * (((k * 0.25 - 0.375) + ROUND) - ROUND) : largeQuadrant;
+
+	// r for an x past MAX_K quarter turns, its quarter turns mod 4 left in largeQuadrant. An infinite or NaN x gives NaN, which the
+	// polynomials pass on.
+	static function remainderLarge(x:Float):Float {
+		if (!Math.isFinite(x)) {
+			largeQuadrant = 0;
+			return Math.NaN;
 		}
-		return r;
+		largeQuadrant = reduceLarge(x);
+		return largeR;
 	}
 
 	// 2^e, from its bits, for e within a double's normal exponents.
@@ -385,100 +370,35 @@ class Trig {
 		return n & 7;
 	}
 
-	// The sine of |r| <= pi/4: a Taylor polynomial whose next term is below a double's precision.
+	// The sine of |r| <= pi/4: fdlibm's polynomial (__kernel_sin), r + r^3 (S1 + S2 r^2 + ... + S6 r^10), within 2^-58 of the sine.
 	static function sinReduced(r:Float):Float {
-		var r2 = r * r;
-		var p = 2.8114572543455206e-15; // 1/17!
-		p = p * r2;
-		p = p - 7.6471637318198164e-13; // -1/15!
-		p = p * r2;
-		p = p + 1.6059043836821613e-10; // 1/13!
-		p = p * r2;
-		p = p - 2.5052108385441720e-08; // -1/11!
-		p = p * r2;
-		p = p + 2.7557319223985893e-06; // 1/9!
-		p = p * r2;
-		p = p - 1.9841269841269841e-04; // -1/7!
-		p = p * r2;
-		p = p + 8.3333333333333333e-03; // 1/5!
-		p = p * r2;
-		p = p - 1.6666666666666667e-01; // -1/3!
-		p = p * r2;
-		p = p * r;
-		return r + p;
+		var z = r * r, w = z * z;
+		var p = 8.33333333332248946124e-03
+			+ z * (-1.98412698298579493134e-04 + z * 2.75573137070700676789e-06)
+			+ z * w * (-2.50507602534068634195e-08 + z * 1.58969099521155010221e-10);
+		return r + z * r * (-1.66666666666666324348e-01 + z * p);
 	}
 
-	// The cosine of |r| <= pi/4: a Taylor polynomial whose next term is below a double's precision.
+	// The cosine of |r| <= pi/4: fdlibm's polynomial (__kernel_cos), 1 - r^2 / 2 + C1 r^4 + ... + C6 r^14, within 2^-58 of the cosine.
 	static function cosReduced(r:Float):Float {
-		var r2 = r * r;
-		var p = -1.5619206968586225e-16; // -1/18!
-		p = p * r2;
-		p = p + 4.7794773323873853e-14; // 1/16!
-		p = p * r2;
-		p = p - 1.1470745597729725e-11; // -1/14!
-		p = p * r2;
-		p = p + 2.0876756987868099e-09; // 1/12!
-		p = p * r2;
-		p = p - 2.7557319223985888e-07; // -1/10!
-		p = p * r2;
-		p = p + 2.4801587301587302e-05; // 1/8!
-		p = p * r2;
-		p = p - 1.3888888888888889e-03; // -1/6!
-		p = p * r2;
-		p = p + 4.1666666666666667e-02; // 1/4!
-		p = p * r2;
-		p = p - 0.5;
-		p = p * r2;
-		return 1 + p;
+		var z = r * r, w = z * z;
+		var p = z * (4.16666666666666019037e-02 + z * (-1.38888888888741095749e-03 + z * 2.48015872894767294178e-05))
+			+ w * w * (-2.75573143513906633035e-07 + z * (2.08757232129817482790e-09 + z * -1.13596475577881948265e-11));
+		// 1 - z / 2 rounded, and what the rounding dropped added back with the small terms.
+		var half = 0.5 * z, c = 1 - half;
+		return c + (((1 - c) - half) + z * p);
 	}
 
-	// atan of |x| <= tan(pi/8): x - x^3/3 + x^5/5 - ..., to x^43 (the next term below 1e-18).
+	// atan of |x| <= tan(pi/8): fdlibm's polynomial (atan's, for |x| < 7/16), x - x^3 (T0 + T1 x^2 + ... + T10 x^20), its even and odd
+	// terms summed apart.
 	static function atanReduced(x:Float):Float {
-		var x2 = x * x;
-		var p = -0.023255813953488372; // -1/43
-		p = p * x2;
-		p = p + 0.024390243902439025; // 1/41
-		p = p * x2;
-		p = p - 0.02564102564102564; // -1/39
-		p = p * x2;
-		p = p + 0.02702702702702703; // 1/37
-		p = p * x2;
-		p = p - 0.02857142857142857; // -1/35
-		p = p * x2;
-		p = p + 0.030303030303030304; // 1/33
-		p = p * x2;
-		p = p - 0.03225806451612903; // -1/31
-		p = p * x2;
-		p = p + 0.034482758620689655; // 1/29
-		p = p * x2;
-		p = p - 0.037037037037037035; // -1/27
-		p = p * x2;
-		p = p + 0.04; // 1/25
-		p = p * x2;
-		p = p - 0.043478260869565216; // -1/23
-		p = p * x2;
-		p = p + 0.047619047619047616; // 1/21
-		p = p * x2;
-		p = p - 0.05263157894736842; // -1/19
-		p = p * x2;
-		p = p + 0.058823529411764705; // 1/17
-		p = p * x2;
-		p = p - 0.06666666666666667; // -1/15
-		p = p * x2;
-		p = p + 0.07692307692307693; // 1/13
-		p = p * x2;
-		p = p - 0.09090909090909091; // -1/11
-		p = p * x2;
-		p = p + 0.1111111111111111; // 1/9
-		p = p * x2;
-		p = p - 0.14285714285714285; // -1/7
-		p = p * x2;
-		p = p + 0.2; // 1/5
-		p = p * x2;
-		p = p - 0.3333333333333333; // -1/3
-		p = p * x2;
-		p = p * x;
-		return x + p;
+		var z = x * x, w = z * z;
+		var even = z * (3.33333333333329318027e-01
+			+ w * (1.42857142725034663711e-01
+				+ w * (9.09088713343650656196e-02 + w * (6.66107313738753120669e-02 + w * (4.97687799461593236017e-02 + w * 1.62858201153657823623e-02)))));
+		var odd = w * (-1.99999999998764832476e-01
+			+ w * (-1.11111104054623557880e-01 + w * (-7.69187620504482999495e-02 + w * (-5.83357013379057348645e-02 + w * -3.65315727442169155270e-02))));
+		return x - x * (even + odd);
 	}
 
 	// atan of any finite x: reduced by atan(x) = pi/4 + atan((x - 1) / (x + 1)) and atan(x) = pi/2 - atan(1 / x).
