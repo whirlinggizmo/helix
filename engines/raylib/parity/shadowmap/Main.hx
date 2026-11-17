@@ -87,7 +87,7 @@ class Main {
 			} else
 				ClearBackground(RAYWHITE);
 			if (frame == 2)
-				TakeScreenshot("helix.png");
+				LoadImageFromScreenAsync(shot -> sys.io.File.saveBytes("helix.png", ExportImageToMemory(shot, ".png", [0])));
 			EndDrawing();
 			if (frame >= 0)
 				frame++;
