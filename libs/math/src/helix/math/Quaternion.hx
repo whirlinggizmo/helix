@@ -53,8 +53,8 @@ class Quaternion {
 		var length = Math.sqrt(ax * ax + ay * ay + az * az);
 		if (length == 0)
 			return result(out, 0, 0, 0, 1);
-		var half = real(radians) / 2, sin = Trig.sin(half) / length;
-		return result(out, ax * sin, ay * sin, az * sin, Trig.cos(half));
+		var half = Trig.turn(real(radians) / 2), sin = half.sin / length;
+		return result(out, ax * sin, ay * sin, az * sin, half.cos);
 	}
 
 	/** Returns the rotation of three turns, around x, then y, then z, each around the world's axes.
@@ -65,12 +65,10 @@ class Quaternion {
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
 	public static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion {
-		var cx = Trig.cos(real(pitch) / 2),
-			sx = Trig.sin(real(pitch) / 2),
-			cy = Trig.cos(real(yaw) / 2),
-			sy = Trig.sin(real(yaw) / 2),
-			cz = Trig.cos(real(roll) / 2),
-			sz = Trig.sin(real(roll) / 2);
+		var x = Trig.turn(real(pitch) / 2),
+			y = Trig.turn(real(yaw) / 2),
+			z = Trig.turn(real(roll) / 2);
+		var cx = x.cos, sx = x.sin, cy = y.cos, sy = y.sin, cz = z.cos, sz = z.sin;
 		return result(out, sx * cy * cz - cx * sy * sz, cx * sy * cz + sx * cy * sz, cx * cy * sz - sx * sy * cz, cx * cy * cz + sx * sy * sz);
 	}
 

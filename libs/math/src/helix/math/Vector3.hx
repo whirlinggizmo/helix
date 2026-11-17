@@ -377,23 +377,7 @@ class Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the axis.
 		@return  The turned point. */
 	public function rotate(axis:Vector3, radians:Float, ?out:Vector3):Vector3 {
-		var kx = real(axis.x), ky = real(axis.y), kz = real(axis.z);
-		var length = sqrt(kx * kx + ky * ky + kz * kz);
-		if (length == 0)
-			return result(out, x, y, z);
-		kx /= length;
-		ky /= length;
-		kz /= length;
-		// Rodrigues' formula: the point's part along the axis kept, the rest turned in the plane square to the axis.
-		var c = cos(radians), s = sin(radians);
-		var along = (kx * x + ky * y + kz * z) * (1 - c);
-		return result(out, x * c
-			+ (ky * z - kz * y) * s
-			+ kx * along, y * c
-			+ (kz * x - kx * z) * s
-			+ ky * along, z * c
-			+ (kx * y - ky * x) * s
-			+ kz * along);
+		return rotated(x, y, z, real(axis.x), real(axis.y), real(axis.z), radians, out);
 	}
 
 	/** Gets the length. */
@@ -449,11 +433,24 @@ class Vector3 {
 	static #if !cpp inline #end function sqrt(value:Float):Float
 		return Math.sqrt(value);
 
-	static #if !cpp inline #end function sin(radians:Float):Float
-		return Trig.sin(radians);
-
-	static #if !cpp inline #end function cos(radians:Float):Float
-		return Trig.cos(radians);
+	static #if !cpp inline #end function rotated(x:Float, y:Float, z:Float, kx:Float, ky:Float, kz:Float, radians:Float, out:Null<Vector3>):Vector3 {
+		var length = Math.sqrt(kx * kx + ky * ky + kz * kz);
+		if (length == 0)
+			return result(out, x, y, z);
+		kx /= length;
+		ky /= length;
+		kz /= length;
+		// Rodrigues' formula: the point's part along the axis kept, the rest turned in the plane square to the axis.
+		var turn = Trig.turn(radians), c = turn.cos, s = turn.sin;
+		var along = (kx * x + ky * y + kz * z) * (1 - c);
+		return result(out, x * c
+			+ (ky * z - kz * y) * s
+			+ kx * along, y * c
+			+ (kz * x - kx * z) * s
+			+ ky * along, z * c
+			+ (kx * y - ky * x) * s
+			+ kz * along);
+	}
 
 	static #if !cpp inline #end function atan2(y:Float, x:Float):Float
 		return Trig.atan2(y, x);

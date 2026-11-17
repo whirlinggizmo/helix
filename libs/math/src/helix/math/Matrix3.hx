@@ -97,7 +97,7 @@ class Matrix3 {
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
 	public static function fromRotation(radians:Float, ?out:Matrix3):Matrix3 {
-		var cos = Trig.cos(radians), sin = Trig.sin(radians);
+		var turn = Trig.turn(radians), cos = turn.cos, sin = turn.sin;
 		return result(out, cos, sin, -sin, cos, 0, 0);
 	}
 
@@ -177,7 +177,7 @@ class Matrix3 {
 		@param out  Optional. The matrix to write into, which may be this one; a new one when omitted.
 		@return  The matrix. */
 	public function appendRotation(radians:Float, ?out:Matrix3):Matrix3 {
-		var cos = Trig.cos(radians), sin = Trig.sin(radians);
+		var turn = Trig.turn(radians), cos = turn.cos, sin = turn.sin;
 		var a = real(this.a),
 			b = real(this.b),
 			c = real(this.c),

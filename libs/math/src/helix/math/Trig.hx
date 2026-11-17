@@ -20,6 +20,11 @@ class Trig {
 	static inline var PIO2_2 = 6.07710050630396597660e-11;
 	static inline var PIO2_3 = 2.02226624879595063154e-21;
 
+	// pi/2 and what its double leaves out, and pi/4 (fdlibm's pio2_hi, pio2_lo and pio4_hi).
+	static inline var PIO2_HI = 1.57079632679489655800e+00;
+	static inline var PIO2_LO = 6.12323399573676603587e-17;
+	static inline var PIO4_HI = 7.85398163397448278999e-01;
+
 	// The largest k reduced by the three parts.
 	static inline var MAX_K = 1048576.;
 
@@ -143,10 +148,21 @@ class Trig {
 	public static function asin(x:Float):Float {
 		if (!(x >= -1 && x <= 1))
 			return Math.NaN;
-		if (x == 1 || x == -1)
-			return x * PI / 2;
-		var root = Math.sqrt((1 - x) * (1 + x));
-		return atanOf(x / root);
+		var t = x < 0 ? -x : x;
+		if (t < 0.5)
+			return x + x * arcRatio(x * x);
+		// asin(t) = pi/2 - 2 asin(s), s the square root of (1 - t) / 2.
+		var z = (1 - t) * 0.5, s = Math.sqrt(z), r = arcRatio(z);
+		var a:Float;
+		if (t >= 0.975)
+			a = PIO2_HI - (2 * (s + s * r) - PIO2_LO);
+		else {
+			// s as its high part w and the rest c, so that pi/4 - 2w is exact.
+			var w = highPart(s), c = (z - w * w) / (s + w);
+			var p = 2 * s * r - (PIO2_LO - 2 * c), q = PIO4_HI - 2 * w;
+			a = PIO4_HI - (p - q);
+		}
+		return x < 0 ? -a : a;
 	}
 
 	/** Returns the angle whose cosine is a value.
@@ -156,11 +172,39 @@ class Trig {
 	public static function acos(x:Float):Float {
 		if (!(x >= -1 && x <= 1))
 			return Math.NaN;
-		if (x == 0)
-			return PI / 2;
-		var root = Math.sqrt((1 - x) * (1 + x));
-		var a = atanOf(root / x);
-		return x > 0 ? a : a + PI;
+		if (x > -0.5 && x < 0.5)
+			return PIO2_HI - (x - (PIO2_LO - arcRatio(x * x) * x));
+		if (x < 0) {
+			// acos(x) = pi - 2 asin(s), s the square root of (1 + x) / 2.
+			var z = (1 + x) * 0.5,
+				s = Math.sqrt(z),
+				w = arcRatio(z) * s - PIO2_LO;
+			return PI - 2 * (s + w);
+		}
+		if (x == 1)
+			return 0;
+		// acos(x) = 2 asin(s), s the square root of (1 - x) / 2, as its high part and the rest c.
+		var z = (1 - x) * 0.5,
+			s = Math.sqrt(z),
+			high = highPart(s),
+			c = (z - high * high) / (s + high);
+		var w = arcRatio(z) * s + c;
+		return 2 * (high + w);
+	}
+
+	// fdlibm's R for asin and acos (e_asin.c), a ratio of two polynomials: asin(x) is x + x R(x^2) for |x| <= 1/2, within an ulp.
+	static function arcRatio(z:Float):Float {
+		var p = z * (1.66666666666666657415e-01
+			+ z * (-3.25565818622400915405e-01
+				+ z * (2.01212532134862925881e-01 + z * (-4.00555345006794114027e-02 + z * (7.91534994289814532176e-04 + z * 3.47933107596021167570e-05)))));
+		var q = 1 + z * (-2.40339491173441421878e+00 + z * (2.02094576023350569471e+00 + z * (-6.88283971605453293030e-01 + z * 7.70381505559019352791e-02)));
+		return p / q;
+	}
+
+	// x rounded to its upper 26 bits (Veltkamp's split), whose square is exact.
+	static inline function highPart(x:Float):Float {
+		var c = x * 134217729.;
+		return c - (c - x);
 	}
 
 	// Whether x is negative, -0 included (1 / -0 is -infinity).

@@ -84,7 +84,7 @@ class Transform2D {
 		@param out  Optional. The vector to write into; a new one when omitted.
 		@return  The direction. */
 	public function computeRight(?out:Vector2):Vector2 {
-		var cos = Trig.cos(rotation), sin = Trig.sin(rotation);
+		var turn = Trig.turn(rotation), cos = turn.cos, sin = turn.sin;
 		return out == null ? new Vector2(-sin, cos) : out.set(-sin, cos);
 	}
 
@@ -93,7 +93,8 @@ class Transform2D {
 		@param distance  How far, in its parent's units; less than 0 moves it back.
 		@return  This transform. */
 	public function moveForward(distance:Float):Transform2D {
-		position.set(position.x + Trig.cos(rotation) * distance, position.y + Trig.sin(rotation) * distance);
+		var turn = Trig.turn(rotation);
+		position.set(position.x + turn.cos * distance, position.y + turn.sin * distance);
 		return this;
 	}
 
@@ -102,7 +103,8 @@ class Transform2D {
 		@param distance  How far, in its parent's units; less than 0 moves it left.
 		@return  This transform. */
 	public function moveRight(distance:Float):Transform2D {
-		position.set(position.x - Trig.sin(rotation) * distance, position.y + Trig.cos(rotation) * distance);
+		var turn = Trig.turn(rotation);
+		position.set(position.x - turn.sin * distance, position.y + turn.cos * distance);
 		return this;
 	}
 
@@ -159,7 +161,7 @@ class Transform2D {
 		@param radians  The swing; more than 0 swings it from +x toward +y.
 		@return  This transform. */
 	public function orbit(x:Float, y:Float, radians:Float):Transform2D {
-		var cos = Trig.cos(radians), sin = Trig.sin(radians);
+		var turn = Trig.turn(radians), cos = turn.cos, sin = turn.sin;
 		var dx = position.x - x, dy = position.y - y;
 		position.set(x + dx * cos - dy * sin, y + dx * sin + dy * cos);
 		rotation += radians;
@@ -181,8 +183,9 @@ class Transform2D {
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */
 	public function toMatrix(?out:Matrix3):Matrix3 {
-		var cos = Trig.cos(rotation),
-			sin = Trig.sin(rotation),
+		var turn = Trig.turn(rotation),
+			cos = turn.cos,
+			sin = turn.sin,
 			scaleX = scale.x,
 			scaleY = scale.y;
 		if (out == null)

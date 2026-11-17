@@ -81,7 +81,7 @@ class Matrix4 {
 			y *= inverse;
 			z *= inverse;
 		}
-		var s = Trig.sin(radians), c = Trig.cos(radians), t = 1 - c;
+		var turn = Trig.turn(radians), s = turn.sin, c = turn.cos, t = 1 - c;
 		if (out == null)
 			out = new Matrix4();
 		return out.set(x * x * t
