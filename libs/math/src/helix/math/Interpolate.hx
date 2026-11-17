@@ -26,7 +26,7 @@ class Interpolate {
 		@param b  The value at 1.
 		@param value  The value.
 		@return  The fraction: 0 at a, 1 at b, past them beyond; 0 when a and b are equal. */
-	public static function inverseLerp(a:Float, b:Float, value:Float):Float
+	public static inline function inverseLerp(a:Float, b:Float, value:Float):Float
 		return b == a ? 0 : (value - a) / (b - a);
 
 	/** Returns a value moved from one range to another, at the same fraction of the way along.
