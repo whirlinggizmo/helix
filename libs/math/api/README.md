@@ -22,3 +22,4 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Trig](types.md#trig)
   - [Vector2](types.md#vector2)
   - [Vector3](types.md#vector3)
+  - [Vector4](types.md#vector4)

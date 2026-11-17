@@ -2,7 +2,8 @@ import helix.math.Interpolate;
 
 /** Checks Interpolate's easing curves with the library alone: each of the thirty at 0 and 1, each family's ease-in the mirror of its
 	ease-out, each ease-in-out halfway at the middle and (but for back's and elastic's) made of the two halves, the curves that don't overshoot rising steadily, and
-	cubic's ease-in-out as raylib's reasings computes it; and each spline piece at its ends and middle. */
+	cubic's ease-in-out as raylib's reasings computes it; each spline piece at its ends and middle; a Hermite curve; a value wrapped into
+	a range; and two values equal but for rounding. */
 class InterpolateTests {
 	static var checks = 0;
 
@@ -67,6 +68,27 @@ class InterpolateTests {
 			&& near(Interpolate.quadraticBezier(0, 10, 4, 1), 4),
 			"quadratic Bezier: its ends, halfway to the control point");
 		check(near(Interpolate.cubicBezier(0, 10, 10, 0, .5), 7.5) && near(Interpolate.cubicBezier(1, 5, 7, 2, 1), 2), "cubic Bezier");
+		check(Interpolate.hermite(2, 5, 7, -3, 0) == 2 && Interpolate.hermite(2, 5, 7, -3, 1) == 7, "Hermite: its ends");
+		check(near(Interpolate.hermite(0, 8, 4, 0, .5), 3)
+			&& near(Interpolate.hermite(0, 0, 4, 8, .5), 1)
+			&& near(Interpolate.hermite(0, 0, 4, 0, .5), 2),
+			"Hermite halfway: half of each end, an eighth of the first slope, less an eighth of the second");
+		check(near(Interpolate.hermite(0, 1, 1, 1, .3), .3), "Hermite: a straight line when both slopes are the line's");
+		check(Interpolate.wrap(370, 0, 360) == 10
+			&& Interpolate.wrap(-10, 0, 360) == 350
+			&& Interpolate.wrap(360, 0, 360) == 0
+			&& Interpolate.wrap(45, 0, 360) == 45,
+			"wrap: over, under, at the end and within");
+		check(near(Interpolate.wrap(4, -Math.PI, Math.PI), 4 - 2 * Math.PI) && Interpolate.wrap(7, 2, 5) == 4, "wrap: a range not from 0");
+		check(Interpolate.equals(1, 1, 0)
+			&& !Interpolate.equals(1, 1.0000001, 0)
+			&& Interpolate.equals(.5, .5000001, 1e-6)
+			&& !Interpolate.equals(.5, .50001, 1e-6),
+			"equals: exactly, or within a tolerance");
+		check(Interpolate.equals(1e6, 1e6 + .5, 1e-6)
+			&& !Interpolate.equals(1e6, 1e6 + 2, 1e-6)
+			&& Interpolate.equals(-1e6, -1e6 - .5, 1e-6),
+			"equals: the tolerance multiplied by the larger value's size over 1");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

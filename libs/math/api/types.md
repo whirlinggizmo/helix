@@ -389,12 +389,15 @@ static function lerp(a:Float, b:Float, t:Float):Float
 static function inverseLerp(a:Float, b:Float, value:Float):Float
 static function remap(value:Float, fromA:Float, fromB:Float, toA:Float, toB:Float):Float
 static function clamp(value:Float, min:Float, max:Float):Float
+static function wrap(value:Float, min:Float, max:Float):Float
+static function equals(a:Float, b:Float, tolerance:Float):Bool
 static function smoothStep(t:Float):Float
 static function wrapAngle(angle:Float):Float
 static function lerpAngle(a:Float, b:Float, t:Float):Float
 static function moveToward(value:Float, target:Float, step:Float):Float
 static function damp(value:Float, target:Float, rate:Float, dt:Float):Float
 static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
+static function hermite(from:Float, fromTangent:Float, to:Float, toTangent:Float, t:Float):Float
 static function catmullRom(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float
 static function bSpline(p0:Float, p1:Float, p2:Float, p3:Float, t:Float):Float
 static function quadraticBezier(p0:Float, p1:Float, p2:Float, t:Float):Float
@@ -457,6 +460,16 @@ static function easeInOutBounce(t:Float):Float
   - returns: The value, or the bound it's past.
 
   Bounds given in the wrong order are swapped.
+- `wrap`: Returns a value wrapped around into a range, as an angle wraps around a turn.
+  - `value`: The value.
+  - `min`: The range's start.
+  - `max`: The range's end.
+  - returns: The value, from min up to max.
+- `equals`: Returns whether two values are equal but for rounding.
+  - `a`: One value.
+  - `b`: The other value.
+  - `tolerance`: The most the values may differ by, multiplied by the larger value's size when that size is over 1.
+  - returns: True when the values are that close.
 - `smoothStep`: Returns a fraction clamped to 0 to 1 and smoothed, slow at both ends.
   - `t`: The fraction.
   - returns: 3t² - 2t³ of the clamped fraction.
@@ -489,6 +502,13 @@ static function easeInOutBounce(t:Float):Float
   - `rate`: How fast it closes the gap, per second.
   - `dt`: The time step, in seconds.
   - returns: The eased angle, in radians, not wrapped.
+- `hermite`: Returns the value on a curve from one value to another, the curve leaving and arriving at two slopes (a cubic Hermite curve), on one axis.
+  - `from`: The value at 0.
+  - `fromTangent`: The slope leaving `from`.
+  - `to`: The value at 1.
+  - `toTangent`: The slope arriving at `to`.
+  - `t`: How far along, 0 to 1.
+  - returns: The value.
 - `catmullRom`: Returns a point on a piece of a uniform Catmull-Rom spline, which passes through the middle two of four points, on one axis.
   - `p0`: The first point, which steers the piece.
   - `p1`: The piece's start.
@@ -903,15 +923,21 @@ var halfway = Quaternion.slerp(from, turn, .5);
 var facing = turn.transformPoint(0, 0, -1);
 ```
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0., ?w:Float = 1.)
+{?x:Float, ?y:Float, ?z:Float, ?w:Float}
+```
+
+```haxe
 static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Quaternion):Quaternion
 static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion
-static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0., ?out:Quaternion):Quaternion
+static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0., ?out:Quaternion):Quaternion = { upZ : 0., upY : 1., upX : 0. }
 static function fromBetween(from:Vector3, to:Vector3, ?out:Quaternion):Quaternion
 static function fromMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion
 static function slerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion
 static function nlerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion
+static function hermite(from:Quaternion, fromTangent:Quaternion, to:Quaternion, toTangent:Quaternion, amount:Float, ?out:Quaternion):Quaternion
 static function compose(first:Quaternion, second:Quaternion, ?out:Quaternion):Quaternion
 var x:Float
 var y:Float
@@ -919,6 +945,7 @@ var z:Float
 var w:Float
 function set(x:Float, y:Float, z:Float, w:Float):Quaternion
 function copyFrom(other:Quaternion):Quaternion
+function copy(?out:Quaternion):Quaternion
 function makeIdentity():Quaternion
 function append(other:Quaternion, ?out:Quaternion):Quaternion
 function prepend(other:Quaternion, ?out:Quaternion):Quaternion
@@ -927,14 +954,12 @@ function normalize(?out:Quaternion):Quaternion
 function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
 function toEuler(?out:Vector3):Vector3
 var angle(get, never):Float
+function getAxis(?out:Vector3):Vector3
+var length(get, never):Float
+function equals(other:Quaternion, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 function toMatrix(?out:Matrix4):Matrix4
 ```
 
-- `new`: Creates a rotation, the identity unless the quaternion is provided.
-  - `x`: Optional. The quaternion's x; defaults to 0.
-  - `y`: Optional. The quaternion's y; defaults to 0.
-  - `z`: Optional. The quaternion's z; defaults to 0.
-  - `w`: Optional. The quaternion's w; defaults to 1.
 - `fromAxisAngle`: Returns a turn around an axis.
   - `axisX`: The axis's x; it needn't be of length 1.
   - `axisY`: The axis's y.
@@ -966,6 +991,8 @@ function toMatrix(?out:Matrix4):Matrix4
   - `to`: The second direction.
   - `out`: Optional. The rotation to fill; a new one when omitted.
   - returns: The rotation.
+
+  Opposite directions give half a turn around an axis square to them. A direction of length 0 gives the identity.
 - `fromMatrix`: Returns the rotation of a matrix, its scale ignored.
   - `matrix`: The matrix: a rotation, scale and translation.
   - `out`: Optional. The rotation to fill; a new one when omitted.
@@ -982,6 +1009,14 @@ function toMatrix(?out:Matrix4):Matrix4
   - `amount`: How far, 0 to 1.
   - `out`: Optional. The rotation to fill; a new one when omitted. It may be from or to.
   - returns: The rotation.
+- `hermite`: Returns the rotation on a curve from one rotation to another, the curve leaving and arriving along two tangents (a cubic Hermite curve, as glTF's CUBICSPLINE animation uses).
+  - `from`: The rotation at 0.
+  - `fromTangent`: The tangent leaving `from`, four numbers held in a quaternion.
+  - `to`: The rotation at 1.
+  - `toTangent`: The tangent arriving at `to`, four numbers held in a quaternion.
+  - `amount`: How far along, 0 to 1.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be any of the four.
+  - returns: The rotation, of length 1.
 - `compose`: Returns one rotation followed by another.
   - `first`: The rotation applied first.
   - `second`: The rotation applied after it.
@@ -1000,6 +1035,9 @@ function toMatrix(?out:Matrix4):Matrix4
 - `copyFrom`: Sets this rotation to another's.
   - `other`: The rotation to copy.
   - returns: This rotation.
+- `copy`: Returns a separate rotation with this one's quaternion.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The copy.
 - `makeIdentity`: Makes this the rotation that turns nothing.
   - returns: This rotation.
 - `append`: Returns this rotation followed by another.
@@ -1030,6 +1068,16 @@ function toMatrix(?out:Matrix4):Matrix4
 
   The pitch and the roll are from -pi to pi, the yaw from -pi / 2 to pi / 2. At a yaw of a quarter turn either way, where the pitch and the roll turn around the same axis, the roll is 0 and the pitch carries the whole turn.
 - `angle`: Gets the angle this rotation turns by, around whatever axis, in radians, 0 to pi.
+- `getAxis`: Returns the axis this rotation turns around. `angle` is the angle of the turn around the axis.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The axis, of length 1; the x axis for a rotation that turns nothing.
+- `length`: Gets this quaternion's length, 1 for a rotation.
+- `equals`: Returns whether this rotation and another turn the same way, within a tolerance on each of the quaternion's four numbers.
+  - `other`: The other rotation.
+  - `tolerance`: Optional. The most each number may differ by, multiplied by the larger number's size when that size is over 1; defaults to 0, exactly equal.
+  - returns: True when they are the same rotation.
+
+  A quaternion and its negative are the same rotation.
 - `toMatrix`: Returns the rotation as a matrix.
   - `out`: Optional. The matrix to write into; a new one when omitted.
   - returns: The matrix.
@@ -1397,14 +1445,21 @@ position.addScaled(velocity, dt, position);
 var toward = target.subtract(position).normalize();
 ```
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(?x:Float = 0., ?y:Float = 0.)
-static function fromAngle(radians:Float, ?length:Float = 1., ?out:Vector2):Vector2
+{?x:Float, ?y:Float}
+```
+
+```haxe
+static function fromAngle(radians:Float, ?length:Float = 1., ?out:Vector2):Vector2 = { length : 1. }
 static function lerp(from:Vector2, to:Vector2, amount:Float, ?out:Vector2):Vector2
+static function hermite(from:Vector2, fromTangent:Vector2, to:Vector2, toTangent:Vector2, amount:Float, ?out:Vector2):Vector2
 var x:Float
 var y:Float
 function set(x:Float, y:Float):Vector2
 function copyFrom(other:Vector2):Vector2
+function copy(?out:Vector2):Vector2
 function add(other:Vector2, ?out:Vector2):Vector2
 function subtract(other:Vector2, ?out:Vector2):Vector2
 function scale(factor:Float, ?out:Vector2):Vector2
@@ -1412,6 +1467,16 @@ function addScaled(other:Vector2, factor:Float, ?out:Vector2):Vector2
 function negate(?out:Vector2):Vector2
 function normalize(?out:Vector2):Vector2
 function rotate(radians:Float, ?out:Vector2):Vector2
+function multiply(other:Vector2, ?out:Vector2):Vector2
+function divide(other:Vector2, ?out:Vector2):Vector2
+function min(other:Vector2, ?out:Vector2):Vector2
+function max(other:Vector2, ?out:Vector2):Vector2
+function clamp(min:Vector2, max:Vector2, ?out:Vector2):Vector2
+function clampLength(min:Float, max:Float, ?out:Vector2):Vector2
+function moveToward(target:Vector2, step:Float, ?out:Vector2):Vector2
+function reflect(normal:Vector2, ?out:Vector2):Vector2
+function refract(normal:Vector2, ratio:Float, ?out:Vector2):Vector2
+function angleTo(other:Vector2):Float
 var length(get, never):Float
 var lengthSquared(get, never):Float
 var angle(get, never):Float
@@ -1419,12 +1484,9 @@ function dot(other:Vector2):Float
 function cross(other:Vector2):Float
 function distance(other:Vector2):Float
 function distanceSquared(other:Vector2):Float
-function equals(other:Vector2, ?tolerance:Float = 0.):Bool
+function equals(other:Vector2, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 ```
 
-- `new`: Creates a vector.
-  - `x`: Optional. The x coordinate; defaults to 0.
-  - `y`: Optional. The y coordinate; defaults to 0.
 - `fromAngle`: Returns the vector of an angle and a length.
   - `radians`: The angle from +x toward +y.
   - `length`: Optional. The length; defaults to 1.
@@ -1438,6 +1500,14 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool
   - returns: The vector.
 
   A fraction outside 0 to 1 goes past the ends.
+- `hermite`: Returns the point on a curve from one point to another, the curve leaving and arriving along two tangents (a cubic Hermite curve).
+  - `from`: The point at 0.
+  - `fromTangent`: The curve's direction and speed leaving `from`.
+  - `to`: The point at 1.
+  - `toTangent`: The curve's direction and speed arriving at `to`.
+  - `amount`: How far along, 0 to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the four.
+  - returns: The point.
 - `x`: Gets or sets the x coordinate.
 - `y`: Gets or sets the y coordinate.
 - `set`: Sets the coordinates.
@@ -1447,6 +1517,9 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool
 - `copyFrom`: Sets the coordinates to another vector's.
   - `other`: The vector to copy.
   - returns: This vector.
+- `copy`: Returns a separate vector with this one's coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The copy.
 - `add`: Returns this vector plus another.
   - `other`: The vector to add.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
@@ -1476,6 +1549,55 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool
   - `radians`: The angle; more than 0 turns from +x toward +y.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The turned vector.
+- `multiply`: Returns this vector times another, coordinate by coordinate.
+  - `other`: The vector to multiply by.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The product.
+- `divide`: Returns this vector divided by another, coordinate by coordinate.
+  - `other`: The vector to divide by.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The quotient.
+- `min`: Returns the lesser of this vector's and another's coordinates, each coordinate on its own.
+  - `other`: The other vector.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The least coordinates.
+- `max`: Returns the greater of this vector's and another's coordinates, each coordinate on its own.
+  - `other`: The other vector.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The greatest coordinates.
+- `clamp`: Returns this vector with each coordinate kept between two other vectors' coordinates.
+  - `min`: The least coordinates.
+  - `max`: The greatest coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or either bound.
+  - returns: The clamped vector.
+
+  A coordinate's two bounds in the wrong order are swapped.
+- `clampLength`: Returns this vector with its length kept between two lengths, its direction unchanged.
+  - `min`: The least length.
+  - `max`: The greatest length.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The clamped vector.
+
+  A vector of length 0 stays 0. Bounds in the wrong order are swapped.
+- `moveToward`: Returns this point moved toward a target by at most a step.
+  - `target`: The point to move toward.
+  - `step`: The most distance to move.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the target.
+  - returns: The moved point.
+
+  The point reaches the target exactly. A step of 0 or less leaves the point where it is.
+- `reflect`: Returns this direction bounced off a surface.
+  - `normal`: The surface's normal, of length 1.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the normal.
+  - returns: The reflected direction.
+- `refract`: Returns this direction bent as light bends entering a surface.
+  - `normal`: The surface's normal, of length 1.
+  - `ratio`: The refractive index of what the direction leaves, over the index of what the direction enters.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the normal.
+  - returns: The bent direction, or all 0 when the surface reflects the direction wholly.
+- `angleTo`: Returns the angle from this vector to another, in radians.
+  - `other`: The other vector.
+  - returns: The angle, -pi to pi: more than 0 when the other is turned from this one toward +y.
 - `length`: Gets the length.
 - `lengthSquared`: Gets the length squared, which is quicker to find than the length and orders vectors alike.
 - `angle`: Gets the angle from +x toward +y, in radians, -pi to pi; 0 for a vector of length 0.
@@ -1493,7 +1615,7 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool
   - returns: The distance squared.
 - `equals`: Returns whether another vector is the same, within a tolerance on each coordinate.
   - `other`: The other vector.
-  - `tolerance`: Optional. The most each coordinate may differ by; defaults to 0, exactly equal.
+  - `tolerance`: Optional. The most each coordinate may differ by, multiplied by the larger coordinate's size when that size is over 1; defaults to 0, exactly equal.
   - returns: True when every coordinate is within the tolerance.
 
 ## Vector3
@@ -1512,14 +1634,23 @@ var toward = target.subtract(position).normalize();
 var right = forward.cross(up);
 ```
 
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
 ```haxe
-function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0.)
+{?x:Float, ?y:Float, ?z:Float}
+```
+
+```haxe
 static function lerp(from:Vector3, to:Vector3, amount:Float, ?out:Vector3):Vector3
+static function hermite(from:Vector3, fromTangent:Vector3, to:Vector3, toTangent:Vector3, amount:Float, ?out:Vector3):Vector3
+static function orthoNormalize(first:Vector3, second:Vector3):Void
+static function barycentric(point:Vector3, a:Vector3, b:Vector3, c:Vector3, ?out:Vector3):Vector3
 var x:Float
 var y:Float
 var z:Float
 function set(x:Float, y:Float, z:Float):Vector3
 function copyFrom(other:Vector3):Vector3
+function copy(?out:Vector3):Vector3
 function add(other:Vector3, ?out:Vector3):Vector3
 function subtract(other:Vector3, ?out:Vector3):Vector3
 function scale(factor:Float, ?out:Vector3):Vector3
@@ -1527,18 +1658,28 @@ function addScaled(other:Vector3, factor:Float, ?out:Vector3):Vector3
 function negate(?out:Vector3):Vector3
 function normalize(?out:Vector3):Vector3
 function cross(other:Vector3, ?out:Vector3):Vector3
+function multiply(other:Vector3, ?out:Vector3):Vector3
+function divide(other:Vector3, ?out:Vector3):Vector3
+function min(other:Vector3, ?out:Vector3):Vector3
+function max(other:Vector3, ?out:Vector3):Vector3
+function clamp(min:Vector3, max:Vector3, ?out:Vector3):Vector3
+function clampLength(min:Float, max:Float, ?out:Vector3):Vector3
+function moveToward(target:Vector3, step:Float, ?out:Vector3):Vector3
+function reflect(normal:Vector3, ?out:Vector3):Vector3
+function refract(normal:Vector3, ratio:Float, ?out:Vector3):Vector3
+function angleTo(other:Vector3):Float
+function project(onto:Vector3, ?out:Vector3):Vector3
+function reject(from:Vector3, ?out:Vector3):Vector3
+function perpendicular(?out:Vector3):Vector3
+function rotate(axis:Vector3, radians:Float, ?out:Vector3):Vector3
 var length(get, never):Float
 var lengthSquared(get, never):Float
 function dot(other:Vector3):Float
 function distance(other:Vector3):Float
 function distanceSquared(other:Vector3):Float
-function equals(other:Vector3, ?tolerance:Float = 0.):Bool
+function equals(other:Vector3, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 ```
 
-- `new`: Creates a vector.
-  - `x`: Optional. The x coordinate; defaults to 0.
-  - `y`: Optional. The y coordinate; defaults to 0.
-  - `z`: Optional. The z coordinate; defaults to 0.
 - `lerp`: Returns the vector a fraction of the way from one vector to another.
   - `from`: The vector at 0.
   - `to`: The vector at 1.
@@ -1547,6 +1688,24 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool
   - returns: The vector.
 
   A fraction outside 0 to 1 goes past the ends.
+- `hermite`: Returns the point on a curve from one point to another, the curve leaving and arriving along two tangents (a cubic Hermite curve).
+  - `from`: The point at 0.
+  - `fromTangent`: The curve's direction and speed leaving `from`.
+  - `to`: The point at 1.
+  - `toTangent`: The curve's direction and speed arriving at `to`.
+  - `amount`: How far along, 0 to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the four.
+  - returns: The point.
+- `orthoNormalize`: Makes two vectors of length 1 and square to each other, in place.
+  - `first`: The vector whose direction is kept.
+  - `second`: The vector turned to be square to `first`, in the plane the two vectors span.
+- `barycentric`: Returns a point's weights among a triangle's three corners (barycentric coordinates).
+  - `point`: The point, in the triangle's plane.
+  - `a`: The first corner.
+  - `b`: The second corner.
+  - `c`: The third corner.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the four.
+  - returns: The weights of `a`, `b` and `c`, which add to 1.
 - `x`: Gets or sets the x coordinate.
 - `y`: Gets or sets the y coordinate.
 - `z`: Gets or sets the z coordinate.
@@ -1558,6 +1717,9 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool
 - `copyFrom`: Sets the coordinates to another vector's.
   - `other`: The vector to copy.
   - returns: This vector.
+- `copy`: Returns a separate vector with this one's coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The copy.
 - `add`: Returns this vector plus another.
   - `other`: The vector to add.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
@@ -1587,6 +1749,71 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool
   - `other`: The other vector.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
   - returns: The cross product; of length 0 when they are parallel.
+- `multiply`: Returns this vector times another, coordinate by coordinate.
+  - `other`: The vector to multiply by.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The product.
+- `divide`: Returns this vector divided by another, coordinate by coordinate.
+  - `other`: The vector to divide by.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The quotient.
+- `min`: Returns the lesser of this vector's and another's coordinates, each coordinate on its own.
+  - `other`: The other vector.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The least coordinates.
+- `max`: Returns the greater of this vector's and another's coordinates, each coordinate on its own.
+  - `other`: The other vector.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The greatest coordinates.
+- `clamp`: Returns this vector with each coordinate kept between two other vectors' coordinates.
+  - `min`: The least coordinates.
+  - `max`: The greatest coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or either bound.
+  - returns: The clamped vector.
+
+  A coordinate's two bounds in the wrong order are swapped.
+- `clampLength`: Returns this vector with its length kept between two lengths, its direction unchanged.
+  - `min`: The least length.
+  - `max`: The greatest length.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The clamped vector.
+
+  A vector of length 0 stays 0. Bounds in the wrong order are swapped.
+- `moveToward`: Returns this point moved toward a target by at most a step.
+  - `target`: The point to move toward.
+  - `step`: The most distance to move.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the target.
+  - returns: The moved point.
+
+  The point reaches the target exactly. A step of 0 or less leaves the point where it is.
+- `reflect`: Returns this direction bounced off a surface.
+  - `normal`: The surface's normal, of length 1.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the normal.
+  - returns: The reflected direction.
+- `refract`: Returns this direction bent as light bends entering a surface.
+  - `normal`: The surface's normal, of length 1.
+  - `ratio`: The refractive index of what the direction leaves, over the index of what the direction enters.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the normal.
+  - returns: The bent direction, or all 0 when the surface reflects the direction wholly.
+- `angleTo`: Returns the angle between this vector and another, in radians.
+  - `other`: The other vector.
+  - returns: The angle, 0 to pi.
+- `project`: Returns the part of this vector that lies along another.
+  - `onto`: The vector to project onto, of any length but 0.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The projection.
+- `reject`: Returns the part of this vector that is square to another: this vector less its projection.
+  - `from`: The vector to be square to, of any length but 0.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The rejection.
+- `perpendicular`: Returns a vector square to this one: this vector crossed with the axis this vector lies least along.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The perpendicular vector, of length 0 when this vector is.
+- `rotate`: Returns this point turned around an axis through the origin.
+  - `axis`: The axis, of any length. An axis of length 0 leaves the point where it is.
+  - `radians`: The angle, by the right-hand rule around the axis.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the axis.
+  - returns: The turned point.
 - `length`: Gets the length.
 - `lengthSquared`: Gets the length squared, which is quicker to find than the length and orders vectors alike.
 - `dot`: Returns the dot product with another vector: the product of their lengths and the cosine of the angle between them.
@@ -1600,5 +1827,167 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool
   - returns: The distance squared.
 - `equals`: Returns whether another vector is the same, within a tolerance on each coordinate.
   - `other`: The other vector.
-  - `tolerance`: Optional. The most each coordinate may differ by; defaults to 0, exactly equal.
+  - `tolerance`: Optional. The most each coordinate may differ by, multiplied by the larger coordinate's size when that size is over 1; defaults to 0, exactly equal.
+  - returns: True when every coordinate is within the tolerance.
+
+## Vector4
+
+*class* in [`libs/math/src/helix/math/Vector4.hx`](../src/helix/math/Vector4.hx), `import helix.math.Vector4;`
+
+Represents a vector of 4 numbers: a point before its perspective divide, a tangent with its handedness, a plane, or any four a shader takes, as its user means it.
+
+Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. See `Quaternion` for a rotation, which has four numbers too and its own operations.
+
+It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, so a vector comes out the same everywhere.
+
+```haxe
+var clip = new Vector4(x, y, z, 1);
+var plane = new Vector4(0, 1, 0, -height).normalize();
+```
+
+Written as an object where one is expected; a field marked `?` may be left out, for its default:
+
+```haxe
+{?x:Float, ?y:Float, ?z:Float, ?w:Float}
+```
+
+```haxe
+static function lerp(from:Vector4, to:Vector4, amount:Float, ?out:Vector4):Vector4
+static function hermite(from:Vector4, fromTangent:Vector4, to:Vector4, toTangent:Vector4, amount:Float, ?out:Vector4):Vector4
+var x:Float
+var y:Float
+var z:Float
+var w:Float
+function set(x:Float, y:Float, z:Float, w:Float):Vector4
+function copyFrom(other:Vector4):Vector4
+function copy(?out:Vector4):Vector4
+function add(other:Vector4, ?out:Vector4):Vector4
+function subtract(other:Vector4, ?out:Vector4):Vector4
+function scale(factor:Float, ?out:Vector4):Vector4
+function addScaled(other:Vector4, factor:Float, ?out:Vector4):Vector4
+function negate(?out:Vector4):Vector4
+function normalize(?out:Vector4):Vector4
+function multiply(other:Vector4, ?out:Vector4):Vector4
+function divide(other:Vector4, ?out:Vector4):Vector4
+function min(other:Vector4, ?out:Vector4):Vector4
+function max(other:Vector4, ?out:Vector4):Vector4
+function clamp(min:Vector4, max:Vector4, ?out:Vector4):Vector4
+function clampLength(min:Float, max:Float, ?out:Vector4):Vector4
+function moveToward(target:Vector4, step:Float, ?out:Vector4):Vector4
+var length(get, never):Float
+var lengthSquared(get, never):Float
+function dot(other:Vector4):Float
+function distance(other:Vector4):Float
+function distanceSquared(other:Vector4):Float
+function equals(other:Vector4, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
+```
+
+- `lerp`: Returns the vector a fraction of the way from one vector to another.
+  - `from`: The vector at 0.
+  - `to`: The vector at 1.
+  - `amount`: The fraction.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be from or to.
+  - returns: The vector.
+
+  A fraction outside 0 to 1 goes past the ends.
+- `hermite`: Returns the point on a curve from one point to another, the curve leaving and arriving along two tangents (a cubic Hermite curve).
+  - `from`: The point at 0.
+  - `fromTangent`: The curve's direction and speed leaving `from`.
+  - `to`: The point at 1.
+  - `toTangent`: The curve's direction and speed arriving at `to`.
+  - `amount`: How far along, 0 to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the four.
+  - returns: The point.
+- `x`: Gets or sets the x coordinate.
+- `y`: Gets or sets the y coordinate.
+- `z`: Gets or sets the z coordinate.
+- `w`: Gets or sets the w coordinate.
+- `set`: Sets the coordinates.
+  - `x`: The x coordinate.
+  - `y`: The y coordinate.
+  - `z`: The z coordinate.
+  - `w`: The w coordinate.
+  - returns: This vector.
+- `copyFrom`: Sets the coordinates to another vector's.
+  - `other`: The vector to copy.
+  - returns: This vector.
+- `copy`: Returns a separate vector with this one's coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The copy.
+- `add`: Returns this vector plus another.
+  - `other`: The vector to add.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The sum.
+- `subtract`: Returns this vector minus another.
+  - `other`: The vector to subtract.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The difference.
+- `scale`: Returns this vector with every coordinate multiplied by a number.
+  - `factor`: The number.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The scaled vector.
+- `addScaled`: Returns this vector plus another times a number.
+  - `other`: The vector to add.
+  - `factor`: The number it is multiplied by first.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The sum.
+- `negate`: Returns this vector with every coordinate negated.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The negated vector.
+- `normalize`: Returns this vector scaled to length 1, the proportions of its coordinates kept.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The vector of length 1, or of length 0.
+
+  A vector of length 0 stays 0.
+- `multiply`: Returns this vector times another, coordinate by coordinate.
+  - `other`: The vector to multiply by.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The product.
+- `divide`: Returns this vector divided by another, coordinate by coordinate.
+  - `other`: The vector to divide by.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The quotient.
+- `min`: Returns the lesser of this vector's and another's coordinates, each coordinate on its own.
+  - `other`: The other vector.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The least coordinates.
+- `max`: Returns the greater of this vector's and another's coordinates, each coordinate on its own.
+  - `other`: The other vector.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+  - returns: The greatest coordinates.
+- `clamp`: Returns this vector with each coordinate kept between two other vectors' coordinates.
+  - `min`: The least coordinates.
+  - `max`: The greatest coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or either bound.
+  - returns: The clamped vector.
+
+  A coordinate's two bounds in the wrong order are swapped.
+- `clampLength`: Returns this vector with its length kept between two lengths, its direction unchanged.
+  - `min`: The least length.
+  - `max`: The greatest length.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The clamped vector.
+
+  A vector of length 0 stays 0. Bounds in the wrong order are swapped.
+- `moveToward`: Returns this point moved toward a target by at most a step.
+  - `target`: The point to move toward.
+  - `step`: The most distance to move.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector or the target.
+  - returns: The moved point.
+
+  The point reaches the target exactly. A step of 0 or less leaves the point where it is.
+- `length`: Gets the length.
+- `lengthSquared`: Gets the length squared, which is quicker to find than the length and orders vectors alike.
+- `dot`: Returns the dot product with another vector: each coordinate times the other's, summed.
+  - `other`: The other vector.
+  - returns: The dot product.
+- `distance`: Returns the distance to another vector.
+  - `other`: The other vector.
+  - returns: The distance.
+- `distanceSquared`: Returns the distance to another vector squared, which is quicker to find than the distance and orders distances alike.
+  - `other`: The other vector.
+  - returns: The distance squared.
+- `equals`: Returns whether another vector is the same, within a tolerance on each coordinate.
+  - `other`: The other vector.
+  - `tolerance`: Optional. The most each coordinate may differ by, multiplied by the larger coordinate's size when that size is over 1; defaults to 0, exactly equal.
   - returns: True when every coordinate is within the tolerance.

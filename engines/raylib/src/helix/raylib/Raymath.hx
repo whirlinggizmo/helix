@@ -37,7 +37,7 @@ class Raymath {
 	#if !macro
 	// ---- raymath: vectors, matrices and quaternions (raylib/RMath.hx) ----
 
-	/** Returns a value kept between two others.
+	/** Returns a value kept between two others. The two in the wrong order are swapped.
 
 		@param value  The value.
 		@param min  The least.
@@ -60,7 +60,7 @@ class Raymath {
 		@param value  The value.
 		@param start  The start.
 		@param end  The end.
-		@return  The fraction. */
+		@return  The fraction; 0 when the start and the end are equal. */
 	public static inline function Normalize(value:Float, start:Float, end:Float):Float
 		return RMath.Normalize(value, start, end);
 
@@ -285,7 +285,7 @@ class Raymath {
 
 	/** Returns a point moved toward a target by at most a distance.
 
-		Gives the target itself when the target is within that distance.
+		Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 
 		@param v  The point.
 		@param target  The target.
@@ -301,7 +301,7 @@ class Raymath {
 	public static inline function Vector2Invert(v:Vector2):Vector2
 		return RMath.Vector2Invert(v);
 
-	/** Returns a vector with each component kept between two others'.
+	/** Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least components.
@@ -310,7 +310,7 @@ class Raymath {
 	public static inline function Vector2Clamp(v:Vector2, min:Vector2, max:Vector2):Vector2
 		return RMath.Vector2Clamp(v, min, max);
 
-	/** Returns a vector with its length kept between two values.
+	/** Returns a vector with its length kept between two values. A vector of length 0 stays 0. The two values in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least length.
@@ -513,7 +513,7 @@ class Raymath {
 	/** Returns a vector turned by a quaternion.
 
 		@param v  The vector.
-		@param q  The quaternion.
+		@param q  The quaternion, of length 1.
 		@return  The turned vector. */
 	public static inline function Vector3RotateByQuaternion(v:Vector3, q:Quaternion):Vector3
 		return RMath.Vector3RotateByQuaternion(v, q);
@@ -529,7 +529,7 @@ class Raymath {
 
 	/** Returns a point moved toward a target by at most a distance.
 
-		Gives the target itself when the target is within that distance.
+		Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 
 		@param v  The point.
 		@param target  The target.
@@ -622,7 +622,7 @@ class Raymath {
 	public static inline function Vector3Invert(v:Vector3):Vector3
 		return RMath.Vector3Invert(v);
 
-	/** Returns a vector with each component kept between two others'.
+	/** Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least components.
@@ -631,7 +631,7 @@ class Raymath {
 	public static inline function Vector3Clamp(v:Vector3, min:Vector3, max:Vector3):Vector3
 		return RMath.Vector3Clamp(v, min, max);
 
-	/** Returns a vector with its length kept between two values.
+	/** Returns a vector with its length kept between two values. A vector of length 0 stays 0. The two values in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least length.
@@ -804,7 +804,7 @@ class Raymath {
 
 	/** Returns a point moved toward a target by at most a distance.
 
-		Gives the target itself when the target is within that distance.
+		Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 
 		@param v  The point.
 		@param target  The target.
@@ -1053,18 +1053,16 @@ class Raymath {
 	public static inline function QuaternionLength(q:Quaternion):Float
 		return RMath.QuaternionLength(q);
 
-	/** Returns a quaternion of length 1 in the same direction, or the quaternion itself when its length is 0.
+	/** Returns a quaternion of length 1 in the same direction, or the identity when its length is 0.
 
 		@param q  The quaternion.
 		@return  The normalized quaternion. */
 	public static inline function QuaternionNormalize(q:Quaternion):Quaternion
 		return RMath.QuaternionNormalize(q);
 
-	/** Returns a quaternion's inverse, which for a quaternion of length 1 is the rotation back.
+	/** Returns the rotation back from a quaternion's.
 
-		Gives the quaternion unchanged when its length is 0.
-
-		@param q  The quaternion.
+		@param q  The quaternion, of length 1.
 		@return  Its inverse. */
 	public static inline function QuaternionInvert(q:Quaternion):Quaternion
 		return RMath.QuaternionInvert(q);
@@ -1102,7 +1100,7 @@ class Raymath {
 	public static inline function QuaternionLerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
 		return RMath.QuaternionLerp(q1, q2, amount);
 
-	/** Returns a quaternion part of the way from one to another, component by component, then normalized.
+	/** Returns a quaternion part of the way from one to another the short way round, component by component, then normalized.
 
 		@param q1  The start.
 		@param q2  The end.
@@ -1140,7 +1138,7 @@ class Raymath {
 
 		@param from  The direction turned from.
 		@param to  The direction turned to.
-		@return  The quaternion, of length 1; all 0 when either direction is. */
+		@return  The quaternion, of length 1; the identity when either direction is all 0. */
 	public static inline function QuaternionFromVector3ToVector3(from:Vector3, to:Vector3):Quaternion
 		return RMath.QuaternionFromVector3ToVector3(from, to);
 
@@ -1172,9 +1170,9 @@ class Raymath {
 
 		Gives x as the axis when the angle is 0.
 
-		@param q  The quaternion, normalized first when its w is over 1 either way.
+		@param q  The quaternion, of length 1.
 		@param outAxis  Its first element is set to the axis, of length 1.
-		@param outAngle  Its first element is set to the angle, in radians. */
+		@param outAngle  Its first element is set to the angle, in radians, 0 to pi. */
 	public static inline function QuaternionToAxisAngle(q:Quaternion, outAxis:Array<Vector3>, outAngle:Array<Float>):Void
 		RMath.QuaternionToAxisAngle(q, outAxis, outAngle);
 
@@ -1189,7 +1187,10 @@ class Raymath {
 
 	/** Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` takes them.
 
-		@param q  The quaternion.
+		At a yaw of a quarter turn either way, where pitch and roll turn about one axis, the roll is 0 and the pitch carries the whole
+		turn.
+
+		@param q  The quaternion, of length 1.
 		@return  The angles, in radians. */
 	public static inline function QuaternionToEuler(q:Quaternion):Vector3
 		return RMath.QuaternionToEuler(q);

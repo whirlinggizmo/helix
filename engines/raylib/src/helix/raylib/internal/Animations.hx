@@ -1,19 +1,31 @@
 package helix.raylib.internal;
 
 import haxe.io.FPHelper;
+import helix.math.Interpolate;
 import helix.math.Matrix4;
 import helix.formats.gltf.GltfFile;
 import helix.raylib.*;
 import helix.raylib.modules.RMath.*;
 
 /** Reads a glTF file's animations as raylib 6.2's `LoadModelAnimationsGLTF` does, and poses a model's bones by them as its
-	`UpdateModelAnimationBones` and `UpdateModelAnimationBonesEx` do: their code ported line by line, with raymath's functions. */
+	`UpdateModelAnimationBones` and `UpdateModelAnimationBonesEx` do: their code ported line by line, on helix-math's vectors and rotations. */
 @:noCompletion
 @:access(helix.raylib.modules.RMath)
 @:access(helix.raylib.modules.RModels)
 class Animations {
 	/** The frames a second raylib samples an animation at. */
 	static inline final FRAMERATE = 60.0;
+
+	// A bone's rotation part way between two rotations, chosen as raylib's QuaternionSlerp chooses it, which the poses of raylib's C
+	// are matched by: the first rotation when the two are one to C's floats, the straight line between two near each other (nlerp,
+	// which takes no trigonometry), and the arc between the rest (slerp).
+	static inline function rotationBetween(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion {
+		var cos = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
+		// Each product and sum rounded to a float, as C's are.
+		var rounded = f32(f32(f32(f32(f32(from.x) * f32(to.x)) + f32(f32(from.y) * f32(to.y))) + f32(f32(from.z) * f32(to.z))) + f32(f32(from.w) * f32(to.w)));
+		return Math.abs(rounded) >= 1 ? from.copy(out) : Math.abs(cos) > 0.95 ? Quaternion.nlerp(from, to, amount,
+			out) : Quaternion.slerp(from, to, amount, out);
+	}
 
 	/** Reads a glTF or GLB file through the assets, with the buffers in files of their own, answering once.
 
@@ -266,7 +278,7 @@ class Animations {
 			tend = input[keyframe + 1];
 		}
 		// A constant animation needs no interpolation.
-		if (FloatEquals(tend, tstart) == 1)
+		if (Interpolate.equals(tend, tstart, Raymath.EPSILON))
 			type = 0;
 		var duration = float32(Math.max(tend - tstart, Raymath.EPSILON));
 		var t = float32((time - tstart) / duration);
@@ -284,29 +296,32 @@ class Animations {
 				case 0:
 					v3(at(keyframe));
 				case 1:
-					Vector3Lerp(v3(at(keyframe)), v3(at(keyframe + 1)), t);
+					Vector3.lerp(v3(at(keyframe)), v3(at(keyframe + 1)), t);
 				case _:
-					Vector3CubicHermite(v3(at(3 * keyframe + 1)), v3(at(3 * keyframe + 2)), v3(at(3 * (keyframe + 1) + 1)), v3(at(3 * (keyframe + 1))), t);
+					Vector3.hermite(v3(at(3 * keyframe + 1)), v3(at(3 * keyframe + 2)), v3(at(3 * (keyframe + 1) + 1)), v3(at(3 * (keyframe + 1))), t);
 			}
 			return [r.x, r.y, r.z];
 		}
-		inline function v4(a:Array<Float>, w:Null<Float>):Vector4
-			return new Vector4(a[0], a[1], a[2], w == null ? a[3] : w);
+		inline function q4(a:Array<Float>, w:Null<Float>):Quaternion
+			return new Quaternion(a[0], a[1], a[2], w == null ? a[3] : w);
 		var r = switch type {
 			case 0:
-				v4(at(keyframe), null);
+				q4(at(keyframe), null);
 			case 1:
-				QuaternionSlerp(v4(at(keyframe), null), v4(at(keyframe + 1), null), t);
+				rotationBetween(q4(at(keyframe), null), q4(at(keyframe + 1), null), t);
 			case _:
-				var v1 = QuaternionNormalize(v4(at(3 * keyframe + 1), null));
-				var outTangent1 = v4(at(3 * keyframe + 2), 0);
-				var v2 = QuaternionNormalize(v4(at(3 * (keyframe + 1) + 1), null));
-				var inTangent2 = v4(at(3 * (keyframe + 1)), 0);
-				if (Vector4DotProduct(v1, v2) < 0)
-					v2 = Vector4Negate(v2);
-				outTangent1 = Vector4Scale(outTangent1, duration);
-				inTangent2 = Vector4Scale(inTangent2, duration);
-				QuaternionCubicHermiteSpline(v1, outTangent1, v2, inTangent2, t);
+				var q1 = q4(at(3 * keyframe + 1), null);
+				q1.normalize(q1);
+				var outTangent1 = q4(at(3 * keyframe + 2), 0);
+				var q2 = q4(at(3 * (keyframe + 1) + 1), null);
+				q2.normalize(q2);
+				var inTangent2 = q4(at(3 * (keyframe + 1)), 0);
+				// The short way round.
+				if (q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w < 0)
+					q2.set(-q2.x, -q2.y, -q2.z, -q2.w);
+				outTangent1.set(outTangent1.x * duration, outTangent1.y * duration, outTangent1.z * duration, outTangent1.w * duration);
+				inTangent2.set(inTangent2.x * duration, inTangent2.y * duration, inTangent2.z * duration, inTangent2.w * duration);
+				Quaternion.hermite(q1, outTangent1, q2, inTangent2, t);
 		}
 		return [r.x, r.y, r.z, r.w];
 	}
@@ -323,11 +338,11 @@ class Animations {
 				continue;
 			}
 			var t = transforms[i], p = transforms[parent];
-			t.rotation = QuaternionMultiply(p.rotation, t.rotation);
-			t.scale = Vector3Multiply(t.scale, p.scale);
-			t.translation = Vector3Multiply(t.translation, p.scale);
-			t.translation = Vector3RotateByQuaternion(t.translation, p.rotation);
-			t.translation = Vector3Add(t.translation, p.translation);
+			t.rotation = Quaternion.compose(t.rotation, p.rotation);
+			t.scale = t.scale.multiply(p.scale);
+			var moved = t.translation.multiply(p.scale);
+			p.rotation.transformPoint(moved.x, moved.y, moved.z, moved);
+			t.translation = moved.add(p.translation, moved);
 		}
 	}
 
@@ -345,7 +360,7 @@ class Animations {
 			return;
 		var currentFrame = truncate(frame);
 		var nextFrame = currentFrame + 1;
-		var blend = Clamp(frame - currentFrame, 0, 1);
+		var blend = Interpolate.clamp(frame - currentFrame, 0, 1);
 		if (currentFrame >= anim.frameCount)
 			currentFrame = currentFrame % anim.frameCount;
 		if (nextFrame >= anim.frameCount)
@@ -355,9 +370,9 @@ class Animations {
 			var a = anim.framePoses[currentFrame][boneIndex],
 				b = anim.framePoses[nextFrame][boneIndex],
 				pose = poses[boneIndex];
-			vector3LerpInto(a.translation, b.translation, blend, pose.translation);
-			quaternionSlerpInto(a.rotation, b.rotation, blend, pose.rotation);
-			vector3LerpInto(a.scale, b.scale, blend, pose.scale);
+			Vector3.lerp(a.translation, b.translation, blend, pose.translation);
+			rotationBetween(a.rotation, b.rotation, blend, pose.rotation);
+			Vector3.lerp(a.scale, b.scale, blend, pose.scale);
 			setPose(model, boneIndex, pose);
 		}
 	}
@@ -379,12 +394,12 @@ class Animations {
 		// raylib wraps the frame before taking its fraction, so a frame past the end mixes with a fraction above 1, clamped.
 		var currentFrameA = truncate(frameA) % animA.frameCount;
 		var nextFrameA = currentFrameA + 1;
-		var blendA = Clamp(frameA - currentFrameA, 0, 1);
+		var blendA = Interpolate.clamp(frameA - currentFrameA, 0, 1);
 		if (nextFrameA >= animA.frameCount)
 			nextFrameA = nextFrameA % animA.frameCount;
 		var currentFrameB = truncate(frameB) % animB.frameCount;
 		var nextFrameB = currentFrameB + 1;
-		var blendB = Clamp(frameB - currentFrameB, 0, 1);
+		var blendB = Interpolate.clamp(frameB - currentFrameB, 0, 1);
 		if (nextFrameB >= animB.frameCount)
 			nextFrameB = nextFrameB % animB.frameCount;
 		var poses = posed(model);
@@ -395,16 +410,16 @@ class Animations {
 				a1 = animA.framePoses[nextFrameA][boneIndex];
 			var b0 = animB.framePoses[currentFrameB][boneIndex],
 				b1 = animB.framePoses[nextFrameB][boneIndex];
-			vector3LerpInto(a0.translation, a1.translation, blendA, ta);
-			quaternionSlerpInto(a0.rotation, a1.rotation, blendA, ra);
-			vector3LerpInto(a0.scale, a1.scale, blendA, sa);
-			vector3LerpInto(b0.translation, b1.translation, blendB, tb);
-			quaternionSlerpInto(b0.rotation, b1.rotation, blendB, rb);
-			vector3LerpInto(b0.scale, b1.scale, blendB, sb);
+			Vector3.lerp(a0.translation, a1.translation, blendA, ta);
+			rotationBetween(a0.rotation, a1.rotation, blendA, ra);
+			Vector3.lerp(a0.scale, a1.scale, blendA, sa);
+			Vector3.lerp(b0.translation, b1.translation, blendB, tb);
+			rotationBetween(b0.rotation, b1.rotation, blendB, rb);
+			Vector3.lerp(b0.scale, b1.scale, blendB, sb);
 			var pose = poses[boneIndex];
-			vector3LerpInto(ta, tb, blend, pose.translation);
-			quaternionSlerpInto(ra, rb, blend, pose.rotation);
-			vector3LerpInto(sa, sb, blend, pose.scale);
+			Vector3.lerp(ta, tb, blend, pose.translation);
+			rotationBetween(ra, rb, blend, pose.rotation);
+			Vector3.lerp(sa, sb, blend, pose.scale);
 			setPose(model, boneIndex, pose);
 		}
 	}
@@ -430,7 +445,7 @@ class Animations {
 			return false;
 		if (animA.frameCount <= 0 || animA.framePoses == null || animB.frameCount <= 0 || animB.framePoses == null)
 			return false;
-		blend = Clamp(blend, 0, 1);
+		blend = Interpolate.clamp(blend, 0, 1);
 		var count = model.boneCount;
 		if (boneWeights.length != count || animA.boneCount != count || animB.boneCount != count) {
 			Runtime.log(4,
@@ -441,10 +456,10 @@ class Animations {
 		var localA = localFrames(animA), localB = localFrames(animB);
 		var currentFrameA = truncate(frameA) % animA.frameCount;
 		var nextFrameA = (currentFrameA + 1) % animA.frameCount;
-		var blendA = Clamp(frameA - currentFrameA, 0, 1);
+		var blendA = Interpolate.clamp(frameA - currentFrameA, 0, 1);
 		var currentFrameB = truncate(frameB) % animB.frameCount;
 		var nextFrameB = (currentFrameB + 1) % animB.frameCount;
-		var blendB = Clamp(frameB - currentFrameB, 0, 1);
+		var blendB = Interpolate.clamp(frameB - currentFrameB, 0, 1);
 		var poses = posed(model);
 		var ta = mixA.translation, ra = mixA.rotation, sa = mixA.scale;
 		var tb = mixB.translation, rb = mixB.rotation, sb = mixB.scale;
@@ -454,16 +469,16 @@ class Animations {
 				a1 = localA[nextFrameA][boneIndex];
 			var b0 = localB[currentFrameB][boneIndex],
 				b1 = localB[nextFrameB][boneIndex];
-			vector3LerpInto(a0.translation, a1.translation, blendA, ta);
-			quaternionSlerpInto(a0.rotation, a1.rotation, blendA, ra);
-			vector3LerpInto(a0.scale, a1.scale, blendA, sa);
-			vector3LerpInto(b0.translation, b1.translation, blendB, tb);
-			quaternionSlerpInto(b0.rotation, b1.rotation, blendB, rb);
-			vector3LerpInto(b0.scale, b1.scale, blendB, sb);
-			var weight = Clamp(boneWeights[boneIndex] * blend, 0, 1);
-			vector3LerpInto(ta, tb, weight, t);
-			quaternionSlerpInto(ra, rb, weight, r);
-			vector3LerpInto(sa, sb, weight, s);
+			Vector3.lerp(a0.translation, a1.translation, blendA, ta);
+			rotationBetween(a0.rotation, a1.rotation, blendA, ra);
+			Vector3.lerp(a0.scale, a1.scale, blendA, sa);
+			Vector3.lerp(b0.translation, b1.translation, blendB, tb);
+			rotationBetween(b0.rotation, b1.rotation, blendB, rb);
+			Vector3.lerp(b0.scale, b1.scale, blendB, sb);
+			var weight = Interpolate.clamp(boneWeights[boneIndex] * blend, 0, 1);
+			Vector3.lerp(ta, tb, weight, t);
+			rotationBetween(ra, rb, weight, r);
+			Vector3.lerp(sa, sb, weight, s);
 			var pose = poses[boneIndex],
 				parent = model.bones[boneIndex].parent;
 			if (parent < 0 || parent >= boneIndex)
@@ -472,9 +487,9 @@ class Animations {
 				composeInto(poses[parent], mixed, pose);
 			if (rotationSpace == 1 && weight > 0) {
 				// Each animation's rotation in the model, from its own frames there, mixed by the weight.
-				quaternionSlerpInto(animA.framePoses[currentFrameA][boneIndex].rotation, animA.framePoses[nextFrameA][boneIndex].rotation, blendA, modelA);
-				quaternionSlerpInto(animB.framePoses[currentFrameB][boneIndex].rotation, animB.framePoses[nextFrameB][boneIndex].rotation, blendB, modelB);
-				quaternionSlerpInto(modelA, modelB, weight, pose.rotation);
+				rotationBetween(animA.framePoses[currentFrameA][boneIndex].rotation, animA.framePoses[nextFrameA][boneIndex].rotation, blendA, modelA);
+				rotationBetween(animB.framePoses[currentFrameB][boneIndex].rotation, animB.framePoses[nextFrameB][boneIndex].rotation, blendB, modelB);
+				rotationBetween(modelA, modelB, weight, pose.rotation);
 			}
 			setPose(model, boneIndex, pose);
 		}

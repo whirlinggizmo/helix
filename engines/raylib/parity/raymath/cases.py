@@ -157,15 +157,30 @@ SAMPLES = {
                'NEW(Matrix, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1)',
                'NEW(Matrix, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1)'],
 }
-SAMPLES['Quaternion'] = SAMPLES['Vector4']
-PRINT = {'float': 'num', 'int': 'num', 'Vector2': 'vec2', 'Vector3': 'v3', 'Vector4': 'v4', 'Quaternion': 'v4', 'Matrix': 'mat'}
+SAMPLES['Quaternion'] = [v.replace('NEW(Vector4, ', 'NEW(Quaternion, ') for v in SAMPLES['Vector4']]
+PRINT = {'float': 'num', 'int': 'num', 'Vector2': 'vec2', 'Vector3': 'v3', 'Vector4': 'v4', 'Quaternion': 'quat', 'Matrix': 'mat'}
 # Arguments kept to values that mean something: a refraction's ratio; an unprojection's view invertible, as a singular one's inverse is
 # float rounding's alone.
 FIXED = {('Vector3Unproject', 'view'): ['NEW(Matrix, 0.8, -0.6, 0, 3, 0.6, 0.8, 0, -1, 0, 0, 2, 0.5, 0, 0, 0, 1)', 'NEW(Matrix, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1)'],
          ('Vector2Refract', 'r'): ['0.66', '1.5', '1'], ('Vector3Refract', 'r'): ['0.66', '1.5', '1']}
+# Ordinary input where helix-raylib gives helix-math's answer on the rest (DECISIONS 79): a clamp's bounds in order, a quaternion of
+# length 1 away from gimbal lock where a rotation is asked for, and a quaternion with a length to normalize.
+ROTATIONS = ['NEW(Quaternion, 0.5, 0.5, 0.5, 0.5)', 'NEW(Quaternion, -0.5, -0.5, 0.5, 0.5)', 'NEW(Quaternion, 0.6, 0, 0, 0.8)',
+             'NEW(Quaternion, 0.1, 0.5, 0.7, 0.5)', 'NEW(Quaternion, 0, 0, 0, 1)']
+FIXED.update({
+    ('Vector2Clamp', 'min'): ['V2(-2, -1)', 'V2(-0.5, 0)', 'V2(-1, -3)'], ('Vector2Clamp', 'max'): ['V2(0.25, 0.5)', 'V2(1, 2)', 'V2(0, 2.5)'],
+    ('Vector3Clamp', 'min'): ['V3(-2, -1, 0)', 'V3(-0.5, 0, -4)', 'V3(-1, -3, 1)'],
+    ('Vector3Clamp', 'max'): ['V3(0.25, 0.5, 2)', 'V3(1, 2, 1.5)', 'V3(0, 2.5, 4)'],
+    ('Vector2ClampValue', 'min'): ['0', '0.5', '1'], ('Vector2ClampValue', 'max'): ['2', '2.5', '4'],
+    ('Vector3ClampValue', 'min'): ['0', '0.5', '1'], ('Vector3ClampValue', 'max'): ['2', '2.5', '4'],
+    ('Vector3RotateByQuaternion', 'q'): ROTATIONS, ('QuaternionInvert', 'q'): ROTATIONS, ('QuaternionToEuler', 'q'): ROTATIONS,
+    ('QuaternionNormalize', 'q'): [q for q in SAMPLES['Quaternion'] if q != 'NEW(Quaternion, 0, 0, 0, 0)'],
+})
 
 # raylib 6.2's, taken where it fixed a bug (DECISIONS 24): in core_62 and raymath_62.
 TAKEN = ['QuaternionFromVector3ToVector3', 'MatrixDecompose']
+
+import re
 
 CASES = []
 for sig in SIGNATURES.strip().split('\n'):
@@ -190,14 +205,14 @@ def c(e):
 
 def hx(e):
     """A sample as Haxe."""
-    return e.replace('NEW(Vector4, ', 'new Vector4(').replace('NEW(Matrix, ', 'new Matrix(')
+    return re.sub(r'NEW\((\w+), ', r'new \1(', e)
 
 
 # The functions with outs.
 for k, (a, b) in enumerate([('V3(1, 2, 0)', 'V3(0.5, 0.5, 2)'), ('V3(0, 3, 0)', 'V3(1, 1, 1)')]):
     CASES.append(f'LET(on{k}a, Vector3, {a}); LET(on{k}b, Vector3, {b}); Vector3OrthoNormalize(OUT(on{k}a), OUT(on{k}b)); '
                  f'v3("orthonormalize{k}a", on{k}a); v3("orthonormalize{k}b", on{k}b);')
-for k, q in enumerate(SAMPLES['Quaternion']):
+for k, q in enumerate(ROTATIONS):
     CASES.append({'c': f'{{ Vector3 axis; float angle; QuaternionToAxisAngle({c(q)}, &axis, &angle); '
                        f'v3("toaxisangle{k}axis", axis); num("toaxisangle{k}angle", angle); }}',
                   'hx': f'{{ var axis = [new Vector3()], angle = [0.]; QuaternionToAxisAngle({hx(q)}, axis, angle); '

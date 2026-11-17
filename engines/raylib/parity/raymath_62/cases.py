@@ -10,4 +10,4 @@ CASES = []
 for k, m in enumerate(MATRICES):
     CASES.append(f'LET(dt{k}, Vector3, V3(0, 0, 0)); LET(dr{k}, Quaternion, NEW(Quaternion, 0, 0, 0, 1)); LET(ds{k}, Vector3, V3(0, 0, 0)); '
                  f'MatrixDecompose({m}, OUT(dt{k}), OUT(dr{k}), OUT(ds{k})); '
-                 f'v3("decompose{k}t", dt{k}); v4("decompose{k}r", dr{k}); v3("decompose{k}s", ds{k});')
+                 f'v3("decompose{k}t", dt{k}); quat("decompose{k}r", dr{k}); v3("decompose{k}s", ds{k});')

@@ -32,8 +32,8 @@ def test(native,audio_device):
     """The adapter rule's check, the layers' check, the names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the
     API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/gen_sizes.py --check), the doc comments' check
     (tools/check_docs.py); each library's tests on the interpreter and Node, the shader compiler's on the interpreter, Trig's bits across
-    targets, helix-raylib's tests on Node; and with native each library's tests, Trig's bits and helix-raylib's tests in hxcpp, and the
-    platform's C tests (SDL3's dummy audio driver)."""
+    targets, helix-raylib's tests on Node; and with native each library's tests, Trig's bits and helix-raylib's tests in hxcpp, the
+    vectors' allocation in hxcpp's C++, and the platform's C tests (SDL3's dummy audio driver)."""
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/check_layers.py'])
     run([sys.executable,'tools/check_names.py'])
@@ -64,6 +64,7 @@ def test(native,audio_device):
     trig(native)
     raylib_tests(native)
     if native:
+        vector_allocation()
         from native_build import tool
         print(subprocess.check_output([str(tool('native-sdl3mixer-audio-test'))],text=True,encoding='utf-8',env=dict(os.environ,SDL_AUDIO_DRIVER='dummy')),end='')
         print(subprocess.check_output([str(tool('native-sdl3-events-test'))],text=True,encoding='utf-8'),end='')
@@ -152,6 +153,19 @@ def raylib_tests(native):
             native_build.place_runtimes(ROOT/'build/tests'/f'{main}-cpp',found)
             result([str(ROOT/'build/tests'/f'{main}-cpp'/(f'{main}.exe' if sys.platform=='win32' else main))])
         print(f'{main}: {value["checks"]} checks (Node{" and hxcpp" if native else ""})',flush=True)
+
+def vector_allocation():
+    """helix-math's vectors are built in place in hxcpp: the C++ generated for Vector2, Vector3 and Vector4, every member kept, defines
+    each one's allocation in its header. hxcpp does that only while none of a class's instance methods names another class, Math
+    included, and a call to an allocation left out of its header costs about 2 ns a vector."""
+    import shutil
+    out=ROOT/'build/tests/vector-allocation-cpp';shutil.rmtree(out,ignore_errors=True)
+    names=('Vector2','Vector3','Vector4')
+    run(['haxe','-lib','helix-math',*(f'helix.math.{name}' for name in names),'-cpp',out,'-D','no-compilation'])
+    for name in names:
+        if f'inline static ::hx::ObjectPtr< {name}_obj > __alloc' not in (out/'include/helix/math'/f'{name}.h').read_text(encoding='utf-8'):
+            sys.exit(f"helix.math.{name} isn't built in place in hxcpp: one of its instance methods names another class, such as Math. An instance method reaches another class through a static of {name}")
+    print(f'Vector allocation: {", ".join(names)} built in place (hxcpp)',flush=True)
 
 def trig(native):
     """helix.math.Trig's bits over fixed inputs: the same hash under the interpreter, in JS (Node) and, with native, in hxcpp. When they

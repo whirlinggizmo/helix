@@ -1104,3 +1104,37 @@ Why things are the way they are, numbered, in order.
     (docs/trials/2026-11-16-example-headers), three agents writing a lit scene read the lighting example including it and none reached
     for `Rlights`: each wrote its own uniforms, two calling it "a C helper". None looked for `reasings.h` either, so it gets no class: its
     curves are `helix.math.Interpolate`'s.
+
+79. **One set of maths: raymath forwards to helix-math, and matches raylib on ordinary input.** It revises 46's "behaviour exactly".
+    helix-raylib's `Vector2`, `Vector3`, `Vector4` and `Quaternion` are helix-math's types, so a value passes between raymath, an
+    extra and a library without a copy. Each of raymath's scalar, vector and quaternion functions is an inline forward to
+    helix-math's member (`Vector3Lerp` to `Vector3.lerp`, `QuaternionSlerp` to `Quaternion.slerp`, `Clamp` to `Interpolate.clamp`),
+    which takes an out. raymath keeps a body only for what no maths library has: C's float arrays (`Vector3ToFloatV`), a number added
+    to every component (`AddValue`, `SubtractValue`), 1 over each component (`Invert`), a quaternion taken as four plain numbers
+    (`QuaternionAdd`, `Scale`, `Lerp`, `Transform`), `Vector2LineAngle` and `Vector2Transform`. The matrix functions keep their
+    bodies until `Matrix` and `Matrix4` are one type.
+
+    On ordinary input a function answers as raylib's C does, to 1e-6 (the raymath parity suites). On degenerate input it gives
+    helix-math's answer: bounds in the wrong order are swapped (`Clamp`, `Vector3Clamp`, `Vector3ClampValue`), a quaternion of length
+    0 normalizes to the identity, a function taking a rotation takes a quaternion of length 1 (`QuaternionInvert`, `QuaternionToEuler`,
+    `QuaternionToAxisAngle`, `Vector3RotateByQuaternion`), `QuaternionToAxisAngle`'s angle is at most half a turn, `QuaternionToEuler`
+    at a yaw of a quarter turn puts the whole turn in the pitch, `QuaternionNlerp` goes the short way round, `QuaternionSlerp` follows
+    the arc between rotations near each other, where raylib's takes the straight line, and `QuaternionFromVector3ToVector3` gives the
+    identity for a direction of length 0. The suites' cases are kept to ordinary input, and compare two rotations as rotations. A
+    `Vector4` is not a `Quaternion`, as it is in C. The model animations choose between two rotations as raylib's `QuaternionSlerp`
+    does, so a pose matches raylib's C to 3e-6 and a blend of near rotations takes no trigonometry.
+
+    Why: an extra used helix-math and a program raymath, so a program carried two sets of maths, and two types for one vector. The
+    aim is an API that is well known, not a port of raylib: an agent writing `Vector3Lerp` gets what it expects, and nothing it writes
+    depends on what raylib does with a quaternion of length 0.
+
+    Cost: a forward is inlined, so a raymath call is helix-math's call. Timed against raylib's own bodies on Node and in hxcpp, the
+    `Vector3` functions are level on both. `Vector2Rotate` and `QuaternionSlerp` take about twice as long natively, as `Trig` gives
+    the same bits on every target and the C library's sine doesn't. hxcpp builds a class in place only while none of its instance
+    methods names another class, `Math` included, and a vector built by a call costs about 2 ns more. helix-math's vectors keep to
+    that, reaching `Math`, `Trig` and `Interpolate` through statics of their own (`helix.py test --native` checks the generated
+    C++). `Quaternion` can't, as its methods return a `Vector3`.
+
+    Rejected: raymath's own bodies beside helix-math's, the duplicate this ends; helix-raylib's own vector types converted at each
+    call into a library, which costs a copy a call; raylib's answer on degenerate input kept by a second body for each such function;
+    the animation suites loosened to helix-math's slerp, which moved a pose by up to 7e-4 and 425 pixels of the skinning suite.

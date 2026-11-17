@@ -3,7 +3,8 @@ import helix.raylib.Raylib.*;
 import helix.raylib.Vector2;
 
 /** A program written in raylib on helix-raylib, as a game in raylib would be. */
-@:adds("helix.math.Vector3", "helix.raylib.internal.Sprites", "helix.raylib.modules.RRlgl", "helix.raylib.modules.RShapes", "helix.services.images.Image")
+@:adds("helix.math.Vector2", "helix.math.Vector3", "helix.raylib.internal.Sprites", "helix.raylib.modules.RRlgl", "helix.raylib.modules.RShapes",
+	"helix.services.images.Image")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

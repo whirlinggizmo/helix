@@ -6,8 +6,9 @@ import helix.math.Vector3;
 	three turns, facing a direction, between two directions and from a matrix; blended (slerp and nlerp, the shorter way round, slerp at
 	an even speed and past its ends), composed in order, inverted and normalized; points turned, its angle, its matrix and its turns
 	back; values pinned to rotation matrices and Hamilton products computed apart from Haxe, and to raylib 5.5's raymath for the same
-	inputs (to its float precision); every operation into a new rotation, itself and each other argument, the same each way; and whole
-	numbers multiplied as floats on the interpreter. */
+	inputs (to its float precision); every operation into a new rotation, itself and each other argument, the same each way; whole
+	numbers multiplied as floats on the interpreter; its length; the same rotation as its negative; its axis, which with `angle` makes
+	the rotation again; a Hermite curve; a copy; and a rotation written in braces. */
 class QuaternionTests {
 	static var checks = 0;
 
@@ -240,6 +241,71 @@ class QuaternionTests {
 		check(Quaternion.compose(large, large).w == 0
 			&& Quaternion.compose(large, large).x == 2e10, "large whole numbers multiplied as floats");
 		check(new Quaternion(0, 0, 0, 1).transformPoint(100000, 100000, 0).x == 100000, "and turned as floats");
+
+		// Its length, and the same rotation as its negative, within a tolerance.
+		check(new Quaternion().length == 1
+			&& new Quaternion(1, 2, 2, 4).length == 5 && near(Quaternion.fromAxisAngle(3, -1, 2, 2.5).length, 1), "its length");
+		var turn = Quaternion.fromAxisAngle(3, -1, 2, 2.5);
+		var opposite = new Quaternion(-turn.x, -turn.y, -turn.z, -turn.w);
+		check(turn.equals(turn) && turn.equals(opposite) && !turn.equals(new Quaternion()) && !turn.equals(turn.invert()), "equal to itself and its negative");
+		check(!turn.equals(new Quaternion(turn.x + 1e-7, turn.y, turn.z, turn.w))
+			&& turn.equals(new Quaternion(turn.x + 1e-7, turn.y, turn.z, turn.w), 1e-6)
+			&& turn.equals(new Quaternion(-turn.x - 1e-7, -turn.y, -turn.z, -turn.w), 1e-6)
+			&& !turn.equals(new Quaternion(-turn.x, turn.y, turn.z, turn.w), 1e-6),
+			"equal within a tolerance, negated or not, and not when one number alone is negated");
+
+		// Its axis: of length 1, the x axis for no turn, and with `angle` the rotation again, whichever of the two quaternions holds it.
+		var axisOut = new Vector3();
+		check(at(new Quaternion().getAxis(), 1, 0, 0)
+			&& at(Quaternion.fromAxisAngle(0, 0, 2, 1).getAxis(), 0, 0, 1)
+			&& turn.getAxis(axisOut) == axisOut
+			&& near(axisOut.length, 1),
+			"its axis: of length 1, the x axis for no turn, into an out");
+		for (angle in [.3, 2.5, 3.5, 4, 6]) {
+			for (q in [
+				Quaternion.fromAxisAngle(3, -1, 2, angle),
+				Quaternion.fromAxisAngle(-3, 1, -2, -angle)
+			]) {
+				var negated = new Quaternion(-q.x, -q.y, -q.z, -q.w);
+				for (held in [q, negated]) {
+					var axis = held.getAxis();
+					var again = Quaternion.fromAxisAngle(axis.x, axis.y, axis.z, held.angle);
+					check(near(axis.length, 1) && turnsAs(again, [q.x, q.y, q.z, q.w], 1e-9) && held.angle <= Math.PI,
+						'its axis and angle make the rotation of $angle again, the angle at most half a turn');
+				}
+			}
+		}
+
+		// A Hermite curve: its ends, of length 1 between, and into any argument.
+		var hFrom = Quaternion.fromAxisAngle(0, 1, 0, .4),
+			hTo = Quaternion.fromAxisAngle(1, 0, 0, 1.2);
+		var leaving = new Quaternion(.1, .3, 0, -.2),
+			arriving = new Quaternion(0, -.4, .2, .1);
+		check(is(Quaternion.hermite(hFrom, leaving, hTo, arriving, 0), [hFrom.x, hFrom.y, hFrom.z, hFrom.w])
+			&& is(Quaternion.hermite(hFrom, leaving, hTo, arriving, 1), [hTo.x, hTo.y, hTo.z, hTo.w]),
+			"Hermite: its ends");
+		var between = Quaternion.hermite(hFrom, leaving, hTo, arriving, .5);
+		var plainX = .5 * hFrom.x + .125 * leaving.x + .5 * hTo.x - .125 * arriving.x,
+			plainW = .5 * hFrom.w + .125 * leaving.w + .5 * hTo.w - .125 * arriving.w;
+		check(near(between.length, 1)
+			&& near(between.x / between.w, plainX / plainW), "Hermite halfway: the curve's four weights, made of length 1");
+		for (into in 0...4) {
+			var args = [copy(hFrom), copy(leaving), copy(hTo), copy(arriving)];
+			check(Quaternion.hermite(args[0], args[1], args[2], args[3], .5, args[into]) == args[into] && identical(args[into], between),
+				'Hermite into argument $into');
+		}
+
+		// A copy is a separate rotation, or the out filled; and a rotation written in braces, a number left out 0.
+		var copied = turn.copy(), copyOut = new Quaternion();
+		copied.x = 9;
+		check(turn.x != 9 && copied.w == turn.w && turn.copy(copyOut) == copyOut && identical(copyOut, turn), "a copy is separate, or the out filled");
+		var braced:Quaternion = {
+			x: 0,
+			y: 0,
+			z: 0,
+			w: 1
+		}, partly:Quaternion = {y: 1};
+		check(is(braced, [0, 0, 0, 1]) && partly.y == 1 && partly.x == 0, "a rotation in braces");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

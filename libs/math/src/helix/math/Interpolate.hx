@@ -56,6 +56,27 @@ class Interpolate {
 		return value < min ? min : value > max ? max : value;
 	}
 
+	/** Returns a value wrapped around into a range, as an angle wraps around a turn.
+
+		@param value  The value.
+		@param min  The range's start.
+		@param max  The range's end.
+		@return  The value, from min up to max. */
+	public static function wrap(value:Float, min:Float, max:Float):Float
+		return value - (max - min) * Math.ffloor((value - min) / (max - min));
+
+	/** Returns whether two values are equal but for rounding.
+
+		@param a  One value.
+		@param b  The other value.
+		@param tolerance  The most the values may differ by, multiplied by the larger value's size when that size is over 1.
+		@return  True when the values are that close. */
+	public static inline function equals(a:Float, b:Float, tolerance:Float):Bool {
+		var sizeA = Math.abs(a), sizeB = Math.abs(b);
+		var size = sizeA > sizeB ? sizeA : sizeB;
+		return Math.abs(a - b) <= (size > 1 ? tolerance * size : tolerance);
+	}
+
 	/** Returns a fraction clamped to 0 to 1 and smoothed, slow at both ends.
 
 		@param t  The fraction.
@@ -122,6 +143,20 @@ class Interpolate {
 		@return  The eased angle, in radians, not wrapped. */
 	public static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
 		return !(rate > 0) || !(dt > 0) ? value : value + wrapAngle(target - value) * (1 - Math.exp(-rate * dt));
+
+	/** Returns the value on a curve from one value to another, the curve leaving and arriving at two slopes (a cubic Hermite curve), on
+		one axis.
+
+		@param from  The value at 0.
+		@param fromTangent  The slope leaving `from`.
+		@param to  The value at 1.
+		@param toTangent  The slope arriving at `to`.
+		@param t  How far along, 0 to 1.
+		@return  The value. */
+	public static inline function hermite(from:Float, fromTangent:Float, to:Float, toTangent:Float, t:Float):Float {
+		var t2 = t * t, t3 = t2 * t;
+		return (2 * t3 - 3 * t2 + 1) * from + (t3 - 2 * t2 + t) * fromTangent + (-2 * t3 + 3 * t2) * to + (t3 - t2) * toTangent;
+	}
 
 	/** Returns a point on a piece of a uniform Catmull-Rom spline, which passes through the middle two of four points, on one axis.
 

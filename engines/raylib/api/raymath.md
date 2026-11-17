@@ -168,7 +168,7 @@ static function QuaternionEquals(p:Quaternion, q:Quaternion):Int
 static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quaternion, scale:Vector3):Void
 ```
 
-- `Clamp`: Returns a value kept between two others.
+- `Clamp`: Returns a value kept between two others. The two in the wrong order are swapped.
   - `value`: The value.
   - `min`: The least.
   - `max`: The most.
@@ -182,7 +182,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `value`: The value.
   - `start`: The start.
   - `end`: The end.
-  - returns: The fraction.
+  - returns: The fraction; 0 when the start and the end are equal.
 - `Remap`: Returns a value moved from one range to another.
   - `value`: The value.
   - `inputStart`: The first range's start.
@@ -300,16 +300,16 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `maxDistance`: The most it moves.
   - returns: The moved point.
 
-  Gives the target itself when the target is within that distance.
+  Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 - `Vector2Invert`: Returns 1 divided by each of a vector's components.
   - `v`: The vector.
   - returns: The inverted vector.
-- `Vector2Clamp`: Returns a vector with each component kept between two others'.
+- `Vector2Clamp`: Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
   - `v`: The vector.
   - `min`: The least components.
   - `max`: The most.
   - returns: The vector.
-- `Vector2ClampValue`: Returns a vector with its length kept between two values.
+- `Vector2ClampValue`: Returns a vector with its length kept between two values. A vector of length 0 stays 0. The two values in the wrong order are swapped.
   - `v`: The vector.
   - `min`: The least length.
   - `max`: The most length.
@@ -407,7 +407,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - returns: The transformed point.
 - `Vector3RotateByQuaternion`: Returns a vector turned by a quaternion.
   - `v`: The vector.
-  - `q`: The quaternion.
+  - `q`: The quaternion, of length 1.
   - returns: The turned vector.
 - `Vector3RotateByAxisAngle`: Returns a vector turned about an axis.
   - `v`: The vector.
@@ -420,7 +420,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `maxDistance`: The most it moves.
   - returns: The moved point.
 
-  Gives the target itself when the target is within that distance.
+  Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 - `Vector3Lerp`: Returns a point part of the way from one to another.
   - `v1`: The start.
   - `v2`: The end.
@@ -465,12 +465,12 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 - `Vector3Invert`: Returns 1 divided by each of a vector's components.
   - `v`: The vector.
   - returns: The inverted vector.
-- `Vector3Clamp`: Returns a vector with each component kept between two others'.
+- `Vector3Clamp`: Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
   - `v`: The vector.
   - `min`: The least components.
   - `max`: The most.
   - returns: The vector.
-- `Vector3ClampValue`: Returns a vector with its length kept between two values.
+- `Vector3ClampValue`: Returns a vector with its length kept between two values. A vector of length 0 stays 0. The two values in the wrong order are swapped.
   - `v`: The vector.
   - `min`: The least length.
   - `max`: The most length.
@@ -559,7 +559,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `maxDistance`: The most it moves.
   - returns: The moved point.
 
-  Gives the target itself when the target is within that distance.
+  Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 - `Vector4Invert`: Returns 1 divided by each of a vector's components.
   - `v`: The vector.
   - returns: The inverted vector.
@@ -678,14 +678,12 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 - `QuaternionLength`: Returns a quaternion's length.
   - `q`: The quaternion.
   - returns: The length.
-- `QuaternionNormalize`: Returns a quaternion of length 1 in the same direction, or the quaternion itself when its length is 0.
+- `QuaternionNormalize`: Returns a quaternion of length 1 in the same direction, or the identity when its length is 0.
   - `q`: The quaternion.
   - returns: The normalized quaternion.
-- `QuaternionInvert`: Returns a quaternion's inverse, which for a quaternion of length 1 is the rotation back.
-  - `q`: The quaternion.
+- `QuaternionInvert`: Returns the rotation back from a quaternion's.
+  - `q`: The quaternion, of length 1.
   - returns: Its inverse.
-
-  Gives the quaternion unchanged when its length is 0.
 - `QuaternionMultiply`: Returns two quaternions multiplied: the rotation q2, then q1.
   - `q1`: The first.
   - `q2`: The second.
@@ -703,7 +701,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `q2`: The end.
   - `amount`: 0 for the start, 1 for the end.
   - returns: The quaternion.
-- `QuaternionNlerp`: Returns a quaternion part of the way from one to another, component by component, then normalized.
+- `QuaternionNlerp`: Returns a quaternion part of the way from one to another the short way round, component by component, then normalized.
   - `q1`: The start.
   - `q2`: The end.
   - `amount`: 0 for the start, 1 for the end.
@@ -723,7 +721,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 - `QuaternionFromVector3ToVector3`: Returns the rotation turning one direction to another.
   - `from`: The direction turned from.
   - `to`: The direction turned to.
-  - returns: The quaternion, of length 1; all 0 when either direction is.
+  - returns: The quaternion, of length 1; the identity when either direction is all 0.
 
   Takes directions of any length.
 
@@ -741,9 +739,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
 
   Gives the identity for an axis of length 0.
 - `QuaternionToAxisAngle`: Finds a quaternion's rotation as an axis and an angle about it.
-  - `q`: The quaternion, normalized first when its w is over 1 either way.
+  - `q`: The quaternion, of length 1.
   - `outAxis`: Its first element is set to the axis, of length 1.
-  - `outAngle`: Its first element is set to the angle, in radians.
+  - `outAngle`: Its first element is set to the angle, in radians, 0 to pi.
 
   Gives x as the axis when the angle is 0.
 - `QuaternionFromEuler`: Returns a rotation by Euler angles as a quaternion.
@@ -752,8 +750,10 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `roll`: About z.
   - returns: The quaternion.
 - `QuaternionToEuler`: Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` takes them.
-  - `q`: The quaternion.
+  - `q`: The quaternion, of length 1.
   - returns: The angles, in radians.
+
+  At a yaw of a quarter turn either way, where pitch and roll turn about one axis, the roll is 0 and the pitch carries the whole turn.
 - `QuaternionTransform`: Returns a quaternion's four components transformed by a matrix, as a point with w.
   - `q`: The quaternion.
   - `mat`: The matrix.

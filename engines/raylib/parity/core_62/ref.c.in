@@ -29,7 +29,12 @@ static void b64(const char *name, const char *text) {
 }
 
 static void text(const char *name, const char *s) { printf("%s text %s\n", name, s && s[0] ? s : "-"); }
-static void quat(const char *name, Quaternion q) { printf("%s quat %.9g %.9g %.9g %.9g\n", name, q.x, q.y, q.z, q.w); }
+// A rotation, its sign chosen so its first component that isn't 0 is positive: a quaternion and its negative are one rotation.
+static void quat(const char *name, Quaternion q) {
+    float first = fabsf(q.x) > 1e-6f ? q.x : fabsf(q.y) > 1e-6f ? q.y : fabsf(q.z) > 1e-6f ? q.z : q.w;
+    float s = first < 0 ? -1.0f : 1.0f;
+    printf("%s quat %.9g %.9g %.9g %.9g\n", name, s * q.x, s * q.y, s * q.z, s * q.w);
+}
 
 int main(void) {
     parity_open();

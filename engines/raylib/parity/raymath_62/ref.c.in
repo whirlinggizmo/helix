@@ -4,6 +4,7 @@
 
 static void v3(const char *name, Vector3 v) { printf("%s v3 %.9g %.9g %.9g\n", name, v.x, v.y, v.z); }
 static void v4(const char *name, Vector4 v) { printf("%s v4 %.9g %.9g %.9g %.9g\n", name, v.x, v.y, v.z, v.w); }
+static void quat(const char *name, Quaternion q) { printf("%s quat %.9g %.9g %.9g %.9g\n", name, q.x, q.y, q.z, q.w); }
 
 static void floats(const char *name, const float *v, int n) {
     printf("%s floats", name);

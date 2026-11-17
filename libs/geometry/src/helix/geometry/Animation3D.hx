@@ -1,5 +1,6 @@
 package helix.geometry;
 
+import helix.math.Interpolate;
 import helix.math.Quaternion;
 import helix.math.Transform3D;
 
@@ -61,12 +62,10 @@ class Animation3D {
 				t = 0;
 			for (c in 0...size) {
 				var a = v[at(k) + c], b = k + 1 < count ? v[at(k + 1) + c] : a;
-				if (cubic && t > 0) {
-					var t2 = t * t, t3 = t2 * t;
-					var outTangent = v[at(k) + size + c],
-						inTangent = v[at(k + 1) - size + c];
-					scratch[c] = (2 * t3 - 3 * t2 + 1) * a + (t3 - 2 * t2 + t) * span * outTangent + (-2 * t3 + 3 * t2) * b + (t3 - t2) * span * inTangent;
-				} else
+				if (cubic && t > 0)
+					// A key's tangents are a second's change, the curve's a span's.
+					scratch[c] = Interpolate.hermite(a, span * v[at(k) + size + c], b, span * v[at(k + 1) - size + c], t);
+				else
 					scratch[c] = t == 0 ? a : a + (b - a) * t;
 			}
 			switch track.property {

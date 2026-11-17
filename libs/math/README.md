@@ -7,7 +7,7 @@ Math for games, in pure Haxe.
 - `Interpolate`: interpolating, clamping, smoothing and easing numbers and angles, and points on spline pieces (Catmull-Rom,
   B-spline, Bezier).
 - `Curve`: curves through points or by control points, in 2D and 3D, and moving along them.
-- `Vector2`, `Vector3`, `Aabb2D`, `Aabb3D`: vectors (positions and directions, their sums, products, lengths, blends and
+- `Vector2`, `Vector3`, `Vector4`, `Aabb2D`, `Aabb3D`: vectors (positions and directions, their sums, products, lengths, blends and
   turns) and axis-aligned boxes, and where boxes overlap.
 - `DistanceField2D`: a grid's distance transform, for distance fields.
 - `Color`: colors as 0xAARRGGBB integers: their channels, the CSS order, hue, saturation and value, mixing, laying one over another,

@@ -15,6 +15,7 @@ package helix.math;
 	var halfway = Quaternion.slerp(from, turn, .5);
 	var facing = turn.transformPoint(0, 0, -1);
 	``` */
+@:structInit
 class Quaternion {
 	/** Gets or sets the quaternion's x, the axis's x scaled by the sine of half the angle. */
 	public var x:Float;
@@ -120,6 +121,7 @@ class Quaternion {
 
 	/** Returns the shortest turn from one direction to another.
 
+		Opposite directions give half a turn around an axis square to them. A direction of length 0 gives the identity.
 		@param from  The first direction; it needn't be of length 1.
 		@param to  The second direction.
 		@param out  Optional. The rotation to fill; a new one when omitted.
@@ -242,6 +244,26 @@ class Quaternion {
 		return out.set(ax + (bx - ax) * amount, ay + (by - ay) * amount, az + (bz - az) * amount, aw + (bw - aw) * amount).normalize(out);
 	}
 
+	/** Returns the rotation on a curve from one rotation to another, the curve leaving and arriving along two tangents (a cubic Hermite
+		curve, as glTF's CUBICSPLINE animation uses).
+
+		@param from  The rotation at 0.
+		@param fromTangent  The tangent leaving `from`, four numbers held in a quaternion.
+		@param to  The rotation at 1.
+		@param toTangent  The tangent arriving at `to`, four numbers held in a quaternion.
+		@param amount  How far along, 0 to 1.
+		@param out  Optional. The rotation to fill; a new one when omitted. It may be any of the four.
+		@return  The rotation, of length 1. */
+	public static function hermite(from:Quaternion, fromTangent:Quaternion, to:Quaternion, toTangent:Quaternion, amount:Float, ?out:Quaternion):Quaternion {
+		var x = Interpolate.hermite(from.x, fromTangent.x, to.x, toTangent.x, amount),
+			y = Interpolate.hermite(from.y, fromTangent.y, to.y, toTangent.y, amount),
+			z = Interpolate.hermite(from.z, fromTangent.z, to.z, toTangent.z, amount),
+			w = Interpolate.hermite(from.w, fromTangent.w, to.w, toTangent.w, amount);
+		if (out == null)
+			out = new Quaternion();
+		return out.set(x, y, z, w).normalize(out);
+	}
+
 	/** Returns one rotation followed by another.
 
 		@param first  The rotation applied first.
@@ -295,6 +317,14 @@ class Quaternion {
 		@return  This rotation. */
 	public function copyFrom(other:Quaternion):Quaternion {
 		return set(other.x, other.y, other.z, other.w);
+	}
+
+	/** Returns a separate rotation with this one's quaternion.
+
+		@param out  Optional. The rotation to fill; a new one when omitted.
+		@return  The copy. */
+	public function copy(?out:Quaternion):Quaternion {
+		return result(out, x, y, z, w);
 	}
 
 	/** Makes this the rotation that turns nothing.
@@ -397,6 +427,50 @@ class Quaternion {
 
 	function get_angle():Float {
 		return 2 * Trig.atan2(Math.sqrt(x * x + y * y + z * z), Math.abs(w));
+	}
+
+	/** Returns the axis this rotation turns around. `angle` is the angle of the turn around the axis.
+
+		@param out  Optional. The vector to fill; a new one when omitted.
+		@return  The axis, of length 1; the x axis for a rotation that turns nothing. */
+	public function getAxis(?out:Vector3):Vector3 {
+		var x = real(this.x), y = real(this.y), z = real(this.z);
+		var length = Math.sqrt(x * x + y * y + z * z);
+		if (length < 1e-9)
+			return out == null ? new Vector3(1, 0, 0) : out.set(1, 0, 0);
+		// q and -q are the same rotation; the one with w over 0 turns by `angle`, at most half a turn.
+		if (w < 0)
+			length = -length;
+		return out == null ? new Vector3(x / length, y / length, z / length) : out.set(x / length, y / length, z / length);
+	}
+
+	/** Gets this quaternion's length, 1 for a rotation. */
+	public var length(get, never):Float;
+
+	function get_length():Float {
+		var x = real(this.x),
+			y = real(this.y),
+			z = real(this.z),
+			w = real(this.w);
+		return Math.sqrt(x * x + y * y + z * z + w * w);
+	}
+
+	/** Returns whether this rotation and another turn the same way, within a tolerance on each of the quaternion's four numbers.
+
+		A quaternion and its negative are the same rotation.
+		@param other  The other rotation.
+		@param tolerance  Optional. The most each number may differ by, multiplied by the larger number's size when that size is over 1;
+			defaults to 0, exactly equal.
+		@return  True when they are the same rotation. */
+	public function equals(other:Quaternion, tolerance = 0.):Bool {
+		return (Interpolate.equals(x, other.x, tolerance)
+			&& Interpolate.equals(y, other.y, tolerance)
+			&& Interpolate.equals(z, other.z, tolerance)
+			&& Interpolate.equals(w, other.w, tolerance))
+			|| (Interpolate.equals(x, -other.x, tolerance)
+				&& Interpolate.equals(y, -other.y, tolerance)
+				&& Interpolate.equals(z, -other.z, tolerance)
+				&& Interpolate.equals(w, -other.w, tolerance));
 	}
 
 	/** Returns the rotation as a matrix.

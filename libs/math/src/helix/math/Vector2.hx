@@ -16,6 +16,7 @@ package helix.math;
 	position.addScaled(velocity, dt, position);
 	var toward = target.subtract(position).normalize();
 	``` */
+@:structInit
 class Vector2 {
 	/** Gets or sets the x coordinate. */
 	public var x:Float;
@@ -55,6 +56,20 @@ class Vector2 {
 		return result(out, fromX + (to.x - fromX) * amount, fromY + (to.y - fromY) * amount);
 	}
 
+	/** Returns the point on a curve from one point to another, the curve leaving and arriving along two tangents (a cubic Hermite curve).
+
+		@param from  The point at 0.
+		@param fromTangent  The curve's direction and speed leaving `from`.
+		@param to  The point at 1.
+		@param toTangent  The curve's direction and speed arriving at `to`.
+		@param amount  How far along, 0 to 1.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the four.
+		@return  The point. */
+	public static function hermite(from:Vector2, fromTangent:Vector2, to:Vector2, toTangent:Vector2, amount:Float, ?out:Vector2):Vector2 {
+		return result(out, Interpolate.hermite(from.x, fromTangent.x, to.x, toTangent.x, amount),
+			Interpolate.hermite(from.y, fromTangent.y, to.y, toTangent.y, amount));
+	}
+
 	/** Sets the coordinates.
 
 		@param x  The x coordinate.
@@ -72,6 +87,14 @@ class Vector2 {
 		@return  This vector. */
 	public function copyFrom(other:Vector2):Vector2 {
 		return set(other.x, other.y);
+	}
+
+	/** Returns a separate vector with this one's coordinates.
+
+		@param out  Optional. The vector to fill; a new one when omitted.
+		@return  The copy. */
+	public function copy(?out:Vector2):Vector2 {
+		return result(out, x, y);
 	}
 
 	/** Returns this vector plus another.
@@ -135,18 +158,130 @@ class Vector2 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
 		@return  The turned vector. */
 	public function rotate(radians:Float, ?out:Vector2):Vector2 {
-		var c = Trig.cos(radians),
-			s = Trig.sin(radians),
+		var c = cos(radians),
+			s = sin(radians),
 			x = real(this.x),
 			y = real(this.y);
 		return result(out, x * c - y * s, x * s + y * c);
 	}
 
+	/** Returns this vector times another, coordinate by coordinate.
+
+		@param other  The vector to multiply by.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+		@return  The product. */
+	public function multiply(other:Vector2, ?out:Vector2):Vector2 {
+		return result(out, real(x) * other.x, real(y) * other.y);
+	}
+
+	/** Returns this vector divided by another, coordinate by coordinate.
+
+		@param other  The vector to divide by.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+		@return  The quotient. */
+	public function divide(other:Vector2, ?out:Vector2):Vector2 {
+		return result(out, x / other.x, y / other.y);
+	}
+
+	/** Returns the lesser of this vector's and another's coordinates, each coordinate on its own.
+
+		@param other  The other vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+		@return  The least coordinates. */
+	public function min(other:Vector2, ?out:Vector2):Vector2 {
+		return result(out, x < other.x ? x : other.x, y < other.y ? y : other.y);
+	}
+
+	/** Returns the greater of this vector's and another's coordinates, each coordinate on its own.
+
+		@param other  The other vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the other.
+		@return  The greatest coordinates. */
+	public function max(other:Vector2, ?out:Vector2):Vector2 {
+		return result(out, x > other.x ? x : other.x, y > other.y ? y : other.y);
+	}
+
+	/** Returns this vector with each coordinate kept between two other vectors' coordinates.
+
+		A coordinate's two bounds in the wrong order are swapped.
+		@param min  The least coordinates.
+		@param max  The greatest coordinates.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or either bound.
+		@return  The clamped vector. */
+	public function clamp(min:Vector2, max:Vector2, ?out:Vector2):Vector2 {
+		return result(out, between(x, min.x, max.x), between(y, min.y, max.y));
+	}
+
+	/** Returns this vector with its length kept between two lengths, its direction unchanged.
+
+		A vector of length 0 stays 0. Bounds in the wrong order are swapped.
+		@param min  The least length.
+		@param max  The greatest length.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
+		@return  The clamped vector. */
+	public function clampLength(min:Float, max:Float, ?out:Vector2):Vector2 {
+		var length = this.length;
+		if (length == 0)
+			return result(out, 0, 0);
+		var factor = between(length, min, max) / length;
+		return result(out, x * factor, y * factor);
+	}
+
+	/** Returns this point moved toward a target by at most a step.
+
+		The point reaches the target exactly. A step of 0 or less leaves the point where it is.
+		@param target  The point to move toward.
+		@param step  The most distance to move.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the target.
+		@return  The moved point. */
+	public function moveToward(target:Vector2, step:Float, ?out:Vector2):Vector2 {
+		var dx = real(target.x) - x, dy = real(target.y) - y;
+		var squared = dx * dx + dy * dy, step = real(step);
+		if (step <= 0)
+			return result(out, x, y);
+		if (squared <= step * step)
+			return result(out, target.x, target.y);
+		var distance = sqrt(squared);
+		return result(out, x + dx / distance * step, y + dy / distance * step);
+	}
+
+	/** Returns this direction bounced off a surface.
+
+		@param normal  The surface's normal, of length 1.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the normal.
+		@return  The reflected direction. */
+	public function reflect(normal:Vector2, ?out:Vector2):Vector2 {
+		var twice = 2 * dot(normal);
+		return result(out, x - normal.x * twice, y - normal.y * twice);
+	}
+
+	/** Returns this direction bent as light bends entering a surface.
+
+		@param normal  The surface's normal, of length 1.
+		@param ratio  The refractive index of what the direction leaves, over the index of what the direction enters.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector or the normal.
+		@return  The bent direction, or all 0 when the surface reflects the direction wholly. */
+	public function refract(normal:Vector2, ratio:Float, ?out:Vector2):Vector2 {
+		var along = dot(normal), ratio = real(ratio);
+		var root = 1 - ratio * ratio * (1 - along * along);
+		if (!(root >= 0))
+			return result(out, 0, 0);
+		var back = ratio * along + sqrt(root);
+		return result(out, ratio * x - back * normal.x, ratio * y - back * normal.y);
+	}
+
+	/** Returns the angle from this vector to another, in radians.
+
+		@param other  The other vector.
+		@return  The angle, -pi to pi: more than 0 when the other is turned from this one toward +y. */
+	public function angleTo(other:Vector2):Float
+		return atan2(cross(other), dot(other));
+
 	/** Gets the length. */
 	public var length(get, never):Float;
 
 	function get_length():Float
-		return Math.sqrt(lengthSquared);
+		return sqrt(lengthSquared);
 
 	/** Gets the length squared, which is quicker to find than the length and orders vectors alike. */
 	public var lengthSquared(get, never):Float;
@@ -160,7 +295,7 @@ class Vector2 {
 	public var angle(get, never):Float;
 
 	function get_angle():Float
-		return Trig.atan2(y, x);
+		return atan2(y, x);
 
 	/** Returns the dot product with another vector: the product of their lengths and the cosine of the angle between them.
 
@@ -182,7 +317,7 @@ class Vector2 {
 		@param other  The other vector.
 		@return  The distance. */
 	public function distance(other:Vector2):Float
-		return Math.sqrt(distanceSquared(other));
+		return sqrt(distanceSquared(other));
 
 	/** Returns the distance to another vector squared, which is quicker to find than the distance and orders distances alike.
 
@@ -196,10 +331,33 @@ class Vector2 {
 	/** Returns whether another vector is the same, within a tolerance on each coordinate.
 
 		@param other  The other vector.
-		@param tolerance  Optional. The most each coordinate may differ by; defaults to 0, exactly equal.
+		@param tolerance  Optional. The most each coordinate may differ by, multiplied by the larger coordinate's size when that size is
+			over 1; defaults to 0, exactly equal.
 		@return  True when every coordinate is within the tolerance. */
 	public function equals(other:Vector2, tolerance = 0.):Bool
-		return Math.abs(x - other.x) <= tolerance && Math.abs(y - other.y) <= tolerance;
+		return near(x, other.x, tolerance) && near(y, other.y, tolerance);
+
+	// hxcpp builds a Vector2 in place only while no instance method names another class, so each reaches these through a static,
+	// inlined on the other targets.
+	static #if !cpp inline #end function sqrt(value:Float):Float
+		return Math.sqrt(value);
+
+	static #if !cpp inline #end function sin(radians:Float):Float
+		return Trig.sin(radians);
+
+	static #if !cpp inline #end function cos(radians:Float):Float
+		return Trig.cos(radians);
+
+	static #if !cpp inline #end function atan2(y:Float, x:Float):Float
+		return Trig.atan2(y, x);
+
+	static #if !cpp inline #end function near(a:Float, b:Float, tolerance:Float):Bool
+		return Interpolate.equals(a, b, tolerance);
+
+	// A value kept between two bounds, the bounds swapped when they are in the wrong order (as Interpolate.clamp).
+	static inline function between(value:Float, min:Float, max:Float):Float {
+		return min <= max ? (value < min ? min : value > max ? max : value) : (value < max ? max : value > min ? min : value);
+	}
 
 	// The out filled with a result its inputs were read for first: a new vector when there is none.
 	static inline function result(out:Null<Vector2>, x:Float, y:Float):Vector2

@@ -1,6 +1,6 @@
 """core_62: raylib 6.2's pure core functions and raymath's QuaternionFromVector3ToVector3 against helix-raylib's. One list for both sides
 (shared/gen.py's syntax), printed by the helpers in ref.c.in and CoreBits62.hx.in: sha1 hashes n bytes of 'a' to 'z' over and over, b64
-decodes text, text prints a string and quat a quaternion.
+decodes text, text prints a string and quat a rotation, as the one of a quaternion and its negative.
 
 6.2's fixes: IsFileExtension matches an extension given without its dot (#5071), GetPrevDirectoryPath skips a separator at the end and
 takes a short path to its root (#6073), ComputeSHA1 pads with the whole length (#5397, #5957; 5.5's was wrong from 32 bytes),
@@ -16,7 +16,7 @@ PATHS = ['/a/b/c', '/a/b/', '/a', '/', 'abc', 'a/b', 'C:\\\\raylib\\\\', 'C:\\\\
 B64 = [('one', 'YQ=='), ('two', 'YWI='), ('three', 'YWJj'), ('text', 'aGVsbG8gd29ybGQ='), ('bad5', 'YWJjZ'), ('bad6', 'YWJjZA'),
        ('bad7', 'YWJjZGU'), ('stray', 'Y*Jj'), ('three9', 'YWJjYWJjYWJj')]
 VECTORS = [('unit', 'V3(1, 0, 0)', 'V3(0, 1, 0)'), ('scaled', 'V3(2, 0, 0)', 'V3(0, 0, 3)'), ('same', 'V3(0, 2, 0)', 'V3(0, 5, 0)'),
-           ('opposite', 'V3(1, 0, 0)', 'V3(-1, 0, 0)'), ('oppositez', 'V3(0, 0.5, 2)', 'V3(0, -1, -4)'), ('zero', 'V3(0, 0, 0)', 'V3(1, 0, 0)'),
+           ('opposite', 'V3(1, 0, 0)', 'V3(-1, 0, 0)'), ('oppositez', 'V3(0, 0.5, 2)', 'V3(0, -1, -4)'),
            ('slant', 'V3(1, 2, 3)', 'V3(-2, 0.5, 1)')]
 
 CASES = []

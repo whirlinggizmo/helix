@@ -636,9 +636,11 @@ function copy(?out:NPatchInfo):NPatchInfo
 
 *typedef* in [`engines/raylib/src/helix/raylib/Quaternion.hx`](../src/helix/raylib/Quaternion.hx), `import helix.raylib.Quaternion;`
 
-Represents raylib's `Quaternion`, the same type as `Vector4`.
+Represents raylib's `Quaternion`: a rotation in three dimensions. It is helix-math's `Quaternion`, so it has that type's operations too, each taking an out to fill. A new one is the identity.
 
-An alias of `Vector4`.
+A `Vector4` isn't one, as it is in C. Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+
+An alias of `Quaternion`.
 
 ## Ray
 
@@ -958,87 +960,33 @@ function copy(?out:Transform):Transform
 
 ## Vector2
 
-*class* in [`engines/raylib/src/helix/raylib/Vector2.hx`](../src/helix/raylib/Vector2.hx), `import helix.raylib.Vector2;`
+*typedef* in [`engines/raylib/src/helix/raylib/Vector2.hx`](../src/helix/raylib/Vector2.hx), `import helix.raylib.Vector2;`
 
-Represents raylib's `Vector2`: a point or a direction in two dimensions.
+Represents raylib's `Vector2`: a point or a direction in two dimensions. It is helix-math's `Vector2`, so it has that type's operations too, each taking an out to fill.
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?x:Float, ?y:Float}
-```
-
-```haxe
-var x:Float
-var y:Float
-function copy(?out:Vector2):Vector2
-```
-
-- `x`: Gets or sets the x component.
-- `y`: Gets or sets the y component.
-- `copy`: Returns a separate copy.
-  - `out`: Optional. The Vector2 to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+An alias of `Vector2`.
 
 ## Vector3
 
-*class* in [`engines/raylib/src/helix/raylib/Vector3.hx`](../src/helix/raylib/Vector3.hx), `import helix.raylib.Vector3;`
+*typedef* in [`engines/raylib/src/helix/raylib/Vector3.hx`](../src/helix/raylib/Vector3.hx), `import helix.raylib.Vector3;`
 
-Represents raylib's `Vector3`: a point or a direction in three dimensions.
+Represents raylib's `Vector3`: a point or a direction in three dimensions. It is helix-math's `Vector3`, so it has that type's operations too, each taking an out to fill.
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?x:Float, ?y:Float, ?z:Float}
-```
-
-```haxe
-var x:Float
-var y:Float
-var z:Float
-function copy(?out:Vector3):Vector3
-```
-
-- `x`: Gets or sets the x component.
-- `y`: Gets or sets the y component.
-- `z`: Gets or sets the z component.
-- `copy`: Returns a separate copy.
-  - `out`: Optional. The Vector3 to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+An alias of `Vector3`.
 
 ## Vector4
 
-*class* in [`engines/raylib/src/helix/raylib/Vector4.hx`](../src/helix/raylib/Vector4.hx), `import helix.raylib.Vector4;`
+*typedef* in [`engines/raylib/src/helix/raylib/Vector4.hx`](../src/helix/raylib/Vector4.hx), `import helix.raylib.Vector4;`
 
-Represents raylib's `Vector4`, also its `Quaternion`: four components.
+Represents raylib's `Vector4`: four components. It is helix-math's `Vector4`, so it has that type's operations too, each taking an out to fill. A `Quaternion` is a type of its own.
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
-```haxe
-{?x:Float, ?y:Float, ?z:Float, ?w:Float}
-```
-
-```haxe
-var x:Float
-var y:Float
-var z:Float
-var w:Float
-function copy(?out:Vector4):Vector4
-```
-
-- `x`: Gets or sets the x component.
-- `y`: Gets or sets the y component.
-- `z`: Gets or sets the z component.
-- `w`: Gets or sets the w component.
-- `copy`: Returns a separate copy.
-  - `out`: Optional. The Vector4 to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+An alias of `Vector4`.
 
 ## VrDeviceInfo
 

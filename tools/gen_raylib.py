@@ -279,6 +279,9 @@ class Function:
         values = f.get('v', '').split(':') if f.get('v') else [''] * len(names)
         self.params = []
         for name, kid, value in zip(names, kids[:-1], values + [''] * len(names)):
+            # The compiler wraps an optional parameter of a typedef's type in Null, which the ? already says.
+            if name.startswith('?') and kid.tag == 'x' and kid.get('path') == 'Null':
+                kid = kid[0]
             text = type_text(kid)
             written = f'{name.lstrip("?")}:{text} = {value}' if value else f'{name}:{text}'
             self.params.append((name.lstrip('?'), text, written, type_text(kid, True)))
@@ -357,7 +360,9 @@ def described(texts):
     sections = {}
     for name, _ in SECTIONS:
         functions = [Function(n) for n in classes[f'helix.raylib.modules.{name}']
-                     if n.get('set') == 'method' and n.get('static') == '1' and FUNCTION.fullmatch(n.tag)]
+                     # An inline function is described as get="inline", its set null.
+                     if (n.get('set') == 'method' or n.get('get') == 'inline') and n.find('f') is not None and n.get('static') == '1'
+                     and FUNCTION.fullmatch(n.tag)]
         sections[name] = sorted(functions, key=lambda f: f.line)
     own = {name: {} for name in texts}
     for path, field, line, is_macro in facade_fields:
