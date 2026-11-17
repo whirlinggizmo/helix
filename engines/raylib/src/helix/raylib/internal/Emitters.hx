@@ -17,7 +17,7 @@ import helix.raylib.extras.Emitter3D;
 @:access(helix.raylib.extras.Emitter3D)
 class Emitters {
 	/** The floats of a particle's slot, and where each is in it. */
-	public static inline final SLOT = 11;
+	public static inline final SLOT = 19;
 
 	public static inline final BORN = 0;
 	public static inline final LIFE = 1;
@@ -30,6 +30,14 @@ class Emitters {
 	public static inline final SCALE = 8;
 	public static inline final SPIN = 9;
 	public static inline final RANDOM = 10;
+	public static inline final PHASE = 11;
+	public static inline final OX = 12;
+	public static inline final OY = 13;
+	public static inline final OZ = 14;
+	public static inline final ORBIT = 15;
+	public static inline final AX = 16;
+	public static inline final AY = 17;
+	public static inline final AZ = 18;
 
 	/** The most keys and palette colors read. */
 	public static inline final MAX_KEYS = 8;
@@ -180,75 +188,65 @@ class Emitters {
 		return x > low ? (x < high ? x : high) : low;
 
 	// A particle born at a time and place, in the slot after the newest, the oldest's when every slot is taken; its offset, velocity,
-	// life, size, spin and tint from the emitter's birth fields.
+	// life, size, spin, phase and tint from the emitter's birth fields.
 	static function birth(e:Emitter, when:Float, x:Float, y:Float, z:Float, flat:Bool):Void {
 		var e3:Null<Emitter3D> = flat ? null : cast e;
 		var e2:Null<Emitter2D> = flat ? cast e : null;
 		// Where around the position.
 		var shape:Int = flat ? cast e2.spawnShape : cast e3.spawnShape;
-		var ox = 0., oy = 0., oz = 0.;
-		var radius = e.spawnRadius > 0 ? e.spawnRadius : 0.;
-		if (shape == 1) {
-			ox = signed(e) * Math.abs(flat ? e2.spawnHalfSize.x : e3.spawnHalfSize.x);
-			oy = signed(e) * Math.abs(flat ? e2.spawnHalfSize.y : e3.spawnHalfSize.y);
-			if (!flat)
-				oz = signed(e) * Math.abs(e3.spawnHalfSize.z);
-		} else if (shape == 2) {
-			if (flat) {
-				var a = next(e) * TAU, r = Math.sqrt(next(e)) * radius;
-				ox = Trig.cos(a) * r;
-				oy = Trig.sin(a) * r;
-			} else {
-				var height = signed(e),
-					phi = next(e) * TAU,
-					r = Math.pow(next(e), 1 / 3) * radius;
-				var ring = Math.sqrt(1 - height * height > 0 ? 1 - height * height : 0);
-				ox = Trig.cos(phi) * ring * r;
-				oy = Trig.sin(phi) * ring * r;
-				oz = height * r;
-			}
+		half[0] = Math.abs(flat ? e2.spawnHalfSize.x : e3.spawnHalfSize.x);
+		half[1] = Math.abs(flat ? e2.spawnHalfSize.y : e3.spawnHalfSize.y);
+		half[2] = flat ? 0 : Math.abs(e3.spawnHalfSize.z);
+		offset[0] = offset[1] = offset[2] = 0;
+		if (shape == 1)
+			box(e, e.spawnShell, flat);
+		else if (shape == 2)
+			ellipsoid(e, e.spawnShell, flat);
+		// The velocity: its direction, of no length up, turned up to spread off it, its speed varied, and the emitter's own motion added.
+		var dx = flat ? e2.direction.x : e3.direction.x,
+			dy = flat ? e2.direction.y : e3.direction.y,
+			dz = flat ? 0 : e3.direction.z;
+		var length = Math.sqrt(dx * dx + dy * dy + dz * dz), vx = 0., vy = 0., vz = 0.;
+		if (!(length > 0)) {
+			dx = dz = 0;
+			dy = flat ? -1 : 1;
+			length = 1;
 		}
-		// The velocity: its direction turned up to spread off it, its speed varied, and the emitter's own motion added.
-		var dx = flat ? e2.velocity.x : e3.velocity.x,
-			dy = flat ? e2.velocity.y : e3.velocity.y,
-			dz = flat ? 0 : e3.velocity.z;
-		var speed = Math.sqrt(dx * dx + dy * dy + dz * dz), vx = 0., vy = 0., vz = 0.;
 		var spread = clamp(e.spread, 0, 180) * DEGREES;
-		if (speed > 0) {
-			dx /= speed;
-			dy /= speed;
-			dz /= speed;
-			if (flat) {
-				var a = signed(e) * spread, c = Trig.cos(a), s = Trig.sin(a);
-				vx = dx * c - dy * s;
-				vy = dx * s + dy * c;
-			} else {
-				// Two directions across it, from a helper not along it, then a turn off it up to spread, around it at random, evenly over
-				// the cone's cap.
-				var hx = Math.abs(dy) < .9 ? 0. : 1.,
-					hy = Math.abs(dy) < .9 ? 1. : 0.;
-				var px = -dz * hy, py = dz * hx, pz = dx * hy - dy * hx;
-				var pl = Math.sqrt(px * px + py * py + pz * pz);
-				px /= pl;
-				py /= pl;
-				pz /= pl;
-				var qx = dy * pz - dz * py,
-					qy = dz * px - dx * pz,
-					qz = dx * py - dy * px;
-				var around = next(e) * TAU,
-					co = 1 - next(e) * (1 - Trig.cos(spread));
-				var so = Math.sqrt(1 - co * co > 0 ? 1 - co * co : 0),
-					ca = Trig.cos(around),
-					sa = Trig.sin(around);
-				vx = dx * co + (px * ca + qx * sa) * so;
-				vy = dy * co + (py * ca + qy * sa) * so;
-				vz = dz * co + (pz * ca + qz * sa) * so;
-			}
-			var v = speed * (1 + signed(e) * clamp(e.speedVariance, 0, 1));
-			vx *= v;
-			vy *= v;
-			vz *= v;
+		dx /= length;
+		dy /= length;
+		dz /= length;
+		if (flat) {
+			var a = signed(e) * spread, c = Trig.cos(a), s = Trig.sin(a);
+			vx = dx * c - dy * s;
+			vy = dx * s + dy * c;
+		} else {
+			// Two directions across it, from a helper not along it, then a turn off it up to spread, around it at random, evenly over the
+			// cone's cap.
+			var hx = Math.abs(dy) < .9 ? 0. : 1.,
+				hy = Math.abs(dy) < .9 ? 1. : 0.;
+			var px = -dz * hy, py = dz * hx, pz = dx * hy - dy * hx;
+			var pl = Math.sqrt(px * px + py * py + pz * pz);
+			px /= pl;
+			py /= pl;
+			pz /= pl;
+			var qx = dy * pz - dz * py,
+				qy = dz * px - dx * pz,
+				qz = dx * py - dy * px;
+			var around = next(e) * TAU,
+				co = 1 - next(e) * (1 - Trig.cos(spread));
+			var so = Math.sqrt(1 - co * co > 0 ? 1 - co * co : 0),
+				ca = Trig.cos(around),
+				sa = Trig.sin(around);
+			vx = dx * co + (px * ca + qx * sa) * so;
+			vy = dy * co + (py * ca + qy * sa) * so;
+			vz = dz * co + (pz * ca + qz * sa) * so;
 		}
+		var v = (e.speed > 0 ? e.speed : 0) * (1 + signed(e) * clamp(e.speedVariance, 0, 1));
+		vx *= v;
+		vy *= v;
+		vz *= v;
+		var ox = offset[0], oy = offset[1], oz = offset[2];
 		var inherit = clamp(e.inheritVelocity, 0, 1);
 		vx += e.moveX * inherit;
 		vy += e.moveY * inherit;
@@ -258,7 +256,10 @@ class Emitters {
 		var scale = 1 + signed(e) * clamp(e.sizeVariance, 0, 1);
 		var slow = e.minSpin, fast = e.maxSpin > slow ? e.maxSpin : slow;
 		var spin = (slow + (fast - slow) * next(e)) * DEGREES;
-		var random = next(e);
+		var random = next(e), phase = next(e);
+		var slowOrbit = e.minOrbit,
+			fastOrbit = e.maxOrbit > slowOrbit ? e.maxOrbit : slowOrbit;
+		var orbit = (slowOrbit + (fastOrbit - slowOrbit) * next(e)) * DEGREES;
 		var colors = e.palette.length < MAX_KEYS ? e.palette.length : MAX_KEYS;
 		var tint = 0xffffffff;
 		if (colors > 0) {
@@ -282,7 +283,118 @@ class Emitters {
 		s[at + SCALE] = scale;
 		s[at + SPIN] = spin;
 		s[at + RANDOM] = random;
+		s[at + PHASE] = phase;
+		s[at + OX] = ox;
+		s[at + OY] = oy;
+		s[at + OZ] = flat ? 0 : oz;
+		s[at + ORBIT] = orbit;
+		s[at + AX] = flat ? 0 : dx;
+		s[at + AY] = flat ? 0 : dy;
+		s[at + AZ] = flat ? 0 : dz;
 		e.tints[slot] = tint;
+	}
+
+	// The spawn shape's half sizes, read at a birth, and the offset a shape gives it.
+	static final half:Array<Float> = [0, 0, 0];
+	static final offset:Array<Float> = [0, 0, 0];
+	// The axes of the half sizes over 0, and their count: the shape's own dimensions.
+	static final axes:Array<Int> = [0, 0, 0];
+	static var axisCount = 0;
+
+	// Finds the axes whose half size is over 0.
+	static function findAxes():Void {
+		axisCount = 0;
+		for (i in 0...3)
+			if (half[i] > 0)
+				axes[axisCount++] = i;
+	}
+
+	// The most tries at a point over a curved surface, before the last tried is taken.
+	static inline final TRIES = 32;
+
+	// An offset in a box (a rectangle in 2D) of the half sizes, or on its surface: a face picked by its area (an edge by its length, an
+	// end of a line), then a point on it.
+	static function box(e:Emitter, shell:Bool, flat:Bool):Void {
+		for (i in 0...(flat ? 2 : 3))
+			offset[i] = signed(e) * half[i];
+		if (!shell)
+			return;
+		findAxes();
+		if (axisCount == 0)
+			return;
+		// Each face pair's area: the product of the full sizes across it, 1 for a line's ends.
+		var total = 0.;
+		for (k in 0...axisCount)
+			total += faceArea(k);
+		var pick = next(e) * total, side = next(e) < .5 ? -1 : 1;
+		for (k in 0...axisCount) {
+			var area = faceArea(k);
+			if (pick < area || k == axisCount - 1) {
+				offset[axes[k]] = side * half[axes[k]];
+				return;
+			}
+			pick -= area;
+		}
+	}
+
+	static function faceArea(k:Int):Float {
+		var area = 1.;
+		for (j in 0...axisCount)
+			if (j != k)
+				area *= 2 * half[axes[j]];
+		return area;
+	}
+
+	// An offset in an ellipsoid (an ellipse in 2D) of the half sizes as radii, or on its surface: a ball of the shape's dimensions
+	// stretched to them, inside; on the surface, a point of the unit sphere (circle) kept as often as the stretched surface's area there.
+	static function ellipsoid(e:Emitter, shell:Bool, flat:Bool):Void {
+		findAxes();
+		if (axisCount == 0)
+			return;
+		var a = half[axes[0]],
+			b = axisCount > 1 ? half[axes[1]] : 0.,
+			c = axisCount > 2 ? half[axes[2]] : 0.;
+		if (axisCount == 1) {
+			offset[axes[0]] = (shell ? (next(e) < .5 ? -1 : 1) : signed(e)) * a;
+			return;
+		}
+		if (axisCount == 2) {
+			var angle = 0., r = 1.;
+			if (shell) {
+				var most = a > b ? a : b;
+				for (_ in 0...TRIES) {
+					angle = next(e) * TAU;
+					var s = Trig.sin(angle), co = Trig.cos(angle);
+					if (next(e) * most <= Math.sqrt(a * a * s * s + b * b * co * co))
+						break;
+				}
+			} else {
+				angle = next(e) * TAU;
+				r = Math.sqrt(next(e));
+			}
+			offset[axes[0]] = Trig.cos(angle) * r * a;
+			offset[axes[1]] = Trig.sin(angle) * r * b;
+			return;
+		}
+		var ux = 0., uy = 0., uz = 0., r = 1.;
+		var most = Math.max(b * c, Math.max(a * c, a * b));
+		for (_ in 0...TRIES) {
+			var height = signed(e), phi = next(e) * TAU;
+			var ring = Math.sqrt(1 - height * height > 0 ? 1 - height * height : 0);
+			ux = Trig.cos(phi) * ring;
+			uy = Trig.sin(phi) * ring;
+			uz = height;
+			if (!shell)
+				break;
+			var bc = b * c * ux, ac = a * c * uy, ab = a * b * uz;
+			if (next(e) * most <= Math.sqrt(bc * bc + ac * ac + ab * ab))
+				break;
+		}
+		if (!shell)
+			r = Math.pow(next(e), 1 / 3);
+		offset[axes[0]] = ux * r * a;
+		offset[axes[1]] = uy * r * b;
+		offset[axes[2]] = uz * r * c;
 	}
 
 	// Moves a 2D emitter's particles alive over a time, each by the part of it since its birth: gravity, then drag.
@@ -321,49 +433,94 @@ class Emitters {
 		return .6 * Trig.sin(turn + first) + .4 * Trig.sin(2.3 * turn + second) - .6 * Trig.sin(first) - .4 * Trig.sin(second);
 	}
 
+	/** Returns how far a 2D particle's orbit has moved it along one axis: its offset from where the emitter was at its birth, turned
+		clockwise on screen by an angle, less the offset.
+
+		@param ox  The offset across, in pixels.
+		@param oy  The offset down.
+		@param angle  The angle, in radians.
+		@param axis  0 across, 1 down. */
+	public static function orbited(ox:Float, oy:Float, angle:Float, axis:Int):Float {
+		var c = Trig.cos(angle), s = Trig.sin(angle);
+		return axis == 0 ? ox * c - oy * s - ox : ox * s + oy * c - oy;
+	}
+
 	static inline function fraction(x:Float):Float
 		return x - Math.ffloor(x);
 
-	/** The size curve read for a draw: its points' times and sizes, startSize first and endSize last, and their count. */
-	public static final sizeTimes:Array<Float> = [for (_ in 0...MAX_KEYS + 2) 0.];
+	/** The size curve read for a draw: its keys' times and sizes, in order of time, and their count. */
+	public static final sizeTimes:Array<Float> = [for (_ in 0...MAX_KEYS) 0.];
 
-	public static final sizeValues:Array<Float> = [for (_ in 0...MAX_KEYS + 2) 0.];
+	public static final sizeValues:Array<Float> = [for (_ in 0...MAX_KEYS) 0.];
 	public static var sizeCount = 0;
 
-	/** The color curve read for a draw: its points' times and colors, startColor first and endColor last, and their count. */
-	public static final colorTimes:Array<Float> = [for (_ in 0...MAX_KEYS + 2) 0.];
+	/** The color curve read for a draw: its keys' times and colors, in order of time, and their count. */
+	public static final colorTimes:Array<Float> = [for (_ in 0...MAX_KEYS) 0.];
 
-	public static final colorValues:Array<Int> = [for (_ in 0...MAX_KEYS + 2) 0];
+	public static final colorValues:Array<Int> = [for (_ in 0...MAX_KEYS) 0];
 	public static var colorCount = 0;
 
-	/** Reads an emitter's size and color curves into `sizeTimes` and the rest: its keys, 8 at most, each time held to 0 to 1, between its
-		start and end.
+	/** Reads an emitter's size and color keys into `sizeTimes` and the rest: its first 8 keys, each time held to 0 to 1, sorted by time,
+		those of one time in the list's order. No keys read as the default's: a 3D emitter's size 0.25 or a 2D emitter's 16, and white
+		fading to clear.
 
-		@param e  The emitter. */
-	public static function readCurves(e:Emitter):Void {
-		var keys = e.sizeKeys.length < MAX_KEYS ? e.sizeKeys.length : MAX_KEYS;
-		sizeTimes[0] = 0;
-		sizeValues[0] = e.startSize;
-		for (i in 0...keys) {
-			sizeTimes[i + 1] = clamp(e.sizeKeys[i].at, 0, 1);
-			sizeValues[i + 1] = e.sizeKeys[i].size;
+		@param e  The emitter.
+		@param flat  Whether it is a 2D emitter. */
+	public static function readCurves(e:Emitter, flat:Bool):Void {
+		var keys = e.sizeKeys == null ? 0 : e.sizeKeys.length < MAX_KEYS ? e.sizeKeys.length : MAX_KEYS;
+		if (keys == 0) {
+			sizeTimes[0] = 0;
+			sizeValues[0] = flat ? 16 : 0.25;
+			sizeCount = 1;
+		} else {
+			for (i in 0...keys) {
+				var t = clamp(e.sizeKeys[i].at, 0, 1), v = e.sizeKeys[i].size, j = i;
+				// Inserted in order of time, after those of the same time.
+				while (j > 0 && sizeTimes[j - 1] > t) {
+					sizeTimes[j] = sizeTimes[j - 1];
+					sizeValues[j] = sizeValues[j - 1];
+					j--;
+				}
+				sizeTimes[j] = t;
+				sizeValues[j] = v;
+			}
+			sizeCount = keys;
 		}
-		sizeTimes[keys + 1] = 1;
-		sizeValues[keys + 1] = e.endSize;
-		sizeCount = keys + 2;
-		keys = e.colorKeys.length < MAX_KEYS ? e.colorKeys.length : MAX_KEYS;
-		colorTimes[0] = 0;
-		colorValues[0] = cast e.startColor;
-		for (i in 0...keys) {
-			colorTimes[i + 1] = clamp(e.colorKeys[i].at, 0, 1);
-			colorValues[i + 1] = cast e.colorKeys[i].color;
+		keys = e.colorKeys == null ? 0 : e.colorKeys.length < MAX_KEYS ? e.colorKeys.length : MAX_KEYS;
+		if (keys == 0) {
+			colorTimes[0] = 0;
+			colorValues[0] = 0xffffffff;
+			colorTimes[1] = 1;
+			colorValues[1] = 0x00ffffff;
+			colorCount = 2;
+			return;
 		}
-		colorTimes[keys + 1] = 1;
-		colorValues[keys + 1] = cast e.endColor;
-		colorCount = keys + 2;
+		for (i in 0...keys) {
+			var t = clamp(e.colorKeys[i].at, 0, 1), v:Int = cast e.colorKeys[i].color, j = i;
+			while (j > 0 && colorTimes[j - 1] > t) {
+				colorTimes[j] = colorTimes[j - 1];
+				colorValues[j] = colorValues[j - 1];
+				j--;
+			}
+			colorTimes[j] = t;
+			colorValues[j] = v;
+		}
+		colorCount = keys;
 	}
 
-	/** Returns the size curve at a point of a life: its first point's size before it, its last's after, and between two points the line
+	/** Returns how much of a particle's alpha its pulse leaves at an age: 1 at the beat's high point, 1 less `pulseDepth` at its low.
+
+		@param e  The emitter.
+		@param phase  The particle's phase, 0 to 1.
+		@param age  Its age, in seconds. */
+	public static function pulseAt(e:Emitter, phase:Float, age:Float):Float {
+		if (!(e.pulseRate > 0))
+			return 1;
+		var depth = clamp(e.pulseDepth, 0, 1);
+		return 1 - depth * (.5 + .5 * Trig.sin(TAU * fraction(e.pulseRate * age + phase)));
+	}
+
+	/** Returns the size curve at a point of a life: its first key's size before it, its last's after, and between two keys the line
 		between them.
 
 		@param t  The point, 0 at birth to 1 at death. */
@@ -483,7 +640,7 @@ class Emitters {
 		var mode = frame.blendMode;
 		if (e.blendMode != mode)
 			@:privateAccess helix.raylib.modules.RCore.BeginBlendMode(e.blendMode);
-		readCurves(e);
+		readCurves(e, true);
 		sourceOf(e, texture, part);
 		var handle = Textures.handle(texture.id);
 		var columns = e.frameColumns > 1 ? e.frameColumns : 1,
@@ -508,10 +665,15 @@ class Emitters {
 			var r = mix(color, tint, 0),
 				g = mix(color, tint, 8),
 				b = mix(color, tint, 16),
-				a = mix(color, tint, 24);
+				a = Math.round(mix(color, tint, 24) * pulseAt(e, s[at + PHASE], age));
 			if (a == 0)
 				continue;
 			var x = s[at + X], y = s[at + Y], vx = s[at + VX], vy = s[at + VY];
+			if (s[at + ORBIT] != 0) {
+				var angle = s[at + ORBIT] * age;
+				x += orbited(s[at + OX], s[at + OY], angle, 0);
+				y += orbited(s[at + OX], s[at + OY], angle, 1);
+			}
 			if (wander > 0) {
 				var turn = TAU * wanderRate * age;
 				x += wander * Emitters.wander(s[at + RANDOM], 0, turn);

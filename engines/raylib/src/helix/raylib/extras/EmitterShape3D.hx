@@ -5,9 +5,9 @@ enum abstract EmitterShape3D(Int) {
 	/** At the position itself. */
 	var Point;
 
-	/** Anywhere in a box, `spawnHalfSize` to each side. */
+	/** In a box, `spawnHalfSize` to each side, or on its surface with `spawnShell`. */
 	var Box;
 
-	/** Anywhere in a sphere of `spawnRadius`. */
-	var Sphere;
+	/** In an ellipsoid of radii `spawnHalfSize`, or on its surface with `spawnShell`. */
+	var Ellipsoid;
 }

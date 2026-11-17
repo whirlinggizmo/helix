@@ -8,8 +8,8 @@ class Emitter3D extends Emitter {
 	/** Gets or sets where the emitter is, in world units. `UpdateEmitter3D` gives birth along the way from where it was. */
 	public var position:Vector3 = new Vector3(0, 0, 0);
 
-	/** Gets or sets the direction and speed particles are born with, in units a second: 1 a second upward by default. */
-	public var velocity:Vector3 = new Vector3(0, 1, 0);
+	/** Gets or sets the direction particles are born moving in, its length ignored: up by default. A direction of no length is up. */
+	public var direction:Vector3 = new Vector3(0, 1, 0);
 
 	/** Gets or sets the acceleration every particle feels, in units a second squared: none by default. `(0, -9.8, 0)` for falling
 		sparks. */
@@ -18,7 +18,8 @@ class Emitter3D extends Emitter {
 	/** Gets or sets where around the position particles are born: `Point` by default. */
 	public var spawnShape:EmitterShape3D = Point;
 
-	/** Gets or sets the half width, height and depth of a `Box` spawn shape, in world units: 0 by default. */
+	/** Gets or sets the half width, height and depth of a `Box` spawn shape, or the radii of an `Ellipsoid` across, up and through, in
+		world units: 0 by default. A half size of 0 flattens the shape. */
 	public var spawnHalfSize:Vector3 = new Vector3(0, 0, 0);
 
 	/** Gets or sets whether the scene's lights (the Lighting extra) light the particles, each by the lights at its place: false by
@@ -29,7 +30,7 @@ class Emitter3D extends Emitter {
 		ignored. Ignored unless `lit`. */
 	public var ambient:Color = new Color(26, 26, 26, 255);
 
-	// The particles' records on the GPU (helix.raylib.internal.EmitterDraws): a data texture of four texels a particle, the bytes it is
+	// The particles' records on the GPU (helix.raylib.internal.EmitterDraws): a data texture of six texels a particle, the bytes it is
 	// written from, the instances' numbers (a static buffer of 0 to capacity - 1, one float each), the draw's buffers, the graphics they
 	// were made on, and the clock their birth times count from.
 	var records = 0;
@@ -42,7 +43,7 @@ class Emitter3D extends Emitter {
 	function new(maxParticles:Int) {
 		// The records' texture holds 256 particles a row, 2048 rows at most, as every WebGL2 allows.
 		super(maxParticles > 524288 ? 524288 : maxParticles);
-		startSize = 0.25;
-		endSize = 0.25;
+		speed = 1;
+		sizeKeys = [{at: 0, size: 0.25}, {at: 1, size: 0.25}];
 	}
 }

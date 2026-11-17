@@ -1,8 +1,9 @@
 #version 330
 // helix-raylib's particle vertex stage (the Particles extra's 3D emitters): an emitter's particles drawn as instances of one quad facing
-// the camera, each worked out from its age. A particle's record is four texels of particleRecords, 256 particles a row, written once at
-// its birth: where (xyz) and when (w) it was born; its velocity (xyz) and life (w); its size scale, its spin in radians a second and a
-// random number from 0 to 1; and its tint.
+// the camera, each worked out from its age. A particle's record is six texels of particleRecords, 256 particles a row, written once at
+// its birth: where (xyz) and when (w) it was born; its velocity (xyz) and life (w); its size scale, its spin in radians a second, a
+// random number from 0 to 1 and its pulse's phase from 0 to 1; its tint; its offset from where the emitter was (xyz) and its orbit in
+// radians a second (w); and the axis it orbits (xyz).
 in float spriteCorner;
 in float particleIndex;
 out vec2 fragTexCoord;
@@ -22,22 +23,22 @@ uniform vec4 particleGravity;
 uniform vec4 particleFrames;
 // The texture's part drawn: u0, v0, u1, v1.
 uniform vec4 particleSource;
-// x: the size points; y: the color points.
+// x: the size keys; y: the color keys; z: the pulse's beats a second; w: how far the pulse takes the alpha down.
 uniform vec4 particleCounts;
 // The sizes over a life, in order: x when, 0 to 1, and y the size; the colors, and when each is.
-uniform vec4 particleSizes[10];
-uniform vec4 particleColorTimes[10];
-uniform vec4 particleColors[10];
+uniform vec4 particleSizes[8];
+uniform vec4 particleColorTimes[8];
+uniform vec4 particleColors[8];
 
 vec4 particleRecord(int slot, int texel) {
-    return texelFetch(particleRecords, ivec2(slot % 256 * 4 + texel, slot / 256), 0);
+    return texelFetch(particleRecords, ivec2(slot % 256 * 6 + texel, slot / 256), 0);
 }
 
-// A curve at t: its first point's value before it, its last's after, and between two points the line between them.
+// A curve at t: its first key's value before it, its last's after, and between two keys the line between them.
 float particleSizeAt(float t) {
     int n = int(particleCounts.x + 0.5);
     float value = particleSizes[0].y;
-    for (int i = 1; i < 10; i++) {
+    for (int i = 1; i < 8; i++) {
         if (i >= n)
             break;
         vec4 a = particleSizes[i - 1];
@@ -56,7 +57,7 @@ float particleSizeAt(float t) {
 vec4 particleColorAt(float t) {
     int n = int(particleCounts.y + 0.5);
     vec4 value = particleColors[0];
-    for (int i = 1; i < 10; i++) {
+    for (int i = 1; i < 8; i++) {
         if (i >= n)
             break;
         float a = particleColorTimes[i - 1].x;
@@ -79,6 +80,7 @@ void main() {
     vec4 motion = particleRecord(slot, 1);
     vec4 shape = particleRecord(slot, 2);
     vec4 tint = particleRecord(slot, 3);
+    vec4 orbit = particleRecord(slot, 4);
     float age = particleClock.x - born.w;
     float t = motion.w > 0.0 ? age/motion.w : 1.0;
     if (age < 0.0 || t >= 1.0) {
@@ -102,6 +104,16 @@ void main() {
     } else {
         position = born.xyz + motion.xyz*age + 0.5*gravity*age*age;
         velocity = motion.xyz + gravity*age;
+    }
+    // Its orbit: its offset from where the emitter was, turned about the axis counterclockwise as seen from where the axis points,
+    // in place of the offset as born.
+    if (orbit.w != 0.0) {
+        vec3 axis = particleRecord(slot, 5).xyz;
+        float turn = orbit.w*age;
+        float c = cos(turn);
+        float s = sin(turn);
+        vec3 turned = orbit.xyz*c + cross(axis, orbit.xyz)*s + axis*dot(axis, orbit.xyz)*(1.0 - c);
+        position += turned - orbit.xyz;
     }
     // A smooth wandering course off its path, starting at its path.
     if (particleClock.w > 0.0) {
@@ -147,6 +159,9 @@ void main() {
     vec2 low = particleSource.xy + cell*vec2(mod(frame, cells.x), floor(frame/cells.x));
     fragTexCoord = vec2(corner < 2 ? low.x : low.x + cell.x, (corner == 0 || corner == 3) ? low.y : low.y + cell.y);
     fragColor = particleColorAt(t)*tint;
+    // The pulse: the alpha down by up to its depth, on the particle's own phase.
+    if (particleCounts.z > 0.0)
+        fragColor.a *= 1.0 - particleCounts.w*(0.5 + 0.5*sin(6.2831853*fract(particleCounts.z*age + shape.w)));
     fragPosition = center;
     gl_Position = mvp*vec4(position + right*(at.x*along) + up*(at.y*size), 1.0);
 }

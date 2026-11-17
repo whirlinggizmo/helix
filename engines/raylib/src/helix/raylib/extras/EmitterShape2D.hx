@@ -5,9 +5,9 @@ enum abstract EmitterShape2D(Int) {
 	/** At the position itself. */
 	var Point;
 
-	/** Anywhere in a rectangle, `spawnHalfSize` to each side. */
+	/** In a rectangle, `spawnHalfSize` to each side, or on its outline with `spawnShell`. */
 	var Rectangle;
 
-	/** Anywhere in a circle of `spawnRadius`. */
-	var Circle;
+	/** In an ellipse of radii `spawnHalfSize`, or on its outline with `spawnShell`. */
+	var Ellipse;
 }

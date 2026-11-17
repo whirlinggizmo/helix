@@ -1,5 +1,5 @@
 {
- "commit": "ee42ebd 2026-11-16",
+ "commit": "978a32c 2026-11-18",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -1123,9 +1123,9 @@
    },
    "11-everything": {
     "adds": "everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6 and helix.raylib.extras a program can call, and every file reader",
-    "raw": 2038026,
-    "gzip": 358487,
-    "brotli": 273687,
+    "raw": 2047485,
+    "gzip": 361218,
+    "brotli": 275036,
     "packages": {
      "formats": 132130,
      "raylib/RTextures": 117033,
@@ -1141,7 +1141,7 @@
      "haxe metadata": 49110,
      "math": 47754,
      "raylib/RMath": 45393,
-     "raylib/EmitterDraws": 39508,
+     "raylib/EmitterDraws": 41532,
      "raylib/Shadows": 36613,
      "services/images": 35514,
      "services/input": 33841,
@@ -1153,14 +1153,14 @@
      "raylib/Runtime": 25983,
      "std/haxe": 25911,
      "raylib/FrameConverter": 25800,
+     "raylib/Emitters": 25128,
      "raylib/Models": 24705,
-     "raylib": 23818,
+     "raylib": 24102,
      "raylib/Pixels": 19805,
      "geometry": 19254,
      "raylib/Automation": 19196,
      "raylib/RDebug": 18482,
      "services/assets": 18406,
-     "raylib/Emitters": 17977,
      "raylib/RFilesAsync": 17957,
      "raylib/Textures": 17925,
      "raylib/ParShapes": 17825,

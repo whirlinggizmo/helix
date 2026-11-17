@@ -12,19 +12,20 @@ class Main {
 		var sparks = LoadEmitter2D(1024);
 		sparks.position = new Vector2(400, 200);
 		sparks.rate = 500;
-		sparks.velocity = new Vector2(0, -260);
+		sparks.speed = 260;
 		sparks.spread = 180;
 		sparks.speedVariance = 0.6;
 		sparks.gravity = new Vector2(0, 420);
 		sparks.drag = 0.8;
 		sparks.minLife = 0.4;
 		sparks.maxLife = 0.9;
-		sparks.startSize = 5;
-		sparks.endSize = 2;
+		sparks.sizeKeys = [{at: 0, size: 5}, {at: 1, size: 2}];
 		sparks.stretch = 0.03;
-		sparks.startColor = new Color(255, 255, 230, 255);
-		sparks.colorKeys = [{at: 0.3, color: new Color(255, 200, 60, 255)}];
-		sparks.endColor = new Color(220, 40, 10, 0);
+		sparks.colorKeys = [
+			{at: 0, color: new Color(255, 255, 230, 255)},
+			{at: 0.3, color: new Color(255, 200, 60, 255)},
+			{at: 1, color: new Color(220, 40, 10, 0)}
+		];
 		sparks.blendMode = BLEND_ADDITIVE;
 		PrewarmEmitter2D(sparks, 1);
 		while (!WindowShouldClose()) {

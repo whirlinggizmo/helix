@@ -6,8 +6,9 @@ import helix.platform.VertexBuffer;
 import helix.raylib.extras.Emitter3D;
 import helix.services.shaders.ShaderUniform;
 
-/** Draws the Particles extra's 3D emitters on the GPU: each emitter's births as a data texture of records, four texels a particle (where
-	and when it was born, its velocity and life, its size scale, spin and random number, its tint), written when particles are born, and
+/** Draws the Particles extra's 3D emitters on the GPU: each emitter's births as a data texture of records, six texels a particle (where
+	and when it was born, its velocity and life, its size scale, spin, random number and phase, its tint, its offset from the emitter
+	and its orbit, the axis it orbits), written when particles are born, and
 	one instanced draw of a quad an emitter (`Frame.quads`) through the particle shader, which works each particle out from its age.
 
 	The unlit and lit programs are made by the first draw of each. Linked by `DrawEmitter3D` alone. */
@@ -18,7 +19,7 @@ class EmitterDraws {
 	/** The particles a row of the records' texture holds, and its width in texels. */
 	static inline final ROW = 256;
 
-	static inline final WIDTH = ROW * 4;
+	static inline final WIDTH = ROW * 6;
 
 	/** How far a 3D emitter's clock runs from the time its records count from before they count from a later one, in seconds, so a
 		record's 32-bit birth time stays fine. */
@@ -179,7 +180,7 @@ class EmitterDraws {
 		for (k in 0...count) {
 			var slot = (e.head - count + k + n) % n,
 				at = slot * Emitters.SLOT,
-				to = ((slot % ROW) * 4 + Std.int(slot / ROW) * WIDTH) * 16;
+				to = ((slot % ROW) * 6 + Std.int(slot / ROW) * WIDTH) * 16;
 			bytes.setFloat(to, s[at + Emitters.X]);
 			bytes.setFloat(to + 4, s[at + Emitters.Y]);
 			bytes.setFloat(to + 8, s[at + Emitters.Z]);
@@ -191,12 +192,20 @@ class EmitterDraws {
 			bytes.setFloat(to + 32, s[at + Emitters.SCALE]);
 			bytes.setFloat(to + 36, s[at + Emitters.SPIN]);
 			bytes.setFloat(to + 40, s[at + Emitters.RANDOM]);
-			bytes.setFloat(to + 44, 0);
+			bytes.setFloat(to + 44, s[at + Emitters.PHASE]);
 			var tint = e.tints[slot];
 			bytes.setFloat(to + 48, (tint & 255) / 255);
 			bytes.setFloat(to + 52, ((tint >>> 8) & 255) / 255);
 			bytes.setFloat(to + 56, ((tint >>> 16) & 255) / 255);
 			bytes.setFloat(to + 60, (tint >>> 24) / 255);
+			bytes.setFloat(to + 64, s[at + Emitters.OX]);
+			bytes.setFloat(to + 68, s[at + Emitters.OY]);
+			bytes.setFloat(to + 72, s[at + Emitters.OZ]);
+			bytes.setFloat(to + 76, s[at + Emitters.ORBIT]);
+			bytes.setFloat(to + 80, s[at + Emitters.AX]);
+			bytes.setFloat(to + 84, s[at + Emitters.AY]);
+			bytes.setFloat(to + 88, s[at + Emitters.AZ]);
+			bytes.setFloat(to + 92, 0);
 		}
 		e.fresh = 0;
 		graphics.updateTexture(e.records, 0, 0, WIDTH, Std.int((n + ROW - 1) / ROW), bytes);
@@ -225,8 +234,9 @@ class EmitterDraws {
 		values.writeVector(f[4], columns, rows, Emitters.framesOf(e), e.framesPerSecond > 0 ? e.framesPerSecond : 0);
 		Emitters.sourceOf(e, texture, part);
 		values.writeVector(f[5], part[0] / texture.width, part[1] / texture.height, (part[0] + part[2]) / texture.width, (part[1] + part[3]) / texture.height);
-		Emitters.readCurves(e);
-		values.writeVector(f[6], Emitters.sizeCount, Emitters.colorCount, 0, 0);
+		Emitters.readCurves(e, false);
+		values.writeVector(f[6], Emitters.sizeCount, Emitters.colorCount, e.pulseRate > 0 ? e.pulseRate : 0,
+			e.pulseDepth > 0 ? (e.pulseDepth < 1 ? e.pulseDepth : 1) : 0);
 		for (i in 0...Emitters.sizeCount)
 			values.writeVector(f[7], Emitters.sizeTimes[i], Emitters.sizeValues[i], 0, 0, i);
 		for (i in 0...Emitters.colorCount) {
@@ -262,12 +272,17 @@ class EmitterDraws {
 		var life = e.maxLife > e.minLife ? e.maxLife : e.minLife;
 		if (!(life > 0))
 			life = 0;
-		var v = e.velocity, g = e.gravity;
-		var speed = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) * 2 + Math.sqrt(e.moveX * e.moveX + e.moveY * e.moveY + e.moveZ * e.moveZ);
-		var reach = speed * life
+		var g = e.gravity, size = 0.;
+		for (k in 0...Emitters.sizeCount)
+			size = Math.max(size, Math.abs(Emitters.sizeValues[k]));
+		var speed = (e.speed > 0 ? e.speed : 0) * 2 + Math.sqrt(e.moveX * e.moveX + e.moveY * e.moveY + e.moveZ * e.moveZ);
+		var h = e.spawnHalfSize,
+			orbit = 2 * Math.max(Math.abs(h.x), Math.max(Math.abs(h.y), Math.abs(h.z)));
+		var reach = orbit
+			+ speed * life
 			+ Math.sqrt(g.x * g.x + g.y * g.y + g.z * g.z) * life * life / 2
 			+ Math.abs(e.wanderDistance)
-			+ Math.max(Math.abs(e.startSize), Math.abs(e.endSize));
+			+ size;
 		bounds.setFloat(0, lowX - reach);
 		bounds.setFloat(4, lowY - reach);
 		bounds.setFloat(8, lowZ - reach);

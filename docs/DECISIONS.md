@@ -1056,12 +1056,12 @@ Why things are the way they are, numbered, in order.
     `helix.raylib.extras.Particles` loads, updates, draws, bursts, prewarms, clears and unloads an `Emitter3D` and an `Emitter2D`, raylib's
     way: a function per action, `LoadEmitter3D` returning the emitter and `UnloadEmitter3D` freeing it. Their settings (`Emitter`, the
     two share) are public fields with their defaults, read where they're used and held to their ranges there, as the Lighting extra's
-    light fields are (CONVENTIONS: a property clamps). A field read at a particle's birth (life, spawn, velocity, size variance, spin,
-    palette) changes the particles born after it, and one read over a life (gravity, drag, wander, sizes, colors, texture, blend mode)
-    changes those alive. A new emitter gives off a small fountain of soft white dots that fade, so a program sees it work before it sets
+    light fields are (CONVENTIONS: a property clamps). A field read at a particle's birth (life, spawn, direction, speed, size variance,
+    spin, palette, the pulse's phase) changes the particles born after it, and one read over a life (gravity, drag, wander, sizes,
+    colors, the pulse, texture, blend mode) changes those alive. A new emitter gives off a small fountain of soft white dots that fade, so a program sees it work before it sets
     anything.
 
-    A 3D emitter's particles are records written once at their birth, four texels each of a data texture, and the vertex stage works
+    A 3D emitter's particles are records written once at their birth, six texels each of a data texture, and the vertex stage works
     each out from its age (gravity, drag, wander, size and color over its life, the flipbook), one instanced draw of a quad an emitter
     (`Frame.quads`), its particles facing the camera and writing no depth. A 2D emitter's particles move on the CPU, and each is a quad
     `Frame.quad` writes, as `DrawTexturePro` does, so they join the sprite batch and its runs. Births take their trigonometry from
@@ -1073,6 +1073,17 @@ Why things are the way they are, numbered, in order.
 
     Why: the Lanternholm port wrote its own particles (billboards moved on the CPU, about 200 lines), as a three.js program writes them
     too; raylib has none. Its API was agreed with the user as doc comments first (AGENTS.md: the spec is the authority).
+
+    The trial (docs/trials/2026-11-16-particles, three blind Sonnet entrants, each meeting the task) changed the API where the entrants
+    guessed otherwise. The spawn shapes are `Point`, `Box` and `Ellipsoid` in 3D and `Point`, `Rectangle` and `Ellipse` in 2D, every
+    shape sized by `spawnHalfSize` (an ellipsoid's radii as a box's half sizes), so `spawnRadius` is gone; a half size of 0 flattens a
+    shape, so a ring on the ground is an ellipsoid of height 0. `spawnShell` births on a shape's surface, spread by its area as it looks.
+    `pulseRate` and `pulseDepth` beat each particle's alpha on a phase of its own. `velocity` is `direction`, its length ignored, and
+    `speed`, as the entrants set a speed apart from where it points and `speedVariance` is a share of it. The size and color keys include
+    their ends, `startSize`, `endSize`, `startColor` and `endColor` gone: the entrants wrote keys at 0 and 1 and expected them used.
+    Keys out of order are read sorted. `minOrbit` and `maxOrbit` turn each particle around the emitter (in 3D the line along
+    `direction` through where the emitter was at its birth), as a cyclone or a tornado had no way to be made: spin turns a particle
+    about its own centre, and nothing moved one around the emitter.
 
     Rejected: an options struct passed to the load, which a program would rebuild to change one setting each frame (wind, a trail's
     color); setters, a method a setting, which the Lighting extra's light fields replaced for the same reason (`SetLightIntensity`

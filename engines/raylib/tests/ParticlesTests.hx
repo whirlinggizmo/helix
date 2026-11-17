@@ -31,8 +31,8 @@ class ParticlesTests {
 	}
 
 	// The hashes of the seeded runs, the same on every target.
-	static inline final SEEDED_3D = 1009943929;
-	static inline final SEEDED_2D = -1744048027;
+	static inline final SEEDED_3D = 1356949216;
+	static inline final SEEDED_2D = -695683687;
 
 	// A hash of numbers' bits, by shifts and exclusive ors alone, which every target computes alike.
 	static function hashOf(rows:Array<Array<Float>>, h:Int):Int {
@@ -115,21 +115,30 @@ class ParticlesTests {
 		// The defaults: a small fountain of soft white dots that fade.
 		var e = LoadEmitter3D(64);
 		check(e.particleCount == 0 && e.rate == 10 && e.minLife == 1 && e.maxLife == 1, "a new emitter: none alive, 10 a second, a second each");
-		check(e.spawnRadius == 0 && e.spread == 30 && e.speedVariance == 0 && e.inheritVelocity == 0 && e.drag == 0, "a new emitter's birth fields");
-		check(e.wanderDistance == 0 && e.wanderRate == 1 && e.startSize == 0.25 && e.endSize == 0.25 && e.sizeVariance == 0, "a 3D emitter's sizes");
-		check(bits(e.startColor) == bits(new Color(255, 255, 255, 255))
-			&& bits(e.endColor) == bits(new Color(255, 255, 255, 0)), "white, fading out");
-		check(e.sizeKeys.length == 0 && e.colorKeys.length == 0 && e.palette.length == 0 && e.texture == null && e.source == null, "no keys");
+		check(!e.spawnShell && e.speed == 1 && e.spread == 30 && e.speedVariance == 0 && e.inheritVelocity == 0 && e.drag == 0, "a new emitter's birth fields");
+		check(e.wanderDistance == 0 && e.wanderRate == 1 && e.sizeVariance == 0 && e.pulseRate == 0 && e.pulseDepth == 1, "no wander, no pulse");
+		check(e.sizeKeys.length == 2 && e.sizeKeys[0].at == 0 && e.sizeKeys[0].size == 0.25 && e.sizeKeys[1].at == 1 && e.sizeKeys[1].size == 0.25,
+			"a 3D emitter's sizes: 0.25 at both ends");
+		check(e.colorKeys.length == 2
+			&& e.colorKeys[0].at == 0
+			&& bits(e.colorKeys[0].color) == bits(new Color(255, 255, 255, 255))
+			&& e.colorKeys[1].at == 1
+			&& bits(e.colorKeys[1].color) == bits(new Color(255, 255, 255, 0)),
+			"white, fading out");
+		check(e.palette.length == 0 && e.texture == null && e.source == null, "no palette, the dot");
 		check(e.frameColumns == 1 && e.frameRows == 1 && e.frameCount == 0 && e.framesPerSecond == 0, "no flipbook");
 		check(e.minSpin == 0 && e.maxSpin == 0 && e.stretch == 0 && e.blendMode == BLEND_ALPHA && e.seed == 0 && !e.lit, "no spin, alpha");
 		check(e.position.x == 0
-			&& e.velocity.y == 1
+			&& e.direction.x == 0
+			&& e.direction.y == 1
+			&& e.direction.z == 0
 			&& e.gravity.y == 0
 			&& e.spawnShape == EmitterShape3D.Point
 			&& e.spawnHalfSize.x == 0,
 			"at the origin, 1 a second up");
 		var flat = LoadEmitter2D(64);
-		check(flat.startSize == 16 && flat.endSize == 16 && flat.velocity.x == 0 && flat.velocity.y == -60 && !flat.alignToMotion,
+		check(flat.sizeKeys[0].size == 16 && flat.sizeKeys[1].size == 16 && flat.direction.x == 0 && flat.direction.y == -1 && flat.speed == 60
+			&& !flat.alignToMotion,
 			"a 2D emitter: 16 pixels, 60 a second up the screen");
 		check(flat.spawnShape == EmitterShape2D.Point && flat.position.x == 0 && flat.gravity.y == 0, "a 2D emitter's place");
 
@@ -146,7 +155,7 @@ class ParticlesTests {
 		check(e.particleCount == 8 && e.clock == 2, 'no time passes: ${e.clock}');
 		// Along the way it moved: births spread evenly from where it was to where it is.
 		var moving = LoadEmitter3D(16);
-		moving.velocity.y = 0;
+		moving.speed = 0;
 		moving.rate = 40;
 		UpdateEmitter3D(moving, 0.1);
 		moving.position.x = 4;
@@ -185,8 +194,8 @@ class ParticlesTests {
 			x.speedVariance = 0.5;
 			x.minLife = 0.5;
 			x.maxLife = 2;
-			x.spawnShape = Sphere;
-			x.spawnRadius = 2;
+			x.spawnShape = Ellipsoid;
+			x.spawnHalfSize = new Vector3(2, 2, 2);
 			x.minSpin = -90;
 			x.maxSpin = 90;
 			x.sizeVariance = 0.5;
@@ -222,8 +231,8 @@ class ParticlesTests {
 		later.rate = 0;
 		later.spread = 0;
 		EmitParticles2D(later, 2);
-		later.velocity.x = 100;
-		later.velocity.y = 0;
+		later.direction = new Vector2(1, 0);
+		later.speed = 100;
 		EmitParticles2D(later, 2);
 		var born = alive(later);
 		check(born[0][Emitters.VX] == 0 && born[0][Emitters.VY] == -60 && born[3][Emitters.VX] == 100, "the velocity: the later births'");
@@ -257,7 +266,7 @@ class ParticlesTests {
 		range.sizeVariance = -1;
 		range.inheritVelocity = 5;
 		range.drag = -3;
-		range.velocity.y = -10;
+		range.speed = 10;
 		EmitParticles2D(range, 200);
 		for (p in alive(range)) {
 			check(p[Emitters.LIFE] == 2, "a longest life under the shortest is the shortest");
@@ -269,7 +278,7 @@ class ParticlesTests {
 		check(down > 50, 'a spread held to 180 throws them every way: $down down');
 		var inherit = LoadEmitter2D(8);
 		inherit.rate = 0;
-		inherit.velocity.y = 0;
+		inherit.speed = 0;
 		inherit.inheritVelocity = 5;
 		UpdateEmitter2D(inherit, 0.5);
 		inherit.position.x = 10;
@@ -284,15 +293,15 @@ class ParticlesTests {
 		UpdateEmitter2D(noDrag, 0.5);
 		near(alive(noDrag)[0][Emitters.VY], -60, "a drag under 0 is none");
 
-		// The size and color curves: start, keys, end; past 8 keys ignored.
+		// The size and color keys: the ends among them, the first's value before it and the last's after; past 8 keys ignored.
 		var curves = LoadEmitter2D(4);
-		curves.startSize = 2;
-		curves.endSize = 10;
-		curves.sizeKeys = [{at: 0.5, size: 20}];
-		curves.startColor = new Color(0, 0, 0, 255);
-		curves.endColor = new Color(200, 100, 0, 0);
-		curves.colorKeys = [{at: 0.25, color: new Color(100, 100, 100, 255)}];
-		Emitters.readCurves(curves);
+		curves.sizeKeys = [{at: 0, size: 2}, {at: 0.5, size: 20}, {at: 1, size: 10}];
+		curves.colorKeys = [
+			{at: 0, color: new Color(0, 0, 0, 255)},
+			{at: 0.25, color: new Color(100, 100, 100, 255)},
+			{at: 1, color: new Color(200, 100, 0, 0)}
+		];
+		Emitters.readCurves(curves, true);
 		near(Emitters.sizeAt(0), 2, "the size at birth");
 		near(Emitters.sizeAt(0.25), 11, "between birth and the key");
 		near(Emitters.sizeAt(0.5), 20, "at the key");
@@ -300,12 +309,242 @@ class ParticlesTests {
 		near(Emitters.sizeAt(1), 10, "at death");
 		check(Emitters.colorAt(0.125) == bits(new Color(50, 50, 50, 255)), "a color between birth and the key");
 		check(Emitters.colorAt(0.625) == bits(new Color(150, 100, 50, 128)), 'a color between the key and death');
+		// Keys inside the life: the first's value before it, the last's after.
+		curves.sizeKeys = [{at: 0.25, size: 4}, {at: 0.75, size: 8}];
+		Emitters.readCurves(curves, true);
+		near(Emitters.sizeAt(0), 4, "before the first key, the first's size");
+		near(Emitters.sizeAt(0.5), 6, "between the keys");
+		near(Emitters.sizeAt(1), 8, "after the last key, the last's size");
+		// One key: its value for the whole life.
+		curves.sizeKeys = [{at: 0.4, size: 7}];
+		curves.colorKeys = [{at: 0.9, color: ORANGE}];
+		Emitters.readCurves(curves, true);
+		check(Emitters.sizeAt(0) == 7 && Emitters.sizeAt(0.4) == 7 && Emitters.sizeAt(1) == 7, "one size key, one size");
+		check(Emitters.colorAt(0) == bits(ORANGE) && Emitters.colorAt(1) == bits(ORANGE), "one color key, one color");
+		// No keys: the default's.
+		curves.sizeKeys = [];
+		curves.colorKeys = [];
+		Emitters.readCurves(curves, true);
+		check(Emitters.sizeAt(0) == 16 && Emitters.sizeAt(1) == 16, "no size keys, a 2D emitter's 16");
+		check(Emitters.colorAt(0) == bits(new Color(255, 255, 255, 255)) && Emitters.colorAt(1) == bits(new Color(255, 255, 255, 0)),
+			"no color keys, white fading out");
+		Emitters.readCurves(LoadEmitter3D(1), false);
+		check(Emitters.sizeAt(0.5) == 0.25, "a 3D emitter's default, 0.25");
+		var empty3 = LoadEmitter3D(1);
+		empty3.sizeKeys = [];
+		Emitters.readCurves(empty3, false);
+		check(Emitters.sizeAt(0.5) == 0.25, "no size keys in 3D, 0.25");
+		// Keys out of order: read sorted, those of one time in the list's order.
+		curves.sizeKeys = [{at: 1, size: 10}, {at: 0.5, size: 20}, {at: 0, size: 2}];
+		curves.colorKeys = [{at: 1, color: BLUE}, {at: 0, color: RED}];
+		Emitters.readCurves(curves, true);
+		near(Emitters.sizeAt(0.25), 11, "out of order, read sorted");
+		near(Emitters.sizeAt(0.75), 15, "out of order, read sorted, after the middle");
+		check(Emitters.colorAt(0) == bits(RED) && Emitters.colorAt(1) == bits(BLUE), "colors out of order, read sorted");
+		curves.sizeKeys = [{at: 0.5, size: 1}, {at: 0.5, size: 3}];
+		Emitters.readCurves(curves, true);
+		check(Emitters.sizeTimes[0] == 0.5 && Emitters.sizeValues[0] == 1 && Emitters.sizeValues[1] == 3, "keys of one time in the list's order");
 		curves.sizeKeys = [for (i in 0...12) {at: i / 12, size: i}];
-		Emitters.readCurves(curves);
-		check(Emitters.sizeCount == 10, "8 size keys at most");
-		curves.sizeKeys = [{at: 2, size: 5}];
-		Emitters.readCurves(curves);
-		check(Emitters.sizeTimes[1] == 1, "a key's time held to 0 to 1");
+		Emitters.readCurves(curves, true);
+		check(Emitters.sizeCount == 8 && Emitters.sizeAt(1) == 7, "8 size keys at most, the first 8");
+		curves.sizeKeys = [{at: 2, size: 5}, {at: -1, size: 1}];
+		Emitters.readCurves(curves, true);
+		check(Emitters.sizeTimes[0] == 0 && Emitters.sizeTimes[1] == 1, "a key's time held to 0 to 1");
+		// Spawn shapes: inside a box and an ellipsoid of the half sizes, or on the surface with spawnShell; a half size of 0 flattens them.
+		function shaped(shape:EmitterShape3D, hx:Float, hy:Float, hz:Float, shell:Bool):Array<Array<Float>> {
+			var s = LoadEmitter3D(400);
+			s.rate = 0;
+			s.speed = 0;
+			s.seed = 3;
+			s.spawnShape = shape;
+			s.spawnHalfSize = new Vector3(hx, hy, hz);
+			s.spawnShell = shell;
+			EmitParticles3D(s, 400);
+			return alive(s);
+		}
+		function shaped2D(shape:EmitterShape2D, hx:Float, hy:Float, shell:Bool):Array<Array<Float>> {
+			var s = LoadEmitter2D(400);
+			s.rate = 0;
+			s.speed = 0;
+			s.seed = 3;
+			s.spawnShape = shape;
+			s.spawnHalfSize = new Vector2(hx, hy);
+			s.spawnShell = shell;
+			EmitParticles2D(s, 400);
+			return alive(s);
+		}
+		// How far each birth is from an ellipsoid's surface, by its radii: 1 on it.
+		function radial(p:Array<Float>, a:Float, b:Float, c:Float):Float {
+			var x = p[Emitters.X] / a,
+				y = p[Emitters.Y] / b,
+				z = c > 0 ? p[Emitters.Z] / c : 0;
+			return Math.sqrt(x * x + y * y + z * z);
+		}
+		var tolerance = 1e-9;
+		var inside = shaped(Ellipsoid, 3, 2, 1, false);
+		check([for (p in inside) if (radial(p, 3, 2, 1) > 1 + tolerance) p].length == 0, "inside the ellipsoid");
+		check([for (p in inside) if (radial(p, 3, 2, 1) < 0.5) p].length > 25, "throughout the ellipsoid");
+		var shell = shaped(Ellipsoid, 3, 2, 1, true);
+		check([for (p in shell) if (Math.abs(radial(p, 3, 2, 1) - 1) > 1e-6) p].length == 0, "on the ellipsoid's surface");
+		// Spread over the surface as it looks, by area: of 400, about 162 where |z| is over 0.7 of its radius, the broad faces, and about 90
+		// where |x| is, the narrow ends (the surface's areas there, integrated apart); a sphere's points stretched would give about 120 each.
+		var broad = [for (p in shell) if (Math.abs(p[Emitters.Z]) > 0.7) p].length,
+			ends = [for (p in shell) if (Math.abs(p[Emitters.X]) > 2.1) p].length;
+		check(Math.abs(broad - 162) < 30 && Math.abs(ends - 90) < 30, 'by area over the surface: $broad on the broad faces and $ends on the ends');
+		var ring = shaped(Ellipsoid, 3, 0, 2, true);
+		check([
+			for (p in ring)
+				if (p[Emitters.Y] != 0
+					|| Math.abs(Math.sqrt(Math.pow(p[Emitters.X] / 3, 2) + Math.pow(p[Emitters.Z] / 2, 2)) - 1) > 1e-6) p
+		].length == 0, "an ellipsoid of height 0 with a shell: a ring on the ground");
+		var disc = shaped(Ellipsoid, 3, 0, 2, false);
+		check([
+			for (p in disc)
+				if (p[Emitters.Y] != 0 || Math.pow(p[Emitters.X] / 3, 2) + Math.pow(p[Emitters.Z] / 2, 2) > 1 + tolerance) p
+		].length == 0 && [
+			for (p in disc)
+				if (Math.pow(p[Emitters.X] / 3, 2) + Math.pow(p[Emitters.Z] / 2, 2) < 0.25) p
+		].length > 50, "an ellipsoid of height 0: a flat ellipse on the ground, filled");
+		var line = shaped(Ellipsoid, 2, 0, 0, true);
+		check([
+			for (p in line)
+				if (Math.abs(p[Emitters.X]) != 2 || p[Emitters.Y] != 0 || p[Emitters.Z] != 0) p
+		].length == 0, "an ellipsoid of one radius, its ends");
+		var surface = shaped(Box, 2, 1, 0.5, true);
+		check([
+			for (p in surface)
+				if (Math.abs(Math.abs(p[Emitters.X]) - 2) > tolerance
+					&& Math.abs(Math.abs(p[Emitters.Y]) - 1) > tolerance
+					&& Math.abs(Math.abs(p[Emitters.Z]) - 0.5) > tolerance) p
+		].length == 0 && [
+			for (p in surface)
+				if (Math.abs(p[Emitters.X]) > 2 + tolerance
+					|| Math.abs(p[Emitters.Y]) > 1 + tolerance
+					|| Math.abs(p[Emitters.Z]) > 0.5 + tolerance) p
+		].length == 0, "on the box's faces");
+		// By area: the 4 x 2 faces (z) hold about 8 / 14 of them.
+		var zFaces = [for (p in surface) if (Math.abs(Math.abs(p[Emitters.Z]) - 0.5) <= tolerance) p].length;
+		check(zFaces > 180 && zFaces < 280, 'the faces by their area: $zFaces of 400 on the largest');
+		var outline = shaped(Box, 2, 0, 1, true);
+		check([
+			for (p in outline)
+				if (p[Emitters.Y] != 0
+					|| (Math.abs(Math.abs(p[Emitters.X]) - 2) > tolerance && Math.abs(Math.abs(p[Emitters.Z]) - 1) > tolerance)) p
+		].length == 0, "a box of height 0 with a shell: a rectangle's outline");
+		var flatBox = shaped(Box, 2, 0, 1, false);
+		check([for (p in flatBox) if (p[Emitters.Y] != 0) p].length == 0, "a box of height 0: flat");
+		var pointShell = shaped(Point, 2, 2, 2, true);
+		check([
+			for (p in pointShell)
+				if (p[Emitters.X] != 0 || p[Emitters.Y] != 0 || p[Emitters.Z] != 0) p
+		].length == 0, "a point ignores the shell");
+		var ellipse = shaped2D(Ellipse, 30, 10, true);
+		check([
+			for (p in ellipse)
+				if (Math.abs(Math.sqrt(Math.pow(p[Emitters.X] / 30, 2) + Math.pow(p[Emitters.Y] / 10, 2)) - 1) > 1e-6) p
+		].length == 0, "on the ellipse's outline");
+		var sides = [for (p in ellipse) if (Math.abs(p[Emitters.Y]) > 7) p].length;
+		check(sides > 200, 'spread along the outline as it looks, most on its long sides: $sides of 400');
+		var filled = shaped2D(Ellipse, 30, 10, false);
+		check([
+			for (p in filled)
+				if (Math.pow(p[Emitters.X] / 30, 2) + Math.pow(p[Emitters.Y] / 10, 2) > 1 + tolerance) p
+		].length == 0, "inside the ellipse");
+		var flatEllipse = shaped2D(Ellipse, 30, 0, false);
+		check([for (p in flatEllipse) if (p[Emitters.Y] != 0 || Math.abs(p[Emitters.X]) > 30) p].length == 0, "an ellipse of height 0: a line");
+		var rectangleOutline = shaped2D(EmitterShape2D.Rectangle, 30, 10, true);
+		check([
+			for (p in rectangleOutline)
+				if (Math.abs(Math.abs(p[Emitters.X]) - 30) > tolerance && Math.abs(Math.abs(p[Emitters.Y]) - 10) > tolerance) p
+		].length == 0, "a rectangle's outline");
+		var longSides = [
+			for (p in rectangleOutline)
+				if (Math.abs(Math.abs(p[Emitters.Y]) - 10) <= tolerance) p
+		].length;
+		check(longSides > 240 && longSides < 360, 'the outline by length: $longSides of 400 on the long sides');
+
+		// The direction: its length ignored; of no length, up.
+		var aimed = LoadEmitter3D(4);
+		aimed.rate = 0;
+		aimed.spread = 0;
+		aimed.direction = new Vector3(0, 0, 5);
+		aimed.speed = 3;
+		EmitParticles3D(aimed, 1);
+		aimed.direction = new Vector3(0, 0, 0);
+		EmitParticles3D(aimed, 1);
+		var thrown = alive(aimed);
+		near(thrown[0][Emitters.VZ], 3, "the direction's length ignored: speed 3 along it");
+		check(thrown[1][Emitters.VY] == 3 && thrown[1][Emitters.VX] == 0, "a direction of no length is up");
+		var aimed2 = LoadEmitter2D(4);
+		aimed2.rate = 0;
+		aimed2.spread = 0;
+		aimed2.direction = new Vector2(0, 0);
+		EmitParticles2D(aimed2, 1);
+		near(alive(aimed2)[0][Emitters.VY], -60, "in 2D, up the screen at 60");
+		aimed2.speed = -5;
+		EmitParticles2D(aimed2, 1);
+		check(alive(aimed2)[1][Emitters.VY] == 0, "a speed under 0 is 0");
+
+		// The orbit: a 3D particle keeps its offset from the emitter, its orbit and the axis, the direction, for the GPU to turn.
+		var whirl = LoadEmitter3D(8);
+		whirl.rate = 0;
+		whirl.speed = 0;
+		whirl.position = new Vector3(5, 0, 0);
+		whirl.spawnShape = Box;
+		whirl.spawnHalfSize = new Vector3(2, 0, 0);
+		whirl.spawnShell = true;
+		whirl.direction = new Vector3(0, 0, 4);
+		whirl.minOrbit = 90;
+		whirl.maxOrbit = 30;
+		EmitParticles3D(whirl, 1);
+		var w = alive(whirl)[0];
+		check(Math.abs(w[Emitters.OX]) == 2 && w[Emitters.X] == 5 + w[Emitters.OX], "the offset from the emitter, kept");
+		near(w[Emitters.ORBIT], Math.PI / 2, "a fastest orbit under the slowest is the slowest, in radians a second");
+		check(w[Emitters.AX] == 0 && w[Emitters.AY] == 0 && w[Emitters.AZ] == 1, "the axis, the direction");
+		// A 2D particle: a quarter turn a second, clockwise on screen, about where the emitter was at its birth.
+		var vortex = LoadEmitter2D(8);
+		vortex.rate = 0;
+		vortex.speed = 0;
+		vortex.position = new Vector2(100, 100);
+		vortex.spawnShape = EmitterShape2D.Rectangle;
+		vortex.spawnHalfSize = new Vector2(40, 0);
+		vortex.spawnShell = true;
+		vortex.minOrbit = vortex.maxOrbit = 90;
+		vortex.minLife = vortex.maxLife = 2;
+		EmitParticles2D(vortex, 1);
+		var born = alive(vortex)[0][Emitters.OX];
+		vortex.position = new Vector2(500, 500);
+		UpdateEmitter2D(vortex, 1);
+		DrawEmitter2D(vortex);
+		var turned = records()[0];
+		var cx = (turned[0] + turned[4]) / 2, cy = (turned[1] + turned[5]) / 2;
+		near(cx, 100, "a quarter turn on: across, over where the emitter was", 1e-4);
+		near(cy, 100 + born, "and down by its offset: clockwise on screen", 1e-4);
+		next();
+
+		// The pulse: each particle on a phase of its own, from the seed.
+		var pulsing = LoadEmitter3D(64), again = LoadEmitter3D(64);
+		for (p in [pulsing, again]) {
+			p.rate = 0;
+			p.seed = 11;
+			p.pulseRate = 2;
+			p.pulseDepth = 0.5;
+			EmitParticles3D(p, 20);
+		}
+		var phases = [for (p in alive(pulsing)) p[Emitters.PHASE]];
+		var distinct = [for (x in phases) if (phases.indexOf(x) == phases.lastIndexOf(x)) x].length;
+		check(distinct == 20, 'a phase each: $distinct of 20 apart');
+		check(same(alive(pulsing), alive(again)), "the same phases from the same seed");
+		var beat = Emitters.pulseAt(pulsing, 0.25, 0),
+			low = Emitters.pulseAt(pulsing, 0.75, 0);
+		near(beat, 0.5, "at the beat's low point, the alpha down by the depth");
+		near(low, 1, "at its high point, all of it");
+		near(Emitters.pulseAt(pulsing, 0.25, 0.5), 0.5, "a beat later, the same");
+		pulsing.pulseDepth = 3;
+		near(Emitters.pulseAt(pulsing, 0.25, 0), 0, "a depth held to 1");
+		pulsing.pulseRate = 0;
+		near(Emitters.pulseAt(pulsing, 0.25, 0), 1, "no beat at a rate of 0");
+
 		// The palette: one color picked at birth, 8 at most.
 		var tinted = LoadEmitter2D(64);
 		tinted.rate = 0;
@@ -325,10 +564,14 @@ class ParticlesTests {
 		// Node and in hxcpp. The fields reach every random number and every transcendental of the simulation.
 		var seeded3 = LoadEmitter3D(256);
 		seeded3.seed = 1234;
-		seeded3.spawnShape = Sphere;
-		seeded3.spawnRadius = 1.5;
+		seeded3.spawnShape = Ellipsoid;
+		seeded3.spawnHalfSize = new Vector3(1.5, 0.7, 1.1);
 		seeded3.spread = 60;
-		seeded3.velocity = new Vector3(0.3, 2, -0.4);
+		seeded3.direction = new Vector3(0.3, 2, -0.4);
+		seeded3.speed = 2.1;
+		seeded3.pulseRate = 2;
+		seeded3.minOrbit = -45;
+		seeded3.maxOrbit = 300;
 		seeded3.speedVariance = 0.4;
 		seeded3.sizeVariance = 0.3;
 		seeded3.minLife = 0.5;
@@ -353,8 +596,13 @@ class ParticlesTests {
 		check(hash3 == SEEDED_3D, 'a seeded 3D emitter\'s births: hash $hash3, not $SEEDED_3D');
 		var seeded2 = LoadEmitter2D(256);
 		seeded2.seed = 4321;
-		seeded2.spawnShape = Circle;
-		seeded2.spawnRadius = 20;
+		seeded2.spawnShape = Ellipse;
+		seeded2.spawnHalfSize = new Vector2(20, 12);
+		seeded2.spawnShell = true;
+		seeded2.pulseRate = 1.5;
+		seeded2.pulseDepth = 0.6;
+		seeded2.minOrbit = 30;
+		seeded2.maxOrbit = 200;
 		seeded2.spread = 75;
 		seeded2.speedVariance = 0.5;
 		seeded2.sizeVariance = 0.25;
@@ -368,10 +616,12 @@ class ParticlesTests {
 		seeded2.palette = [ORANGE, SKYBLUE];
 		seeded2.minLife = 0.4;
 		seeded2.maxLife = 1.5;
-		seeded2.startSize = 4;
-		seeded2.endSize = 12;
-		seeded2.sizeKeys = [{at: 0.3, size: 9}];
-		seeded2.colorKeys = [{at: 0.6, color: new Color(30, 200, 90, 180)}];
+		seeded2.sizeKeys = [{at: 1, size: 12}, {at: 0, size: 4}, {at: 0.3, size: 9}];
+		seeded2.colorKeys = [
+			{at: 0.6, color: new Color(30, 200, 90, 180)},
+			{at: 0, color: WHITE},
+			{at: 1, color: new Color(255, 0, 0, 0)}
+		];
 		seeded2.rate = 53;
 		for (i in 0...40) {
 			seeded2.position.y = 100 + i * 2;
@@ -384,7 +634,7 @@ class ParticlesTests {
 		rectangle.spawnHalfSize = new Vector2(30, 10);
 		EmitParticles2D(rectangle, 20);
 		// Each particle's simulation, then where it's drawn, how big and its color: its wander, size and color curves at its age.
-		Emitters.readCurves(seeded2);
+		Emitters.readCurves(seeded2, true);
 		var drawn2:Array<Array<Float>> = [];
 		for (p in alive(seeded2)) {
 			var age = seeded2.clock - p[Emitters.BORN],
@@ -395,6 +645,9 @@ class ParticlesTests {
 				p[Emitters.Y] + seeded2.wanderDistance * Emitters.wander(p[Emitters.RANDOM], 1, turn),
 				Emitters.sizeAt(t) * p[Emitters.SCALE],
 				Emitters.colorAt(t),
+				Emitters.pulseAt(seeded2, p[Emitters.PHASE], age),
+				Emitters.orbited(p[Emitters.OX], p[Emitters.OY], p[Emitters.ORBIT] * age, 0),
+				Emitters.orbited(p[Emitters.OX], p[Emitters.OY], p[Emitters.ORBIT] * age, 1),
 				p[Emitters.SPIN] * age
 			]));
 		}
@@ -410,7 +663,7 @@ class ParticlesTests {
 		quads.rate = 0;
 		quads.texture = sheet;
 		quads.position = new Vector2(32, 32);
-		quads.velocity = new Vector2(0, 0);
+		quads.speed = 0;
 		EmitParticles2D(quads, 3);
 		DrawTexture(sheet, 0, 0, WHITE);
 		DrawEmitter2D(quads);
@@ -421,7 +674,7 @@ class ParticlesTests {
 		near(quad[0], 24, "a quad 16 pixels across, at the position");
 		near(quad[1], 24, "its top");
 		near(quad[4], 40, "its right");
-		// The color: startColor at birth, white.
+		// The color: the first color key's at birth, white.
 		check(quad[12] == 255 && quad[15] == 255, "white, opaque at birth");
 		// Another blend mode is a run of its own, and the blend mode drawn after is the one before.
 		quads.blendMode = BLEND_ADDITIVE;
@@ -453,7 +706,7 @@ class ParticlesTests {
 		DrawEmitter2D(quads);
 		near(records()[0][10], 1, "no columns are one");
 		// Over the life: the end color reaches those alive, and stretch draws a streak along the motion.
-		quads.endColor = new Color(255, 0, 0, 255);
+		quads.colorKeys = [{at: 0, color: WHITE}, {at: 1, color: new Color(255, 0, 0, 255)}];
 		next();
 		DrawEmitter2D(quads);
 		check(records()[0][13] == 89 && records()[0][12] == 255, "a new end color reaches those alive");
@@ -461,7 +714,8 @@ class ParticlesTests {
 		var streak = LoadEmitter2D(4);
 		streak.rate = 0;
 		streak.spread = 0;
-		streak.velocity = new Vector2(100, 0);
+		streak.direction = new Vector2(1, 0);
+		streak.speed = 100;
 		streak.stretch = 0.1;
 		EmitParticles2D(streak, 1);
 		DrawEmitter2D(streak);
@@ -481,7 +735,8 @@ class ParticlesTests {
 		var aligned = LoadEmitter2D(4);
 		aligned.rate = 0;
 		aligned.spread = 0;
-		aligned.velocity = new Vector2(0, 100);
+		aligned.direction = new Vector2(0, 1);
+		aligned.speed = 100;
 		aligned.alignToMotion = true;
 		EmitParticles2D(aligned, 1);
 		DrawEmitter2D(aligned);
@@ -492,7 +747,7 @@ class ParticlesTests {
 		// Wandering: from its path, by at most twice the distance, starting on it.
 		var wandering = LoadEmitter2D(4);
 		wandering.rate = 0;
-		wandering.velocity = new Vector2(0, 0);
+		wandering.speed = 0;
 		wandering.wanderDistance = 10;
 		wandering.wanderRate = 2;
 		EmitParticles2D(wandering, 1);

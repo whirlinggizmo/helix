@@ -19,14 +19,20 @@ class Emitter {
 	/** Gets or sets the longest a particle lives, in seconds: 1 by default. At least `minLife`. */
 	public var maxLife:Float = 1;
 
-	/** Gets or sets the radius of a `Sphere` or `Circle` spawn shape: 0 by default. Particles are born evenly inside it. */
-	public var spawnRadius:Float = 0;
+	/** Gets or sets whether particles are born on the spawn shape's surface rather than inside it: false by default. They are spread
+		evenly over the surface as it looks: a shape flattened by a half size of 0 is its outline, so an ellipsoid of height 0 gives a
+		ring. A `Point` ignores it. */
+	public var spawnShell:Bool = false;
 
-	/** Gets or sets the half angle of the cone around `velocity` particles are thrown within, 0 to 180 degrees: 30 by default. 180
+	/** Gets or sets the half angle of the cone around `direction` particles are thrown within, 0 to 180 degrees: 30 by default. 180
 		throws them every way. */
 	public var spread:Float = 30;
 
-	/** Gets or sets how much a particle's speed varies either way, 0 to 1 of itself: 0 by default. */
+	/** Gets or sets how fast particles are born moving, 0 or more: 1 unit a second for an `Emitter3D` and 60 pixels a second for an
+		`Emitter2D` by default. */
+	public var speed:Float;
+
+	/** Gets or sets how much a particle's speed varies either way, 0 to 1 of `speed`: 0 by default. */
 	public var speedVariance:Float = 0;
 
 	/** Gets or sets the share of the emitter's own motion particles are born with, 0 to 1: 0 by default. 1 throws them along as it
@@ -43,26 +49,28 @@ class Emitter {
 	/** Gets or sets how often a wandering particle's course turns, a second: 1 by default. */
 	public var wanderRate:Float = 1;
 
-	/** Gets or sets each particle's size at birth: 0.25 for an `Emitter3D` and 16 for an `Emitter2D` by default. */
-	public var startSize:Float;
-
-	/** Gets or sets each particle's size at death: 0.25 for an `Emitter3D` and 16 for an `Emitter2D` by default. */
-	public var endSize:Float;
-
-	/** Gets or sets sizes between birth and death, in order of `at`: none by default. 8 at most; past that, ignored. */
-	public var sizeKeys:Array<EmitterSizeKey> = [];
+	/** Gets or sets each particle's size over its life, the keys read in order of `at`: 0.25 for an `Emitter3D` and 16 for an
+		`Emitter2D` at 0 and at 1 by default. Before the first key the first key's size holds, and after the last the last's. One key is
+		a size for the whole life, and none is the default's. 8 at most; past that, ignored. */
+	public var sizeKeys:Array<EmitterSizeKey>;
 
 	/** Gets or sets how much a particle's size varies at birth, 0 to 1 of itself: 0 by default. */
 	public var sizeVariance:Float = 0;
 
-	/** Gets or sets each particle's color at birth: white by default. */
-	public var startColor:Color = new Color(255, 255, 255, 255);
+	/** Gets or sets each particle's color over its life, the keys read in order of `at`: white at 0 and white of alpha 0 at 1 by
+		default, fading it out. Before the first key the first key's color holds, and after the last the last's. One key is a color for
+		the whole life, and none is the default's. 8 at most; past that, ignored. */
+	public var colorKeys:Array<EmitterColorKey> = [
+		{at: 0, color: new Color(255, 255, 255, 255)},
+		{at: 1, color: new Color(255, 255, 255, 0)}
+	];
 
-	/** Gets or sets each particle's color at death: white of alpha 0 by default, fading it out. */
-	public var endColor:Color = new Color(255, 255, 255, 0);
+	/** Gets or sets how many times a second each particle's alpha beats, on a phase of its own picked at its birth: 0 by default, no
+		beat. */
+	public var pulseRate:Float = 0;
 
-	/** Gets or sets colors between birth and death, in order of `at`: none by default. 8 at most; past that, ignored. */
-	public var colorKeys:Array<EmitterColorKey> = [];
+	/** Gets or sets how far a particle's alpha falls at a beat's low point, 0 to 1 of itself: 1 by default, to clear. */
+	public var pulseDepth:Float = 1;
 
 	/** Gets or sets colors a particle may be tinted by, one picked at its birth: none by default, untinted. 8 at most; past that, ignored. */
 	public var palette:Array<Color> = [];
@@ -91,6 +99,15 @@ class Emitter {
 	/** Gets or sets the fastest a particle spins, in degrees a second: 0 by default. At least `minSpin`. */
 	public var maxSpin:Float = 0;
 
+	/** Gets or sets the slowest a particle travels around the emitter, in degrees a second: 0 by default. A 3D emitter's particle
+		circles the line along `direction` through where the emitter was at its birth, positive counterclockwise seen from where
+		`direction` points. A 2D emitter's particle circles where the emitter was at its birth, positive clockwise on screen. The
+		particle's own motion is added, and its spin turns it as well. */
+	public var minOrbit:Float = 0;
+
+	/** Gets or sets the fastest a particle travels around the emitter, in degrees a second: 0 by default. At least `minOrbit`. */
+	public var maxOrbit:Float = 0;
+
 	/** Gets or sets how far along its motion on screen a particle stretches, as a streak, in seconds of that motion: 0, square, by
 		default. */
 	public var stretch:Float = 0;
@@ -103,7 +120,8 @@ class Emitter {
 	public var seed:Int = 0;
 
 	// The particles, a ring of `capacity` slots: SLOT floats each in `slots` (born, life, x, y, z, vx, vy, vz, size scale, spin in
-	// radians a second, a random 0 to 1) and each one's tint in `tints`. `head` is the next slot written, and the `span` slots before it
+	// radians a second, a random 0 to 1, the pulse's phase 0 to 1, its offset from the emitter at its birth, its orbit in radians a second, and
+	// the axis it orbits) and each one's tint in `tints`. `head` is the next slot written, and the `span` slots before it
 	// run from the oldest that may be alive to the newest.
 	var capacity = 1;
 	var slots:haxe.ds.Vector<Float>;
@@ -138,5 +156,5 @@ class Emitter {
 	}
 
 	// The floats of a particle's slot.
-	static inline final SLOT = 11;
+	static inline final SLOT = 19;
 }

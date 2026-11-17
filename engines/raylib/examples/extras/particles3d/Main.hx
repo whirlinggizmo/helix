@@ -13,17 +13,18 @@ class Main {
 		var camera = new Camera3D(new Vector3(0, 3, 9), new Vector3(0, 2, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var fountain = LoadEmitter3D(512);
 		fountain.rate = 160;
-		fountain.velocity = new Vector3(0, 6, 0);
+		fountain.speed = 6;
 		fountain.spread = 10;
 		fountain.speedVariance = 0.1;
 		fountain.gravity = new Vector3(0, -9.8, 0);
 		fountain.minLife = 1.1;
 		fountain.maxLife = 1.3;
-		fountain.startSize = 0.22;
-		fountain.endSize = 0.1;
-		fountain.startColor = new Color(170, 230, 255, 255);
-		fountain.colorKeys = [{at: 0.5, color: new Color(60, 140, 255, 255)}];
-		fountain.endColor = new Color(30, 70, 200, 0);
+		fountain.sizeKeys = [{at: 0, size: 0.22}, {at: 1, size: 0.1}];
+		fountain.colorKeys = [
+			{at: 0, color: new Color(170, 230, 255, 255)},
+			{at: 0.5, color: new Color(60, 140, 255, 255)},
+			{at: 1, color: new Color(30, 70, 200, 0)}
+		];
 		PrewarmEmitter3D(fountain, 2);
 		while (!WindowShouldClose()) {
 			UpdateEmitter3D(fountain, GetFrameTime());
