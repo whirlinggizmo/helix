@@ -100,13 +100,19 @@ class Trig {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The cosine in x and the sine in y: the point at the angle on a circle of radius 1. */
 	public static function cosSin(x:Float, ?out:Vector2):Vector2 {
-		if (out == null)
-			out = new Vector2();
-		if (x == 0)
-			return out.set(1, x); // a zero keeps its sign, as sin's
+		var turn = turn(x);
+		return out == null ? new Vector2(turn.cos, turn.sin) : out.set(turn.cos, turn.sin);
+	}
+
+	// cosSin's cosine and sine for the library's own, inlined where called, so the two are locals there and nothing is built.
+
+	@:allow(helix.math)
+	static inline function turn(x:Float):Turn {
 		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
 		var s = sinReduced(r), c = cosReduced(r);
-		return quadrant == 0 ? out.set(c, s) : quadrant == 1 ? out.set(-s, c) : quadrant == 2 ? out.set(-c, -s) : out.set(s, -c);
+		// A zero keeps its sign, as sin's.
+		return new Turn(quadrant == 0 ? c : quadrant == 1 ? -s : quadrant == 2 ? -c : s,
+			x == 0 ? x : quadrant == 0 ? s : quadrant == 1 ? c : quadrant == 2 ? -s : -c);
 	}
 
 	/** Returns the angle of a point from the +x axis, as `Math.atan2` does.
@@ -414,5 +420,24 @@ class Trig {
 		else
 			a = PI / 2 - atanReduced(1 / t);
 		return x < 0 ? -a : a;
+	}
+}
+
+/** Holds an angle's cosine and sine, as `Trig.turn` gives them. Its constructor is inline, so one read where it was made is two
+	locals. */
+private class Turn {
+	/** Gets the cosine. */
+	public final cos:Float;
+
+	/** Gets the sine. */
+	public final sin:Float;
+
+	/** Creates the pair.
+
+		@param cos  The cosine.
+		@param sin  The sine. */
+	public inline function new(cos:Float, sin:Float) {
+		this.cos = cos;
+		this.sin = sin;
 	}
 }

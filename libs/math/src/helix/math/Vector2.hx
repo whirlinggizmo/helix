@@ -167,8 +167,7 @@ class Vector2 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
 		@return  The turned vector. */
 	public function rotate(radians:Float, ?out:Vector2):Vector2 {
-		var turn = cosSin(radians), c = turn.x, s = turn.y, x = real(this.x), y = real(this.y);
-		return result(out, x * c - y * s, x * s + y * c);
+		return rotated(real(x), real(y), radians, out);
 	}
 
 	/** Returns this vector times another, coordinate by coordinate.
@@ -343,16 +342,15 @@ class Vector2 {
 	public function equals(other:Vector2, tolerance = 0.):Bool
 		return near(x, other.x, tolerance) && near(y, other.y, tolerance);
 
-	// cosSin's cosine and sine.
-	static final unit = new Vector2();
-
 	// hxcpp builds a Vector2 in place only while no instance method names another class, so each reaches these through a static,
 	// inlined on the other targets.
 	static #if !cpp inline #end function sqrt(value:Float):Float
 		return Math.sqrt(value);
 
-	static #if !cpp inline #end function cosSin(radians:Float):Vector2
-		return Trig.cosSin(radians, unit);
+	static #if !cpp inline #end function rotated(x:Float, y:Float, radians:Float, out:Null<Vector2>):Vector2 {
+		var turn = Trig.turn(radians), c = turn.cos, s = turn.sin;
+		return result(out, x * c - y * s, x * s + y * c);
+	}
 
 	static #if !cpp inline #end function atan2(y:Float, x:Float):Float
 		return Trig.atan2(y, x);
