@@ -72,6 +72,17 @@ class VectorTests {
 		check(moved.x == 5 && moved.y == 0, "2D added scaled");
 		var negated = three2(p, q, (a, b, out) -> a.negate(out), "2D negate");
 		check(negated.x == -3 && negated.y == -4, "2D negated");
+		var inverted = three2([4., -.5], q, (a, b, out) -> a.inverse(out), "2D inverse");
+		check(inverted.x == .25 && inverted.y == -2 && new Vector2(0, 1).inverse().x == Math.POSITIVE_INFINITY, "2D inverted");
+		var angled = Vector2.fromAngle(2.5, 3), into = new Vector2(9, 9);
+		check(angled.x == Trig.cos(2.5) * 3
+			&& angled.y == Trig.sin(2.5) * 3
+			&& Vector2.fromAngle(2.5, 3, into) == into
+			&& into.equals(angled),
+			"2D from an angle: Trig's cosine and sine times the length, into an out");
+		var spun = new Vector2(3, 4).rotate(2.5);
+		check(spun.x == 3 * Trig.cos(2.5) - 4 * Trig.sin(2.5)
+			&& spun.y == 3 * Trig.sin(2.5) + 4 * Trig.cos(2.5), "2D rotated by Trig's cosine and sine");
 		var unit = three2(p, q, (a, b, out) -> a.normalize(out), "2D normalize");
 		check(near(unit.x, .6) && near(unit.y, .8) && near(unit.length, 1), "2D normalized");
 		var zero = new Vector2().normalize();
@@ -123,6 +134,8 @@ class VectorTests {
 		check(moved3.x == 3 && moved3.y == -.5 && moved3.z == 6, "3D added scaled");
 		var negated3 = three3(r, s, (a, b, out) -> a.negate(out), "3D negate");
 		check(negated3.x == -1 && negated3.y == -2 && negated3.z == -3, "3D negated");
+		var inverted3 = three3([4., -.5, 8], s, (a, b, out) -> a.inverse(out), "3D inverse");
+		check(inverted3.x == .25 && inverted3.y == -2 && inverted3.z == .125, "3D inverted");
 		var unit3 = three3([0., 3, 4], s, (a, b, out) -> a.normalize(out), "3D normalize");
 		check(unit3.x == 0 && near(unit3.y, .6) && near(unit3.z, .8), "3D normalized");
 		var zero3 = new Vector3().normalize();
@@ -170,6 +183,7 @@ class VectorTests {
 			{name: "scaled", op: (a, b, out) -> a.scale(2, out), want: [2, 4, 6, 8]},
 			{name: "sum of one scaled", op: (a, b, out) -> a.addScaled(b, 2, out), want: [11, 14, 17, 20]},
 			{name: "negated", op: (a, b, out) -> a.negate(out), want: [-1, -2, -3, -4]},
+			{name: "inverted", op: (a, b, out) -> a.inverse(out), want: [1, .5, 1 / 3, .25]},
 			{name: "blend", op: (a, b, out) -> Vector4.lerp(a, b, .5, out), want: [3, 4, 5, 6]}
 		];
 		for (o in ops) {

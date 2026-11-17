@@ -324,8 +324,8 @@ class RMath {
 
 		@param v  The vector.
 		@return  The inverted vector. */
-	static function Vector2Invert(v:Vector2):Vector2 {
-		return new Vector2(1 / v.x, 1 / v.y);
+	static inline function Vector2Invert(v:Vector2):Vector2 {
+		return v.inverse();
 	}
 
 	/** Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
@@ -789,8 +789,8 @@ class RMath {
 
 		@param v  The vector.
 		@return  The inverted vector. */
-	static function Vector3Invert(v:Vector3):Vector3 {
-		return new Vector3(1 / v.x, 1 / v.y, 1 / v.z);
+	static inline function Vector3Invert(v:Vector3):Vector3 {
+		return v.inverse();
 	}
 
 	/** Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
@@ -1014,8 +1014,8 @@ class RMath {
 
 		@param v  The vector.
 		@return  The inverted vector. */
-	static function Vector4Invert(v:Vector4):Vector4 {
-		return new Vector4(1 / v.x, 1 / v.y, 1 / v.z, 1 / v.w);
+	static inline function Vector4Invert(v:Vector4):Vector4 {
+		return v.inverse();
 	}
 
 	/** Returns whether two vectors are equal but for rounding, each component as `FloatEquals` compares it.

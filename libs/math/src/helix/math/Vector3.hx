@@ -189,6 +189,14 @@ class Vector3 {
 		return result(out, -x, -y, -z);
 	}
 
+	/** Returns 1 divided by each of this vector's coordinates.
+
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
+		@return  The inverted vector. A coordinate of 0 gives an infinite one. */
+	public function inverse(?out:Vector3):Vector3 {
+		return result(out, 1 / x, 1 / y, 1 / z);
+	}
+
 	/** Returns this vector scaled to length 1, its direction kept.
 
 		A vector of length 0 stays 0.

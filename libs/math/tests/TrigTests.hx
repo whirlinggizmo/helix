@@ -1,4 +1,5 @@
 import helix.math.Trig;
+import helix.math.Vector2;
 
 /** Checks helix.math.Trig against Math with the library alone: within a few ulp over many angles, and the special values (zeros,
 	infinities, NaN, the quadrants). Whether it gives the same bits on every target is TrigBits' check. */
@@ -26,18 +27,21 @@ class TrigTests {
 			seed = (seed * 16807) % 2147483647;
 			return seed / 1073741823.5 - 1;
 		}
-		var worst = 0;
+		var both = new Vector2();
 		for (range in [Math.PI, 100., 10000.]) {
-			var ok = true, okTan = true, okAtan = true, okInverse = true;
+			var ok = true, okTan = true, okAtan = true, okInverse = true, okBoth = true;
 			for (_ in 0...20000) {
 				var x = next() * range, y = next() * range, u = next();
 				ok = ok && closeAt(Trig.sin(x), Math.sin(x), 8, x) && closeAt(Trig.cos(x), Math.cos(x), 8, x);
 				okTan = okTan && closeAt(Trig.tan(x), Math.tan(x), 16, x);
+				Trig.cosSin(x, both);
+				okBoth = okBoth && both.x == Trig.cos(x) && both.y == Trig.sin(x);
 				okAtan = okAtan && close(Trig.atan2(y, x), Math.atan2(y, x));
 				okInverse = okInverse && close(Trig.asin(u), Math.asin(u), 8) && close(Trig.acos(u), Math.acos(u), 8);
 			}
 			check(ok, 'sin and cos agree with Math within ±$range');
 			check(okTan, 'tan agrees with Math within ±$range');
+			check(okBoth, 'cosSin gives cos and sin to the bit within ±$range');
 			check(okAtan, 'atan2 agrees with Math within ±$range');
 			check(okInverse, "asin and acos agree with Math");
 		}
@@ -62,8 +66,11 @@ class TrigTests {
 			// cos here is -r, from the exact remainder (pi to 1000 digits, Python's decimal): glibc's is 8 ulp off.
 			[5.319372648326541e+255, 1.0, -4.687165924254628e-19]
 		];
-		for (row in large)
+		for (row in large) {
 			check(close(Trig.sin(row[0]), row[1], 2) && close(Trig.cos(row[0]), row[2], 2), 'sin and cos of ${row[0]} as glibc\'s');
+			check(Trig.cosSin(row[0], both) == both && both.x == Trig.cos(row[0]) && both.y == Trig.sin(row[0]),
+				'cosSin of ${row[0]} gives cos and sin to the bit, into its out');
+		}
 		// And many more against Math, where the C runtime reduces large angles exactly (not Windows').
 		if (#if sys Sys.systemName() != "Windows" #else true #end) {
 			for (scale in [2e6, 1e9, 1e15, 1e22, 1e100, 1e300, 1.7976931348623157e308]) {
@@ -83,6 +90,10 @@ class TrigTests {
 			&& Math.isNaN(Trig.cos(Math.NaN))
 			&& Math.isNaN(Trig.tan(Math.NEGATIVE_INFINITY)),
 			"NaN for infinite or NaN angles");
+		var made = Trig.cosSin(-0.),
+			endless = Trig.cosSin(Math.NEGATIVE_INFINITY);
+		check(made != both && made.x == 1 && 1 / made.y < 0 && Math.isNaN(endless.x) && Math.isNaN(endless.y),
+			"cosSin makes a vector without an out, keeps a zero's sign and gives NaN for an infinite angle");
 		check(Math.isNaN(Trig.asin(1.5)) && Math.isNaN(Trig.acos(-1.0000001)) && Trig.asin(1) == Math.PI / 2 && close(Trig.acos(-1), Math.PI),
 			"asin and acos at and past the ends");
 		check(Trig.atan2(0, -1) == Math.PI && Trig.atan2(-0., -1) == -Math.PI && Trig.atan2(1, 0) == Math.PI / 2 && Trig.atan2(-1, 0) == -Math.PI / 2,

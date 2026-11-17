@@ -154,6 +154,14 @@ class Vector4 {
 		return result(out, -x, -y, -z, -w);
 	}
 
+	/** Returns 1 divided by each of this vector's coordinates.
+
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
+		@return  The inverted vector. A coordinate of 0 gives an infinite one. */
+	public function inverse(?out:Vector4):Vector4 {
+		return result(out, 1 / x, 1 / y, 1 / z, 1 / w);
+	}
+
 	/** Returns this vector scaled to length 1, the proportions of its coordinates kept.
 
 		A vector of length 0 stays 0.

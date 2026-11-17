@@ -1404,6 +1404,7 @@ Natively the generated C++ is compiled with `-ffp-contract=off` on GCC and clang
 static function sin(x:Float):Float
 static function cos(x:Float):Float
 static function tan(x:Float):Float
+static function cosSin(x:Float, ?out:Vector2):Vector2
 static function atan2(y:Float, x:Float):Float
 static function asin(x:Float):Float
 static function acos(x:Float):Float
@@ -1418,6 +1419,10 @@ static function acos(x:Float):Float
 - `tan`: Returns the tangent of an angle.
   - `x`: The angle, in radians.
   - returns: The tangent.
+- `cosSin`: Returns the cosine and the sine of an angle together, each as `cos` and `sin` give it, for less than the two calls cost.
+  - `x`: The angle, in radians.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The cosine in x and the sine in y: the point at the angle on a circle of radius 1.
 - `atan2`: Returns the angle of a point from the +x axis, as `Math.atan2` does.
   - `y`: The point's y coordinate.
   - `x`: The point's x coordinate.
@@ -1465,6 +1470,7 @@ function subtract(other:Vector2, ?out:Vector2):Vector2
 function scale(factor:Float, ?out:Vector2):Vector2
 function addScaled(other:Vector2, factor:Float, ?out:Vector2):Vector2
 function negate(?out:Vector2):Vector2
+function inverse(?out:Vector2):Vector2
 function normalize(?out:Vector2):Vector2
 function rotate(radians:Float, ?out:Vector2):Vector2
 function multiply(other:Vector2, ?out:Vector2):Vector2
@@ -1540,6 +1546,9 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 - `negate`: Returns this vector turned the other way: both coordinates negated.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The negated vector.
+- `inverse`: Returns 1 divided by each of this vector's coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The inverted vector. A coordinate of 0 gives an infinite one.
 - `normalize`: Returns this vector scaled to length 1, its direction kept.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The vector of length 1, or of length 0.
@@ -1656,6 +1665,7 @@ function subtract(other:Vector3, ?out:Vector3):Vector3
 function scale(factor:Float, ?out:Vector3):Vector3
 function addScaled(other:Vector3, factor:Float, ?out:Vector3):Vector3
 function negate(?out:Vector3):Vector3
+function inverse(?out:Vector3):Vector3
 function normalize(?out:Vector3):Vector3
 function cross(other:Vector3, ?out:Vector3):Vector3
 function multiply(other:Vector3, ?out:Vector3):Vector3
@@ -1740,6 +1750,9 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 - `negate`: Returns this vector turned the other way: every coordinate negated.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The negated vector.
+- `inverse`: Returns 1 divided by each of this vector's coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The inverted vector. A coordinate of 0 gives an infinite one.
 - `normalize`: Returns this vector scaled to length 1, its direction kept.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The vector of length 1, or of length 0.
@@ -1866,6 +1879,7 @@ function subtract(other:Vector4, ?out:Vector4):Vector4
 function scale(factor:Float, ?out:Vector4):Vector4
 function addScaled(other:Vector4, factor:Float, ?out:Vector4):Vector4
 function negate(?out:Vector4):Vector4
+function inverse(?out:Vector4):Vector4
 function normalize(?out:Vector4):Vector4
 function multiply(other:Vector4, ?out:Vector4):Vector4
 function divide(other:Vector4, ?out:Vector4):Vector4
@@ -1934,6 +1948,9 @@ function equals(other:Vector4, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 - `negate`: Returns this vector with every coordinate negated.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The negated vector.
+- `inverse`: Returns 1 divided by each of this vector's coordinates.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
+  - returns: The inverted vector. A coordinate of 0 gives an infinite one.
 - `normalize`: Returns this vector scaled to length 1, the proportions of its coordinates kept.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The vector of length 1, or of length 0.

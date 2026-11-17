@@ -40,7 +40,8 @@ class Vector2 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
 	public static function fromAngle(radians:Float, length = 1., ?out:Vector2):Vector2 {
-		return result(out, Trig.cos(radians) * length, Trig.sin(radians) * length);
+		var unit = Trig.cosSin(radians, out);
+		return unit.set(unit.x * length, unit.y * length);
 	}
 
 	/** Returns the vector a fraction of the way from one vector to another.
@@ -142,6 +143,14 @@ class Vector2 {
 		return result(out, -x, -y);
 	}
 
+	/** Returns 1 divided by each of this vector's coordinates.
+
+		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
+		@return  The inverted vector. A coordinate of 0 gives an infinite one. */
+	public function inverse(?out:Vector2):Vector2 {
+		return result(out, 1 / x, 1 / y);
+	}
+
 	/** Returns this vector scaled to length 1, its direction kept.
 
 		A vector of length 0 stays 0.
@@ -158,10 +167,7 @@ class Vector2 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
 		@return  The turned vector. */
 	public function rotate(radians:Float, ?out:Vector2):Vector2 {
-		var c = cos(radians),
-			s = sin(radians),
-			x = real(this.x),
-			y = real(this.y);
+		var turn = cosSin(radians), c = turn.x, s = turn.y, x = real(this.x), y = real(this.y);
 		return result(out, x * c - y * s, x * s + y * c);
 	}
 
@@ -337,16 +343,16 @@ class Vector2 {
 	public function equals(other:Vector2, tolerance = 0.):Bool
 		return near(x, other.x, tolerance) && near(y, other.y, tolerance);
 
+	// cosSin's cosine and sine.
+	static final unit = new Vector2();
+
 	// hxcpp builds a Vector2 in place only while no instance method names another class, so each reaches these through a static,
 	// inlined on the other targets.
 	static #if !cpp inline #end function sqrt(value:Float):Float
 		return Math.sqrt(value);
 
-	static #if !cpp inline #end function sin(radians:Float):Float
-		return Trig.sin(radians);
-
-	static #if !cpp inline #end function cos(radians:Float):Float
-		return Trig.cos(radians);
+	static #if !cpp inline #end function cosSin(radians:Float):Vector2
+		return Trig.cosSin(radians, unit);
 
 	static #if !cpp inline #end function atan2(y:Float, x:Float):Float
 		return Trig.atan2(y, x);

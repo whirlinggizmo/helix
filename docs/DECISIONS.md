@@ -1110,9 +1110,9 @@ Why things are the way they are, numbered, in order.
     extra and a library without a copy. Each of raymath's scalar, vector and quaternion functions is an inline forward to
     helix-math's member (`Vector3Lerp` to `Vector3.lerp`, `QuaternionSlerp` to `Quaternion.slerp`, `Clamp` to `Interpolate.clamp`),
     which takes an out. raymath keeps a body only for what no maths library has: C's float arrays (`Vector3ToFloatV`), a number added
-    to every component (`AddValue`, `SubtractValue`), 1 over each component (`Invert`), a quaternion taken as four plain numbers
-    (`QuaternionAdd`, `Scale`, `Lerp`, `Transform`), `Vector2LineAngle` and `Vector2Transform`. The matrix functions keep their
-    bodies until `Matrix` and `Matrix4` are one type.
+    to every component (`AddValue`, `SubtractValue`), a quaternion taken as four plain numbers (`QuaternionAdd`, `Scale`, `Lerp`,
+    `Transform`), `Vector2LineAngle` and `Vector2Transform`. The matrix functions keep their bodies until `Matrix` and `Matrix4`
+    are one type.
 
     On ordinary input a function answers as raylib's C does, to 1e-6 (the raymath parity suites). On degenerate input it gives
     helix-math's answer: bounds in the wrong order are swapped (`Clamp`, `Vector3Clamp`, `Vector3ClampValue`), a quaternion of length
@@ -1128,12 +1128,15 @@ Why things are the way they are, numbered, in order.
     aim is an API that is well known, not a port of raylib: an agent writing `Vector3Lerp` gets what it expects, and nothing it writes
     depends on what raylib does with a quaternion of length 0.
 
-    Cost: a forward is inlined, so a raymath call is helix-math's call. Timed against raylib's own bodies on Node and in hxcpp, the
-    `Vector3` functions are level on both. `Vector2Rotate` and `QuaternionSlerp` take about twice as long natively, as `Trig` gives
-    the same bits on every target and the C library's sine doesn't. hxcpp builds a class in place only while none of its instance
-    methods names another class, `Math` included, and a vector built by a call costs about 2 ns more. helix-math's vectors keep to
-    that, reaching `Math`, `Trig` and `Interpolate` through statics of their own (`helix.py test --native` checks the generated
-    C++). `Quaternion` can't, as its methods return a `Vector3`.
+    Cost: a forward is inlined, so a raymath call is helix-math's call. Timed against raylib's own bodies on Node and in hxcpp,
+    the `Vector3` functions are level on both. A function taking an angle costs more, as `Trig` gives the same bits on every
+    target and the C library's and V8's functions don't: natively a `Trig` sine or cosine takes about 9 ns against 5.5 and an arc
+    cosine or `atan2` about 13 against 4.5 and 9, on Node 14 against 6 and 26 against 4 and 7. `Vector2Rotate` takes about 7 ns
+    longer natively and 19 on Node, its cosine and sine from one `Trig.cosSin`, and `QuaternionSlerp` about 20 ns longer natively
+    and none on Node. hxcpp builds a class in place only while none of its instance methods names another class, `Math` included,
+    and a vector built by a call costs about 2 ns more. helix-math's vectors keep to that, reaching `Math`, `Trig` and
+    `Interpolate` through statics of their own (`helix.py test --native` checks the generated C++). `Quaternion` can't, as its
+    methods return a `Vector3`.
 
     Rejected: raymath's own bodies beside helix-math's, the duplicate this ends; helix-raylib's own vector types converted at each
     call into a library, which costs a copy a call; raylib's answer on degenerate input kept by a second body for each such function;
