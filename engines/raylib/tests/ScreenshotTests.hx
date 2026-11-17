@@ -140,8 +140,8 @@ private class ReadingGraphics extends CountingGraphics {
 	/** The handles read, in order. */
 	public final reads:Array<Int> = [];
 
-	override public function createRenderTarget(width:Int, height:Int, format:helix.platform.TextureFormat = Rgba8, depth:Bool = true,
-			msaaSampleCount:Int = 0, bottomRowFirst:Bool = false):Int {
+	override public function createRenderTarget(width:Int, height:Int, format:helix.platform.TextureFormat = Rgba8,
+			depth:helix.platform.RenderTargetDepth = Buffer, msaaSampleCount:Int = 0, bottomRowFirst:Bool = false):Int {
 		var handle = super.createRenderTarget(width, height, format, depth, msaaSampleCount, bottomRowFirst);
 		targets.push(handle);
 		return handle;
