@@ -15,8 +15,8 @@ var pbr = LoadPbrShader();
 SetShaderValue(pbr, GetShaderLocation(pbr, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
 for (m in model.materials)
 m.shader = pbr;
-var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(4, 10, 2), Vector3Zero(), WHITE, pbr);
-var lamp = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, pbr);
+var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(4, 10, 2), new Vector3(0, 0, 0), WHITE, pbr);
+var lamp = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), new Vector3(0, 0, 0), YELLOW, pbr);
 lamp.range = 6;
 // each frame
 SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
@@ -38,12 +38,12 @@ EnableLightShadows(sun);
 EnableLightShadows(lamp);
 // each frame, before BeginDrawing or after it and before BeginMode3D
 BeginShadowMode(camera);
-DrawModel(island, Vector3Zero(), 1, WHITE);
+DrawModel(island, new Vector3(0, 0, 0), 1, WHITE);
 DrawModel(hut, hutPosition, 1, WHITE);
 EndShadowMode();
 BeginDrawing();
 BeginMode3D(camera);
-DrawModel(island, Vector3Zero(), 1, WHITE);
+DrawModel(island, new Vector3(0, 0, 0), 1, WHITE);
 DrawModel(hut, hutPosition, 1, WHITE);
 EndMode3D();
 EndDrawing();
@@ -107,7 +107,7 @@ static function EndShadowMode():Void
   var shader = LoadLightingShader();
   SetShaderValue(shader, GetShaderLocation(shader, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
   model.materials[0].shader = shader;
-  var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
+  var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), new Vector3(0, 0, 0), YELLOW, shader);
   ```
 - `LoadPbrShader`: Returns helix-raylib's PBR shader, built in: a glTF's materials drawn as authored, metallic-roughness under the scene's lights, where `LoadLightingShader` shines every material alike.
   - returns: The shader, the program's until `UnloadShader`.
@@ -123,7 +123,7 @@ static function EndShadowMode():Void
   ```haxe
   var pbr = LoadPbrShader();
   SetShaderValue(pbr, GetShaderLocation(pbr, "ambient"), [0.2, 0.2, 0.2, 1.0], SHADER_UNIFORM_VEC4);
-  CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 4, 2), Vector3Zero(), WHITE, pbr);
+  CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 4, 2), new Vector3(0, 0, 0), WHITE, pbr);
   for (m in model.materials)
   m.shader = pbr;
   // each frame

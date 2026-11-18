@@ -27,7 +27,7 @@ class RLighting {
 		var shader = LoadLightingShader();
 		SetShaderValue(shader, GetShaderLocation(shader, "ambient"), [0.1, 0.1, 0.1, 1.0], SHADER_UNIFORM_VEC4);
 		model.materials[0].shader = shader;
-		var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), Vector3Zero(), YELLOW, shader);
+		var light = CreateLight(LIGHT_POINT, new Vector3(-2, 1, -2), new Vector3(0, 0, 0), YELLOW, shader);
 		```
 
 		@return  The shader, the program's until `UnloadShader`. */
@@ -64,7 +64,7 @@ class RLighting {
 		```haxe
 		var pbr = LoadPbrShader();
 		SetShaderValue(pbr, GetShaderLocation(pbr, "ambient"), [0.2, 0.2, 0.2, 1.0], SHADER_UNIFORM_VEC4);
-		CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 4, 2), Vector3Zero(), WHITE, pbr);
+		CreateLight(LIGHT_DIRECTIONAL, new Vector3(2, 4, 2), new Vector3(0, 0, 0), WHITE, pbr);
 		for (m in model.materials)
 			m.shader = pbr;
 		// each frame
