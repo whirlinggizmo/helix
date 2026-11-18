@@ -42,6 +42,7 @@ A trial gives part of helix to fresh agents who know nothing of it, and reads wh
 
 | trial | asked | found |
 |---|---|---|
+| [2026-11-18-quaternions](2026-11-18-quaternions/results.md) | Whether agents get past a `Vector4` that isn't a `Quaternion`, as it is in C | The one that met it (1 of 3) retyped its keys from the compiler's message alone; all met the task, $0.19 to $0.23 |
 | [2026-11-16-example-headers](2026-11-16-example-headers/results.md) | Whether agents reach for `rlights.h` and `reasings.h`, raylib's examples' headers, unprompted | 0 of 3 for either: each wrote its own lights' uniforms and easing curves |
 | [2026-11-16-particles](2026-11-16-particles/results.md) | Whether agents make a camp at night's effects with the Particles extra from its page alone | 3 of 3 met the task, $0.32 to $0.63, no compile error; a shell spawn, a pulse, speed apart from direction and keys including the ends asked for |
 | [2026-11-17-lighting-tweens](2026-11-17-lighting-tweens/results.md) | Whether agents use the Lighting extra and the tweens when the brief hands them over, on the example headers trial's task | 3 of 3 used both and wrote no shader or curve, $0.23 to $0.24, about 40% fewer tokens written; two tweens of one value in a sequence left each guessing |
