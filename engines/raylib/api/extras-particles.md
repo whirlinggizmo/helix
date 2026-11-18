@@ -30,7 +30,7 @@ A 3D emitter's particles are worked out on the GPU from their age, so thousands 
 
 A particle stays where it was born when the emitter moves, so a moving emitter leaves a trail. Particles aren't sorted among themselves: `BLEND_ALPHA` suits soft, pale particles such as smoke and dust, and `BLEND_ADDITIVE` suits glows, sparks and fire.
 
-A field read at a particle's birth (life, spawn, direction, speed, size variance, spin, palette) changes the particles born after. A field read over a particle's life (gravity, drag, wander, sizes, colors, pulse, texture, blend mode) changes every particle alive. A value out of its range is held to it where it's read. A program that calls none of this links none of it.
+A field read at a particle's birth (life, spawn, direction, speed, size variance, spin, orbit, palette) changes the particles born after. A field read over a particle's life (gravity, drag, wander, sizes, colors, pulse, texture, blend mode) changes every particle alive. A value out of its range is held to it where it's read. A program that calls none of this links none of it.
 
 ### particles: emitters in 3D, drawn on the GPU, and in 2D, drawn in the batch
 
@@ -222,7 +222,7 @@ var seed:Int
 - `framesPerSecond`: Gets or sets the flipbook's frames a second: 0 by default, playing them once over each particle's life.
 - `minSpin`: Gets or sets the slowest a particle spins, in degrees a second, negative for the other way: 0 by default.
 - `maxSpin`: Gets or sets the fastest a particle spins, in degrees a second: 0 by default. At least `minSpin`.
-- `minOrbit`: Gets or sets the slowest a particle travels around the emitter, in degrees a second: 0 by default. A 3D emitter's particle circles the line along `direction` through where the emitter was at its birth, positive counterclockwise seen from where `direction` points. A 2D emitter's particle circles where the emitter was at its birth, positive clockwise on screen. The particle's own motion is added, and its spin turns it as well.
+- `minOrbit`: Gets or sets the slowest a particle travels around the emitter, in degrees a second: 0 by default. A 3D emitter's particle circles the line along `direction` through where the emitter was at its birth, positive counterclockwise seen from where `direction` points. A 2D emitter's particle circles where the emitter was at its birth, positive clockwise on screen. The whole path turns, its own motion included, so a particle thrown outward spirals. Its spin turns it as well.
 - `maxOrbit`: Gets or sets the fastest a particle travels around the emitter, in degrees a second: 0 by default. At least `minOrbit`.
 - `stretch`: Gets or sets how far along its motion on screen a particle stretches, as a streak, in seconds of that motion: 0, square, by default.
 - `blendMode`: Gets or sets how particles are drawn over what's behind: `BLEND_ALPHA` by default, or another of raylib's blend modes.

@@ -198,9 +198,9 @@ class EmitterDraws {
 			bytes.setFloat(to + 52, ((tint >>> 8) & 255) / 255);
 			bytes.setFloat(to + 56, ((tint >>> 16) & 255) / 255);
 			bytes.setFloat(to + 60, (tint >>> 24) / 255);
-			bytes.setFloat(to + 64, s[at + Emitters.OX]);
-			bytes.setFloat(to + 68, s[at + Emitters.OY]);
-			bytes.setFloat(to + 72, s[at + Emitters.OZ]);
+			bytes.setFloat(to + 64, s[at + Emitters.CX]);
+			bytes.setFloat(to + 68, s[at + Emitters.CY]);
+			bytes.setFloat(to + 72, s[at + Emitters.CZ]);
 			bytes.setFloat(to + 76, s[at + Emitters.ORBIT]);
 			bytes.setFloat(to + 80, s[at + Emitters.AX]);
 			bytes.setFloat(to + 84, s[at + Emitters.AY]);

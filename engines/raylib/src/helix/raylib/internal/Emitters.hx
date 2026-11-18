@@ -31,9 +31,9 @@ class Emitters {
 	public static inline final SPIN = 9;
 	public static inline final RANDOM = 10;
 	public static inline final PHASE = 11;
-	public static inline final OX = 12;
-	public static inline final OY = 13;
-	public static inline final OZ = 14;
+	public static inline final CX = 12;
+	public static inline final CY = 13;
+	public static inline final CZ = 14;
 	public static inline final ORBIT = 15;
 	public static inline final AX = 16;
 	public static inline final AY = 17;
@@ -284,9 +284,9 @@ class Emitters {
 		s[at + SPIN] = spin;
 		s[at + RANDOM] = random;
 		s[at + PHASE] = phase;
-		s[at + OX] = ox;
-		s[at + OY] = oy;
-		s[at + OZ] = flat ? 0 : oz;
+		s[at + CX] = x;
+		s[at + CY] = y;
+		s[at + CZ] = flat ? 0 : z;
 		s[at + ORBIT] = orbit;
 		s[at + AX] = flat ? 0 : dx;
 		s[at + AY] = flat ? 0 : dy;
@@ -433,11 +433,11 @@ class Emitters {
 		return .6 * Trig.sin(turn + first) + .4 * Trig.sin(2.3 * turn + second) - .6 * Trig.sin(first) - .4 * Trig.sin(second);
 	}
 
-	/** Returns how far a 2D particle's orbit has moved it along one axis: its offset from where the emitter was at its birth, turned
-		clockwise on screen by an angle, less the offset.
+	/** Returns how far a 2D particle's orbit has moved it along one axis: where it is from where the emitter was at its birth, turned
+		clockwise on screen by an angle, less where it is.
 
-		@param ox  The offset across, in pixels.
-		@param oy  The offset down.
+		@param ox  How far across it is from where the emitter was, in pixels.
+		@param oy  How far down.
 		@param angle  The angle, in radians.
 		@param axis  0 across, 1 down. */
 	public static function orbited(ox:Float, oy:Float, angle:Float, axis:Int):Float {
@@ -670,9 +670,11 @@ class Emitters {
 				continue;
 			var x = s[at + X], y = s[at + Y], vx = s[at + VX], vy = s[at + VY];
 			if (s[at + ORBIT] != 0) {
-				var angle = s[at + ORBIT] * age;
-				x += orbited(s[at + OX], s[at + OY], angle, 0);
-				y += orbited(s[at + OX], s[at + OY], angle, 1);
+				var angle = s[at + ORBIT] * age,
+					rx = x - s[at + CX],
+					ry = y - s[at + CY];
+				x += orbited(rx, ry, angle, 0);
+				y += orbited(rx, ry, angle, 1);
 			}
 			if (wander > 0) {
 				var turn = TAU * wanderRate * age;

@@ -1081,8 +1081,9 @@ Why things are the way they are, numbered, in order.
     `pulseRate` and `pulseDepth` beat each particle's alpha on a phase of its own. `velocity` is `direction`, its length ignored, and
     `speed`, as the entrants set a speed apart from where it points and `speedVariance` is a share of it. The size and color keys include
     their ends, `startSize`, `endSize`, `startColor` and `endColor` gone: the entrants wrote keys at 0 and 1 and expected them used.
-    Keys out of order are read sorted. `minOrbit` and `maxOrbit` turn each particle around the emitter (in 3D the line along
-    `direction` through where the emitter was at its birth), as a cyclone or a tornado had no way to be made: spin turns a particle
+    Keys out of order are read sorted. `minOrbit` and `maxOrbit` turn each particle's whole path around the emitter (in 3D the line
+    along `direction` through where the emitter was at its birth), as Godot's and Unity's orbits do, so a particle born at the
+    emitter and thrown outward spirals, as a cyclone or a tornado had no way to be made: spin turns a particle
     about its own centre, and nothing moved one around the emitter.
 
     Rejected: an options struct passed to the load, which a program would rebuild to change one setting each frame (wind, a trail's

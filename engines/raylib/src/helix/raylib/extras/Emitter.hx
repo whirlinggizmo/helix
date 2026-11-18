@@ -101,8 +101,8 @@ class Emitter {
 
 	/** Gets or sets the slowest a particle travels around the emitter, in degrees a second: 0 by default. A 3D emitter's particle
 		circles the line along `direction` through where the emitter was at its birth, positive counterclockwise seen from where
-		`direction` points. A 2D emitter's particle circles where the emitter was at its birth, positive clockwise on screen. The
-		particle's own motion is added, and its spin turns it as well. */
+		`direction` points. A 2D emitter's particle circles where the emitter was at its birth, positive clockwise on screen. The whole
+		path turns, its own motion included, so a particle thrown outward spirals. Its spin turns it as well. */
 	public var minOrbit:Float = 0;
 
 	/** Gets or sets the fastest a particle travels around the emitter, in degrees a second: 0 by default. At least `minOrbit`. */
@@ -120,7 +120,7 @@ class Emitter {
 	public var seed:Int = 0;
 
 	// The particles, a ring of `capacity` slots: SLOT floats each in `slots` (born, life, x, y, z, vx, vy, vz, size scale, spin in
-	// radians a second, a random 0 to 1, the pulse's phase 0 to 1, its offset from the emitter at its birth, its orbit in radians a second, and
+	// radians a second, a random 0 to 1, the pulse's phase 0 to 1, where the emitter was at its birth, its orbit in radians a second, and
 	// the axis it orbits) and each one's tint in `tints`. `head` is the next slot written, and the `span` slots before it
 	// run from the oldest that may be alive to the newest.
 	var capacity = 1;

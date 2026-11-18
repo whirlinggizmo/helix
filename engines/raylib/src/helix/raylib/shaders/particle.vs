@@ -2,7 +2,7 @@
 // helix-raylib's particle vertex stage (the Particles extra's 3D emitters): an emitter's particles drawn as instances of one quad facing
 // the camera, each worked out from its age. A particle's record is six texels of particleRecords, 256 particles a row, written once at
 // its birth: where (xyz) and when (w) it was born; its velocity (xyz) and life (w); its size scale, its spin in radians a second, a
-// random number from 0 to 1 and its pulse's phase from 0 to 1; its tint; its offset from where the emitter was (xyz) and its orbit in
+// random number from 0 to 1 and its pulse's phase from 0 to 1; its tint; where the emitter was at its birth (xyz) and its orbit in
 // radians a second (w); and the axis it orbits (xyz).
 in float spriteCorner;
 in float particleIndex;
@@ -105,15 +105,16 @@ void main() {
         position = born.xyz + motion.xyz*age + 0.5*gravity*age*age;
         velocity = motion.xyz + gravity*age;
     }
-    // Its orbit: its offset from where the emitter was, turned about the axis counterclockwise as seen from where the axis points,
-    // in place of the offset as born.
+    // Its orbit: where it is from where the emitter was at its birth, turned about the axis through that point, counterclockwise as
+    // seen from where the axis points.
     if (orbit.w != 0.0) {
         vec3 axis = particleRecord(slot, 5).xyz;
         float turn = orbit.w*age;
         float c = cos(turn);
         float s = sin(turn);
-        vec3 turned = orbit.xyz*c + cross(axis, orbit.xyz)*s + axis*dot(axis, orbit.xyz)*(1.0 - c);
-        position += turned - orbit.xyz;
+        vec3 away = position - orbit.xyz;
+        vec3 turned = away*c + cross(axis, away)*s + axis*dot(axis, away)*(1.0 - c);
+        position = orbit.xyz + turned;
     }
     // A smooth wandering course off its path, starting at its path.
     if (particleClock.w > 0.0) {

@@ -31,8 +31,8 @@ class ParticlesTests {
 	}
 
 	// The hashes of the seeded runs, the same on every target.
-	static inline final SEEDED_3D = 1356949216;
-	static inline final SEEDED_2D = -695683687;
+	static inline final SEEDED_3D = 707118164;
+	static inline final SEEDED_2D = 980360975;
 
 	// A hash of numbers' bits, by shifts and exclusive ors alone, which every target computes alike.
 	static function hashOf(rows:Array<Array<Float>>, h:Int):Int {
@@ -485,7 +485,7 @@ class ParticlesTests {
 		EmitParticles2D(aimed2, 1);
 		check(alive(aimed2)[1][Emitters.VY] == 0, "a speed under 0 is 0");
 
-		// The orbit: a 3D particle keeps its offset from the emitter, its orbit and the axis, the direction, for the GPU to turn.
+		// The orbit: a 3D particle keeps where the emitter was at its birth, its orbit and the axis, the direction, for the GPU to turn.
 		var whirl = LoadEmitter3D(8);
 		whirl.rate = 0;
 		whirl.speed = 0;
@@ -498,7 +498,7 @@ class ParticlesTests {
 		whirl.maxOrbit = 30;
 		EmitParticles3D(whirl, 1);
 		var w = alive(whirl)[0];
-		check(Math.abs(w[Emitters.OX]) == 2 && w[Emitters.X] == 5 + w[Emitters.OX], "the offset from the emitter, kept");
+		check(w[Emitters.CX] == 5 && w[Emitters.CY] == 0 && w[Emitters.CZ] == 0 && Math.abs(w[Emitters.X] - 5) == 2, "where the emitter was, kept");
 		near(w[Emitters.ORBIT], Math.PI / 2, "a fastest orbit under the slowest is the slowest, in radians a second");
 		check(w[Emitters.AX] == 0 && w[Emitters.AY] == 0 && w[Emitters.AZ] == 1, "the axis, the direction");
 		// A 2D particle: a quarter turn a second, clockwise on screen, about where the emitter was at its birth.
@@ -512,7 +512,7 @@ class ParticlesTests {
 		vortex.minOrbit = vortex.maxOrbit = 90;
 		vortex.minLife = vortex.maxLife = 2;
 		EmitParticles2D(vortex, 1);
-		var born = alive(vortex)[0][Emitters.OX];
+		var born = alive(vortex)[0][Emitters.X] - 100;
 		vortex.position = new Vector2(500, 500);
 		UpdateEmitter2D(vortex, 1);
 		DrawEmitter2D(vortex);
@@ -520,6 +520,23 @@ class ParticlesTests {
 		var cx = (turned[0] + turned[4]) / 2, cy = (turned[1] + turned[5]) / 2;
 		near(cx, 100, "a quarter turn on: across, over where the emitter was", 1e-4);
 		near(cy, 100 + born, "and down by its offset: clockwise on screen", 1e-4);
+		next();
+		near(Emitters.orbited(1, 0, Math.PI / 2, 0), -1, "a quarter turn from across: back across");
+		near(Emitters.orbited(1, 0, Math.PI / 2, 1), 1, "and down, clockwise on screen");
+		// A particle born at the emitter and thrown outward spirals: its whole path turns.
+		var spiral = LoadEmitter2D(8);
+		spiral.rate = 0;
+		spiral.position = new Vector2(100, 100);
+		spiral.direction = new Vector2(1, 0);
+		spiral.spread = 0;
+		spiral.minOrbit = spiral.maxOrbit = 90;
+		spiral.minLife = spiral.maxLife = 2;
+		EmitParticles2D(spiral, 1);
+		UpdateEmitter2D(spiral, 1);
+		DrawEmitter2D(spiral);
+		var thrown = records()[0];
+		near((thrown[0] + thrown[4]) / 2, 100, "thrown 60 across and a quarter turn on: over the emitter", 1e-4);
+		near((thrown[1] + thrown[5]) / 2, 160, "and 60 down", 1e-4);
 		next();
 
 		// The pulse: each particle on a phase of its own, from the seed.
@@ -646,8 +663,8 @@ class ParticlesTests {
 				Emitters.sizeAt(t) * p[Emitters.SCALE],
 				Emitters.colorAt(t),
 				Emitters.pulseAt(seeded2, p[Emitters.PHASE], age),
-				Emitters.orbited(p[Emitters.OX], p[Emitters.OY], p[Emitters.ORBIT] * age, 0),
-				Emitters.orbited(p[Emitters.OX], p[Emitters.OY], p[Emitters.ORBIT] * age, 1),
+				Emitters.orbited(p[Emitters.X] - p[Emitters.CX], p[Emitters.Y] - p[Emitters.CY], p[Emitters.ORBIT] * age, 0),
+				Emitters.orbited(p[Emitters.X] - p[Emitters.CX], p[Emitters.Y] - p[Emitters.CY], p[Emitters.ORBIT] * age, 1),
 				p[Emitters.SPIN] * age
 			]));
 		}

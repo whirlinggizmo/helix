@@ -36,7 +36,7 @@ import helix.raylib.modules.RParticles;
 	A particle stays where it was born when the emitter moves, so a moving emitter leaves a trail. Particles aren't sorted among
 	themselves: `BLEND_ALPHA` suits soft, pale particles such as smoke and dust, and `BLEND_ADDITIVE` suits glows, sparks and fire.
 
-	A field read at a particle's birth (life, spawn, direction, speed, size variance, spin, palette) changes the particles born after. A
+	A field read at a particle's birth (life, spawn, direction, speed, size variance, spin, orbit, palette) changes the particles born after. A
 	field read over a particle's life (gravity, drag, wander, sizes, colors, pulse, texture, blend mode) changes every particle alive. A value out of its
 	range is held to it where it's read. A program that calls none of this links none of it. */
 class Particles {
