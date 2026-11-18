@@ -20,6 +20,8 @@ function new(from:Color, to:Color, duration:Float, ?ease:Ease)
 var from(get, set):Color
 var to(get, set):Color
 var value(get, never):Color
+function append(to:Color, duration:Float, ?ease:Ease):ColorTween
+function appendDelay(seconds:Float):ColorTween
 ```
 
 - `new`: Creates a tween of a color, at its start.
@@ -28,8 +30,25 @@ var value(get, never):Color
   - `duration`: The seconds one play takes, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
 - `from`: Gets or sets the color at the start.
-- `to`: Gets or sets the color at the end.
+- `to`: Gets or sets the color at the end: the first leg's end, where `append` added more legs.
 - `value`: Gets the color now, its channels rounded and kept to 0 to 255 where the easing curve overshoots.
+- `append`: Adds a leg: the color fades on from where the tween ended before to another color.
+  - `to`: The color at the leg's end.
+  - `duration`: The seconds the leg takes, 0 or more.
+  - `ease`: Optional. The leg's easing curve; a straight line when omitted.
+  - returns: This tween.
+  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+
+  ```haxe
+  // To red, a wait, then back to white.
+  var flash = new ColorTween(WHITE, RED, 0.1).appendDelay(0.2).append(WHITE, 0.5, Ease.outQuad);
+  ```
+- `appendDelay`: Adds a wait: the color stays where the tween ended before, for some seconds.
+  - `seconds`: The seconds to wait, 0 or more.
+  - returns: This tween.
+  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
 
 ## Ease
 

@@ -4,9 +4,9 @@ import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.extras.tweens.*;
 
-/** Checks the tweens package with raylib's types: a `Color` faded by its channels, set, and kept to 0 to 255; a color tween added to
-	a set and placed in a sequence as any tween; raylib's vectors written in place; a `Quaternion` turned as `QuaternionSlerp` turns
-	one; and a point moved along a curve. */
+/** Checks the tweens package with raylib's types: a `Color` faded by its channels, set, kept to 0 to 255 and appended to; a color
+	tween added to a set and placed in a sequence as any tween; raylib's vectors written in place; a `Quaternion` turned as
+	`QuaternionSlerp` turns one; and a point moved along a curve. */
 class TweensTests {
 	static var checks = 0;
 
@@ -32,6 +32,14 @@ class TweensTests {
 		fade.ease = Ease.outBack;
 		fade.update(.6);
 		check(fade.amount > 1 && fade.value.r == 0 && fade.value.b == 255 && fade.value.a == 255, "a curve that overshoots is kept to 0 to 255");
+		var flash:ColorTween = new ColorTween(WHITE, RED, 1).appendDelay(1).append(new Color(0, 0, 0, 0), 2, Ease.linear);
+		flash.update(1.5);
+		check(flash.value == RED && flash.duration == 4, "a color tween's legs and waits, appended as Colors");
+		flash.update(1.5);
+		var faded:Color = flash.value;
+		check(faded.r == 115 && faded.g == 21 && faded.b == 28 && faded.a == 128, "its second leg, each channel on its own");
+		flash.update(1);
+		check(flash.value == BLANK && flash.done, "to its end");
 
 		// A set and a sequence take a color tween as any tween, and a set gives the tween back as a color tween.
 		var tweens = new Tweens();

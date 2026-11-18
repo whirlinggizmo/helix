@@ -7,9 +7,10 @@ import helix.tweens.Tweens;
 import helix.tweens.Vector3Tween;
 
 /** Checks a sequence and a set with the library alone: tweens one after another, together and at times of their own, waits and
-	calls, two tweens writing one vector, the tweens' own delays, repeats, speeds and callbacks, a sequence repeating, playing back
-	and forth, backwards and sought, a sequence in a sequence, a tween that repeats for ever, tweens of no seconds, a sequence stepped
-	frame by frame against the same one sought; then a set stepping its tweens, dropping the done, and changed by a callback. */
+	calls, a tween of several legs placed as one, two tweens writing one vector, the tweens' own delays, repeats, speeds and
+	callbacks, a sequence repeating, playing back and forth, backwards and sought, a sequence in a sequence, a tween that repeats for
+	ever, tweens of no seconds, a sequence stepped frame by frame against the same one sought; then a set stepping its tweens,
+	dropping the done, and changed by a callback. */
 class TweenSequenceTests {
 	static var checks = 0;
 
@@ -73,6 +74,19 @@ class TweenSequenceTests {
 		a.seek(0);
 		a.update(1);
 		check(a.time == 0, "the sequence alone steps a tween placed in it");
+		check(refuses(() -> a.append(5, 1)) && refuses(() -> a.appendDelay(1)) && a.duration == 2, "a tween placed takes no more legs");
+
+		// A tween of several legs is placed as one tween.
+		var legs = new FloatTween(0, 2, 2).appendDelay(1).append(0, 1),
+			after = new FloatTween(0, 1, 1);
+		var chained = new TweenSequence().append(legs).append(after);
+		check(chained.duration == 5, "a tween's legs and waits are its time in a sequence");
+		chained.update(2.5);
+		check(legs.value == 2 && after.value == 0, "its wait");
+		chained.update(1);
+		check(legs.value == 1 && after.value == 0, "its second leg");
+		chained.update(1);
+		check(legs.value == 0 && legs.done && after.value == .5, "and the tween after it");
 
 		// The first join starts at the sequence's start, and a join after a wait starts with the tween before the wait.
 		var e = new FloatTween(0, 1, 1),

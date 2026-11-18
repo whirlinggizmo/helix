@@ -5,7 +5,7 @@ package helix.tweens;
 
 	A tween's settings are its fields, read at each `update`. */
 class Tween {
-	/** Gets the seconds one play takes: what a kind was made with, or what a sequence's tweens add up to. */
+	/** Gets the seconds one play takes: a kind's legs and waits together, or what a sequence's tweens add up to. */
 	public var duration(get, never):Float;
 
 	/** Gets or sets the seconds the tween waits before its first play. Defaults to 0. */

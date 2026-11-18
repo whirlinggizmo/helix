@@ -6,6 +6,7 @@ frame. Stepping allocates nothing natively and makes no object in a page.
 - `FloatTween`, `Vector2Tween`, `Vector3Tween`, `Vector4Tween`, `QuaternionTween`, `ColorTween`: a number, a vector, a rotation or a
   color moved from a start to an end along an easing curve. The vectors and the rotation are written in place.
 - `Vector2CurveTween`, `Vector3CurveTween`: a point moved along a `Curve` by distance, or along a part of it, with its heading.
+- `append` and `appendDelay` on each of those: the value moves on to another end, or waits, as one tween with one `value`.
 - `EasedTween`: the easing curve alone, for a program that mixes values of its own.
 - `Tween`: what every tween has: a delay, repeats and the wait before each, yoyo, a speed, pausing, playing backwards, seeking, and
   callbacks at the start, each step, each repeat and the end.
@@ -36,6 +37,24 @@ tweens.add(new TweenSequence().append(rise).appendDelay(0.25).append(glow).appen
 tweens.update(dt);
 light.intensity = glow.value;
 ```
+
+## One value through several moves, or several tweens
+
+A value that goes somewhere, waits and goes on is one tween. `append` adds a leg from where the tween ended before, and
+`appendDelay` a wait. The tween has one `value`, and repeats, plays back and seeks through every leg as one play.
+
+```haxe
+// Across with a bounce, a second's wait, back smoothly, a second's wait, for ever.
+var x = new FloatTween(-4, 4, 2, Ease.outBounce).appendDelay(1).append(-4, 2, Ease.inOutSine).appendDelay(1);
+x.repeatCount = -1;
+
+// each frame
+x.update(dt);
+ball.x = x.value;
+```
+
+Tweens that each move a value of their own are placed in a `TweenSequence`, as the door and the light above. Each stays a tween,
+with its own start, end, curve, repeats and callbacks, and the sequence can place them together or overlapping.
 
 ## Using it
 

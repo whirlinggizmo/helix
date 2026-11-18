@@ -2,9 +2,10 @@ import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.extras.tweens.*;
 
-/** Plays tweens (`helix.raylib.extras.tweens`): a panel slides in and its title fades in after it, the two placed in a sequence, and a
-	ball goes back and forth for ever, all stepped by one set. The `quit_after_frame` option (`--quit_after_frame=60` natively,
-	`?quit_after_frame=60` in a page) quits it after that frame. */
+/** Plays tweens (`helix.raylib.extras.tweens`): a panel slides in and its title fades in after it, the two placed in a sequence; a
+	ball goes back and forth for ever; and a block crosses with a bounce, waits and comes back smoothly, one tween of two legs. One
+	set steps them all. The `quit_after_frame` option (`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits it
+	after that frame. */
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: tweens");
@@ -16,6 +17,8 @@ class Main {
 		var ball = tweens.add(new FloatTween(60, 740, 1.2, Ease.inOutSine));
 		ball.repeatCount = -1;
 		ball.yoyo = true;
+		var block = tweens.add(new FloatTween(40, 720, 1.5, Ease.outBounce).appendDelay(0.5).append(40, 1.5, Ease.inOutSine).appendDelay(0.5));
+		block.repeatCount = -1;
 		while (!WindowShouldClose()) {
 			tweens.update(GetFrameTime());
 			BeginDrawing();
@@ -23,6 +26,7 @@ class Main {
 			DrawRectangleV(panel, new Vector2(360, 120), DARKBLUE);
 			DrawText("tweens", Std.int(panel.x) + 20, 100, 40, title.value);
 			DrawCircle(Std.int(ball.value), 330, 24, ORANGE);
+			DrawRectangle(Std.int(block.value), 380, 40, 40, SKYBLUE);
 			EndDrawing();
 		}
 		CloseWindow();

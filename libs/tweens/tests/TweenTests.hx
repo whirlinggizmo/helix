@@ -17,7 +17,8 @@ import helix.tweens.Vector4Tween;
 /** Checks a tween's timing and each kind with the library alone: a play from its start to exactly its end, the delay, repeats and
 	the wait before each, yoyo, a tween that repeats for ever, the speed, pausing, playing backwards, seeking, restarting, finishing
 	and cancelling, each callback and when it is made; then a number, the vectors written in place, a rotation, a color, and a point
-	along a curve by distance with its heading. */
+	along a curve by distance with its heading; then a tween of several legs and waits, repeated, played back and forth, backwards
+	and sought, for each kind. */
 class TweenTests {
 	static var checks = 0;
 
@@ -45,6 +46,7 @@ class TweenTests {
 		control();
 		kinds();
 		curves();
+		legs();
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);
@@ -482,5 +484,177 @@ class TweenTests {
 
 		check(refuses(() -> new Vector3CurveTween(square, 1)), "a Vector3CurveTween refuses a curve in 2 dimensions");
 		check(refuses(() -> new Vector2CurveTween(path, 1)), "a Vector2CurveTween refuses a curve in 3");
+	}
+
+	static function legs():Void {
+		// A number: across, a wait, back by another curve, a wait.
+		var x = new FloatTween(-4, 4, 2, Ease.outQuad);
+		check(x.append(-4, 2, Ease.inQuad) == x && x.appendDelay(1) == x, "appending returns the tween");
+		var plain = new FloatTween(-4, 4, 2, Ease.outQuad).appendDelay(1).append(-4, 2, Ease.inQuad).appendDelay(1);
+		var starts = 0, repeats = 0, completes = 0;
+		plain.onStart = () -> starts++;
+		plain.onRepeat = () -> repeats++;
+		plain.onComplete = () -> completes++;
+		check(plain.duration == 6 && plain.value == -4 && plain.amount == 0, "the legs and waits add up, and the value starts at the start");
+		plain.update(1);
+		check(plain.value == 2 && plain.amount == .75 && near(plain.progress, 1 / 6), "the first leg by its curve, the progress by the whole play");
+		plain.update(1);
+		check(plain.value == 4, "the first leg's end");
+		plain.update(.5);
+		check(plain.value == 4 && plain.amount == 0 && plain.time == 2.5, "a wait holds the value, at amount 0");
+		plain.update(1.5);
+		check(plain.value == 2 && plain.amount == .25, "the second leg by its own curve, from the first leg's end");
+		plain.update(1);
+		check(plain.value == -4 && !plain.done, "the second leg's end");
+		plain.update(1);
+		check(plain.value == -4 && plain.done && plain.time == 6 && starts == 1 && completes == 1, "the last wait, then done");
+		plain.update(1);
+		check(plain.time == 6 && completes == 1, "and stays");
+
+		// Each end is the end's own number, and a leg left out of the curve is a straight line.
+		var exact = new FloatTween(.1, .7, 3).append(.3, 3).append(.9, 3);
+		for (_ in 0...3)
+			exact.update(1);
+		check(exact.value == .7 && exact.time == 3, "a leg ends exactly at its end");
+		for (_ in 0...3)
+			exact.update(1);
+		check(exact.value == .3, "and the next");
+		exact.update(1.5);
+		check(near(exact.value, .6) && exact.amount == .5, "a leg with no curve is a straight line");
+		exact.update(1.5);
+		check(exact.value == .9 && exact.amount == 1 && exact.done, "the last leg ends at amount 1");
+
+		// A repeat takes every leg as one play.
+		plain.restart();
+		plain.repeatCount = 1;
+		plain.update(7);
+		check(plain.value == 2 && plain.amount == .75 && repeats == 1 && !plain.done, "a repeat starts again at the first leg");
+		plain.update(5);
+		check(plain.value == -4 && plain.done && plain.time == 12 && completes == 2, "and ends after its last leg");
+		var forth = new FloatTween(0, 10, 1).append(30, 1).appendDelay(1);
+		forth.yoyo = true;
+		forth.repeatCount = 1;
+		forth.update(1.5);
+		check(forth.value == 20, "forth");
+		forth.update(2);
+		check(forth.value == 30 && forth.amount == 0, "a yoyo comes back through the wait");
+		forth.update(1);
+		check(forth.value == 20, "then back down the last leg");
+		forth.update(1);
+		check(forth.value == 5 && forth.amount == .5, "and the first");
+		forth.update(.5);
+		check(forth.value == 0 && forth.done, "to the start");
+
+		// Backwards and sought.
+		var sought = new FloatTween(0, 10, 1).append(30, 1).append(0, 2);
+		sought.seek(1.5);
+		check(sought.value == 20 && sought.time == 1.5, "a seek finds its leg");
+		sought.seek(3);
+		check(sought.value == 15, "and another");
+		sought.seek(.5);
+		check(sought.value == 5, "and back");
+		sought.seek(4);
+		sought.reverse();
+		sought.update(1);
+		check(sought.value == 15, "backwards through the last leg");
+		sought.update(1);
+		check(sought.value == 30 && sought.amount == 1, "a leg reached backwards is at its end where two legs meet");
+		sought.update(2);
+		check(sought.value == 0 && sought.done, "back to the start");
+		sought.finish();
+		check(sought.value == 0, "a done tween stays");
+		sought.restart();
+		sought.finish();
+		check(sought.value == 0 && sought.time == 4 && sought.amount == 1, "finish jumps to the last leg's end");
+
+		// The first leg's ends stay settable, and the second leg leaves from where the first ends.
+		var moved = new FloatTween(0, 10, 1).append(100, 1);
+		moved.from = 2;
+		moved.to = 20;
+		moved.ease = Ease.inQuad;
+		moved.update(.5);
+		check(moved.value == 6.5, "from, to and ease are the first leg's");
+		moved.update(1);
+		check(moved.value == 60, "the second leg leaves from the first leg's to");
+
+		// A leg of no seconds jumps.
+		var jump = new FloatTween(0, 1, 1).append(5, 0).append(6, 1);
+		check(jump.duration == 2, "a leg of no seconds adds none");
+		jump.update(1);
+		check(jump.value == 5, "played forwards, a leg of no seconds is at its end");
+		jump.update(.5);
+		check(jump.value == 5.5, "and the leg after leaves from there");
+		jump.reverse();
+		jump.update(.5);
+		check(jump.value == 1, "played backwards, it is at its start");
+		var last = new FloatTween(0, 1, 1).append(9, 0);
+		last.update(1);
+		check(last.value == 9 && last.done, "a last leg of no seconds is reached at the end");
+		var none = new FloatTween(3, 4, 0).append(5, 0);
+		check(none.value == 3, "a tween of no seconds starts at its start");
+		none.update(0);
+		check(none.value == 5 && none.done, "and jumps to its last leg's end");
+		var negative = new FloatTween(0, 1, 1).append(2, -3).appendDelay(-1);
+		check(negative.duration == 1, "seconds less than 0 count as 0");
+
+		// A vector through its legs, written in place.
+		var position = new Vector3(0, 0, 0), top = new Vector3(0, 4, 0);
+		var lift = new Vector3Tween(position, new Vector3(2, 0, 0), 1, null, position).append(top, 2).appendDelay(1).append(position, 1);
+		top.set(9, 9, 9);
+		lift.update(2);
+		check(position.x == 1 && position.y == 2 && lift.value == position, "a vector's second leg, the tween keeping a copy of its end");
+		lift.update(1.5);
+		check(position.x == 0 && position.y == 4, "held through a wait");
+		lift.update(1);
+		check(position.x == 0 && position.y == 2, "and on to where the out was when appended");
+		lift.update(.5);
+		check(position.x == 0 && position.y == 0 && lift.done, "to the end");
+		var flat = new Vector2Tween(new Vector2(0, 0), new Vector2(4, 0), 1).append(new Vector2(4, 8), 1, Ease.inQuad);
+		flat.update(1.5);
+		check(flat.value.x == 4 && flat.value.y == 2, "a Vector2's second leg by its curve");
+		var four = new Vector4Tween(new Vector4(0, 0, 0, 0), new Vector4(1, 1, 1, 1), 1).appendDelay(1).append(new Vector4(1, 3, 5, 7), 2);
+		four.update(3);
+		check(four.value.x == 1 && four.value.y == 2 && four.value.z == 3 && four.value.w == 4, "a Vector4's, after a wait");
+
+		// A rotation.
+		var ahead = Quaternion.fromAxisAngle(0, 1, 0, 0),
+			left = Quaternion.fromAxisAngle(0, 1, 0, 1),
+			right = Quaternion.fromAxisAngle(0, 1, 0, -1);
+		var sweep = new QuaternionTween(ahead, left, 1).append(right, 2);
+		sweep.update(2);
+		var middle = Quaternion.slerp(left, right, .5);
+		check(sweep.value.x == middle.x && sweep.value.y == middle.y && sweep.value.z == middle.z && sweep.value.w == middle.w,
+			"a rotation's second leg turns from the first leg's end");
+		sweep.update(1);
+		check(sweep.value.y == right.y && sweep.value.w == right.w, "to its end");
+
+		// A color.
+		var flash = new ColorTween(0xffffffff, 0xffff0000, 1).appendDelay(1).append(0x00000000, 2);
+		flash.update(1.5);
+		check(flash.value == 0xffff0000, "a color held through a wait");
+		flash.update(1.5);
+		check(flash.value == 0x80800000, "a color's second leg, each channel on its own");
+		flash.update(1);
+		check(flash.value == 0, "to its end");
+
+		// Along a curve: on, and back.
+		var path = Curve.polyline([0, 0, 0, 3, 0, 0, 3, 1, 0], 3);
+		var cart = new Vector3();
+		var ride = new Vector3CurveTween(path, 2, null, cart);
+		ride.to = .5;
+		check(ride.appendDelay(1).append(1, 2).append(.25, 3) == ride && ride.duration == 8, "a curve tween's legs");
+		ride.update(2.5);
+		check(near(cart.x, 2) && near(cart.y, 0), "half way along, and waiting there");
+		ride.update(1);
+		check(near(cart.x, 2.5) && near(cart.y, 0) && near(ride.direction.x, 1), "on along the curve");
+		ride.update(1.5);
+		check(cart.x == 3 && cart.y == 1, "to the curve's end");
+		ride.update(1.5);
+		check(near(cart.x, 2.5) && near(cart.y, 0) && near(ride.direction.x, 1), "a leg to a lesser place moves back, the heading the curve's own");
+		ride.update(1.5);
+		check(near(cart.x, 1) && ride.done, "to its end");
+		var round = new Vector2CurveTween(Curve.polyline([0, 0, 4, 0, 4, 4, 0, 4], 2, true), 4).append(1.5, 2);
+		round.update(5);
+		check(near(round.value.x, 4) && near(round.value.y, 0), "a Vector2 on round a closed curve");
 	}
 }

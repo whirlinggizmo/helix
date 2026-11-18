@@ -555,8 +555,8 @@ OWNERS=r"(?:raylib(?: [\d.]+)?|rlgl|raygui|raymath|rlights|MTL|glTF)'s? $"
 def unknown_names(xml,pages):
     """The names helix-raylib's pages give in backticks that no library's reference shows: (page, name) pairs. A name is one a program
     would call or write, a type, function or constant, starting with a capital. One after its owner (OWNERS) is another's. One the shader
-    includes declare is in shaders.md."""
-    known=set()
+    includes declare is in shaders.md. `String` is Haxe's own, the type a refusal throws."""
+    known={'String'}
     for node in public_types(xml).values():
         known.update((node.get('path'),node.get('path').split('.')[-1]))
         known.update(c.tag for c in node.iter())

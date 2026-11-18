@@ -1207,3 +1207,19 @@ Why things are the way they are, numbered, in order.
     function value and the number returned, two allocations for each tween each step (27.7 ns a call against 10); an enum of the
     curves the library switches on, which allocates nothing and links all thirty curves into every program that makes a tween
     (3.7 KB gzip in a page built for one curve, against 0.4).
+
+82. **A tween takes more legs itself.** Each kind of tween that moves a value has `append(to, duration, ?ease)` and
+    `appendDelay(seconds)`: the value moves on from where the tween ended before to another end, or waits there. The tween's
+    `duration` is every leg and wait together, so the tween has one `value` through all of them, and repeats, plays back and
+    forth, reverses and seeks as one play. `from`, `to` and `ease` stay the first leg's, and settable. A leg added by `append`
+    is set when added. `amount` is the current leg's, and 0 during a wait. A tween placed in a sequence refuses both, as the
+    sequence took the tween's time when placed. helix-raylib's `ColorTween` appends raylib's `Color`. Stepping a tween of
+    several legs allocates nothing on hxcpp: 0 bytes of heap growth over a million steps of each kind, collection off.
+
+    Why: each entrant of the lighting and tweens trial moved one ball there and back with two tweens in a `TweenSequence`, and
+    each guessed. One read whichever of two `FloatTween`s had started, and two gave two `Vector3Tween`s one `out`. A sequence
+    places tweens that are each a part of their own. One value through several moves is one tween.
+
+    Rejected: a tween's `append` taking another tween, which is a second `TweenSequence` under another name and brings the
+    same guesses (a jump where the second doesn't start at the first's end, which `out` is written, kinds that can't follow each
+    other); a `value` on `TweenSequence`, which holds tweens of any kind and has no one type to give.
