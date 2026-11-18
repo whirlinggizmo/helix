@@ -389,6 +389,11 @@ def paged(path,members):
     out=['Its members are on their own pages:','']+links if len(links)>1 else [f'Its members are on their own page: [{name}.md]({name}.md).']
     return out+['']+sectioned([],(named,refused))
 
+def module_label(name):
+    """A raylib module page's name: Raylib and the module's words, as RCore's 'Raylib: core' and RTexturesAsync's 'Raylib: textures
+    async'."""
+    return 'Raylib: '+' '.join(word.lower() for word in re.findall(r'[A-Z][a-z]*',name[1:]))
+
 def for_dox(source,output):
     """The description dox reads: source's, with Raylib's functions moved to a class for each of raylib's modules (the module classes of
     helix.raylib.modules, each with the functions it writes), so the HTML has a page for each, as the Markdown does. Raylib keeps its
@@ -406,7 +411,7 @@ def for_dox(source,output):
         title=named.get(member.group(1))
         if title in moved and member.group(1) not in skipped:
             moved[title].append(member.group(0));kept=kept.replace(member.group(0),'',1)
-    links=', '.join(f'[{name}](modules/{name}.html)' for name,_ in sections)
+    links=', '.join(f'[{module_label(name)}](modules/{name}.html)' for name,_ in sections)
     kept=re.sub(r'</haxe_doc>(\n\t\t<meta>(?:(?!</haxe_doc>).)*)?$',lambda m:f"\n\nIts functions are on a page for each of raylib's modules: {links}.</haxe_doc>"+(m.group(1) or ''),kept,count=1,flags=re.S)
     blocks=[]
     for name,title in sections:

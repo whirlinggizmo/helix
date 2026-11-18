@@ -3,8 +3,8 @@ $(function () {
 	var root = new URL(dox.rootPath, location.href).href;
 	if (location.href.indexOf(root) != 0)
 		return;
-	// A folder's name opens its page: a library's or a package's, and Libraries' and Engines' the overview. Its icon only opens the
-	// branch.
+	// A closed folder's name opens its page: a library's or a package's, and Libraries' and Engines' the overview. An open folder's
+	// name closes it, and its icon opens or closes it.
 	$("#nav li.expando").each(function () {
 		var depth = $(this).parents("li.expando").length, href = root + "index.html";
 		if (depth > 0) {
@@ -13,11 +13,13 @@ $(function () {
 				return;
 			href = root + link.href.slice(root.length).split("/").slice(0, depth + 1).join("/") + "/index.html";
 		}
+		var folder = $(this);
 		$(this).children("a.nav-header").attr("href", href).removeAttr("onclick").on("click", function (e) {
-			return $(e.target).is("i") ? toggleCollapsed(this) : true;
+			return $(e.target).is("i") || folder.hasClass("expanded") ? toggleCollapsed(this) : true;
 		});
 	});
-	$("head").append("<style>#nav a.nav-header.current{background:#999;color:#fff}.dark-theme #nav a.nav-header.current{background:#269}</style>");
+	// The members' items are for the search alone (tools/build_pages.py), never shown in the tree.
+	$("head").append("<style>#nav a.nav-header.current{background:#999;color:#fff}.dark-theme #nav a.nav-header.current{background:#269}#nav li.member-index{display:none}</style>");
 	var parts = location.href.slice(root.length).split(/[?#]/)[0].split("/");
 	var file = parts.pop();
 	var open = function (branch) {
@@ -39,8 +41,9 @@ $(function () {
 		var branch = list.children("li.expando").filter(function () {
 			return $(this).children("a.nav-header").text() == parts[i];
 		}).first();
+		// A page with no folder of its own in the tree (Raylib's module pages, listed beside Raylib) is marked where its folder's would be.
 		if (!branch.length)
-			return;
+			break;
 		open(branch);
 		list = branch.children("ul");
 	}
