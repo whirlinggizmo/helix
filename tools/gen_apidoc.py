@@ -319,6 +319,15 @@ def member_lines(member,known,instance=()):
         sig=f'{static}{final_}{name}{access}:{type_text(t,known)}'
     return sig,doc_text(member),member
 
+def forms(body):
+    """A type's members, an overloaded one followed by its other forms, which the compiler's XML nests in the first (overloads)."""
+    for member in body:
+        yield member
+        others=member.find('overloads')
+        for other in ([] if others is None else others):
+            if member.get('static')=='1':other.set('static','1')
+            yield other
+
 def member_block(members):
     """Members as one block of signatures, then each one's doc."""
     lines=['```haxe']+[sig for sig,_,_ in members]+['```','']
@@ -459,7 +468,7 @@ def markdown(xml,native=frozenset()):
             enum={c.tag for c in body if c.find('meta') is not None and any(m.get('n')==':enum' for m in c.find('meta'))} if node.tag=='abstract' else set()
             # An abstract's property is the value's when its accessor takes the value (this).
             instance={c.tag for c in body if c.tag in properties and any((a.tag==f'get_{c.tag}' or a.tag==f'set_{c.tag}') and len(a) and (a[0].get('a') or '').split(':')[0]=='this' for a in body)} if node.tag=='abstract' else set()
-            members=[m for m in (member_lines(c,known,instance) for c in body if c.tag not in enum and not (c.tag[:4] in ('get_','set_') and c.tag[4:] in properties)) if m]
+            members=[m for m in (member_lines(c,known,instance) for c in forms(body) if c.tag not in enum and not (c.tag[:4] in ('get_','set_') and c.tag[4:] in properties)) if m]
             members=[(MACROS.get((path,n.tag),sig),d,n) for sig,d,n in members]
             members.sort(key=lambda m:0 if m[0].split('(')[0].endswith(' new') else 1)
             # A @:structInit class is written as an object where one is expected, not constructed: shown as that object, each field with

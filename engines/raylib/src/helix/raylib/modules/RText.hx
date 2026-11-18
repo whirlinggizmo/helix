@@ -1,6 +1,7 @@
 package helix.raylib.modules;
 
 #if !macro
+import helix.math.MathTools;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix4;
@@ -1105,7 +1106,7 @@ class RText {
 		}
 		if (x == 0 && places > 0)
 			mantissa = fixed(0, places);
-		var power = Std.string(Std.int(Math.abs(e)));
+		var power = Std.string(MathTools.abs(e));
 		return mantissa + (upper ? "E" : "e") + (e < 0 ? "-" : "+") + (power.length < 2 ? "0" + power : power);
 	}
 

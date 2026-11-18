@@ -2,6 +2,7 @@ package helix.render;
 
 #if !macro
 import helix.math.Matrix3;
+import helix.math.MathTools;
 import helix.platform.Blend;
 import helix.platform.ColorChannels;
 import helix.platform.CullFace;
@@ -286,9 +287,6 @@ class Material3D {
 	public function new() {}
 
 	// A value held to 0 to 1.
-	static function clamp(value:Float):Float
-		return Math.max(0, Math.min(1, value));
-
 	// Inlined, so a program writing Unlit links no lighting.
 	inline function set_shading(value:Shading3D):Shading3D {
 		if (value != Unlit)
@@ -309,15 +307,15 @@ class Material3D {
 	}
 
 	function set_metallic(value:Float):Float {
-		return metallic = clamp(value);
+		return metallic = MathTools.clamp01(value);
 	}
 
 	function set_roughness(value:Float):Float {
-		return roughness = clamp(value);
+		return roughness = MathTools.clamp01(value);
 	}
 
 	function set_specularIntensity(value:Float):Float {
-		return specularIntensity = clamp(value);
+		return specularIntensity = MathTools.clamp01(value);
 	}
 
 	function set_shininess(value:Float):Float {
@@ -329,15 +327,15 @@ class Material3D {
 	}
 
 	function set_clearcoat(value:Float):Float {
-		return clearcoat = clamp(value);
+		return clearcoat = MathTools.clamp01(value);
 	}
 
 	function set_clearcoatRoughness(value:Float):Float {
-		return clearcoatRoughness = clamp(value);
+		return clearcoatRoughness = MathTools.clamp01(value);
 	}
 
 	function set_sheenRoughness(value:Float):Float {
-		return sheenRoughness = clamp(value);
+		return sheenRoughness = MathTools.clamp01(value);
 	}
 
 	function set_normalScale(value:Float):Float {
@@ -345,7 +343,7 @@ class Material3D {
 	}
 
 	function set_occlusionIntensity(value:Float):Float {
-		return occlusionIntensity = clamp(value);
+		return occlusionIntensity = MathTools.clamp01(value);
 	}
 
 	function set_lightIntensity(value:Float):Float {
@@ -361,7 +359,7 @@ class Material3D {
 	}
 
 	function set_alphaCutoff(value:Float):Float {
-		return alphaCutoff = clamp(value);
+		return alphaCutoff = MathTools.clamp01(value);
 	}
 	#end
 

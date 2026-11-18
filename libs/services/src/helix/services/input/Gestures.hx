@@ -1,5 +1,6 @@
 package helix.services.input;
 
+import helix.math.MathTools;
 import helix.platform.Event;
 import helix.platform.IEvents;
 import helix.platform.IPollable;
@@ -279,7 +280,7 @@ class Gestures implements IPollable {
 
 	// Degrees from the x axis, 0 to 360.
 	static function angle(x1:Float, y1:Float, x2:Float, y2:Float):Float {
-		var result = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+		var result = MathTools.toDegrees(Math.atan2(y2 - y1, x2 - x1));
 		return result < 0 ? result + 360 : result;
 	}
 }

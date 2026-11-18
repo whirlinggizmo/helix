@@ -1,6 +1,7 @@
 package helix.raylib.modules;
 
 #if !macro
+import helix.math.MathTools;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.raylib.internal.Runtime;
@@ -83,7 +84,7 @@ class RTextureDraws {
 	static function DrawTexturePoly(texture:Texture2D, center:Vector2, points:Array<Vector2>, texcoords:Array<Vector2>, pointCount:Int, tint:Color):Void {
 		if (texture.id == 0 || pointCount < 2)
 			return;
-		var count = Std.int(Math.min(pointCount, Math.min(points.length, texcoords.length)));
+		var count = MathTools.min(pointCount, MathTools.min(points.length, texcoords.length));
 		var handle = helix.raylib.internal.Textures.handle(texture.id);
 		for (i in 0...count) {
 			var a = points[i], b = points[(i + 1) % count];
@@ -203,7 +204,7 @@ class RTextureDraws {
 			if (mode == TEXTURE_PATCH_STRETCH || tile <= 0)
 				piece(from, to, middleStart, middleEnd);
 			else if (mode == TEXTURE_PATCH_TILE_FIT) {
-				var count = Std.int(Math.max(1, Math.round((to - from) / tile)));
+				var count = MathTools.max(1, Math.round((to - from) / tile));
 				var size = (to - from) / count;
 				for (k in 0...count)
 					piece(from + k * size, k == count - 1 ? to : from + (k + 1) * size, middleStart, middleEnd);

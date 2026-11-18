@@ -1,5 +1,6 @@
 package helix.services.images;
 
+import helix.math.MathTools;
 import haxe.ds.Vector;
 import haxe.io.Bytes;
 import helix.math.Aabb2D;
@@ -393,11 +394,8 @@ class Image {
 		@param fill  The color of the canvas around it, as 0xAARRGGBB.
 		@return  The image: a copy when its sides are powers of two already. */
 	public function toPowerOfTwo(fill:Int):Image {
-		var w = 1, h = 1;
-		while (w < width)
-			w <<= 1;
-		while (h < height)
-			h <<= 1;
+		var w = MathTools.nextPowerOfTwo(width),
+			h = MathTools.nextPowerOfTwo(height);
 		return w == width && h == height ? copy() : resizeCanvas(w, h, 0, 0, fill);
 	}
 
@@ -808,7 +806,7 @@ class Image {
 		];
 		var levels = [for (k in 0...4) [for (v in 0...256) widen(v, bits[k], k == 3)]];
 		inline function spread(at:Int, error:Int, k:Int, weight:Float)
-			pixels.set(at + k, Std.int(Math.min(pixels.get(at + k) + Std.int(f32(f32(error * weight) / 16)), 255)));
+			pixels.set(at + k, MathTools.min(pixels.get(at + k) + Std.int(f32(f32(error * weight) / 16)), 255));
 		for (y in 0...height)
 			for (x in 0...width) {
 				var at = (y * width + x) * 4;

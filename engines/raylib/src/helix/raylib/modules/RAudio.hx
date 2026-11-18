@@ -1,6 +1,7 @@
 package helix.raylib.modules;
 
 #if !macro
+import helix.math.MathTools;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix4;
@@ -257,7 +258,7 @@ class RAudio {
 			var data = haxe.io.Bytes.alloc(size);
 			var from = wave.data;
 			if (from != null)
-				data.blit(0, from, start, Std.int(Math.max(0, Math.min(size, from.length - start))));
+				data.blit(0, from, start, MathTools.max(0, MathTools.min(size, from.length - start)));
 			wave.data = data;
 			wave.frameCount = frameCount;
 		} else
@@ -600,8 +601,8 @@ class RAudio {
 			return;
 		StopSound(sound);
 		var channels = service.channelCount;
-		var samples = owner.samples != null ? owner.samples : haxe.io.Bytes.alloc(Std.int(Math.max(1, Math.round(service.duration * 44100))) * channels * 4);
-		var bytes = Std.int(Math.min(Math.min(sampleCount * channels * 4, data.length), samples.length));
+		var samples = owner.samples != null ? owner.samples : haxe.io.Bytes.alloc(MathTools.max(1, Math.round(service.duration * 44100)) * channels * 4);
+		var bytes = MathTools.min(MathTools.min(sampleCount * channels * 4, data.length), samples.length);
 		if (bytes > 0)
 			samples.blit(0, data, 0, bytes);
 		var path = owner.path;
@@ -1186,7 +1187,7 @@ class RAudio {
 	// A buffer of a stream's samples, in its format, queued as floats, filled with silence to a buffer's frames.
 	static function queueBuffer(stream:AudioStream, data:haxe.io.Bytes, frameCount:Int):Void {
 		var frames = stream.bufferFrames, channels = stream.channels;
-		var given = Std.int(Math.max(0, Math.min(frameCount, frames)));
+		var given = MathTools.max(0, MathTools.min(frameCount, frames));
 		var size = bytesPerSample(stream.sampleSize) * channels;
 		var source = padded(data, given * size);
 		var floats = haxe.io.Bytes.alloc(frames * channels * 4);

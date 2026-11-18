@@ -1,6 +1,7 @@
 package helix.render;
 
 #if !macro
+import helix.math.MathTools;
 import helix.geometry.Camera3D;
 import helix.math.Aabb3D;
 import helix.math.Matrix4;
@@ -1609,7 +1610,7 @@ class Batch3D {
 			paletteBones = 0;
 			// One chunk of the rows the last frame needed, made again when it is four times too big. A frame needing more than the
 			// chunk holds makes others, each twice the one before.
-			var wanted = Std.int(Math.max(1, Math.ceil(paletteLastBones / 64)));
+			var wanted = MathTools.max(1, Math.ceil(paletteLastBones / 64));
 			if (paletteChunks.length > 1
 				|| paletteChunks.length == 1
 				&& (paletteChunks[0].rows < wanted || paletteChunks[0].rows > 16 && paletteChunks[0].rows > wanted * 4))
@@ -1623,9 +1624,9 @@ class Batch3D {
 		var n = skinning.length;
 		var chunk = paletteChunks.length > 0 ? paletteChunks[paletteChunks.length - 1] : null;
 		if (chunk == null || chunk.used + n > chunk.rows * 64) {
-			var rows = Std.int(Math.max(Math.max(1, Math.ceil(paletteLastBones / 64)), Math.ceil(n / 64)));
+			var rows = MathTools.max(MathTools.max(1, Math.ceil(paletteLastBones / 64)), Math.ceil(n / 64));
 			if (chunk != null)
-				rows = Std.int(Math.max(rows, chunk.rows * 2));
+				rows = MathTools.max(rows, chunk.rows * 2);
 			paletteChunks.push(chunk = new BonePalette(renderer.dataTexture(256, rows), rows));
 		}
 		var data = chunk.bytes;

@@ -456,7 +456,7 @@ class Vector3 {
 		return Trig.atan2(y, x);
 
 	static #if !cpp inline #end function near(a:Float, b:Float, tolerance:Float):Bool
-		return Interpolate.equals(a, b, tolerance);
+		return MathTools.equals(a, b, tolerance);
 
 	// A value kept between two bounds, the bounds swapped when they are in the wrong order (as Interpolate.clamp).
 	static inline function between(value:Float, min:Float, max:Float):Float {

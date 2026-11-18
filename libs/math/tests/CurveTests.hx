@@ -2,9 +2,9 @@ import helix.math.Curve;
 import helix.math.CurveKind;
 import helix.math.Interpolate;
 
-/** Interpolation (helix.math.Interpolate) and curves (Curve): lerps, angles the short way round, damping the same at any frame rate; a
-	polyline's points and length, a Bézier's known middle, a Catmull-Rom through its points, closed curves around, tangents, and a steady
-	speed by distance. */
+/** Interpolation (helix.math.Interpolate) and curves (Curve): lerps, the smooth steps, angles the short way round and turned by a step,
+	damping the same at any frame rate; a polyline's points and length, a Bézier's known middle, a Catmull-Rom through its points, closed
+	curves around, tangents, and a steady speed by distance. */
 class CurveTests {
 	static var checks = 0;
 
@@ -22,11 +22,20 @@ class CurveTests {
 		check(Interpolate.lerp(10, 20, .25) == 12.5 && Interpolate.lerp(10, 20, 1.5) == 25, "lerp, past the ends too");
 		check(Interpolate.inverseLerp(10, 20, 15) == .5 && Interpolate.inverseLerp(5, 5, 7) == 0, "inverseLerp, and 0 for an empty range");
 		check(Interpolate.remap(5, 0, 10, 100, 200) == 150, "remap");
-		check(Interpolate.clamp(5, 0, 3) == 3 && Interpolate.clamp(-1, 0, 3) == 0 && Interpolate.clamp(2, 3, 0) == 2, "clamp, with swapped bounds");
 		check(Interpolate.smoothStep(.5) == .5 && Interpolate.smoothStep(2) == 1 && Interpolate.smoothStep(.25) < .25, "smoothStep is slow at the ends");
-		check(near(Interpolate.wrapAngle(3 * Math.PI), -Math.PI)
-			&& near(Interpolate.wrapAngle(-3.5 * Math.PI), .5 * Math.PI), "wrapAngle to -π up to π");
+		check(Interpolate.smootherStep(.5) == .5
+			&& Interpolate.smootherStep(-1) == 0
+			&& Interpolate.smootherStep(2) == 1
+			&& Interpolate.smootherStep(.25) < Interpolate.smoothStep(.25),
+			"smootherStep is slower at the ends than smoothStep");
 		check(near(Interpolate.lerpAngle(.1, 2 * Math.PI - .1, .5), 0), "lerpAngle goes the short way round");
+		check(near(Interpolate.rotateToward(.1, 2 * Math.PI - .1, .05), .05)
+			&& near(Interpolate.rotateToward(.1, 2 * Math.PI - .1, 1), -.1)
+			&& near(Interpolate.rotateToward(3, -3, .1), 3.1)
+			&& Interpolate.rotateToward(1, 2, .25) == 1.25
+			&& Interpolate.rotateToward(1, 2, 0) == 1
+			&& Interpolate.rotateToward(1, 2, -1) == 1,
+			"rotateToward turns the short way round by a step, stops at the target's direction, and stays for a step of 0 or less");
 		check(Interpolate.moveToward(0, 10, 3) == 3
 			&& Interpolate.moveToward(9, 10, 3) == 10
 			&& Interpolate.moveToward(0, -10, 3) == -3

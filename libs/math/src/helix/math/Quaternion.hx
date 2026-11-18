@@ -454,14 +454,14 @@ class Quaternion {
 			defaults to 0, exactly equal.
 		@return  True when they are the same rotation. */
 	public function equals(other:Quaternion, tolerance = 0.):Bool {
-		return (Interpolate.equals(x, other.x, tolerance)
-			&& Interpolate.equals(y, other.y, tolerance)
-			&& Interpolate.equals(z, other.z, tolerance)
-			&& Interpolate.equals(w, other.w, tolerance))
-			|| (Interpolate.equals(x, -other.x, tolerance)
-				&& Interpolate.equals(y, -other.y, tolerance)
-				&& Interpolate.equals(z, -other.z, tolerance)
-				&& Interpolate.equals(w, -other.w, tolerance));
+		return (MathTools.equals(x, other.x, tolerance)
+			&& MathTools.equals(y, other.y, tolerance)
+			&& MathTools.equals(z, other.z, tolerance)
+			&& MathTools.equals(w, other.w, tolerance))
+			|| (MathTools.equals(x, -other.x, tolerance)
+				&& MathTools.equals(y, -other.y, tolerance)
+				&& MathTools.equals(z, -other.z, tolerance)
+				&& MathTools.equals(w, -other.w, tolerance));
 	}
 
 	/** Returns the rotation as a matrix.

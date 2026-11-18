@@ -2,6 +2,7 @@ package helix.raylib.internal;
 
 import haxe.io.Bytes;
 import helix.math.Matrix4;
+import helix.math.MathTools;
 import helix.services.shaders.ShaderUniform;
 
 /** Holds the scene's lights (the Lighting extra's `CreateLight`) and lights each draw through a shader declaring rlights' `lights`: the lights
@@ -226,16 +227,17 @@ class SceneLights {
 		var px = light.position.x,
 			py = light.position.y,
 			pz = light.position.z;
-		var nx = clamp(px, box[0], box[3]) - px,
-			ny = clamp(py, box[1], box[4]) - py,
-			nz = clamp(pz, box[2], box[5]) - pz;
+		var nx = MathTools.clamp(px, box[0], box[3]) - px,
+			ny = MathTools.clamp(py, box[1], box[4]) - py,
+			nz = MathTools.clamp(pz, box[2], box[5]) - pz;
 		// A range under 0 is none, as 0 is.
 		var d2 = nx * nx + ny * ny + nz * nz, range = light.range;
 		if (range > 0) {
 			if (d2 >= range * range)
 				return 0;
 			// The shaders' falloff: inverse square (from 0.1 out, for the score), windowed to nothing at the range.
-			var q2 = d2 / (range * range), window = clamp(1 - q2 * q2, 0, 1);
+			var q2 = d2 / (range * range),
+				window = MathTools.clamp(1 - q2 * q2, 0, 1);
 			s *= window * window / (d2 > 0.01 ? d2 : 0.01);
 		}
 		if (light.type == SPOT) {
@@ -255,7 +257,7 @@ class SceneLights {
 					dz = light.target.z - pz;
 				var dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
 				var cosine = dl > 0 ? (tx * dx + ty * dy + tz * dz) / (tl * dl) : 1;
-				var angle = Math.acos(clamp(cosine, -1, 1)) - Math.asin(radius / tl);
+				var angle = Math.acos(MathTools.clamp(cosine, -1, 1)) - Math.asin(radius / tl);
 				s *= cone(angle > 0 ? Math.cos(angle) : 1, coneCosine(light, true), coneCosine(light, false));
 			}
 		}
@@ -270,7 +272,7 @@ class SceneLights {
 	public static function cone(cosine:Float, inner:Float, outer:Float):Float {
 		if (inner - outer <= 1e-6)
 			return cosine >= outer ? 1 : 0;
-		var t = clamp((cosine - outer) / (inner - outer), 0, 1);
+		var t = MathTools.clamp((cosine - outer) / (inner - outer), 0, 1);
 		return t * t * (3 - 2 * t);
 	}
 
@@ -286,9 +288,6 @@ class SceneLights {
 		var angle = inner && light.innerAngle < outer ? light.innerAngle : outer;
 		return Math.cos((angle > 0 ? angle : 0) * Math.PI / 180);
 	}
-
-	static inline function clamp(x:Float, low:Float, high:Float):Float
-		return x < low ? low : x > high ? high : x;
 
 	// Writes the draw's lights into a program's lights, its others off, and the shadows they cast.
 	static function write(p:Program, f:Array<Null<ShaderUniform>>, n:Int):Void {

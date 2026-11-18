@@ -4,6 +4,7 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Interpolate;
+import helix.math.MathTools;
 import helix.math.Matrix4;
 import helix.math.Trig;
 import helix.raylib.internal.DefaultFont;
@@ -36,7 +37,7 @@ class RMath {
 		@param max  The most.
 		@return  The value, at least min and at most max. */
 	static inline function Clamp(value:Float, min:Float, max:Float):Float {
-		return Interpolate.clamp(value, min, max);
+		return MathTools.clamp(value, min, max);
 	}
 
 	/** Returns a value part of the way from one to another.
@@ -78,7 +79,7 @@ class RMath {
 		@param max  Its end.
 		@return  The value in the range. */
 	static inline function Wrap(value:Float, min:Float, max:Float):Float {
-		return Interpolate.wrap(value, min, max);
+		return MathTools.wrap(value, min, max);
 	}
 
 	/** Returns whether two values are equal but for rounding.
@@ -89,7 +90,7 @@ class RMath {
 		@param y  The other.
 		@return  1 if they are, 0 if not. */
 	static inline function FloatEquals(x:Float, y:Float):Int {
-		return Interpolate.equals(x, y, Raymath.EPSILON) ? 1 : 0;
+		return MathTools.equals(x, y, Raymath.EPSILON) ? 1 : 0;
 	}
 
 	// ---- raymath: Vector2 ----

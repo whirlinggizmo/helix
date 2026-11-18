@@ -1,6 +1,7 @@
 package helix.raylib.modules;
 
 #if !macro
+import helix.math.MathTools;
 import helix.raylib.*;
 import helix.raylib.modules.RCore.*;
 import helix.raylib.modules.RMath.*;
@@ -336,7 +337,7 @@ class RDebug {
 	static function fontSizeOf(style:FrameStatsStyle):Int {
 		var size = style.fontSize;
 		if (size == null)
-			return Std.int(Math.max(1, Math.round(GetScreenHeight() / 36)));
+			return MathTools.max(1, Math.round(GetScreenHeight() / 36));
 		if (size < 1)
 			throw 'FrameStatsStyle.fontSize must be at least 1, not $size';
 		return size;

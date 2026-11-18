@@ -9,7 +9,7 @@ import helix.raylib.Vector3;
 
 /** A program written in raylib on helix-raylib, as a game in raylib would be. Its image is docs/trials/templates/assets/player.png,
 	its model and animations engines/raylib/parity/assets/robot.glb. */
-@:adds("helix.math.Interpolate", "helix.raylib.internal.Skinning", "helix.raylib.internal._Skinning.Chunk")
+@:adds("helix.raylib.internal.Skinning", "helix.raylib.internal._Skinning.Chunk")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

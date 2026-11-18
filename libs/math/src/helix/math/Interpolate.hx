@@ -1,7 +1,7 @@
 package helix.math;
 
-/** Provides interpolation: between numbers and angles, along spline pieces, easing curves, clamping, smoothing, stepping and easing toward
-	a target.
+/** Provides interpolation: between numbers and angles, along spline pieces, easing curves, smoothing, stepping and easing toward a target.
+	`MathTools` clamps, wraps and snaps a number.
 
 	The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both.
 	Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses
@@ -41,43 +41,6 @@ class Interpolate {
 	public static function remap(value:Float, fromA:Float, fromB:Float, toA:Float, toB:Float):Float
 		return lerp(toA, toB, inverseLerp(fromA, fromB, value));
 
-	/** Returns a value clamped to a range.
-
-		Bounds given in the wrong order are swapped.
-		@param value  The value.
-		@param min  The lower bound.
-		@param max  The upper bound.
-		@return  The value, or the bound it's past. */
-	public static function clamp(value:Float, min:Float, max:Float):Float {
-		if (max < min) {
-			var t = min;
-			min = max;
-			max = t;
-		}
-		return value < min ? min : value > max ? max : value;
-	}
-
-	/** Returns a value wrapped around into a range, as an angle wraps around a turn.
-
-		@param value  The value.
-		@param min  The range's start.
-		@param max  The range's end.
-		@return  The value, from min up to max. */
-	public static function wrap(value:Float, min:Float, max:Float):Float
-		return value - (max - min) * Math.ffloor((value - min) / (max - min));
-
-	/** Returns whether two values are equal but for rounding.
-
-		@param a  One value.
-		@param b  The other value.
-		@param tolerance  The most the values may differ by, multiplied by the larger value's size when that size is over 1.
-		@return  True when the values are that close. */
-	public static inline function equals(a:Float, b:Float, tolerance:Float):Bool {
-		var sizeA = Math.abs(a), sizeB = Math.abs(b);
-		var size = sizeA > sizeB ? sizeA : sizeB;
-		return Math.abs(a - b) <= (size > 1 ? tolerance * size : tolerance);
-	}
-
 	/** Returns a fraction clamped to 0 to 1 and smoothed, slow at both ends.
 
 		@param t  The fraction.
@@ -87,17 +50,13 @@ class Interpolate {
 		return t * t * (3 - 2 * t);
 	}
 
-	/** Returns an angle wrapped to -π up to π.
+	/** Returns a fraction clamped to 0 to 1 and smoothed more than `smoothStep` smooths: speed and acceleration are 0 at both ends.
 
-		@param angle  The angle, in radians.
-		@return  The same direction, from -π, included, to π, excluded. */
-	public static function wrapAngle(angle:Float):Float {
-		var a = angle % (2 * Math.PI);
-		if (a >= Math.PI)
-			a -= 2 * Math.PI;
-		else if (a < -Math.PI)
-			a += 2 * Math.PI;
-		return a;
+		@param t  The fraction.
+		@return  6t⁵ - 15t⁴ + 10t³ of the clamped fraction. */
+	public static function smootherStep(t:Float):Float {
+		t = t < 0 ? 0 : t > 1 ? 1 : t;
+		return t * t * t * (t * (t * 6 - 15) + 10);
 	}
 
 	/** Returns the angle a fraction of the way from one angle to another, the short way round.
@@ -107,7 +66,7 @@ class Interpolate {
 		@param t  The fraction.
 		@return  The angle, in radians, not wrapped. */
 	public static function lerpAngle(a:Float, b:Float, t:Float):Float
-		return a + wrapAngle(b - a) * t;
+		return a + MathTools.wrapAngle(b - a) * t;
 
 	/** Returns a value moved toward a target by at most a step.
 
@@ -121,6 +80,20 @@ class Interpolate {
 			return value;
 		var d = target - value;
 		return d > step ? value + step : d < -step ? value - step : target;
+	}
+
+	/** Returns an angle turned toward a target by at most a step, the short way round.
+
+		The angle reaches the target's direction and stops there. A step of 0 or less leaves the angle unchanged.
+		@param angle  The angle, in radians.
+		@param target  The angle to turn toward, in radians.
+		@param step  The most the angle turns, in radians.
+		@return  The turned angle, in radians, not wrapped. */
+	public static function rotateToward(angle:Float, target:Float, step:Float):Float {
+		if (!(step > 0))
+			return angle;
+		var d = MathTools.wrapAngle(target - angle);
+		return d > step ? angle + step : d < -step ? angle - step : angle + d;
 	}
 
 	/** Returns a value eased toward a target over a time step, the same at any frame rate.
@@ -143,7 +116,7 @@ class Interpolate {
 		@param dt  The time step, in seconds.
 		@return  The eased angle, in radians, not wrapped. */
 	public static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
-		return !(rate > 0) || !(dt > 0) ? value : value + wrapAngle(target - value) * (1 - Math.exp(-rate * dt));
+		return !(rate > 0) || !(dt > 0) ? value : value + MathTools.wrapAngle(target - value) * (1 - Math.exp(-rate * dt));
 
 	/** Returns the value on a curve from one value to another, the curve leaving and arriving at two slopes (a cubic Hermite curve), on
 		one axis.

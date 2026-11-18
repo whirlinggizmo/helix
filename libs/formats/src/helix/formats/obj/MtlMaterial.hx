@@ -1,5 +1,7 @@
 package helix.formats.obj;
 
+import helix.math.MathTools;
+
 /** Represents one material of an .mtl file: its colors, factors and the textures it names, as paths resolved against the file's
 	directory and normalized as `ObjFile`'s are (null for none). A value the file doesn't give is null, and its `computeX` method gives
 	the default to draw with. Its colors are arrays the material holds, and the defaults' are shared: read them, don't change them. A
@@ -151,8 +153,8 @@ class MtlMaterial {
 		@return  The roughness. */
 	public function computeRoughness():Float {
 		if (roughness != null)
-			return clamp(roughness);
-		return clamp(1 - Math.sqrt(Math.max(0, computeShininess()) / 1000));
+			return MathTools.clamp01(roughness);
+		return MathTools.clamp01(1 - Math.sqrt(Math.max(0, computeShininess()) / 1000));
 	}
 
 	/** Returns the metalness to draw with, 0 to 1: the file's (`metalness`), or 0 when it gives none, as older files describe no
@@ -160,7 +162,7 @@ class MtlMaterial {
 
 		@return  The metalness. */
 	public function computeMetalness():Float {
-		return metalness != null ? clamp(metalness) : 0;
+		return metalness != null ? MathTools.clamp01(metalness) : 0;
 	}
 
 	/** Returns the normal map to draw with: the file's normal map (`norm`), or its bump texture when it gives none, as most exporters
@@ -172,8 +174,6 @@ class MtlMaterial {
 	}
 
 	// A value held to 0 to 1.
-	static function clamp(value:Float):Float
-		return value < 0 ? 0 : value > 1 ? 1 : value;
 
 	/** Returns the path the last of some texture statements gives, in the file's order: for a reader that takes some of the statements
 		a field joins and not others (`bumpTexturePath` is the last of `bump`, `map_bump` and `map_Bump`).

@@ -1,3 +1,4 @@
+import helix.math.MathTools;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
 import helix.platform.IPollable;
@@ -78,7 +79,7 @@ class Main {
 		for (id in touch.released)
 			trace('finger $id lifted at ${Math.round(touch.getX(id))}, ${Math.round(touch.getY(id))}: ${touch.fingers.length} down');
 		// Each finger down adds 24 to every channel of the grey.
-		var lift = Std.int(Math.min(touch.fingers.length * 24, 200));
+		var lift = MathTools.min(touch.fingers.length * 24, 200);
 		var color = WAITING + (lift << 16 | lift << 8 | lift);
 		graphics.beginFrame(window.framebufferWidth, window.framebufferHeight, color);
 		graphics.endFrame();

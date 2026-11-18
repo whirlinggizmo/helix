@@ -1,5 +1,7 @@
 package helix.render;
 
+import helix.math.MathTools;
+
 /** Shapes made of triangles in a plane, for both batches: each triangle handed to `emit`, curves cut into as many segments as keep their
 	edge within a quarter of a pixel at `scale` pixels a unit. Strokes are centered on their edges; a polyline's ends are square, cut at
 	its points, and its corners mitered, or bevelled where the miter would reach past twice the thickness. */
@@ -211,7 +213,7 @@ class Tessellator2D {
 	/** The outline of a rectangle with rounded corners into `outline`: clockwise on screen from the top-left corner's arc. */
 	function rounded(x:Float, y:Float, width:Float, height:Float, radius:Float):Void {
 		var r = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
-		var steps = Std.int(Math.max(1, Math.ceil(segments(r) / 4)));
+		var steps = MathTools.max(1, Math.ceil(segments(r) / 4));
 		outline.resize(0);
 		for (corner in 0...4) {
 			var cx = corner == 0 || corner == 3 ? x + r : x + width - r,

@@ -1,7 +1,7 @@
 package helix.raylib.internal;
 
 import haxe.io.FPHelper;
-import helix.math.Interpolate;
+import helix.math.MathTools;
 import helix.math.Matrix4;
 import helix.formats.gltf.GltfFile;
 import helix.raylib.*;
@@ -278,7 +278,7 @@ class Animations {
 			tend = input[keyframe + 1];
 		}
 		// A constant animation needs no interpolation.
-		if (Interpolate.equals(tend, tstart, Raymath.EPSILON))
+		if (MathTools.equals(tend, tstart, Raymath.EPSILON))
 			type = 0;
 		var duration = float32(Math.max(tend - tstart, Raymath.EPSILON));
 		var t = float32((time - tstart) / duration);
@@ -360,7 +360,7 @@ class Animations {
 			return;
 		var currentFrame = truncate(frame);
 		var nextFrame = currentFrame + 1;
-		var blend = Interpolate.clamp(frame - currentFrame, 0, 1);
+		var blend = MathTools.clamp(frame - currentFrame, 0, 1);
 		if (currentFrame >= anim.frameCount)
 			currentFrame = currentFrame % anim.frameCount;
 		if (nextFrame >= anim.frameCount)
@@ -394,12 +394,12 @@ class Animations {
 		// raylib wraps the frame before taking its fraction, so a frame past the end mixes with a fraction above 1, clamped.
 		var currentFrameA = truncate(frameA) % animA.frameCount;
 		var nextFrameA = currentFrameA + 1;
-		var blendA = Interpolate.clamp(frameA - currentFrameA, 0, 1);
+		var blendA = MathTools.clamp(frameA - currentFrameA, 0, 1);
 		if (nextFrameA >= animA.frameCount)
 			nextFrameA = nextFrameA % animA.frameCount;
 		var currentFrameB = truncate(frameB) % animB.frameCount;
 		var nextFrameB = currentFrameB + 1;
-		var blendB = Interpolate.clamp(frameB - currentFrameB, 0, 1);
+		var blendB = MathTools.clamp(frameB - currentFrameB, 0, 1);
 		if (nextFrameB >= animB.frameCount)
 			nextFrameB = nextFrameB % animB.frameCount;
 		var poses = posed(model);
@@ -445,7 +445,7 @@ class Animations {
 			return false;
 		if (animA.frameCount <= 0 || animA.framePoses == null || animB.frameCount <= 0 || animB.framePoses == null)
 			return false;
-		blend = Interpolate.clamp(blend, 0, 1);
+		blend = MathTools.clamp(blend, 0, 1);
 		var count = model.boneCount;
 		if (boneWeights.length != count || animA.boneCount != count || animB.boneCount != count) {
 			Runtime.log(4,
@@ -456,10 +456,10 @@ class Animations {
 		var localA = localFrames(animA), localB = localFrames(animB);
 		var currentFrameA = truncate(frameA) % animA.frameCount;
 		var nextFrameA = (currentFrameA + 1) % animA.frameCount;
-		var blendA = Interpolate.clamp(frameA - currentFrameA, 0, 1);
+		var blendA = MathTools.clamp(frameA - currentFrameA, 0, 1);
 		var currentFrameB = truncate(frameB) % animB.frameCount;
 		var nextFrameB = (currentFrameB + 1) % animB.frameCount;
-		var blendB = Interpolate.clamp(frameB - currentFrameB, 0, 1);
+		var blendB = MathTools.clamp(frameB - currentFrameB, 0, 1);
 		var poses = posed(model);
 		var ta = mixA.translation, ra = mixA.rotation, sa = mixA.scale;
 		var tb = mixB.translation, rb = mixB.rotation, sb = mixB.scale;
@@ -475,7 +475,7 @@ class Animations {
 			Vector3.lerp(b0.translation, b1.translation, blendB, tb);
 			rotationBetween(b0.rotation, b1.rotation, blendB, rb);
 			Vector3.lerp(b0.scale, b1.scale, blendB, sb);
-			var weight = Interpolate.clamp(boneWeights[boneIndex] * blend, 0, 1);
+			var weight = MathTools.clamp(boneWeights[boneIndex] * blend, 0, 1);
 			Vector3.lerp(ta, tb, weight, t);
 			rotationBetween(ra, rb, weight, r);
 			Vector3.lerp(sa, sb, weight, s);

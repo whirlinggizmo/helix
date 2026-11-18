@@ -466,7 +466,7 @@ function at(t:Float):Float
 
 *class* in [`libs/math/src/helix/math/Interpolate.hx`](../src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
 
-Provides interpolation: between numbers and angles, along spline pieces, easing curves, clamping, smoothing, stepping and easing toward a target.
+Provides interpolation: between numbers and angles, along spline pieces, easing curves, smoothing, stepping and easing toward a target. `MathTools` clamps, wraps and snaps a number.
 
 The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both. Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses `Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets. `Ease` has each curve as a value (`Ease.outCubic`), for a tween or another call to take.
 
@@ -476,13 +476,11 @@ The easing curves are Robert Penner's, each family in three: `easeIn...` starts 
 static function lerp(a:Float, b:Float, t:Float):Float
 static function inverseLerp(a:Float, b:Float, value:Float):Float
 static function remap(value:Float, fromA:Float, fromB:Float, toA:Float, toB:Float):Float
-static function clamp(value:Float, min:Float, max:Float):Float
-static function wrap(value:Float, min:Float, max:Float):Float
-static function equals(a:Float, b:Float, tolerance:Float):Bool
 static function smoothStep(t:Float):Float
-static function wrapAngle(angle:Float):Float
+static function smootherStep(t:Float):Float
 static function lerpAngle(a:Float, b:Float, t:Float):Float
 static function moveToward(value:Float, target:Float, step:Float):Float
+static function rotateToward(angle:Float, target:Float, step:Float):Float
 static function damp(value:Float, target:Float, rate:Float, dt:Float):Float
 static function dampAngle(value:Float, target:Float, rate:Float, dt:Float):Float
 static function hermite(from:Float, fromTangent:Float, to:Float, toTangent:Float, t:Float):Float
@@ -541,29 +539,12 @@ static function easeInOutBounce(t:Float):Float
   - `toA`: The second range's start.
   - `toB`: The second range's end.
   - returns: The value in the second range.
-- `clamp`: Returns a value clamped to a range.
-  - `value`: The value.
-  - `min`: The lower bound.
-  - `max`: The upper bound.
-  - returns: The value, or the bound it's past.
-
-  Bounds given in the wrong order are swapped.
-- `wrap`: Returns a value wrapped around into a range, as an angle wraps around a turn.
-  - `value`: The value.
-  - `min`: The range's start.
-  - `max`: The range's end.
-  - returns: The value, from min up to max.
-- `equals`: Returns whether two values are equal but for rounding.
-  - `a`: One value.
-  - `b`: The other value.
-  - `tolerance`: The most the values may differ by, multiplied by the larger value's size when that size is over 1.
-  - returns: True when the values are that close.
 - `smoothStep`: Returns a fraction clamped to 0 to 1 and smoothed, slow at both ends.
   - `t`: The fraction.
   - returns: 3t² - 2t³ of the clamped fraction.
-- `wrapAngle`: Returns an angle wrapped to -π up to π.
-  - `angle`: The angle, in radians.
-  - returns: The same direction, from -π, included, to π, excluded.
+- `smootherStep`: Returns a fraction clamped to 0 to 1 and smoothed more than `smoothStep` smooths: speed and acceleration are 0 at both ends.
+  - `t`: The fraction.
+  - returns: 6t⁵ - 15t⁴ + 10t³ of the clamped fraction.
 - `lerpAngle`: Returns the angle a fraction of the way from one angle to another, the short way round.
   - `a`: The angle at 0, in radians.
   - `b`: The angle at 1, in radians.
@@ -576,6 +557,13 @@ static function easeInOutBounce(t:Float):Float
   - returns: The moved value.
 
   It reaches the target exactly. A step of 0 or less leaves the value unchanged.
+- `rotateToward`: Returns an angle turned toward a target by at most a step, the short way round.
+  - `angle`: The angle, in radians.
+  - `target`: The angle to turn toward, in radians.
+  - `step`: The most the angle turns, in radians.
+  - returns: The turned angle, in radians, not wrapped.
+
+  The angle reaches the target's direction and stops there. A step of 0 or less leaves the angle unchanged.
 - `damp`: Returns a value eased toward a target over a time step, the same at any frame rate.
   - `value`: The value.
   - `target`: The target.
@@ -716,6 +704,126 @@ static function easeInOutBounce(t:Float):Float
 - `easeInOutBounce`: Returns a fraction eased slow at both ends: bouncing to rest.
   - `t`: The fraction, 0 to 1.
   - returns: The eased fraction, 0 at 0 and 1 at 1.
+
+## MathTools
+
+*class* in [`libs/math/src/helix/math/MathTools.hx`](../src/helix/math/MathTools.hx), `import helix.math.MathTools;`
+
+Provides what Haxe's `Math` lacks for a number: clamping, wrapping, snapping, comparing, the least, greatest and size of whole numbers, powers of two, and degrees and radians.
+
+Each function takes the number first, so a file with `using helix.math.MathTools;` calls each on the number. `clamp`, `wrap` and `snap` give an `Int` for `Int`s and a `Float` for any other numbers.
+
+```haxe
+using helix.math.MathTools;
+
+var volume = level.clamp(0, 1);
+var column = index.clamp(0, 7); // an Int, as index is
+var facing = velocity.x.sign(); // -1, 0 or 1
+var radians = degrees.toRadians();
+```
+
+```haxe
+static function clamp(value:Int, min:Int, max:Int):Int
+static function clamp(value:Float, min:Float, max:Float):Float
+static function clamp01(value:Float):Float
+static function wrap(value:Int, min:Int, max:Int):Int
+static function wrap(value:Float, min:Float, max:Float):Float
+static function wrapAngle(angle:Float):Float
+static function snap(value:Int, step:Int):Int
+static function snap(value:Float, step:Float):Float
+static function pingPong(value:Float, length:Float):Float
+static function sign(value:Float):Int
+static function equals(a:Float, b:Float, tolerance:Float):Bool
+static function min(a:Int, b:Int):Int
+static function max(a:Int, b:Int):Int
+static function abs(value:Int):Int
+static function isPowerOfTwo(value:Int):Bool
+static function nextPowerOfTwo(value:Int):Int
+static function toRadians(degrees:Float):Float
+static function toDegrees(radians:Float):Float
+```
+
+- `clamp`: Returns a whole number clamped to a range.
+  - `value`: The number.
+  - `min`: The lower bound.
+  - `max`: The upper bound.
+  - returns: The number, or the bound the number is past.
+
+  Bounds given in the wrong order are swapped.
+- `clamp`: Returns a value clamped to a range.
+  - `value`: The value.
+  - `min`: The lower bound.
+  - `max`: The upper bound.
+  - returns: The value, or the bound the value is past.
+
+  Bounds given in the wrong order are swapped.
+- `clamp01`: Returns a value clamped to 0 to 1.
+  - `value`: The value.
+  - returns: The value, 0 below 0, or 1 above 1.
+- `wrap`: Returns a whole number wrapped around into a range, as a column wraps around a row.
+  - `value`: The number.
+  - `min`: The range's start.
+  - `max`: The range's end.
+  - returns: The number, from min up to max, max excluded.
+
+  Bounds given in the wrong order are swapped. A range of no size gives `min`.
+- `wrap`: Returns a value wrapped around into a range, as an angle wraps around a turn.
+  - `value`: The value.
+  - `min`: The range's start.
+  - `max`: The range's end.
+  - returns: The value, from min up to max.
+
+  Bounds given in the wrong order are swapped. A range of no size gives `min`.
+- `wrapAngle`: Returns an angle wrapped to -π up to π.
+  - `angle`: The angle, in radians.
+  - returns: The same direction, from -π, included, to π, excluded.
+- `snap`: Returns a whole number moved to the nearest multiple of a step, as a place snaps to a grid of tiles.
+  - `value`: The number.
+  - `step`: The step. 0 or less leaves the number as it is.
+  - returns: The snapped number.
+
+  A number halfway between two multiples moves to the greater.
+- `snap`: Returns a value moved to the nearest multiple of a step, as a slider snaps to its marks.
+  - `value`: The value.
+  - `step`: The step. 0 or less leaves the value as it is.
+  - returns: The snapped value.
+
+  A value halfway between two multiples moves to the greater.
+- `pingPong`: Returns a value bounced back and forth between 0 and a length, as a ball between two walls.
+  - `value`: The value, of any size.
+  - `length`: The far wall. 0 or less gives 0.
+  - returns: The bounced value, 0 to length.
+- `sign`: Returns a value's sign.
+  - `value`: The value.
+  - returns: 1 above 0, -1 below 0, and 0 at 0 and for NaN.
+- `equals`: Returns whether two values are equal but for rounding.
+  - `a`: One value.
+  - `b`: The other value.
+  - `tolerance`: The most the values may differ by, multiplied by the larger value's size when that size is over 1.
+  - returns: True when the values are that close.
+- `min`: Returns the lesser of two whole numbers, as an `Int`. `Math.min` gives a `Float`.
+  - `a`: One number.
+  - `b`: The other number.
+  - returns: The lesser.
+- `max`: Returns the greater of two whole numbers, as an `Int`. `Math.max` gives a `Float`.
+  - `a`: One number.
+  - `b`: The other number.
+  - returns: The greater.
+- `abs`: Returns a whole number's size, as an `Int`. `Math.abs` gives a `Float`.
+  - `value`: The number.
+  - returns: The number without its sign.
+- `isPowerOfTwo`: Returns whether a whole number is a power of two: 1, 2, 4, 8 and on.
+  - `value`: The number.
+  - returns: True for a power of two. False for 0 and for a number below 0.
+- `nextPowerOfTwo`: Returns the least power of two that isn't below a whole number, as a texture's side is rounded up.
+  - `value`: The number.
+  - returns: The power of two: the number itself when the number is one, 1 for a number below 1, and 1,073,741,824 at most.
+- `toRadians`: Returns an angle in degrees as radians.
+  - `degrees`: The angle, in degrees.
+  - returns: The angle, in radians.
+- `toDegrees`: Returns an angle in radians as degrees.
+  - `radians`: The angle, in radians.
+  - returns: The angle, in degrees.
 
 ## Matrix3
 

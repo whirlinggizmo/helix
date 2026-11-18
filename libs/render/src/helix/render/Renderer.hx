@@ -1,5 +1,6 @@
 package helix.render;
 
+import helix.math.MathTools;
 import haxe.io.Bytes;
 import helix.platform.Blend;
 import helix.platform.ColorChannels;
@@ -159,7 +160,7 @@ class Renderer {
 			throw "helix-render: TargetDepth.Texture isn't built yet; use Buffer or None";
 		// The count asked for, or the screen's, held to 1 to what this GPU draws the format with, a power of two as the platform rounds it.
 		var asked = msaaSampleCount == null ? graphics.msaaSampleCount : msaaSampleCount;
-		var most = Std.int(Math.min(graphics.maxMsaaSampleCount, graphics.getMaxRenderTargetMsaaSampleCount(format)));
+		var most = MathTools.min(graphics.maxMsaaSampleCount, graphics.getMaxRenderTargetMsaaSampleCount(format));
 		var samples = 1;
 		while (samples * 2 <= asked && samples * 2 <= most)
 			samples *= 2;

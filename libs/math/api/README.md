@@ -13,6 +13,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [DistanceField2D](types.md#distancefield2d)
   - [Ease](types.md#ease)
   - [Interpolate](types.md#interpolate)
+  - [MathTools](types.md#mathtools)
   - [Matrix3](types.md#matrix3)
   - [Matrix4](types.md#matrix4)
   - [Quaternion](types.md#quaternion)

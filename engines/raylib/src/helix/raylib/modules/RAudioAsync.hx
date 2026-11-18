@@ -1,6 +1,7 @@
 package helix.raylib.modules;
 
 #if !macro
+import helix.math.MathTools;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix4;
@@ -79,7 +80,7 @@ class RAudioAsync {
 
 	// LoadWaveFromMemoryAsync's call (Raylib.LoadWaveFromMemoryAsync): the bytes read by read, the reader fileType names (WaveMacro).
 	static function loadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, read:WaveReader, loaded:Wave->Void, ?failed:String->Void):Void {
-		var data = fileData == null ? haxe.io.Bytes.alloc(0) : dataSize < fileData.length ? fileData.sub(0, Std.int(Math.max(0, dataSize))) : fileData;
+		var data = fileData == null ? haxe.io.Bytes.alloc(0) : dataSize < fileData.length ? fileData.sub(0, MathTools.max(0, dataSize)) : fileData;
 		read(fileType == null ? "" : fileType, data, wave -> loadedWave(wave, loaded), message -> refuse("LoadWaveFromMemoryAsync", message, failed));
 	}
 

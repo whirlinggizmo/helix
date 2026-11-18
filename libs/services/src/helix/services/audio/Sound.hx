@@ -1,5 +1,6 @@
 package helix.services.audio;
 
+import helix.math.MathTools;
 import haxe.io.Bytes;
 import helix.formats.audio.AudioHeader;
 import helix.platform.GrowingSource;
@@ -79,9 +80,9 @@ class Sound {
 	// Has the length read from a download's start and its last bytes, once its start has arrived (`Audio.stream`, natively).
 	function measureFrom(growing:GrowingSource, tail:Bytes):Void {
 		measure = () -> {
-			if (growing.received < Std.int(Math.min(START, growing.total - tail.length)))
+			if (growing.received < MathTools.min(START, growing.total - tail.length))
 				return -1;
-			var start = growing.bytes.sub(0, Std.int(Math.min(START, growing.received)));
+			var start = growing.bytes.sub(0, MathTools.min(START, growing.received));
 			return AudioHeader.readDuration(start, tail, growing.total);
 		};
 	}

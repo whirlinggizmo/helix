@@ -1,6 +1,7 @@
 package helix.raylib.modules;
 
 #if !macro
+import helix.math.MathTools;
 import helix.raylib.*;
 import helix.raylib.internal.Runtime;
 #end
@@ -83,9 +84,6 @@ class RTextureFills {
 	static var polygon:Null<Array<Float>>;
 	static var clipped:Null<Array<Float>>;
 
-	static function clamp(value:Float, low:Float, high:Float):Float
-		return value < low ? low : value > high ? high : value;
-
 	// An angle in degrees wrapped to [0, 360).
 	static function wrap(degrees:Float):Float {
 		var wrapped = degrees % 360;
@@ -97,7 +95,7 @@ class RTextureFills {
 			fillDegrees:Float, tint:Color):Void {
 		if (texture.id == 0 || texture.width == 0 || texture.height == 0 || dest.width <= 0 || dest.height <= 0)
 			return;
-		amount = clamp(amount, 0, 1);
+		amount = MathTools.clamp(amount, 0, 1);
 		if (amount == 0)
 			return;
 		// The source's texture coordinates at dest's left, right, top and bottom: a negative width or height flips it.
@@ -134,7 +132,7 @@ class RTextureFills {
 			RTextureDraws.cell(x0, y0, x1, y1, u0 + (u1 - u0) * x0 / w, v0 + (v1 - v0) * y0 / h, u0 + (u1 - u0) * x1 / w, v0 + (v1 - v0) * y1 / h);
 			return;
 		}
-		var sweep = clamp(fillDegrees, 0, 360) * amount;
+		var sweep = MathTools.clamp(fillDegrees, 0, 360) * amount;
 		if (sweep <= 0)
 			return;
 		var from = wrap(startAngle);
@@ -217,7 +215,7 @@ class RTextureFills {
 			out:Null<Vector3>):Vector3 {
 		if (out == null)
 			out = new Vector3(0, 0, 0);
-		amount = clamp(amount, 0, 1);
+		amount = MathTools.clamp(amount, 0, 1);
 		out.x = dest.x + dest.width / 2;
 		out.y = dest.y + dest.height / 2;
 		out.z = 0;
@@ -231,7 +229,7 @@ class RTextureFills {
 			case BOTTOM_TO_TOP:
 				out.y = dest.y + dest.height * (1 - amount);
 			case CLOCKWISE | COUNTER_CLOCKWISE:
-				var sweep = clamp(fillDegrees, 0, 360) * amount;
+				var sweep = MathTools.clamp(fillDegrees, 0, 360) * amount;
 				out.x = dest.x + originX;
 				out.y = dest.y + originY;
 				out.z = wrap(fillDirection == CLOCKWISE ? wrap(startAngle) + sweep : wrap(startAngle) - sweep);

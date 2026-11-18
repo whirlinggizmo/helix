@@ -1,5 +1,6 @@
 package helix.render;
 
+import helix.math.MathTools;
 import helix.geometry.Mesh3D;
 import helix.math.Aabb3D;
 import helix.math.Matrix4;
@@ -344,7 +345,7 @@ class GpuMesh3D {
 			for (i in [a, b, b, c, c, a])
 				list.push(i);
 		}
-		var bytes = haxe.io.Bytes.alloc(Std.int(Math.max(4, list.length * 4)));
+		var bytes = haxe.io.Bytes.alloc(MathTools.max(4, list.length * 4));
 		for (i in 0...list.length)
 			bytes.setInt32(i * 4, list[i]);
 		edgeBuffer = renderer.graphics.createStaticBuffer(bytes, bytes.length, true);

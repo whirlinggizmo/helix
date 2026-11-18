@@ -1,5 +1,6 @@
 package helix.raylib.internal;
 
+import helix.math.MathTools;
 import haxe.io.Bytes;
 import helix.math.Matrix4;
 import helix.raylib.*;
@@ -213,7 +214,7 @@ class Skinning {
 			writtenStamp = -1;
 			// One chunk of the rows the last frame needed, made again when it is four times too big; a frame needing more than it
 			// holds makes others, each twice the one before.
-			var wanted = Std.int(Math.max(1, Math.ceil(lastBones / 64)));
+			var wanted = MathTools.max(1, Math.ceil(lastBones / 64));
 			if (chunks.length > 1 || chunks.length == 1 && (chunks[0].rows < wanted || chunks[0].rows > 16 && chunks[0].rows > wanted * 4))
 				for (c in chunks.splice(0, chunks.length)) {
 					Runtime.graphics.disposeTexture(c.handle);
@@ -226,9 +227,9 @@ class Skinning {
 			return chunk.handle;
 		var floats = pose.bones, n = Std.int(floats.length / 16);
 		if (chunk == null || chunk.used + n > chunk.rows * 64) {
-			var rows = Std.int(Math.max(Math.max(1, Math.ceil(lastBones / 64)), Math.ceil(n / 64)));
+			var rows = MathTools.max(MathTools.max(1, Math.ceil(lastBones / 64)), Math.ceil(n / 64));
 			if (chunk != null)
-				rows = Std.int(Math.max(rows, chunk.rows * 2));
+				rows = MathTools.max(rows, chunk.rows * 2);
 			chunks.push(chunk = new Chunk(Runtime.graphics.createDataTexture(256, rows), rows));
 		}
 		var data = chunk.bytes, at = chunk.used * 64;
