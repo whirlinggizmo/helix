@@ -236,8 +236,9 @@ static function fromMatrix(viewProjection:Matrix4, ?out:Frustum):Frustum
 final planes:Array<Float>
 function copyFrom(other:Frustum):Frustum
 function contains(x:Float, y:Float, z:Float):Bool
-function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
+function intersectsSphere(sphere:Sphere):Bool
 function intersectsBounds(bounds:Aabb3D):Bool
+function getPlane(index:Int, ?out:Plane):Plane
 ```
 
 - `new`: Creates a frustum that holds everything until it is set from a matrix (`fromMatrix`).
@@ -255,16 +256,19 @@ function intersectsBounds(bounds:Aabb3D):Bool
   - `z`: The point's z.
   - returns: True when it is inside or on a plane.
 - `intersectsSphere`: Returns whether a sphere is at least partly inside.
-  - `x`: The center's x, in the matrix's world units.
-  - `y`: The center's y.
-  - `z`: The center's z.
-  - `radius`: The radius.
+  - `sphere`: The sphere, in the matrix's world units.
   - returns: True when some of it may be inside.
+
+  An empty sphere is never inside.
 - `intersectsBounds`: Returns whether a box is at least partly inside.
   - `bounds`: The box, in the matrix's world units.
   - returns: True when some of it may be inside.
 
   An empty box is never inside.
+- `getPlane`: Returns one of the six planes, facing into the frustum.
+  - `index`: Which plane: 0 the left, 1 the right, 2 the bottom, 3 the top, 4 the near and 5 the far.
+  - `out`: Optional. The plane to fill; a new one when omitted.
+  - returns: The plane, a point inside the frustum in front of it.
 
 ## Geometry2D
 
@@ -327,6 +331,81 @@ static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Flo
   - `bx`: Its end x.
   - `by`: Its end y.
   - returns: True when they touch, the circle's edge included.
+
+## Geometry3D
+
+*class* in [`libs/geometry/src/helix/geometry/Geometry3D.hx`](../src/helix/geometry/Geometry3D.hx), `import helix.geometry.Geometry3D;`
+
+Provides tests on points, segments and triangles in space, their points given as plain numbers, as `Geometry2D` does in a plane.
+
+```haxe
+// How far a ball is from a rail, and the point of the rail the ball is nearest.
+var nearest = Geometry3D.getClosestPointOnSegment(ball.x, ball.y, ball.z, 0, 1, 0, 10, 1, 0);
+```
+
+Each test that returns a point writes it into an optional out, the last argument, and returns it: a new vector when omitted.
+
+```haxe
+static function getClosestPointOnSegment(x:Float, y:Float, z:Float, ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, ?out:Vector3):Vector3
+static function getDistanceToSegment(x:Float, y:Float, z:Float, ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float):Float
+static function getClosestPointOnTriangle(x:Float, y:Float, z:Float, ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float, cy:Float, cz:Float, ?out:Vector3):Vector3
+static function getClosestPointsBetweenSegments(a1x:Float, a1y:Float, a1z:Float, a2x:Float, a2y:Float, a2z:Float, b1x:Float, b1y:Float, b1z:Float, b2x:Float, b2y:Float, b2z:Float, ?outA:Vector3, ?outB:Vector3):Float
+```
+
+- `getClosestPointOnSegment`: Returns the point on a segment nearest a point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `ax`: The segment's start x.
+  - `ay`: The start's y.
+  - `az`: The start's z.
+  - `bx`: The segment's end x.
+  - `by`: The end's y.
+  - `bz`: The end's z.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The nearest point; the start for a segment of no length.
+- `getDistanceToSegment`: Returns how far a point is from a segment.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `ax`: The segment's start x.
+  - `ay`: The start's y.
+  - `az`: The start's z.
+  - `bx`: The segment's end x.
+  - `by`: The end's y.
+  - `bz`: The end's z.
+  - returns: The distance.
+- `getClosestPointOnTriangle`: Returns the point on a triangle nearest a point: inside the triangle, on an edge or at a corner.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `ax`: The first corner's x.
+  - `ay`: The first corner's y.
+  - `az`: The first corner's z.
+  - `bx`: The second corner's x.
+  - `by`: The second corner's y.
+  - `bz`: The second corner's z.
+  - `cx`: The third corner's x.
+  - `cy`: The third corner's y.
+  - `cz`: The third corner's z.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The nearest point. A triangle of no area is taken as the segment or the point its corners make.
+- `getClosestPointsBetweenSegments`: Finds where two segments come nearest each other.
+  - `a1x`: The first segment's start x.
+  - `a1y`: The first segment's start y.
+  - `a1z`: The first segment's start z.
+  - `a2x`: The first segment's end x.
+  - `a2y`: The first segment's end y.
+  - `a2z`: The first segment's end z.
+  - `b1x`: The second segment's start x.
+  - `b1y`: The second segment's start y.
+  - `b1z`: The second segment's start z.
+  - `b2x`: The second segment's end x.
+  - `b2y`: The second segment's end y.
+  - `b2z`: The second segment's end z.
+  - `outA`: Optional. Set to the point on the first segment.
+  - `outB`: Optional. Set to the point on the second segment.
+  - returns: How far apart the two points are: 0 when the segments cross. Parallel segments give the first segment's start and the point of the second nearest that start, or the nearest pair of ends when that start is past the second segment.
 
 ## KeyInterpolation
 
@@ -504,7 +583,7 @@ function computeBounds(?out:Aabb3D):Aabb3D
 
 Represents a ray: a point it starts from and a direction it goes in, for picking and line of sight.
 
-A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses, its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1, in world units. Shapes are given as plain numbers, as `Frustum` and `Aabb3D` take them. Given an out, no test allocates.
+A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses, its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1, in world units. Given an out, no test allocates.
 
 ```haxe
 function new()
@@ -514,8 +593,8 @@ function set(x:Float, y:Float, z:Float, dx:Float, dy:Float, dz:Float):Ray3D
 function copyFrom(other:Ray3D):Ray3D
 function computePoint(distance:Float, ?out:Vector3):Vector3
 function transform(matrix:Matrix4, ?out:Ray3D):Ray3D
-function intersectPlane(x:Float, y:Float, z:Float, nx:Float, ny:Float, nz:Float, ?out:RayHit3D):Null<RayHit3D>
-function intersectSphere(x:Float, y:Float, z:Float, radius:Float, ?out:RayHit3D):Null<RayHit3D>
+function intersectPlane(plane:Plane, ?out:RayHit3D):Null<RayHit3D>
+function intersectSphere(sphere:Sphere, ?out:RayHit3D):Null<RayHit3D>
 function intersectBounds(bounds:Aabb3D, ?out:RayHit3D):Null<RayHit3D>
 function intersectTriangle(ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float, cy:Float, cz:Float, ?out:RayHit3D):Null<RayHit3D>
 function intersectMesh(mesh:Mesh3D, ?transform:Matrix4, ?out:RayHit3D):Null<RayHit3D>
@@ -543,20 +622,12 @@ function intersectMesh(mesh:Mesh3D, ?transform:Matrix4, ?out:RayHit3D):Null<RayH
   - `matrix`: The transform.
   - `out`: Optional. Set to the moved ray; may be this one.
   - returns: The moved ray.
-- `intersectPlane`: Returns where the ray meets a plane, from either side. The hit's normal is the plane's, as given.
-  - `x`: A point on the plane's x.
-  - `y`: Its y.
-  - `z`: Its z.
-  - `nx`: The plane's normal's x.
-  - `ny`: Its y.
-  - `nz`: Its z.
+- `intersectPlane`: Returns where the ray meets a plane, from either side. The hit's normal is the plane's.
+  - `plane`: The plane.
   - `out`: Optional. Set to the hit.
   - returns: The hit; null when the ray runs along the plane or away from it.
 - `intersectSphere`: Returns where the ray meets a sphere: where it goes in, or from inside, where it comes out. The hit's normal points out of the sphere.
-  - `x`: The center's x.
-  - `y`: Its y.
-  - `z`: Its z.
-  - `radius`: The radius.
+  - `sphere`: The sphere; an empty one is never met.
   - `out`: Optional. Set to the hit.
   - returns: The hit; null when it misses or the sphere is behind it.
 - `intersectBounds`: Returns where the ray meets bounds: where it goes in, or from inside, where it comes out. The hit's normal points out of the face it is on.

@@ -3,6 +3,8 @@ import helix.geometry.Ray3D;
 import helix.geometry.RayHit3D;
 import helix.math.Aabb3D;
 import helix.math.Matrix4;
+import helix.math.Plane;
+import helix.math.Sphere;
 import helix.math.Vector3;
 
 /** Checks Ray3D with the library alone, against hits worked by hand: a plane from either side, along it and behind; a sphere from
@@ -41,21 +43,30 @@ class Ray3DTests {
 
 		// A plane.
 		var down = new Ray3D().set(0, 10, 0, 0, -2, 0);
-		check(is(down.intersectPlane(0, 0, 0, 0, 1, 0), 5, [0, 0, 0], [0, 1, 0]), "the ground from above: the direction's lengths");
-		check(is(new Ray3D().set(3, -4, 1, 0, 1, 0).intersectPlane(0, 0, 0, 0, 2, 0), 4, [3, 0, 1], [0, 1, 0]),
-			"from below too, its normal the plane's as given, made length 1");
-		check(new Ray3D().set(0, 10, 0, 1, 0, 0).intersectPlane(0, 0, 0, 0, 1, 0) == null, "along it: none");
-		check(new Ray3D().set(0, 10, 0, 0, 1, 0).intersectPlane(0, 0, 0, 0, 1, 0) == null, "away from it: none");
+		check(is(down.intersectPlane(Plane.fromPointNormal(0, 0, 0, 0, 1, 0)), 5, [0, 0, 0], [0, 1, 0]), "the ground from above: the direction's lengths");
+		check(is(new Ray3D().set(3, -4, 1, 0, 1, 0).intersectPlane(Plane.fromPointNormal(0, 0, 0, 0, 2, 0)), 4, [3, 0, 1], [0, 1, 0]),
+			"from below too, its normal the plane's");
+		check(is(down.intersectPlane(new Plane(0, 1, 0, -2)), 4, [0, 2, 0], [0, 1, 0]), "a plane away from the origin");
+		check(is(new Ray3D().set(4, 0, 0, -1, 0, 0).intersectPlane(Plane.fromPointNormal(1, 1, 0, -1, -1, 0)), 2, [2, 0, 0],
+			[-Math.sqrt(.5), -Math.sqrt(.5), 0]),
+			"a tilted plane from behind: the normal still the plane's");
+		check(new Ray3D().set(0, 10, 0, 1, 0, 0).intersectPlane(Plane.fromPointNormal(0, 0, 0, 0, 1, 0)) == null, "along it: none");
+		check(new Ray3D().set(0, 10, 0, 0, 1, 0).intersectPlane(Plane.fromPointNormal(0, 0, 0, 0, 1, 0)) == null, "away from it: none");
 
 		// A sphere.
 		var toSphere = new Ray3D().set(0, 0, 10, 0, 0, -1);
-		check(is(toSphere.intersectSphere(0, 0, 0, 2), 8, [0, 0, 2], [0, 0, 1]), "a sphere from outside: where it goes in");
-		check(is(new Ray3D().set(0, 0, 0, 1, 0, 0).intersectSphere(0, 0, 0, 2), 2, [2, 0, 0], [1, 0, 0]),
+		check(is(toSphere.intersectSphere(new Sphere(0, 0, 0, 2)), 8, [0, 0, 2], [0, 0, 1]), "a sphere from outside: where it goes in");
+		check(is(new Ray3D().set(0, 0, 0, 1, 0, 0).intersectSphere(new Sphere(0, 0, 0, 2)), 2, [2, 0, 0], [1, 0, 0]),
 			"from inside: where it comes out, its normal still out");
-		check(new Ray3D().set(0, 0, 10, 0, 0, 1).intersectSphere(0, 0, 0, 2) == null, "behind it: none");
-		check(new Ray3D().set(3, 0, 10, 0, 0, -1).intersectSphere(0, 0, 0, 2) == null, "beside it: none");
-		var grazing = new Ray3D().set(2, 0, 10, 0, 0, -1).intersectSphere(0, 0, 0, 2);
+		check(new Ray3D().set(0, 0, 10, 0, 0, 1).intersectSphere(new Sphere(0, 0, 0, 2)) == null, "behind it: none");
+		check(new Ray3D().set(3, 0, 10, 0, 0, -1).intersectSphere(new Sphere(0, 0, 0, 2)) == null, "beside it: none");
+		var grazing = new Ray3D().set(2, 0, 10, 0, 0, -1).intersectSphere(new Sphere(0, 0, 0, 2));
 		check(is(grazing, 10, [2, 0, 0], [1, 0, 0]), "touching its edge: met there");
+		check(is(toSphere.intersectSphere(new Sphere(0, 1, 3, 2)), 7 - Math.sqrt(3), [0, 0, 3 + Math.sqrt(3)], [0, -.5, Math.sqrt(3) / 2]),
+			"a sphere off the ray's line");
+		check(toSphere.intersectSphere(new Sphere(0, 0, 0, -1)) == null
+			&& toSphere.intersectSphere(new Sphere(0, 0, 0, 2).makeEmpty()) == null,
+			"an empty sphere: none");
 
 		// Bounds.
 		var box = new Aabb3D().set(-1, -2, -3, 1, 2, 3);
@@ -102,12 +113,13 @@ class Ray3DTests {
 
 		// Into the hit given; a miss leaves it.
 		var given = new RayHit3D();
-		check(toSphere.intersectSphere(0, 0, 0, 2, given) == given && near(given.distance, 8), "a hit into the one given");
-		check(toSphere.intersectSphere(50, 0, 0, 2, given) == null
+		check(toSphere.intersectSphere(new Sphere(0, 0, 0, 2), given) == given && near(given.distance, 8), "a hit into the one given");
+		check(toSphere.intersectSphere(new Sphere(50, 0, 0, 2), given) == null
 			&& near(given.distance, 8)
 			&& at(given.point, 0, 0, 2), "a miss: it unchanged");
 		check(along.intersectMesh(cube, placed, given) == given && given.triangleIndex == hitTriangle, "a mesh's hit into the one given");
-		check(toSphere.intersectPlane(0, 0, 0, 0, 0, 1, given) == given && given.triangleIndex == -1, "another test's: no triangle");
+		check(toSphere.intersectPlane(Plane.fromPointNormal(0, 0, 0, 0, 0, 1), given) == given
+			&& given.triangleIndex == -1, "another test's: no triangle");
 		var copy = new RayHit3D().copyFrom(given);
 		check(copy.distance == given.distance
 			&& at(copy.point, given.point.x, given.point.y, given.point.z)

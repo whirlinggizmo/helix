@@ -80,7 +80,7 @@ function intersects(other:Aabb2D):Bool
 
 Represents an axis-aligned box in 3 dimensions: its least and greatest coordinate on each axis.
 
-A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. `set`, `copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` writes its result into an optional out, the last argument, and returns it: a new box when it is omitted, this one left unchanged; the out may be this box or the other. Its space is its maker's.
+A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. `set`, `copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` and `getClosestPoint` write their result into an optional out, the last argument, and return it: a new value when omitted, this box left unchanged. `union`'s out may be this box or the other. Its space is its maker's.
 
 ```haxe
 function new()
@@ -104,7 +104,8 @@ function expand(x:Float, y:Float, z:Float):Aabb3D
 function union(other:Aabb3D, ?out:Aabb3D):Aabb3D
 function contains(x:Float, y:Float, z:Float):Bool
 function intersects(other:Aabb3D):Bool
-function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
+function intersectsSphere(sphere:Sphere):Bool
+function getClosestPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
 ```
 
 - `new`: Creates an empty box.
@@ -153,12 +154,15 @@ function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
 - `intersects`: Returns whether the box and another overlap, touching faces included.
   - `other`: The other box.
   - returns: True when they overlap; false when either is empty.
-- `intersectsSphere`: Returns whether a sphere touches or overlaps the bounds.
-  - `x`: The sphere's center's x.
-  - `y`: Its y.
-  - `z`: Its z.
-  - `radius`: Its radius.
-  - returns: True when they touch or overlap; false for empty bounds.
+- `intersectsSphere`: Returns whether the box and a sphere overlap, touching included.
+  - `sphere`: The sphere.
+  - returns: True when they overlap; false when either is empty.
+- `getClosestPoint`: Returns the point in the box nearest a point.
+  - `x`: The point's x coordinate.
+  - `y`: The point's y coordinate.
+  - `z`: The point's z coordinate.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The nearest point: the point itself when in the box, and NaN on each axis for an empty box.
 
 ## Color
 
@@ -1302,6 +1306,110 @@ static function fractal(x:Float, y:Float, ?z:Float = 0., ?octaves:Int = 6, ?lacu
   - `seed`: Optional. Picks one noise of 256; defaults to 0.
   - returns: The sum: mostly within -1 to 1 at the default gain, and at most the octaves' sizes added up, 1.97 at the defaults.
 
+## Plane
+
+*class* in [`libs/math/src/helix/math/Plane.hx`](../src/helix/math/Plane.hx), `import helix.math.Plane;`
+
+Represents a plane: a point is on the plane when `normal` dot the point, plus `distance`, is 0, and in front of the plane when that sum is above 0.
+
+```haxe
+var floor = Plane.fromPointNormal(0, 2, 0, 0, 1, 0); // facing up, 2 above the origin
+var height = floor.getDistanceTo(player.x, player.y, player.z); // below 0 under the floor
+```
+
+`set` and `copyFrom` change this plane and return it. The others write their result into an optional out, the last argument, and return it: a new value when omitted.
+
+```haxe
+function new(?normalX:Float = 0., ?normalY:Float = 1., ?normalZ:Float = 0., ?distance:Float = 0.)
+static function fromPointNormal(x:Float, y:Float, z:Float, normalX:Float, normalY:Float, normalZ:Float, ?out:Plane):Plane
+static function fromPoints(ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float, cy:Float, cz:Float, ?out:Plane):Plane
+static function intersectPlanes(a:Plane, b:Plane, c:Plane, ?out:Vector3):Null<Vector3>
+final normal:Vector3
+var distance:Float
+function set(normalX:Float, normalY:Float, normalZ:Float, distance:Float):Plane
+function copyFrom(other:Plane):Plane
+function getDistanceTo(x:Float, y:Float, z:Float):Float
+function getClosestPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
+function intersectSegment(ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, ?out:Vector3):Null<Vector3>
+function intersectsSphere(sphere:Sphere):Bool
+function intersectsBounds(bounds:Aabb3D):Bool
+function transform(matrix:Matrix4, ?out:Plane):Plane
+```
+
+- `new`: Creates a plane, the ground facing up (+y) unless told.
+  - `normalX`: Optional. The x of the direction the plane faces, of length 1; defaults to 0.
+  - `normalY`: Optional. The direction's y; defaults to 1.
+  - `normalZ`: Optional. The direction's z; defaults to 0.
+  - `distance`: Optional. How far the origin is in front of the plane; defaults to 0.
+- `fromPointNormal`: Returns the plane through a point, facing a direction.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `normalX`: The x of the direction the plane faces, of any length.
+  - `normalY`: The direction's y.
+  - `normalZ`: The direction's z.
+  - `out`: Optional. The plane to fill; a new one when omitted.
+  - returns: The plane. A direction of length 0 gives a plane facing up (+y).
+- `fromPoints`: Returns the plane through three points, facing the side the points run counterclockwise on.
+  - `ax`: The first point's x.
+  - `ay`: The first point's y.
+  - `az`: The first point's z.
+  - `bx`: The second point's x.
+  - `by`: The second point's y.
+  - `bz`: The second point's z.
+  - `cx`: The third point's x.
+  - `cy`: The third point's y.
+  - `cz`: The third point's z.
+  - `out`: Optional. The plane to fill; a new one when omitted.
+  - returns: The plane. Three points in a line give a plane through the first point, facing up (+y).
+- `intersectPlanes`: Returns the point three planes share.
+  - `a`: The first plane.
+  - `b`: The second plane.
+  - `c`: The third plane.
+  - `out`: Optional. The vector to fill when the planes share a point; a new one when omitted.
+  - returns: The point; null when the planes share no one point (two of them parallel, or all three along one line), the out unchanged.
+- `normal`: Gets the direction the plane faces, of length 1.
+- `distance`: Gets or sets how far the origin is in front of the plane.
+- `set`: Sets the plane's normal and distance.
+  - `normalX`: The x of the direction the plane faces, of length 1.
+  - `normalY`: The direction's y.
+  - `normalZ`: The direction's z.
+  - `distance`: How far the origin is in front of the plane.
+  - returns: This plane.
+- `copyFrom`: Sets the plane's normal and distance to another plane's.
+  - `other`: The plane to copy.
+  - returns: This plane.
+- `getDistanceTo`: Returns how far a point is in front of the plane.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - returns: The distance: 0 on the plane, below 0 behind the plane.
+- `getClosestPoint`: Returns the point on the plane nearest a point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The nearest point.
+- `intersectSegment`: Returns where the segment between two points crosses the plane.
+  - `ax`: The segment's start x.
+  - `ay`: The start's y.
+  - `az`: The start's z.
+  - `bx`: The segment's end x.
+  - `by`: The end's y.
+  - `bz`: The end's z.
+  - `out`: Optional. The vector to fill when the segment crosses; a new one when omitted.
+  - returns: The crossing, an end on the plane included; the start for a segment lying in the plane. null when both ends are on one side, the out unchanged.
+- `intersectsSphere`: Returns whether a sphere touches or crosses the plane.
+  - `sphere`: The sphere.
+  - returns: true when part of the sphere is on the plane; false for an empty sphere.
+- `intersectsBounds`: Returns whether a box touches or crosses the plane.
+  - `bounds`: The box.
+  - returns: true when part of the box is on the plane; false for an empty box.
+- `transform`: Returns this plane moved by a matrix: the plane through the moved points of this plane, its front the moved front.
+  - `matrix`: The matrix, which may scale each axis by its own amount, shear and mirror.
+  - `out`: Optional. The plane to fill; a new one when omitted. It may be this plane.
+  - returns: The moved plane. A matrix that flattens this plane to a line or a point keeps this plane's normal.
+
 ## Quaternion
 
 *class* in [`libs/math/src/helix/math/Quaternion.hx`](../src/helix/math/Quaternion.hx), `import helix.math.Quaternion;`
@@ -1624,6 +1732,106 @@ static function pack(width:Int, height:Int, sizes:Array<Int>):Array<Int>
   - `height`: The area's height.
   - `sizes`: Each rectangle's width and height, flat: width, height, width, height.
   - returns: Each rectangle's place, flat, in the same order: x, y, and 1 when it was placed or 0 when it didn't fit. A rectangle with no width or height is placed at 0, 0.
+
+## Sphere
+
+*class* in [`libs/math/src/helix/math/Sphere.hx`](../src/helix/math/Sphere.hx), `import helix.math.Sphere;`
+
+Represents a sphere: a center and a radius.
+
+```haxe
+var reach = new Sphere(tower.x, tower.y, tower.z, 12);
+if (reach.contains(enemy.x, enemy.y, enemy.z))
+fire();
+```
+
+A sphere with a radius below 0 is empty: the sphere holds no point and touches no shape. `set`, `copyFrom`, `makeEmpty` and `expand` change this sphere and return it. The others write their result into an optional out, the last argument, and return it: a new value when omitted.
+
+```haxe
+function new(?x:Float = 0., ?y:Float = 0., ?z:Float = 0., ?radius:Float = 1.)
+static function fromBounds(bounds:Aabb3D, ?out:Sphere):Sphere
+static function fromPoints(points:Array<Float>, pointCount:Int, ?offset:Int = 0, ?stride:Int = 3, ?out:Sphere):Sphere
+final center:Vector3
+var radius:Float
+function set(x:Float, y:Float, z:Float, radius:Float):Sphere
+function copyFrom(other:Sphere):Sphere
+function makeEmpty():Sphere
+var isEmpty(get, never):Bool
+function contains(x:Float, y:Float, z:Float):Bool
+function intersects(other:Sphere):Bool
+function intersectsBounds(bounds:Aabb3D):Bool
+function getClosestPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
+function expand(x:Float, y:Float, z:Float):Sphere
+function union(other:Sphere, ?out:Sphere):Sphere
+function transform(matrix:Matrix4, ?out:Sphere):Sphere
+function getBounds(?out:Aabb3D):Aabb3D
+```
+
+- `new`: Creates a sphere, of radius 1 at the origin unless told.
+  - `x`: Optional. The center's x; defaults to 0.
+  - `y`: Optional. The center's y; defaults to 0.
+  - `z`: Optional. The center's z; defaults to 0.
+  - `radius`: Optional. The radius; defaults to 1.
+- `fromBounds`: Returns the smallest sphere around a box.
+  - `bounds`: The box.
+  - `out`: Optional. The sphere to fill; a new one when omitted.
+  - returns: The sphere; an empty sphere for an empty box.
+- `fromPoints`: Returns a sphere around points: its center the middle of the points' bounds, its radius the distance to the farthest point.
+  - `points`: The points' numbers.
+  - `pointCount`: How many points.
+  - `offset`: Optional. Where the first point's x is in `points`; defaults to 0.
+  - `stride`: Optional. How many numbers from one point's x to the next point's; defaults to 3.
+  - `out`: Optional. The sphere to fill; a new one when omitted.
+  - returns: The sphere; an empty sphere for no points.
+- `center`: Gets the center.
+- `radius`: Gets or sets the radius; below 0 while empty.
+- `set`: Sets the sphere's center and radius.
+  - `x`: The center's x.
+  - `y`: The center's y.
+  - `z`: The center's z.
+  - `radius`: The radius.
+  - returns: This sphere.
+- `copyFrom`: Sets the sphere's center and radius to another sphere's.
+  - `other`: The sphere to copy.
+  - returns: This sphere.
+- `makeEmpty`: Makes the sphere empty: at the origin, with a radius of -1.
+  - returns: This sphere.
+- `isEmpty`: Gets a value indicating whether the sphere is empty: its radius is below 0.
+- `contains`: Returns whether a point is inside the sphere or on its surface.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - returns: true when the point is in the sphere; false for an empty sphere.
+- `intersects`: Returns whether this sphere and another overlap, touching included.
+  - `other`: The other sphere.
+  - returns: true when the spheres overlap; false when either is empty.
+- `intersectsBounds`: Returns whether this sphere and a box overlap, touching included.
+  - `bounds`: The box.
+  - returns: true when the sphere and the box overlap; false when either is empty.
+- `getClosestPoint`: Returns the point in the sphere nearest a point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The nearest point: the point itself when inside the sphere, and the center for an empty sphere.
+- `expand`: Grows this sphere to hold a point: the smallest sphere holding the sphere as it was and the point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - returns: This sphere. An empty sphere becomes the point, with a radius of 0.
+- `union`: Returns the smallest sphere holding this sphere and another.
+  - `other`: The other sphere.
+  - `out`: Optional. The sphere to fill; a new one when omitted. It may be this sphere or the other.
+  - returns: The union.
+
+  An empty sphere adds nothing: the union with one is the other sphere.
+- `transform`: Returns this sphere moved by a matrix: its center moved, its radius scaled by the largest scale the matrix gives an axis.
+  - `matrix`: The matrix.
+  - `out`: Optional. The sphere to fill; a new one when omitted. It may be this sphere.
+  - returns: The moved sphere, which holds every moved point of this sphere unless the matrix shears. An empty sphere stays empty.
+- `getBounds`: Returns the box around this sphere.
+  - `out`: Optional. The box to fill; a new one when omitted.
+  - returns: The box; an empty box for an empty sphere.
 
 ## Spring
 

@@ -1,5 +1,7 @@
 import helix.math.Aabb2D;
 import helix.math.Aabb3D;
+import helix.math.Sphere;
+import helix.math.Vector3;
 
 /** Checks Aabb2D and Aabb3D with the library alone: made empty, grown by points and by other bounds, their sizes and centers,
 	what they contain and overlap (faces included, an empty one never), the spheres a 3D box touches, set, copied and cleared. */
@@ -65,13 +67,28 @@ class AabbTests {
 		var copy3 = new Aabb3D().copyFrom(c);
 		check(copy3.minZ == 3 && copy3.maxZ == 9 && copy3.makeEmpty().isEmpty && !c.isEmpty, "3D: copied, made empty, the original unchanged");
 		var crate = new Aabb3D().set(-1, -1, -1, 1, 2, 1);
-		check(crate.intersectsSphere(0, 0, 0, .1)
-			&& crate.intersectsSphere(2, 3, 0, Math.sqrt(2))
-			&& !crate.intersectsSphere(2, 3, 0, 1.41)
-			&& crate.intersectsSphere(1.5, 0, 0, .5)
-			&& !crate.intersectsSphere(1.5, 0, 0, .49),
+		check(crate.intersectsSphere(new Sphere(0, 0, 0, .1))
+			&& crate.intersectsSphere(new Sphere(2, 3, 0, Math.sqrt(2)))
+			&& !crate.intersectsSphere(new Sphere(2, 3, 0, 1.41))
+			&& crate.intersectsSphere(new Sphere(1.5, 0, 0, .5))
+			&& !crate.intersectsSphere(new Sphere(1.5, 0, 0, .49)),
 			"3D: a sphere inside, touching a corner and a face, and just apart");
-		check(!new Aabb3D().intersectsSphere(0, 0, 0, 100), "3D: an empty box meets no sphere");
+		check(!new Aabb3D().intersectsSphere(new Sphere(0, 0, 0, 100)), "3D: an empty box meets no sphere");
+		check(!crate.intersectsSphere(new Sphere(0, 0, 0, -1))
+			&& crate.intersectsSphere(new Sphere(0, 0, 0, 0))
+			&& !crate.intersectsSphere(new Sphere(0, 3, 0, 0)),
+			"3D: an empty sphere meets no box; one of radius 0 is its center");
+		var nearest = crate.getClosestPoint(5, 0, -7);
+		check(nearest.x == 1 && nearest.y == 0 && nearest.z == -1, "3D: the nearest point to one outside, on an edge");
+		var given = new Vector3();
+		check(crate.getClosestPoint(.5, 1.5, -.5, given) == given && given.x == .5 && given.y == 1.5 && given.z == -.5,
+			"3D: the nearest point to one inside is the point, into the vector given");
+		check(crate.getClosestPoint(-9, 9, 9, given) == given
+			&& given.x == -1
+			&& given.y == 2
+			&& given.z == 1, "3D: the nearest point to one past a corner");
+		new Aabb3D().getClosestPoint(1, 2, 3, given);
+		check(Math.isNaN(given.x) && Math.isNaN(given.y) && Math.isNaN(given.z), "3D: an empty box's nearest point is not a number");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

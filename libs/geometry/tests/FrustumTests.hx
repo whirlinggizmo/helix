@@ -1,6 +1,8 @@
 import helix.math.Aabb3D;
 import helix.geometry.Frustum;
 import helix.math.Matrix4;
+import helix.math.Plane;
+import helix.math.Sphere;
 
 /** Checks Frustum with the library alone: made holding everything; its planes from a perspective and an orthographic view-projection,
 	pinned to Gribb and Hartmann's planes computed apart from Haxe; copied and filled into the one given; points, spheres and boxes
@@ -33,7 +35,7 @@ class FrustumTests {
 		var everything = new Frustum();
 		check(everything.contains(0, 0, 0)
 			&& everything.contains(1e30, -1e30, 5)
-			&& everything.intersectsSphere(-1e20, 0, 0, 0)
+			&& everything.intersectsSphere(new Sphere(-1e20, 0, 0, 0))
 			&& everything.intersectsBounds(box(1e10, 1e10, 1e10, 1e10 + 1, 1e10 + 1, 1e10 + 1)),
 			"made: holds everything");
 		check(!everything.intersectsBounds(new Aabb3D()), "made: an empty box is still never inside");
@@ -106,16 +108,49 @@ class FrustumTests {
 
 		// Spheres: inside, outside, straddling a plane, holding the camera.
 		var f = perspective;
-		check(f.intersectsSphere(0, 1, 0, .5) && f.intersectsSphere(0, 1, 0, 1e4), "a sphere inside, and one holding all of it");
-		check(!f.intersectsSphere(200, 1, 0, 50), "a sphere to the right, outside");
+		check(f.intersectsSphere(new Sphere(0, 1, 0, .5))
+			&& f.intersectsSphere(new Sphere(0, 1, 0, 1e4)), "a sphere inside, and one holding all of it");
+		check(!f.intersectsSphere(new Sphere(200, 1, 0, 50)), "a sphere to the right, outside");
 		var leftDistance = f.planes[0] * -200 + f.planes[1] * 1 + f.planes[2] * 0 + f.planes[3];
 		check(leftDistance < 0
-			&& f.intersectsSphere(-200, 1, 0, -leftDistance + .01)
-			&& !f.intersectsSphere(-200, 1, 0, -leftDistance - .01),
+			&& f.intersectsSphere(new Sphere(-200, 1, 0, -leftDistance + .01))
+			&& !f.intersectsSphere(new Sphere(-200, 1, 0, -leftDistance - .01)),
 			"a sphere straddling the left plane, in; just short of it, out");
-		check(f.intersectsSphere(2, 3, 8, .2) && !f.intersectsSphere(2.5, 3.5, 9.5, .5), "one holding the camera's near plane, in; behind, out");
-		check(f.contains(0, 1, 0) == f.intersectsSphere(0, 1, 0, 0)
-			&& !f.intersectsSphere(200, 1, 0, 0), "a sphere of radius 0 is a point");
+		check(f.intersectsSphere(new Sphere(2, 3, 8, .2)) && !f.intersectsSphere(new Sphere(2.5, 3.5, 9.5, .5)),
+			"one holding the camera's near plane, in; behind, out");
+		check(f.contains(0, 1, 0) == f.intersectsSphere(new Sphere(0, 1, 0, 0)) && !f.intersectsSphere(new Sphere(200, 1, 0, 0)),
+			"a sphere of radius 0 is a point");
+
+		check(!f.intersectsSphere(new Sphere(0, 1, 0, -1)) && !everything.intersectsSphere(new Sphere(0, 0, 0, 1).makeEmpty()),
+			"an empty sphere is never inside");
+
+		// Each plane, facing in.
+		var names = ["left", "right", "bottom", "top", "near", "far"];
+		for (index in 0...6) {
+			var plane = f.getPlane(index);
+			var i = index * 4;
+			check(plane.normal.x == f.planes[i] && plane.normal.y == f.planes[i + 1] && plane.normal.z == f.planes[i + 2]
+				&& plane.distance == f.planes[i + 3] && plane.getDistanceTo(0, 1, 0) > 0,
+				'the ${names[index]} plane, a point inside in front of it');
+		}
+		var givenPlane = new Plane();
+		check(f.getPlane(4, givenPlane) == givenPlane && near(givenPlane.getDistanceTo(2, 3, 8), -.1, 1e-9),
+			"the near plane into the plane given: the camera .1 behind it");
+		check(near(f.getPlane(0).getDistanceTo(-200, 1, 0), leftDistance), "a point's distance to the left plane");
+		var refused = "";
+		try {
+			f.getPlane(6);
+		} catch (message:String) {
+			refused = message;
+		}
+		check(refused == "A frustum has 6 planes, 0 to 5: there is no plane 6", "a seventh plane is refused");
+		try {
+			f.getPlane(-1);
+			refused = "";
+		} catch (message:String) {
+			refused = message;
+		}
+		check(refused == "A frustum has 6 planes, 0 to 5: there is no plane -1", "a plane before the first is refused");
 
 		// Boxes: inside, outside, straddling, holding all of it, empty.
 		check(f.intersectsBounds(box(-1, 0, -1, 1, 2, 1)), "a box inside");

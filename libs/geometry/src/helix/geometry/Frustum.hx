@@ -2,6 +2,8 @@ package helix.geometry;
 
 import helix.math.Aabb3D;
 import helix.math.Matrix4;
+import helix.math.Plane;
+import helix.math.Sphere;
 
 /** Represents what a view sees: six planes bounding a volume, from any view-projection matrix.
 
@@ -67,24 +69,16 @@ class Frustum {
 		@param z  The point's z.
 		@return  True when it is inside or on a plane. */
 	public function contains(x:Float, y:Float, z:Float):Bool {
-		return intersectsSphere(x, y, z, 0);
+		return reaches(x, y, z, 0);
 	}
 
 	/** Returns whether a sphere is at least partly inside.
 
-		@param x  The center's x, in the matrix's world units.
-		@param y  The center's y.
-		@param z  The center's z.
-		@param radius  The radius.
+		An empty sphere is never inside.
+		@param sphere  The sphere, in the matrix's world units.
 		@return  True when some of it may be inside. */
-	public function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool {
-		var p = planes, x = real(x), y = real(y), z = real(z);
-		for (plane in 0...6) {
-			var i = plane * 4;
-			if (p[i] * x + p[i + 1] * y + p[i + 2] * z + p[i + 3] < -radius)
-				return false;
-		}
-		return true;
+	public function intersectsSphere(sphere:Sphere):Bool {
+		return sphere.radius >= 0 && reaches(sphere.center.x, sphere.center.y, sphere.center.z, sphere.radius);
 	}
 
 	/** Returns whether a box is at least partly inside.
@@ -103,6 +97,31 @@ class Frustum {
 				+ b * (b >= 0 ? bounds.maxY : bounds.minY)
 				+ c * (c >= 0 ? bounds.maxZ : bounds.minZ)
 				+ p[i + 3] < 0)
+				return false;
+		}
+		return true;
+	}
+
+	/** Returns one of the six planes, facing into the frustum.
+
+		@param index  Which plane: 0 the left, 1 the right, 2 the bottom, 3 the top, 4 the near and 5 the far.
+		@param out  Optional. The plane to fill; a new one when omitted.
+		@return  The plane, a point inside the frustum in front of it. */
+	public function getPlane(index:Int, ?out:Plane):Plane {
+		if (index < 0 || index > 5)
+			throw 'A frustum has 6 planes, 0 to 5: there is no plane $index';
+		if (out == null)
+			out = new Plane();
+		var i = index * 4;
+		return out.set(planes[i], planes[i + 1], planes[i + 2], planes[i + 3]);
+	}
+
+	// Whether a point is no further outside any plane than a distance.
+	function reaches(x:Float, y:Float, z:Float, distance:Float):Bool {
+		var p = planes, x = real(x), y = real(y), z = real(z);
+		for (plane in 0...6) {
+			var i = plane * 4;
+			if (p[i] * x + p[i + 1] * y + p[i + 2] * z + p[i + 3] < -distance)
 				return false;
 		}
 		return true;

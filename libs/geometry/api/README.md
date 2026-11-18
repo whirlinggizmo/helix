@@ -13,6 +13,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Camera3D](types.md#camera3d)
   - [Frustum](types.md#frustum)
   - [Geometry2D](types.md#geometry2d)
+  - [Geometry3D](types.md#geometry3d)
   - [KeyInterpolation](types.md#keyinterpolation)
   - [Mesh3D](types.md#mesh3d)
   - [Ray3D](types.md#ray3d)

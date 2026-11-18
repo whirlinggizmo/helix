@@ -4,11 +4,12 @@ Geometry for games: pure Haxe, built on [helix-math](../math/README.md).
 
 - `Camera2D`, `Camera3D`: views of a world, their matrices, and what they see; a 3D camera's ray through a point of its view, to pick
   with.
-- `Frustum`: what a camera sees, and whether a point, a sphere or bounds are in it.
+- `Frustum`: what a camera sees, whether a point, a sphere or bounds are in it, and its six planes.
 - `Ray3D`, `RayHit3D`: rays and where they meet a plane, a sphere, bounds, a triangle or a mesh.
 - `Mesh3D`: surfaces of triangles: the usual shapes made (box, plane, disk, sphere, hemisphere, cylinder and cone, capsule, torus,
   torus knot), merged and moved, their normals and tangents computed.
 - `Geometry2D`: segments crossing, points in triangles and polygons, distances to segments, circles touching them.
+- `Geometry3D`: the nearest point on a segment and on a triangle, and where two segments come nearest each other.
 
 ```haxe
 import helix.geometry.Camera3D;

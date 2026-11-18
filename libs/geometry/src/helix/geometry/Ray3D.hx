@@ -2,6 +2,8 @@ package helix.geometry;
 
 import helix.math.Aabb3D;
 import helix.math.Matrix4;
+import helix.math.Plane;
+import helix.math.Sphere;
 import helix.math.Vector3;
 
 /** Represents a ray: a point it starts from and a direction it goes in, for picking and line of sight.
@@ -9,7 +11,7 @@ import helix.math.Vector3;
 	A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a
 	sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses,
 	its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1,
-	in world units. Shapes are given as plain numbers, as `Frustum` and `Aabb3D` take them. Given an out, no test allocates. */
+	in world units. Given an out, no test allocates. */
 class Ray3D {
 	/** Gets the point it starts from. */
 	public final origin = new Vector3(0, 0, 0);
@@ -72,40 +74,35 @@ class Ray3D {
 		return out;
 	}
 
-	/** Returns where the ray meets a plane, from either side. The hit's normal is the plane's, as given.
+	/** Returns where the ray meets a plane, from either side. The hit's normal is the plane's.
 
-		@param x  A point on the plane's x.
-		@param y  Its y.
-		@param z  Its z.
-		@param nx  The plane's normal's x.
-		@param ny  Its y.
-		@param nz  Its z.
+		@param plane  The plane.
 		@param out  Optional. Set to the hit.
 		@return  The hit; null when the ray runs along the plane or away from it. */
-	public function intersectPlane(x:Float, y:Float, z:Float, nx:Float, ny:Float, nz:Float, ?out:RayHit3D):Null<RayHit3D> {
-		var denominator = nx * direction.x + ny * direction.y + nz * direction.z;
+	public function intersectPlane(plane:Plane, ?out:RayHit3D):Null<RayHit3D> {
+		var normal = plane.normal;
+		var denominator = normal.x * direction.x + normal.y * direction.y + normal.z * direction.z;
 		if (denominator == 0)
 			return null;
-		var t = (nx * (x - origin.x) + ny * (y - origin.y) + nz * (z - origin.z)) / denominator;
+		var t = -plane.getDistanceTo(origin.x, origin.y, origin.z) / denominator;
 		if (!(t >= 0))
 			return null;
-		var length = Math.sqrt(nx * nx + ny * ny + nz * nz);
-		return hit(t, nx / length, ny / length, nz / length, -1, out);
+		return hit(t, normal.x, normal.y, normal.z, -1, out);
 	}
 
 	/** Returns where the ray meets a sphere: where it goes in, or from inside, where it comes out. The hit's normal points out of the
 		sphere.
 
-		@param x  The center's x.
-		@param y  Its y.
-		@param z  Its z.
-		@param radius  The radius.
+		@param sphere  The sphere; an empty one is never met.
 		@param out  Optional. Set to the hit.
 		@return  The hit; null when it misses or the sphere is behind it. */
-	public function intersectSphere(x:Float, y:Float, z:Float, radius:Float, ?out:RayHit3D):Null<RayHit3D> {
-		var ox = origin.x - x, oy = origin.y - y, oz = origin.z - z;
+	public function intersectSphere(sphere:Sphere, ?out:RayHit3D):Null<RayHit3D> {
+		var radius = sphere.radius;
+		var ox = origin.x - sphere.center.x,
+			oy = origin.y - sphere.center.y,
+			oz = origin.z - sphere.center.z;
 		var a = direction.lengthSquared;
-		if (a == 0)
+		if (a == 0 || !(radius >= 0))
 			return null;
 		var b = ox * direction.x + oy * direction.y + oz * direction.z;
 		var c = ox * ox + oy * oy + oz * oz - radius * radius;

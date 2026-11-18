@@ -3,9 +3,9 @@ package helix.math;
 /** Represents an axis-aligned box in 3 dimensions: its least and greatest coordinate on each axis.
 
 	A new box is empty (its least coordinates past its greatest), so expanding it by a first point makes it that point. `set`,
-	`copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` writes its result into an optional out, the last
-	argument, and returns it: a new box when it is omitted, this one left unchanged; the out may be this box or the other. Its space is
-	its maker's. */
+	`copyFrom`, `makeEmpty` and `expand` change this box and return it. `union` and `getClosestPoint` write their result into an optional
+	out, the last argument, and return it: a new value when omitted, this box left unchanged. `union`'s out may be this box or the
+	other. Its space is its maker's. */
 class Aabb3D {
 	/** Gets or sets the least x coordinate; infinity while empty. */
 	public var minX:Float = Math.POSITIVE_INFINITY;
@@ -170,20 +170,41 @@ class Aabb3D {
 		return !isEmpty && !other.isEmpty && minX <= other.maxX && other.minX <= maxX && minY <= other.maxY && other.minY <= maxY && minZ <= other.maxZ
 			&& other.minZ <= maxZ;
 
-	/** Returns whether a sphere touches or overlaps the bounds.
+	/** Returns whether the box and a sphere overlap, touching included.
 
-		@param x  The sphere's center's x.
-		@param y  Its y.
-		@param z  Its z.
-		@param radius  Its radius.
-		@return  True when they touch or overlap; false for empty bounds. */
-	public function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool {
-		if (isEmpty)
+		@param sphere  The sphere.
+		@return  True when they overlap; false when either is empty. */
+	public function intersectsSphere(sphere:Sphere):Bool {
+		var x = sphere.center.x,
+			y = sphere.center.y,
+			z = sphere.center.z,
+			radius = sphere.radius;
+		if (isEmpty || !(radius >= 0))
 			return false;
 		// The distance squared from the center to the nearest point of the bounds.
 		var dx = x < minX ? minX - x : x > maxX ? x - maxX : 0.;
 		var dy = y < minY ? minY - y : y > maxY ? y - maxY : 0.;
 		var dz = z < minZ ? minZ - z : z > maxZ ? z - maxZ : 0.;
 		return dx * dx + dy * dy + dz * dz <= radius * radius;
+	}
+
+	/** Returns the point in the box nearest a point.
+
+		@param x  The point's x coordinate.
+		@param y  The point's y coordinate.
+		@param z  The point's z coordinate.
+		@param out  Optional. The vector to fill; a new one when omitted.
+		@return  The nearest point: the point itself when in the box, and NaN on each axis for an empty box. */
+	public function getClosestPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3 {
+		if (isEmpty) {
+			x = Math.NaN;
+			y = Math.NaN;
+			z = Math.NaN;
+		} else {
+			x = x < minX ? minX : x > maxX ? maxX : x;
+			y = y < minY ? minY : y > maxY ? maxY : y;
+			z = z < minZ ? minZ : z > maxZ ? maxZ : z;
+		}
+		return out == null ? new Vector3(x, y, z) : out.set(x, y, z);
 	}
 }
