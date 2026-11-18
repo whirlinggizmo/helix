@@ -1457,7 +1457,9 @@ var angle = random.nextRange(0, 2 * Math.PI);
 var card = random.pick(deck);
 ```
 
-Natively the generated C++ is compiled with `-fwrapv` on GCC and clang. Haxe's Int wraps on overflow, and C++'s int doesn't, so without it a compiler may change the sequence.
+The points, directions, rotations and bell-shaped numbers it gives agree on every target too, made with `Trig` and arithmetic alone.
+
+Natively the generated C++ is compiled with `-fwrapv` and `-ffp-contract=off` on GCC and clang. Haxe's Int wraps on overflow, and C++'s int doesn't, so without `-fwrapv` a compiler may change the sequence. Without `-ffp-contract=off` fused multiply-adds may change a number's rounding.
 
 ```haxe
 function new(?seed:Int = 12345)
@@ -1472,6 +1474,13 @@ function nextBool(?chance:Float = .5):Bool
 function pick(items:Array<T>):Null<T>
 function pickWeighted(weights:Array<Float>):Int
 function shuffle(items:Array<T>):Array<T>
+function nextGaussian(?mean:Float = 0., ?deviation:Float = 1.):Float
+function nextInCircle(?radius:Float = 1., ?out:Vector2):Vector2
+function nextOnCircle(?radius:Float = 1., ?out:Vector2):Vector2
+function nextInSphere(?radius:Float = 1., ?out:Vector3):Vector3
+function nextOnSphere(?radius:Float = 1., ?out:Vector3):Vector3
+function nextInCone(direction:Vector3, radians:Float, ?out:Vector3):Vector3
+function nextRotation(?out:Quaternion):Quaternion
 ```
 
 - `new`: Creates a generator.
@@ -1515,6 +1524,34 @@ function shuffle(items:Array<T>):Array<T>
 - `shuffle`: Shuffles items in place, every order equally likely.
   - `items`: The items.
   - returns: The same array, shuffled.
+- `nextGaussian`: Returns a number from a normal (bell-shaped) distribution.
+  - `mean`: Optional. The middle of the bell; defaults to 0.
+  - `deviation`: Optional. The bell's standard deviation; defaults to 1.
+  - returns: The number.
+- `nextInCircle`: Returns a point inside a circle around the origin, every place as likely as another.
+  - `radius`: Optional. The circle's radius; defaults to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The point.
+- `nextOnCircle`: Returns a point on a circle around the origin: a direction in 2D at radius 1.
+  - `radius`: Optional. The circle's radius; defaults to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The point.
+- `nextInSphere`: Returns a point inside a sphere around the origin, every place as likely as another.
+  - `radius`: Optional. The sphere's radius; defaults to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The point.
+- `nextOnSphere`: Returns a point on a sphere around the origin: a direction in 3D at radius 1.
+  - `radius`: Optional. The sphere's radius; defaults to 1.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The point.
+- `nextInCone`: Returns a direction within an angle of another, every direction in that cone as likely as another.
+  - `direction`: The cone's middle; it needn't be of length 1.
+  - `radians`: The most the direction strays from the middle, clamped to 0 to pi.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be the middle.
+  - returns: The direction, of length 1; of length 0 when the middle is.
+- `nextRotation`: Returns a rotation, every rotation as likely as another.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The rotation.
 
 ## RectanglePacker
 
