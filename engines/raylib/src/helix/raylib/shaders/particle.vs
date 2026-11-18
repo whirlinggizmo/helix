@@ -25,6 +25,8 @@ uniform vec4 particleFrames;
 uniform vec4 particleSource;
 // x: the size keys; y: the color keys; z: the pulse's beats a second; w: how far the pulse takes the alpha down.
 uniform vec4 particleCounts;
+// xyz: where the emitter is now; w: 1 when its particles move with it (local space), else 0.
+uniform vec4 particleEmitter;
 // The sizes over a life, in order: x when, 0 to 1, and y the size; the colors, and when each is.
 uniform vec4 particleSizes[8];
 uniform vec4 particleColorTimes[8];
@@ -116,6 +118,9 @@ void main() {
         vec3 turned = away*c + cross(axis, away)*s + axis*dot(axis, away)*(1.0 - c);
         position = orbit.xyz + turned;
     }
+    // In local space, moved as far as the emitter has moved since its birth.
+    if (particleEmitter.w > 0.0)
+        position += particleEmitter.xyz - orbit.xyz;
     // A smooth wandering course off its path, starting at its path.
     if (particleClock.w > 0.0) {
         float turn = 6.2831853*particleGravity.w*age;

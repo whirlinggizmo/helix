@@ -23,7 +23,9 @@ class RParticles {
 		@param maxParticles  The most alive at once, 1 or more.
 		@return  The emitter, the program's until `UnloadEmitter3D`. */
 	static function LoadEmitter3D(maxParticles:Int):Emitter3D {
-		return @:privateAccess new Emitter3D(maxParticles);
+		var e = @:privateAccess new Emitter3D(maxParticles);
+		e.seed = @:privateAccess RCore.random.nextBits();
+		return e;
 	}
 
 	/** Frees a 3D emitter and its particles.
@@ -84,7 +86,9 @@ class RParticles {
 		@return  The emitter, the program's until `UnloadEmitter2D`. */
 	static function LoadEmitter2D(maxParticles:Int):Emitter2D {
 		helix.raylib.internal.Sprites.register();
-		return @:privateAccess new Emitter2D(maxParticles);
+		var e = @:privateAccess new Emitter2D(maxParticles);
+		e.seed = @:privateAccess RCore.random.nextBits();
+		return e;
 	}
 
 	/** Frees a 2D emitter and its particles.

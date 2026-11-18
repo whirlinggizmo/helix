@@ -46,7 +46,8 @@ class EmitterDraws {
 		"particleCounts",
 		"particleSizes",
 		"particleColorTimes",
-		"particleColors"
+		"particleColors",
+		"particleEmitter"
 	];
 
 	// What a draw reads and writes, kept so a draw allocates nothing.
@@ -235,6 +236,7 @@ class EmitterDraws {
 		Emitters.sourceOf(e, texture, part);
 		values.writeVector(f[5], part[0] / texture.width, part[1] / texture.height, (part[0] + part[2]) / texture.width, (part[1] + part[3]) / texture.height);
 		Emitters.readCurves(e, false);
+		values.writeVector(f[10], e.position.x, e.position.y, e.position.z, e.localSpace ? 1 : 0);
 		values.writeVector(f[6], Emitters.sizeCount, Emitters.colorCount, e.pulseRate > 0 ? e.pulseRate : 0,
 			e.pulseDepth > 0 ? (e.pulseDepth < 1 ? e.pulseDepth : 1) : 0);
 		for (i in 0...Emitters.sizeCount)

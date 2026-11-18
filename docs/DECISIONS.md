@@ -1085,6 +1085,10 @@ Why things are the way they are, numbered, in order.
     along `direction` through where the emitter was at its birth), as Godot's and Unity's orbits do, so a particle born at the
     emitter and thrown outward spirals, as a cyclone or a tornado had no way to be made: spin turns a particle
     about its own centre, and nothing moved one around the emitter.
+    `localSpace` moves every particle alive with the emitter, as Godot's local coordinates and Unity's local simulation space do,
+    for an aura or a flame on something moving. Each emitter's `seed` is drawn at its load from raylib's random numbers, as Godot's
+    and Unity's emitters are seeded at random unless fixed: two emitters left at one seed threw the same particles side by side, and
+    `SetRandomSeed` repeats a whole program's.
 
     Rejected: an options struct passed to the load, which a program would rebuild to change one setting each frame (wind, a trail's
     color); setters, a method a setting, which the Lighting extra's light fields replaced for the same reason (`SetLightIntensity`

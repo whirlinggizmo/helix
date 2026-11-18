@@ -36,8 +36,13 @@ class Emitter {
 	public var speedVariance:Float = 0;
 
 	/** Gets or sets the share of the emitter's own motion particles are born with, 0 to 1: 0 by default. 1 throws them along as it
-		moves. */
+		moves. Ignored with `localSpace`. */
 	public var inheritVelocity:Float = 0;
+
+	/** Gets or sets whether particles move with the emitter: false by default, each particle left on its own path as the emitter
+		moves. True moves every particle alive by the emitter's motion, as an aura around a moving character does. The orbit then
+		circles where the emitter is now, and `inheritVelocity` does nothing. */
+	public var localSpace:Bool = false;
 
 	/** Gets or sets how much the air slows particles, in proportion to their speed, a second: 0 by default. */
 	public var drag:Float = 0;
@@ -115,8 +120,9 @@ class Emitter {
 	/** Gets or sets how particles are drawn over what's behind: `BLEND_ALPHA` by default, or another of raylib's blend modes. */
 	public var blendMode:Int = Raylib.BLEND_ALPHA;
 
-	/** Gets or sets the seed of the emitter's random numbers: 0 by default. The same seed and fields give the same particles from its
-		load or its clear. */
+	/** Gets or sets the seed of the emitter's random numbers: drawn at its load from raylib's random numbers (`GetRandomValue`'s,
+		which `SetRandomSeed` sets), so emitters differ unless given one. The same seed and fields give the same particles from its load
+		or its clear. */
 	public var seed:Int = 0;
 
 	// The particles, a ring of `capacity` slots: SLOT floats each in `slots` (born, life, x, y, z, vx, vy, vz, size scale, spin in

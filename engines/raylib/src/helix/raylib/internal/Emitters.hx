@@ -247,7 +247,7 @@ class Emitters {
 		vy *= v;
 		vz *= v;
 		var ox = offset[0], oy = offset[1], oz = offset[2];
-		var inherit = clamp(e.inheritVelocity, 0, 1);
+		var inherit = e.localSpace ? 0 : clamp(e.inheritVelocity, 0, 1);
 		vx += e.moveX * inherit;
 		vy += e.moveY * inherit;
 		vz += e.moveZ * inherit;
@@ -651,6 +651,7 @@ class Emitters {
 			stretch = e.stretch > 0 ? e.stretch : 0.,
 			align = e.alignToMotion;
 		var wander = e.wanderDistance, wanderRate = e.wanderRate;
+		var local = e.localSpace, nowX = e.position.x, nowY = e.position.y;
 		var s = e.slots, n = e.capacity;
 		for (k in 0...e.span) {
 			var slot = (e.head - e.span + k + n) % n, at = slot * SLOT;
@@ -675,6 +676,11 @@ class Emitters {
 					ry = y - s[at + CY];
 				x += orbited(rx, ry, angle, 0);
 				y += orbited(rx, ry, angle, 1);
+			}
+			// In local space, moved as far as the emitter has moved since the particle's birth.
+			if (local) {
+				x += nowX - s[at + CX];
+				y += nowY - s[at + CY];
 			}
 			if (wander > 0) {
 				var turn = TAU * wanderRate * age;

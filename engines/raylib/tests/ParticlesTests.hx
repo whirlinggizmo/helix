@@ -127,7 +127,15 @@ class ParticlesTests {
 			"white, fading out");
 		check(e.palette.length == 0 && e.texture == null && e.source == null, "no palette, the dot");
 		check(e.frameColumns == 1 && e.frameRows == 1 && e.frameCount == 0 && e.framesPerSecond == 0, "no flipbook");
-		check(e.minSpin == 0 && e.maxSpin == 0 && e.stretch == 0 && e.blendMode == BLEND_ALPHA && e.seed == 0 && !e.lit, "no spin, alpha");
+		check(e.minSpin == 0 && e.maxSpin == 0 && e.stretch == 0 && e.blendMode == BLEND_ALPHA && !e.lit, "no spin, alpha");
+		check(!e.localSpace, "particles left where they were born as the emitter moves");
+		// Each load's seed drawn from raylib's random numbers: emitters differ, and SetRandomSeed repeats them.
+		SetRandomSeed(41);
+		var firstSeed = LoadEmitter3D(1).seed,
+			secondSeed = LoadEmitter2D(1).seed;
+		SetRandomSeed(41);
+		check(firstSeed != secondSeed && LoadEmitter3D(1).seed == firstSeed && LoadEmitter2D(1).seed == secondSeed,
+			'a seed drawn at each load, repeated by SetRandomSeed: $firstSeed, then $secondSeed');
 		check(e.position.x == 0
 			&& e.direction.x == 0
 			&& e.direction.y == 1
@@ -537,6 +545,29 @@ class ParticlesTests {
 		var thrown = records()[0];
 		near((thrown[0] + thrown[4]) / 2, 100, "thrown 60 across and a quarter turn on: over the emitter", 1e-4);
 		near((thrown[1] + thrown[5]) / 2, 160, "and 60 down", 1e-4);
+		next();
+		// Local space: every particle alive moves with the emitter, and none is thrown along by its motion.
+		var aura = LoadEmitter2D(8);
+		aura.rate = 0;
+		aura.speed = 0;
+		aura.localSpace = true;
+		aura.inheritVelocity = 1;
+		aura.minLife = aura.maxLife = 5;
+		aura.position = new Vector2(100, 100);
+		UpdateEmitter2D(aura, 0.5);
+		EmitParticles2D(aura, 1);
+		aura.position = new Vector2(300, 140);
+		UpdateEmitter2D(aura, 0.5);
+		check(alive(aura)[0][Emitters.VX] == 0 && alive(aura)[0][Emitters.VY] == 0, "in local space, not thrown along by the emitter's motion");
+		DrawEmitter2D(aura);
+		var carried = records()[0];
+		near((carried[0] + carried[4]) / 2, 300, "in local space, carried across with the emitter", 1e-4);
+		near((carried[1] + carried[5]) / 2, 140, "and down", 1e-4);
+		next();
+		aura.localSpace = false;
+		DrawEmitter2D(aura);
+		var left = records()[0];
+		near((left[0] + left[4]) / 2, 100, "in world space, left where it was born", 1e-4);
 		next();
 
 		// The pulse: each particle on a phase of its own, from the seed.

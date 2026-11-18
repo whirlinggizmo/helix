@@ -172,6 +172,7 @@ var spread:Float
 var speed:Float
 var speedVariance:Float
 var inheritVelocity:Float
+var localSpace:Bool
 var drag:Float
 var wanderDistance:Float
 var wanderRate:Float
@@ -204,7 +205,8 @@ var seed:Int
 - `spread`: Gets or sets the half angle of the cone around `direction` particles are thrown within, 0 to 180 degrees: 30 by default. 180 throws them every way.
 - `speed`: Gets or sets how fast particles are born moving, 0 or more: 1 unit a second for an `Emitter3D` and 60 pixels a second for an `Emitter2D` by default.
 - `speedVariance`: Gets or sets how much a particle's speed varies either way, 0 to 1 of `speed`: 0 by default.
-- `inheritVelocity`: Gets or sets the share of the emitter's own motion particles are born with, 0 to 1: 0 by default. 1 throws them along as it moves.
+- `inheritVelocity`: Gets or sets the share of the emitter's own motion particles are born with, 0 to 1: 0 by default. 1 throws them along as it moves. Ignored with `localSpace`.
+- `localSpace`: Gets or sets whether particles move with the emitter: false by default, each particle left on its own path as the emitter moves. True moves every particle alive by the emitter's motion, as an aura around a moving character does. The orbit then circles where the emitter is now, and `inheritVelocity` does nothing.
 - `drag`: Gets or sets how much the air slows particles, in proportion to their speed, a second: 0 by default.
 - `wanderDistance`: Gets or sets how far a particle strays from its path on a smooth wandering course: 0 by default. Dust motes and fireflies wander.
 - `wanderRate`: Gets or sets how often a wandering particle's course turns, a second: 1 by default.
@@ -226,7 +228,7 @@ var seed:Int
 - `maxOrbit`: Gets or sets the fastest a particle travels around the emitter, in degrees a second: 0 by default. At least `minOrbit`.
 - `stretch`: Gets or sets how far along its motion on screen a particle stretches, as a streak, in seconds of that motion: 0, square, by default.
 - `blendMode`: Gets or sets how particles are drawn over what's behind: `BLEND_ALPHA` by default, or another of raylib's blend modes.
-- `seed`: Gets or sets the seed of the emitter's random numbers: 0 by default. The same seed and fields give the same particles from its load or its clear.
+- `seed`: Gets or sets the seed of the emitter's random numbers: drawn at its load from raylib's random numbers (`GetRandomValue`'s, which `SetRandomSeed` sets), so emitters differ unless given one. The same seed and fields give the same particles from its load or its clear.
 
 ## EmitterColorKey
 
