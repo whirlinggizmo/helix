@@ -1,0 +1,7 @@
+-lib helix-raylib
+-cp .
+-main Main
+-dce full
+-cpp native
+-D helix-raylib-asset-host=..
+-D helix-raylib-portable-sys
