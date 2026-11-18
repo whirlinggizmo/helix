@@ -1177,3 +1177,33 @@ Why things are the way they are, numbered, in order.
 
     Why: `Trig` gives the same bits on every target, which costs a program in a browser a few nanoseconds an angle (79). A program
     that needs no two targets to agree can take the browser's own functions instead, and that choice is the program's.
+
+81. **Tweens are a library of their own, helix-tweens.** `libs/tweens`, on helix-math alone. A tween moves one typed value along an
+    easing curve over time: `FloatTween`, `Vector2Tween`, `Vector3Tween`, `Vector4Tween`, `QuaternionTween` and `ColorTween`, and
+    `Vector2CurveTween` and `Vector3CurveTween`, which move a point along a `Curve` by distance. Each has a delay, repeats, a yoyo,
+    a speed and callbacks, and is paused, reversed, sought, restarted, finished and cancelled. A `TweenSequence` places tweens,
+    waits and calls in time, and holds sequences. A `Tweens` steps a set of them. The program steps a tween, a sequence or a set itself.
+
+    The easing curves are helix-math's. A tween takes an `Ease`: `Ease.outCubic` and the rest of `Interpolate`'s thirty, each an
+    object with a typed method, `Ease.linear`, and `Ease.of` for a function of the program's own. Stepping a tween then allocates
+    nothing on hxcpp: 0 bytes of heap growth over a million steps of each kind, collection off. A curve from `Ease.of` allocates
+    there on each step. In a page stepping makes no object, and V8 boxes a number or two a step whatever the curve.
+
+    A tween's state is a function of its time. Stepping to a time and seeking to it give the same value, forwards and backwards,
+    which the tests check for sequences with repeats and a yoyo. A sequence calls back in the order its tweens and calls are
+    placed, so in one long step a tween's `onComplete` can come before a call placed within its span.
+
+    helix-raylib has them as the package `helix.raylib.extras.tweens`: an alias for each type, and a `ColorTween` of its own
+    over the library's, taking and giving raylib's `Color`.
+
+    Why: raylib has easing curves (`reasings.h`) and nothing that plays them, and each entrant of the example headers trial wrote
+    its own. A tween holds state, calls back and runs a timeline, which is more than helix-math's functions, and every engine
+    above wants one. A library on helix-math alone serves helix-raylib now and the next engine after it.
+
+    Rejected: tweens as an extra of helix-raylib alone, written again for the next engine; tweens within helix-math; a tween of
+    an object's properties by name (GSAP's `to(obj, {x: 100})`), found by reflection at run time; one `Tween.to` overloaded by
+    type, as a color is an `Int` and can't be told from a number; a ticker the tweens join by themselves, as a program
+    constructs and steps what it uses; an easing curve as a function value (`Float->Float`), as hxcpp boxes the number given to a
+    function value and the number returned, two allocations for each tween each step (27.7 ns a call against 10); an enum of the
+    curves the library switches on, which allocates nothing and links all thirty curves into every program that makes a tween
+    (3.7 KB gzip in a page built for one curve, against 0.4).

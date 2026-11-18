@@ -9,7 +9,7 @@
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
 | `helix.raylib.Raylib6` | the calls raylib 6.0 adds, ahead of the move to raylib 6: `UpdateModelAnimationEx`, two animations blended |
-| `helix.raylib.extras` | what a program opts into that raylib has no call for: the scene's lights, made as the lighting examples' `rlights.h` makes them, lit and PBR shaders, a light's range, intensity and cone, and its shadows, what a material gives off and where it is cut out, a virtual gamepad, a model's bounds as posed, models merged into one, the device (safe area, touch, orientation, tilt), raygui skins from images, debug drawing and frame stats, many copies of a sprite in one call, raylib's shadowmap example's render texture of depth, particle emitters in 3D and 2D |
+| `helix.raylib.extras` | what a program opts into that raylib has no call for: the scene's lights, made as the lighting examples' `rlights.h` makes them, lit and PBR shaders, a light's range, intensity and cone, and its shadows, what a material gives off and where it is cut out, a virtual gamepad, a model's bounds as posed, models merged into one, the device (safe area, touch, orientation, tilt), raygui skins from images, debug drawing and frame stats, many copies of a sprite in one call, raylib's shadowmap example's render texture of depth, particle emitters in 3D and 2D, tweens (`helix.raylib.extras.tweens`, helix-tweens with raylib's `Color`) |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
 Each raylib header is a class, imported as C includes the header: `import helix.raylib.Raylib.*;` brings `raylib.h`'s functions,
@@ -69,6 +69,7 @@ haxelib git helix-math https://github.com/whirlinggizmo/helix main libs/math
 haxelib git helix-formats https://github.com/whirlinggizmo/helix main libs/formats
 haxelib git helix-platform https://github.com/whirlinggizmo/helix main libs/platform
 haxelib git helix-geometry https://github.com/whirlinggizmo/helix main libs/geometry
+haxelib git helix-tweens https://github.com/whirlinggizmo/helix main libs/tweens
 haxelib git helix-log https://github.com/whirlinggizmo/helix main libs/log
 haxelib git helix-services https://github.com/whirlinggizmo/helix main libs/services
 haxelib git helix-raylib https://github.com/whirlinggizmo/helix main engines/raylib
@@ -100,10 +101,12 @@ Defines, set in the build's hxml:
 - `images`: an image made on the CPU, a circle and text drawn into it, drawn as a texture.
 - `extras/particles3d`: a fountain, one 3D emitter of the Particles extra, its particles worked out on the GPU (`helix.raylib.extras.Particles`).
 - `extras/particles2d`: a sparkler, one 2D emitter of the Particles extra, its sparks drawn in the sprite batch.
+- `extras/tweens`: a panel sliding in and its title fading in after it, a sequence, and a ball going back and forth for ever
+  (`helix.raylib.extras.tweens`).
 
 ## Depends on
 
-helix-services and helix-platform (and helix-formats, helix-math and helix-log under them).
+helix-services, helix-platform, helix-geometry, helix-tweens and helix-math (and helix-formats and helix-log under them).
 
 ## Credit
 

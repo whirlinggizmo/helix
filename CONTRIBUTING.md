@@ -30,7 +30,7 @@ make it as they run (`tools/pins.py`). A worktree gets a real copy of `build/hax
 ## Layout
 
 ```
-libs/<library>/    the libraries (math, log, geometry, formats, platform, services, render): haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
+libs/<library>/    the libraries (math, log, geometry, tweens, formats, platform, services, render): haxelib.json, README.md, src/, tests/ (and examples/, vendor/)
 engines/<engine>/  the engines over them (raylib), laid out as a library is (and parity/)
 tools/             the repository's checks and helpers, never shipped
 docs/              the plan, the specs, conventions, architecture, the API reference and the benchmarks

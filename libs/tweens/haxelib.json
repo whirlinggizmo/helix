@@ -1,0 +1,14 @@
+{
+	"name": "helix-tweens",
+	"url": "https://github.com/whirlinggizmo/helix",
+	"license": "BSD",
+	"tags": ["tween", "easing", "animation", "game", "js", "cpp"],
+	"description": "Tweens for games: numbers, vectors, rotations and colors moved along easing curves, points moved along curves, sequences of them, and a set stepped together.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {
+		"helix-math": ""
+	}
+}

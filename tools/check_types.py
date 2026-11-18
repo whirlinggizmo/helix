@@ -20,6 +20,7 @@ def targets(web=False):
     found.append(('log LogTests',['-lib','helix-log','-cp','libs/log/tests','-main','LogTests','--interp']))
     for main in ('TrigTests','RandomTests','CurveTests','AabbTests','VectorTests','TrigBits'):found.append((f'math {main}',['-lib','helix-math','-cp','libs/math/tests','-main',main,'--interp']))
     found.append(('math StandardTrigTests',['-lib','helix-math','-cp','libs/math/tests','-main','StandardTrigTests','-D','helix-math-standard-trig','--interp']))
+    for main in ('TweenTests','TweenSequenceTests'):found.append((f'tweens {main}',['-lib','helix-tweens','-cp','libs/tweens/tests','-main',main,'--interp']))
     for main in ('GltfTests','ObjTests','BmFontTests','TrueTypeTests'):found.append((f'formats {main}',['-lib','helix-formats','-cp','libs/formats/tests','-main',main,'--interp']))
     # Each platform example and the graphics, audio, window and HTTP tests, with the library alone, on both targets (their own hxml files build them:
     # tools/test_platform.py).

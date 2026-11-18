@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = [ROOT / 'libs/platform/src/helix', ROOT / 'libs/log/src/helix', ROOT / 'libs/math/src/helix', ROOT / 'libs/geometry/src/helix', ROOT / 'libs/formats/src/helix', ROOT / 'libs/services/src/helix', ROOT / 'libs/render/src/helix']
+SOURCES = [ROOT / 'libs/platform/src/helix', ROOT / 'libs/log/src/helix', ROOT / 'libs/math/src/helix', ROOT / 'libs/geometry/src/helix', ROOT / 'libs/tweens/src/helix', ROOT / 'libs/formats/src/helix', ROOT / 'libs/services/src/helix', ROOT / 'libs/render/src/helix']
 
 # The types of a kind's package that are neither kind's alone, each with its reason (none yet: no library draws).
 NEUTRAL = {}

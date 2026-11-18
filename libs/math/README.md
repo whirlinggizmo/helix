@@ -6,6 +6,7 @@ Math for games, in pure Haxe.
 - `Random`: a seeded generator giving the same sequence on every target.
 - `Interpolate`: interpolating, clamping, smoothing and easing numbers and angles, and points on spline pieces (Catmull-Rom,
   B-spline, Bezier).
+- `Ease`: an easing curve as a value, for a tween or any move from 0 to 1 to take: `Interpolate`'s thirty and a straight line.
 - `Curve`: curves through points or by control points, in 2D and 3D, and moving along them.
 - `Vector2`, `Vector3`, `Vector4`, `Aabb2D`, `Aabb3D`: vectors (positions and directions, their sums, products, lengths, blends and
   turns) and axis-aligned boxes, and where boxes overlap.
@@ -16,7 +17,8 @@ Math for games, in pure Haxe.
 - `Matrix3`, `Matrix4`, `Quaternion`, `Transform2D`, `Transform3D`: transforms, moving, turning, scaling and projecting points,
   the same on every target.
 
-Cameras, rays, meshes and the tests on shapes built on these are in [helix-geometry](../geometry/README.md).
+Cameras, rays, meshes and the tests on shapes built on these are in [helix-geometry](../geometry/README.md). Tweens along `Ease`'s
+curves are in [helix-tweens](../tweens/README.md).
 
 ```haxe
 import helix.math.Random;

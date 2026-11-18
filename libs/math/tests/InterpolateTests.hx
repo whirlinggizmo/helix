@@ -1,11 +1,16 @@
+import helix.math.Ease;
 import helix.math.Interpolate;
 
 /** Checks Interpolate's easing curves with the library alone: each of the thirty at 0 and 1, each family's ease-in the mirror of its
 	ease-out, each ease-in-out halfway at the middle and (but for back's and elastic's) made of the two halves, the curves that don't overshoot rising steadily, and
 	cubic's ease-in-out as raylib's reasings computes it; each spline piece at its ends and middle; a Hermite curve; a value wrapped into
-	a range; and two values equal but for rounding. */
+	a range; two values equal but for rounding; and each of Ease's curves against its function, its straight line, a curve of a function
+	of the test's own, and a curve held in a static. */
 class InterpolateTests {
 	static var checks = 0;
+
+	// A curve held in a static, set as the program starts.
+	static final held = Ease.outBounce;
 
 	static function check(value:Bool, message:String):Void {
 		if (!value)
@@ -89,6 +94,46 @@ class InterpolateTests {
 			&& !Interpolate.equals(1e6, 1e6 + 2, 1e-6)
 			&& Interpolate.equals(-1e6, -1e6 - .5, 1e-6),
 			"equals: the tolerance multiplied by the larger value's size over 1");
+		var curves:Array<{ease:Ease, curve:Float->Float}> = [
+			{ease: Ease.inSine, curve: Interpolate.easeInSine},
+			{ease: Ease.outSine, curve: Interpolate.easeOutSine},
+			{ease: Ease.inOutSine, curve: Interpolate.easeInOutSine},
+			{ease: Ease.inQuad, curve: Interpolate.easeInQuad},
+			{ease: Ease.outQuad, curve: Interpolate.easeOutQuad},
+			{ease: Ease.inOutQuad, curve: Interpolate.easeInOutQuad},
+			{ease: Ease.inCubic, curve: Interpolate.easeInCubic},
+			{ease: Ease.outCubic, curve: Interpolate.easeOutCubic},
+			{ease: Ease.inOutCubic, curve: Interpolate.easeInOutCubic},
+			{ease: Ease.inQuart, curve: Interpolate.easeInQuart},
+			{ease: Ease.outQuart, curve: Interpolate.easeOutQuart},
+			{ease: Ease.inOutQuart, curve: Interpolate.easeInOutQuart},
+			{ease: Ease.inQuint, curve: Interpolate.easeInQuint},
+			{ease: Ease.outQuint, curve: Interpolate.easeOutQuint},
+			{ease: Ease.inOutQuint, curve: Interpolate.easeInOutQuint},
+			{ease: Ease.inExpo, curve: Interpolate.easeInExpo},
+			{ease: Ease.outExpo, curve: Interpolate.easeOutExpo},
+			{ease: Ease.inOutExpo, curve: Interpolate.easeInOutExpo},
+			{ease: Ease.inCirc, curve: Interpolate.easeInCirc},
+			{ease: Ease.outCirc, curve: Interpolate.easeOutCirc},
+			{ease: Ease.inOutCirc, curve: Interpolate.easeInOutCirc},
+			{ease: Ease.inBack, curve: Interpolate.easeInBack},
+			{ease: Ease.outBack, curve: Interpolate.easeOutBack},
+			{ease: Ease.inOutBack, curve: Interpolate.easeInOutBack},
+			{ease: Ease.inElastic, curve: Interpolate.easeInElastic},
+			{ease: Ease.outElastic, curve: Interpolate.easeOutElastic},
+			{ease: Ease.inOutElastic, curve: Interpolate.easeInOutElastic},
+			{ease: Ease.inBounce, curve: Interpolate.easeInBounce},
+			{ease: Ease.outBounce, curve: Interpolate.easeOutBounce},
+			{ease: Ease.inOutBounce, curve: Interpolate.easeInOutBounce}
+		];
+		var same = true;
+		for (c in curves)
+			for (i in 0...21)
+				same = same && c.ease.at(i / 20) == c.curve(i / 20);
+		check(same, "Ease: each of the thirty curves is its function");
+		check(Ease.linear.at(0) == 0 && Ease.linear.at(.3) == .3 && Ease.linear.at(1) == 1, "Ease: linear is a straight line");
+		check(Ease.of(t -> t * t).at(.5) == .25, "Ease: a curve of a function of the program's own");
+		check(held.at(.4) == Interpolate.easeOutBounce(.4), "Ease: a curve held in a static");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

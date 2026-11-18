@@ -11,6 +11,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Curve](types.md#curve)
   - [CurveKind](types.md#curvekind)
   - [DistanceField2D](types.md#distancefield2d)
+  - [Ease](types.md#ease)
   - [Interpolate](types.md#interpolate)
   - [Matrix3](types.md#matrix3)
   - [Matrix4](types.md#matrix4)

@@ -33,15 +33,16 @@ ROOT = Path(__file__).resolve().parents[1]
 LAYERS = [
     ('helix-math', 'libs/math/src', ['helix.math'], []),
     ('helix-geometry', 'libs/geometry/src', ['helix.geometry'], ['helix-math']),
+    ('helix-tweens', 'libs/tweens/src', ['helix.tweens'], ['helix-math']),
     ('helix-log', 'libs/log/src', ['helix.log'], []),
     ('helix-formats', 'libs/formats/src', ['helix.formats'], ['helix-math']),
     ('helix-platform', 'libs/platform/src', ['helix.platform'], ['helix-formats', 'helix-geometry', 'helix-math']),
     ('helix-services', 'libs/services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
     ('helix-render', 'libs/render/src', ['helix.render'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
-    ('helix-raylib', 'engines/raylib/src', ['helix.raylib'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
+    ('helix-raylib', 'engines/raylib/src', ['helix.raylib'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-tweens', 'helix-geometry', 'helix-math', 'helix-log']),
 ]
 # Each library's tests and examples, held to its layer too: they build with that library alone.
-TESTS = {'helix-math': ['libs/math/tests'], 'helix-geometry': ['libs/geometry/tests'], 'helix-log': ['libs/log/tests'], 'helix-formats': ['libs/formats/tests'], 'helix-platform': ['libs/platform/tests', 'libs/platform/examples'],
+TESTS = {'helix-math': ['libs/math/tests'], 'helix-geometry': ['libs/geometry/tests'], 'helix-tweens': ['libs/tweens/tests'], 'helix-log': ['libs/log/tests'], 'helix-formats': ['libs/formats/tests'], 'helix-platform': ['libs/platform/tests', 'libs/platform/examples'],
          'helix-services': ['libs/services/tests'], 'helix-render': ['libs/render/tests', 'libs/render/examples'], 'helix-raylib': ['engines/raylib/examples']}
 # The interfaces in helix.platform shared between interfaces (rule 3): IPollable, the poll a program calls each frame, and IDecodedImage,
 # an image the decoder gives for the graphics to upload.

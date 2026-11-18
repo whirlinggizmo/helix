@@ -115,7 +115,7 @@ function copy(?out:BoundingBox):BoundingBox
 
 Represents raylib's `Camera`, the same type as `Camera3D`.
 
-An alias of `Camera3D`.
+An alias of [`Camera3D`](types.md#camera3d).
 
 ## Camera2D
 
@@ -655,7 +655,7 @@ Represents raylib's `Quaternion`: a rotation in three dimensions. It is helix-ma
 
 A `Vector4` isn't one, as it is in C. Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-An alias of `Quaternion`.
+An alias of [`Quaternion`](../../../libs/math/api/types.md#quaternion).
 
 ## Ray
 
@@ -848,7 +848,7 @@ var depth:Texture2D
 
 Represents raylib's `RenderTexture2D`, the same type as `RenderTexture`.
 
-An alias of `RenderTexture`.
+An alias of [`RenderTexture`](types.md#rendertexture).
 
 ## Rlgl
 
@@ -904,7 +904,7 @@ var frameCount(default, null):Int
 
 Represents raylib's `Texture`, the same type as `Texture2D`.
 
-An alias of `Texture2D`.
+An alias of [`Texture2D`](types.md#texture2d).
 
 ## Texture2D
 
@@ -943,7 +943,7 @@ Represents raylib's `TextureCubemap`, the same type as `Texture`: a cubemap's re
 
 Made by `Raylib.LoadTextureCubemap`.
 
-An alias of `Texture`.
+An alias of [`Texture`](types.md#texture).
 
 ## Transform
 
@@ -981,7 +981,7 @@ Represents raylib's `Vector2`: a point or a direction in two dimensions. It is h
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-An alias of `Vector2`.
+An alias of [`Vector2`](../../../libs/math/api/types.md#vector2).
 
 ## Vector3
 
@@ -991,7 +991,7 @@ Represents raylib's `Vector3`: a point or a direction in three dimensions. It is
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-An alias of `Vector3`.
+An alias of [`Vector3`](../../../libs/math/api/types.md#vector3).
 
 ## Vector4
 
@@ -1001,7 +1001,7 @@ Represents raylib's `Vector4`: four components. It is helix-math's `Vector4`, so
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-An alias of `Vector4`.
+An alias of [`Vector4`](../../../libs/math/api/types.md#vector4).
 
 ## VrDeviceInfo
 

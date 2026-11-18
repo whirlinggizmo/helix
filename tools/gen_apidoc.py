@@ -163,6 +163,11 @@ def anchor(heading):
     """The anchor GitHub gives a heading: lower case, its spaces as hyphens, its other punctuation dropped."""
     return re.sub(r'[^\w\- ]','',heading.lower()).replace(' ','-')
 
+def heading(path,node):
+    """A type's section's heading: its name with its type parameters."""
+    params=node.get('params','')
+    return short(path)+(f'<{params.replace(":",", ")}>' if params else '')
+
 def short(path):
     """A type's name without its package."""
     return path.rsplit('.',1)[-1]
@@ -418,8 +423,7 @@ def markdown(xml,native=frozenset()):
     known=set(types);secret=hidden_paths(xml)
     files={};index={}
     for path in sorted(types):
-        node=types[path];name=short(path);params=node.get('params','')
-        header=name+(f'<{params.replace(":",", ")}>' if params else '')
+        node=types[path];name=short(path);header=heading(path,node)
         kind='interface' if node.get('interface')=='1' else {'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
         # What it extends and implements, by name: an interface's base, an adapter's interface. A hidden base is the engine's own, left out.
         above={word:[e for e in node.findall(word) if e.get('path') not in secret] for word in ('extends','implements')}
@@ -479,7 +483,13 @@ def markdown(xml,native=frozenset()):
                 if inner[0].tag=='a':
                     for f in inner[0]:
                         if len(f):lines.append(f'- `{f.tag}:{type_text(list(f)[0],known)}`'+(f': {doc_text(f)}' if doc_text(f) else ''))
-                else:lines.append(f'An alias of `{type_text(inner[0],known)}`.')
+                else:
+                    # A type of helix's own is linked to its section, where its members are, on its package's page.
+                    of=inner[0].get('path');text=f'`{type_text(inner[0],known)}`'
+                    if of in known and page_package(of) not in SPLIT:
+                        there=os.path.relpath(ROOT/package_file(page_package(of)),ROOT/Path(package_file(page_package(path))).parent).replace(os.sep,'/')
+                        text=f'[{text}]({there}#{anchor(heading(of,types[of]))})'
+                    lines.append(f'An alias of {text}.')
                 lines.append('')
         index.setdefault(file,[]).append((path,header));files.setdefault(file,[]).append('\n'.join(lines))
     # A page a package, and a library's README.md its index: its packages, the library's own first, its shader includes and its defines.

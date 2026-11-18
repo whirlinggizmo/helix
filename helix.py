@@ -14,6 +14,7 @@ pins.use_haxelib()
 # Each library's tests, run with that library alone on the interpreter and Node, and with --native in hxcpp.
 TESTS=(('helix-platform','PlatformTests'),('helix-log','LogTests'),*(('helix-math',m) for m in ('TrigTests','RandomTests','CurveTests','AabbTests','VectorTests','Matrix4Tests','Matrix3Tests','Transform2DTests','QuaternionTests','Transform3DTests','InterpolateTests','Grid2DTests','ColorTests')),
       *(('helix-geometry',m) for m in ('GeometryTests','Camera2DTests','FrustumTests','Camera3DTests','Ray3DTests','Mesh3DTests','AnimationTests')),
+      *(('helix-tweens',m) for m in ('TweenTests','TweenSequenceTests')),
       *(('helix-formats',m) for m in ('Utf8TextTests','GltfTests','ObjTests','BmFontTests','TrueTypeTests','DeflateTests','PngTests','QoiTests','QoaTests','GifTests','WavTests','AudioHeaderTests')),
       *(('helix-services',m) for m in ('ConfigTests','TimeTests','InputTests','VirtualGamepadTests','GesturesTests','SavesTests','AssetsTests','AudioTests','ImagesTests','ImageTests','ModelsTests','FontsTests','ScreenTests','ShaderTests')),
       ('helix-render','RenderTests'))
@@ -72,7 +73,7 @@ def test(native,audio_device):
         if audio_device:print(subprocess.check_output([str(tool('native-sdl3mixer-device-probe'))],text=True,encoding='utf-8'),end='')
 
 # helix-raylib's own tests, built as the parity harnesses are: from its source, without its program loop (tools/test_raylib_parity.py).
-RAYLIB_TESTS=('CountTests','EnsureTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','ScreenshotTests','SpritesTests','WaitTests','ScreenReadTests','ShaderValueTests','AnimationMaskTests','LightingTests','MaterialsTests','ShadowsTests','ShadowmapsTests','ParticlesTests')
+RAYLIB_TESTS=('CountTests','EnsureTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','ScreenshotTests','SpritesTests','WaitTests','ScreenReadTests','ShaderValueTests','AnimationMaskTests','LightingTests','MaterialsTests','ShadowsTests','ShadowmapsTests','ParticlesTests','TweensTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.
 TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader'),('own_lights.vs','own_lights.fs','own_lights.shader'),('own_lights.vs','four_lights.fs','four_lights.shader'),('instanced_lights.vs','own_lights.fs','instanced_lights.shader'),('sway.vs','own_lights.fs','sway.shader')]
@@ -137,7 +138,7 @@ def refused(base):
 
 def raylib_tests(native):
     """helix-raylib's tests on Node, and with native in hxcpp: on graphics of their own, without a window."""
-    base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
+    base=[a for lib in ('helix-log','helix-math','helix-geometry','helix-tweens','helix-formats','helix-platform','helix-services') for a in ('-lib',lib)]
     base+=['-cp','engines/raylib/src','--macro','helix.raylib.internal.Metadata.register()','--macro','helix.raylib.internal.SysCalls.register()','--macro','helix.raylib.internal.ObjectCasts.register()','-cp','engines/raylib/tests','-cp','libs/services/tests']
     def path(name,folder):return 'null' if name is None else json.dumps(f'{folder}/{name}')
     run(['haxe',*base,*[a for vs,fs,out in TEST_SHADERS for a in ('--macro',f'helix.raylib.Raylib.CompileShaderFile({path(vs,"engines/raylib/tests/shaders")}, {path(fs,"engines/raylib/tests/shaders")}, {path(out,"build/tests")})')]])

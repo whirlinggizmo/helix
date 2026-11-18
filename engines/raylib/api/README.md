@@ -81,6 +81,20 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
     - [VirtualGamepadOptions](extras-virtualgamepad.md#virtualgamepadoptions)
     - [VirtualStickOptions](extras-virtualgamepad.md#virtualstickoptions)
     - [VirtualButtonOptions](extras-virtualgamepad.md#virtualbuttonoptions)
+- [`helix.raylib.extras.tweens`](extras-tweens.md)
+  - [ColorTween](extras-tweens.md#colortween)
+  - [Ease](extras-tweens.md#ease)
+  - [EasedTween](extras-tweens.md#easedtween)
+  - [FloatTween](extras-tweens.md#floattween)
+  - [QuaternionTween](extras-tweens.md#quaterniontween)
+  - [Tween](extras-tweens.md#tween)
+  - [TweenSequence](extras-tweens.md#tweensequence)
+  - [Tweens](extras-tweens.md#tweens)
+  - [Vector2CurveTween](extras-tweens.md#vector2curvetween)
+  - [Vector2Tween](extras-tweens.md#vector2tween)
+  - [Vector3CurveTween](extras-tweens.md#vector3curvetween)
+  - [Vector3Tween](extras-tweens.md#vector3tween)
+  - [Vector4Tween](extras-tweens.md#vector4tween)
 
 ## Shader includes
 

@@ -374,13 +374,101 @@ static function transform(grid:Array<Float>, width:Int, height:Int):Void
 
   Cells start at 0 where distances are measured from, and large (1e20) everywhere else.
 
+## Ease
+
+*abstract* in [`libs/math/src/helix/math/Ease.hx`](../src/helix/math/Ease.hx), `import helix.math.Ease;`
+
+Represents an easing curve: the shape a tween moves by, or any move from 0 to 1. `Interpolate`'s thirty curves are each one (`Ease.outCubic` is `Interpolate.easeOutCubic`), `Ease.linear` is a straight line, and `Ease.of` makes one of a program's own function.
+
+```haxe
+var ease = Ease.outBack;
+// each frame
+scale = Interpolate.lerp(1, 2, ease.at(elapsed / 0.5));
+```
+
+```haxe
+static final linear(default, null):Ease
+static final inSine(default, null):Ease
+static final outSine(default, null):Ease
+static final inOutSine(default, null):Ease
+static final inQuad(default, null):Ease
+static final outQuad(default, null):Ease
+static final inOutQuad(default, null):Ease
+static final inCubic(default, null):Ease
+static final outCubic(default, null):Ease
+static final inOutCubic(default, null):Ease
+static final inQuart(default, null):Ease
+static final outQuart(default, null):Ease
+static final inOutQuart(default, null):Ease
+static final inQuint(default, null):Ease
+static final outQuint(default, null):Ease
+static final inOutQuint(default, null):Ease
+static final inExpo(default, null):Ease
+static final outExpo(default, null):Ease
+static final inOutExpo(default, null):Ease
+static final inCirc(default, null):Ease
+static final outCirc(default, null):Ease
+static final inOutCirc(default, null):Ease
+static final inBack(default, null):Ease
+static final outBack(default, null):Ease
+static final inOutBack(default, null):Ease
+static final inElastic(default, null):Ease
+static final outElastic(default, null):Ease
+static final inOutElastic(default, null):Ease
+static final inBounce(default, null):Ease
+static final outBounce(default, null):Ease
+static final inOutBounce(default, null):Ease
+static function of(curve:Float -> Float):Ease
+function at(t:Float):Float
+```
+
+- `linear`: Gets the straight line: a fraction unchanged.
+- `inSine`: Gets the curve slow at the start, a quarter sine wave: `Interpolate.easeInSine`.
+- `outSine`: Gets the curve slow at the end, a quarter sine wave: `Interpolate.easeOutSine`.
+- `inOutSine`: Gets the curve slow at both ends, a quarter sine wave: `Interpolate.easeInOutSine`.
+- `inQuad`: Gets the curve slow at the start, t squared: `Interpolate.easeInQuad`.
+- `outQuad`: Gets the curve slow at the end, t squared: `Interpolate.easeOutQuad`.
+- `inOutQuad`: Gets the curve slow at both ends, t squared: `Interpolate.easeInOutQuad`.
+- `inCubic`: Gets the curve slow at the start, t cubed: `Interpolate.easeInCubic`.
+- `outCubic`: Gets the curve slow at the end, t cubed: `Interpolate.easeOutCubic`.
+- `inOutCubic`: Gets the curve slow at both ends, t cubed: `Interpolate.easeInOutCubic`.
+- `inQuart`: Gets the curve slow at the start, t to the fourth: `Interpolate.easeInQuart`.
+- `outQuart`: Gets the curve slow at the end, t to the fourth: `Interpolate.easeOutQuart`.
+- `inOutQuart`: Gets the curve slow at both ends, t to the fourth: `Interpolate.easeInOutQuart`.
+- `inQuint`: Gets the curve slow at the start, t to the fifth: `Interpolate.easeInQuint`.
+- `outQuint`: Gets the curve slow at the end, t to the fifth: `Interpolate.easeOutQuint`.
+- `inOutQuint`: Gets the curve slow at both ends, t to the fifth: `Interpolate.easeInOutQuint`.
+- `inExpo`: Gets the curve slow at the start, two to the power of t: `Interpolate.easeInExpo`.
+- `outExpo`: Gets the curve slow at the end, two to the power of t: `Interpolate.easeOutExpo`.
+- `inOutExpo`: Gets the curve slow at both ends, two to the power of t: `Interpolate.easeInOutExpo`.
+- `inCirc`: Gets the curve slow at the start, a quarter circle: `Interpolate.easeInCirc`.
+- `outCirc`: Gets the curve slow at the end, a quarter circle: `Interpolate.easeOutCirc`.
+- `inOutCirc`: Gets the curve slow at both ends, a quarter circle: `Interpolate.easeInOutCirc`.
+- `inBack`: Gets the curve slow at the start, pulling back a tenth before it goes: `Interpolate.easeInBack`.
+- `outBack`: Gets the curve slow at the end, pulling back a tenth before it goes: `Interpolate.easeOutBack`.
+- `inOutBack`: Gets the curve slow at both ends, pulling back a tenth before it goes: `Interpolate.easeInOutBack`.
+- `inElastic`: Gets the curve slow at the start, springing past its end and back: `Interpolate.easeInElastic`.
+- `outElastic`: Gets the curve slow at the end, springing past its end and back: `Interpolate.easeOutElastic`.
+- `inOutElastic`: Gets the curve slow at both ends, springing past its end and back: `Interpolate.easeInOutElastic`.
+- `inBounce`: Gets the curve slow at the start, bouncing to rest: `Interpolate.easeInBounce`.
+- `outBounce`: Gets the curve slow at the end, bouncing to rest: `Interpolate.easeOutBounce`.
+- `inOutBounce`: Gets the curve slow at both ends, bouncing to rest: `Interpolate.easeInOutBounce`.
+- `of`: Returns a curve of a program's own function.
+  - `curve`: The function: given a fraction from 0 to 1, returns the eased fraction, 0 at 0 and 1 at 1.
+  - returns: The curve.
+
+  On hxcpp each `at` of the returned curve allocates, as hxcpp boxes a number passed to a function value. The curves named here allocate nothing.
+- `at`: Returns a fraction eased along this curve.
+  - `t`: The fraction, 0 to 1.
+  - returns: The eased fraction, 0 at 0 and 1 at 1.
+
 ## Interpolate
 
 *class* in [`libs/math/src/helix/math/Interpolate.hx`](../src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
 
 Provides interpolation: between numbers and angles, along spline pieces, easing curves, clamping, smoothing, stepping and easing toward a target.
 
-The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both. Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses `Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets.
+The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both. Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses `Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets. `Ease` has each curve as a value (`Ease.outCubic`), for a tween or another call to take.
 
 `damp` and `dampAngle` use `Math.exp`, whose last bit can differ between targets, so a simulation that must replay alike on every target uses `moveToward` or its own integer math instead. Angles are in radians.
 

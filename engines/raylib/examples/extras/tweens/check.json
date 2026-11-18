@@ -1,0 +1,7 @@
+{
+  "what": "the dark background in the corner; the panel where the sequence's first tween left it, clear of its title.",
+  "points": [
+    {"x": 780, "y": 20, "color": [16, 14, 22], "tolerance": 3},
+    {"x": 380, "y": 160, "color": [0, 82, 172], "tolerance": 3}
+  ]
+}

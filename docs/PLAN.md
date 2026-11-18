@@ -9,6 +9,7 @@ them, which may own the loop and keep statics.
 libs/                the libraries
   math/              points, bounds, transforms, curves, deterministic trig   depends on nothing
   geometry/          cameras, rays, meshes, tests on shapes                   depends on math
+  tweens/            values along easing curves over time, and sequences      depends on math
   log/               levels and tags, to the console or stdio                 depends on nothing
   formats/           file formats read into plain data: glTF, BMFont, fonts   depends on math
   platform/          the hardware and the OS as interfaces and adapters        depends on math, formats
