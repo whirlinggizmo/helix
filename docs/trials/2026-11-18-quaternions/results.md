@@ -22,7 +22,7 @@ its work's.
 | finding | to do |
 |---|---|
 | The one entrant that typed the keys `Vector4` (1 of 3) met `Vector4 should be Quaternion` and retyped them in one change, without a guess. The middle cube was `QuaternionNlerp` for all three, none reaching for `Vector4Lerp` | nothing: the two types stand |
-| Two of three reached for a `create` on the structs (`Quaternion.create`, `Vector3.create`, `Camera3D.create`) and wrote `new` after the error. One read `Class<helix.math.Vector3> has no field create` as the wrong `Vector3` and imported `helix.raylib.Vector3` again | the message names helix-math's class, as raylib's structs are its typedefs; left as is, as `new` was each one's next step |
+| Two of three reached for a `create` on the structs (`Quaternion.create`, `Vector3.create`, `Camera3D.create`) and wrote `new` after the error. One read `Class<helix.math.Vector3> has no field create` as the wrong `Vector3` and imported `helix.raylib.Vector3` again | nothing for now, as `new` was each one's next step: no `create` and no refusal, as a second API to mirror isn't wanted. If the habit keeps coming up, a helix-raylib macro turns `X.create(...)` into `new X(...)` |
 | Each met `LoadShader`'s or `LoadShaderFromMemory`'s refusal and followed it to `LoadCompiledShader` (3 of 3) | nothing: as in the earlier trials |
 | One guessed `SetShaderValue` takes an `Array<Float>` for a vec4, and it did | nothing |
 | An entrant's program left running holds its session open | the templates' briefs say to run the program in the foreground |
