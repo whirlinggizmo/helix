@@ -154,6 +154,21 @@ class Transform2D {
 		return this;
 	}
 
+	/** Turns it toward facing a point by at most a step, the short way round, as a turret follows what it aims at.
+
+		It faces the point exactly once within a step of facing the point. A point at its position, or a step of 0 or less, leaves it
+		as it is.
+		@param x  The point's x.
+		@param y  The point's y.
+		@param step  The most to turn by, in radians.
+		@return  This transform. */
+	public function rotateToward(x:Float, y:Float, step:Float):Transform2D {
+		var dx = x - position.x, dy = y - position.y;
+		if (dx != 0 || dy != 0)
+			rotation = Interpolate.rotateToward(rotation, Trig.atan2(dy, dx), step);
+		return this;
+	}
+
 	/** Swings it around a point: its position and its rotation both, so whatever faced the point still does.
 
 		@param x  The point's x.

@@ -1,10 +1,12 @@
+import helix.math.EulerOrder;
 import helix.math.Matrix4;
 import helix.math.Quaternion;
 import helix.math.Vector3;
 
-/** Checks Matrix4 with the library alone: made as each kind of transform (into a new matrix or one given), combined in order (compose, append, prepend), each operation into a
-	new matrix, itself or its other argument alike, inverted (a singular one refused, unchanged) and transposed, added and subtracted, its trace and determinant, points and directions carried through it, a point through a
-	projection, and a transform taken apart, whole and a part at a time. */
+/** Checks Matrix4 with the library alone: made as each kind of transform (into a new matrix or one given), three turns in each of the
+	six orders, combined in order (compose, append, prepend), each operation into a new matrix, itself or its other argument alike, inverted
+	(a singular one refused, unchanged) and transposed, added and subtracted, its trace and determinant, points and directions carried
+	through it, a point through a projection, and a transform taken apart, whole and a part at a time. */
 class Matrix4Tests {
 	static var checks = 0;
 
@@ -64,7 +66,8 @@ class Matrix4Tests {
 		var turns = Quaternion.fromEuler(.4, -1.1, 2.3);
 		check(same(Matrix4.fromEuler(.4, -1.1, 2.3), Matrix4.fromQuaternion(turns.x, turns.y, turns.z, turns.w)), "three turns, as the quaternion's");
 		check(at(Matrix4.fromEuler(Math.PI / 2, 0, Math.PI / 2).transformPoint(0, 1, 0, p), 0, 0, 1), "about x first: y to z, which z leaves");
-		check(Matrix4.fromEuler(.4, -1.1, 2.3, m) == m && same(m, Matrix4.fromEuler(.4, -1.1, 2.3)), "three turns into the one given");
+		check(Matrix4.fromEuler(.4, -1.1, 2.3, ZYX, m) == m
+			&& same(m, Matrix4.fromEuler(.4, -1.1, 2.3)), "three turns into the one given");
 
 		Matrix4.fromScale(2, 2, 2, m).appendRotation(0, 1, 0, Math.PI / 2, m).appendTranslation(1, 0, -3, m);
 		check(at(m.transformPoint(1, 0, 0, p), 1, 0, -5), "appended in order: scaled, then turned, then moved");
@@ -175,6 +178,100 @@ class Matrix4Tests {
 			&& at(Matrix4.fromScale(0, 0, 0).getScale(), 0, 0, 0)
 			&& near(Matrix4.fromScale(0, 0, 0).getRotation().w, 1),
 			"the identity's scale 1, a matrix of no size's 0 and its rotation none");
+
+		// Three turns in each order: each matrix pinned to the product of the three turns' matrices, worked in Python.
+		var orders = [
+			ZYX => [
+				0.34692944965489897,
+				0.681632986593423,
+				0.644217687237691,
+				-0.9377582425124973,
+				0.26366945348719223,
+				0.22602632124962302,
+				-0.01579352911863996,
+				-0.6825356334181358,
+				0.7306816499355124
+			],
+			XYZ => [
+				0.34692944965489897,
+				0.7650475783754858,
+				0.5425330955655644,
+				-0.681632986593423,
+				0.6030043987602139,
+				-0.41444199432919854,
+				-0.644217687237691,
+				-0.22602632124962302,
+				0.7306816499355124
+			],
+			YXZ => [
+				0.1772619770183881,
+				0.8514029104439915,
+				0.4936509653500467,
+				-0.7679883186619287,
+				0.4333369261237031,
+				-0.4716068816890655,
+				-0.6154446635582734,
+				-0.29552020666133955,
+				0.7306816499355124
+			],
+			ZXY => [
+				0.5165969222914099,
+				0.5952776545249172,
+				0.6154446635582734,
+				-0.8514029104439915,
+				0.4333369261237031,
+				0.29552020666133955,
+				-0.09077832321949786,
+				-0.6766562070069067,
+				0.7306816499355124
+			],
+			YZX => [
+				0.34692944965489897,
+				0.8912073600614354,
+				0.2922146442847723,
+				-0.8415682083517346,
+				0.4333369261237031,
+				-0.3224624926240442,
+				-0.414008342492999,
+				-0.13404681954446868,
+				0.9003491225720233
+			],
+			XZY => [
+				0.34692944965489897,
+				0.4608095202169893,
+				0.8168809846235479,
+				-0.8912073600614354,
+				0.4333369261237031,
+				0.13404681954446868,
+				-0.2922146442847723,
+				-0.7745151351232902,
+				0.5610141772990016
+			],
+		];
+		var names = [
+			ZYX => "ZYX",
+			XYZ => "XYZ",
+			YXZ => "YXZ",
+			ZXY => "ZXY",
+			YZX => "YZX",
+			XZY => "XZY"
+		];
+		for (order => columns in orders) {
+			var name = names[order];
+			var made = Matrix4.fromEuler(.3, -.7, 1.1, order).toArray(), matches = true;
+			for (column in 0...3)
+				for (row in 0...3)
+					if (Math.abs(made[column * 4 + row] - columns[column * 3 + row]) > 1e-15)
+						matches = false;
+			check(matches && made[3] == 0 && made[7] == 0 && made[11] == 0 && made[12] == 0 && made[13] == 0 && made[14] == 0 && made[15] == 1,
+				'three turns in the order $name: pinned');
+			var q = Quaternion.fromEuler(.3, -.7, 1.1, order);
+			check(same(Matrix4.fromEuler(.3, -.7, 1.1, order), Matrix4.fromQuaternion(q.x, q.y, q.z, q.w)), 'and as the quaternion\'s in the order $name');
+		}
+		check(identical(Matrix4.fromEuler(.3, -.7, 1.1), Matrix4.fromEuler(.3, -.7, 1.1, ZYX)), "no order given: x, then y, then z");
+		check(Matrix4.fromEuler(.3, -.7, 1.1, XYZ, m) == m
+			&& identical(m, Matrix4.fromEuler(.3, -.7, 1.1, XYZ)), "an order, into the one given");
+		check(at(Matrix4.fromEuler(Math.PI / 2, 0, Math.PI / 2, XYZ).transformPoint(0, 1, 0, p), -1, 0, 0), "about z first: y to -x, which x leaves");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

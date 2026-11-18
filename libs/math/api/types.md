@@ -462,6 +462,19 @@ function at(t:Float):Float
   - `t`: The fraction, 0 to 1.
   - returns: The eased fraction, 0 at 0 and 1 at 1.
 
+## EulerOrder
+
+*abstract* in [`libs/math/src/helix/math/EulerOrder.hx`](../src/helix/math/EulerOrder.hx), `import helix.math.EulerOrder;`
+
+Specifies the order three turns around x, y and z are made in. Each order is named as raylib, three.js and glm name it: by the product of the three rotation matrices, so the last letter's turn is made first. Every turn is around the world's axes.
+
+- `EulerOrder.ZYX`: Around x first, then y, then z.
+- `EulerOrder.XYZ`: Around z first, then y, then x.
+- `EulerOrder.YXZ`: Around z first, then x, then y.
+- `EulerOrder.ZXY`: Around y first, then x, then z.
+- `EulerOrder.YZX`: Around x first, then z, then y.
+- `EulerOrder.XZY`: Around y first, then z, then x.
+
 ## Interpolate
 
 *class* in [`libs/math/src/helix/math/Interpolate.hx`](../src/helix/math/Interpolate.hx), `import helix.math.Interpolate;`
@@ -966,7 +979,7 @@ static function fromTranslation(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
 static function fromScale(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
 static function fromRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix4):Matrix4
 static function fromQuaternion(x:Float, y:Float, z:Float, w:Float, ?out:Matrix4):Matrix4
-static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Matrix4):Matrix4
+static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?order:EulerOrder = EulerOrder.ZYX, ?out:Matrix4):Matrix4
 static function fromLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float, ?out:Matrix4):Matrix4
 static function fromPerspective(fovY:Float, aspect:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
 static function fromOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
@@ -1043,10 +1056,11 @@ function decompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Void
   - `w`: Its w.
   - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
-- `fromEuler`: Returns the rotation of three turns, around x, then y, then z, each around the world's axes. `Quaternion.fromEuler` gives the same rotation as a quaternion.
+- `fromEuler`: Returns the rotation of three turns around x, y and z, each around the world's axes. `Quaternion.fromEuler` gives the same rotation as a quaternion.
   - `pitch`: The turn around x, in radians.
   - `yaw`: The turn around y, in radians.
   - `roll`: The turn around z, in radians.
+  - `order`: Optional. The order the turns are made in; defaults to `ZYX`: around x, then y, then z.
   - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 - `fromLookAt`: Returns a view from an eye looking at a target.
@@ -1219,7 +1233,7 @@ Written as an object where one is expected; a field marked `?` may be left out, 
 
 ```haxe
 static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Quaternion):Quaternion
-static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion
+static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?order:EulerOrder = EulerOrder.ZYX, ?out:Quaternion):Quaternion = { order : EulerOrder.ZYX }
 static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0., ?out:Quaternion):Quaternion = { upZ : 0., upY : 1., upX : 0. }
 static function fromBetween(from:Vector3, to:Vector3, ?out:Quaternion):Quaternion
 static function fromRotationMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion
@@ -1240,11 +1254,14 @@ function prepend(other:Quaternion, ?out:Quaternion):Quaternion
 function invert(?out:Quaternion):Quaternion
 function normalize(?out:Quaternion):Quaternion
 function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
-function toEuler(?out:Vector3):Vector3
+function toEuler(?order:EulerOrder = EulerOrder.ZYX, ?out:Vector3):Vector3 = { order : EulerOrder.ZYX }
 var angle(get, never):Float
 function getAxis(?out:Vector3):Vector3
 var length(get, never):Float
 function equals(other:Quaternion, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
+function dot(other:Quaternion):Float
+function angleTo(other:Quaternion):Float
+function rotateToward(target:Quaternion, step:Float, ?out:Quaternion):Quaternion
 function toMatrix(?out:Matrix4):Matrix4
 ```
 
@@ -1257,10 +1274,11 @@ function toMatrix(?out:Matrix4):Matrix4
   - returns: The rotation.
 
   An axis of length 0 makes the identity.
-- `fromEuler`: Returns the rotation of three turns, around x, then y, then z, each around the world's axes.
+- `fromEuler`: Returns the rotation of three turns around x, y and z, each around the world's axes.
   - `pitch`: The turn around x, in radians.
   - `yaw`: The turn around y, in radians.
   - `roll`: The turn around z, in radians.
+  - `order`: Optional. The order the turns are made in; defaults to `ZYX`: around x, then y, then z.
   - `out`: Optional. The rotation to fill; a new one when omitted.
   - returns: The rotation.
 - `fromLookRotation`: Returns the rotation that turns -z to face a direction, +y kept as near to up as it can be.
@@ -1352,11 +1370,12 @@ function toMatrix(?out:Matrix4):Matrix4
   - `z`: The point's z.
   - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The turned point.
-- `toEuler`: Returns the turns around x, y and z that `fromEuler` would make this from.
+- `toEuler`: Returns the turns around x, y and z that `fromEuler` would make this rotation from, in an order.
+  - `order`: Optional. The order the turns are made in; defaults to `ZYX`: around x, then y, then z.
   - `out`: Optional. The vector to write into: pitch in x, yaw in y, roll in z, in radians; a new one when omitted.
   - returns: The angles.
 
-  The pitch and the roll are from -pi to pi, the yaw from -pi / 2 to pi / 2. At a yaw of a quarter turn either way, where the pitch and the roll turn around the same axis, the roll is 0 and the pitch carries the whole turn.
+  The turn made second is from -pi / 2 to pi / 2, and the other two are from -pi to pi. Where the second turn is a quarter turn either way, the first and the last turn around the same axis: the last is 0 and the first carries the whole turn.
 - `angle`: Gets the angle this rotation turns by, around whatever axis, in radians, 0 to pi.
 - `getAxis`: Returns the axis this rotation turns around. `angle` is the angle of the turn around the axis.
   - `out`: Optional. The vector to fill; a new one when omitted.
@@ -1368,6 +1387,23 @@ function toMatrix(?out:Matrix4):Matrix4
   - returns: True when they are the same rotation.
 
   A quaternion and its negative are the same rotation.
+- `dot`: Returns this quaternion's dot product with another: 1 or -1 for the same rotation, 0 for rotations half a turn apart.
+  - `other`: The other rotation.
+  - returns: The dot product.
+- `angleTo`: Returns the angle between this rotation and another, in radians: how far one turns to become the other, the short way round.
+  - `other`: The other rotation.
+  - returns: The angle, 0 to pi.
+- `rotateToward`: Returns this rotation turned toward a target by at most a step, the short way round.
+  - `target`: The rotation to turn toward.
+  - `step`: The most to turn by, in radians.
+  - `out`: Optional. The rotation to fill; a new one when omitted. It may be this rotation or the target.
+  - returns: The turned rotation.
+
+  The rotation reaches the target exactly. A step of 0 or less leaves the rotation as it is.
+
+  ```haxe
+  turret.rotation.rotateToward(aim, turnSpeed * dt, turret.rotation);
+  ```
 - `toMatrix`: Returns the rotation as a matrix.
   - `out`: Optional. The matrix to write into; a new one when omitted.
   - returns: The matrix.
@@ -1492,6 +1528,7 @@ function moveRight(distance:Float):Transform2D
 function moveToward(x:Float, y:Float, distance:Float, ?nearest:Float = .001):Transform2D
 function rotate(radians:Float):Transform2D
 function lookAt(x:Float, y:Float):Transform2D
+function rotateToward(x:Float, y:Float, step:Float):Transform2D
 function orbit(x:Float, y:Float, radians:Float):Transform2D
 function transformPoint(x:Float, y:Float, ?out:Vector2):Vector2
 function toMatrix(?out:Matrix3):Matrix3
@@ -1541,6 +1578,13 @@ function toMatrix(?out:Matrix3):Matrix3
   - returns: This transform.
 
   A point at its position leaves it as it is.
+- `rotateToward`: Turns it toward facing a point by at most a step, the short way round, as a turret follows what it aims at.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `step`: The most to turn by, in radians.
+  - returns: This transform.
+
+  It faces the point exactly once within a step of facing the point. A point at its position, or a step of 0 or less, leaves it as it is.
 - `orbit`: Swings it around a point: its position and its rotation both, so whatever faced the point still does.
   - `x`: The point's x.
   - `y`: The point's y.
@@ -1591,6 +1635,7 @@ function yaw(radians:Float):Transform3D
 function pitch(radians:Float, ?lock:Bool = false):Transform3D
 function roll(radians:Float):Transform3D
 function lookAt(x:Float, y:Float, z:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0.):Transform3D
+function rotateToward(x:Float, y:Float, z:Float, step:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0.):Transform3D
 function orbit(x:Float, y:Float, z:Float, yaw:Float, pitch:Float, ?lock:Bool = false):Transform3D
 function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
 function toMatrix(?out:Matrix4):Matrix4
@@ -1660,6 +1705,17 @@ function toMatrix(?out:Matrix4):Matrix4
   - returns: This transform.
 
   A point at its position leaves it as it is.
+- `rotateToward`: Turns it toward facing a point by at most a step, the short way round, as a turret follows what it aims at.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `step`: The most to turn by, in radians.
+  - `upX`: Optional. Which way up it is kept once it faces the point, x; defaults to 0.
+  - `upY`: Optional. Up's y; defaults to 1.
+  - `upZ`: Optional. Up's z; defaults to 0.
+  - returns: This transform.
+
+  It faces the point exactly once within a step of facing the point. A point at its position, or a step of 0 or less, leaves it as it is.
 - `orbit`: Swings it around a point: its position and its rotation both, so whatever faced the point still does, as an orbiting camera moves.
   - `x`: The point's x.
   - `y`: The point's y.

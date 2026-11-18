@@ -1,14 +1,16 @@
+import helix.math.EulerOrder;
 import helix.math.Matrix4;
 import helix.math.Quaternion;
 import helix.math.Vector3;
 
 /** Checks Quaternion with the library alone: made, set, copied and reset, each returning itself; made from an axis and an angle, from
-	three turns, facing a direction, between two directions and from a matrix; blended (slerp and nlerp, the shorter way round, slerp at
-	an even speed and past its ends), composed in order, inverted and normalized; points turned, its angle, its matrix and its turns
-	back; values pinned to rotation matrices and Hamilton products computed apart from Haxe, and to raylib 5.5's raymath for the same
-	inputs (to its float precision); every operation into a new rotation, itself and each other argument, the same each way; whole
-	numbers multiplied as floats on the interpreter; its length; the same rotation as its negative; its axis, which with `angle` makes
-	the rotation again; a Hermite curve; a copy; and a rotation written in braces. */
+	three turns, facing a direction, between two directions and from a matrix; blended (slerp and nlerp, the shorter way round, slerp at an
+	even speed and past its ends), composed in order, inverted and normalized; points turned, its angle, its matrix and its turns back;
+	values pinned to rotation matrices and Hamilton products computed apart from Haxe, and to raylib 5.5's raymath for the same inputs (to
+	its float precision); every operation into a new rotation, itself and each other argument, the same each way; whole numbers multiplied
+	as floats on the interpreter; its length; the same rotation as its negative; its axis, which with `angle` makes the rotation again; a
+	Hermite curve; a copy; a rotation written in braces; its dot product with another, the angle to another and turned toward another by a
+	step; and three turns made in each of the six orders and read back, at the lock too. */
 class QuaternionTests {
 	static var checks = 0;
 
@@ -74,7 +76,7 @@ class QuaternionTests {
 		check(is(euler, [0.503721714, -0.17203483, 0.751522005, 0.38972187], 1e-6), "and raylib's QuaternionFromEuler");
 		var steps = Quaternion.fromAxisAngle(1, 0, 0, .3).append(Quaternion.fromAxisAngle(0, 1, 0, -1.1)).append(Quaternion.fromAxisAngle(0, 0, 1, 2));
 		check(is(euler, [steps.x, steps.y, steps.z, steps.w]), "around x, then y, then z, each the world's");
-		check(Quaternion.fromEuler(.3, -1.1, 2, into) == into && identical(into, euler), "into the one given");
+		check(Quaternion.fromEuler(.3, -1.1, 2, ZYX, into) == into && identical(into, euler), "into the one given");
 		var angles = euler.toEuler();
 		check(at(angles, .3, -1.1, 2), "its turns back");
 		check(at(angles, 0.300000012, -1.0999999, 1.99999988, 1e-6), "and raylib's QuaternionToEuler");
@@ -83,7 +85,7 @@ class QuaternionTests {
 			check(at(back, turns[0], turns[1], turns[2], 1e-12), 'its turns back: ${turns}');
 		}
 		var given = new Vector3();
-		check(euler.toEuler(given) == given && given.equals(angles), "its turns, into the vector given");
+		check(euler.toEuler(ZYX, given) == given && given.equals(angles), "its turns, into the vector given");
 		for (yaw in [Math.PI / 2, -Math.PI / 2]) {
 			var locked = Quaternion.fromEuler(.4, yaw, .3),
 				back = locked.toEuler();
@@ -321,6 +323,78 @@ class QuaternionTests {
 			w: 1
 		}, partly:Quaternion = {y: 1};
 		check(is(braced, [0, 0, 0, 1]) && partly.y == 1 && partly.x == 0, "a rotation in braces");
+
+		// The dot product, the angle between two rotations, and a turn toward one by a step.
+		var yawA = Quaternion.fromAxisAngle(0, 1, 0, .3),
+			yawB = Quaternion.fromAxisAngle(0, 1, 0, 1.5);
+		check(near(yawA.dot(yawA), 1) && near(yawA.dot(yawB), Math.cos(.6)), "the dot product: the cosine of half the angle between");
+		check(near(new Quaternion(1, 0, 0, 0).dot(new Quaternion(0, 0, 0, 1)), 0), "rotations half a turn apart: a dot product of 0");
+		check(near(yawA.angleTo(yawB), 1.2) && near(yawB.angleTo(yawA), 1.2), "the angle between two turns around one axis, either way round");
+		check(yawA.angleTo(yawA) == 0, "no angle to itself");
+		check(near(yawA.angleTo(new Quaternion(-yawB.x, -yawB.y, -yawB.z, -yawB.w)), 1.2), "a quaternion's negative is the same rotation");
+		check(near(new Quaternion().angleTo(Quaternion.fromAxisAngle(1, 0, 0, Math.PI)), Math.PI), "half a turn apart: pi");
+		check(near(new Quaternion().angleTo(Quaternion.fromAxisAngle(0, 0, 1, 1e-9)), 1e-9, 1e-21), "the smallest angles kept");
+		check(near(Quaternion.fromAxisAngle(1, 0, 0, .4).angleTo(Quaternion.fromAxisAngle(0, 1, 0, .9)), 0.9792975059130261),
+			"turns around two axes: pinned, worked in Python from the dot product");
+		var turned = threeWays(yawA, yawB, (a, b, out) -> a.rotateToward(b, .5, out), "turned toward");
+		check(turnsAs(turned, [0, Math.sin(.4), 0, Math.cos(.4)]), "turned toward a target by a step");
+		check(near(turned.angleTo(yawA), .5) && near(turned.angleTo(yawB), .7), "a step nearer the target and no more");
+		check(identical(yawA.rotateToward(yawB, 1.2000001), yawB)
+			&& identical(yawA.rotateToward(yawB, 9), yawB), "a step past the target: the target exactly");
+		check(identical(yawA.rotateToward(yawB, 0), yawA)
+			&& identical(yawA.rotateToward(yawB, -1), yawA)
+			&& identical(yawA.rotateToward(yawB, Math.NaN), yawA),
+			"a step of 0 or less: left as it is");
+		var far = Quaternion.fromAxisAngle(0, 1, 0, .3 + 4);
+		check(near(yawA.rotateToward(far, .5).angleTo(far), 2 * Math.PI - 4 - .5), "the short way round");
+		var chase = copy(yawA), steps = 0;
+		while (!identical(chase, yawB) && steps < 100) {
+			chase.rotateToward(yawB, .25, chase);
+			steps++;
+		}
+		check(steps == 5, "stepped to the target in as many steps as the angle holds");
+
+		// Three turns in each order, and the turns read back.
+		var orders:Array<EulerOrder> = [ZYX, XYZ, YXZ, ZXY, YZX, XZY];
+		// Which of pitch, yaw and roll is made second in each order, and which last.
+		var seconds = [1, 1, 0, 0, 2, 2], lasts = [2, 0, 1, 2, 1, 0];
+		var names = ["ZYX", "XYZ", "YXZ", "ZXY", "YZX", "XZY"];
+		for (index => order in orders) {
+			var name = names[index];
+			for (turns in [[.3, -.7, 1.1], [-2.9, 1.2, 3], [1.4, -1.5, -.4], [0., 0., 0.]]) {
+				// The second turn is read back from -pi / 2 to pi / 2: the sample's is within that already.
+				var made = Quaternion.fromEuler(turns[0], turns[1], turns[2], order);
+				var back = made.toEuler(order);
+				check(turnsAs(Quaternion.fromEuler(back.x, back.y, back.z, order), [made.x, made.y, made.z, made.w]),
+					'the order $name: the turns read back make the rotation again');
+			}
+			var back = Quaternion.fromEuler(.3, -.7, 1.1, order).toEuler(order);
+			check(at(back, .3, -.7, 1.1), 'the order $name: turns within the ranges read back as given');
+			for (quarter in [Math.PI / 2, -Math.PI / 2]) {
+				var turns = [.4, .9, .3];
+				turns[seconds[index]] = quarter;
+				var locked = Quaternion.fromEuler(turns[0], turns[1], turns[2], order);
+				var back = locked.toEuler(order),
+					read = [back.x, back.y, back.z];
+				check(read[lasts[index]] == 0
+					&& near(read[seconds[index]], quarter, 1e-7)
+					&& turnsAs(Quaternion.fromEuler(back.x, back.y, back.z, order), [locked.x, locked.y, locked.z, locked.w], 1e-7),
+					'the order $name, its second turn a quarter turn: the last turn 0, the first carrying the whole turn');
+			}
+		}
+		check(identical(Quaternion.fromEuler(.3, -1.1, 2), Quaternion.fromEuler(.3, -1.1, 2, ZYX)), "no order given: x, then y, then z");
+		var first = Quaternion.fromAxisAngle(0, 0, 1, 1.1),
+			then = Quaternion.fromAxisAngle(0, 1, 0, -.7),
+			last = Quaternion.fromAxisAngle(1, 0, 0, .3);
+		check(turnsAs(Quaternion.fromEuler(.3, -.7, 1.1, XYZ), {
+			var q = Quaternion.compose(Quaternion.compose(first, then), last);
+			[q.x, q.y, q.z, q.w];
+		}), "XYZ: around z first, then y, then x");
+		var ordered = new Quaternion(9, 9, 9, 9);
+		check(Quaternion.fromEuler(.3, -.7, 1.1, YXZ, ordered) == ordered && identical(ordered, Quaternion.fromEuler(.3, -.7, 1.1, YXZ)),
+			"an order, into the one given");
+		var readInto = new Vector3();
+		check(ordered.toEuler(YXZ, readInto) == readInto && at(readInto, .3, -.7, 1.1), "an order's turns, into the vector given");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

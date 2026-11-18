@@ -183,26 +183,74 @@ class Matrix4 extends Matrix4Storage {
 			- 2 * (a2 + b2), 0, 0, 0, 0, 1);
 	}
 
-	/** Returns the rotation of three turns, around x, then y, then z, each around the world's axes. `Quaternion.fromEuler` gives the same
+	/** Returns the rotation of three turns around x, y and z, each around the world's axes. `Quaternion.fromEuler` gives the same
 		rotation as a quaternion.
 
 		@param pitch  The turn around x, in radians.
 		@param yaw  The turn around y, in radians.
 		@param roll  The turn around z, in radians.
+		@param order  Optional. The order the turns are made in; defaults to `ZYX`: around x, then y, then z.
 		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Matrix4):Matrix4 {
+	public static function fromEuler(pitch:Float, yaw:Float, roll:Float, order = EulerOrder.ZYX, ?out:Matrix4):Matrix4 {
 		var x = Trig.turn(pitch), y = Trig.turn(yaw), z = Trig.turn(roll);
 		var cx = x.cos, sx = x.sin, cy = y.cos, sy = y.sin, cz = z.cos, sz = z.sin;
 		if (out == null)
 			out = new Matrix4();
-		return out.set(cz * cy, sz * cy,
-			-sy, 0, cz * sy * sx
-			- sz * cx, sz * sy * sx
-			+ cz * cx, cy * sx, 0, cz * sy * cx
-			+ sz * sx, sz * sy * cx
-			- cz * sx,
-			cy * cx, 0, 0, 0, 0, 1);
+		// Each the product of the three turns' matrices in the order's letters, by columns.
+		return switch order {
+			case ZYX:
+				out.set(cz * cy, sz * cy,
+					-sy, 0, cz * sy * sx
+					- sz * cx, sz * sy * sx
+					+ cz * cx, cy * sx, 0, cz * sy * cx
+					+ sz * sx, sz * sy * cx
+					- cz * sx,
+					cy * cx, 0, 0, 0, 0, 1);
+			case XYZ:
+				out.set(cy * cz, cx * sz
+					+ sx * cz * sy, sx * sz
+					- cx * cz * sy, 0,
+					-cy * sz, cx * cz
+					- sx * sz * sy, sx * cz
+					+ cx * sz * sy, 0, sy,
+					-sx * cy,
+					cx * cy, 0, 0, 0, 0, 1);
+			case YXZ:
+				out.set(cy * cz
+					+ sy * sz * sx, cx * sz, cy * sz * sx
+					- sy * cz, 0, sy * cz * sx
+					- cy * sz, cx * cz, sy * sz
+					+ cy * cz * sx, 0, cx * sy,
+					-sx,
+					cx * cy, 0, 0, 0, 0, 1);
+			case ZXY:
+				out.set(cy * cz
+					- sy * sz * sx, cy * sz
+					+ sy * cz * sx,
+					-cx * sy, 0,
+					-cx * sz, cx * cz, sx, 0, sy * cz
+					+ cy * sz * sx, sy * sz
+					- cy * cz * sx,
+					cx * cy, 0, 0, 0, 0, 1);
+			case YZX:
+				out.set(cy * cz, sz,
+					-sy * cz, 0, sx * sy
+					- cx * cy * sz, cx * cz, cx * sy * sz
+					+ sx * cy, 0, sx * cy * sz
+					+ cx * sy,
+					-sx * cz,
+					cx * cy
+					- sx * sy * sz, 0, 0, 0, 0, 1);
+			case XZY:
+				out.set(cy * cz, cx * cy * sz
+					+ sx * sy, sx * cy * sz
+					- cx * sy, 0,
+					-sz, cx * cz, sx * cz, 0, sy * cz, cx * sy * sz
+					- sx * cy,
+					sx * sy * sz
+					+ cx * cy, 0, 0, 0, 0, 1);
+		}
 	}
 
 	/** Returns a view from an eye looking at a target.

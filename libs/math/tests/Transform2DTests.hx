@@ -1,11 +1,12 @@
 import helix.math.Matrix3;
 import helix.math.Transform2D;
+import helix.math.Trig;
 import helix.math.Vector2;
 
 /** Checks Transform2D with the library alone: made, copied and reset, each returning itself; its forward and right; moved along them
-	and toward a point (stopping short of it); turned, turned to face a point and swung around one; points carried and its matrix, pinned
-	to plain 3 x 3 algebra computed apart from Haxe; each result into a new value or the one given, alike, even when the one given is its
-	own position; and taken back from a matrix. */
+	and toward a point (stopping short of it); turned, turned to face a point at once or by a step, and swung around one; points carried and
+	its matrix, pinned to plain 3 x 3 algebra computed apart from Haxe; each result into a new value or the one given, alike, even when the
+	one given is its own position; and taken back from a matrix. */
 class Transform2DTests {
 	static var checks = 0;
 
@@ -119,6 +120,19 @@ class Transform2DTests {
 		check(mirrored.rotation == 0 && at(mirrored.scale, 1, -1), "a mirroring matrix: y's scale less than 0");
 		var sheared = Transform2D.fromMatrix(new Matrix3().set(2, 0, 1, 3, 0, 0));
 		check(sheared.rotation == 0 && at(sheared.scale, 2, 3), "a shearing matrix: its x axis kept, the shear lost");
+
+		// Turned toward a point by a step.
+		var turret = new Transform2D();
+		turret.position.set(2, 1);
+		check(turret.rotateToward(2, 5, .5) == turret && near(turret.rotation, .5), "turned toward a point by a step");
+		turret.rotateToward(2, 5, .5).rotateToward(2, 5, .5);
+		check(near(turret.rotation, 1.5), "and again, a step at a time");
+		check(turret.rotateToward(2, 5, .5).rotation == Trig.atan2(4, 0), "within a step: facing the point exactly");
+		check(turret.rotateToward(2, 1, .5).rotation == Trig.atan2(4, 0), "a point at its position leaves it as it is");
+		check(turret.rotateToward(9, 1, 0).rotation == Trig.atan2(4, 0) && turret.rotateToward(9, 1, -1).rotation == Trig.atan2(4, 0),
+			"a step of 0 or less leaves it as it is");
+		turret.rotation = 3;
+		check(near(turret.rotateToward(1, 0, .25).rotation, 3.25), "the short way round, past pi");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

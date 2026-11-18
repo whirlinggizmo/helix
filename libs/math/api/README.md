@@ -12,6 +12,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [CurveKind](types.md#curvekind)
   - [DistanceField2D](types.md#distancefield2d)
   - [Ease](types.md#ease)
+  - [EulerOrder](types.md#eulerorder)
   - [Interpolate](types.md#interpolate)
   - [MathTools](types.md#mathtools)
   - [Matrix3](types.md#matrix3)

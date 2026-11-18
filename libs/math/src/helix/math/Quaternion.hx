@@ -57,19 +57,59 @@ class Quaternion {
 		return result(out, ax * sin, ay * sin, az * sin, half.cos);
 	}
 
-	/** Returns the rotation of three turns, around x, then y, then z, each around the world's axes.
+	/** Returns the rotation of three turns around x, y and z, each around the world's axes.
 
 		@param pitch  The turn around x, in radians.
 		@param yaw  The turn around y, in radians.
 		@param roll  The turn around z, in radians.
+		@param order  Optional. The order the turns are made in; defaults to `ZYX`: around x, then y, then z.
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
-	public static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion {
+	public static function fromEuler(pitch:Float, yaw:Float, roll:Float, order = EulerOrder.ZYX, ?out:Quaternion):Quaternion {
 		var x = Trig.turn(real(pitch) / 2),
 			y = Trig.turn(real(yaw) / 2),
 			z = Trig.turn(real(roll) / 2);
 		var cx = x.cos, sx = x.sin, cy = y.cos, sy = y.sin, cz = z.cos, sz = z.sin;
-		return result(out, sx * cy * cz - cx * sy * sz, cx * sy * cz + sx * cy * sz, cx * cy * sz - sx * sy * cz, cx * cy * cz + sx * sy * sz);
+		// Each order's product of the three turns differs from the others' by four signs alone.
+		var px, py, pz, pw;
+		switch order {
+			case ZYX:
+				px = -1.;
+				py = 1.;
+				pz = -1.;
+				pw = 1.;
+			case XYZ:
+				px = 1.;
+				py = -1.;
+				pz = 1.;
+				pw = -1.;
+			case YXZ:
+				px = 1.;
+				py = -1.;
+				pz = -1.;
+				pw = 1.;
+			case ZXY:
+				px = -1.;
+				py = 1.;
+				pz = 1.;
+				pw = -1.;
+			case YZX:
+				px = 1.;
+				py = 1.;
+				pz = -1.;
+				pw = -1.;
+			case XZY:
+				px = -1.;
+				py = -1.;
+				pz = 1.;
+				pw = 1.;
+		}
+		return result(out, sx * cy * cz
+			+ px * (cx * sy * sz), cx * sy * cz
+			+ py * (sx * cy * sz), cx * cy * sz
+			+ pz * (sx * sy * cz),
+			cx * cy * cz
+			+ pw * (sx * sy * sz));
 	}
 
 	/** Returns the rotation that turns -z to face a direction, +y kept as near to up as it can be.
@@ -385,30 +425,120 @@ class Quaternion {
 		return out == null ? new Vector3(rx, ry, rz) : out.set(rx, ry, rz);
 	}
 
-	/** Returns the turns around x, y and z that `fromEuler` would make this from.
+	/** Returns the turns around x, y and z that `fromEuler` would make this rotation from, in an order.
 
-		The pitch and the roll are from -pi to pi, the yaw from -pi / 2 to pi / 2. At a yaw of a quarter turn either way, where the pitch
-		and the roll turn around the same axis, the roll is 0 and the pitch carries the whole turn.
+		The turn made second is from -pi / 2 to pi / 2, and the other two are from -pi to pi. Where the second turn is a quarter turn
+		either way, the first and the last turn around the same axis: the last is 0 and the first carries the whole turn.
+		@param order  Optional. The order the turns are made in; defaults to `ZYX`: around x, then y, then z.
 		@param out  Optional. The vector to write into: pitch in x, yaw in y, roll in z, in radians; a new one when omitted.
 		@return  The angles. */
-	public function toEuler(?out:Vector3):Vector3 {
+	public function toEuler(order = EulerOrder.ZYX, ?out:Vector3):Vector3 {
 		var x = this.x, y = this.y, z = this.z, w = this.w;
-		// The rotation's matrix, row then column, the parts the angles are read from.
+		// The rotation's matrix, row then column.
 		var m00 = 1 - 2 * (y * y + z * z),
+			m01 = 2 * (x * y - w * z),
+			m02 = 2 * (x * z + w * y),
 			m10 = 2 * (x * y + w * z),
+			m11 = 1 - 2 * (x * x + z * z),
+			m12 = 2 * (y * z - w * x),
 			m20 = 2 * (x * z - w * y),
 			m21 = 2 * (y * z + w * x),
 			m22 = 1 - 2 * (x * x + y * y);
-		var cosYaw = Math.sqrt(m00 * m00 + m10 * m10);
-		var yaw = Trig.atan2(-m20, cosYaw), pitch, roll;
-		if (cosYaw < 1e-9) {
-			// Yawed a quarter turn either way: pitch and roll turn around one axis, so the pitch takes the whole turn.
-			var m01 = 2 * (x * y - w * z), m11 = 1 - 2 * (x * x + z * z);
-			pitch = Trig.atan2(m20 < 0 ? m01 : -m01, m11);
-			roll = 0.;
+		// The matrix is the product of a last turn around axis i, a second around j and a first around k: the seven parts the angles
+		// are read from, named by their row and column among i, j and k, and whether i, j, k runs as x, y, z does (1) or against (-1).
+		var ik, jk, kk, ij, ii, ji, jj, sign;
+		switch order {
+			case ZYX:
+				ik = m20;
+				jk = m10;
+				kk = m00;
+				ij = m21;
+				ii = m22;
+				ji = m12;
+				jj = m11;
+				sign = -1.;
+			case XYZ:
+				ik = m02;
+				jk = m12;
+				kk = m22;
+				ij = m01;
+				ii = m00;
+				ji = m10;
+				jj = m11;
+				sign = 1.;
+			case YXZ:
+				ik = m12;
+				jk = m02;
+				kk = m22;
+				ij = m10;
+				ii = m11;
+				ji = m01;
+				jj = m00;
+				sign = -1.;
+			case ZXY:
+				ik = m21;
+				jk = m01;
+				kk = m11;
+				ij = m20;
+				ii = m22;
+				ji = m02;
+				jj = m00;
+				sign = 1.;
+			case YZX:
+				ik = m10;
+				jk = m20;
+				kk = m00;
+				ij = m12;
+				ii = m11;
+				ji = m21;
+				jj = m22;
+				sign = 1.;
+			case XZY:
+				ik = m01;
+				jk = m21;
+				kk = m11;
+				ij = m02;
+				ii = m00;
+				ji = m20;
+				jj = m22;
+				sign = -1.;
+		}
+		var cosSecond = Math.sqrt(kk * kk + jk * jk);
+		var second = Trig.atan2(sign * ik, cosSecond), first, last;
+		if (cosSecond < 1e-9) {
+			// The second a quarter turn either way: the first and the last turn around one axis, so the first takes the whole turn.
+			first = Trig.atan2(sign * ji, jj);
+			last = 0.;
 		} else {
-			pitch = Trig.atan2(m21, m22);
-			roll = Trig.atan2(m10, m00);
+			first = Trig.atan2(-sign * ij, ii);
+			last = Trig.atan2(-sign * jk, kk);
+		}
+		var pitch, yaw, roll;
+		switch order {
+			case ZYX:
+				pitch = first;
+				yaw = second;
+				roll = last;
+			case XYZ:
+				roll = first;
+				yaw = second;
+				pitch = last;
+			case YXZ:
+				roll = first;
+				pitch = second;
+				yaw = last;
+			case ZXY:
+				yaw = first;
+				pitch = second;
+				roll = last;
+			case YZX:
+				pitch = first;
+				roll = second;
+				yaw = last;
+			case XZY:
+				yaw = first;
+				roll = second;
+				pitch = last;
 		}
 		return out == null ? new Vector3(pitch, yaw, roll) : out.set(pitch, yaw, roll);
 	}
@@ -462,6 +592,58 @@ class Quaternion {
 				&& MathTools.equals(y, -other.y, tolerance)
 				&& MathTools.equals(z, -other.z, tolerance)
 				&& MathTools.equals(w, -other.w, tolerance));
+	}
+
+	/** Returns this quaternion's dot product with another: 1 or -1 for the same rotation, 0 for rotations half a turn apart.
+
+		@param other  The other rotation.
+		@return  The dot product. */
+	public function dot(other:Quaternion):Float {
+		return real(x) * other.x + real(y) * other.y + real(z) * other.z + real(w) * other.w;
+	}
+
+	/** Returns the angle between this rotation and another, in radians: how far one turns to become the other, the short way round.
+
+		@param other  The other rotation.
+		@return  The angle, 0 to pi. */
+	public function angleTo(other:Quaternion):Float {
+		var ax = real(x), ay = real(y), az = real(z), aw = real(w);
+		var bx = real(other.x),
+			by = real(other.y),
+			bz = real(other.z),
+			bw = real(other.w);
+		// q and -q are the same rotation; the one nearer this one is the shorter way.
+		if (ax * bx + ay * by + az * bz + aw * bw < 0) {
+			bx = -bx;
+			by = -by;
+			bz = -bz;
+			bw = -bw;
+		}
+		// The difference's length over the sum's is the tangent of a quarter of the angle, exact for the smallest angles where an
+		// arccosine of the dot product loses them.
+		var dx = ax - bx, dy = ay - by, dz = az - bz, dw = aw - bw;
+		var sx = ax + bx, sy = ay + by, sz = az + bz, sw = aw + bw;
+		return 4 * Trig.atan2(Math.sqrt(dx * dx + dy * dy + dz * dz + dw * dw), Math.sqrt(sx * sx + sy * sy + sz * sz + sw * sw));
+	}
+
+	/** Returns this rotation turned toward a target by at most a step, the short way round.
+
+		The rotation reaches the target exactly. A step of 0 or less leaves the rotation as it is.
+		```haxe
+		turret.rotation.rotateToward(aim, turnSpeed * dt, turret.rotation);
+		```
+
+		@param target  The rotation to turn toward.
+		@param step  The most to turn by, in radians.
+		@param out  Optional. The rotation to fill; a new one when omitted. It may be this rotation or the target.
+		@return  The turned rotation. */
+	public function rotateToward(target:Quaternion, step:Float, ?out:Quaternion):Quaternion {
+		if (!(step > 0))
+			return result(out, x, y, z, w);
+		var angle = angleTo(target);
+		if (angle <= step)
+			return result(out, target.x, target.y, target.z, target.w);
+		return slerp(this, target, step / angle, out);
 	}
 
 	/** Returns the rotation as a matrix.

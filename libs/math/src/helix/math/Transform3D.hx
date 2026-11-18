@@ -201,6 +201,27 @@ class Transform3D {
 		return this;
 	}
 
+	/** Turns it toward facing a point by at most a step, the short way round, as a turret follows what it aims at.
+
+		It faces the point exactly once within a step of facing the point. A point at its position, or a step of 0 or less, leaves it
+		as it is.
+		@param x  The point's x.
+		@param y  The point's y.
+		@param z  The point's z.
+		@param step  The most to turn by, in radians.
+		@param upX  Optional. Which way up it is kept once it faces the point, x; defaults to 0.
+		@param upY  Optional. Up's y; defaults to 1.
+		@param upZ  Optional. Up's z; defaults to 0.
+		@return  This transform. */
+	public function rotateToward(x:Float, y:Float, z:Float, step:Float, upX = 0., upY = 1., upZ = 0.):Transform3D {
+		var dx = real(x) - position.x,
+			dy = real(y) - position.y,
+			dz = real(z) - position.z;
+		if (dx != 0 || dy != 0 || dz != 0)
+			rotation.rotateToward(Quaternion.fromLookRotation(dx, dy, dz, upX, upY, upZ, quaternion()), step, rotation);
+		return this;
+	}
+
 	/** Swings it around a point: its position and its rotation both, so whatever faced the point still does, as an orbiting camera
 		moves.
 

@@ -1,13 +1,14 @@
+import helix.math.EulerOrder;
 import helix.math.Matrix4;
 import helix.math.Quaternion;
 import helix.math.Transform3D;
 import helix.math.Vector3;
 
 /** Checks Transform3D with the library alone: made, copied and reset, each returning itself; its forward, right and up; moved along
-	them, along the ground and toward a point (stopping short of it); turned around its own axes, the pitch locked short of straight up
-	and down, turned to face a point and swung around one; points carried and its matrix, pinned to rotation matrices computed apart
-	from Haxe; each result into a new value or the one given, alike, even when the one given is its own position; taken back from a
-	matrix, one that mirrors, one that flattens and one that shears (its nearest rotation, as the SVD gives it); and whole numbers
+	them, along the ground and toward a point (stopping short of it); turned around its own axes, the pitch locked short of straight up and
+	down, turned to face a point at once or by a step, and swung around one; points carried and its matrix, pinned to rotation matrices
+	computed apart from Haxe; each result into a new value or the one given, alike, even when the one given is its own position; taken back
+	from a matrix, one that mirrors, one that flattens and one that shears (its nearest rotation, as the SVD gives it); and whole numbers
 	multiplied as floats on the interpreter. */
 class Transform3DTests {
 	static var checks = 0;
@@ -41,7 +42,7 @@ class Transform3DTests {
 	static function sample():Transform3D {
 		var t = new Transform3D();
 		t.position.set(3, -4, 2);
-		Quaternion.fromEuler(.3, -1.1, .5, t.rotation);
+		Quaternion.fromEuler(.3, -1.1, .5, ZYX, t.rotation);
 		t.scale.set(2, .5, 1.5);
 		return t;
 	}
@@ -278,6 +279,35 @@ class Transform3DTests {
 		large.scale.set(100000, 1, 1);
 		check(large.transformPoint(100000, 0, 0).x == 1e10 && large.toMatrix().transformPoint(100000, 0, 0).x == 1e10,
 			"large whole numbers multiplied as floats");
+
+		// Turned toward a point by a step.
+		var turret = new Transform3D();
+		turret.position.set(1, 2, 3);
+		var aim = new Transform3D();
+		aim.position.set(1, 2, 3);
+		aim.lookAt(11, 2, 3);
+		var whole = turret.rotation.angleTo(aim.rotation);
+		check(turret.rotateToward(11, 2, 3, .5) == turret
+			&& near(turret.rotation.angleTo(aim.rotation), whole - .5), "turned toward a point by a step");
+		check(near(turret.rotation.angle, .5), "a step from where it was");
+		turret.rotateToward(11, 2, 3, .5).rotateToward(11, 2, 3, .5);
+		check(near(turret.rotation.angleTo(aim.rotation), whole - 1.5), "and again, a step at a time");
+		turret.rotateToward(11, 2, 3, .5);
+		check(turret.rotation.x == aim.rotation.x && turret.rotation.y == aim.rotation.y && turret.rotation.z == aim.rotation.z
+			&& turret.rotation.w == aim.rotation.w,
+			"within a step: facing the point exactly, as lookAt leaves it");
+		check(turret.computeForward().equals(new Vector3(1, 0, 0), 1e-15), "its forward at the point");
+		turret.rotateToward(1, 2, 3, .5);
+		turret.rotateToward(1, 9, 3, 0);
+		turret.rotateToward(1, 9, 3, -1);
+		check(turret.rotation.x == aim.rotation.x && turret.rotation.w == aim.rotation.w,
+			"a point at its position, or a step of 0 or less, leaves it as it is");
+		aim.lookAt(1, 2, 13, 1, 0, 0);
+		turret.rotateToward(1, 2, 13, 9, 1, 0, 0);
+		check(turret.rotation.x == aim.rotation.x
+			&& turret.rotation.w == aim.rotation.w
+			&& turret.computeUp().equals(new Vector3(1, 0, 0), 1e-15),
+			"an up given");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

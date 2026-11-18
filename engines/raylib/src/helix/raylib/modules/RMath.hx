@@ -3,6 +3,7 @@ package helix.raylib.modules;
 #if !macro
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.math.EulerOrder;
 import helix.math.Interpolate;
 import helix.math.MathTools;
 import helix.math.Matrix4;
@@ -1050,9 +1051,7 @@ class RMath {
 		@param angle  The angles, in radians.
 		@return  The matrix. */
 	static function MatrixRotateXYZ(angle:Vector3):Matrix {
-		// The turns of MatrixRotateZYX undone: each angle the other way, and the rotation inverted.
-		var q = Quaternion.fromEuler(-angle.x, -angle.y, -angle.z, turn);
-		return Matrix4.fromQuaternion(-q.x, -q.y, -q.z, q.w);
+		return Matrix4.fromEuler(angle.x, angle.y, angle.z, XYZ);
 	}
 
 	/** Returns a rotation by three angles that turns a point about x, then y, then z, the reverse of `MatrixRotateXYZ`.
@@ -1060,7 +1059,7 @@ class RMath {
 		@param angle  The angles, in radians.
 		@return  The matrix. */
 	static function MatrixRotateZYX(angle:Vector3):Matrix {
-		return Matrix4.fromEuler(angle.x, angle.y, angle.z);
+		return Matrix4.fromEuler(angle.x, angle.y, angle.z, ZYX);
 	}
 
 	/** Returns a scale.
@@ -1403,10 +1402,8 @@ class RMath {
 		}
 	}
 
-	// The matrix Vector3Unproject inverts, and the rotation MatrixRotateXYZ's matrix is made from, reused.
+	// The matrix Vector3Unproject inverts, reused.
 	static final unprojection = new Matrix4();
-
-	static final turn = new Quaternion();
 
 	// A number as C's float holds it.
 	static inline function f32(x:Float):Float {
