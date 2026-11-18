@@ -26,6 +26,17 @@ class StructTests {
 
 		var m = new Matrix(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), n = m.copy();
 		check(n != m && n.m0 == 1 && n.m4 == 2 && n.m12 == 4 && n.m1 == 5 && n.m15 == 16, "a matrix's sixteen values, in raylib's order");
+		var zero = new Matrix(), bracedMatrix:Matrix = {
+			m0: 1,
+			m5: 1,
+			m10: 1,
+			m12: 7
+		};
+		check(zero.m0 == 0 && zero.m15 == 0, "a new matrix is all 0");
+		check(bracedMatrix.m0 == 1 && bracedMatrix.m12 == 7 && bracedMatrix.m4 == 0 && bracedMatrix.m15 == 0, "a matrix in braces: a number left out is 0");
+		var shared:helix.math.Matrix4 = m;
+		shared.m12 = 40;
+		check(m.m12 == 40 && n.m12 == 4 && m.copy(zero) == zero && zero.m12 == 40, "a matrix is helix-math's, the same one: m12 is its m12");
 
 		var red = new Color(230, 41, 55, 255), faded = red;
 		faded.a = 128;

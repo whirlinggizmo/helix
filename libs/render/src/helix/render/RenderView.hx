@@ -70,10 +70,9 @@ class RenderView {
 		this.width = width;
 		this.height = height;
 		if (view.invert(inverse) != null) {
-			var m = inverse.values;
-			eyeX = m[12];
-			eyeY = m[13];
-			eyeZ = m[14];
+			eyeX = inverse.m12;
+			eyeY = inverse.m13;
+			eyeZ = inverse.m14;
 		} else
 			eyeX = eyeY = eyeZ = 0;
 	}

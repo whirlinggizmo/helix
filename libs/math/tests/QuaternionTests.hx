@@ -138,15 +138,27 @@ class QuaternionTests {
 		b = Quaternion.fromAxisAngle(0, 1, 1, 2.1);
 		check(is(b, [0, 0.6133608449762378, 0.6133608449762378, 0.49757104789172696]), "the second sample: pinned");
 		var rotation = Matrix4.fromRotation(1, 2, 3, .7);
-		check(turnsAs(Quaternion.fromMatrix(rotation), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789]),
-			"from a matrix: pinned");
-		check(turnsAs(Quaternion.fromMatrix(rotation), [0.0916432887, 0.183286577, 0.274929851, 0.939372718], 1e-6), "and raylib's QuaternionFromMatrix");
+		check(turnsAs(Quaternion.fromRotationMatrix(rotation), [0.0916432887, 0.183286577, 0.274929851, 0.939372718], 1e-6),
+			"from a rotation matrix: raylib's QuaternionFromMatrix");
+		check(is(Quaternion.fromRotationMatrix(rotation), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789], 1e-15),
+			"from a rotation matrix: pinned");
+		check(Quaternion.fromRotationMatrix(rotation, into) == into
+			&& identical(into, Quaternion.fromRotationMatrix(rotation)), "into the one given");
+		for (turn in [
+			Matrix4.fromRotation(1, 0, 0, 3),
+			Matrix4.fromRotation(0, 1, 0, 3),
+			Matrix4.fromRotation(0, 0, 1, 3)
+		]) {
+			var scaled = turn.getRotation();
+			check(turnsAs(Quaternion.fromRotationMatrix(turn), [scaled.x, scaled.y, scaled.z, scaled.w], 1e-15),
+				"a turn near half about each axis: as the matrix's getRotation");
+		}
 		var placed = Matrix4.fromScale(2, .5, 3).append(rotation).appendTranslation(4, -5, 6);
-		check(turnsAs(Quaternion.fromMatrix(placed), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789]),
-			"from a matrix that scales and moves: its scale and translation ignored");
+		check(turnsAs(placed.getRotation(), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789]),
+			"the rotation of a matrix that scales and moves: its scale and translation left out");
 		var mirrored = Matrix4.fromScale(-1, 1, 1).append(rotation);
-		check(turnsAs(Quaternion.fromMatrix(mirrored), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789]),
-			"from one that mirrors: the mirror taken as its x's scale");
+		check(turnsAs(mirrored.getRotation(), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789]),
+			"the rotation of one that mirrors: the mirror taken as its x's scale");
 		for (made in [
 			a,
 			b,
@@ -154,8 +166,11 @@ class QuaternionTests {
 			Quaternion.fromAxisAngle(1, 1, -1, 3.1),
 			new Quaternion(0, 0, 1, 0)
 		])
-			check(turnsAs(Quaternion.fromMatrix(made.toMatrix()), [made.x, made.y, made.z, made.w], 1e-14), "its matrix and back");
-		check(Quaternion.fromMatrix(rotation, into) == into && turnsAs(into, [axis.x, axis.y, axis.z, axis.w]), "into the one given");
+			check(turnsAs(Quaternion.fromRotationMatrix(made.toMatrix()), [made.x, made.y, made.z, made.w], 1e-14)
+				&& turnsAs(made.toMatrix().getRotation(), [made.x, made.y, made.z, made.w], 1e-14),
+				"its matrix and back");
+		check(rotation.getRotation(into) == into
+			&& turnsAs(into, [axis.x, axis.y, axis.z, axis.w]), "a matrix's rotation into the one given");
 
 		// Blends, the shorter way round.
 		check(is(Quaternion.slerp(a, b, .3), [
@@ -206,7 +221,7 @@ class QuaternionTests {
 		check(at(b.transformPoint(1.5, -2, .25), 0.616088688, 0.608523607, -2.35852361, 1e-6), "and raylib's Vector3RotateByQuaternion");
 		check(b.transformPoint(1.5, -2, .25, given) == given && at(given, 0.6160885357678314, 0.6085236627865849, -2.3585236627865847),
 			"a point turned, into the vector given");
-		var m = b.toMatrix().values;
+		var m = b.toMatrix().toArray();
 		var pinned = [
 			-0.5048461045998576, 0.6103811967411634, -0.6103811967411634, 0, -0.6103811967411634, 0.24757694770007121, 0.7524230522999288, 0,
 			 0.6103811967411634, 0.7524230522999288, 0.24757694770007121, 0,                   0,                   0,                  0, 1

@@ -32,7 +32,7 @@ class Frustum {
 		@param out  Optional. The frustum to fill; a new one when omitted.
 		@return  The frustum. */
 	public static function fromMatrix(viewProjection:Matrix4, ?out:Frustum):Frustum {
-		var m = viewProjection.values;
+		var m = viewProjection.toArray(numbers);
 		if (out == null)
 			out = new Frustum();
 		var p = out.planes;
@@ -109,6 +109,9 @@ class Frustum {
 	}
 
 	// The interpreter keeps an Int passed for a Float as an Int and multiplies two such as Ints, overflowing; dividing makes it a Float.
+	// A matrix's 16 numbers, which fromMatrix reads the matrix's rows from.
+	static final numbers:Array<Float> = [for (_ in 0...16) 0.];
+
 	static inline function real(value:Float):Float {
 		#if eval
 		return value / 1;

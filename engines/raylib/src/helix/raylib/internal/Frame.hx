@@ -534,7 +534,7 @@ class Frame {
 
 	// The batch's runs as draws in the pass, through the current program, matrices and state.
 	function drawBatch():Void {
-		var m = wire && cull ? Matrix4.compose(view, projection, viewProjection).values : null;
+		var m = wire && cull ? Matrix4.compose(view, projection, viewProjection) : null;
 		for (run in batch) {
 			if (run.mode == SPRITES) {
 				if (run.count == 0)
@@ -1075,7 +1075,7 @@ class Frame {
 	public function pointsOfRun(first:Int, count:Int, quads:Bool):Array<Int> {
 		if (!cull && !quads)
 			return [first, count - count % 3];
-		var m = cull ? Matrix4.compose(view, projection, viewProjection).values : null,
+		var m = cull ? Matrix4.compose(view, projection, viewProjection) : null,
 			from = vertices;
 		for (k in 0...Std.int(corners(count, quads) / 3)) {
 			var a = corner(first, quads, k * 3) * STRIDE,
@@ -1105,7 +1105,7 @@ class Frame {
 		var indices = mesh.indices;
 		if (!cull || instanced)
 			return indices != null ? [mesh.gpu.indexBuffer, mesh.triangleCount * 3] : [0, mesh.vertexCount - mesh.vertexCount % 3];
-		var m = Matrix4.compose(Matrix4.compose(model, view, viewProjection), projection, viewProjection).values;
+		var m = Matrix4.compose(Matrix4.compose(model, view, viewProjection), projection, viewProjection);
 		var p = mesh.animVertices != null ? mesh.animVertices : mesh.vertices, corners = [];
 		for (k in 0...(indices != null ? mesh.triangleCount : Std.int(mesh.vertexCount / 3))) {
 			var a = indices == null ? k * 3 : indices[k * 3],
@@ -1223,7 +1223,7 @@ class Frame {
 		// line mode culls the triangles it outlines.
 		var edges = 0, edgeCount = mesh.triangleCount * 6;
 		if (wire && cull && instances == 0) {
-			var front = frontEdges(mesh, Matrix4.compose(Matrix4.compose(model, view, viewProjection), projection, viewProjection).values);
+			var front = frontEdges(mesh, Matrix4.compose(Matrix4.compose(model, view, viewProjection), projection, viewProjection));
 			edgeCount = front.length;
 			if (edgeCount == 0)
 				return;
@@ -1396,18 +1396,18 @@ class Frame {
 
 	// Whether culling drops a triangle, its corners moved by a matrix to clip space: by the sign of its area on the screen, GL's rule,
 	// counterclockwise its front, one of no area its back. One with a corner behind the eye is kept.
-	function culled(m:Array<Float>, ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float, cy:Float, cz:Float):Bool {
-		var aw = m[3] * ax + m[7] * ay + m[11] * az + m[15],
-			bw = m[3] * bx + m[7] * by + m[11] * bz + m[15],
-			cw = m[3] * cx + m[7] * cy + m[11] * cz + m[15];
+	function culled(m:Matrix4, ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float, cy:Float, cz:Float):Bool {
+		var aw = m.m3 * ax + m.m7 * ay + m.m11 * az + m.m15,
+			bw = m.m3 * bx + m.m7 * by + m.m11 * bz + m.m15,
+			cw = m.m3 * cx + m.m7 * cy + m.m11 * cz + m.m15;
 		if (aw <= 0 || bw <= 0 || cw <= 0)
 			return false;
-		var x0 = (m[0] * ax + m[4] * ay + m[8] * az + m[12]) / aw,
-			y0 = (m[1] * ax + m[5] * ay + m[9] * az + m[13]) / aw;
-		var x1 = (m[0] * bx + m[4] * by + m[8] * bz + m[12]) / bw,
-			y1 = (m[1] * bx + m[5] * by + m[9] * bz + m[13]) / bw;
-		var x2 = (m[0] * cx + m[4] * cy + m[8] * cz + m[12]) / cw,
-			y2 = (m[1] * cx + m[5] * cy + m[9] * cz + m[13]) / cw;
+		var x0 = (m.m0 * ax + m.m4 * ay + m.m8 * az + m.m12) / aw,
+			y0 = (m.m1 * ax + m.m5 * ay + m.m9 * az + m.m13) / aw;
+		var x1 = (m.m0 * bx + m.m4 * by + m.m8 * bz + m.m12) / bw,
+			y1 = (m.m1 * bx + m.m5 * by + m.m9 * bz + m.m13) / bw;
+		var x2 = (m.m0 * cx + m.m4 * cy + m.m8 * cz + m.m12) / cw,
+			y2 = (m.m1 * cx + m.m5 * cy + m.m9 * cz + m.m13) / cw;
 		// In window coordinates, snapped to a 256th of a pixel as GL rasterizers snap them, so a triangle seen almost edge-on has the area
 		// GL finds for it.
 		var w = pass.width * 128, h = pass.height * 128;
@@ -1424,7 +1424,7 @@ class Frame {
 
 	// The edges, two indices each, of a mesh's triangles culling leaves, its positions (an animation's, when one moved it) moved to clip
 	// space by a matrix.
-	function frontEdges(mesh:helix.raylib.Mesh, m:Array<Float>):Array<Int> {
+	function frontEdges(mesh:helix.raylib.Mesh, m:Matrix4):Array<Int> {
 		var p = mesh.animVertices != null ? mesh.animVertices : mesh.vertices, indices = mesh.indices, edges = [];
 		for (k in 0...mesh.triangleCount) {
 			var a = indices == null ? k * 3 : indices[k * 3],

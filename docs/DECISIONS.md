@@ -1106,13 +1106,17 @@ Why things are the way they are, numbered, in order.
     curves are `helix.math.Interpolate`'s.
 
 79. **One set of maths: raymath forwards to helix-math, and matches raylib on ordinary input.** It revises 46's "behaviour exactly".
-    helix-raylib's `Vector2`, `Vector3`, `Vector4` and `Quaternion` are helix-math's types, so a value passes between raymath, an
-    extra and a library without a copy. Each of raymath's scalar, vector and quaternion functions is an inline forward to
-    helix-math's member (`Vector3Lerp` to `Vector3.lerp`, `QuaternionSlerp` to `Quaternion.slerp`, `Clamp` to `Interpolate.clamp`),
-    which takes an out. raymath keeps a body only for what no maths library has: C's float arrays (`Vector3ToFloatV`), a number added
-    to every component (`AddValue`, `SubtractValue`), a quaternion taken as four plain numbers (`QuaternionAdd`, `Scale`, `Lerp`,
-    `Transform`), `Vector2LineAngle` and `Vector2Transform`. The matrix functions keep their bodies until `Matrix` and `Matrix4`
-    are one type.
+    helix-raylib's `Vector2`, `Vector3`, `Vector4` and `Quaternion` are helix-math's types, and its `Matrix` is helix-math's
+    `Matrix4` under raylib's names (`m0` to `m15`, a constructor taking the 16 numbers by rows), so a value passes between raymath,
+    an extra and a library without a copy. Each of raymath's scalar, vector, quaternion and matrix functions is a forward to
+    helix-math's member (`Vector3Lerp` to `Vector3.lerp`, `QuaternionSlerp` to `Quaternion.slerp`, `Clamp` to `Interpolate.clamp`,
+    `MatrixMultiply` to `Matrix4.compose`, `MatrixDecompose` to `Matrix4.decompose`), which takes an out. raymath keeps a body only
+    for what no maths library has: C's float arrays (`Vector3ToFloatV`, `MatrixToFloatV`), a number added to every component
+    (`AddValue`, `SubtractValue`), a quaternion taken as four plain numbers (`QuaternionAdd`, `Scale`, `Lerp`, `Transform`),
+    `Vector2LineAngle` and `Vector2Transform`. `MatrixRotateZYX` is `Quaternion.fromEuler`'s rotation as a matrix, and
+    `MatrixRotateXYZ` the same turns in the other order. Where a program hands helix-raylib a matrix helix-raylib keeps, or is
+    handed one of helix-raylib's own (`rlSetMatrixProjection`, `rlGetMatrixModelview`, `SetShaderValueMatrix`), the matrix is
+    copied, as C copies a struct.
 
     On ordinary input a function answers as raylib's C does, to 1e-6 (the raymath parity suites). On degenerate input it gives
     helix-math's answer: bounds in the wrong order are swapped (`Clamp`, `Vector3Clamp`, `Vector3ClampValue`), a quaternion of length
@@ -1120,9 +1124,12 @@ Why things are the way they are, numbered, in order.
     `QuaternionToAxisAngle`, `Vector3RotateByQuaternion`), `QuaternionToAxisAngle`'s angle is at most half a turn, `QuaternionToEuler`
     at a yaw of a quarter turn puts the whole turn in the pitch, `QuaternionNlerp` goes the short way round, `QuaternionSlerp` follows
     the arc between rotations near each other, where raylib's takes the straight line, and `QuaternionFromVector3ToVector3` gives the
-    identity for a direction of length 0. The suites' cases are kept to ordinary input, and compare two rotations as rotations. A
-    `Vector4` is not a `Quaternion`, as it is in C. The model animations choose between two rotations as raylib's `QuaternionSlerp`
-    does, so a pose matches raylib's C to 3e-6 and a blend of near rotations takes no trigonometry.
+    identity for a direction of length 0. `MatrixInvert` gives a matrix of NaN and `Vector3Unproject` a point of NaN where there is
+    no inverse. `MatrixDecompose` of a matrix that shears gives the nearest rotation. A matrix that mirrors is ordinary input:
+    `Matrix4.decompose` mirrors it along x alone, and `MatrixDecompose` turns that into raylib's answer, a scale less than 0 along
+    each axis. The suites' cases are kept to ordinary input, and compare two rotations as rotations. A `Vector4` is not a
+    `Quaternion`, as it is in C. The model animations choose between two rotations as raylib's `QuaternionSlerp` does, so a pose
+    matches raylib's C to 3e-6 and a blend of near rotations takes no trigonometry.
 
     Why: an extra used helix-math and a program raymath, so a program carried two sets of maths, and two types for one vector. The
     aim is an API that is well known, not a port of raylib: an agent writing `Vector3Lerp` gets what it expects, and nothing it writes
@@ -1142,6 +1149,24 @@ Why things are the way they are, numbered, in order.
     that, reaching `Math`, `Trig` and `Interpolate` through statics of their own (`helix.py test --native` checks the generated
     C++). `Quaternion` can't, as its methods return a `Vector3`.
 
-    Rejected: raymath's own bodies beside helix-math's, the duplicate this ends; helix-raylib's own vector types converted at each
-    call into a library, which costs a copy a call; raylib's answer on degenerate input kept by a second body for each such function;
-    the animation suites loosened to helix-math's slerp, which moved a pose by up to 7e-4 and 425 pixels of the skinning suite.
+    A `Matrix4` keeps its 16 numbers where each target reads them fastest: 16 fields on hxcpp, which makes them one object where
+    an array is three, and an array on JavaScript, which V8 makes and reads faster than an object of 16 fields. `Matrix4Storage`
+    holds them, a hidden base in a file named for its target (`Matrix4Storage.cpp.hx` beside `Matrix4Storage.hx`), the one place
+    helix-math differs by target. `Matrix4` is written once over the storage. A program reads the numbers as `m0` to `m15` and
+    copies them with `toArray` and `fromArray`. The storage has no constructor, as hxcpp calls a base's constructor for each new
+    matrix, about 1 ns. Timed on each storage (a pinned core, each result kept, the best of three runs), a function returning a
+    new matrix takes 7 to 20 ns less with the fields in hxcpp and 4 to 19 ns less with the array on Node. On a phone (a moto g
+    power) the fields take 75 to 340 ns less natively, and the array 4 to 76 ns less in Chrome.
+
+    Timed the same way against raymath's own bodies, most matrix functions cost less on both targets: `MatrixMultiply` 20 ns
+    against 133 natively and 32 against 87 on Node, `MatrixInvert` 25 against 29 and 34 against 45, `MatrixAdd` 16 against 21 and
+    17 against 34, `Vector3Transform` 8 against 42 and 9 against 20. Four cost more on a target. `MatrixRotateZYX` (`Matrix4.fromEuler`) takes
+    32 against 34 natively and 39 against 33 on Node, where `Trig`'s cosine and sine take 4 ns an angle more than V8's.
+    `MatrixToFloatV` takes 23 against 21 and 14 against 11, and `QuaternionFromMatrix` 10.2 against 9.8 and 13 against 11.6.
+    `MatrixDecompose` of a matrix that shears takes the polar decomposition: 312 against 174 natively, 277 against 172 on Node. A
+    matrix that doesn't shear takes 31 against 176 and 38 against 172.
+
+    Rejected: raymath's own bodies beside helix-math's, the duplicate this ends; one storage for a `Matrix4` on every target, which
+    costs hxcpp or JavaScript the difference above; helix-raylib's own vector and matrix types converted at each call into a
+    library, which costs a copy a call; raylib's answer on degenerate input kept by a second body for each such function; the
+    animation suites loosened to helix-math's slerp, which moved a pose by up to 7e-4 and 425 pixels of the skinning suite.

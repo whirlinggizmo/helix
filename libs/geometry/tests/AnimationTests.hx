@@ -25,7 +25,7 @@ class AnimationTests {
 		return Math.abs(a - b) <= tolerance;
 
 	static function at(m:Matrix4, x:Float, y:Float, z:Float, tolerance = 1e-12):Bool
-		return near(m.values[12], x, tolerance) && near(m.values[13], y, tolerance) && near(m.values[14], z, tolerance);
+		return near(m.m12, x, tolerance) && near(m.m13, y, tolerance) && near(m.m14, z, tolerance);
 
 	static function rest(y:Float):Transform3D {
 		var t = new Transform3D();
@@ -47,9 +47,11 @@ class AnimationTests {
 		var skin = new Skin3D("arm", [0, 1, 2], [for (m in world) m.invert()]);
 		var skinning = skin.computeSkinning(world);
 		var identity = true;
-		for (m in skinning)
+		for (m in skinning) {
+			var numbers = m.toArray();
 			for (i in 0...16)
-				identity = identity && near(m.values[i], i % 5 == 0 ? 1 : 0);
+				identity = identity && near(numbers[i], i % 5 == 0 ? 1 : 0);
+		}
 		check(identity, "at rest, a skin's matrices are the identity");
 
 		// The elbow bent 90 degrees about z over a second, moving straight between its two keys.

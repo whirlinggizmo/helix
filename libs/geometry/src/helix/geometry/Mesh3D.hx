@@ -515,24 +515,24 @@ class Mesh3D {
 			out = new Mesh3D();
 		if (out != this)
 			out.copyFrom(this);
-		var m = matrix.values, p = out.positions;
+		var m = matrix, p = out.positions;
 		for (i in 0...out.vertexCount) {
 			var x = p[i * 3], y = p[i * 3 + 1], z = p[i * 3 + 2];
-			p[i * 3] = m[0] * x + m[4] * y + m[8] * z + m[12];
-			p[i * 3 + 1] = m[1] * x + m[5] * y + m[9] * z + m[13];
-			p[i * 3 + 2] = m[2] * x + m[6] * y + m[10] * z + m[14];
+			p[i * 3] = m.m0 * x + m.m4 * y + m.m8 * z + m.m12;
+			p[i * 3 + 1] = m.m1 * x + m.m5 * y + m.m9 * z + m.m13;
+			p[i * 3 + 2] = m.m2 * x + m.m6 * y + m.m10 * z + m.m14;
 		}
 		// The upper 3 by 3's cofactors, row by row: its inverse transposed, times its determinant.
-		var c0 = m[5] * m[10] - m[9] * m[6],
-			c1 = m[9] * m[2] - m[1] * m[10],
-			c2 = m[1] * m[6] - m[5] * m[2];
-		var c3 = m[8] * m[6] - m[4] * m[10],
-			c4 = m[0] * m[10] - m[8] * m[2],
-			c5 = m[4] * m[2] - m[0] * m[6];
-		var c6 = m[4] * m[9] - m[8] * m[5],
-			c7 = m[8] * m[1] - m[0] * m[9],
-			c8 = m[0] * m[5] - m[4] * m[1];
-		var determinant = m[0] * c0 + m[4] * c1 + m[8] * c2;
+		var c0 = m.m5 * m.m10 - m.m9 * m.m6,
+			c1 = m.m9 * m.m2 - m.m1 * m.m10,
+			c2 = m.m1 * m.m6 - m.m5 * m.m2;
+		var c3 = m.m8 * m.m6 - m.m4 * m.m10,
+			c4 = m.m0 * m.m10 - m.m8 * m.m2,
+			c5 = m.m4 * m.m2 - m.m0 * m.m6;
+		var c6 = m.m4 * m.m9 - m.m8 * m.m5,
+			c7 = m.m8 * m.m1 - m.m0 * m.m9,
+			c8 = m.m0 * m.m5 - m.m4 * m.m1;
+		var determinant = m.m0 * c0 + m.m4 * c1 + m.m8 * c2;
 		var sign = determinant < 0 ? -1 : 1;
 		var n = out.normals;
 		if (n != null)
@@ -544,7 +544,7 @@ class Mesh3D {
 		if (t != null)
 			for (i in 0...Std.int(t.length / 4)) {
 				var x = t[i * 4], y = t[i * 4 + 1], z = t[i * 4 + 2];
-				setUnit(t, i * 4, m[0] * x + m[4] * y + m[8] * z, m[1] * x + m[5] * y + m[9] * z, m[2] * x + m[6] * y + m[10] * z);
+				setUnit(t, i * 4, m.m0 * x + m.m4 * y + m.m8 * z, m.m1 * x + m.m5 * y + m.m9 * z, m.m2 * x + m.m6 * y + m.m10 * z);
 				t[i * 4 + 3] *= sign;
 			}
 		if (determinant < 0)
@@ -738,9 +738,23 @@ class Mesh3D {
 					var weight = w[v * 4 + k];
 					if (weight == 0)
 						continue;
-					var bone = skinning[j[v * 4 + k]].values;
-					for (i in 0...16)
-						m[i] += bone[i] * weight;
+					var bone = skinning[j[v * 4 + k]];
+					m[0] += bone.m0 * weight;
+					m[1] += bone.m1 * weight;
+					m[2] += bone.m2 * weight;
+					m[3] += bone.m3 * weight;
+					m[4] += bone.m4 * weight;
+					m[5] += bone.m5 * weight;
+					m[6] += bone.m6 * weight;
+					m[7] += bone.m7 * weight;
+					m[8] += bone.m8 * weight;
+					m[9] += bone.m9 * weight;
+					m[10] += bone.m10 * weight;
+					m[11] += bone.m11 * weight;
+					m[12] += bone.m12 * weight;
+					m[13] += bone.m13 * weight;
+					m[14] += bone.m14 * weight;
+					m[15] += bone.m15 * weight;
 					total += weight;
 				}
 			if (total == 0)

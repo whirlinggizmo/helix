@@ -106,10 +106,7 @@ class RRlgl {
 
 		@param matf  The matrix's 16 numbers, by columns, as `MatrixToFloatV` gives them. */
 	static function rlMultMatrixf(matf:Array<Float>):Void {
-		var m = new Matrix4();
-		for (i in 0...16)
-			m.values[i] = matf[i];
-		apply(m);
+		apply(Matrix4.fromArray(matf));
 	}
 
 	/** Applies an orthographic projection before the current matrix.
@@ -140,21 +137,21 @@ class RRlgl {
 
 		@return  The matrix. */
 	static function rlGetMatrixModelview():Matrix {
-		return toMatrix(Runtime.frame.view);
+		return new Matrix4().copyFrom(Runtime.frame.view);
 	}
 
 	/** Returns the projection.
 
 		@return  The matrix. */
 	static function rlGetMatrixProjection():Matrix {
-		return toMatrix(Runtime.frame.projection);
+		return new Matrix4().copyFrom(Runtime.frame.projection);
 	}
 
 	/** Returns the transform `rlPushMatrix` started, or the identity when none is pushed.
 
 		@return  The matrix. */
 	static function rlGetMatrixTransform():Matrix {
-		return toMatrix(pushed ? transform : new Matrix4());
+		return pushed ? new Matrix4().copyFrom(transform) : new Matrix4();
 	}
 
 	/** Sets the view.
@@ -162,7 +159,7 @@ class RRlgl {
 		@param view  The matrix. */
 	static function rlSetMatrixModelview(view:Matrix):Void {
 		Runtime.frame.cut();
-		Runtime.frame.view = toMatrix4(view);
+		Runtime.frame.view = view.copy();
 	}
 
 	/** Sets the projection.
@@ -170,7 +167,7 @@ class RRlgl {
 		@param proj  The matrix. */
 	static function rlSetMatrixProjection(proj:Matrix):Void {
 		Runtime.frame.cut();
-		Runtime.frame.projection = toMatrix4(proj);
+		Runtime.frame.projection = proj.copy();
 	}
 
 	/** Returns the near distance cameras see from, 0.01 until `rlSetClipPlanes` sets it.
@@ -269,10 +266,10 @@ class RRlgl {
 	static function rlNormal3f(x:Float, y:Float, z:Float):Void {
 		var nx = x, ny = y, nz = z;
 		if (pushed) {
-			var m = transform.values;
-			nx = m[0] * x + m[4] * y + m[8] * z;
-			ny = m[1] * x + m[5] * y + m[9] * z;
-			nz = m[2] * x + m[6] * y + m[10] * z;
+			var m = transform;
+			nx = m.m0 * x + m.m4 * y + m.m8 * z;
+			ny = m.m1 * x + m.m5 * y + m.m9 * z;
+			nz = m.m2 * x + m.m6 * y + m.m10 * z;
 		}
 		var length = Math.sqrt(nx * nx + ny * ny + nz * nz);
 		if (length != 0) {
@@ -752,7 +749,7 @@ class RRlgl {
 		@param eye  The eye: 0, drawn in the left half, or 1.
 		@return  The matrix. */
 	static function rlGetMatrixProjectionStereo(eye:Int):Matrix {
-		return eye == 0 || eye == 1 ? toMatrix(helix.raylib.internal.Stereo.projections[eye]) : new Matrix();
+		return eye == 0 || eye == 1 ? new Matrix4().copyFrom(helix.raylib.internal.Stereo.projections[eye]) : new Matrix();
 	}
 
 	/** Returns an eye's view offset in stereo rendering, as `rlSetMatrixViewOffsetStereo` set it.
@@ -762,7 +759,7 @@ class RRlgl {
 		@param eye  The eye: 0, drawn in the left half, or 1.
 		@return  The matrix. */
 	static function rlGetMatrixViewOffsetStereo(eye:Int):Matrix {
-		return eye == 0 || eye == 1 ? toMatrix(helix.raylib.internal.Stereo.offsets[eye]) : new Matrix();
+		return eye == 0 || eye == 1 ? new Matrix4().copyFrom(helix.raylib.internal.Stereo.offsets[eye]) : new Matrix();
 	}
 
 	/** Sets each eye's projection in stereo rendering, used in place of the projection from the batch's next flush.
@@ -772,8 +769,8 @@ class RRlgl {
 		@param right  Eye 0's projection, drawn in the left half (raylib names it the right).
 		@param left  Eye 1's, drawn in the right half. */
 	static function rlSetMatrixProjectionStereo(right:Matrix, left:Matrix):Void {
-		helix.raylib.internal.Stereo.projections[0].copyFrom(toMatrix4(right));
-		helix.raylib.internal.Stereo.projections[1].copyFrom(toMatrix4(left));
+		helix.raylib.internal.Stereo.projections[0].copyFrom(right);
+		helix.raylib.internal.Stereo.projections[1].copyFrom(left);
 	}
 
 	/** Sets each eye's view offset in stereo rendering, applied after the view from the batch's next flush and in a mesh's mvp.
@@ -781,8 +778,8 @@ class RRlgl {
 		@param right  Eye 0's offset, drawn in the left half (raylib names it the right).
 		@param left  Eye 1's, drawn in the right half. */
 	static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void {
-		helix.raylib.internal.Stereo.offsets[0].copyFrom(toMatrix4(right));
-		helix.raylib.internal.Stereo.offsets[1].copyFrom(toMatrix4(left));
+		helix.raylib.internal.Stereo.offsets[0].copyFrom(right);
+		helix.raylib.internal.Stereo.offsets[1].copyFrom(left);
 	}
 
 	// ---- rlgl's GL objects and GL itself, which helix-raylib draws without: each refuses to compile, saying what to use ----

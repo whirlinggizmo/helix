@@ -239,12 +239,8 @@ class GltfFile {
 					var inverse:Null<Int> = field(s, "inverseBindMatrices");
 					var values = inverse == null ? null : floats(inverse);
 					var matrices = [
-						for (j in 0...joints.length) {
-							var m = new Matrix4();
-							if (values != null) for (i in 0...16)
-								m.values[i] = values[j * 16 + i];
-							m;
-						}
+						for (j in 0...joints.length)
+							values == null ? new Matrix4() : Matrix4.fromArray(values, j * 16)
 					];
 					var skeleton:Null<Int> = field(s, "skeleton");
 					new GltfSkin(text(s, "name"), joints, matrices, skeleton == null ? -1 : skeleton);
@@ -321,12 +317,8 @@ class GltfFile {
 	// A node's own transform: its matrix, or its scale, then rotation, then translation.
 	static function local(node:Dynamic):Matrix4 {
 		var matrix = optionalNumbers(field(node, "matrix"));
-		if (matrix != null) {
-			var m = new Matrix4();
-			for (i in 0...16)
-				m.values[i] = matrix[i];
-			return m;
-		}
+		if (matrix != null)
+			return Matrix4.fromArray(matrix);
 		var s = optionalNumbers(field(node, "scale")),
 			r = optionalNumbers(field(node, "rotation")),
 			t = optionalNumbers(field(node, "translation"));

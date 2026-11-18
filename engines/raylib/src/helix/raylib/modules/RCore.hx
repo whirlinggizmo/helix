@@ -2625,7 +2625,7 @@ class RCore {
 		@param camera  The camera.
 		@return  The matrix. */
 	static function GetCameraMatrix2D(camera:Camera2D):Matrix {
-		return toMatrix(camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix4());
+		return camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix4();
 	}
 
 	/** Returns where a point in a 2D camera's world is on the screen.
@@ -2943,7 +2943,7 @@ class RCore {
 		@param camera  The camera.
 		@return  The matrix. */
 	static function GetCameraMatrix(camera:Camera3D):Matrix {
-		return toMatrix(camera3D(camera).computeViewMatrix(viewMatrix3D));
+		return camera3D(camera).computeViewMatrix();
 	}
 
 	/** Returns the ray from a camera through a screen position, for picking. See `GetScreenToWorldRayEx` for casting through a view of
@@ -3006,8 +3006,6 @@ class RCore {
 	// along the view, or a target at its position, as helix.math.Quaternion.fromLookRotation replaces them), its fovy in radians or, orthographic,
 	// the height it shows, and raylib's near and far planes, 0.01 and 1000.
 	static final view3D = new helix.geometry.Camera3D();
-
-	static final viewMatrix3D = new Matrix4();
 
 	static final point3D = new helix.math.Vector3();
 
@@ -3241,7 +3239,7 @@ class RCore {
 		if (shader.program == null)
 			return;
 		Runtime.frame.cut();
-		shader.program.write(locIndex, toMatrix4(mat).values);
+		shader.program.write(locIndex, mat.toArray());
 	}
 
 	/** Sets a shader's texture for the draws after the call, a `Texture2D` at a `sampler2D` or a cubemap (`LoadTextureCubemap`) at a

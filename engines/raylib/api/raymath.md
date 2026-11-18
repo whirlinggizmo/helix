@@ -456,6 +456,8 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `projection`: The projection.
   - `view`: The view.
   - returns: The point in the world.
+
+  A view and a projection without an inverse give a point of NaN.
 - `Vector3ToFloatV`: Returns a vector's components as an array: x, y, z.
   - `v`: The vector.
   - returns: The array.
@@ -580,7 +582,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `mat`: The matrix.
   - returns: Its inverse.
 
-  Inverting a singular matrix divides by a determinant of 0 and gives infinite or NaN values.
+  A matrix without an inverse gives a matrix of NaN.
 - `MatrixIdentity`: Returns the identity matrix.
   - returns: The matrix.
 - `MatrixAdd`: Returns the sum of two matrices.
@@ -768,8 +770,4 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `rotation`: Set to its rotation.
   - `scale`: Set to its scale.
 
-  Makes the columns orthonormal one after another. The orthonormal columns are the rotation, and their lengths are the scale.
-
-  Drops any shear between the columns.
-
-  Decomposing a matrix that mirrors negates all three components of the scale.
+  A matrix that shears gives the nearest rotation and the scale along that rotation's axes, the shear lost. One that mirrors gives a scale less than 0 along each axis.

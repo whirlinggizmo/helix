@@ -474,7 +474,7 @@ final events:Sdl3EventsAdapter
 
 ## Sdl3GpuGraphicsAdapter
 
-*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx`](../src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter;`, extends `NativeGraphics`, implements `IGraphics`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx`](../src/helix/platform/adapters/graphics/sdl3gpu/Sdl3GpuGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter;`, implements `IGraphics`
 
 Provides `IGraphics` on SDL_GPU, natively: Vulkan, Direct3D 12 or Metal.
 
@@ -491,7 +491,7 @@ function dispose():Void
 
 ## SokolGraphicsAdapter
 
-*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx`](../src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter;`, extends `NativeGraphics`, implements `IGraphics`
+*class*, native (cpp) in [`libs/platform/src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx`](../src/helix/platform/adapters/graphics/sokol/SokolGraphicsAdapter.hx), `import helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter;`, implements `IGraphics`
 
 Provides `IGraphics` on sokol_gfx, natively, drawing with GL 4.1 in the window's context.
 

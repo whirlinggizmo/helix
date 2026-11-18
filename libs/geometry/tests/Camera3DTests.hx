@@ -25,8 +25,9 @@ class Camera3DTests {
 		return near(p.x, x, tolerance) && near(p.y, y, tolerance) && near(p.z, z, tolerance);
 
 	static function matrixIs(m:Matrix4, values:Array<Float>, tolerance = 1e-12):Bool {
+		var numbers = m.toArray();
 		for (i in 0...16)
-			if (!near(m.values[i], values[i], tolerance))
+			if (!near(numbers[i], values[i], tolerance))
 				return false;
 		return true;
 	}

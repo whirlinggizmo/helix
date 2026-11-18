@@ -415,15 +415,15 @@ def merged(js,cpp,output):
 def markdown(xml,native=frozenset()):
     """The Markdown files from an XML description: {relative path: text}. native holds the native adapters' paths, the rest the browser's."""
     types=public_types(xml)
-    known=set(types)
+    known=set(types);secret=hidden_paths(xml)
     files={};index={}
     for path in sorted(types):
         node=types[path];name=short(path);params=node.get('params','')
         header=name+(f'<{params.replace(":",", ")}>' if params else '')
         kind='interface' if node.get('interface')=='1' else {'class':'class','enum':'enum','typedef':'typedef','abstract':'abstract'}[node.tag]
-        # What it extends and implements, by name: an interface's base, an adapter's interface.
-        parents=''.join(f', {word} '+', '.join(f'`{short(e.get("path"))}`' for e in node.findall(word))
-                        for word in ('extends','implements') if node.findall(word))
+        # What it extends and implements, by name: an interface's base, an adapter's interface. A hidden base is the engine's own, left out.
+        above={word:[e for e in node.findall(word) if e.get('path') not in secret] for word in ('extends','implements')}
+        parents=''.join(f', {word} '+', '.join(f'`{short(e.get("path"))}`' for e in found) for word,found in above.items() if found)
         # Its source, relative to its page: a link on GitHub and in a checkout alike.
         source=node.get('file','')
         # A library reached through a haxelib dev link is reported by its absolute path: made relative to the checkout.

@@ -230,13 +230,28 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeMatrix(uniform:ShaderUniform, matrix:Matrix4, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeMatrix", MAT4);
-		var m = matrix.values;
 		var same = !fresh;
-		for (i in 0...16)
-			if (e[i] != m[i]) {
-				e[i] = m[i];
+		inline function put(i:Int, value:Float):Void
+			if (e[i] != value) {
+				e[i] = value;
 				same = false;
 			}
+		put(0, matrix.m0);
+		put(1, matrix.m1);
+		put(2, matrix.m2);
+		put(3, matrix.m3);
+		put(4, matrix.m4);
+		put(5, matrix.m5);
+		put(6, matrix.m6);
+		put(7, matrix.m7);
+		put(8, matrix.m8);
+		put(9, matrix.m9);
+		put(10, matrix.m10);
+		put(11, matrix.m11);
+		put(12, matrix.m12);
+		put(13, matrix.m13);
+		put(14, matrix.m14);
+		put(15, matrix.m15);
 		if (!same)
 			changed(uniform, elementIndex, e);
 	}

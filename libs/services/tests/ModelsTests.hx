@@ -152,8 +152,8 @@ class ModelsTests {
 			&& house.skins.length == 0
 			&& house.animations.length == 0
 			&& house.meshSkinIndices.join(",") == "-1,-1,-1,-1"
-			&& house.meshTransforms[0].values[12] == 0
-			&& house.meshTransforms[0].values[0] == 1,
+			&& house.meshTransforms[0].m12 == 0
+			&& house.meshTransforms[0].m0 == 1,
 			"no skeleton; identity transforms");
 		var quad = house.meshes[1];
 		check(quad.vertexCount == 4 && quad.indices.join(",") == "0,1,2,0,2,3", "a quad: a vertex a corner, two triangles indexing them");
@@ -358,7 +358,7 @@ class ModelsTests {
 			&& model.skins.length == 0
 			&& model.animations.length == 0
 			&& model.meshSkinIndices.join(",") == "-1"
-			&& near(model.meshTransforms[0].values[12], 10),
+			&& near(model.meshTransforms[0].m12, 10),
 			"no skin: no skeleton, no animations; its node's transform beside it");
 
 		var rigged:Model3D = null;
@@ -377,8 +377,8 @@ class ModelsTests {
 			&& body.jointIndices.join(",") == "0,1,0,0,1,0,0,0,0,1,0,0"
 			&& near(body.weights[0], .5),
 			"a skinned mesh: its vertices as the file has them, its joints and weights");
-		var placed = rigged.meshTransforms[0].values;
-		check(near(placed[12], 7) && near(placed[14], 5), "its node's transform kept beside it, not put into it");
+		var placed = rigged.meshTransforms[0];
+		check(near(placed.m12, 7) && near(placed.m14, 5), "its node's transform kept beside it, not put into it");
 		var kick = rigged.animations[0];
 		check(rigged.animations.length == 1
 			&& kick.name == "Kick"

@@ -48,10 +48,10 @@ class RModelsMerged {
 			return refuse("no models");
 		if (skeleton != null && skeleton.boneCount > 256)
 			return refuse('a skeleton of ${skeleton.boneCount} bones, over 256');
-		var skeletonTransform = skeleton == null ? null : RModels.toMatrix4(skeleton.transform);
+		var skeletonTransform:Null<Matrix4> = skeleton == null ? null : skeleton.transform;
 		if (skeleton != null)
 			for (model in models)
-				if (hasBones(model) && !near(RModels.toMatrix4(model.transform), skeletonTransform, 1e-5))
+				if (hasBones(model) && !near(model.transform, skeletonTransform, 1e-5))
 					return refuse("a model with bones whose transform differs from the skeleton's");
 
 		// Each group is the meshes of one material but for its diffuse color, in the order the groups' first meshes come.
@@ -115,7 +115,7 @@ class RModelsMerged {
 
 	// What moves a model's vertices to their place in the new model: its transform, under a skeleton's the inverse of that one's.
 	static function placement(model:Model, skeletonTransform:Null<Matrix4>):Matrix4 {
-		var own = RModels.toMatrix4(model.transform);
+		var own:Matrix4 = model.transform;
 		if (skeletonTransform == null)
 			return own;
 		var inverse = skeletonTransform.invert();
@@ -123,8 +123,9 @@ class RModelsMerged {
 	}
 
 	static function near(a:Matrix4, b:Matrix4, tolerance:Float):Bool {
+		var x = a.toArray(), y = b.toArray();
 		for (i in 0...16)
-			if (Math.abs(a.values[i] - b.values[i]) > tolerance)
+			if (Math.abs(x[i] - y[i]) > tolerance)
 				return false;
 		return true;
 	}
@@ -279,7 +280,7 @@ class RModelsMerged {
 		var positions = part.positions.copy();
 		var normals = part.normals == null ? null : part.normals.copy();
 		var tangents = part.tangents == null ? null : part.tangents.copy();
-		var m = [for (_ in 0...16) 0.];
+		var m = [for (_ in 0...16) 0.], bone = [];
 		for (k in 0...part.vertexCount) {
 			for (i in 0...16)
 				m[i] = 0;
@@ -289,8 +290,9 @@ class RModelsMerged {
 				var move = w != 0 && joints[j] < rebinds.length ? rebinds[joints[j]] : null;
 				if (move != null) {
 					total += w;
+					move.toArray(bone);
 					for (i in 0...16)
-						m[i] += move.values[i] * w;
+						m[i] += bone[i] * w;
 				}
 			}
 			if (total == 0)

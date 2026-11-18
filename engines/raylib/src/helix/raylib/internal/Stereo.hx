@@ -27,10 +27,7 @@ class Stereo {
 	}
 
 	static function zero():Matrix4 {
-		var m = new Matrix4();
-		for (i in 0...16)
-			m.values[i] = 0;
-		return m;
+		return Matrix4.fromArray([for (_ in 0...16) 0.]);
 	}
 
 	// What is added, once for each eye: in its half of what is drawn into (the left the first eye's), the batch through the view moved by

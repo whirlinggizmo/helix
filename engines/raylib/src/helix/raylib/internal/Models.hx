@@ -534,18 +534,20 @@ class Models {
 				new BoneInfo(bones.bones[b].name, parent);
 			}
 		];
-		var identity = new Matrix4(), given = false;
-		for (m in skin.inverseBinds)
+		var identity = new Matrix4().toArray(), numbers = [], given = false;
+		for (m in skin.inverseBinds) {
+			m.toArray(numbers);
 			for (k in 0...16)
-				if (m.values[k] != identity.values[k])
+				if (numbers[k] != identity[k])
 					given = true;
+		}
 		// raylib reads the matrices when there are as many as joints.
 		if (skin.inverseBinds.length < joints.length)
 			given = false;
 		var world = given ? null : bones.computeWorld(bones.computeRestPose());
 		model.bindPose = [
 			for (i => b in joints) {
-				var bind = world == null ? RMath.MatrixInvert(RModels.toMatrix(skin.inverseBinds[i])) : RModels.toMatrix(world[b]);
+				var bind:Matrix = world == null ? RMath.MatrixInvert(skin.inverseBinds[i]) : world[b];
 				var pose = new Transform();
 				RMath.MatrixDecompose(bind, pose.translation, pose.rotation, pose.scale);
 				pose;

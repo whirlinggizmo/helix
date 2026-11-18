@@ -811,7 +811,7 @@ class RModels {
 		var m = Matrix4.fromScale(scaleX, scaleY, scaleZ, placed);
 		Matrix4.compose(m, Matrix4.fromRotation(axisX, axisY, axisZ, angle * DEG2RAD, placing), m);
 		Matrix4.compose(m, Matrix4.fromTranslation(x, y, z, placing), m);
-		var transform = Matrix4.compose(toMatrix4(model.transform, placing), m, placing);
+		var transform = Matrix4.compose(model.transform, m, placing);
 		modelEmissive = model.emissive;
 		for (i in 0...model.meshCount) {
 			var material = model.materials[model.meshMaterial[i]];
@@ -906,7 +906,7 @@ class RModels {
 		@param material  The material.
 		@param transform  The transform. */
 	static function DrawMesh(mesh:Mesh, material:Material, transform:Matrix):Void {
-		drawMesh(mesh, material, toMatrix4(transform, placing), WHITE);
+		drawMesh(mesh, material, transform, WHITE);
 	}
 
 	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
@@ -940,9 +940,12 @@ class RModels {
 			return;
 		}
 		var bytes = haxe.io.Bytes.alloc(count * 64);
-		for (i in 0...count)
-			for (k => v in toMatrix4(transforms[i]).values)
-				bytes.setFloat((i * 16 + k) * 4, v);
+		var numbers = [];
+		for (i in 0...count) {
+			transforms[i].toArray(numbers);
+			for (k in 0...16)
+				bytes.setFloat((i * 16 + k) * 4, numbers[k]);
+		}
 		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
 		Runtime.frame.retire(buffer);
 		drawMesh(mesh, material, new Matrix4(), WHITE, buffer, count, transforms);
@@ -2005,7 +2008,7 @@ class RModels {
 		var v = mesh.vertices;
 		if (v == null)
 			return collision;
-		var t = toMatrix4(transform);
+		var t:Matrix4 = transform;
 		function corner(i:Int):Vector3 {
 			var p = t.transformPoint(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
 			return new Vector3(p.x, p.y, p.z);
@@ -2153,8 +2156,8 @@ class RModels {
 			return [value.x, value.y, value.z];
 		if (Std.isOfType(value, Vector4))
 			return [value.x, value.y, value.z, value.w];
-		if (Std.isOfType(value, Matrix))
-			return toMatrix4(value).values;
+		if (Std.isOfType(value, Matrix4))
+			return (value : Matrix4).toArray();
 		if (Std.isOfType(value, Float))
 			return [(value : Float)];
 		var memory:Null<{bytes:haxe.io.Bytes, offset:Int, length:Int}> = if (Std.isOfType(value, haxe.io.Bytes)) {
@@ -2176,36 +2179,6 @@ class RModels {
 			for (i in 0...Std.int(memory.length / 4))
 				ints ? memory.bytes.getInt32(memory.offset + i * 4) : memory.bytes.getFloat(memory.offset + i * 4)
 		];
-	}
-
-	// raylib's Matrix, named by rows, and helix-math's, stored by columns: m0 to m3 the first column in both.
-
-	static function toMatrix4(m:Matrix, ?out:Matrix4):Matrix4 {
-		if (out == null)
-			out = new Matrix4();
-		var v = out.values;
-		v[0] = m.m0;
-		v[1] = m.m1;
-		v[2] = m.m2;
-		v[3] = m.m3;
-		v[4] = m.m4;
-		v[5] = m.m5;
-		v[6] = m.m6;
-		v[7] = m.m7;
-		v[8] = m.m8;
-		v[9] = m.m9;
-		v[10] = m.m10;
-		v[11] = m.m11;
-		v[12] = m.m12;
-		v[13] = m.m13;
-		v[14] = m.m14;
-		v[15] = m.m15;
-		return out;
-	}
-
-	static function toMatrix(m:Matrix4):Matrix {
-		var a = m.values;
-		return new Matrix(a[0], a[4], a[8], a[12], a[1], a[5], a[9], a[13], a[2], a[6], a[10], a[14], a[3], a[7], a[11], a[15]);
 	}
 
 	// The texture DrawMesh binds at each of the program's slots, -1 for the program's own (SetShaderValueTexture's). raylib binds each map

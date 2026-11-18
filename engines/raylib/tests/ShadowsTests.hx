@@ -193,9 +193,9 @@ class ShadowsTests {
 		shadows.sort((a, b) -> a - b);
 		check(shadows.join(",") == "1,2,3", "the draw's three casting lights given their shadows' indices");
 		check(drawnInt(p, lit, "shadowed") == 1, "shadows fall on a material until SetMaterialShadowed");
-		var m = @:privateAccess helix.raylib.internal.Shadows.matrices[0].values;
-		check(near(drawnFloat(p, lit, "helixShadowMatrices", 0, 0), m[0])
-			&& near(drawnFloat(p, lit, "helixShadowMatrices", 8, 15), @:privateAccess helix.raylib.internal.Shadows.matrices[8].values[15]),
+		var m = @:privateAccess helix.raylib.internal.Shadows.matrices[0];
+		check(near(drawnFloat(p, lit, "helixShadowMatrices", 0, 0), m.m0)
+			&& near(drawnFloat(p, lit, "helixShadowMatrices", 8, 15), @:privateAccess helix.raylib.internal.Shadows.matrices[8].m15),
 			"the maps' matrices written");
 		check(drawnFloat(p, lit, "helixShadowStrengths", 0, 0) == 1 && drawnFloat(p, lit, "helixShadowStrengths", 0, 1) == 0.5,
 			"each light's strength written, the lamp's 0.5");
@@ -212,7 +212,7 @@ class ShadowsTests {
 		check(shadowPasses().length == 0, "a frame drawn: its shadow passes gone");
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(lastDraw().textures[helix.raylib.internal.ShadowSlots.slotOf(p)] == map
-			&& near(drawnFloat(p, lastDraw(), "helixShadowMatrices", 0, 0), m[0])
+			&& near(drawnFloat(p, lastDraw(), "helixShadowMatrices", 0, 0), m.m0)
 			&& drawnInt(p, lastDraw(), "lights.shadow", 0) > 0,
 			"a frame without the pass keeps the last one's shadows");
 		frame.draw(800, 450, true);

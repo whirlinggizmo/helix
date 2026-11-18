@@ -562,9 +562,8 @@ class RMath {
 		@param v  The point.
 		@param mat  The matrix.
 		@return  The transformed point. */
-	static function Vector3Transform(v:Vector3, mat:Matrix):Vector3 {
-		var p = toMatrix4(mat).transformPoint(v.x, v.y, v.z);
-		return new Vector3(p.x, p.y, p.z);
+	static inline function Vector3Transform(v:Vector3, mat:Matrix):Vector3 {
+		return mat.transformPoint(v.x, v.y, v.z);
 	}
 
 	/** Returns a vector turned by a quaternion.
@@ -660,113 +659,15 @@ class RMath {
 
 	/** Returns a point in normalized device coordinates (each from -1 to 1) taken back into the world, through a view and a projection.
 
+		A view and a projection without an inverse give a point of NaN.
+
 		@param source  The point.
 		@param projection  The projection.
 		@param view  The view.
 		@return  The point in the world. */
 	static function Vector3Unproject(source:Vector3, projection:Matrix, view:Matrix):Vector3 {
-		// raymath's own steps, its matrices filled in the order Matrix's fields are declared, as its C initializers fill them.
-		var matViewProj = new Matrix(view.m0 * projection.m0
-			+ view.m1 * projection.m4
-			+ view.m2 * projection.m8
-			+ view.m3 * projection.m12,
-			view.m0 * projection.m1
-			+ view.m1 * projection.m5
-			+ view.m2 * projection.m9
-			+ view.m3 * projection.m13,
-			view.m0 * projection.m2
-			+ view.m1 * projection.m6
-			+ view.m2 * projection.m10
-			+ view.m3 * projection.m14,
-			view.m0 * projection.m3
-			+ view.m1 * projection.m7
-			+ view.m2 * projection.m11
-			+ view.m3 * projection.m15,
-			view.m4 * projection.m0
-			+ view.m5 * projection.m4
-			+ view.m6 * projection.m8
-			+ view.m7 * projection.m12,
-			view.m4 * projection.m1
-			+ view.m5 * projection.m5
-			+ view.m6 * projection.m9
-			+ view.m7 * projection.m13,
-			view.m4 * projection.m2
-			+ view.m5 * projection.m6
-			+ view.m6 * projection.m10
-			+ view.m7 * projection.m14,
-			view.m4 * projection.m3
-			+ view.m5 * projection.m7
-			+ view.m6 * projection.m11
-			+ view.m7 * projection.m15,
-			view.m8 * projection.m0
-			+ view.m9 * projection.m4
-			+ view.m10 * projection.m8
-			+ view.m11 * projection.m12,
-			view.m8 * projection.m1
-			+ view.m9 * projection.m5
-			+ view.m10 * projection.m9
-			+ view.m11 * projection.m13,
-			view.m8 * projection.m2
-			+ view.m9 * projection.m6
-			+ view.m10 * projection.m10
-			+ view.m11 * projection.m14,
-			view.m8 * projection.m3
-			+ view.m9 * projection.m7
-			+ view.m10 * projection.m11
-			+ view.m11 * projection.m15,
-			view.m12 * projection.m0
-			+ view.m13 * projection.m4
-			+ view.m14 * projection.m8
-			+ view.m15 * projection.m12,
-			view.m12 * projection.m1
-			+ view.m13 * projection.m5
-			+ view.m14 * projection.m9
-			+ view.m15 * projection.m13,
-			view.m12 * projection.m2
-			+ view.m13 * projection.m6
-			+ view.m14 * projection.m10
-			+ view.m15 * projection.m14,
-			view.m12 * projection.m3
-			+ view.m13 * projection.m7
-			+ view.m14 * projection.m11
-			+ view.m15 * projection.m15);
-		var a00 = matViewProj.m0,
-			a01 = matViewProj.m1,
-			a02 = matViewProj.m2,
-			a03 = matViewProj.m3;
-		var a10 = matViewProj.m4,
-			a11 = matViewProj.m5,
-			a12 = matViewProj.m6,
-			a13 = matViewProj.m7;
-		var a20 = matViewProj.m8,
-			a21 = matViewProj.m9,
-			a22 = matViewProj.m10,
-			a23 = matViewProj.m11;
-		var a30 = matViewProj.m12,
-			a31 = matViewProj.m13,
-			a32 = matViewProj.m14,
-			a33 = matViewProj.m15;
-		var b00 = a00 * a11 - a01 * a10;
-		var b01 = a00 * a12 - a02 * a10;
-		var b02 = a00 * a13 - a03 * a10;
-		var b03 = a01 * a12 - a02 * a11;
-		var b04 = a01 * a13 - a03 * a11;
-		var b05 = a02 * a13 - a03 * a12;
-		var b06 = a20 * a31 - a21 * a30;
-		var b07 = a20 * a32 - a22 * a30;
-		var b08 = a20 * a33 - a23 * a30;
-		var b09 = a21 * a32 - a22 * a31;
-		var b10 = a21 * a33 - a23 * a31;
-		var b11 = a22 * a33 - a23 * a32;
-		var invDet = 1 / (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06);
-		var matViewProjInv = new Matrix((a11 * b11 - a12 * b10 + a13 * b09) * invDet, (-a01 * b11 + a02 * b10 - a03 * b09) * invDet,
-			(a31 * b05 - a32 * b04 + a33 * b03) * invDet, (-a21 * b05 + a22 * b04 - a23 * b03) * invDet, (-a10 * b11 + a12 * b08 - a13 * b07) * invDet,
-			(a00 * b11 - a02 * b08 + a03 * b07) * invDet, (-a30 * b05 + a32 * b02 - a33 * b01) * invDet, (a20 * b05 - a22 * b02 + a23 * b01) * invDet,
-			(a10 * b10 - a11 * b08 + a13 * b06) * invDet, (-a00 * b10 + a01 * b08 - a03 * b06) * invDet, (a30 * b04 - a31 * b02 + a33 * b00) * invDet,
-			(-a20 * b04 + a21 * b02 - a23 * b00) * invDet, (-a10 * b09 + a11 * b07 - a12 * b06) * invDet, (a00 * b09 - a01 * b07 + a02 * b06) * invDet,
-			(-a30 * b03 + a31 * b01 - a32 * b00) * invDet, (a20 * b03 - a21 * b01 + a22 * b00) * invDet);
-		var q = QuaternionTransform(new Quaternion(source.x, source.y, source.z, 1), matViewProjInv);
-		return new Vector3(q.x / q.w, q.y / q.w, q.z / q.w);
+		var inverse = Matrix4.compose(view, projection, unprojection).invert(unprojection);
+		return inverse == null ? new Vector3(Math.NaN, Math.NaN, Math.NaN) : inverse.projectPoint(source.x, source.y, source.z);
 	}
 
 	/** Returns a vector's components as an array: x, y, z.
@@ -1033,82 +934,43 @@ class RMath {
 
 		@param mat  The matrix.
 		@return  The determinant. */
-	static function MatrixDeterminant(mat:Matrix):Float {
-		var a00 = mat.m0, a01 = mat.m1, a02 = mat.m2, a03 = mat.m3;
-		var a10 = mat.m4, a11 = mat.m5, a12 = mat.m6, a13 = mat.m7;
-		var a20 = mat.m8, a21 = mat.m9, a22 = mat.m10, a23 = mat.m11;
-		var a30 = mat.m12, a31 = mat.m13, a32 = mat.m14, a33 = mat.m15;
-		return a30 * a21 * a12 * a03 - a20 * a31 * a12 * a03 - a30 * a11 * a22 * a03 + a10 * a31 * a22 * a03 + a20 * a11 * a32 * a03 - a10 * a21 * a32 * a03
-			- a30 * a21 * a02 * a13 + a20 * a31 * a02 * a13 + a30 * a01 * a22 * a13 - a00 * a31 * a22 * a13 - a20 * a01 * a32 * a13 + a00 * a21 * a32 * a13
-			+ a30 * a11 * a02 * a23 - a10 * a31 * a02 * a23 - a30 * a01 * a12 * a23 + a00 * a31 * a12 * a23 + a10 * a01 * a32 * a23 - a00 * a11 * a32 * a23
-			- a20 * a11 * a02 * a33 + a10 * a21 * a02 * a33 + a20 * a01 * a12 * a33 - a00 * a21 * a12 * a33 - a10 * a01 * a22 * a33 + a00 * a11 * a22 * a33;
+	static inline function MatrixDeterminant(mat:Matrix):Float {
+		return mat.determinant;
 	}
 
 	/** Returns a matrix's trace: the sum of its diagonal.
 
 		@param mat  The matrix.
 		@return  The trace. */
-	static function MatrixTrace(mat:Matrix):Float {
-		return mat.m0 + mat.m5 + mat.m10 + mat.m15;
+	static inline function MatrixTrace(mat:Matrix):Float {
+		return mat.trace;
 	}
 
 	/** Returns a matrix transposed.
 
 		@param mat  The matrix.
 		@return  Its transpose. */
-	static function MatrixTranspose(mat:Matrix):Matrix {
-		return toMatrix(toMatrix4(mat).transpose());
+	static inline function MatrixTranspose(mat:Matrix):Matrix {
+		return mat.transpose();
 	}
 
 	/** Returns a matrix's inverse.
 
-		Inverting a singular matrix divides by a determinant of 0 and gives infinite or NaN values.
+		A matrix without an inverse gives a matrix of NaN.
 
 		@param mat  The matrix.
 		@return  Its inverse. */
 	static function MatrixInvert(mat:Matrix):Matrix {
-		var a00 = mat.m0, a01 = mat.m1, a02 = mat.m2, a03 = mat.m3;
-		var a10 = mat.m4, a11 = mat.m5, a12 = mat.m6, a13 = mat.m7;
-		var a20 = mat.m8, a21 = mat.m9, a22 = mat.m10, a23 = mat.m11;
-		var a30 = mat.m12, a31 = mat.m13, a32 = mat.m14, a33 = mat.m15;
-		var b00 = a00 * a11 - a01 * a10,
-			b01 = a00 * a12 - a02 * a10,
-			b02 = a00 * a13 - a03 * a10;
-		var b03 = a01 * a12 - a02 * a11,
-			b04 = a01 * a13 - a03 * a11,
-			b05 = a02 * a13 - a03 * a12;
-		var b06 = a20 * a31 - a21 * a30,
-			b07 = a20 * a32 - a22 * a30,
-			b08 = a20 * a33 - a23 * a30;
-		var b09 = a21 * a32 - a22 * a31,
-			b10 = a21 * a33 - a23 * a31,
-			b11 = a22 * a33 - a23 * a32;
-		var invDet = 1.0 / (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06);
-		var result = new Matrix();
-		result.m0 = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
-		result.m1 = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
-		result.m2 = (a31 * b05 - a32 * b04 + a33 * b03) * invDet;
-		result.m3 = (-a21 * b05 + a22 * b04 - a23 * b03) * invDet;
-		result.m4 = (-a10 * b11 + a12 * b08 - a13 * b07) * invDet;
-		result.m5 = (a00 * b11 - a02 * b08 + a03 * b07) * invDet;
-		result.m6 = (-a30 * b05 + a32 * b02 - a33 * b01) * invDet;
-		result.m7 = (a20 * b05 - a22 * b02 + a23 * b01) * invDet;
-		result.m8 = (a10 * b10 - a11 * b08 + a13 * b06) * invDet;
-		result.m9 = (-a00 * b10 + a01 * b08 - a03 * b06) * invDet;
-		result.m10 = (a30 * b04 - a31 * b02 + a33 * b00) * invDet;
-		result.m11 = (-a20 * b04 + a21 * b02 - a23 * b00) * invDet;
-		result.m12 = (-a10 * b09 + a11 * b07 - a12 * b06) * invDet;
-		result.m13 = (a00 * b09 - a01 * b07 + a02 * b06) * invDet;
-		result.m14 = (-a30 * b03 + a31 * b01 - a32 * b00) * invDet;
-		result.m15 = (a20 * b03 - a21 * b01 + a22 * b00) * invDet;
-		return result;
+		var inverse = mat.invert();
+		return inverse == null ? new Matrix(Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN,
+			Math.NaN, Math.NaN, Math.NaN, Math.NaN, Math.NaN) : inverse;
 	}
 
 	/** Returns the identity matrix.
 
 		@return  The matrix. */
-	static function MatrixIdentity():Matrix {
-		return toMatrix(new Matrix4());
+	static inline function MatrixIdentity():Matrix {
+		return new Matrix4();
 	}
 
 	/** Returns the sum of two matrices.
@@ -1116,26 +978,8 @@ class RMath {
 		@param left  One.
 		@param right  The other.
 		@return  The sum. */
-	static function MatrixAdd(left:Matrix, right:Matrix):Matrix {
-		return new Matrix(left.m0
-			+ right.m0, left.m4
-			+ right.m4, left.m8
-			+ right.m8, left.m12
-			+ right.m12, left.m1
-			+ right.m1, left.m5
-			+ right.m5,
-			left.m9
-			+ right.m9, left.m13
-			+ right.m13, left.m2
-			+ right.m2, left.m6
-			+ right.m6, left.m10
-			+ right.m10, left.m14
-			+ right.m14, left.m3
-			+ right.m3,
-			left.m7
-			+ right.m7, left.m11
-			+ right.m11, left.m15
-			+ right.m15);
+	static inline function MatrixAdd(left:Matrix, right:Matrix):Matrix {
+		return left.add(right);
 	}
 
 	/** Returns one matrix less another.
@@ -1143,26 +987,8 @@ class RMath {
 		@param left  The first.
 		@param right  The one taken from it.
 		@return  The difference. */
-	static function MatrixSubtract(left:Matrix, right:Matrix):Matrix {
-		return new Matrix(left.m0
-			- right.m0, left.m4
-			- right.m4, left.m8
-			- right.m8, left.m12
-			- right.m12, left.m1
-			- right.m1, left.m5
-			- right.m5,
-			left.m9
-			- right.m9, left.m13
-			- right.m13, left.m2
-			- right.m2, left.m6
-			- right.m6, left.m10
-			- right.m10, left.m14
-			- right.m14, left.m3
-			- right.m3,
-			left.m7
-			- right.m7, left.m11
-			- right.m11, left.m15
-			- right.m15);
+	static inline function MatrixSubtract(left:Matrix, right:Matrix):Matrix {
+		return left.subtract(right);
 	}
 
 	/** Returns two matrices multiplied: left, then right.
@@ -1170,8 +996,8 @@ class RMath {
 		@param left  The first.
 		@param right  The second.
 		@return  The product. */
-	static function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
-		return toMatrix(Matrix4.compose(toMatrix4(left), toMatrix4(right)));
+	static inline function MatrixMultiply(left:Matrix, right:Matrix):Matrix {
+		return Matrix4.compose(left, right);
 	}
 
 	/** Returns a translation.
@@ -1180,8 +1006,8 @@ class RMath {
 		@param y  Along y.
 		@param z  Along z.
 		@return  The matrix. */
-	static function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
-		return toMatrix(Matrix4.fromTranslation(x, y, z));
+	static inline function MatrixTranslate(x:Float, y:Float, z:Float):Matrix {
+		return Matrix4.fromTranslation(x, y, z);
 	}
 
 	/** Returns a rotation about an axis.
@@ -1189,32 +1015,32 @@ class RMath {
 		@param axis  The axis.
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	static function MatrixRotate(axis:Vector3, angle:Float):Matrix {
-		return toMatrix(Matrix4.fromRotation(axis.x, axis.y, axis.z, angle));
+	static inline function MatrixRotate(axis:Vector3, angle:Float):Matrix {
+		return Matrix4.fromRotation(axis.x, axis.y, axis.z, angle);
 	}
 
 	/** Returns a rotation about x.
 
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	static function MatrixRotateX(angle:Float):Matrix {
-		return toMatrix(Matrix4.fromRotation(1, 0, 0, angle));
+	static inline function MatrixRotateX(angle:Float):Matrix {
+		return Matrix4.fromRotation(1, 0, 0, angle);
 	}
 
 	/** Returns a rotation about y.
 
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	static function MatrixRotateY(angle:Float):Matrix {
-		return toMatrix(Matrix4.fromRotation(0, 1, 0, angle));
+	static inline function MatrixRotateY(angle:Float):Matrix {
+		return Matrix4.fromRotation(0, 1, 0, angle);
 	}
 
 	/** Returns a rotation about z.
 
 		@param angle  The angle, in radians.
 		@return  The matrix. */
-	static function MatrixRotateZ(angle:Float):Matrix {
-		return toMatrix(Matrix4.fromRotation(0, 0, 1, angle));
+	static inline function MatrixRotateZ(angle:Float):Matrix {
+		return Matrix4.fromRotation(0, 0, 1, angle);
 	}
 
 	/** Returns a rotation by three angles that turns a point about z, then y, then x. See `MatrixRotateZYX` for turning in the reverse
@@ -1223,20 +1049,9 @@ class RMath {
 		@param angle  The angles, in radians.
 		@return  The matrix. */
 	static function MatrixRotateXYZ(angle:Vector3):Matrix {
-		var cosz = Trig.cos(-angle.z), sinz = Trig.sin(-angle.z);
-		var cosy = Trig.cos(-angle.y), siny = Trig.sin(-angle.y);
-		var cosx = Trig.cos(-angle.x), sinx = Trig.sin(-angle.x);
-		var result = toMatrix(new Matrix4());
-		result.m0 = cosz * cosy;
-		result.m1 = (cosz * siny * sinx) - (sinz * cosx);
-		result.m2 = (cosz * siny * cosx) + (sinz * sinx);
-		result.m4 = sinz * cosy;
-		result.m5 = (sinz * siny * sinx) + (cosz * cosx);
-		result.m6 = (sinz * siny * cosx) - (cosz * sinx);
-		result.m8 = -siny;
-		result.m9 = cosy * sinx;
-		result.m10 = cosy * cosx;
-		return result;
+		// The turns of MatrixRotateZYX undone: each angle the other way, and the rotation inverted.
+		var q = Quaternion.fromEuler(-angle.x, -angle.y, -angle.z, turn);
+		return Matrix4.fromQuaternion(-q.x, -q.y, -q.z, q.w);
 	}
 
 	/** Returns a rotation by three angles that turns a point about x, then y, then z, the reverse of `MatrixRotateXYZ`.
@@ -1244,16 +1059,7 @@ class RMath {
 		@param angle  The angles, in radians.
 		@return  The matrix. */
 	static function MatrixRotateZYX(angle:Vector3):Matrix {
-		var cz = Trig.cos(angle.z), sz = Trig.sin(angle.z);
-		var cy = Trig.cos(angle.y), sy = Trig.sin(angle.y);
-		var cx = Trig.cos(angle.x), sx = Trig.sin(angle.x);
-		return new Matrix(cz * cy, cz * sy * sx
-			- cx * sz, sz * sx
-			+ cz * cx * sy, 0, cy * sz, cz * cx
-			+ sz * sy * sx, cx * sz * sy
-			- cz * sx, 0,
-			-sy,
-			cy * sx, cy * cx, 0, 0, 0, 0, 1);
+		return Matrix4.fromEuler(angle.x, angle.y, angle.z);
 	}
 
 	/** Returns a scale.
@@ -1262,8 +1068,8 @@ class RMath {
 		@param y  Along y.
 		@param z  Along z.
 		@return  The matrix. */
-	static function MatrixScale(x:Float, y:Float, z:Float):Matrix {
-		return toMatrix(Matrix4.fromScale(x, y, z));
+	static inline function MatrixScale(x:Float, y:Float, z:Float):Matrix {
+		return Matrix4.fromScale(x, y, z);
 	}
 
 	/** Returns a perspective projection by its near plane's edges.
@@ -1275,10 +1081,8 @@ class RMath {
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
 		@return  The matrix. */
-	static function MatrixFrustum(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
-		var rl = right - left, tb = top - bottom, fn = farPlane - nearPlane;
-		return new Matrix((nearPlane * 2) / rl, 0, (right + left) / rl, 0, 0, (nearPlane * 2) / tb, (top + bottom) / tb, 0, 0, 0,
-			-(farPlane + nearPlane) / fn, -(farPlane * nearPlane * 2) / fn, 0, 0, -1, 0);
+	static inline function MatrixFrustum(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
+		return Matrix4.fromFrustum(left, right, bottom, top, nearPlane, farPlane);
 	}
 
 	/** Returns a perspective projection.
@@ -1288,8 +1092,8 @@ class RMath {
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
 		@return  The matrix. */
-	static function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return toMatrix(Matrix4.fromPerspective(fovY, aspect, nearPlane, farPlane));
+	static inline function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix {
+		return Matrix4.fromPerspective(fovY, aspect, nearPlane, farPlane);
 	}
 
 	/** Returns an orthographic projection.
@@ -1301,8 +1105,8 @@ class RMath {
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
 		@return  The matrix. */
-	static function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
-		return toMatrix(Matrix4.fromOrthographic(left, right, bottom, top, nearPlane, farPlane));
+	static inline function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix {
+		return Matrix4.fromOrthographic(left, right, bottom, top, nearPlane, farPlane);
 	}
 
 	/** Returns a view looking from eye at target.
@@ -1311,8 +1115,8 @@ class RMath {
 		@param target  What at.
 		@param up  Up.
 		@return  The matrix. */
-	static function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
-		return toMatrix(Matrix4.fromLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z));
+	static inline function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix {
+		return Matrix4.fromLookAt(eye.x, eye.y, eye.z, target.x, target.y, target.z, up.x, up.y, up.z);
 	}
 
 	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader takes them.
@@ -1320,9 +1124,7 @@ class RMath {
 		@param mat  The matrix.
 		@return  The array. */
 	static function MatrixToFloatV(mat:Matrix):Array<Float> {
-		return [
-			mat.m0, mat.m1, mat.m2, mat.m3, mat.m4, mat.m5, mat.m6, mat.m7, mat.m8, mat.m9, mat.m10, mat.m11, mat.m12, mat.m13, mat.m14, mat.m15
-		];
+		return mat.toArray();
 	}
 
 	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` take them. raymath's macro for
@@ -1494,41 +1296,16 @@ class RMath {
 
 		@param mat  The matrix.
 		@return  The quaternion. */
-	static function QuaternionFromMatrix(mat:Matrix):Quaternion {
-		var fourWSquaredMinus1 = mat.m0 + mat.m5 + mat.m10;
-		var fourXSquaredMinus1 = mat.m0 - mat.m5 - mat.m10;
-		var fourYSquaredMinus1 = mat.m5 - mat.m0 - mat.m10;
-		var fourZSquaredMinus1 = mat.m10 - mat.m0 - mat.m5;
-		var biggestIndex = 0;
-		var fourBiggestSquaredMinus1 = fourWSquaredMinus1;
-		if (fourXSquaredMinus1 > fourBiggestSquaredMinus1) {
-			fourBiggestSquaredMinus1 = fourXSquaredMinus1;
-			biggestIndex = 1;
-		}
-		if (fourYSquaredMinus1 > fourBiggestSquaredMinus1) {
-			fourBiggestSquaredMinus1 = fourYSquaredMinus1;
-			biggestIndex = 2;
-		}
-		if (fourZSquaredMinus1 > fourBiggestSquaredMinus1) {
-			fourBiggestSquaredMinus1 = fourZSquaredMinus1;
-			biggestIndex = 3;
-		}
-		var biggestVal = Math.sqrt(fourBiggestSquaredMinus1 + 1) * .5;
-		var mult = .25 / biggestVal;
-		return switch biggestIndex {
-			case 0: new Quaternion((mat.m6 - mat.m9) * mult, (mat.m8 - mat.m2) * mult, (mat.m1 - mat.m4) * mult, biggestVal);
-			case 1: new Quaternion(biggestVal, (mat.m1 + mat.m4) * mult, (mat.m8 + mat.m2) * mult, (mat.m6 - mat.m9) * mult);
-			case 2: new Quaternion((mat.m1 + mat.m4) * mult, biggestVal, (mat.m6 + mat.m9) * mult, (mat.m8 - mat.m2) * mult);
-			case _: new Quaternion((mat.m8 + mat.m2) * mult, (mat.m6 + mat.m9) * mult, biggestVal, (mat.m1 - mat.m4) * mult);
-		}
+	static inline function QuaternionFromMatrix(mat:Matrix):Quaternion {
+		return Quaternion.fromRotationMatrix(mat);
 	}
 
 	/** Returns a quaternion's rotation as a matrix.
 
 		@param q  The quaternion.
 		@return  The matrix. */
-	static function QuaternionToMatrix(q:Quaternion):Matrix {
-		return toMatrix(Matrix4.fromQuaternion(q.x, q.y, q.z, q.w));
+	static inline function QuaternionToMatrix(q:Quaternion):Matrix {
+		return q.toMatrix();
 	}
 
 	/** Returns the rotation about an axis as a quaternion, normalized.
@@ -1609,73 +1386,26 @@ class RMath {
 
 	/** Splits a transform matrix into its translation, rotation and scale.
 
-		Makes the columns orthonormal one after another. The orthonormal columns are the rotation, and their lengths are the scale.
-
-		Drops any shear between the columns.
-
-		Decomposing a matrix that mirrors negates all three components of the scale.
+		A matrix that shears gives the nearest rotation and the scale along that rotation's axes, the shear lost. One that mirrors gives
+		a scale less than 0 along each axis.
 
 		@param mat  The matrix.
 		@param translation  Set to its translation.
 		@param rotation  Set to its rotation.
 		@param scale  Set to its scale. */
 	static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quaternion, scale:Vector3):Void {
-		var eps = 1e-9;
-		translation.x = mat.m12;
-		translation.y = mat.m13;
-		translation.z = mat.m14;
-		var columns = [
-			new Vector3(mat.m0, mat.m1, mat.m2),
-			new Vector3(mat.m4, mat.m5, mat.m6),
-			new Vector3(mat.m8, mat.m9, mat.m10)
-		];
-		var shear = [0., 0., 0.];
-		var scl = new Vector3();
-		// Dividing by the largest element first keeps it stable.
-		var stabilizer = eps;
-		for (c in columns) {
-			stabilizer = fmaxf(stabilizer, Math.abs(c.x));
-			stabilizer = fmaxf(stabilizer, Math.abs(c.y));
-			stabilizer = fmaxf(stabilizer, Math.abs(c.z));
+		mat.decompose(translation, rotation, scale);
+		// helix-math mirrors along x alone. raylib's mirrors along all three: the same matrix, its rotation half a turn about its x.
+		if (scale.x < 0) {
+			scale.set(scale.x, -scale.y, -scale.z);
+			rotation.set(rotation.w, rotation.z, -rotation.y, -rotation.x);
 		}
-		for (i in 0...3)
-			columns[i] = Vector3Scale(columns[i], 1 / stabilizer);
-		scl.x = Vector3Length(columns[0]);
-		if (scl.x > eps)
-			columns[0] = Vector3Scale(columns[0], 1 / scl.x);
-		// The second column made orthogonal to the first.
-		shear[0] = Vector3DotProduct(columns[0], columns[1]);
-		columns[1] = Vector3Subtract(columns[1], Vector3Scale(columns[0], shear[0]));
-		scl.y = Vector3Length(columns[1]);
-		if (scl.y > eps) {
-			columns[1] = Vector3Scale(columns[1], 1 / scl.y);
-			shear[0] /= scl.y;
-		}
-		// The third to both.
-		shear[1] = Vector3DotProduct(columns[0], columns[2]);
-		columns[2] = Vector3Subtract(columns[2], Vector3Scale(columns[0], shear[1]));
-		shear[2] = Vector3DotProduct(columns[1], columns[2]);
-		columns[2] = Vector3Subtract(columns[2], Vector3Scale(columns[1], shear[2]));
-		scl.z = Vector3Length(columns[2]);
-		if (scl.z > eps)
-			columns[2] = Vector3Scale(columns[2], 1 / scl.z);
-		// A rotation, not a mirror: det 1.
-		if (Vector3DotProduct(columns[0], Vector3CrossProduct(columns[1], columns[2])) < 0) {
-			scl = Vector3Negate(scl);
-			for (i in 0...3)
-				columns[i] = Vector3Negate(columns[i]);
-		}
-		var s = Vector3Scale(scl, stabilizer);
-		scale.x = s.x;
-		scale.y = s.y;
-		scale.z = s.z;
-		var r = QuaternionFromMatrix(new Matrix(columns[0].x, columns[1].x, columns[2].x, 0, columns[0].y, columns[1].y, columns[2].y, 0, columns[0].z,
-			columns[1].z, columns[2].z, 0, 0, 0, 0, 1));
-		rotation.x = r.x;
-		rotation.y = r.y;
-		rotation.z = r.z;
-		rotation.w = r.w;
 	}
+
+	// The matrix Vector3Unproject inverts, and the rotation MatrixRotateXYZ's matrix is made from, reused.
+	static final unprojection = new Matrix4();
+
+	static final turn = new Quaternion();
 
 	// A number as C's float holds it.
 	static inline function f32(x:Float):Float {

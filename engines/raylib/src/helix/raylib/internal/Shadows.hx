@@ -381,19 +381,20 @@ class Shadows {
 		Matrix4.compose(cameraView, cameraProjection, scratch);
 		if (scratch.invert(inverse) == null)
 			inverse.makeIdentity();
-		var m = inverse.values, w = cameraView.values;
+		var m = inverse, w = cameraView;
 		for (k in 0...8) {
 			var x = k & 1 == 0 ? -1. : 1,
 				y = k & 2 == 0 ? -1. : 1,
 				z = k < 4 ? -1. : 1;
-			var h = m[3] * x + m[7] * y + m[11] * z + m[15];
+			var h = m.m3 * x + m.m7 * y + m.m11 * z + m.m15;
 			if (Math.abs(h) < 1e-12)
 				h = 1e-12;
-			for (axis in 0...3)
-				corners[k * 3 + axis] = (m[axis] * x + m[4 + axis] * y + m[8 + axis] * z + m[12 + axis]) / h;
+			corners[k * 3] = (m.m0 * x + m.m4 * y + m.m8 * z + m.m12) / h;
+			corners[k * 3 + 1] = (m.m1 * x + m.m5 * y + m.m9 * z + m.m13) / h;
+			corners[k * 3 + 2] = (m.m2 * x + m.m6 * y + m.m10 * z + m.m14) / h;
 		}
-		corners[24] = -(w[2] * corners[0] + w[6] * corners[1] + w[10] * corners[2] + w[14]);
-		corners[25] = -(w[2] * corners[12] + w[6] * corners[13] + w[10] * corners[14] + w[14]);
+		corners[24] = -(w.m2 * corners[0] + w.m6 * corners[1] + w.m10 * corners[2] + w.m14);
+		corners[25] = -(w.m2 * corners[12] + w.m6 * corners[13] + w.m10 * corners[14] + w.m14);
 	}
 
 	// The shadow map, of a size and at least a number of layers: the last one, or a new one, the old freed once the frame is drawn.

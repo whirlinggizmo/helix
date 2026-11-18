@@ -197,9 +197,7 @@ class Ray3D {
 		@param out  Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) give them.
 		@return  The nearest hit; null when it meets none. */
 	public function intersectMesh(mesh:Mesh3D, ?transform:Matrix4, ?out:RayHit3D):Null<RayHit3D> {
-		var p = mesh.positions,
-			indices = mesh.indices,
-			m = transform == null ? null : transform.values;
+		var p = mesh.positions, indices = mesh.indices, m = transform;
 		var best = Math.POSITIVE_INFINITY, bestTriangle = -1;
 		var corners = scratch;
 		for (k in 0...mesh.triangleCount) {
@@ -207,9 +205,9 @@ class Ray3D {
 				var i = (indices == null ? k * 3 + c : indices[k * 3 + c]) * 3;
 				var x = p[i], y = p[i + 1], z = p[i + 2];
 				if (m != null) {
-					corners[c * 3] = m[0] * x + m[4] * y + m[8] * z + m[12];
-					corners[c * 3 + 1] = m[1] * x + m[5] * y + m[9] * z + m[13];
-					corners[c * 3 + 2] = m[2] * x + m[6] * y + m[10] * z + m[14];
+					corners[c * 3] = m.m0 * x + m.m4 * y + m.m8 * z + m.m12;
+					corners[c * 3 + 1] = m.m1 * x + m.m5 * y + m.m9 * z + m.m13;
+					corners[c * 3 + 2] = m.m2 * x + m.m6 * y + m.m10 * z + m.m14;
 				} else {
 					corners[c * 3] = x;
 					corners[c * 3 + 1] = y;

@@ -177,16 +177,18 @@ def links(ladder):
     it names, a declaration naming nothing the
     rung links, a declaration naming a package of BY_CLASS whole, the standard library's run-time type inspection (Type, ValueType, haxe.rtti, js.Boot.getClass) linked, or a library's
     @:keep (tools/haxe/Kept.hx) is a problem. Interfaces, externs and abstracts' implementations aren't counted: the compiler keeps
-    those of its own. Returns the problems."""
+    those of its own, and a class comes with the declared classes extending it. Returns the problems."""
     problems, declared, reported = [], set(), set()
     for rung in rungs(ladder):
         name = f'{ladder} {rung.name}'
         root = ElementTree.parse(OUT / ladder / rung.name / 'app.xml').getroot()
-        kept, adds = {}, []
+        kept, adds, parents = {}, [], {}
         for e in root:
             path = e.get('path')
             if e.tag not in ('class', 'enum') or e.get('extern'):
                 continue
+            if e.find('extends') is not None:
+                parents[path] = e.find('extends').get('path')
             if path == 'Main':
                 adds = [json.loads(v.text) for m in e.iter('m') if m.get('n') == ':adds' for v in m.findall('e')]
             elif (path.startswith(LIBRARY_PREFIX) or path in WATCHED) and not e.get('interface') and '_Impl_' not in path:
@@ -201,8 +203,13 @@ def links(ladder):
             if not any(declaration in units for units in kept.values()):
                 problems.append(f'{name} declares {declaration} in @:adds, which it doesn\'t link')
         declared |= set(adds)
+        inherited = set()
+        for path, units in kept.items():
+            while units & declared and path in parents:
+                path = parents[path]
+                inherited.add(path)
         for path, units in sorted(kept.items()):
-            if not units & declared and path not in reported:
+            if not units & declared and path not in inherited and path not in reported:
                 problems.append(f'{name} links {path}, which no rung up to it declares in @:adds')
                 reported.add(path)
         for marked in json.loads((OUT / ladder / rung.name / 'kept.json').read_text(encoding='utf-8')):

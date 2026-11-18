@@ -30,8 +30,9 @@ class Transform3DTests {
 	}
 
 	static function matrixIs(m:Matrix4, values:Array<Float>, tolerance = 1e-12):Bool {
+		var numbers = m.toArray();
 		for (i in 0...16)
-			if (!near(m.values[i], values[i], tolerance))
+			if (!near(numbers[i], values[i], tolerance))
 				return false;
 		return true;
 	}
@@ -228,7 +229,7 @@ class Transform3DTests {
 		]) {
 			var original = made.toMatrix(),
 				back = Transform3D.fromMatrix(original);
-			check(matrixIs(back.toMatrix(), original.values, 1e-12), 'back from its matrix, the same matrix (${original.values})');
+			check(matrixIs(back.toMatrix(), original.toArray(), 1e-12), 'back from its matrix, the same matrix (${original.toArray()})');
 		}
 		var back = Transform3D.fromMatrix(sample().toMatrix(), t);
 		var sampled = sample().rotation;
@@ -259,8 +260,7 @@ class Transform3DTests {
 			3,
 			1
 		];
-		for (i in 0...16)
-			sheared.values[i] = shear[i];
+		Matrix4.fromArray(shear, 0, sheared);
 		var nearest = Transform3D.fromMatrix(sheared);
 		check(turnsAs(nearest.rotation,
 			[

@@ -755,7 +755,7 @@ function toMatrix4(?out:Matrix4):Matrix4
 
 Represents a 4 x 4 matrix transforming points in 3 dimensions: moving, turning, scaling and projecting them.
 
-It acts on column vectors and is stored by columns, as GPUs take it, so `values` can be sent to a shader as they are. A static `fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix (`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this matrix unchanged; given this matrix, it changes it in place (`m.transpose(m)`). The out may be this matrix or any other argument, and none of them allocates when given one, so a caller can reuse one matrix every frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
+It acts on column vectors, and its 16 numbers are `m0` to `m15` by columns, as GPUs take them: row r of column c is number c * 4 + r, and the translation is `m12`, `m13` and `m14`. `toArray` gives the 16 numbers a shader takes. A static `fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix (`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this matrix unchanged; given this matrix, it changes it in place (`m.transpose(m)`). The out may be this matrix or any other argument, and none of them allocates when given one, so a caller can reuse one matrix every frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
 
 ```haxe
 var model = Matrix4.fromScale(2, 2, 2);
@@ -765,16 +765,35 @@ var mvp = Matrix4.compose(model, view).append(projection);
 
 ```haxe
 function new()
+static function fromArray(values:Array<Float>, ?offset:Int = 0, ?out:Matrix4):Matrix4
 static function fromTranslation(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
 static function fromScale(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
 static function fromRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix4):Matrix4
 static function fromQuaternion(x:Float, y:Float, z:Float, w:Float, ?out:Matrix4):Matrix4
+static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Matrix4):Matrix4
 static function fromLookAt(eyeX:Float, eyeY:Float, eyeZ:Float, targetX:Float, targetY:Float, targetZ:Float, upX:Float, upY:Float, upZ:Float, ?out:Matrix4):Matrix4
 static function fromPerspective(fovY:Float, aspect:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
 static function fromOrthographic(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
 static function fromFrustum(left:Float, right:Float, bottom:Float, top:Float, near:Float, far:Float, ?out:Matrix4):Matrix4
 static function compose(first:Matrix4, second:Matrix4, ?out:Matrix4):Matrix4
-final values:Array<Float>
+var m0(get, set):Float
+var m1(get, set):Float
+var m2(get, set):Float
+var m3(get, set):Float
+var m4(get, set):Float
+var m5(get, set):Float
+var m6(get, set):Float
+var m7(get, set):Float
+var m8(get, set):Float
+var m9(get, set):Float
+var m10(get, set):Float
+var m11(get, set):Float
+var m12(get, set):Float
+var m13(get, set):Float
+var m14(get, set):Float
+var m15(get, set):Float
+var determinant(get, never):Float
+var trace(get, never):Float
 function makeIdentity():Matrix4
 function copyFrom(other:Matrix4):Matrix4
 function append(other:Matrix4, ?out:Matrix4):Matrix4
@@ -784,11 +803,24 @@ function appendScale(x:Float, y:Float, z:Float, ?out:Matrix4):Matrix4
 function appendRotation(axisX:Float, axisY:Float, axisZ:Float, radians:Float, ?out:Matrix4):Matrix4
 function invert(?out:Matrix4):Null<Matrix4>
 function transpose(?out:Matrix4):Matrix4
+function add(other:Matrix4, ?out:Matrix4):Matrix4
+function subtract(other:Matrix4, ?out:Matrix4):Matrix4
 function transformPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
 function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
+function projectPoint(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
+function toArray(?out:Array<Float>, ?offset:Int = 0):Array<Float>
+function getTranslation(?out:Vector3):Vector3
+function getRotation(?out:Quaternion):Quaternion
+function getScale(?out:Vector3):Vector3
+function decompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Void
 ```
 
 - `new`: Creates the identity matrix.
+- `fromArray`: Returns the matrix of 16 numbers of an array, by columns.
+  - `values`: The array.
+  - `offset`: Optional. Where in the array the first of the 16 numbers is; defaults to 0.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
 - `fromTranslation`: Returns a translation.
   - `x`: Along x.
   - `y`: Along y.
@@ -813,6 +845,12 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
   - `y`: Its y.
   - `z`: Its z.
   - `w`: Its w.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
+  - returns: The matrix.
+- `fromEuler`: Returns the rotation of three turns, around x, then y, then z, each around the world's axes. `Quaternion.fromEuler` gives the same rotation as a quaternion.
+  - `pitch`: The turn around x, in radians.
+  - `yaw`: The turn around y, in radians.
+  - `roll`: The turn around z, in radians.
   - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 - `fromLookAt`: Returns a view from an eye looking at a target.
@@ -857,7 +895,24 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
   - `second`: The transform applied after it.
   - `out`: Optional. The matrix to fill; a new one when omitted. It may be first or second.
   - returns: The matrix.
-- `values`: Gets the 16 numbers, by columns: row r of column c at `values[c * 4 + r]`; the translation at 12, 13 and 14.
+- `m0`: Gets or sets the number in row 0 of column 0.
+- `m1`: Gets or sets the number in row 1 of column 0.
+- `m2`: Gets or sets the number in row 2 of column 0.
+- `m3`: Gets or sets the number in row 3 of column 0.
+- `m4`: Gets or sets the number in row 0 of column 1.
+- `m5`: Gets or sets the number in row 1 of column 1.
+- `m6`: Gets or sets the number in row 2 of column 1.
+- `m7`: Gets or sets the number in row 3 of column 1.
+- `m8`: Gets or sets the number in row 0 of column 2.
+- `m9`: Gets or sets the number in row 1 of column 2.
+- `m10`: Gets or sets the number in row 2 of column 2.
+- `m11`: Gets or sets the number in row 3 of column 2.
+- `m12`: Gets or sets the number in row 0 of column 3: the translation's x.
+- `m13`: Gets or sets the number in row 1 of column 3: the translation's y.
+- `m14`: Gets or sets the number in row 2 of column 3: the translation's z.
+- `m15`: Gets or sets the number in row 3 of column 3.
+- `determinant`: Gets this matrix's determinant: 0 when the matrix has no inverse.
+- `trace`: Gets this matrix's trace: the sum of the four numbers on its diagonal.
 - `makeIdentity`: Makes this matrix the identity.
   - returns: This matrix.
 - `copyFrom`: Sets this to another matrix's values.
@@ -896,6 +951,14 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
 - `transpose`: Returns this matrix transposed: its rows made columns.
   - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix.
   - returns: The transpose.
+- `add`: Returns this matrix plus another, number by number.
+  - `other`: The matrix to add.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix or the other.
+  - returns: The sum.
+- `subtract`: Returns this matrix less another, number by number.
+  - `other`: The matrix to subtract.
+  - `out`: Optional. The matrix to fill; a new one when omitted. It may be this matrix or the other.
+  - returns: The difference.
 - `transformPoint`: Computes where a point goes, translation included.
   - `x`: The point's x.
   - `y`: Its y.
@@ -908,6 +971,35 @@ function transformDirection(x:Float, y:Float, z:Float, ?out:Vector3):Vector3
   - `z`: Its z.
   - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The direction.
+- `projectPoint`: Computes where a point goes through a projection: transformed, then divided by the w the matrix gives the point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: The point's z.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The point.
+- `toArray`: Returns the matrix's 16 numbers as an array, by columns, as a shader takes them.
+  - `out`: Optional. The array to fill; a new one when omitted.
+  - `offset`: Optional. Where in the array the first of the 16 numbers goes; defaults to 0.
+  - returns: The array.
+- `getTranslation`: Returns the matrix's translation.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The translation.
+- `getRotation`: Returns the matrix's rotation, its scale and translation left out.
+  - `out`: Optional. The rotation to fill; a new one when omitted.
+  - returns: The rotation.
+
+  A matrix that mirrors is taken as mirrored along x, so the way it faces and its up are kept. See `decompose` for a matrix that shears.
+- `getScale`: Returns the matrix's scale: the lengths of its x, y and z axes.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The scale along x, y and z.
+
+  A matrix that mirrors gives an x scale less than 0. See `decompose` for a matrix that shears.
+- `decompose`: Takes this transform apart into a translation, a rotation and a scale.
+  - `translation`: Filled with the translation.
+  - `rotation`: Filled with the rotation.
+  - `scale`: Filled with the scale along x, y and z.
+
+  A matrix that shears gives the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear lost. One that mirrors gives an x scale less than 0, so the way it faces and its up are kept.
 
 ## Quaternion
 
@@ -934,7 +1026,7 @@ static function fromAxisAngle(axisX:Float, axisY:Float, axisZ:Float, radians:Flo
 static function fromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion
 static function fromLookRotation(forwardX:Float, forwardY:Float, forwardZ:Float, ?upX:Float = 0., ?upY:Float = 1., ?upZ:Float = 0., ?out:Quaternion):Quaternion = { upZ : 0., upY : 1., upX : 0. }
 static function fromBetween(from:Vector3, to:Vector3, ?out:Quaternion):Quaternion
-static function fromMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion
+static function fromRotationMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion
 static function slerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion
 static function nlerp(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion
 static function hermite(from:Quaternion, fromTangent:Quaternion, to:Quaternion, toTangent:Quaternion, amount:Float, ?out:Quaternion):Quaternion
@@ -993,10 +1085,12 @@ function toMatrix(?out:Matrix4):Matrix4
   - returns: The rotation.
 
   Opposite directions give half a turn around an axis square to them. A direction of length 0 gives the identity.
-- `fromMatrix`: Returns the rotation of a matrix, its scale ignored.
-  - `matrix`: The matrix: a rotation, scale and translation.
+- `fromRotationMatrix`: Returns the rotation of a matrix that is a rotation alone.
+  - `matrix`: The rotation matrix: its three axes of length 1 and square to one another.
   - `out`: Optional. The rotation to fill; a new one when omitted.
   - returns: The rotation.
+
+  A matrix with a scale or a shear gives a quaternion that isn't a rotation. See `Matrix4.getRotation` for a matrix with a scale.
 - `slerp`: Returns the rotation part way from one rotation to another along the shortest arc, at an even speed (slerp).
   - `from`: The rotation at 0.
   - `to`: The rotation at 1.

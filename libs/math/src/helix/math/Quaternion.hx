@@ -157,28 +157,15 @@ class Quaternion {
 		return result(out, px / length, py / length, pz / length, 0);
 	}
 
-	/** Returns the rotation of a matrix, its scale ignored.
+	/** Returns the rotation of a matrix that is a rotation alone.
 
-		@param matrix  The matrix: a rotation, scale and translation.
+		A matrix with a scale or a shear gives a quaternion that isn't a rotation. See `Matrix4.getRotation` for a matrix with a scale.
+
+		@param matrix  The rotation matrix: its three axes of length 1 and square to one another.
 		@param out  Optional. The rotation to fill; a new one when omitted.
 		@return  The rotation. */
-	public static function fromMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion {
-		var v = matrix.values;
-		var x = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]),
-			y = Math.sqrt(v[4] * v[4] + v[5] * v[5] + v[6] * v[6]),
-			z = Math.sqrt(v[8] * v[8] + v[9] * v[9] + v[10] * v[10]);
-		if (x == 0)
-			x = 1;
-		if (y == 0)
-			y = 1;
-		if (z == 0)
-			z = 1;
-		// A mirroring matrix has a scale less than 0, taken as its x's, so the way it faces and its up are kept.
-		var determinant = v[0] * (v[5] * v[10] - v[6] * v[9]) - v[4] * (v[1] * v[10] - v[2] * v[9]) + v[8] * (v[1] * v[6] - v[2] * v[5]);
-		if (determinant < 0)
-			x = -x;
-		var rotation = fromBasis(v[0] / x, v[1] / x, v[2] / x, v[4] / y, v[5] / y, v[6] / y, v[8] / z, v[9] / z, v[10] / z, out);
-		return rotation.normalize(rotation);
+	public static function fromRotationMatrix(matrix:Matrix4, ?out:Quaternion):Quaternion {
+		return inline fromBasis(matrix.m0, matrix.m1, matrix.m2, matrix.m4, matrix.m5, matrix.m6, matrix.m8, matrix.m9, matrix.m10, out);
 	}
 
 	/** Returns the rotation part way from one rotation to another along the shortest arc, at an even speed (slerp).
@@ -487,6 +474,8 @@ class Quaternion {
 
 	// The rotation whose own x, y and z axes are these, each of length 1 and square to the others: raymath's QuaternionFromMatrix,
 	// from the largest of the four parts, so none is found by dividing by a small one.
+
+	@:allow(helix.math)
 	static function fromBasis(xx:Float, xy:Float, xz:Float, yx:Float, yy:Float, yz:Float, zx:Float, zy:Float, zz:Float, ?out:Quaternion):Quaternion {
 		var w4 = xx + yy + zz,
 			x4 = xx - yy - zz,

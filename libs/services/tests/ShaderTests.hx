@@ -162,7 +162,7 @@ class ShaderTests {
 		v.write(s.getUniform("offsetScale"), Vector(1, 2, 3, 4));
 		check(v.uniforms[0].getFloat(12) == 4, "a value held as data");
 		var m = new Matrix4();
-		check(m.values.length == 16, "a matrix's values");
+		check(m.toArray().length == 16, "a matrix's 16 numbers");
 		v.writeTexture(s.getSampler("image"), 42, Sampling.NEAREST);
 		check(v.textures.join(",") == "42,0,0" && v.samplings[0] == Sampling.NEAREST && v.samplings[1] == Sampling.LINEAR, "textures and samplings by slot");
 		v.writeSamplerValue(s.getSampler("sky"), Texture(7));

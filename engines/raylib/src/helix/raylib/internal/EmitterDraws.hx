@@ -217,9 +217,8 @@ class EmitterDraws {
 		var values = p.values, n = e.capacity;
 		// The camera's right and up in the world: the view's first two rows, up turned over where the projection turns y over (the
 		// screen's, a pixel a unit).
-		var v = frame.view.values,
-			flip = frame.projection.values[5] < 0 ? -1. : 1.;
-		var rx = v[0], ry = v[4], rz = v[8], ux = v[1] * flip, uy = v[5] * flip, uz = v[9] * flip;
+		var v = frame.view, flip = frame.projection.m5 < 0 ? -1. : 1.;
+		var rx = v.m0, ry = v.m4, rz = v.m8, ux = v.m1 * flip, uy = v.m5 * flip, uz = v.m9 * flip;
 		var rl = Math.sqrt(rx * rx + ry * ry + rz * rz),
 			ul = Math.sqrt(ux * ux + uy * uy + uz * uz);
 		if (rl == 0)

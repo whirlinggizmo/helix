@@ -2,7 +2,7 @@
 its scale from the matrix's columns where 5.5 took the rows (QuaternionFromVector3ToVector3 is in core_62). shared/gen.py's syntax."""
 
 MATRICES = ['NEW(Matrix, 0.8, -0.6, 0, 3, 0.6, 0.8, 0, -1, 0, 0, 2, 0.5, 0, 0, 0, 1)',
-            'NEW(Matrix, 1, 2, 3, 4, 0.5, -1, 2, 1, 3, 0.25, -2, 0, 0.1, 0.2, 0.3, 1)',
+            'MatrixMultiply(MatrixScale(0.25, 4, 1.5), MatrixMultiply(MatrixRotate(V3(1, 2, -1), 2.5), MatrixTranslate(-4, 0.5, 2)))',
             'MatrixMultiply(MatrixScale(2, 0.5, 3), MatrixMultiply(MatrixRotateXYZ(V3(0.3, -0.7, 1.1)), MatrixTranslate(1, -2, 3)))',
             'MatrixMultiply(MatrixScale(-1, 2, 1), MatrixRotateY(0.4))']
 

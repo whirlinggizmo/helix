@@ -242,23 +242,22 @@ class Matrix3 {
 	public function toMatrix4(?out:Matrix4):Matrix4 {
 		if (out == null)
 			out = new Matrix4();
-		var v = out.values;
-		v[0] = a;
-		v[1] = b;
-		v[2] = 0;
-		v[3] = 0;
-		v[4] = c;
-		v[5] = d;
-		v[6] = 0;
-		v[7] = 0;
-		v[8] = 0;
-		v[9] = 0;
-		v[10] = 1;
-		v[11] = 0;
-		v[12] = tx;
-		v[13] = ty;
-		v[14] = 0;
-		v[15] = 1;
+		out.m0 = a;
+		out.m1 = b;
+		out.m2 = 0;
+		out.m3 = 0;
+		out.m4 = c;
+		out.m5 = d;
+		out.m6 = 0;
+		out.m7 = 0;
+		out.m8 = 0;
+		out.m9 = 0;
+		out.m10 = 1;
+		out.m11 = 0;
+		out.m12 = tx;
+		out.m13 = ty;
+		out.m14 = 0;
+		out.m15 = 1;
 		return out;
 	}
 

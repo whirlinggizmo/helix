@@ -164,7 +164,8 @@ PRINT = {'float': 'num', 'int': 'num', 'Vector2': 'vec2', 'Vector3': 'v3', 'Vect
 FIXED = {('Vector3Unproject', 'view'): ['NEW(Matrix, 0.8, -0.6, 0, 3, 0.6, 0.8, 0, -1, 0, 0, 2, 0.5, 0, 0, 0, 1)', 'NEW(Matrix, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1)'],
          ('Vector2Refract', 'r'): ['0.66', '1.5', '1'], ('Vector3Refract', 'r'): ['0.66', '1.5', '1']}
 # Ordinary input where helix-raylib gives helix-math's answer on the rest (DECISIONS 79): a clamp's bounds in order, a quaternion of
-# length 1 away from gimbal lock where a rotation is asked for, and a quaternion with a length to normalize.
+# length 1 away from gimbal lock where a rotation is asked for, a quaternion with a length to normalize, and a matrix with an inverse
+# to invert.
 ROTATIONS = ['NEW(Quaternion, 0.5, 0.5, 0.5, 0.5)', 'NEW(Quaternion, -0.5, -0.5, 0.5, 0.5)', 'NEW(Quaternion, 0.6, 0, 0, 0.8)',
              'NEW(Quaternion, 0.1, 0.5, 0.7, 0.5)', 'NEW(Quaternion, 0, 0, 0, 1)']
 FIXED.update({
@@ -175,6 +176,7 @@ FIXED.update({
     ('Vector3ClampValue', 'min'): ['0', '0.5', '1'], ('Vector3ClampValue', 'max'): ['2', '2.5', '4'],
     ('Vector3RotateByQuaternion', 'q'): ROTATIONS, ('QuaternionInvert', 'q'): ROTATIONS, ('QuaternionToEuler', 'q'): ROTATIONS,
     ('QuaternionNormalize', 'q'): [q for q in SAMPLES['Quaternion'] if q != 'NEW(Quaternion, 0, 0, 0, 0)'],
+    ('MatrixInvert', 'mat'): [m for m in SAMPLES['Matrix'] if m != 'NEW(Matrix, 1, 2, 3, 4, 2, 4, 6, 8, 0, 1, 0, 1, 0, 0, 0, 1)'],
 })
 
 # raylib 6.2's, taken where it fixed a bug (DECISIONS 24): in core_62 and raymath_62.

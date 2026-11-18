@@ -148,7 +148,7 @@ class Matrix3Tests {
 		var big = m1.toMatrix4(), given = new Matrix4();
 		var q = big.transformPoint(1.25, -2.5, 7);
 		check(at(new Vector2(q.x, q.y), 11.743738122493903, -10.125772186539436) && q.z == 7, "as a 4 x 4 matrix: the same point, z kept");
-		check(m1.toMatrix4(given) == given && given.values[12] == m1.tx && given.values[4] == m1.c && given.values[15] == 1, "into the one given");
+		check(m1.toMatrix4(given) == given && given.m12 == m1.tx && given.m4 == m1.c && given.m15 == 1, "into the one given");
 
 		// The interpreter multiplies Ints passed for Floats as Ints; whole numbers this large must still multiply as floats.
 		var large = new Matrix3().set(100000, 0, 0, 100000, 0, 0);

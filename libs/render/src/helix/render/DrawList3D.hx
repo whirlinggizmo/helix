@@ -528,12 +528,12 @@ class DrawList3D {
 	function boxed(b:Aabb3D, t:Matrix4):Void {
 		if (b.isEmpty)
 			return;
-		var m = t.values;
+		var m = t;
 		for (corner in 0...8) {
 			var x = corner & 1 == 0 ? b.minX : b.maxX,
 				y = corner & 2 == 0 ? b.minY : b.maxY,
 				z = corner & 4 == 0 ? b.minZ : b.maxZ;
-			bounds.expand(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]);
+			bounds.expand(m.m0 * x + m.m4 * y + m.m8 * z + m.m12, m.m1 * x + m.m5 * y + m.m9 * z + m.m13, m.m2 * x + m.m6 * y + m.m10 * z + m.m14);
 		}
 	}
 

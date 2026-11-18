@@ -568,12 +568,9 @@ class Batch3D {
 			}
 			if (lit)
 				posed.union(transformBox(mesh.bounds, copy, box), posed);
-			var at = instances.reserve(1),
-				b = instances.bytes,
-				m = copy.values;
+			var at = instances.reserve(1), b = instances.bytes;
 			b.blit(at, instanceTemplate, 0, GpuMesh3D.INSTANCE_STRIDE);
-			for (k in 0...16)
-				b.setFloat(at + k * 4, m[k]);
+			writeMatrix(b, at, copy);
 			bytesOf(b, at + 64, colors == null ? 0xffffffff : colors[i]);
 			kept++;
 		}
@@ -1426,8 +1423,27 @@ class Batch3D {
 		return inView(box);
 	}
 
-	static function transformBox(b:Aabb3D, matrix:Matrix4, out:Aabb3D):Aabb3D {
-		var m = matrix.values;
+	// Writes a matrix's 16 numbers, by columns, as floats.
+	static inline function writeMatrix(bytes:Bytes, at:Int, m:Matrix4):Void {
+		bytes.setFloat(at, m.m0);
+		bytes.setFloat(at + 4, m.m1);
+		bytes.setFloat(at + 2 * 4, m.m2);
+		bytes.setFloat(at + 3 * 4, m.m3);
+		bytes.setFloat(at + 4 * 4, m.m4);
+		bytes.setFloat(at + 5 * 4, m.m5);
+		bytes.setFloat(at + 6 * 4, m.m6);
+		bytes.setFloat(at + 7 * 4, m.m7);
+		bytes.setFloat(at + 8 * 4, m.m8);
+		bytes.setFloat(at + 9 * 4, m.m9);
+		bytes.setFloat(at + 10 * 4, m.m10);
+		bytes.setFloat(at + 11 * 4, m.m11);
+		bytes.setFloat(at + 12 * 4, m.m12);
+		bytes.setFloat(at + 13 * 4, m.m13);
+		bytes.setFloat(at + 14 * 4, m.m14);
+		bytes.setFloat(at + 15 * 4, m.m15);
+	}
+
+	static function transformBox(b:Aabb3D, m:Matrix4, out:Aabb3D):Aabb3D {
 		var empty = b.isEmpty, minX = b.minX, minY = b.minY, minZ = b.minZ, maxX = b.maxX, maxY = b.maxY, maxZ = b.maxZ;
 		out.makeEmpty();
 		if (empty)
@@ -1436,7 +1452,7 @@ class Batch3D {
 			var x = corner & 1 == 0 ? minX : maxX,
 				y = corner & 2 == 0 ? minY : maxY,
 				z = corner & 4 == 0 ? minZ : maxZ;
-			out.expand(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]);
+			out.expand(m.m0 * x + m.m4 * y + m.m8 * z + m.m12, m.m1 * x + m.m5 * y + m.m9 * z + m.m13, m.m2 * x + m.m6 * y + m.m10 * z + m.m14);
 		}
 		return out;
 	}
@@ -1614,11 +1630,8 @@ class Batch3D {
 		}
 		var data = chunk.bytes;
 		var at = chunk.used * 64;
-		for (i in 0...n) {
-			var m = skinning[i].values;
-			for (k in 0...16)
-				data.setFloat(at + i * 64 + k * 4, m[k]);
-		}
+		for (i in 0...n)
+			writeMatrix(data, at + i * 64, skinning[i]);
 		paletteOffset = chunk.used;
 		chunk.used += n;
 		paletteBones += n;
@@ -1810,8 +1823,8 @@ class Batch3D {
 			if (!inView(box))
 				return;
 		}
-		var v = viewPool[0].view.values;
-		var rx = v[0], ry = v[4], rz = v[8], ux = v[1], uy = v[5], uz = v[9];
+		var v = viewPool[0].view;
+		var rx = v.m0, ry = v.m4, rz = v.m8, ux = v.m1, uy = v.m5, uz = v.m9;
 		var cos = Math.cos(rotation),
 			sin = Math.sin(rotation),
 			hw = width / 2,

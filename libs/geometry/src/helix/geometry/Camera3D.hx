@@ -68,10 +68,9 @@ class Camera3D {
 		// The rotation's transpose undoes it, and the position, turned back, moves the world the other way.
 		var view = Matrix4.fromQuaternion(q.x, q.y, q.z, q.w, out);
 		view.transpose(view);
-		var v = view.values;
-		v[12] = -(v[0] * px + v[4] * py + v[8] * pz);
-		v[13] = -(v[1] * px + v[5] * py + v[9] * pz);
-		v[14] = -(v[2] * px + v[6] * py + v[10] * pz);
+		view.m12 = -(view.m0 * px + view.m4 * py + view.m8 * pz);
+		view.m13 = -(view.m1 * px + view.m5 * py + view.m9 * pz);
+		view.m14 = -(view.m2 * px + view.m6 * py + view.m10 * pz);
 		return view;
 	}
 
@@ -110,11 +109,11 @@ class Camera3D {
 	public function project(x:Float, y:Float, z:Float, aspect:Float, ?out:Vector3):Vector3 {
 		var x = real(x), y = real(y), z = real(z);
 		var view = computeViewMatrix(shared());
-		var m = view.append(computeProjectionMatrix(aspect, sharedProjection()), view).values;
-		var w = m[3] * x + m[7] * y + m[11] * z + m[15];
-		var px = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w,
-			py = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w,
-			pz = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
+		var m = view.append(computeProjectionMatrix(aspect, sharedProjection()), view);
+		var w = m.m3 * x + m.m7 * y + m.m11 * z + m.m15;
+		var px = (m.m0 * x + m.m4 * y + m.m8 * z + m.m12) / w,
+			py = (m.m1 * x + m.m5 * y + m.m9 * z + m.m13) / w,
+			pz = (m.m2 * x + m.m6 * y + m.m10 * z + m.m14) / w;
 		return out == null ? new Vector3(px, py, pz) : out.set(px, py, pz);
 	}
 

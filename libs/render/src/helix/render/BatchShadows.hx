@@ -291,19 +291,20 @@ class BatchShadows {
 		Matrix4.compose(v.viewMatrix, v.projectionMatrix, scratch);
 		if (scratch.invert(inverse) == null)
 			inverse.makeIdentity();
-		var m = inverse.values, w = v.viewMatrix.values;
+		var m = inverse, w = v.viewMatrix;
 		for (k in 0...8) {
 			var x = k & 1 == 0 ? -1. : 1,
 				y = k & 2 == 0 ? -1. : 1,
 				z = k < 4 ? -1. : 1;
-			var h = m[3] * x + m[7] * y + m[11] * z + m[15];
+			var h = m.m3 * x + m.m7 * y + m.m11 * z + m.m15;
 			if (Math.abs(h) < 1e-12)
 				h = 1e-12;
-			for (axis in 0...3)
-				corners[k * 3 + axis] = (m[axis] * x + m[4 + axis] * y + m[8 + axis] * z + m[12 + axis]) / h;
+			corners[k * 3] = (m.m0 * x + m.m4 * y + m.m8 * z + m.m12) / h;
+			corners[k * 3 + 1] = (m.m1 * x + m.m5 * y + m.m9 * z + m.m13) / h;
+			corners[k * 3 + 2] = (m.m2 * x + m.m6 * y + m.m10 * z + m.m14) / h;
 		}
 		inline function depth(k:Int):Float
-			return -(w[2] * corners[k * 3] + w[6] * corners[k * 3 + 1] + w[10] * corners[k * 3 + 2] + w[14]);
+			return -(w.m2 * corners[k * 3] + w.m6 * corners[k * 3 + 1] + w.m10 * corners[k * 3 + 2] + w.m14);
 		corners[24] = depth(0);
 		corners[25] = depth(4);
 	}
@@ -459,10 +460,9 @@ class BatchShadows {
 					reached = true;
 			if (!reached)
 				continue;
-			var at = stream.reserve(1), b = stream.bytes, m = copy.values;
+			var at = stream.reserve(1), b = stream.bytes;
 			b.blit(at, batch.instanceTemplate, 0, GpuMesh3D.INSTANCE_STRIDE);
-			for (k in 0...16)
-				b.setFloat(at + k * 4, m[k]);
+			Batch3D.writeMatrix(b, at, copy);
 			kept++;
 		}
 		if (kept == 0)

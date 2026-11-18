@@ -57,18 +57,9 @@ class Transform3D {
 		@param out  Optional. The transform to fill; a new one when omitted.
 		@return  The transform. */
 	public static function fromMatrix(matrix:Matrix4, ?out:Transform3D):Transform3D {
-		var v = matrix.values;
-		var m = [for (i in [0, 1, 2, 4, 5, 6, 8, 9, 10]) real(v[i])];
-		var u = nearestRotation(m);
-		var rotationMatrix = shared(), r = rotationMatrix.values;
-		for (column in 0...3)
-			for (row in 0...3)
-				r[column * 4 + row] = u[column * 3 + row];
 		if (out == null)
 			out = new Transform3D();
-		out.position.set(v[12], v[13], v[14]);
-		Quaternion.fromMatrix(rotationMatrix, out.rotation);
-		out.scale.set(u[0] * m[0] + u[1] * m[1] + u[2] * m[2], u[3] * m[3] + u[4] * m[4] + u[5] * m[5], u[6] * m[6] + u[7] * m[7] + u[8] * m[8]);
+		matrix.decompose(out.position, out.rotation, out.scale);
 		return out;
 	}
 
@@ -263,15 +254,18 @@ class Transform3D {
 	public function toMatrix(?out:Matrix4):Matrix4 {
 		var px = position.x, py = position.y, pz = position.z, sx = scale.x, sy = scale.y, sz = scale.z;
 		var matrix = Matrix4.fromQuaternion(rotation.x, rotation.y, rotation.z, rotation.w, out);
-		var v = matrix.values;
-		for (row in 0...3) {
-			v[row] *= sx;
-			v[4 + row] *= sy;
-			v[8 + row] *= sz;
-		}
-		v[12] = px;
-		v[13] = py;
-		v[14] = pz;
+		matrix.m0 *= sx;
+		matrix.m1 *= sx;
+		matrix.m2 *= sx;
+		matrix.m4 *= sy;
+		matrix.m5 *= sy;
+		matrix.m6 *= sy;
+		matrix.m8 *= sz;
+		matrix.m9 *= sz;
+		matrix.m10 *= sz;
+		matrix.m12 = px;
+		matrix.m13 = py;
+		matrix.m14 = pz;
 		return matrix;
 	}
 
@@ -322,108 +316,12 @@ class Transform3D {
 	static function wrapped(angle:Float):Float
 		return angle - Math.floor(angle / (Math.PI * 2)) * Math.PI * 2;
 
-	// The rotation nearest a 3 x 3 matrix, by columns, as 9 numbers by columns: its polar decomposition, by Newton's iteration (scaled,
-	// so a matrix scaled very unevenly takes few steps), a mirror taken out of its x axis. A matrix that flattens has none of its own,
-	// so its columns are made square to one another, longest first, and an axis it lacks is the cross product of the others.
-	static function nearestRotation(m:Array<Float>):Array<Float> {
-		var u = m.copy();
-		var determinant = cofactors(u, cofactor);
-		var flat = determinant == 0 || !Math.isFinite(determinant);
-		if (!flat) {
-			for (_ in 0...100) {
-				var size = 0., inverseSize = 0.;
-				for (i in 0...9) {
-					size += u[i] * u[i];
-					inverseSize += cofactor[i] * cofactor[i];
-				}
-				var gamma = Math.sqrt(Math.sqrt(inverseSize) / Math.abs(determinant) / Math.sqrt(size));
-				var change = 0.;
-				for (i in 0...9) {
-					var next = (gamma * u[i] + cofactor[i] / (gamma * determinant)) / 2;
-					change = Math.max(change, Math.abs(next - u[i]));
-					u[i] = next;
-				}
-				if (change < 1e-15)
-					break;
-				determinant = cofactors(u, cofactor);
-				if (determinant == 0 || !Math.isFinite(determinant)) {
-					flat = true;
-					break;
-				}
-			}
-			if (!flat
-				&& (m[0] * (m[4] * m[8] - m[5] * m[7]) - m[3] * (m[1] * m[8] - m[2] * m[7]) + m[6] * (m[1] * m[5] - m[2] * m[4])) < 0)
-				for (i in 0...3)
-					u[i] = -u[i];
-		}
-		if (flat) {
-			u = m.copy();
-			var lengths = [
-				for (c in 0...3)
-					Math.sqrt(u[c * 3] * u[c * 3] + u[c * 3 + 1] * u[c * 3 + 1] + u[c * 3 + 2] * u[c * 3 + 2])
-			];
-			var order = [0, 1, 2];
-			order.sort((p, q) -> lengths[p] > lengths[q] ? -1 : lengths[p] < lengths[q] ? 1 : p - q);
-			var first = order[0] * 3, second = order[1] * 3, third = order[2];
-			if (lengths[order[0]] == 0) {
-				u = [1., 0., 0., 0., 1., 0., 0., 0., 1.];
-				return u;
-			}
-			for (i in 0...3)
-				u[first + i] /= lengths[order[0]];
-			var dot = u[first] * u[second] + u[first + 1] * u[second + 1] + u[first + 2] * u[second + 2];
-			for (i in 0...3)
-				u[second + i] -= dot * u[first + i];
-			var length = Math.sqrt(u[second] * u[second] + u[second + 1] * u[second + 1] + u[second + 2] * u[second + 2]);
-			if (length < 1e-12) {
-				// Square to the first: the world axis it lies least along, its part along the first taken out.
-				var ax = Math.abs(u[first]),
-					ay = Math.abs(u[first + 1]),
-					az = Math.abs(u[first + 2]);
-				var pick = ax <= ay && ax <= az ? 0 : ay <= az ? 1 : 2;
-				for (i in 0...3)
-					u[second + i] = (i == pick ? 1 : 0) - u[first + pick] * u[first + i];
-				length = Math.sqrt(u[second] * u[second] + u[second + 1] * u[second + 1] + u[second + 2] * u[second + 2]);
-			}
-			for (i in 0...3)
-				u[second + i] /= length;
-			// Right-handed: each axis the cross product of the next two.
-			var p = ((third + 1) % 3) * 3, q = ((third + 2) % 3) * 3, r = third * 3;
-			u[r] = u[p + 1] * u[q + 2] - u[p + 2] * u[q + 1];
-			u[r + 1] = u[p + 2] * u[q] - u[p] * u[q + 2];
-			u[r + 2] = u[p] * u[q + 1] - u[p + 1] * u[q];
-		}
-		return u;
-	}
-
-	// The matrix's inverse transposed times its determinant, into out: each column the cross product of the other two. Returns the
-	// determinant.
-	static function cofactors(u:Array<Float>, out:Array<Float>):Float {
-		for (c in 0...3) {
-			var p = ((c + 1) % 3) * 3, q = ((c + 2) % 3) * 3;
-			out[c * 3] = u[p + 1] * u[q + 2] - u[p + 2] * u[q + 1];
-			out[c * 3 + 1] = u[p + 2] * u[q] - u[p] * u[q + 2];
-			out[c * 3 + 2] = u[p] * u[q + 1] - u[p + 1] * u[q];
-		}
-		return u[0] * out[0] + u[1] * out[1] + u[2] * out[2];
-	}
-
-	static final cofactor:Array<Float> = [for (_ in 0...9) 0.];
-
-	// A matrix, a rotation and two vectors the methods go through, reused.
-	static var matrix:Null<Matrix4> = null;
-
+	// A rotation and two vectors the methods go through, reused.
 	static var turn:Null<Quaternion> = null;
 
 	static var scratch:Null<Vector3> = null;
 
 	static var scratchAxis:Null<Vector3> = null;
-
-	static function shared():Matrix4 {
-		if (matrix == null)
-			matrix = new Matrix4();
-		return matrix;
-	}
 
 	static function quaternion():Quaternion {
 		if (turn == null)

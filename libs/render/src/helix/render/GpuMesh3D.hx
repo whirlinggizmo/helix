@@ -65,7 +65,7 @@ class GpuMesh3D {
 		if (out == null)
 			out = new Aabb3D();
 		out.makeEmpty();
-		var m = transform.values, p = positions;
+		var m = transform, p = positions;
 		for (v in 0...vertexCount) {
 			var x = p[v * 3], y = p[v * 3 + 1], z = p[v * 3 + 2];
 			if (skinning != null && joints != null) {
@@ -77,16 +77,16 @@ class GpuMesh3D {
 					var j = joints[v * 4 + k];
 					if (j >= skinning.length)
 						continue;
-					var s = skinning[j].values;
-					sx += w * (s[0] * x + s[4] * y + s[8] * z + s[12]);
-					sy += w * (s[1] * x + s[5] * y + s[9] * z + s[13]);
-					sz += w * (s[2] * x + s[6] * y + s[10] * z + s[14]);
+					var s = skinning[j];
+					sx += w * (s.m0 * x + s.m4 * y + s.m8 * z + s.m12);
+					sy += w * (s.m1 * x + s.m5 * y + s.m9 * z + s.m13);
+					sz += w * (s.m2 * x + s.m6 * y + s.m10 * z + s.m14);
 				}
 				x = sx;
 				y = sy;
 				z = sz;
 			}
-			out.expand(m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14]);
+			out.expand(m.m0 * x + m.m4 * y + m.m8 * z + m.m12, m.m1 * x + m.m5 * y + m.m9 * z + m.m13, m.m2 * x + m.m6 * y + m.m10 * z + m.m14);
 		}
 		return out;
 	}
@@ -363,19 +363,19 @@ class GpuMesh3D {
 			var b = jointBoxes[j];
 			if (b.isEmpty || j >= skinning.length)
 				continue;
-			var m = skinning[j].values;
+			var m = skinning[j];
 			var cx = (b.minX + b.maxX) * .5,
 				cy = (b.minY + b.maxY) * .5,
 				cz = (b.minZ + b.maxZ) * .5;
 			var hx = (b.maxX - b.minX) * .5,
 				hy = (b.maxY - b.minY) * .5,
 				hz = (b.maxZ - b.minZ) * .5;
-			var x = m[0] * cx + m[4] * cy + m[8] * cz + m[12],
-				y = m[1] * cx + m[5] * cy + m[9] * cz + m[13],
-				z = m[2] * cx + m[6] * cy + m[10] * cz + m[14];
-			var ex = Math.abs(m[0]) * hx + Math.abs(m[4]) * hy + Math.abs(m[8]) * hz,
-				ey = Math.abs(m[1]) * hx + Math.abs(m[5]) * hy + Math.abs(m[9]) * hz,
-				ez = Math.abs(m[2]) * hx + Math.abs(m[6]) * hy + Math.abs(m[10]) * hz;
+			var x = m.m0 * cx + m.m4 * cy + m.m8 * cz + m.m12,
+				y = m.m1 * cx + m.m5 * cy + m.m9 * cz + m.m13,
+				z = m.m2 * cx + m.m6 * cy + m.m10 * cz + m.m14;
+			var ex = Math.abs(m.m0) * hx + Math.abs(m.m4) * hy + Math.abs(m.m8) * hz,
+				ey = Math.abs(m.m1) * hx + Math.abs(m.m5) * hy + Math.abs(m.m9) * hz,
+				ez = Math.abs(m.m2) * hx + Math.abs(m.m6) * hy + Math.abs(m.m10) * hz;
 			out.expand(x - ex, y - ey, z - ez);
 			out.expand(x + ex, y + ey, z + ez);
 		}

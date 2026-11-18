@@ -111,27 +111,10 @@ class SceneLights {
 			return false;
 		if (transforms != null)
 			for (i in 0...count) {
-				var t = transforms[i];
-				instance[0] = t.m0;
-				instance[1] = t.m1;
-				instance[2] = t.m2;
-				instance[3] = t.m3;
-				instance[4] = t.m4;
-				instance[5] = t.m5;
-				instance[6] = t.m6;
-				instance[7] = t.m7;
-				instance[8] = t.m8;
-				instance[9] = t.m9;
-				instance[10] = t.m10;
-				instance[11] = t.m11;
-				instance[12] = t.m12;
-				instance[13] = t.m13;
-				instance[14] = t.m14;
-				instance[15] = t.m15;
-				place(local, instance, i > 0);
+				place(local, transforms[i].toArray(instance), i > 0);
 			}
 		else
-			place(local, model.values, false);
+			place(local, model.toArray(instance), false);
 		return true;
 	}
 

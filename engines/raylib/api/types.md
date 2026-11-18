@@ -385,9 +385,9 @@ var value:Float
 
 ## Matrix
 
-*class* in [`engines/raylib/src/helix/raylib/Matrix.hx`](../src/helix/raylib/Matrix.hx), `import helix.raylib.Matrix;`
+*abstract* in [`engines/raylib/src/helix/raylib/Matrix.hx`](../src/helix/raylib/Matrix.hx), `import helix.raylib.Matrix;`
 
-Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as raylib's is.
+Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as raylib's is. It is helix-math's `Matrix4` under raylib's names, so it has that type's operations too, each taking an out to fill, and passes for one without a copy.
 
 `m0, m4, m8, m12` is the first row.
 
@@ -395,32 +395,45 @@ Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as ra
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
-Written as an object where one is expected; a field marked `?` may be left out, for its default:
-
 ```haxe
-{?m0:Float, ?m4:Float, ?m8:Float, ?m12:Float, ?m1:Float, ?m5:Float, ?m9:Float, ?m13:Float, ?m2:Float, ?m6:Float, ?m10:Float, ?m14:Float, ?m3:Float, ?m7:Float, ?m11:Float, ?m15:Float}
-```
-
-```haxe
-var m0:Float
-var m4:Float
-var m8:Float
-var m12:Float
-var m1:Float
-var m5:Float
-var m9:Float
-var m13:Float
-var m2:Float
-var m6:Float
-var m10:Float
-var m14:Float
-var m3:Float
-var m7:Float
-var m11:Float
-var m15:Float
+function new(?m0:Float = 0., ?m4:Float = 0., ?m8:Float = 0., ?m12:Float = 0., ?m1:Float = 0., ?m5:Float = 0., ?m9:Float = 0., ?m13:Float = 0., ?m2:Float = 0., ?m6:Float = 0., ?m10:Float = 0., ?m14:Float = 0., ?m3:Float = 0., ?m7:Float = 0., ?m11:Float = 0., ?m15:Float = 0.)
+var m0(get, set):Float
+var m4(get, set):Float
+var m8(get, set):Float
+var m12(get, set):Float
+var m1(get, set):Float
+var m5(get, set):Float
+var m9(get, set):Float
+var m13(get, set):Float
+var m2(get, set):Float
+var m6(get, set):Float
+var m10(get, set):Float
+var m14(get, set):Float
+var m3(get, set):Float
+var m7(get, set):Float
+var m11(get, set):Float
+var m15(get, set):Float
+static function fromObject(matrix:{m9:Null<Float>, m8:Null<Float>, m7:Null<Float>, m6:Null<Float>, m5:Null<Float>, m4:Null<Float>, m3:Null<Float>, m2:Null<Float>, m15:Null<Float>, m14:Null<Float>, m13:Null<Float>, m12:Null<Float>, m11:Null<Float>, m10:Null<Float>, m1:Null<Float>, m0:Null<Float>}):Matrix
 function copy(?out:Matrix):Matrix
 ```
 
+- `new`: Creates a matrix from its 16 numbers, row by row. Each defaults to 0.
+  - `m0`: Row 1, column 1.
+  - `m4`: Row 1, column 2.
+  - `m8`: Row 1, column 3.
+  - `m12`: Row 1, column 4.
+  - `m1`: Row 2, column 1.
+  - `m5`: Row 2, column 2.
+  - `m9`: Row 2, column 3.
+  - `m13`: Row 2, column 4.
+  - `m2`: Row 3, column 1.
+  - `m6`: Row 3, column 2.
+  - `m10`: Row 3, column 3.
+  - `m14`: Row 3, column 4.
+  - `m3`: Row 4, column 1.
+  - `m7`: Row 4, column 2.
+  - `m11`: Row 4, column 3.
+  - `m15`: Row 4, column 4.
 - `m0`: Gets or sets row 1, column 1.
 - `m4`: Gets or sets row 1, column 2.
 - `m8`: Gets or sets row 1, column 3.
@@ -437,6 +450,8 @@ function copy(?out:Matrix):Matrix
 - `m7`: Gets or sets row 4, column 2.
 - `m11`: Gets or sets row 4, column 3.
 - `m15`: Gets or sets row 4, column 4.
+- `fromObject`: Creates a matrix from an object in braces, where a matrix is expected: `var m:Matrix = {m0: 1, m5: 1, m10: 1, m15: 1};`. A number left out is 0.
+  - `matrix`: The numbers, each named as a `Matrix`'s.
 - `copy`: Returns a separate copy.
   - `out`: Optional. The Matrix to copy into, so nothing is made; a new one when omitted.
   - returns: The copy: out, when given.
