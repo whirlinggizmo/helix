@@ -5,7 +5,7 @@ import helix.geometry.Camera2D;
 import helix.math.Matrix3;
 import helix.platform.Blend;
 import helix.services.shaders.ShaderValues;
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.math.Matrix4;
 import helix.platform.Sampling;
 import helix.services.shaders.Shader;

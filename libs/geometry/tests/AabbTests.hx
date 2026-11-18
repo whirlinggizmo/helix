@@ -1,6 +1,6 @@
-import helix.math.Aabb2D;
-import helix.math.Aabb3D;
-import helix.math.Sphere;
+import helix.geometry.Aabb2D;
+import helix.geometry.Aabb3D;
+import helix.geometry.Sphere;
 import helix.math.Vector3;
 
 /** Checks Aabb2D and Aabb3D with the library alone: made empty, grown by points and by other bounds, their sizes and centers,

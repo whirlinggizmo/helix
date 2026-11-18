@@ -1226,26 +1226,26 @@ Why things are the way they are, numbered, in order.
 
 83. **helix-math and helix-geometry carry what other engines' maths libraries carry.** `MathTools` holds the helpers on a plain
     number, as Haxe's `StringTools` holds a string's: `clamp`, `wrap`, `snap`, `sign`, `pingPong`, `toRadians`, `toDegrees`, the
-    `Int` `min`, `max` and `abs`, and the powers of two. `Interpolate` keeps what moves a value toward another. A turn by at most
-    a step is `rotateToward`, beside `moveToward`, on an angle, a `Quaternion`, a `Transform2D` and a `Transform3D`. Three turns
-    are made in any of six orders, named by `EulerOrder`. `Color` reads and makes a color by hue, saturation and lightness and in
-    linear light. `Random` gives a bell-shaped number, a point in or on a circle or a sphere, a direction in a cone and a
+    `Int` `min`, `max` and `abs`, and the powers of two. `Interpolate` keeps what moves a value toward another. A turn by at
+    most a step is `rotateToward`, beside `moveToward`, on an angle, a `Quaternion`, a `Transform2D` and a `Transform3D`. Three
+    turns are made in any of six orders, named by `EulerOrder`. `Color` reads and makes a color by hue, saturation and lightness
+    and in linear light. `Random` gives a bell-shaped number, a point in or on a circle or a sphere, a direction in a cone and a
     rotation. `Spring` eases a value to a target that may move. `Noise` gives Perlin, simplex, cellular and fractal noise.
-    `Plane` and `Sphere` are shapes beside `Aabb3D`, and helix-geometry's `Geometry3D` holds the nearest points on a segment and
-    a triangle. A shape's test takes a point as plain numbers and another shape as an object: `Ray3D.intersectSphere(sphere)`,
-    `Aabb3D.intersectsSphere(sphere)`, `Frustum.intersectsSphere(sphere)`, `Ray3D.intersectPlane(plane)`. The layers above call
-    these where they wrote the same thing: helix-render and helix-services decode and encode sRGB with `Color.srgbToLinear` and
-    `Color.linearToSrgb`.
+    helix-geometry holds every shape: `Plane` and `Sphere` are new there, `Aabb2D` and `Aabb3D` move there from helix-math, and
+    `Geometry3D` holds the nearest points on a segment and a triangle. A shape's test takes a point as plain numbers and another
+    shape as an object: `Ray3D.intersectSphere(sphere)`, `Aabb3D.intersectsSphere(sphere)`, `Frustum.intersectsSphere(sphere)`,
+    `Ray3D.intersectPlane(plane)`. The layers above call these where they wrote the same thing: helix-render and helix-services
+    decode and encode sRGB with `Color.srgbToLinear` and `Color.linearToSrgb`.
 
     `Image.perlinNoise` keeps its own noise, rounded to 32 bits at each step as stb_perlin's is in raylib's
     `GenImagePerlinNoise`. `Noise.fractal` in doubles gives 22 other pixels of 3,086,352 over ten images, each by 1 of 255.
 
-    Why: the libraries are judged by what another engine would find in Unity's, Godot's, three.js's or glm's maths. Each of these
-    is in one of them or more, and a program without them writes them again. `Noise`, `Random`'s samplers and `Trig` give the
-    same bits in a page and natively, which a simulation shared between the two needs.
+    Why: the libraries are judged by what another engine would find in Unity's, Godot's, three.js's or glm's maths. Each of
+    these is in one of them or more, and a program without them writes them again. `Noise`, `Random`'s samplers and `Trig` give
+    the same bits in a page and natively, which a simulation shared between the two needs.
 
     Rejected: `rotateTo` and `moveTo`, as the step may fall short of the target; a `Scalar` class for the helpers, as an `Int`'s
     `sign` and a power of two aren't scalars' alone; a sphere and a plane as loose numbers in each test, which every caller
-    unpacks and no test can hand on; `Plane` and `Sphere` in helix-geometry, which helix-math's `Aabb3D.intersectsSphere` would then
-    reach up for; a point as a `Vector3` in the shapes' tests, where every test before took plain numbers; `Image.perlinNoise`
-    forwarding to `Noise.fractal`, for the 22 pixels.
+    unpacks and no test can hand on; `Plane` and `Sphere` in helix-math beside the boxes, which splits the shapes between two
+    libraries and leaves a reader asking which library a sphere is in; a point as a `Vector3` in the shapes' tests, where every
+    test before took plain numbers; `Image.perlinNoise` forwarding to `Noise.fractal`, for the 22 pixels.

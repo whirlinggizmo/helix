@@ -1,10 +1,10 @@
 import helix.geometry.Mesh3D;
 import helix.geometry.Ray3D;
 import helix.geometry.RayHit3D;
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
-import helix.math.Plane;
-import helix.math.Sphere;
+import helix.geometry.Plane;
+import helix.geometry.Sphere;
 import helix.math.Vector3;
 
 /** Checks Ray3D with the library alone, against hits worked by hand: a plane from either side, along it and behind; a sphere from

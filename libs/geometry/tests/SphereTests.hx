@@ -1,6 +1,6 @@
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
-import helix.math.Sphere;
+import helix.geometry.Sphere;
 import helix.math.Vector3;
 
 /** Checks Sphere with the library alone, against answers worked by hand: made, set, copied and empty; around a box and around points

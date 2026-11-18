@@ -12,9 +12,7 @@ Math for games, in pure Haxe.
 - `Spring`: a value eased to a target that may move, the same whatever the frame's length.
 - `Ease`: an easing curve as a value, for a tween or any move from 0 to 1 to take: `Interpolate`'s thirty and a straight line.
 - `Curve`: curves through points or by control points, in 2D and 3D, and moving along them.
-- `Vector2`, `Vector3`, `Vector4`, `Aabb2D`, `Aabb3D`: vectors (positions and directions, their sums, products, lengths, blends and
-  turns) and axis-aligned boxes, and where boxes overlap.
-- `Plane`, `Sphere`: planes and spheres: distances, nearest points, what they touch, and each moved by a matrix.
+- `Vector2`, `Vector3`, `Vector4`: vectors: positions and directions, their sums, products, lengths, blends and turns.
 - `DistanceField2D`: a grid's distance transform, for distance fields.
 - `Color`: colors as 0xAARRGGBB integers: their channels, the CSS order, hue, saturation, value and lightness, linear light, mixing,
   laying one over another, tinting, brightening and contrasting.

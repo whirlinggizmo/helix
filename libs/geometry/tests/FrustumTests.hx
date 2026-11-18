@@ -1,8 +1,8 @@
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.geometry.Frustum;
 import helix.math.Matrix4;
-import helix.math.Plane;
-import helix.math.Sphere;
+import helix.geometry.Plane;
+import helix.geometry.Sphere;
 
 /** Checks Frustum with the library alone: made holding everything; its planes from a perspective and an orthographic view-projection,
 	pinned to Gribb and Hartmann's planes computed apart from Haxe; copied and filled into the one given; points, spheres and boxes

@@ -1,6 +1,6 @@
 package helix.render;
 
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 
 /** Represents how a light's shadows are made: its shadow map's size and reach, its bias against a surface shadowing itself, and how soft
 	and dark its shadows are.

@@ -1,6 +1,6 @@
 package helix.render;
 
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
 import helix.math.Vector3;
 

@@ -1,9 +1,6 @@
 package helix.geometry;
 
-import helix.math.Aabb3D;
 import helix.math.Matrix4;
-import helix.math.Plane;
-import helix.math.Sphere;
 import helix.math.Vector3;
 
 /** Represents a ray: a point it starts from and a direction it goes in, for picking and line of sight.

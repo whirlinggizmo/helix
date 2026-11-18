@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 
 /** Represents how a `VirtualGamepad` starts. Every field has a default, so options set only what they change. Its placement and dead
 	zone are both sticks' defaults. A field set in a stick's own options replaces it for that stick. Positions and sizes are framebuffer pixels. */

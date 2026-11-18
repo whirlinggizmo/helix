@@ -12,8 +12,8 @@ sys.path.insert(0,str(ROOT/'tools'))
 import pins  # noqa: E402
 pins.use_haxelib()
 # Each library's tests, run with that library alone on the interpreter and Node, and with --native in hxcpp.
-TESTS=(('helix-platform','PlatformTests'),('helix-log','LogTests'),*(('helix-math',m) for m in ('TrigTests','RandomTests','CurveTests','AabbTests','VectorTests','Matrix4Tests','Matrix3Tests','Transform2DTests','QuaternionTests','Transform3DTests','PlaneTests','SphereTests','InterpolateTests','MathToolsTests','SpringTests','NoiseTests','Grid2DTests','ColorTests')),
-      *(('helix-geometry',m) for m in ('GeometryTests','Geometry3DTests','Camera2DTests','FrustumTests','Camera3DTests','Ray3DTests','Mesh3DTests','AnimationTests')),
+TESTS=(('helix-platform','PlatformTests'),('helix-log','LogTests'),*(('helix-math',m) for m in ('TrigTests','RandomTests','CurveTests','VectorTests','Matrix4Tests','Matrix3Tests','Transform2DTests','QuaternionTests','Transform3DTests','InterpolateTests','MathToolsTests','SpringTests','NoiseTests','Grid2DTests','ColorTests')),
+      *(('helix-geometry',m) for m in ('AabbTests','PlaneTests','SphereTests','GeometryTests','Geometry3DTests','Camera2DTests','FrustumTests','Camera3DTests','Ray3DTests','Mesh3DTests','AnimationTests')),
       *(('helix-tweens',m) for m in ('TweenTests','TweenSequenceTests')),
       *(('helix-formats',m) for m in ('Utf8TextTests','GltfTests','ObjTests','BmFontTests','TrueTypeTests','DeflateTests','PngTests','QoiTests','QoaTests','GifTests','WavTests','AudioHeaderTests')),
       *(('helix-services',m) for m in ('ConfigTests','TimeTests','InputTests','VirtualGamepadTests','GesturesTests','SavesTests','AssetsTests','AudioTests','ImagesTests','ImageTests','ModelsTests','FontsTests','ScreenTests','ShaderTests')),

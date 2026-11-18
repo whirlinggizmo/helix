@@ -2,7 +2,7 @@ package helix.render;
 
 import helix.math.MathTools;
 import helix.geometry.Mesh3D;
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
 
 /** Represents a mesh on the GPU: its vertices and indices, uploaded once and drawn as often as wanted (`Batch3D.drawMesh`).

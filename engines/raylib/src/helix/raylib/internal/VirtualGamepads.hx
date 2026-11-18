@@ -1,6 +1,6 @@
 package helix.raylib.internal;
 
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.platform.IPollable;
 import helix.raylib.*;
 import helix.services.input.Touch;

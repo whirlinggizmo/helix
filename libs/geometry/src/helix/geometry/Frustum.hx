@@ -1,9 +1,6 @@
 package helix.geometry;
 
-import helix.math.Aabb3D;
 import helix.math.Matrix4;
-import helix.math.Plane;
-import helix.math.Sphere;
 
 /** Represents what a view sees: six planes bounding a volume, from any view-projection matrix.
 

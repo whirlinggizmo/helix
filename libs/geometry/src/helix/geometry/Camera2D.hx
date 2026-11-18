@@ -1,6 +1,5 @@
 package helix.geometry;
 
-import helix.math.Aabb2D;
 import helix.math.Matrix3;
 import helix.math.Transform2D;
 import helix.math.Trig;

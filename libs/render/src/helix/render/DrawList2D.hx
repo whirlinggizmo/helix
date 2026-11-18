@@ -1,6 +1,6 @@
 package helix.render;
 
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 
 /** Represents 2D drawing recorded once and replayed by a `Batch2D` as often as wanted (`Batch2D.drawList`), under a transform: a HUD
 	panel, a level's static decoration, a shape built of many calls.

@@ -1,4 +1,4 @@
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.math.Vector2;
 import helix.services.input.Gamepads;
 import helix.services.input.Tilt;

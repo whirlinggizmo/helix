@@ -1,4 +1,7 @@
-package helix.math;
+package helix.geometry;
+
+import helix.math.Matrix4;
+import helix.math.Vector3;
 
 /** Represents a plane: a point is on the plane when `normal` dot the point, plus `distance`, is 0, and in front of the plane when that
 	sum is above 0.

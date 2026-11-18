@@ -1,4 +1,6 @@
-package helix.math;
+package helix.geometry;
+
+import helix.math.Vector3;
 
 /** Represents an axis-aligned box in 3 dimensions: its least and greatest coordinate on each axis.
 

@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.platform.IGamepads;
 import helix.platform.IPollable;
 import helix.platform.IWindow;

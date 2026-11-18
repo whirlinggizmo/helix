@@ -25,10 +25,10 @@ import helix.services.images.Image;
 import helix.services.images.Images;
 
 /** A program on helix-render and what it sits on, constructing only what it uses, as a game built on them would. */
-@:adds("helix.geometry.Camera3D", "helix.geometry.Frustum", "helix.geometry.Mesh3D", "helix.math.Aabb3D", "helix.math.Quaternion", "helix.math.Transform3D",
-	"helix.math.Trig", "helix.math.Vector3", "helix.render.Batch3D", "helix.render.Fog3D", "helix.render.GpuMesh3D", "helix.render.Material3D",
-	"helix.render.MeshState3D", "helix.render.RenderFill", "helix.render.RenderView", "helix.render.View3D", "helix.services.shaders.ShaderBlockValues",
-	"helix.services.shaders.compiled")
+@:adds("helix.geometry.Camera3D", "helix.geometry.Frustum", "helix.geometry.Mesh3D", "helix.geometry.Aabb3D", "helix.math.Quaternion",
+	"helix.math.Transform3D", "helix.math.Trig", "helix.math.Vector3", "helix.render.Batch3D", "helix.render.Fog3D", "helix.render.GpuMesh3D",
+	"helix.render.Material3D", "helix.render.MeshState3D", "helix.render.RenderFill", "helix.render.RenderView", "helix.render.View3D",
+	"helix.services.shaders.ShaderBlockValues", "helix.services.shaders.compiled")
 class Main {
 	static var window:DomWindowAdapter;
 	static var events:DomEventsAdapter;

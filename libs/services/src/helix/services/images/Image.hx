@@ -3,7 +3,7 @@ package helix.services.images;
 import helix.math.MathTools;
 import haxe.ds.Vector;
 import haxe.io.Bytes;
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.math.Random;
 import helix.services.fonts.Font2D;
 import helix.services.fonts.Glyph2D;

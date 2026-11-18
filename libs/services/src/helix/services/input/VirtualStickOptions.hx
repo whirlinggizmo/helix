@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.math.Vector2;
 
 /** Represents how one stick of a `VirtualGamepad` starts. A field left out takes the gamepad's options, or their default. */

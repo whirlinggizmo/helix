@@ -1,4 +1,4 @@
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.geometry.Camera2D;
 import helix.math.Matrix3;
 import helix.math.Vector2;

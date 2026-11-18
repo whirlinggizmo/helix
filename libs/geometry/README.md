@@ -2,6 +2,8 @@
 
 Geometry for games: pure Haxe, built on [helix-math](../math/README.md).
 
+- `Aabb2D`, `Aabb3D`, `Plane`, `Sphere`: axis-aligned boxes, planes and spheres: where they overlap, distances, nearest points, and a
+  plane or a sphere moved by a matrix.
 - `Camera2D`, `Camera3D`: views of a world, their matrices, and what they see; a 3D camera's ray through a point of its view, to pick
   with.
 - `Frustum`: what a camera sees, whether a point, a sphere or bounds are in it, and its six planes.

@@ -3,7 +3,7 @@ package helix.render;
 #if !macro
 import helix.math.MathTools;
 import helix.geometry.Camera3D;
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
 import helix.platform.Blend;
 import helix.platform.ColorChannels;

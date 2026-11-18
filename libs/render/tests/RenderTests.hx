@@ -2,7 +2,7 @@ import haxe.io.Bytes;
 import helix.geometry.Camera2D;
 import helix.geometry.Camera3D;
 import helix.geometry.Mesh3D;
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix3;
 import helix.math.Matrix4;
 import helix.platform.Blend;

@@ -1,5 +1,5 @@
 import helix.geometry.Mesh3D;
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
 
 /** Checks Mesh3D with the library alone: each shape's triangles facing out (its volume, summed from them, positive and near the

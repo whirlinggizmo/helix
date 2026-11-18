@@ -1,7 +1,7 @@
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
-import helix.math.Plane;
-import helix.math.Sphere;
+import helix.geometry.Plane;
+import helix.geometry.Sphere;
 import helix.math.Vector3;
 
 /** Checks Plane with the library alone, against answers worked by hand: made through a point and through three points, a direction of

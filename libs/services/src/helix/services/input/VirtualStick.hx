@@ -1,6 +1,6 @@
 package helix.services.input;
 
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.math.Vector2;
 
 /** Represents one stick of a `VirtualGamepad`: its settings, and the finger it captured.

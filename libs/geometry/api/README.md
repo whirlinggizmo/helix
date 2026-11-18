@@ -5,6 +5,8 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 ## Packages
 
 - [`helix.geometry`](types.md)
+  - [Aabb2D](types.md#aabb2d)
+  - [Aabb3D](types.md#aabb3d)
   - [Animation3D](types.md#animation3d)
   - [AnimationProperty3D](types.md#animationproperty3d)
   - [AnimationTrack3D](types.md#animationtrack3d)
@@ -16,7 +18,9 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Geometry3D](types.md#geometry3d)
   - [KeyInterpolation](types.md#keyinterpolation)
   - [Mesh3D](types.md#mesh3d)
+  - [Plane](types.md#plane)
   - [Ray3D](types.md#ray3d)
   - [RayHit3D](types.md#rayhit3d)
   - [Skeleton3D](types.md#skeleton3d)
   - [Skin3D](types.md#skin3d)
+  - [Sphere](types.md#sphere)

@@ -4,7 +4,7 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix4;
-import helix.math.Aabb2D;
+import helix.geometry.Aabb2D;
 import helix.geometry.Geometry2D;
 import helix.math.Interpolate;
 import helix.raylib.internal.DefaultFont;

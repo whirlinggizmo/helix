@@ -7,7 +7,7 @@ import helix.raylib.extras.Textures.*;
 	reader, so nothing of helix-raylib can be left out. A game approaches it from below. It is built and measured, never run: its calls are
 	given nothing, and its files aren't there. */
 @:adds("helix.formats.deflate", "helix.formats.gif", "helix.formats.obj", "helix.formats.png", "helix.formats.qoa", "helix.formats.wav",
-	"helix.geometry.Geometry2D", "helix.math.Aabb2D", "helix.math.DistanceField2D", "helix.platform.adapters.clipboard.dom",
+	"helix.geometry.Geometry2D", "helix.geometry.Aabb2D", "helix.math.DistanceField2D", "helix.platform.adapters.clipboard.dom",
 	"helix.platform.adapters.export.download", "helix.math.Interpolate", "helix.raylib.internal.Automation", "helix.raylib.internal.DroppedFiles",
 	"helix.raylib.internal.FontAtlases", "helix.raylib.internal.GuiIcons", "helix.raylib.internal.Mipmaps", "helix.raylib.internal.ObjModels",
 	"helix.raylib.internal.ParShapes", "helix.raylib.internal.Stereo", "helix.raylib.internal.Waves", "helix.raylib.modules.RGui",
@@ -21,9 +21,9 @@ import helix.raylib.extras.Textures.*;
 	"helix.platform.adapters.tilt.dom", "helix.services.input.Tilt", "helix.services.input.TiltAxis", "helix.raylib.modules.RDebug",
 	"helix.raylib.modules.RGuiSkins", "helix.raylib.modules.RSprites", "helix.raylib.modules.RTextureDraws", "helix.raylib.modules.RTextureFills",
 	"helix.raylib.modules.RTextureAtlases", "helix.raylib.modules.RRenderTextureFit", "helix.raylib.extras.TextureAtlas", "helix.raylib.internal.SyncLoads",
-	"helix.raylib.internal.Shadows", "helix.raylib.extras.ShadowOptions", "helix.geometry.Frustum", "helix.math.Aabb3D", "helix.raylib.modules.RParticles",
-	"helix.raylib.internal.Emitters", "helix.raylib.internal.EmitterDraws", "helix.raylib.extras.Emitter", "helix.raylib.extras.Emitter2D",
-	"helix.raylib.extras.Emitter3D", "helix.raylib.extras.EmitterColorKey", "helix.raylib.extras.EmitterSizeKey")
+	"helix.raylib.internal.Shadows", "helix.raylib.extras.ShadowOptions", "helix.geometry.Frustum", "helix.geometry.Aabb3D",
+	"helix.raylib.modules.RParticles", "helix.raylib.internal.Emitters", "helix.raylib.internal.EmitterDraws", "helix.raylib.extras.Emitter",
+	"helix.raylib.extras.Emitter2D", "helix.raylib.extras.Emitter3D", "helix.raylib.extras.EmitterColorKey", "helix.raylib.extras.EmitterSizeKey")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

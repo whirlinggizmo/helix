@@ -1,4 +1,4 @@
-package helix.math;
+package helix.geometry;
 
 /** Represents an axis-aligned box in 2 dimensions: its least and greatest coordinate on each axis.
 

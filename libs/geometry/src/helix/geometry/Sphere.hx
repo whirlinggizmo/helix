@@ -1,4 +1,7 @@
-package helix.math;
+package helix.geometry;
+
+import helix.math.Matrix4;
+import helix.math.Vector3;
 
 /** Represents a sphere: a center and a radius.
 

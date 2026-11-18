@@ -5,8 +5,6 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
 ## Packages
 
 - [`helix.math`](types.md)
-  - [Aabb2D](types.md#aabb2d)
-  - [Aabb3D](types.md#aabb3d)
   - [Color](types.md#color)
   - [Curve](types.md#curve)
   - [CurveKind](types.md#curvekind)
@@ -18,11 +16,9 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Matrix3](types.md#matrix3)
   - [Matrix4](types.md#matrix4)
   - [Noise](types.md#noise)
-  - [Plane](types.md#plane)
   - [Quaternion](types.md#quaternion)
   - [Random](types.md#random)
   - [RectanglePacker](types.md#rectanglepacker)
-  - [Sphere](types.md#sphere)
   - [Spring](types.md#spring)
   - [Transform2D](types.md#transform2d)
   - [Transform3D](types.md#transform3d)

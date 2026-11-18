@@ -1,7 +1,7 @@
 package helix.render;
 
 import helix.geometry.Camera3D;
-import helix.math.Aabb3D;
+import helix.geometry.Aabb3D;
 import helix.math.Matrix4;
 
 /** Represents one view a `Batch3D` draws through: where the eye is and how it projects, as matrices, and the rectangle of the pass it
