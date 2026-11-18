@@ -1,0 +1,2 @@
+# What every build on -lib helix-math needs beyond its class path (src/helix/math/macros/Defines.hx): the library's defines registered.
+--macro helix.math.macros.Defines.register()

@@ -9,6 +9,9 @@ import haxe.io.FPHelper;
 	`Math`'s. Angles are in radians, of any size: an angle that keeps growing stays as accurate however large it gets. An infinite or NaN
 	angle gives NaN, as do `asin` and `acos` outside -1 to 1.
 
+	With `-D helix-math-standard-trig` each function is the standard library's (`Math.sin` and the others), which is faster in a
+	browser. A result's last bit may then differ between targets.
+
 	Natively the generated C++ is compiled with `-ffp-contract=off` on GCC and clang, so that fused multiply-adds don't change the
 	rounding. */
 @:buildXml("<files id='haxe'><compilerflag value='-ffp-contract=off' unless='windows'/></files>")
@@ -75,10 +78,14 @@ class Trig {
 		@param x  The angle, in radians.
 		@return  The sine. */
 	public static function sin(x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.sin(x);
+		#else
 		if (x == 0)
 			return x; // a zero keeps its sign, as Math's
 		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
 		return quadrant == 0 ? sinReduced(r) : quadrant == 1 ? cosReduced(r) : quadrant == 2 ? -sinReduced(r) : -cosReduced(r);
+		#end
 	}
 
 	/** Returns the cosine of an angle.
@@ -86,8 +93,12 @@ class Trig {
 		@param x  The angle, in radians.
 		@return  The cosine. */
 	public static function cos(x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.cos(x);
+		#else
 		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
 		return quadrant == 0 ? cosReduced(r) : quadrant == 1 ? -sinReduced(r) : quadrant == 2 ? -cosReduced(r) : sinReduced(r);
+		#end
 	}
 
 	/** Returns the tangent of an angle.
@@ -95,11 +106,15 @@ class Trig {
 		@param x  The angle, in radians.
 		@return  The tangent. */
 	public static function tan(x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.tan(x);
+		#else
 		if (x == 0)
 			return x; // a zero keeps its sign, as Math's
 		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
 		var s = sinReduced(r), c = cosReduced(r);
 		return quadrant == 0 ? s / c : quadrant == 1 ? c / -s : quadrant == 2 ? -s / -c : -c / s;
+		#end
 	}
 
 	/** Returns the cosine and the sine of an angle together, each as `cos` and `sin` give it, for less than the two calls cost.
@@ -116,11 +131,15 @@ class Trig {
 
 	@:allow(helix.math)
 	static inline function turn(x:Float):Turn {
+		#if helix_math_standard_trig
+		return new Turn(Math.cos(x), Math.sin(x));
+		#else
 		var k = quarterTurns(x), r = remainder(x, k), quadrant = quadrant(k);
 		var s = sinReduced(r), c = cosReduced(r);
 		// A zero keeps its sign, as sin's.
 		return new Turn(quadrant == 0 ? c : quadrant == 1 ? -s : quadrant == 2 ? -c : s,
 			x == 0 ? x : quadrant == 0 ? s : quadrant == 1 ? c : quadrant == 2 ? -s : -c);
+		#end
 	}
 
 	/** Returns the angle of a point from the +x axis, as `Math.atan2` does.
@@ -129,6 +148,9 @@ class Trig {
 		@param x  The point's x coordinate.
 		@return  The angle, in radians, from -π to π. */
 	public static function atan2(y:Float, x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.atan2(y, x);
+		#else
 		if (Math.isNaN(y) || Math.isNaN(x))
 			return Math.NaN;
 		if (x == 0 && y == 0)
@@ -142,6 +164,7 @@ class Trig {
 			return negative(y) ? a - PI : a + PI;
 		}
 		return y > 0 ? PI / 2 : -PI / 2;
+		#end
 	}
 
 	/** Returns the angle whose sine is a value.
@@ -149,6 +172,9 @@ class Trig {
 		@param x  The sine, from -1 to 1.
 		@return  The angle, in radians, from -π/2 to π/2, or NaN if x is outside -1 to 1. */
 	public static function asin(x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.asin(x);
+		#else
 		if (!(x >= -1 && x <= 1))
 			return Math.NaN;
 		var t = x < 0 ? -x : x;
@@ -166,6 +192,7 @@ class Trig {
 			a = PIO4_HI - (p - q);
 		}
 		return x < 0 ? -a : a;
+		#end
 	}
 
 	/** Returns the angle whose cosine is a value.
@@ -173,6 +200,9 @@ class Trig {
 		@param x  The cosine, from -1 to 1.
 		@return  The angle, in radians, from 0 to π, or NaN if x is outside -1 to 1. */
 	public static function acos(x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.acos(x);
+		#else
 		if (!(x >= -1 && x <= 1))
 			return Math.NaN;
 		if (x >= 0)
@@ -182,12 +212,16 @@ class Trig {
 		// acos(x) = pi - 2 asin(s), s the square root of (1 + x) / 2.
 		var z = (1 + x) * 0.5, s = Math.sqrt(z), w = arcRatio(z) * s - PIO2_LO;
 		return PI - 2 * (s + w);
+		#end
 	}
 
 	// acos for an x from 0 up to 1, whose angle is from 0 to pi/2, without acos's checks.
 
 	@:allow(helix.math)
 	static inline function acosAcute(x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.acos(x);
+		#else
 		if (x < 0.5)
 			return acosNearZero(x);
 		else {
@@ -198,6 +232,7 @@ class Trig {
 				c = (z - high * high) / (s + high);
 			return 2 * (high + (arcRatio(z) * s + c));
 		}
+		#end
 	}
 
 	// acos for an x between -1/2 and 1/2.
@@ -207,8 +242,13 @@ class Trig {
 	// sin for an angle from 0 to pi/2, reduced with one compare.
 
 	@:allow(helix.math)
-	static inline function sinAcute(x:Float):Float
+	static inline function sinAcute(x:Float):Float {
+		#if helix_math_standard_trig
+		return Math.sin(x);
+		#else
 		return x * QUARTER_TURNS <= 0.5 ? sinReduced(x) : cosReduced(((x - PIO2_1) - PIO2_2) - PIO2_3);
+		#end
+	}
 
 	// fdlibm's R for asin and acos (e_asin.c), a ratio of two polynomials: asin(x) is x + x R(x^2) for |x| <= 1/2, within an ulp.
 	static function arcRatio(z:Float):Float {

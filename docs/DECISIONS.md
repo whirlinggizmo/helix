@@ -1170,3 +1170,10 @@ Why things are the way they are, numbered, in order.
     costs hxcpp or JavaScript the difference above; helix-raylib's own vector and matrix types converted at each call into a
     library, which costs a copy a call; raylib's answer on degenerate input kept by a second body for each such function; the
     animation suites loosened to helix-math's slerp, which moved a pose by up to 7e-4 and 425 pixels of the skinning suite.
+
+80. **A define makes `Trig` the standard library's.** With `-D helix-math-standard-trig` each of `Trig`'s functions is `Math`'s, and
+    so are the cosines and sines helix-math's rotations take. It is off by default, and nothing in helix sets it. The library
+    registers it (its `extraParams.hxml`), so `haxe --help-user-defines` lists it for every build on helix-math.
+
+    Why: `Trig` gives the same bits on every target, which costs a program in a browser a few nanoseconds an angle (79). A program
+    that needs no two targets to agree can take the browser's own functions instead, and that choice is the program's.

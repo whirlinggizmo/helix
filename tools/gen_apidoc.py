@@ -570,7 +570,8 @@ def main():
     generate(check=p.parse_args().check)
 
 # The libraries with defines of their own: their haxelib, the macro registering them, and an example.
-DEFINES={'helix.platform':('helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids'),
+DEFINES={'helix.math':('helix-math','helix.math.macros.Defines','-D helix-math-standard-trig'),
+         'helix.platform':('helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids'),
          'helix.raylib':('helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-asset-host=../assets')}
 
 def defines_section(env,library,macro,example):

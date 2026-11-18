@@ -32,7 +32,8 @@ def test(native,audio_device):
     """The adapter rule's check, the layers' check, the names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the
     API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/gen_sizes.py --check), the doc comments' check
     (tools/check_docs.py); each library's tests on the interpreter and Node, the shader compiler's on the interpreter, Trig's bits across
-    targets, helix-raylib's tests on Node; and with native each library's tests, Trig's bits and helix-raylib's tests in hxcpp, the
+    targets and Trig with -D helix-math-standard-trig, helix-raylib's tests on Node; and with native each library's tests, Trig's bits,
+    Trig with the define and helix-raylib's tests in hxcpp, the
     vectors' allocation in hxcpp's C++, and the platform's C tests (SDL3's dummy audio driver)."""
     run([sys.executable,'tools/check_adapters.py'])
     run([sys.executable,'tools/check_layers.py'])
@@ -187,6 +188,22 @@ def trig(native):
             if len(set(parts))!=1:print('differs: '+'  '.join(f'{target}: {part}' for target,part in zip(outputs,parts)))
         sys.exit(f'helix.math.Trig differs between targets: {hashes}')
     print(f'Trig bits: the same on {", ".join(hashes)}: {next(iter(hashes.values()))}',flush=True)
+    standard_trig(native)
+
+def standard_trig(native):
+    """-D helix-math-standard-trig: listed by the compiler for a build on helix-math, and with it Trig's functions the standard library's
+    (StandardTrigTests) under the interpreter, in JS (Node) and, with native, in hxcpp."""
+    listed=subprocess.check_output(['haxe','-lib','helix-math','--help-user-defines'],cwd=ROOT,text=True,encoding='utf-8')
+    if 'helix-math-standard-trig' not in listed:sys.exit(f"haxe --help-user-defines doesn't list helix-math-standard-trig for -lib helix-math:\n{listed}")
+    args=['haxe','-lib','helix-math','-cp','libs/math/tests','-main','StandardTrigTests','-D','helix-math-standard-trig']
+    value=result(args+['--interp'])
+    run(args+['-js','build/tests/StandardTrigTests.js','-dce','full'])
+    result(['node','build/tests/StandardTrigTests.js'])
+    if native:
+        from native_build import ARCH
+        run(args+['-cpp','build/tests/StandardTrigTests-cpp','-dce','full','-D','analyzer-optimize','-D',ARCH])
+        result([str(ROOT/'build/tests/StandardTrigTests-cpp'/('StandardTrigTests.exe' if sys.platform=='win32' else 'StandardTrigTests'))])
+    print(f'StandardTrigTests: {value["checks"]} checks with -D helix-math-standard-trig (interpreter, Node{" and hxcpp" if native else ""})',flush=True)
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='command',required=True,metavar='command')

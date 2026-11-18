@@ -1492,6 +1492,8 @@ Provides trigonometry that gives the same bits on every target.
 
 A simulation that must play alike on every target (a recorded run's replay, a lockstep game, physics) uses these in place of `Math`'s, whose last bit differs between targets for some angles. Drawing doesn't need them. Results are within a few ulp of `Math`'s. Angles are in radians, of any size: an angle that keeps growing stays as accurate however large it gets. An infinite or NaN angle gives NaN, as do `asin` and `acos` outside -1 to 1.
 
+With `-D helix-math-standard-trig` each function is the standard library's (`Math.sin` and the others), which is faster in a browser. A result's last bit may then differ between targets.
+
 Natively the generated C++ is compiled with `-ffp-contract=off` on GCC and clang, so that fused multiply-adds don't change the rounding.
 
 ```haxe

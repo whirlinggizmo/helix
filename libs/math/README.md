@@ -2,7 +2,7 @@
 
 Math for games, in pure Haxe.
 
-- `Trig`: trigonometry giving the same bits on every target.
+- `Trig`: trigonometry giving the same bits on every target, or the standard library's with `-D helix-math-standard-trig`.
 - `Random`: a seeded generator giving the same sequence on every target.
 - `Interpolate`: interpolating, clamping, smoothing and easing numbers and angles, and points on spline pieces (Catmull-Rom,
   B-spline, Bezier).

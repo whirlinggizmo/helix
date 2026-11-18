@@ -23,3 +23,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Vector2](types.md#vector2)
   - [Vector3](types.md#vector3)
   - [Vector4](types.md#vector4)
+
+## Defines
+
+[defines.md](defines.md): the defines a build's hxml sets.
