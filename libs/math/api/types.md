@@ -1246,6 +1246,62 @@ function decompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Void
 
   A matrix that shears gives the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear lost. One that mirrors gives an x scale less than 0, so the way it faces and its up are kept.
 
+## Noise
+
+*class* in [`libs/math/src/helix/math/Noise.hx`](../src/helix/math/Noise.hx), `import helix.math.Noise;`
+
+Provides smooth noise: a number for each point that changes little between near points, the same on every target.
+
+```haxe
+var height = Noise.fractal(x * .01, z * .01) * 40; // terrain: hills with detail
+var sway = Noise.perlin(time * .5, 0) * 3; // a camera's shake or a flame's flicker
+var cloud = Noise.simplex(x * .02, y * .02, time); // a moving cloud layer
+var crack = Noise.cellular(x * .1, y * .1); // cells, as stone or water caustics
+```
+
+Natively the generated C++ is compiled with `-ffp-contract=off` on GCC and clang, so that fused multiply-adds don't change the rounding.
+
+```haxe
+static function perlin(x:Float, y:Float, ?z:Float = 0., ?seed:Int = 0):Float
+static function simplex(x:Float, y:Float, ?z:Float = 0., ?seed:Int = 0):Float
+static function cellular(x:Float, y:Float, ?z:Float = 0., ?seed:Int = 0):Float
+static function fractal(x:Float, y:Float, ?z:Float = 0., ?octaves:Int = 6, ?lacunarity:Float = 2., ?gain:Float = .5, ?seed:Int = 0):Float
+```
+
+- `perlin`: Returns Perlin noise at a point.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: Optional. The point's z; defaults to 0, a 2D slice.
+  - `seed`: Optional. Picks one noise of 256; defaults to 0.
+  - returns: The noise, about -1 to 1.
+
+  A point with whole-number coordinates gives 0. The noise repeats every 256 along each axis.
+- `simplex`: Returns simplex noise at a point. Simplex noise shows less of the grid's directions than `perlin` does.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: Optional. The point's z; defaults to 0, a 2D slice.
+  - `seed`: Optional. Picks one noise of 256; defaults to 0.
+  - returns: The noise, about -1 to 1.
+
+  The noise repeats every 768 along each axis.
+- `cellular`: Returns cellular (Worley) noise at a point: the distance to the nearest of points scattered one to a unit cell.
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: Optional. The point's z; defaults to 0, a 2D slice.
+  - `seed`: Optional. Picks one scatter of 256; defaults to 0.
+  - returns: The distance, 0 at a scattered point.
+
+  The scatter repeats every 256 along each axis.
+- `fractal`: Returns Perlin noise summed over octaves, each finer and fainter than the last (fractal Brownian motion).
+  - `x`: The point's x.
+  - `y`: The point's y.
+  - `z`: Optional. The point's z; defaults to 0, a 2D slice.
+  - `octaves`: Optional. How many layers are summed; defaults to 6.
+  - `lacunarity`: Optional. How much finer each octave is than the last; defaults to 2.
+  - `gain`: Optional. How much fainter each octave is than the last; defaults to 0.5.
+  - `seed`: Optional. Picks one noise of 256; defaults to 0.
+  - returns: The sum: mostly within -1 to 1 at the default gain, and at most the octaves' sizes added up, 1.97 at the defaults.
+
 ## Quaternion
 
 *class* in [`libs/math/src/helix/math/Quaternion.hx`](../src/helix/math/Quaternion.hx), `import helix.math.Quaternion;`
@@ -1568,6 +1624,37 @@ static function pack(width:Int, height:Int, sizes:Array<Int>):Array<Int>
   - `height`: The area's height.
   - `sizes`: Each rectangle's width and height, flat: width, height, width, height.
   - returns: Each rectangle's place, flat, in the same order: x, y, and 1 when it was placed or 0 when it didn't fit. A rectangle with no width or height is placed at 0, 0.
+
+## Spring
+
+*class* in [`libs/math/src/helix/math/Spring.hx`](../src/helix/math/Spring.hx), `import helix.math.Spring;`
+
+Represents a value that follows a target as a damped spring does: the value speeds up, slows as it nears the target, and stops at the target without going past (Unity's SmoothDamp).
+
+```haxe
+var zoom = new Spring(1);
+zoom.update(target, .25, dt);
+camera.zoom = zoom.value;
+```
+
+```haxe
+function new(?value:Float = 0.)
+var value:Float
+var velocity:Float
+function update(target:Float, time:Float, dt:Float):Float
+```
+
+- `new`: Creates a spring at rest.
+  - `value`: Optional. The value the spring starts at; defaults to 0.
+- `value`: Gets or sets the value.
+- `velocity`: Gets or sets how fast the value is changing, per second.
+- `update`: Moves the value toward a target over a time step, the same at any frame rate.
+  - `target`: The target.
+  - `time`: About how long the value takes to reach the target, in seconds: the value closes 3/5 of the gap in that time from rest, and 9/10 in twice that time. 0 or less puts the value at the target.
+  - `dt`: The time step, in seconds.
+  - returns: The value.
+
+  A time step of 0 or less leaves the value and the velocity unchanged. A value that would pass the target stops at the target.
 
 ## Transform2D
 
