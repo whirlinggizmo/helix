@@ -1,7 +1,7 @@
 package helix.math;
 
-/** Provides functions for colors held as 0xAARRGGBB integers, with alpha in the top byte: their channels, hue, saturation and value,
-	blending one over another, and mixing, tinting, brightening and contrasting them.
+/** Provides functions for colors held as 0xAARRGGBB integers, with alpha in the top byte: their channels, hue, saturation, value and
+	lightness, their channels as linear light, blending one over another, and mixing, tinting, brightening and contrasting them.
 
 	Each channel is 0 to 255. Text writes a color in CSS order, as #RRGGBB or #RRGGBBAA. `fromRgba` and `toRgba` convert between that
 	order and this one.
@@ -127,6 +127,86 @@ class Color {
 		@return  The value, 0 (black) to 1. */
 	public static function getValue(color:Int):Float
 		return Math.max(getRed(color), Math.max(getGreen(color), getBlue(color))) / 255;
+
+	/** Returns the color of a hue, saturation and lightness, opaque or with an alpha.
+
+		@param hue  The hue, in degrees: 0 red, 120 green, 240 blue; any angle, wrapped.
+		@param saturation  The saturation, 0 (gray) to 1, clamped.
+		@param lightness  The lightness, 0 (black) to 1 (white), clamped. 0.5 is the pure hue.
+		@param alpha  Optional. The alpha channel, 0 to 255; defaults to 255.
+		@return  The color, its channels rounded. */
+	public static function fromHsl(hue:Float, saturation:Float, lightness:Float, alpha = 255):Int {
+		hue = hue % 360;
+		if (hue < 0)
+			hue += 360;
+		saturation = saturation < 0 ? 0 : saturation > 1 ? 1 : saturation;
+		lightness = lightness < 0 ? 0 : lightness > 1 ? 1 : lightness;
+		var reach = saturation * Math.min(lightness, 1 - lightness);
+		function channel(n:Float):Int {
+			var k = (n + hue / 30) % 12;
+			return Math.round((lightness - reach * Math.max(-1, Math.min(Math.min(k - 3, 9 - k), 1))) * 255);
+		}
+		return fromChannels(channel(0), channel(8), channel(4), alpha);
+	}
+
+	/** Returns a color's lightness: halfway between its brightest and darkest channels.
+
+		@param color  The color, as 0xAARRGGBB.
+		@return  The lightness, 0 (black) to 1 (white). */
+	public static function getLightness(color:Int):Float {
+		var most = Math.max(getRed(color), Math.max(getGreen(color), getBlue(color)));
+		var least = Math.min(getRed(color), Math.min(getGreen(color), getBlue(color)));
+		return (most + least) / 510;
+	}
+
+	/** Returns a color's saturation as `fromHsl` takes it. `getSaturation` gives the saturation `fromHsv` takes.
+
+		@param color  The color, as 0xAARRGGBB.
+		@return  The saturation, 0 to 1: 0 for a gray, black or white. */
+	public static function getHslSaturation(color:Int):Float {
+		var most = Math.max(getRed(color), Math.max(getGreen(color), getBlue(color)));
+		var least = Math.min(getRed(color), Math.min(getGreen(color), getBlue(color)));
+		return most == least ? 0 : (most - least) / (255 - Math.abs(most + least - 255));
+	}
+
+	/** Returns a channel of an sRGB color as linear light.
+
+		@param value  The channel as stored, 0 to 1.
+		@return  The linear value, 0 to 1. */
+	public static function srgbToLinear(value:Float):Float
+		return value <= .04045 ? value / 12.92 : Math.pow((value + .055) / 1.055, 2.4);
+
+	/** Returns a channel of linear light as an sRGB color stores it.
+
+		@param value  The linear value, 0 to 1.
+		@return  The channel as stored, 0 to 1. */
+	public static function linearToSrgb(value:Float):Float
+		return value <= .0031308 ? value * 12.92 : 1.055 * Math.pow(value, 1 / 2.4) - .055;
+
+	/** Returns a color as linear light, for a shader that lights in linear light.
+
+		@param color  The color, as 0xAARRGGBB, sRGB.
+		@param out  Optional. The vector to fill; a new one when omitted.
+		@return  The red, green and blue as linear light and the alpha, each 0 to 1. */
+	public static function toLinear(color:Int, ?out:Vector4):Vector4 {
+		var red = srgbToLinear(getRed(color) / 255),
+			green = srgbToLinear(getGreen(color) / 255),
+			blue = srgbToLinear(getBlue(color) / 255);
+		return out == null ? new Vector4(red, green, blue, getAlpha(color) / 255) : out.set(red, green, blue, getAlpha(color) / 255);
+	}
+
+	/** Returns the color of linear light.
+
+		@param red  The red, linear, 0 to 1, clamped.
+		@param green  The green, linear, 0 to 1, clamped.
+		@param blue  The blue, linear, 0 to 1, clamped.
+		@param alpha  Optional. The alpha, 0 to 1, clamped; defaults to 1.
+		@return  The color, as 0xAARRGGBB, sRGB, its channels rounded. */
+	public static function fromLinear(red:Float, green:Float, blue:Float, alpha = 1.):Int {
+		inline function channel(linear:Float):Int
+			return Math.round(linearToSrgb(linear < 0 ? 0 : linear > 1 ? 1 : linear) * 255);
+		return fromChannels(channel(red), channel(green), channel(blue), Math.round((alpha < 0 ? 0 : alpha > 1 ? 1 : alpha) * 255));
+	}
 
 	/** Returns the color a fraction of the way from one color to another, each channel alpha included.
 

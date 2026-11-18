@@ -164,7 +164,7 @@ function intersectsSphere(x:Float, y:Float, z:Float, radius:Float):Bool
 
 *class* in [`libs/math/src/helix/math/Color.hx`](../src/helix/math/Color.hx), `import helix.math.Color;`
 
-Provides functions for colors held as 0xAARRGGBB integers, with alpha in the top byte: their channels, hue, saturation and value, blending one over another, and mixing, tinting, brightening and contrasting them.
+Provides functions for colors held as 0xAARRGGBB integers, with alpha in the top byte: their channels, hue, saturation, value and lightness, their channels as linear light, blending one over another, and mixing, tinting, brightening and contrasting them.
 
 Each channel is 0 to 255. Text writes a color in CSS order, as #RRGGBB or #RRGGBBAA. `fromRgba` and `toRgba` convert between that order and this one.
 
@@ -186,6 +186,13 @@ static function fromHsv(hue:Float, saturation:Float, value:Float, ?alpha:Int = 2
 static function getHue(color:Int):Float
 static function getSaturation(color:Int):Float
 static function getValue(color:Int):Float
+static function fromHsl(hue:Float, saturation:Float, lightness:Float, ?alpha:Int = 255):Int
+static function getLightness(color:Int):Float
+static function getHslSaturation(color:Int):Float
+static function srgbToLinear(value:Float):Float
+static function linearToSrgb(value:Float):Float
+static function toLinear(color:Int, ?out:Vector4):Vector4
+static function fromLinear(red:Float, green:Float, blue:Float, ?alpha:Float = 1.):Int
 static function lerp(from:Int, to:Int, t:Float):Int
 static function blend(under:Int, over:Int):Int
 static function tint(color:Int, tint:Int):Int
@@ -240,6 +247,34 @@ static function contrast(color:Int, factor:Float):Int
 - `getValue`: Returns a color's value: its brightest channel.
   - `color`: The color, as 0xAARRGGBB.
   - returns: The value, 0 (black) to 1.
+- `fromHsl`: Returns the color of a hue, saturation and lightness, opaque or with an alpha.
+  - `hue`: The hue, in degrees: 0 red, 120 green, 240 blue; any angle, wrapped.
+  - `saturation`: The saturation, 0 (gray) to 1, clamped.
+  - `lightness`: The lightness, 0 (black) to 1 (white), clamped. 0.5 is the pure hue.
+  - `alpha`: Optional. The alpha channel, 0 to 255; defaults to 255.
+  - returns: The color, its channels rounded.
+- `getLightness`: Returns a color's lightness: halfway between its brightest and darkest channels.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The lightness, 0 (black) to 1 (white).
+- `getHslSaturation`: Returns a color's saturation as `fromHsl` takes it. `getSaturation` gives the saturation `fromHsv` takes.
+  - `color`: The color, as 0xAARRGGBB.
+  - returns: The saturation, 0 to 1: 0 for a gray, black or white.
+- `srgbToLinear`: Returns a channel of an sRGB color as linear light.
+  - `value`: The channel as stored, 0 to 1.
+  - returns: The linear value, 0 to 1.
+- `linearToSrgb`: Returns a channel of linear light as an sRGB color stores it.
+  - `value`: The linear value, 0 to 1.
+  - returns: The channel as stored, 0 to 1.
+- `toLinear`: Returns a color as linear light, for a shader that lights in linear light.
+  - `color`: The color, as 0xAARRGGBB, sRGB.
+  - `out`: Optional. The vector to fill; a new one when omitted.
+  - returns: The red, green and blue as linear light and the alpha, each 0 to 1.
+- `fromLinear`: Returns the color of linear light.
+  - `red`: The red, linear, 0 to 1, clamped.
+  - `green`: The green, linear, 0 to 1, clamped.
+  - `blue`: The blue, linear, 0 to 1, clamped.
+  - `alpha`: Optional. The alpha, 0 to 1, clamped; defaults to 1.
+  - returns: The color, as 0xAARRGGBB, sRGB, its channels rounded.
 - `lerp`: Returns the color a fraction of the way from one color to another, each channel alpha included.
   - `from`: The color at 0, as 0xAARRGGBB.
   - `to`: The color at 1.
