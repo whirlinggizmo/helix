@@ -1,5 +1,7 @@
 package helix.render;
 
+import helix.math.Color;
+
 /** Represents a light that a `Batch3D` lights its lit materials with: a `DirectionalLight3D`, a `PointLight3D`, a `SpotLight3D` or a
 	`HemisphereLight`.
 
@@ -59,7 +61,7 @@ abstract class Light3D {
 	static function writeRadiance(color:Int, intensity:Float, out:Array<Float>, at:Int):Void {
 		for (k in 0...3) {
 			var c = (color >> (16 - k * 8) & 255) / 255;
-			out[at + k] = (c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4)) * intensity;
+			out[at + k] = Color.srgbToLinear(c) * intensity;
 		}
 		out[at + 3] = 0;
 	}

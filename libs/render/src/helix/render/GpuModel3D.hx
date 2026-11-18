@@ -1,6 +1,7 @@
 package helix.render;
 
 import helix.math.Aabb3D;
+import helix.math.Color;
 import helix.math.Matrix4;
 import helix.services.images.Image;
 import helix.services.models.Model3D;
@@ -177,7 +178,7 @@ class GpuModel3D {
 		inline function channel(c:Float):Int {
 			var v = Math.max(0, Math.min(1, c));
 			if (!asStored)
-				v = v <= .0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - .055;
+				v = Color.linearToSrgb(v);
 			return Math.round(v * 255);
 		}
 		return Math.round(Math.max(0, Math.min(1, a)) * 255) << 24 | channel(r) << 16 | channel(g) << 8 | channel(b);

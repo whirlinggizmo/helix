@@ -1,5 +1,6 @@
 import haxe.io.Bytes;
 import helix.geometry.Mesh3D;
+import helix.math.Color;
 import helix.math.Matrix4;
 import helix.platform.IEvents;
 import helix.platform.IGraphics;
@@ -565,13 +566,12 @@ class PixelTests {
 	// Linear light encoded as an sRGB byte, clamped, as a target holds it.
 	static function encode(linear:Float):Int {
 		var c = Math.max(0, Math.min(1, linear));
-		return Math.round((c <= .0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - .055) * 255);
+		return Math.round(Color.linearToSrgb(c) * 255);
 	}
 
 	// An sRGB byte decoded to linear light.
 	static function decode(byte:Int):Float {
-		var c = byte / 255;
-		return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
+		return Color.srgbToLinear(byte / 255);
 	}
 
 	// A grey of linear light as a pixel.

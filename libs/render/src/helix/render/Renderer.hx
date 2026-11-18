@@ -1,5 +1,6 @@
 package helix.render;
 
+import helix.math.Color;
 import helix.math.MathTools;
 import haxe.io.Bytes;
 import helix.platform.Blend;
@@ -906,7 +907,7 @@ class Renderer {
 	// A clear color's channel as the target holds it: as stored, or decoded to linear light in an RGBA16F target.
 	static function channel(value:Int, linear:Bool):Float {
 		var c = value / 255;
-		return !linear ? c : c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4);
+		return linear ? Color.srgbToLinear(c) : c;
 	}
 
 	// After the frame is drawn: what waited freed, retired targets pooled and those unused a frame freed, the streams emptied.

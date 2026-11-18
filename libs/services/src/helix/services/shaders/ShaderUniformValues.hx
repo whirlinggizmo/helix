@@ -1,5 +1,6 @@
 package helix.services.shaders;
 
+import helix.math.Color;
 import helix.math.Matrix4;
 import helix.services.shaders.ShaderLayout.ShaderShape;
 
@@ -176,9 +177,9 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeLinearRgb(uniform:ShaderUniform, rgb:Int, scale:Float = 1, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeLinearRgb", COLORS);
-		var r = linear((rgb >> 16 & 255) / 255) * scale,
-			g = linear((rgb >> 8 & 255) / 255) * scale,
-			b = linear((rgb & 255) / 255) * scale;
+		var r = Color.srgbToLinear((rgb >> 16 & 255) / 255) * scale,
+			g = Color.srgbToLinear((rgb >> 8 & 255) / 255) * scale,
+			b = Color.srgbToLinear((rgb & 255) / 255) * scale;
 		if (!fresh && e[0] == r && e[1] == g && e[2] == b)
 			return;
 		e[0] = r;
@@ -195,9 +196,9 @@ class ShaderUniformValues {
 		@param elementIndex  Optional. The index of the array element written; defaults to 0. */
 	public function writeLinearColor(uniform:ShaderUniform, color:Int, elementIndex:Int = 0):Void {
 		var e = element(uniform, elementIndex, "writeLinearColor", COLORS);
-		var r = linear((color >> 16 & 255) / 255),
-			g = linear((color >> 8 & 255) / 255),
-			b = linear((color & 255) / 255),
+		var r = Color.srgbToLinear((color >> 16 & 255) / 255),
+			g = Color.srgbToLinear((color >> 8 & 255) / 255),
+			b = Color.srgbToLinear((color & 255) / 255),
 			a = (color >>> 24) / 255;
 		if (!fresh && e[0] == r && e[1] == g && e[2] == b && (e.length < 4 || e[3] == a))
 			return;
@@ -428,8 +429,4 @@ class ShaderUniformValues {
 		w.elements[elementIndex] = e;
 		changed(uniform, elementIndex, e);
 	}
-
-	// sRGB to linear light, as three.js's color management decodes a hex color.
-	static function linear(c:Float):Float
-		return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
