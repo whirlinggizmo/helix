@@ -1,6 +1,10 @@
 package helix.raylib.internal;
 
+import helix.math.MathTools;
+import helix.math.Random;
 import helix.math.Trig;
+import helix.math.Vector2;
+import helix.math.Vector3;
 import helix.raylib.Color;
 import helix.raylib.extras.Emitter;
 import helix.raylib.extras.Emitter2D;
@@ -171,21 +175,26 @@ class Emitters {
 		e.particleCount = alive;
 	}
 
-	// The next random number from 0 up to 1, the emitter's random numbers started from its seed at the first after its load or clear.
-	static inline function next(e:Emitter):Float {
+	// The emitter's random numbers, started from its seed at the first draw after its load or clear.
+	static inline function generator(e:Emitter):Random {
 		if (!e.seeded) {
 			e.seeded = true;
 			e.random.seed = e.seed;
 		}
-		return e.random.nextFloat();
+		return e.random;
 	}
+
+	// The next random number from 0 up to 1.
+	static inline function next(e:Emitter):Float
+		return generator(e).nextFloat();
 
 	// A number from -1 up to 1.
 	static inline function signed(e:Emitter):Float
 		return next(e) * 2 - 1;
 
-	static inline function clamp(x:Float, low:Float, high:Float):Float
-		return x > low ? (x < high ? x : high) : low;
+	// The points and directions a birth draws, kept so a birth allocates nothing.
+	static final point2 = new Vector2();
+	static final point3 = new Vector3();
 
 	// A particle born at a time and place, in the slot after the newest, the oldest's when every slot is taken; its offset, velocity,
 	// life, size, spin, phase and tint from the emitter's birth fields.
@@ -212,48 +221,33 @@ class Emitters {
 			dy = flat ? -1 : 1;
 			length = 1;
 		}
-		var spread = clamp(e.spread, 0, 180) * DEGREES;
+		var spread = MathTools.clamp(e.spread, 0, 180) * DEGREES;
 		dx /= length;
 		dy /= length;
 		dz /= length;
 		if (flat) {
-			var a = signed(e) * spread, c = Trig.cos(a), s = Trig.sin(a);
+			Trig.cosSin(signed(e) * spread, point2);
+			var c = point2.x, s = point2.y;
 			vx = dx * c - dy * s;
 			vy = dx * s + dy * c;
 		} else {
-			// Two directions across it, from a helper not along it, then a turn off it up to spread, around it at random, evenly over the
-			// cone's cap.
-			var hx = Math.abs(dy) < .9 ? 0. : 1.,
-				hy = Math.abs(dy) < .9 ? 1. : 0.;
-			var px = -dz * hy, py = dz * hx, pz = dx * hy - dy * hx;
-			var pl = Math.sqrt(px * px + py * py + pz * pz);
-			px /= pl;
-			py /= pl;
-			pz /= pl;
-			var qx = dy * pz - dz * py,
-				qy = dz * px - dx * pz,
-				qz = dx * py - dy * px;
-			var around = next(e) * TAU,
-				co = 1 - next(e) * (1 - Trig.cos(spread));
-			var so = Math.sqrt(1 - co * co > 0 ? 1 - co * co : 0),
-				ca = Trig.cos(around),
-				sa = Trig.sin(around);
-			vx = dx * co + (px * ca + qx * sa) * so;
-			vy = dy * co + (py * ca + qy * sa) * so;
-			vz = dz * co + (pz * ca + qz * sa) * so;
+			generator(e).nextInCone(point3.set(dx, dy, dz), spread, point3);
+			vx = point3.x;
+			vy = point3.y;
+			vz = point3.z;
 		}
-		var v = (e.speed > 0 ? e.speed : 0) * (1 + signed(e) * clamp(e.speedVariance, 0, 1));
+		var v = (e.speed > 0 ? e.speed : 0) * (1 + signed(e) * MathTools.clamp(e.speedVariance, 0, 1));
 		vx *= v;
 		vy *= v;
 		vz *= v;
 		var ox = offset[0], oy = offset[1], oz = offset[2];
-		var inherit = e.localSpace ? 0 : clamp(e.inheritVelocity, 0, 1);
+		var inherit = e.localSpace ? 0 : MathTools.clamp(e.inheritVelocity, 0, 1);
 		vx += e.moveX * inherit;
 		vy += e.moveY * inherit;
 		vz += e.moveZ * inherit;
 		var low = e.minLife > 0 ? e.minLife : 0., high = longestLife(e);
 		var life = low + (high - low) * next(e);
-		var scale = 1 + signed(e) * clamp(e.sizeVariance, 0, 1);
+		var scale = 1 + signed(e) * MathTools.clamp(e.sizeVariance, 0, 1);
 		var slow = e.minSpin, fast = e.maxSpin > slow ? e.maxSpin : slow;
 		var spin = (slow + (fast - slow) * next(e)) * DEGREES;
 		var random = next(e), phase = next(e);
@@ -358,43 +352,36 @@ class Emitters {
 			offset[axes[0]] = (shell ? (next(e) < .5 ? -1 : 1) : signed(e)) * a;
 			return;
 		}
+		var g = generator(e);
 		if (axisCount == 2) {
-			var angle = 0., r = 1.;
 			if (shell) {
 				var most = a > b ? a : b;
 				for (_ in 0...TRIES) {
-					angle = next(e) * TAU;
-					var s = Trig.sin(angle), co = Trig.cos(angle);
-					if (next(e) * most <= Math.sqrt(a * a * s * s + b * b * co * co))
+					g.nextOnCircle(1, point2);
+					if (g.nextFloat() * most <= Math.sqrt(a * a * point2.y * point2.y + b * b * point2.x * point2.x))
 						break;
 				}
-			} else {
-				angle = next(e) * TAU;
-				r = Math.sqrt(next(e));
-			}
-			offset[axes[0]] = Trig.cos(angle) * r * a;
-			offset[axes[1]] = Trig.sin(angle) * r * b;
+			} else
+				g.nextInCircle(1, point2);
+			offset[axes[0]] = point2.x * a;
+			offset[axes[1]] = point2.y * b;
 			return;
 		}
-		var ux = 0., uy = 0., uz = 0., r = 1.;
-		var most = Math.max(b * c, Math.max(a * c, a * b));
-		for (_ in 0...TRIES) {
-			var height = signed(e), phi = next(e) * TAU;
-			var ring = Math.sqrt(1 - height * height > 0 ? 1 - height * height : 0);
-			ux = Trig.cos(phi) * ring;
-			uy = Trig.sin(phi) * ring;
-			uz = height;
-			if (!shell)
-				break;
-			var bc = b * c * ux, ac = a * c * uy, ab = a * b * uz;
-			if (next(e) * most <= Math.sqrt(bc * bc + ac * ac + ab * ab))
-				break;
-		}
-		if (!shell)
-			r = Math.pow(next(e), 1 / 3);
-		offset[axes[0]] = ux * r * a;
-		offset[axes[1]] = uy * r * b;
-		offset[axes[2]] = uz * r * c;
+		if (shell) {
+			var most = Math.max(b * c, Math.max(a * c, a * b));
+			for (_ in 0...TRIES) {
+				g.nextOnSphere(1, point3);
+				var bc = b * c * point3.x,
+					ac = a * c * point3.y,
+					ab = a * b * point3.z;
+				if (g.nextFloat() * most <= Math.sqrt(bc * bc + ac * ac + ab * ab))
+					break;
+			}
+		} else
+			g.nextInSphere(1, point3);
+		offset[axes[0]] = point3.x * a;
+		offset[axes[1]] = point3.y * b;
+		offset[axes[2]] = point3.z * c;
 	}
 
 	// Moves a 2D emitter's particles alive over a time, each by the part of it since its birth: gravity, then drag.
@@ -474,7 +461,7 @@ class Emitters {
 			sizeCount = 1;
 		} else {
 			for (i in 0...keys) {
-				var t = clamp(e.sizeKeys[i].at, 0, 1), v = e.sizeKeys[i].size, j = i;
+				var t = MathTools.clamp(e.sizeKeys[i].at, 0, 1), v = e.sizeKeys[i].size, j = i;
 				// Inserted in order of time, after those of the same time.
 				while (j > 0 && sizeTimes[j - 1] > t) {
 					sizeTimes[j] = sizeTimes[j - 1];
@@ -496,7 +483,7 @@ class Emitters {
 			return;
 		}
 		for (i in 0...keys) {
-			var t = clamp(e.colorKeys[i].at, 0, 1), v:Int = cast e.colorKeys[i].color, j = i;
+			var t = MathTools.clamp(e.colorKeys[i].at, 0, 1), v:Int = cast e.colorKeys[i].color, j = i;
 			while (j > 0 && colorTimes[j - 1] > t) {
 				colorTimes[j] = colorTimes[j - 1];
 				colorValues[j] = colorValues[j - 1];
@@ -516,7 +503,7 @@ class Emitters {
 	public static function pulseAt(e:Emitter, phase:Float, age:Float):Float {
 		if (!(e.pulseRate > 0))
 			return 1;
-		var depth = clamp(e.pulseDepth, 0, 1);
+		var depth = MathTools.clamp(e.pulseDepth, 0, 1);
 		return 1 - depth * (.5 + .5 * Trig.sin(TAU * fraction(e.pulseRate * age + phase)));
 	}
 
@@ -553,7 +540,7 @@ class Emitters {
 				var a = colorValues[i - 1],
 					b = colorValues[i],
 					f = (t - colorTimes[i - 1]) / (colorTimes[i] - colorTimes[i - 1]);
-				value = between(a, b, f, 0) | between(a, b, f, 8) | between(a, b, f, 16) | between(a, b, f, 24);
+				value = helix.math.Color.lerp(a, b, f);
 			}
 			break;
 		}
@@ -561,11 +548,6 @@ class Emitters {
 	}
 
 	// A channel of the color between two, rounded, in its place.
-	static inline function between(a:Int, b:Int, f:Float, shift:Int):Int {
-		var x = (a >>> shift) & 255, y = (b >>> shift) & 255;
-		return Math.round(x + (y - x) * f) << shift;
-	}
-
 	// The soft round dot a particle draws without a texture, made once for each graphics.
 	static var dot:Null<helix.raylib.Texture2D>;
 	static var dotGraphics:Null<helix.platform.IGraphics>;

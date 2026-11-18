@@ -31,7 +31,7 @@ class ParticlesTests {
 	}
 
 	// The hashes of the seeded runs, the same on every target.
-	static inline final SEEDED_3D = 127556419;
+	static inline final SEEDED_3D = 520633988;
 	static inline final SEEDED_2D = -1673772643;
 
 	// A hash of numbers' bits, by shifts and exclusive ors alone, which every target computes alike.
