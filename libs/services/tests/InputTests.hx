@@ -8,7 +8,7 @@ import helix.services.input.Touch;
 
 /** Checks the keyboard, the mouse, touch, the gamepads, the tilt and Actions over fake events: held, pressed and released by frame;
 	repeats ignored; fingers by id; focus lost letting go; sticks past a round dead zone; tilt from level; and actions over
-	the devices given, pressed once however many bindings are held, axes as buttons, and movement capped at 1. */
+	the devices provided, pressed once however many bindings are held, axes as buttons, and movement capped at 1. */
 class InputTests {
 	static var checks = 0;
 
@@ -164,7 +164,7 @@ class InputTests {
 			&& actions.getBindings("each").indexOf(each[7]) >= 0,
 			"unbind removes only the bindings equal to those given");
 		actions.unbindAll();
-		// Tilt: asked through the platform's tilt, level taken once held steady for half a second, then read turned with the screen.
+		// Tilt: asked through the platform's tilt, level measured once held steady for half a second, then read turned with the screen.
 		check(tilt.requestAccess() && devices.tiltRequested && tilt.status == Off, "tilt asked for through the platform's tilt");
 		frame([TiltState(Starting)]);
 		check(tilt.status == Starting && tilt.getAxis(X) == 0, "starting: waiting for the first reading, reading 0");

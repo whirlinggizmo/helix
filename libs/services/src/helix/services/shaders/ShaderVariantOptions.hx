@@ -5,6 +5,6 @@ typedef ShaderVariantOptions = {
 	> ShaderOptions,
 
 	/** The combinations to compile, each a list of features (`[]` for none on). Optional; omitted, every combination of the features is
-		compiled, at most 8 features (256 variants), and a larger set must give its combinations. */
+		compiled, at most 8 features (256 variants), and a larger set must list its combinations. */
 	@:optional var combinations:Array<Array<String>>;
 }

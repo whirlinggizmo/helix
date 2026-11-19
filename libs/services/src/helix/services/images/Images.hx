@@ -8,7 +8,7 @@ import helix.services.assets.Assets;
 
 /** Provides images by path: each file found through the assets, decoded off the main thread where the platform can, into pixels.
 
-	Images draws nothing and holds nothing on the GPU: what a program draws with is its own (`IGraphics.createTexture` takes an image's
+	Images draws nothing and holds nothing on the GPU: what a program draws with is its own (`IGraphics.createTexture` accepts an image's
 	pixels as they are). The program polls it once a frame, as it does the decoder.
 
 	```haxe

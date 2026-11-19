@@ -10,7 +10,7 @@ import helix.services.input.Touch;
 /** Shows Touch: every finger, by its id, as it lands, moves and lifts.
 
 	Each finger landing and lifting is printed with where, and how many are down. The screen is dark grey with none down, and brighter
-	for each finger, as many as the screen takes. The window, its events and the loop are the platform's, written out by hand, as a program
+	for each finger, as many as the screen accepts. The window, its events and the loop are the platform's, written out by hand, as a program
 	does them until the layer above the services does. The `quit_after_frame` option (`--quit_after_frame=60` natively,
 	`?quit_after_frame=60` in a page) quits it after that frame. */
 class Main {

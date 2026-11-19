@@ -2,7 +2,7 @@ package helix.services.fonts;
 
 /** Specifies what a font's glyphs hold (`Font2D.kind`): `Fonts.load`, `rasterize` and `loadBmFont` make Coverage, `loadBitmap` and
 	`rasterizeBitmap` Bitmap, `loadDistanceField` and `rasterizeDistanceField` Distance; `packFont` and a `Font2D` a program makes what
-	they are given. */
+	they are provided. */
 #if !macro
 @:build(helix.platform.macros.EnumNames.build())
 #end

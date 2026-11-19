@@ -4,7 +4,7 @@ package helix.services.shaders;
 	works over either.
 
 	A `get` form throws for a name nothing declares, listing what is declared and, for a path written with brackets, the spelling it
-	takes; a `find` form returns null. On a set, a name is found when any variant declares it. */
+	accepts; a `find` form returns null. On a set, a name is found when any variant declares it. */
 interface IShaderHandles {
 	/** Gets every uniform's handle: each block member, struct field and field of an array of structs, in block order. On a set, every
 		variant's, each name once. */
@@ -15,26 +15,26 @@ interface IShaderHandles {
 
 	/** Returns whether a uniform is declared.
 
-		@param name  Its path, or the name `Shader.withNames` gave it.
+		@param name  Its path, or the name `Shader.withNames` assigned it.
 		@return  True when it is declared (on a set, by any variant). */
 	function hasUniform(name:String):Bool;
 
 	/** Returns whether a texture is sampled.
 
-		@param name  Its GLSL name, or the name `Shader.withNames` gave it.
+		@param name  Its GLSL name, or the name `Shader.withNames` assigned it.
 		@return  True when it is declared (on a set, by any variant). */
 	function hasSampler(name:String):Bool;
 
 	/** Returns the handle of a uniform.
 
-		@param name  Its path (`roughness`, `material.roughness`, `lights.color`), or the name `Shader.withNames` gave it.
+		@param name  Its path (`roughness`, `material.roughness`, `lights.color`), or the name `Shader.withNames` assigned it.
 		@return  The handle, the same each call.
-		@throws String  A name nothing declares; given `lights[0].position`, it names `lights.position` and `getUniformPath`. */
+		@throws String  A name nothing declares; for `lights[0].position`, it names `lights.position` and `getUniformPath`. */
 	function getUniform(name:String):ShaderUniform;
 
 	/** Finds the handle of a uniform that may not be declared.
 
-		@param name  Its path, or the name `Shader.withNames` gave it.
+		@param name  Its path, or the name `Shader.withNames` assigned it.
 		@return  The handle, the same each call, or null. */
 	function findUniform(name:String):Null<ShaderUniform>;
 
@@ -54,14 +54,14 @@ interface IShaderHandles {
 
 	/** Returns the handle of a sampled texture.
 
-		@param name  Its GLSL name, or the name `Shader.withNames` gave it.
+		@param name  Its GLSL name, or the name `Shader.withNames` assigned it.
 		@return  The handle, the same each call.
 		@throws String  A name nothing declares. */
 	function getSampler(name:String):ShaderSampler;
 
 	/** Finds the handle of a sampled texture that may not be declared.
 
-		@param name  Its GLSL name, or the name `Shader.withNames` gave it.
+		@param name  Its GLSL name, or the name `Shader.withNames` assigned it.
 		@return  The handle, or null. */
 	function findSampler(name:String):Null<ShaderSampler>;
 
@@ -91,7 +91,7 @@ interface IShaderHandles {
 
 	/** Returns a vertex attribute (on a set, the first variant's that reads it).
 
-		@param name  Its GLSL name, or the name `Shader.withNames` gave it.
+		@param name  Its GLSL name, or the name `Shader.withNames` assigned it.
 		@return  The attribute.
 		@throws String  A name nothing declares. */
 	function getAttribute(name:String):ShaderAttribute;

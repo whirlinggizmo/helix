@@ -107,7 +107,7 @@ class ManifestCache extends AssetCache {
 				copies.forgetUnder(server, level + name, () -> {});
 	}
 
-	// The shipped trees from the i-th on: the first whose manifests give path the hash; null for none.
+	// The shipped trees from the i-th on: the first whose manifests list path at the hash; null for none.
 	function shippedWith(path:String, hash:String, i:Int, request:AssetRequest, found:Null<IFileSystem>->Void):Void {
 		if (i == shipped.length) {
 			found(null);
@@ -186,7 +186,7 @@ class ManifestCache extends AssetCache {
 		});
 	}
 
-	/** Hashes bytes with SHA-256 and gives the 64 hex digits, as manifests write them after "sha256:": the browser's digest in a page,
+	/** Hashes bytes with SHA-256 and returns the 64 hex digits, as manifests write them after "sha256:": the browser's digest in a page,
 		off the main thread and so not during this call; Node's where a page's build runs there (the tests); Haxe's natively, during
 		the call. */
 	static function digest(bytes:Bytes, done:String->Void):Void {

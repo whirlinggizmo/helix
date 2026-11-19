@@ -15,7 +15,7 @@ import helix.platform.Primitive;
 	``` */
 class ShaderPipelineState {
 	/** Opaque triangles, indexed, depth tested and written, back faces culled, the uniform `viewProjection` flipped for a render
-		target: the name a library's shaders use. A layer whose shaders name it otherwise gives its own (raylib's `mvp`:
+		target: the name a library's shaders use. A layer whose shaders name it otherwise provides its own (raylib's `mvp`:
 		`OPAQUE.with({flipUniform: "mvp"})`). */
 	public static final OPAQUE = new ShaderPipelineState();
 
@@ -67,7 +67,7 @@ class ShaderPipelineState {
 	/** Gets how a draw into a render target is turned the right way up: `ViewProjection` a matrix's y row, `ClipScale` a vec4 clip
 		scale the shader multiplies `gl_Position` by, `None` nothing.
 
-		A shader is flipped only through a uniform it reads, one of those two; `ShaderOptions.clipScale` gives any shader one
+		A shader is flipped only through a uniform it reads, one of those two; `ShaderOptions.clipScale` adds one to any shader
 		(`CLIP_SCALE`). A flipped draw's winding is reversed with it, by the
 		adapter, so `clockwise` and `cull` mean what they say in a target and on the screen alike. A shadow pass is never flipped: a shadow
 		map is stored bottom first, as clip space maps to it (`IGraphics.createShadowMap`). */
@@ -78,7 +78,7 @@ class ShaderPipelineState {
 		unless `flip` is `None`. */
 	public final flipUniform:String;
 
-	/** Creates a state, each value given or as `OPAQUE` has it.
+	/** Creates a state, each value provided or as `OPAQUE` has it.
 
 		@param values  Optional. The values that differ from `OPAQUE`'s. */
 	public function new(?values:{

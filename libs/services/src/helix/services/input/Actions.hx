@@ -5,7 +5,7 @@ import helix.math.Vector2;
 /** Provides actions, which are names the game reads, such as "jump" or "left", each bound to keys, mouse buttons, gamepads and tilt.
 
 	Any of an action's bindings works it. Actions reads the devices it was created over, so it is current once they are polled. It has no
-	`poll` of its own. A binding to a device it wasn't given, or a name with no bindings, reads as not held, with a value of 0.
+	`poll` of its own. A binding to a device it wasn't provided, or a name with no bindings, reads as not held, with a value of 0.
 
 	```haxe
 	var keyboard = new Keyboard(events, keyboardAdapter), gamepads = new Gamepads(events, gamepadsAdapter);
@@ -190,7 +190,7 @@ class Actions {
 		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
-	// The device that reads a binding of its kind, or null when the game gave none.
+	// The device that reads a binding of its kind, or null when the game provided none.
 	function deviceOf(binding:Binding):Null<IActionDevice> {
 		for (device in devices)
 			if (device.reads(binding))

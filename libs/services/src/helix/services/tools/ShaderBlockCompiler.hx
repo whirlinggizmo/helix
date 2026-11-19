@@ -24,7 +24,7 @@ class ShaderBlockCompiler {
 			blockName, uniforms, pos);
 	}
 
-	/** Makes values for a shared block from its declaration as GLSL text known while the program builds, as `Shader.compileText` takes
+	/** Makes values for a shared block from its declaration as GLSL text known while the program builds, as `Shader.compileText` accepts
 		text (a literal, or a class's string constant), so a library keeping its GLSL in constants needs no file.
 
 		@param text  The GLSL declaring the block.

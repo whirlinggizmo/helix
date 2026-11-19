@@ -27,7 +27,7 @@ class FloatTween extends EasedTween {
 
 		@param from  The value at the start.
 		@param to  The value at the end.
-		@param duration  The seconds one play takes, 0 or more.
+		@param duration  The seconds one play lasts, 0 or more.
 		@param ease  Optional. The easing curve; a straight line when omitted. */
 	public function new(from:Float, to:Float, duration:Float, ?ease:Ease) {
 		super(duration, ease);
@@ -42,7 +42,7 @@ class FloatTween extends EasedTween {
 
 	/** Adds a leg: the value moves on from where the tween ended before to another value.
 
-		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and
+		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and
 		`ease` stay the first leg's.
 
 		```haxe
@@ -55,10 +55,10 @@ class FloatTween extends EasedTween {
 		```
 
 		@param to  The value at the leg's end.
-		@param duration  The seconds the leg takes, 0 or more.
+		@param duration  The seconds the leg lasts, 0 or more.
 		@param ease  Optional. The leg's easing curve; a straight line when omitted.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function append(to:Float, duration:Float, ?ease:Ease):FloatTween {
 		addLeg(duration, ease != null ? ease : Ease.linear);
 		if (legValues == null)
@@ -71,7 +71,7 @@ class FloatTween extends EasedTween {
 
 		@param seconds  The seconds to wait, 0 or more.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function appendDelay(seconds:Float):FloatTween {
 		addLeg(seconds, null);
 		return this;

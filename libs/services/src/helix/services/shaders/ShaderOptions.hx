@@ -1,8 +1,8 @@
 package helix.services.shaders;
 
-/** Represents how a build-time compile at a call compiles: every macro that compiles a shader takes it, as a constant object written at
+/** Represents how a build-time compile at a call compiles: every macro that compiles a shader accepts it, as a constant object written at
 	the call or a class's static constant holding one (`static final OPTIONS:ShaderOptions = {...}`), so options several calls share
-	live in one place. An array of them composes, left to right: `[Lit.OPTIONS, {file: "shaders/lit.shader"}]` takes `Lit.OPTIONS` and
+	live in one place. An array of them composes, left to right: `[Lit.OPTIONS, {file: "shaders/lit.shader"}]` uses `Lit.OPTIONS` and
 	sets `file`; a later array (`defines`, `shared`) is added to an earlier one, a later value replaces an earlier one.
 
 	```haxe
@@ -15,9 +15,9 @@ typedef ShaderOptions = {
 	@:optional var defines:Array<String>;
 
 	/** A class whose static `String` constants (`static inline final` or `static final` with a constant value) are texts an
-		angle-bracket `#include` takes by the constant's name: `#include <common>` takes `common`. It is named as Haxe names it from the
-		call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module. Optional; none
-		by default. An included text may include others. They are looked in before the build's class paths. */
+		angle-bracket `#include` includes by the constant's name: `#include <common>` includes `common`. It is named as Haxe names
+		it from the call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module.
+		Optional; none by default. An included text may include others. They are looked in before the build's class paths. */
 	@:optional var includes:String;
 
 	/** Directories a quoted `#include` looks in after the including file's own, relative to the file holding the call. Optional; none by

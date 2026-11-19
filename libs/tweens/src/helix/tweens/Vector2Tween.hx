@@ -28,7 +28,7 @@ class Vector2Tween extends EasedTween {
 
 		@param from  The vector at the start. The tween keeps a copy.
 		@param to  The vector at the end. The tween keeps a copy.
-		@param duration  The seconds one play takes, 0 or more.
+		@param duration  The seconds one play lasts, 0 or more.
 		@param ease  Optional. The easing curve; a straight line when omitted.
 		@param out  Optional. The vector each `update` writes, which may be `from` or `to`; a new one when omitted. */
 	public function new(from:Vector2, to:Vector2, duration:Float, ?ease:Ease, ?out:Vector2) {
@@ -40,7 +40,7 @@ class Vector2Tween extends EasedTween {
 
 	/** Adds a leg: the vector moves on from where the tween ended before to another vector.
 
-		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and
+		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and
 		`ease` stay the first leg's.
 
 		```haxe
@@ -49,10 +49,10 @@ class Vector2Tween extends EasedTween {
 		```
 
 		@param to  The vector at the leg's end. The tween keeps a copy.
-		@param duration  The seconds the leg takes, 0 or more.
+		@param duration  The seconds the leg lasts, 0 or more.
 		@param ease  Optional. The leg's easing curve; a straight line when omitted.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function append(to:Vector2, duration:Float, ?ease:Ease):Vector2Tween {
 		addLeg(duration, ease != null ? ease : Ease.linear);
 		if (legValues == null)
@@ -65,7 +65,7 @@ class Vector2Tween extends EasedTween {
 
 		@param seconds  The seconds to wait, 0 or more.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function appendDelay(seconds:Float):Vector2Tween {
 		addLeg(seconds, null);
 		return this;

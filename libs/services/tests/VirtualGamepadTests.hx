@@ -6,7 +6,7 @@ import helix.services.input.Touch;
 import helix.services.input.VirtualGamepad;
 
 /** Checks VirtualGamepad over fake events, devices and window (800 by 600): unplugged with the hint until the first touch; a floating
-	stick on each half read through Gamepads; the dead zone; a finger landing on a held stick taking it over; a blocked bound; a lift
+	stick on each half read through Gamepads; the dead zone; a finger landing on a held stick claiming it; a blocked bound; a lift
 	handing the stick to a finger still down; a fixed stick pushed from its base; a following base; a resize letting go; a physical
 	gamepad replacing the virtual one until the next touch after it leaves; and buttons: shown from the start, pressed by the first touch,
 	slid off and onto, a button turned off, kept from the sticks, and released by a physical gamepad; the diamond; and a tilt

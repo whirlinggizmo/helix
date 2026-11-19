@@ -30,7 +30,7 @@ class ColorTween extends EasedTween {
 
 		@param from  The color at the start.
 		@param to  The color at the end.
-		@param duration  The seconds one play takes, 0 or more.
+		@param duration  The seconds one play lasts, 0 or more.
 		@param ease  Optional. The easing curve; a straight line when omitted. */
 	public function new(from:Int, to:Int, duration:Float, ?ease:Ease) {
 		super(duration, ease);
@@ -45,7 +45,7 @@ class ColorTween extends EasedTween {
 
 	/** Adds a leg: the color fades on from where the tween ended before to another color.
 
-		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and
+		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and
 		`ease` stay the first leg's.
 
 		```haxe
@@ -54,10 +54,10 @@ class ColorTween extends EasedTween {
 		```
 
 		@param to  The color at the leg's end.
-		@param duration  The seconds the leg takes, 0 or more.
+		@param duration  The seconds the leg lasts, 0 or more.
 		@param ease  Optional. The leg's easing curve; a straight line when omitted.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function append(to:Int, duration:Float, ?ease:Ease):ColorTween {
 		addLeg(duration, ease != null ? ease : Ease.linear);
 		if (legValues == null)
@@ -70,7 +70,7 @@ class ColorTween extends EasedTween {
 
 		@param seconds  The seconds to wait, 0 or more.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function appendDelay(seconds:Float):ColorTween {
 		addLeg(seconds, null);
 		return this;

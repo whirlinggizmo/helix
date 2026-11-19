@@ -13,7 +13,7 @@ import helix.services.shaders.ShaderMacros;
 
 	**Members.** For each uniform a class gains members named for its path, the parts joined in camel case (`material.roughness` as
 	`MaterialRoughness`, `lights.color` as `LightsColor`). A member of a block with no instance name is named alone (`uniform Glow {
-	vec4 tint; };` gives `Tint`); with one, the instance name leads (`... } glow;` gives `GlowTint`). Loose uniforms are named alone.
+	vec4 tint; };` produces `Tint`); with one, the instance name leads (`... } glow;` produces `GlowTint`). Loose uniforms are named alone.
 
 	- A scalar (`float`, `int`, `uint`, `bool`): `setX(value)`.
 	- A vector: `setX(x, y, ...)` with its components. A `vec3` or `vec4` whose name holds `color`, `colour` or `tint` (any case) also
@@ -69,7 +69,7 @@ class ShaderValueClasses {
 		```
 		@param vertex  The vertex stage's file, relative to the file holding the class.
 		@param fragment  The fragment stage's file, relative to the file holding the class.
-		@param options  Optional. Defines, includes, shared blocks, a check, and a file, as `Shader.compile` takes them, at the call or a
+		@param options  Optional. Defines, includes, shared blocks, a check, and a file, as `Shader.compile` accepts them, at the call or a
 			class's static constant.
 		@return  The class's fields with the generated ones. */
 	public static macro function build(vertex:String, fragment:String, ?options:ExprOf<helix.services.shaders.ShaderOptions>):Array<Field> {
@@ -231,8 +231,8 @@ class ShaderValueClasses {
 	/** Makes the class it builds, extending `ShaderBlockValues`, a class of typed values for one shared block, as a shader or a set of
 		variants names it shared.
 
-		The class gains a member for each of the block's uniforms, named as above, and a constructor taking nothing, over the block as the
-		shader or set given lays it out. It follows the block's layout as `ShaderBlockValues` does.
+		The class gains a member for each of the block's uniforms, named as above, and a constructor with no arguments, over the
+		block as the shader or set provided lays it out. It follows the block's layout as `ShaderBlockValues` does.
 
 		```haxe
 		@:build(helix.services.tools.ShaderValueClasses.buildBlock("LitMaterial.VARIANTS", "Camera"))

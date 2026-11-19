@@ -6,7 +6,7 @@ package helix.services.shaders;
 	`getUniformPath` and `findUniformPath` (`IShaderHandles`) return it, the same object for the same path, so a layer that sets values by
 	such names parses each once: `values.writeColor(path.uniform, color, path.elementIndex)`. */
 class ShaderUniformPath {
-	/** Gets the path as given. */
+	/** Gets the path as provided. */
 	public final path:String;
 
 	/** Gets the uniform it names (`pointLights.color`). */

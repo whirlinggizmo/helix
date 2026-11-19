@@ -283,7 +283,7 @@ class ServerSource extends AssetSource {
 			else if (status == 206) {
 				var total = totalOf(responseHeaders.get("content-range"));
 				if (total == null || bytes.length > total)
-					// A range answer that doesn't give the file's size: the file is downloaded again, whole.
+					// A range answer that doesn't state the file's size: the file is downloaded again, whole.
 					download(path, request, null, null, replacing, false, got, missing, failed, growing, true);
 				else if (bytes.length == total) {
 					var source = GrowingSource.of(bytes);
@@ -338,7 +338,7 @@ class ServerSource extends AssetSource {
 		}, message -> source.fail(message));
 	}
 
-	/** Returns a file's size from a range answer's `Content-Range` ("bytes 100-199/1000"), or null when it doesn't give it. */
+	/** Returns a file's size from a range answer's `Content-Range` ("bytes 100-199/1000"), or null when it doesn't state it. */
 	static function totalOf(range:Null<String>):Null<Int> {
 		if (range == null)
 			return null;

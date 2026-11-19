@@ -5,10 +5,11 @@ import helix.services.fonts.Font2D;
 import helix.services.fonts.Glyph2D;
 import helix.services.images.Image;
 
-/** Checks Image's operations: the pixels of a few cases of each pinned by their CRC-32, each the value raylib's own function gives the
-	same input (compiled from its C, R8G8B8A8: 5.5's, and 6.2's for the lines and the filled circle); and the behaviour around them: the byte order, clipping, the filters of this library's
-	own (`Bilinear`, `Bicubic`, the mipmaps), scaled drawing, and where it differs from raylib by design (alpha kept by `grayscale` and
-	`convolve`, `dither` left 8-bit, `crop` outside, `resizeCanvas` at the same size). */
+/** Checks Image's operations: the pixels of a few cases of each pinned by their CRC-32, each the value raylib's own function
+	produces for the same input (compiled from its C, R8G8B8A8: 5.5's, and 6.2's for the lines and the filled circle); and the
+	behaviour around them: the byte order, clipping, the filters of this library's own (`Bilinear`, `Bicubic`, the mipmaps), scaled
+	drawing, and where it differs from raylib by design (alpha kept by `grayscale` and `convolve`, `dither` left 8-bit, `crop`
+	outside, `resizeCanvas` at the same size). */
 @:access(helix.services.fonts)
 class ImageTests {
 	static var checks = 0;
@@ -26,7 +27,7 @@ class ImageTests {
 	static function angle(degrees:Float):Float
 		return f32(f32(f32(degrees) * f32(Math.PI)) / 180);
 
-	// Degrees as raylib's GenImageGradientLinear turns them, (90 - direction) already taken, to radians.
+	// Degrees as raylib's GenImageGradientLinear turns them, (90 - direction) already applied, to radians.
 	static function direction(degrees:Float):Float
 		return f32(f32(f32(degrees) / 180) * f32(3.14159));
 

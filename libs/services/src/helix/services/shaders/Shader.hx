@@ -16,12 +16,12 @@ import helix.platform.VertexBuffer;
 
 	**Stages.** Both stages are written in one of two forms, told apart by the `#version` line:
 
-	- **`#version 450`**, Vulkan-style: attributes may give `layout(location = n)`, blocks and textures `layout(binding = n)`.
-	- **`#version 300 es`, or 330 to 440,** as WebGL2 and GL write it: nothing gives a location or a binding, as GLSL ES 3.0 can't, and
+	- **`#version 450`**, Vulkan-style: attributes may declare `layout(location = n)`, blocks and textures `layout(binding = n)`.
+	- **`#version 300 es`, or 330 to 440,** as WebGL2 and GL write it: nothing declares a location or a binding, as GLSL ES 3.0 can't, and
 	  the compiler places everything; a `binding` or `location` written in this form is refused. GLSL ES 100's `attribute`, `varying`,
-	  `gl_FragColor` and `texture2D` are not taken.
+	  `gl_FragColor` and `texture2D` are not accepted.
 
-	**Loose uniforms** (`uniform vec4 tint;`, outside a block) are taken in either form, so a variant's own uniforms, declared under its
+	**Loose uniforms** (`uniform vec4 tint;`, outside a block) are accepted in either form, so a variant's own uniforms, declared under its
 	`#ifdef`, need no block of their own. Both stages' are gathered into one block, `helix_uniforms`, read by both (platform proposal 6):
 	the vertex stage's in the order it declares them (an include's where it is included), then the fragment stage's not already there.
 	A uniform both stages declare loose is one member; declared with two types, it is refused. A program with none has no such block.
@@ -32,19 +32,19 @@ import helix.platform.VertexBuffer;
 	uniform whose elements are the array's (`lights.color`). An array inside an array of structs, a `double`, and a sampler array
 	(`sampler2D maps[4]`) are refused, naming them.
 
-	**Placement**, where nothing gives it. Blocks and textures are numbered apart: blocks 0 to 3 in each stage (platform proposal 10, as
-	SDL_GPU binds four a stage; a block both stages read takes a slot in each), textures 0 to 11, as every adapter binds them; one past
-	them is refused. Named blocks without a binding take the lowest free
+	**Placement**, where nothing declares it. Blocks and textures are numbered apart: blocks 0 to 3 in each stage (platform proposal 10, as
+	SDL_GPU binds four a stage; a block both stages read uses a slot in each), textures 0 to 11, as every adapter binds them; one past
+	them is refused. Named blocks without a binding get the lowest free
 	block bindings in the order declared, then `helix_uniforms`, then the shared blocks gathered from loose uniforms
-	(`ShaderSharedBlock.uniforms`). Textures without a binding take the lowest free texture bindings, in the order declared. Attributes
-	without a location take the lowest free locations in the order declared, a matrix a location a column. A block both stages declare
+	(`ShaderSharedBlock.uniforms`). Textures without a binding get the lowest free texture bindings, in the order declared. Attributes
+	without a location get the lowest free locations in the order declared, a matrix a location a column. A block both stages declare
 	alike is one block at one binding, read by both. Since everything is found by name, and a pipeline names the uniform it flips by its
 	place (`ShaderPipelineState.flipUniform`, platform proposal 9), no rule of placement is the program's to keep: `findUniformPlace`
 	says where a uniform is, and a library with a rule of its own passes a `check`.
 
 	**Includes and defines.** A quoted `#include` resolves beside the including file, then in `ShaderOptions.includeDirectories`; one in
 	angle brackets in the texts `ShaderOptions.includes` names, then in each of the build's class paths (`#include <helix/draw/color.glsl>`).
-	No stage declares the include extension: the compiler enables it. Defines are given to the compiler, so a line in an error is the
+	No stage declares the include extension: the compiler enables it. Defines are passed to the compiler, so a line in an error is the
 	file's; each stage also has `HELIX_VERTEX` or `HELIX_FRAGMENT`.
 
 	**Macros and the program's own types.** The service's types that hold macros import nothing with a build macro, so they type in the
@@ -71,11 +71,11 @@ import helix.platform.VertexBuffer;
 	values.writeTexture(glow.getSampler("image"), texture);
 	``` */
 class Shader implements IShaderHandles {
-	/** Gets the compiled program in every dialect the build's adapters take, as `IGraphics.createShader` takes it, with its reflection:
+	/** Gets the compiled program in every dialect the build's adapters accept, as `IGraphics.createShader` accepts it, with its reflection:
 		its blocks' members (`ShaderBlock.members`) and its attributes' types. */
 	public var source(default, null):ShaderSource;
 
-	/** Gets the vertex attributes, by slot: entry i is the attribute at slot i, so a matrix, which takes a slot a column from its own,
+	/** Gets the vertex attributes, by slot: entry i is the attribute at slot i, so a matrix, which uses a slot a column from its own,
 		is the entry at each of its columns' slots, the same record each time. */
 	public var attributes(default, null):Array<ShaderAttribute>;
 
@@ -98,7 +98,7 @@ class Shader implements IShaderHandles {
 		receives the shader. A rejected replacement (`reloadError`) calls none. */
 	public final reloadListeners:Array<Shader->Void> = [];
 
-	/** Gets why the last replacement wasn't taken, or null when it was: a file that doesn't read or holds another kind of shader or
+	/** Gets why the last replacement wasn't applied, or null when it was: a file that doesn't read or holds another kind of shader or
 		other features (`Shaders`), or a replaced program the GPU refused (`ShaderPrograms`). The shader, and what was built from it, stay
 		as they were, and this says so where a holder can see it as well as in the log. */
 	public var reloadError(default, null):Null<String>;
@@ -127,7 +127,7 @@ class Shader implements IShaderHandles {
 
 	/** Compiles a vertex and a fragment stage while the program builds, and returns the shader as a value in the program.
 
-		A browser build carries GLSL ES 300 alone; a native build GLSL 410 and SDL_GPU's dialects besides. Both stages are given: a layer
+		A browser build carries GLSL ES 300 alone; a native build GLSL 410 and SDL_GPU's dialects besides. Both stages are required: a layer
 		whose users may leave one out (raylib's `LoadShader(null, "x.fs")`) supplies its own default, through `makeExpr`.
 		@param vertex  The vertex stage's file, relative to the file holding the call.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
@@ -156,8 +156,8 @@ class Shader implements IShaderHandles {
 	/** Returns the GLSL text an expression stands for while the program builds, for a library's macro that forwards a program's shader
 		text (helix-raylib's `LoadShaderFromMemory`) to `makeExpr`.
 
-		The expression is as `compileText` takes it: a literal, a static `String` constant, or such strings joined with `+`, typed where it
-		was written. A `null` gives null: a stage the program left out (raylib's `LoadShader(null, "x.fs")`) is the caller's to supply, as
+		The expression is as `compileText` accepts it: a literal, a static `String` constant, or such strings joined with `+`, typed where it
+		was written. A `null` returns null: a stage the program left out (raylib's `LoadShader(null, "x.fs")`) is the caller's to supply, as
 		helix-raylib supplies rlgl's default.
 		@param text  The expression.
 		@return  The text, and the file a quoted include in it resolves beside (the file declaring it), or null for `null`.
@@ -169,13 +169,13 @@ class Shader implements IShaderHandles {
 	/** Returns the expression of a shader compiled from two stages' text, for a library's macro that makes or reads the text itself.
 
 		Every compile goes through it, the macros above, `ShaderVariants`' and `ShaderValueClasses`' included. It compiles through
-		`ShaderCompiler.compileText` with the dialects the build's target takes, runs the options' `check`, writes the options' `file`
-		when `-D helix-asset-directory` is given, and reports an error at the position given. Both stages are given: a stage left out is
+		`ShaderCompiler.compileText` with the dialects the build's target accepts, runs the options' `check`, writes the options' `file`
+		when `-D helix-asset-directory` is set, and reports an error at the position provided. Both stages are required: a stage left out is
 		the caller's to supply (`foldText`).
 
 		The expression it returns is one shader for each distinct pair of stage texts and options in the build: a static the macro adds
 		holds it, made once, so every evaluation (a load in a loop, a load after an unload) and every call site compiling the same text
-		with the same options gives the same `Shader`; any difference in text or options is another. A shader holds no GPU resource, so what a layer's
+		with the same options returns the same `Shader`; any difference in text or options is another. A shader holds no GPU resource, so what a layer's
 		unload frees is the GPU's (`ShaderPrograms.disposeShader`), and a later load builds it again.
 		@param vertex  The vertex stage: a name for messages (its file's path, when it has one, which quoted includes resolve beside) and its
 			GLSL.
@@ -190,7 +190,7 @@ class Shader implements IShaderHandles {
 
 	/** Returns whether the shader declares a uniform.
 
-		@param name  Its path, or the name `withNames` gave it.
+		@param name  Its path, or the name `withNames` assigned it.
 		@return  True when it is declared. */
 	public function hasUniform(name:String):Bool {
 		var u = handles.get(name);
@@ -207,9 +207,9 @@ class Shader implements IShaderHandles {
 
 	/** Returns a handle for a uniform the shader may declare now or only after a replacement, for code written ahead of the GLSL: one not
 		declared now is `declared` false, keeps what is written through it, and binds when a replacement declares it, its type then the
-		declaration's. A value kept that the declared type doesn't take is logged and dropped.
+		declaration's. A value kept that the declared type doesn't accept is logged and dropped.
 
-		@param name  Its path, or the name `withNames` gave it.
+		@param name  Its path, or the name `withNames` assigned it.
 		@return  The handle, the same each call; the declared one's when the shader declares it. */
 	public function reserveUniform(name:String):ShaderUniform {
 		var u = handles.get(name);
@@ -239,7 +239,7 @@ class Shader implements IShaderHandles {
 	/** Returns a handle for a texture the shader may sample now or only after a replacement, binding, its kind then the declaration's,
 		when a replacement declares it.
 
-		@param name  Its GLSL name, or the name `withNames` gave it.
+		@param name  Its GLSL name, or the name `withNames` assigned it.
 		@return  The handle, the same each call. */
 	public function reserveSampler(name:String):ShaderSampler {
 		var s = samplerHandles.get(name);
@@ -253,7 +253,7 @@ class Shader implements IShaderHandles {
 
 	/** Returns whether the shader samples a texture.
 
-		@param name  Its GLSL name, or the name `withNames` gave it.
+		@param name  Its GLSL name, or the name `withNames` assigned it.
 		@return  True when it is declared. */
 	public function hasSampler(name:String):Bool {
 		var s = samplerHandles.get(name);
@@ -262,9 +262,9 @@ class Shader implements IShaderHandles {
 
 	/** Returns the handle of a uniform the shader declares.
 
-		@param name  Its path (`roughness`, `material.roughness`, `lights.color`), or the name `withNames` gave it.
+		@param name  Its path (`roughness`, `material.roughness`, `lights.color`), or the name `withNames` assigned it.
 		@return  The handle, the same each call.
-		@throws String  A name the shader doesn't declare, listing those it does; given `lights[0].position`, it names
+		@throws String  A name the shader doesn't declare, listing those it does; for `lights[0].position`, it names
 			`lights.position` and `getUniformPath`. */
 	public function getUniform(name:String):ShaderUniform {
 		var u = findUniform(name);
@@ -275,7 +275,7 @@ class Shader implements IShaderHandles {
 
 	/** Finds the handle of a uniform the shader may not declare.
 
-		@param name  Its path, or the name `withNames` gave it.
+		@param name  Its path, or the name `withNames` assigned it.
 		@return  The handle, the same each call, or null. */
 	public function findUniform(name:String):Null<ShaderUniform> {
 		var u = handles.get(name);
@@ -319,7 +319,7 @@ class Shader implements IShaderHandles {
 
 	/** Returns the handle of a texture the shader samples.
 
-		@param name  Its GLSL name, or the name `withNames` gave it.
+		@param name  Its GLSL name, or the name `withNames` assigned it.
 		@return  The handle, the same each call.
 		@throws String  A name the shader doesn't declare, listing those it does. */
 	public function getSampler(name:String):ShaderSampler {
@@ -331,7 +331,7 @@ class Shader implements IShaderHandles {
 
 	/** Finds the handle of a texture the shader may not sample.
 
-		@param name  Its GLSL name, or the name `withNames` gave it.
+		@param name  Its GLSL name, or the name `withNames` assigned it.
 		@return  The handle, or null. */
 	public function findSampler(name:String):Null<ShaderSampler> {
 		var s = samplerHandles.get(name);
@@ -355,7 +355,7 @@ class Shader implements IShaderHandles {
 
 	/** Returns a vertex attribute the shader reads.
 
-		@param name  Its GLSL name, or the name `withNames` gave it.
+		@param name  Its GLSL name, or the name `withNames` assigned it.
 		@return  The attribute, with its slot and type.
 		@throws String  A name the shader doesn't declare, listing those it does. */
 	public function getAttribute(name:String):ShaderAttribute {
@@ -367,7 +367,7 @@ class Shader implements IShaderHandles {
 
 	/** Finds a vertex attribute the shader may not read.
 
-		@param name  Its GLSL name, or the name `withNames` gave it.
+		@param name  Its GLSL name, or the name `withNames` assigned it.
 		@return  The attribute, or null. */
 	public function findAttribute(name:String):Null<ShaderAttribute> {
 		var glsl = glslNameOf(name);
@@ -378,18 +378,18 @@ class Shader implements IShaderHandles {
 	}
 
 	/** Returns the layout of a vertex buffer built for this shader, its records holding the attributes named, packed as floats in the
-		order given.
+		order provided.
 
 		It suits a buffer a program fills for this shader (a sprite batch's, a variant's own). A mesh whose records are laid out already,
-		drawn by any shader, is a `ShaderVertexLayout` (`ShaderVertexLayout.fromAttributes` packs one the same way for any shader). Each attribute takes its
+		drawn by any shader, is a `ShaderVertexLayout` (`ShaderVertexLayout.fromAttributes` packs one the same way for any shader). Each attribute holds its
 		type's floats (`ShaderValueType.componentCount` times `columnCount`), and a matrix a `VertexAttribute` a column at consecutive
-		slots, as `PipelineDesc.buffers` takes them.
+		slots, as `PipelineDesc.buffers` accepts them.
 
 		```haxe
 		var layout = shader.computeVertexBuffer(["position", "normal", "texCoord"]);   // 32-byte records
 		var instances = shader.computeVertexBuffer(["instanceTransform"], true);       // 64-byte records, a slot a column
 		```
-		@param names  The attributes, in their order in a record, by GLSL name or the name `withNames` gave them.
+		@param names  The attributes, in their order in a record, by GLSL name or the name `withNames` assigned them.
 		@param instanced  Optional. Whether the buffer steps once an instance; defaults to false.
 		@return  The buffer's layout: its stride, the sum of the attributes' sizes, and an attribute a column.
 		@throws String  A name the shader doesn't declare, or an integer attribute (`ivec4`), which the platform can't feed yet. */
@@ -423,7 +423,7 @@ class Shader implements IShaderHandles {
 
 	/** Returns this shader with some of its names changed, for code that finds what a shader declares by names other than its GLSL's.
 
-		The program is the same: only the names the finds and gets take change. A renamed thing is found by its new name alone; a struct's
+		The program is the same: only the names the finds and gets accept change. A renamed thing is found by its new name alone; a struct's
 		name renames the paths that start with it (`light` the `light.color`); a name in the map that the shader doesn't declare is
 		skipped, so one map serves shaders that declare different parts of it. The shader returned is
 		replaced with it; this one is unchanged.
@@ -456,7 +456,7 @@ class Shader implements IShaderHandles {
 		return renamed;
 	}
 
-	// The names withNames gave, by GLSL name, and back; empty for a shader of its GLSL names.
+	// The names withNames assigned, by GLSL name, and back; empty for a shader of its GLSL names.
 	var renames:Null<Map<String, String>> = null;
 	final unnames = new Map<String, String>();
 	// The shaders withNames made from this one, replaced with it.
@@ -639,7 +639,7 @@ class Shader implements IShaderHandles {
 			renamed.reloaded();
 	}
 
-	// Records why a replacement wasn't taken.
+	// Records why a replacement wasn't applied.
 
 	@:allow(helix.services.shaders)
 	function refuse(why:String):Void {

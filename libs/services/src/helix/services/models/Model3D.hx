@@ -8,14 +8,14 @@ import helix.geometry.Skin3D;
 import helix.math.Matrix4;
 
 /** Represents a model as `Models` reads it: its meshes, with their nodes' transforms put into them, its materials, and its images
-	decoded for the GPU (`ModelImage3D`). A glTF file and an OBJ file give the same kinds: an OBJ file's materials are made glTF materials
-	(`materials`), and it has no skeleton, skins or animations. */
+	decoded for the GPU (`ModelImage3D`). A glTF file and an OBJ file produce the same kinds: an OBJ file's materials are made glTF
+	materials (`materials`), and it has no skeleton, skins or animations. */
 class Model3D {
 	/** Gets the file it was read from, as the assets name it. */
 	public final path:String;
 
 	/** Gets the meshes, each node's triangles in the scene's order: its transform in their positions, normals and tangents, but for a
-		skinned mesh's (`meshSkinIndices`), whose vertices are as the file gives them, in the space its skin binds them in, as glTF has it.
+		skinned mesh's (`meshSkinIndices`), whose vertices are as the file stores them, in the space its skin binds them in, as glTF has it.
 		An OBJ file's are a mesh for each object, group and material (`ObjFile.computeParts`), in the order of their first faces, their
 		texture coordinates' v running down the image as glTF's do. */
 	public final meshes:Array<Mesh3D>;
@@ -49,7 +49,7 @@ class Model3D {
 		diffuse color and opacity (`MtlMaterial.computeDiffuse` and `computeOpacity`) the base color factor, its diffuse texture the base
 		color image; its metalness and roughness `computeMetalness` and `computeRoughness`, with no metallic-roughness image; its normal
 		map `computeNormalTexturePath`'s; its emissive color (`computeEmission`) the emissive factor, white when it names an emissive
-		texture with that color black, and that texture the emissive image; no occlusion image. A name no library gives is a material of every default. */
+		texture with that color black, and that texture the emissive image; no occlusion image. A name no library defines is a material of every default. */
 	public final materials:Array<GltfMaterial>;
 
 	/** Gets the images, each decoded for the GPU with its file's bytes, by their index in the file; null for one that couldn't be read or

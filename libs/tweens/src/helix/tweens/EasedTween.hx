@@ -22,10 +22,10 @@ class EasedTween extends Tween {
 		Where a kind's `append` added legs, the amount is the current leg's, by that leg's curve, and 0 during a wait. */
 	public var amount(default, null) = 0.;
 
-	// The seconds one play takes: every leg and wait together.
+	// The seconds one play lasts: every leg and wait together.
 	var length:Float;
 
-	// The seconds the first leg takes.
+	// The seconds the first leg lasts.
 	final first:Float;
 
 	// The legs and waits after the first, null until a kind adds one: the seconds into a play each ends at, each one's curve (null
@@ -46,7 +46,7 @@ class EasedTween extends Tween {
 
 	/** Creates a tween at its start.
 
-		@param duration  The seconds one play takes, 0 or more. A play of 0 seconds jumps to its end.
+		@param duration  The seconds one play lasts, 0 or more. A play of 0 seconds jumps to its end.
 		@param ease  Optional. The easing curve, one of `Ease`'s (`Ease.outBounce`) or a function of the program's own (`Ease.of`);
 			a straight line when omitted. */
 	public function new(duration:Float, ?ease:Ease) {
@@ -97,7 +97,7 @@ class EasedTween extends Tween {
 	// Moves the kind's value to `amount` of the way from the value numbered `legFrom` to the one numbered `legTo`.
 	function apply():Void {}
 
-	// Adds a leg ending at a value the kind keeps next among its own, or a wait when given no curve.
+	// Adds a leg ending at a value the kind keeps next among its own, or a wait when the curve is null.
 	function addLeg(duration:Float, ease:Null<Ease>):Void {
 		if (owned)
 			throw "The tween is placed in a sequence, which took the tween's time when placed: append to the tween before placing it";

@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 import helix.platform.Sampling;
 import helix.services.shaders.ShaderLayout.ShaderBlockLayout;
 
-/** Represents values for one shader's uniforms and textures, kept as `IGraphics.draw` takes them.
+/** Represents values for one shader's uniforms and textures, kept as `IGraphics.draw` accepts them.
 
 	Each uniform block is kept as its bytes at its declared size, by slot; each texture slot as a texture handle and its sampling. A
 	draw hands the three arrays over as they are:
@@ -13,12 +13,12 @@ import helix.services.shaders.ShaderLayout.ShaderBlockLayout;
 	graphics.draw(pipeline.handle, [vertices], null, indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
 	```
 
-	`IGraphics.draw` reads them during the call, so a value changed between two draws gives each its own. Values are written by handle
-	(`ShaderUniformValues`' `write` methods, `writeTexture`).
+	`IGraphics.draw` reads them during the call, so a value changed between two draws reaches each draw as it was then. Values are
+	written by handle (`ShaderUniformValues`' `write` methods, `writeTexture`).
 
 	**Layers.** A values made over a base reads, for each uniform and texture it hasn't written and each block and texture it hasn't
 	shared, the base's as they are now. A block it hasn't written into is the base's own bytes, shared by reference, so nothing is
-	copied. Its first write into one of the base's blocks gives it its own copy of that block (copy on write), which takes the base's
+	copied. Its first write into one of the base's blocks creates its own copy of that block (copy on write), which receives the base's
 	later changes to the block's other uniforms at its next read, once a change, never per draw. A base may itself have a base.
 
 	The layers a program makes: a scene's defaults; each material over them, its values written once; and a draw's own values over
@@ -277,7 +277,7 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 		sharedBlocks.clear();
 	}
 
-	// The scene given these values, or null for their base's.
+	// The scene set for these values, or null for their base's.
 	var ownScene:Null<ShaderScene>;
 	// The shader's layout these were packed for: its reloadCount.
 	var packedAt = -1;
@@ -294,7 +294,7 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 	final ownTextures:Array<Null<ShaderSharedTexture>> = [];
 	final sharedTextures:Array<Null<ShaderSharedTexture>> = [];
 	final sharedBlocks = new Map<String, ShaderBlockValues>();
-	// What a draw takes, kept and updated in place.
+	// What a draw is passed, kept and updated in place.
 	final out:Array<Null<Bytes>> = [];
 	final outTextures:Array<Int> = [];
 	final outSamplings:Array<Sampling> = [];

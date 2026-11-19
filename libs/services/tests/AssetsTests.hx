@@ -240,7 +240,7 @@ class AssetsTests {
 		cache.failWrite = null;
 		check(record(url, "a.txt") == null
 			&& cache.files.get('$d/files/a.txt').toString() == "a three", "the record's write failed: no record");
-		// The server rolls back to a2: the copy has no record, so it is downloaded, never taken for a2.
+		// The server rolls back to a2: the copy has no record, so it is downloaded, never used for a2.
 		http.routes.set(url + "a.txt", {
 			status: 0,
 			respond: headers -> headers.get("If-None-Match") == '"a2"' ? {status: 304} : {status: 200, headers: ["etag" => '"a2"'], body: text("a two!")}

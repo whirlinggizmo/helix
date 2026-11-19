@@ -28,7 +28,7 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 	/** Gets the sources streams were opened from, by stream. */
 	public final sources = new Map<Int, StreamSource>();
 
-	/** Gets the frames each queue holds, by queue: what was queued, less what the test has taken as heard. */
+	/** Gets the frames each queue holds, by queue: what was queued, less what the test has marked as heard. */
 	public final queued = new Map<Int, Int>();
 
 	/** Gets or sets what `getStreamDuration` answers for every stream. Defaults to 0, unknown. */

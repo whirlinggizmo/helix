@@ -1,6 +1,6 @@
 package helix.services.shaders;
 
-/** Represents a set of a `ShaderVariants`' features, the defines its variants differ by, as bits: `ShaderVariants.getShader` takes it.
+/** Represents a set of a `ShaderVariants`' features, the defines its variants differ by, as bits: `ShaderVariants.getShader` accepts it.
 
 	A feature is a name alone, defined as 1 when on and not defined when off; a define with a value is a shared define
 	(`ShaderOptions.defines`), the same in every variant. A set's features come from its variants (`ShaderVariants.getFeature`), or

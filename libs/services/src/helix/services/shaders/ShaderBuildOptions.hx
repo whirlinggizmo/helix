@@ -7,7 +7,7 @@ typedef ShaderBuildOptions = {
 		Optional; none by default. */
 	@:optional final defines:Array<String>;
 
-	/** Texts an angle-bracket `#include` takes by name, before the build's class paths are looked in. Optional; none by default. */
+	/** Texts an angle-bracket `#include` includes by name, before the build's class paths are looked in. Optional; none by default. */
 	@:optional final includes:Map<String, String>;
 
 	/** Directories a quoted `#include` looks in after the including file's own. Optional; none by default. */

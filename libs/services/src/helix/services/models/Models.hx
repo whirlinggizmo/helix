@@ -23,19 +23,19 @@ import helix.services.images.Images;
 /** Provides 3D models by path: a glTF 2.0 file (.gltf or .glb) or a Wavefront OBJ file (.obj) read through the assets, with the files it
 	names (a glTF file's buffers and images, an OBJ file's material libraries and their textures) brought in and its images decoded for
 	the GPU, as one `Model3D`. `loadGltf` and `loadObj` each read one format, so a program carries only the reader it calls. A program
-	that takes a name as it runs chooses between them itself.
+	that receives a name as it runs chooses between them itself.
 
 	The file is read by helix-formats' `GltfFile`. Each node of its scene puts its transform, and its parents', into its meshes'
 	positions, normals and tangents (`Mesh3D.transform`), so a model's meshes are drawn as they are; a skinned mesh's vertices stay as
-	the file gives them, its skin's matrices placing it. Its skins become a skeleton (`Model3D.skeleton`), and its animations of that
+	the file stores them, its skin's matrices placing it. Its skins become a skeleton (`Model3D.skeleton`), and its animations of that
 	skeleton's bones `Animation3D`s. Only triangles are read; morph targets aren't yet.
 
 	An OBJ file is read by helix-formats' `ObjFile`, and the .mtl files it names by `MtlFile`: a file whose corners name a position,
 	texture coordinate or normal it doesn't have fails, and a library that can't be read is logged and skipped, its materials' names
 	then standing for materials with every value its default. Its faces become a mesh for each object,
 	group and material (`ObjFile.computeParts`), each corner that differs a vertex of its own, its texture coordinates' v turned to run
-	down the image as glTF's do, and its normals made length 1, or computed from the triangles where the file gives none for some of
-	its corners. Its materials are given as `GltfMaterial`s (`Model3D.materials` says how), and the textures they name decoded. It has
+	down the image as glTF's do, and its normals made length 1, or computed from the triangles where the file has none for some of
+	its corners. Its materials are returned as `GltfMaterial`s (`Model3D.materials` says how), and the textures they name decoded. It has
 	no skeleton or animations.
 
 	Each image, held in the model's file or in a file of its own, is decoded through `Images.decodeForGpu`, so in a page the program never

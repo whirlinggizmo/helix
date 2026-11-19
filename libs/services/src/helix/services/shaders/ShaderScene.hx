@@ -4,7 +4,7 @@ package helix.services.shaders;
 	camera, the lights) and shared textures (a shadow map), by name.
 
 	A values reads a shared block or texture from, in order: what it shares itself, its base's (and its base's base), then its scene
-	(`IShaderValues.scene`), its own or else its base's. So a material made once is drawn in any scene by giving its draw that scene, and
+	(`IShaderValues.scene`), its own or else its base's. So a material made once is drawn in any scene by passing its draw that scene, and
 	one scene binds every material in it:
 
 	```haxe

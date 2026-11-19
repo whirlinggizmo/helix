@@ -247,7 +247,7 @@ class Audio implements IPollable {
 
 	/** Stops every voice, unloads every sound and disposes every queue.
 
-		Call it before disposing the output, decoder and `Assets` it was given. */
+		Call it before disposing the output, decoder and `Assets` it was provided. */
 	public function dispose():Void {
 		for (voice in voices)
 			voice.stop();

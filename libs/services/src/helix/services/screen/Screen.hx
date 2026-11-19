@@ -33,7 +33,7 @@ class Screen implements IPollable {
 	var windowedY:Int;
 	var wasFullscreen:Bool;
 	// The requests for the windowed size and place, asked for on leaving fullscreen, that haven't answered yet: what the window has
-	// counts again once they have, whatever the window manager gave.
+	// counts again once they have, whatever the window manager reported.
 	var restoring = 0;
 	// What keeps the window in the saves, set by `remember` and null until then, so a program that never remembers never links the saves;
 	// and which call of `remember` is current.
@@ -103,7 +103,7 @@ class Screen implements IPollable {
 		return height;
 	}
 
-	/** Gets the framebuffer pixels a design pixel takes across. */
+	/** Gets the framebuffer pixels a design pixel spans across. */
 	@:isVar public var scaleX(get, null):Float = 1;
 
 	function get_scaleX():Float {
@@ -111,7 +111,7 @@ class Screen implements IPollable {
 		return scaleX;
 	}
 
-	/** Gets the framebuffer pixels a design pixel takes down; `scaleX` unless the fit is `Stretch`. */
+	/** Gets the framebuffer pixels a design pixel spans down; `scaleX` unless the fit is `Stretch`. */
 	@:isVar public var scaleY(get, null):Float = 1;
 
 	function get_scaleY():Float {

@@ -105,7 +105,7 @@ class Gamepads implements IPollable implements IActionDevice {
 		return gamepads.isConnected(slot);
 	}
 
-	/** Returns a gamepad's name, as its maker gives it.
+	/** Returns a gamepad's name, as its maker names it.
 
 		@param slot  The slot, 0 to 3.
 		@return  The name, or "" for an empty slot. */

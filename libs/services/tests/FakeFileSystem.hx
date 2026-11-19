@@ -16,7 +16,7 @@ class FakeFileSystem implements IFileSystem {
 	/** Gets when each file was last written, by path: the fake's clock, `time`, at its write. */
 	public final modified = new Map<String, Float>();
 
-	/** Gets or sets the fake's clock, in seconds, given to each file written. */
+	/** Gets or sets the fake's clock, in seconds, set on each file written. */
 	public var time = 0.;
 
 	/** Gets or sets which paths' writes fail, when it returns true; null for none. */

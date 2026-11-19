@@ -1,7 +1,7 @@
 import helix.services.config.Config;
 
-/** Checks Config over a fake system: options given or not, text as given, true and false in their spellings, whole numbers and numbers
-	strictly, each falling back on what it can't read. */
+/** Checks Config over a fake system: options provided or not, text as provided, true and false in their spellings, whole numbers
+	and numbers strictly, each falling back on what it can't read. */
 class ConfigTests {
 	static var checks = 0;
 

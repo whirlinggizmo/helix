@@ -7,7 +7,7 @@ import helix.services.images.Image;
 /** Captures frames as images: the next frame that ends is read back from the GPU, for a screenshot or a check.
 
 	The program constructs one over its `IGraphics`, and calls `frameEnded` once a frame, between `IGraphics.endFrame` and `present`.
-	A capture waits for the GPU, so the frame it's taken in is slower.
+	A capture waits for the GPU, so the frame it's captured in is slower.
 
 	```haxe
 	var screenshots = new Screenshots(graphics);

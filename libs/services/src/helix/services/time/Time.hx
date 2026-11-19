@@ -20,7 +20,7 @@ class Time implements IPollable {
 	/** The least `maxDelta` may be, a millisecond. */
 	static inline final LEAST_MAX_DELTA = .001;
 
-	/** `fps` averages this many frames' times, one taken each FPS_STEP seconds at most: half a second's worth, as raylib's `GetFPS`. */
+	/** `fps` averages this many frames' times, one sampled each FPS_STEP seconds at most: half a second's worth, as raylib's `GetFPS`. */
 	static inline final FPS_SAMPLES = 30;
 
 	static inline final FPS_STEP = .5 / FPS_SAMPLES;
@@ -75,15 +75,15 @@ class Time implements IPollable {
 		return maxDelta = value > LEAST_MAX_DELTA ? value : LEAST_MAX_DELTA;
 	}
 
-	/** Gets the frames a second, averaged over about the last half second: 30 frames' real times, one taken each sixtieth of a second at
+	/** Gets the frames a second, averaged over about the last half second: 30 frames' real times, one sampled each sixtieth of a second at
 		most, as raylib's `GetFPS` averages them. 0 before the first frame. */
 	public var fps(get, never):Float;
 
 	function get_fps():Float
 		return sampleSum > 0 ? 1 / sampleSum : 0;
 
-	/** Gets or sets the real seconds a frame is aimed to take, as a frame rate's limit: 0, the default, for none. The loop's owner waits
-		out what `getRemaining` gives, as only it can (a page can't wait, and skips a frame of the display's instead). */
+	/** Gets or sets the real seconds a frame is aimed to last, as a frame rate's limit: 0, the default, for none. The loop's owner waits
+		out what `getRemaining` returns, as only it can (a page can't wait, and skips a frame of the display's instead). */
 	public var targetDelta(default, set):Float = 0;
 
 	function set_targetDelta(value:Float):Float {
@@ -92,7 +92,7 @@ class Time implements IPollable {
 
 	/** Returns how much of the frame aimed for is left: `targetDelta` less the real seconds since the last `poll`.
 
-		@return  The seconds, 0 when the frame has taken that long or `targetDelta` is 0. */
+		@return  The seconds, 0 when the frame has lasted that long or `targetDelta` is 0. */
 	public function getRemaining():Float {
 		var left = targetDelta - (system.getTime() - last);
 		return targetDelta > 0 && left > 0 ? left : 0;
@@ -139,7 +139,7 @@ class Time implements IPollable {
 		elapsed += delta;
 		for (timer in timers)
 			timer.fresh = false;
-		// One at a time, the earliest due first, so a repeating timer whose next call also falls in this frame takes its turn among the
+		// One at a time, the earliest due first, so a repeating timer whose next call also falls in this frame has its turn among the
 		// others; a timer made by one of them waits for the next poll.
 		polling = true;
 		while (true) {

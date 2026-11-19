@@ -7,7 +7,7 @@ import helix.services.models.Models;
 
 /** Checks Models over fakes: a .gltf whose buffer and image are files of their own (named URI-encoded, beside it in a folder) and whose
 	second image is held in it, read with what it names; its nodes' transforms put into its mesh's positions and normals; a lines primitive
-	left out; the images decoded for the GPU by index, each with its file's bytes and path, its decoded image taken once, one that won't
+	left out; the images decoded for the GPU by index, each with its file's bytes and path, its decoded image returned once, one that won't
 	decode null, a load aborted disposing what it decoded; a rig's skeleton (its joints and the node above them), skin,
 	skinned mesh left unplaced beside its node's transform, and animation of its bones alone; a missing buffer failing the load by
 	name; and OBJ files: their libraries (a missing and a broken one skipped) and textures (a missing one null), a mesh for each group
@@ -125,14 +125,14 @@ class ModelsTests {
 	}
 
 	// OBJ files: a house naming three libraries (one missing, one broken) whose materials name textures (one missing), its faces before
-	// any usemtl, in two groups, a material no library gives; a colored triangle; a file that can't be read, and one naming positions it
+	// any usemtl, in two groups, a material no library defines; a colored triangle; a file that can't be read, and one naming positions it
 	// doesn't have.
 	static function obj(files:FakeFileSystem, models:Models, pump:Void->Void):Void {
 		files.files.set("objs/house.obj",
 			Bytes.ofString("mtllib house.mtl missing.mtl broken.mtl\n"
 				+ "v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nvt 0 0\nvt 1 0\nvt 1 0.25\nvt 0 1\nvn 0 0 2\n"
 				+ "f 1 2 3\n" // before any usemtl
-				+ "g a\nusemtl wall\nf 1/1/1 2/2/1 3/3/1 4/4/1\n" // a quad, its corners' normals given
+				+ "g a\nusemtl wall\nf 1/1/1 2/2/1 3/3/1 4/4/1\n" // a quad, its corners' normals provided
 				+ "g b\nusemtl roof\nf 1/1 2/2 3/3\n" // no normals
 				+ "usemtl nowhere\nf 1 3 4\n"));
 		files.files.set("objs/house.mtl",

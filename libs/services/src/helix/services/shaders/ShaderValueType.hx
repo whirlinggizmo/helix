@@ -8,7 +8,7 @@ enum abstract ShaderValueType(String) to String {
 	/** Two floats. */
 	var Vec2 = "vec2";
 
-	/** Three floats; in a block it takes 16 bytes' alignment and 12 of room. */
+	/** Three floats; in a block it has 16 bytes' alignment and 12 of room. */
 	var Vec3 = "vec3";
 
 	/** Four floats. */
@@ -62,7 +62,7 @@ enum abstract ShaderValueType(String) to String {
 	/** Gets the number of components in one column: 1 for a scalar, 2 to 4 for a vector, a matrix's rows. */
 	public var componentCount(get, never):StdTypes.Int;
 
-	/** Gets the number of columns: a matrix's 2 to 4, and 1 for anything else. As a vertex attribute, a matrix takes a slot a column. */
+	/** Gets the number of columns: a matrix's 2 to 4, and 1 for anything else. As a vertex attribute, a matrix uses a slot a column. */
 	public var columnCount(get, never):StdTypes.Int;
 
 	/** Gets a value indicating whether it holds integers, unsigned integers or bools rather than floats. */

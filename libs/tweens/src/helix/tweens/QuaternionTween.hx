@@ -28,7 +28,7 @@ class QuaternionTween extends EasedTween {
 
 		@param from  The rotation at the start. The tween keeps a copy.
 		@param to  The rotation at the end. The tween keeps a copy.
-		@param duration  The seconds one play takes, 0 or more.
+		@param duration  The seconds one play lasts, 0 or more.
 		@param ease  Optional. The easing curve; a straight line when omitted.
 		@param out  Optional. The rotation each `update` writes, which may be `from` or `to`; a new one when omitted. */
 	public function new(from:Quaternion, to:Quaternion, duration:Float, ?ease:Ease, ?out:Quaternion) {
@@ -40,7 +40,7 @@ class QuaternionTween extends EasedTween {
 
 	/** Adds a leg: the rotation moves on from where the tween ended before to another rotation.
 
-		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and
+		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and
 		`ease` stay the first leg's.
 
 		```haxe
@@ -49,10 +49,10 @@ class QuaternionTween extends EasedTween {
 		```
 
 		@param to  The rotation at the leg's end. The tween keeps a copy.
-		@param duration  The seconds the leg takes, 0 or more.
+		@param duration  The seconds the leg lasts, 0 or more.
 		@param ease  Optional. The leg's easing curve; a straight line when omitted.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function append(to:Quaternion, duration:Float, ?ease:Ease):QuaternionTween {
 		addLeg(duration, ease != null ? ease : Ease.linear);
 		if (legValues == null)
@@ -65,7 +65,7 @@ class QuaternionTween extends EasedTween {
 
 		@param seconds  The seconds to wait, 0 or more.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public function appendDelay(seconds:Float):QuaternionTween {
 		addLeg(seconds, null);
 		return this;

@@ -99,7 +99,7 @@ class ShaderPlace {
 }
 
 /** A value type's shape, worked out once for each type: its rows and columns, its floats, whether it holds integers or bools, and its
-	kind, a bit the write methods check against a mask of the kinds they take. One instance is kept for each type. */
+	kind, a bit the write methods check against a mask of the kinds they accept. One instance is kept for each type. */
 @:noCompletion
 @:allow(helix.services.shaders)
 class ShaderShape {

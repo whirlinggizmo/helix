@@ -6,7 +6,7 @@ import helix.services.shaders.ShaderLayout.ShaderShape;
 
 /** Provides writing uniform values by handle, which `ShaderValues`, `ShaderBlockValues` and `ShaderVariantValues` share.
 
-	Each `write` method takes a `ShaderUniform`, found once (`getUniform`), and writes the value at its std140 offset at once, so nothing
+	Each `write` method accepts a `ShaderUniform`, found once (`getUniform`), and writes the value at its std140 offset at once, so nothing
 	is looked up or converted when it draws. Every name here starts with `write`, so a typed class's generated `setX` members
 	(`ShaderValueClasses`) never meet one, whatever a uniform is called.
 
@@ -403,7 +403,7 @@ class ShaderUniformValues {
 		}
 	}
 
-	// Takes another values' written elements as these values' own: a material's values replayed into a variant's.
+	// Adopts another values' written elements as these values' own: a material's values replayed into a variant's.
 
 	@:allow(helix.services.shaders)
 	function copyWritten(from:ShaderUniformValues):Void
@@ -412,7 +412,7 @@ class ShaderUniformValues {
 				if (e != null)
 					writeElement(uniform, index, e);
 
-	// Writes one element as given, as a write method would; a kept value the declared type can't take is logged and dropped.
+	// Writes one element as provided, as a write method would; a kept value the declared type can't accept is logged and dropped.
 
 	@:allow(helix.services.shaders)
 	function writeElement(uniform:ShaderUniform, elementIndex:Int, values:Array<Float>):Void {

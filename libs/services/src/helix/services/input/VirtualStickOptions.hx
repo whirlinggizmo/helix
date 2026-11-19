@@ -3,7 +3,7 @@ package helix.services.input;
 import helix.geometry.Aabb2D;
 import helix.math.Vector2;
 
-/** Represents how one stick of a `VirtualGamepad` starts. A field left out takes the gamepad's options, or their default. */
+/** Represents how one stick of a `VirtualGamepad` starts. A field left out uses the gamepad's options, or their default. */
 @:structInit
 class VirtualStickOptions {
 	/** Gets a value indicating whether the stick is enabled. Defaults to true. */

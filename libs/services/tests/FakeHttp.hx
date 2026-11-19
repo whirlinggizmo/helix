@@ -1,7 +1,7 @@
 import haxe.io.Bytes;
 import helix.platform.IHttp;
 
-/** One response FakeHttp gives for a URL. */
+/** One response FakeHttp returns for a URL. */
 typedef FakeResponse = {
 	status:Int,
 	?headers:Map<String, String>,
@@ -13,7 +13,7 @@ typedef FakeResponse = {
 /** Stands in for HTTP in the services' tests: responses by URL, each answered at the next `poll` (its body in two parts), the requests
 	kept, and the network turned off by the test.
 
-	A 200 response takes a `Range` header of one range (`bytes=-N`, `bytes=A-B`, `bytes=A-`), answering 206 with that part of its body
+	A 200 response accepts a `Range` header of one range (`bytes=-N`, `bytes=A-B`, `bytes=A-`), answering 206 with that part of its body
 	and a `Content-Range`, or 416 when none of the body is in it, unless it `ignoresRange`. An `If-Range` that isn't the response's ETag
 	or Last-Modified gets the whole body. The bytes it has sent are counted. Nothing times out: the idle timeout is ignored. */
 class FakeHttp implements IHttp {

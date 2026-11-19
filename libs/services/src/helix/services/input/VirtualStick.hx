@@ -126,8 +126,8 @@ class VirtualStick {
 		knobY = baseY;
 	}
 
-	// Takes a finger at a point. Landing, the base goes where its placement puts it; handed over, the knob stays where it was, the base
-	// moving by as much as the finger is from the knob.
+	// Assigns the stick a finger at a point. Landing, the base goes where its placement puts it; handed over, the knob stays where
+	// it was, the base moving by as much as the finger is from the knob.
 	function take(id:Int, atX:Float, atY:Float, handed:Bool):Void {
 		finger = id;
 		if (basePlacement == Fixed)

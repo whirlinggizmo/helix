@@ -13,7 +13,7 @@ class Voice {
 	final id:Int;
 	var ended:Bool;
 	var fade:Null<Fade> = null;
-	// The volume last given the output, so an unchanged one isn't sent again.
+	// The volume last sent to the output, so an unchanged one isn't sent again.
 	var sent = -1.;
 
 	@:allow(helix.services.audio)
@@ -92,7 +92,7 @@ class Voice {
 	/** Moves the voice to a position in its sound, playing or paused.
 
 		A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved, nor, in a page,
-		a stream from a server that doesn't take range requests.
+		a stream from a server that doesn't accept range requests.
 
 		@param seconds  The position in seconds from the start, 0 or more.
 		@return  False, changing nothing, when the voice has ended, is a queue's, or can't be moved there. */
@@ -128,7 +128,7 @@ class Voice {
 		output.stop(id);
 	}
 
-	// Gives the output its volume as heard: its own times its groups'.
+	// Sends the output its volume as heard: its own times its groups'.
 	function apply():Void {
 		if (ended)
 			return;

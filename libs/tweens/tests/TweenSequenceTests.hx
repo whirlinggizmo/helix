@@ -99,7 +99,7 @@ class TweenSequenceTests {
 		joined.update(3);
 		check(g.value == .5, "append comes after the wait");
 
-		// The time a tween takes when placed: its delay, its repeats, at its speed.
+		// The time a tween lasts when placed: its delay, its repeats, at its speed.
 		var slow = new FloatTween(0, 2, 2), after = new FloatTween(0, 1, 1);
 		slow.delay = 1;
 		slow.repeatCount = 1;

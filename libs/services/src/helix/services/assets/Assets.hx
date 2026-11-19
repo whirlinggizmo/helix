@@ -10,15 +10,15 @@ import helix.platform.StreamSource;
 
 	It asks its sources in order, and the first that has the path answers. A file missing from one source is looked for in the next.
 	A game whose files never change lists its file system alone (`FileSystemSource`). A game patched from a server lists the server first,
-	with a `ManifestCache` given the shipped files, and its shipped files after it. A shipped file that the server's manifest lists at the
-	same hash is then read in place, and only what changed is downloaded. A page, whose files are on the server that served it, lists a
-	`ServerSource` at "".
+	with a `ManifestCache` provided the shipped files, and its shipped files after it. A shipped file that the server's manifest
+	lists at the same hash is then read in place, and only what changed is downloaded. A page, whose files are on the server that
+	served it, lists a `ServerSource` at "".
 
 	A path is plain names joined by `/`, as in `IFileSystem` (`FilePath`), from every source: a server is never asked for one the file
 	systems would refuse, so a name fails alike on every target. Each call answers once, on the main thread, in a later poll,
 	never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
 
-	The program polls the assets once a frame, with the HTTP client and file systems it was given. Downloads and copies finish in their
+	The program polls the assets once a frame, with the HTTP client and file systems it was provided. Downloads and copies finish in their
 	polls, and what Assets answers with nothing of theirs to wait on (a file held in memory, a refused path) in its own. Assets that
 	are never polled answer nothing.
 
@@ -159,12 +159,12 @@ class Assets implements IPollable {
 					watch(bytes);
 	}
 
-	/** Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` takes.
+	/** Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` accepts.
 
 		A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise, natively, it plays as
 		it downloads, and the copy is kept; in a page it is located once it is kept. A native download asks for the file's last 64 KiB
 		first and then the rest, so the stream's length can be read before it has all arrived, as a browser's media element does. A
-		server that doesn't take range requests sends the whole file at the first request.
+		server that doesn't accept range requests sends the whole file at the first request.
 
 		@param path  The file's path.
 		@param located  Receives the source, and a release function to call once when the source is no longer read.
@@ -234,7 +234,7 @@ class Assets implements IPollable {
 
 	/** Aborts every load and locate in flight.
 
-		Call it before disposing the HTTP client and file systems it was given. */
+		Call it before disposing the HTTP client and file systems it was provided. */
 	public function dispose():Void {
 		for (request in requests.copy())
 			request.abort();
@@ -242,7 +242,7 @@ class Assets implements IPollable {
 
 	/** Returns the last bytes of a stream downloading in two parts (`locate`), until its source is released.
 
-		@param source  The download, as `locate` gave it.
+		@param source  The download, as `locate` passed it.
 		@return  Its last 64 KiB or fewer, or null when it was downloaded whole from its start. */
 	@:noCompletion
 	@:allow(helix.services.audio)

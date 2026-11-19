@@ -15,7 +15,7 @@ class TweenSequence extends Tween {
 	// What is placed, by the time each begins, and in the order placed where two begin together.
 	final placements:Array<Placement> = [];
 
-	// The seconds everything placed takes.
+	// The seconds everything placed lasts.
 	var length = 0.;
 
 	// The time the tween placed last starts at, which `join` places at.
@@ -28,7 +28,7 @@ class TweenSequence extends Tween {
 
 	/** Places a tween after everything placed before it.
 
-		The tween takes the time its delay, its duration and its repeats add up to when it is placed, at its `timeScale` then.
+		The tween lasts the time its delay, its duration and its repeats add up to when it is placed, at its `timeScale` then.
 		Nothing placed after a tween that repeats for ever is reached.
 
 		@param tween  The tween, or another sequence.
@@ -193,10 +193,10 @@ private class Placement {
 	/** Gets or sets the tween's seconds to one of the sequence's: the tween's `timeScale` when placed. */
 	public var scale = 1.;
 
-	/** Gets or sets whether the tween takes no time, and is shown as the sequence passes its time, as a call is made. */
+	/** Gets or sets whether the tween lasts no time, and is shown as the sequence passes its time, as a call is made. */
 	public var instant = false;
 
-	/** Gets or sets whether the sequence is past the call, or past the tween that takes no time. */
+	/** Gets or sets whether the sequence is past the call, or past the tween that lasts no time. */
 	public var passed = false;
 
 	/** Creates a placement.

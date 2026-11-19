@@ -4,7 +4,7 @@ package helix.services.audio;
 	floor of -60 dB for silence. */
 @:noCompletion @:allow(helix.services.audio)
 class Fade {
-	/** The decibels taken as silence. */
+	/** The decibels counted as silence. */
 	static inline final FLOOR = -60.;
 
 	final from:Float;

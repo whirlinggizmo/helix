@@ -13,7 +13,7 @@ import helix.platform.IPollable;
 	everything set in a frame as one file, one write at a time. A value set, or deleted, before the read has finished is held and made
 	once it has, so it wins over what the file kept: a program can save as it starts, before it has asked for anything back.
 
-	Set a value when it changes, not as the program ends. A page's end gives a write no time to finish, so what is set there is lost. A
+	Set a value when it changes, not as the program ends. A page's end leaves a write no time to finish, so what is set there is lost. A
 	native program leaving its loop flushes first, and leaves when the flush answers.
 
 	```haxe
@@ -278,7 +278,7 @@ class Saves implements IPollable {
 
 	/** Releases the values. A write in flight still finishes.
 
-		Call it before disposing the file system it was given. */
+		Call it before disposing the file system it was provided. */
 	public function dispose():Void {
 		disposed = true;
 		values = {};

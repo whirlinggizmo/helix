@@ -9,7 +9,7 @@ import helix.platform.GamepadButton;
 
 /** Provides an on-screen gamepad worked by the fingers, read as a gamepad in a slot.
 
-	The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the
+	The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and passes the virtual gamepad to `Gamepads` in place of the
 	`IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read
 	through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both
 	through `Actions`, as any gamepad's do.
@@ -20,7 +20,7 @@ import helix.platform.GamepadButton;
 	the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical
 	gamepads alone.
 
-	Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick or a button
+	Positions and sizes are framebuffer pixels, as `Touch` reports them. `Touch` lists every finger, a finger holding a stick or a button
 	included. Drawing is the engine's: each button and each `Fixed` stick while `visible` is true, each other stick while `held`, and each
 	stick's hint while `hintVisible` is true. A tilt stick (`VirtualStick.tilt`) isn't drawn, and has no hint.
 
@@ -162,7 +162,7 @@ class VirtualGamepad implements IPollable implements IGamepads {
 		null, a tilt stick reads 0. */
 	public var tilt:Null<Tilt> = null;
 
-	/** Gets the buttons, as the options gave them. */
+	/** Gets the buttons, as the options set them. */
 	public var buttons(default, null):Array<VirtualButton>;
 
 	/** Gets or sets bounds where a landing finger stays free, even within a stick's touch zone, such as a GUI button's bounds. The blocked bounds follow changes to these

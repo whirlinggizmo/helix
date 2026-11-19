@@ -8,7 +8,7 @@ import helix.platform.TiltStatus;
 /** Provides the device's tilt, from level and turned with the screen, for a game steered by tilting a phone or a tablet.
 
 	The program constructs one over its `IEvents` and its `ITilt`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need
-	permission, asked at the next tap, so a game asks before the tap that starts play. Level is taken once the
+	permission, asked at the next tap, so a game asks before the tap that starts play. Level is measured once the
 	device is held steady, and the tilt reads 0 until then (`calibrating`). Natively it is unavailable.
 
 	```haxe
@@ -19,15 +19,16 @@ import helix.platform.TiltStatus;
 	x += speed * tilt.getAxis(X) * time.delta;
 	``` */
 class Tilt implements IPollable implements IActionDevice {
-	/** How steady the device is held, and for how long, before that is taken as level. */
+	/** How steady the device is held, and for how long, before that counts as level. */
 	static inline final STEADY_DEGREES = 3.;
 
 	static inline final STEADY_SECONDS = .5;
 
 	final events:IEvents;
 	final device:ITilt;
-	// The tilt read this poll and the one before, x then y; the reading taken as level, and the screen's quarter turn when it was taken;
-	// while level is being taken, the reading the device is held near, and since when (seconds, NaN before a reading).
+	// The tilt read this poll and the one before, x then y; the reading measured as level, and the screen's quarter turn when it
+	// was measured; while level is being measured, the reading the device is held near, and since when (seconds, NaN before a
+	// reading).
 	final tilt = [0., 0.];
 	final lastTilt = [0., 0.];
 	var level = false;
@@ -71,19 +72,19 @@ class Tilt implements IPollable implements IActionDevice {
 	/** Gets the tilt's status: Off, WaitingForTap, Starting, On, Refused, Unavailable or NeedsHttps. Defaults to Off. */
 	public var status(default, null):TiltStatus = Off;
 
-	/** Gets a value indicating whether level is being taken.
+	/** Gets a value indicating whether level is being measured.
 
-		Level is taken once the device is held within 3 degrees for half a second: when the tilt starts, after the screen turns, and after
-		`calibrate`. The tilt reads 0 meanwhile. */
+		Level is measured once the device is held within 3 degrees for half a second: when the tilt starts, after the screen turns,
+		and after `calibrate`. The tilt reads 0 meanwhile. */
 	public var calibrating(default, null):Bool = false;
 
-	/** Gets a value indicating whether the tilt steers: `status` is On and level is taken (`calibrating` is false). */
+	/** Gets a value indicating whether the tilt steers: `status` is On and level is measured (`calibrating` is false). */
 	public var ready(get, never):Bool;
 
 	function get_ready():Bool
 		return status == On && !calibrating;
 
-	/** Takes level again from how the device is held next, as a game's "Level" button does. */
+	/** Measures level again from how the device is held next, as a game's "Level" button does. */
 	public function calibrate():Void {
 		level = false;
 		steadySince = Math.NaN;
@@ -95,7 +96,7 @@ class Tilt implements IPollable implements IActionDevice {
 	/** Returns how far the device is tilted from level along an axis, turned with the screen.
 
 		@param axis  The axis: X across the screen, right positive; Y up and down it, down positive.
-		@return  -1 to 1, where `range` degrees reads 1; 0 while level is being taken, or when the tilt isn't on. */
+		@return  -1 to 1, where `range` degrees reads 1; 0 while level is being measured, or when the tilt isn't on. */
 	public function getAxis(axis:TiltAxis):Float {
 		return tilt[axis == X ? 0 : 1];
 	}

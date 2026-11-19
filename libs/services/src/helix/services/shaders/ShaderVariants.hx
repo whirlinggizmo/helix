@@ -43,7 +43,7 @@ class ShaderVariants implements IShaderHandles {
 		whatever the build. */
 	public final filePath:Null<String>;
 
-	/** Gets why the last change of the variants' file wasn't taken (another set of features, a file that doesn't read), or null. */
+	/** Gets why the last change of the variants' file wasn't applied (another set of features, a file that doesn't read), or null. */
 	public var reloadError(default, null):Null<String>;
 
 	/** Gets the number of times a change of the variants' file has replaced them in place, each variant's `reloadCount` moving with it. */
@@ -53,13 +53,13 @@ class ShaderVariants implements IShaderHandles {
 		in the order added. Each variant's own `Shader.reloadListeners` are called too. */
 	public final reloadListeners:Array<ShaderVariants->Void> = [];
 
-	/** Creates variants from shaders compiled with the features given, as the macros do.
+	/** Creates variants from shaders compiled with the features provided, as the macros do.
 
 		@param featureNames  The features, in bit order.
 		@param variantFeatures  Each shader's features.
 		@param shaders  The shaders, by the same index.
 		@param filePath  Optional. The asset path of their file.
-		@throws String  Arrays of different lengths, or one combination given twice. */
+		@throws String  Arrays of different lengths, or one combination listed twice. */
 	public function new(featureNames:Array<String>, variantFeatures:Array<ShaderFeatures>, shaders:Array<Shader>, ?filePath:String) {
 		if (variantFeatures.length != shaders.length)
 			throw 'shader variants: ${variantFeatures.length} combinations for ${shaders.length} shaders';
@@ -100,7 +100,7 @@ class ShaderVariants implements IShaderHandles {
 
 	/** Compiles stages from GLSL text known while the program builds once for each combination of features, and returns the variants.
 
-		Each stage's text is as `Shader.compileText` takes it.
+		Each stage's text is as `Shader.compileText` accepts it.
 		@param vertex  The vertex stage's GLSL.
 		@param fragment  The fragment stage's GLSL.
 		@param features  The features, each a name.
@@ -294,9 +294,9 @@ class ShaderVariants implements IShaderHandles {
 
 	/** Returns the handle of a uniform any variant declares, which works on every variant's values.
 
-		@param name  Its path, or the name `Shader.withNames` gave it.
+		@param name  Its path, or the name `Shader.withNames` assigned it.
 		@return  The handle, the same each call.
-		@throws String  A name no variant declares; given `lights[0].position`, it names `lights.position` and `getUniformPath`. */
+		@throws String  A name no variant declares; for `lights[0].position`, it names `lights.position` and `getUniformPath`. */
 	public function getUniform(name:String):ShaderUniform {
 		var u = findUniform(name);
 		if (u == null) {
@@ -443,7 +443,7 @@ class ShaderVariants implements IShaderHandles {
 			f(this);
 	}
 
-	// Records why a replacement wasn't taken.
+	// Records why a replacement wasn't applied.
 
 	@:allow(helix.services.shaders)
 	function refuse(why:String):Void

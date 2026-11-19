@@ -5,7 +5,7 @@ package helix.tweens;
 
 	A tween's settings are its fields, read at each `update`. */
 class Tween {
-	/** Gets the seconds one play takes: a kind's legs and waits together, or what a sequence's tweens add up to. */
+	/** Gets the seconds one play lasts: a kind's legs and waits together, or what a sequence's tweens add up to. */
 	public var duration(get, never):Float;
 
 	/** Gets or sets the seconds the tween waits before its first play. Defaults to 0. */
@@ -161,7 +161,7 @@ class Tween {
 	inline function getCycle(length:Float):Float
 		return length + (repeatDelay > 0 ? repeatDelay : 0);
 
-	// The seconds every play and wait take, which `time` ends at: infinite for a tween that repeats for ever.
+	// The seconds every play and wait last, which `time` ends at: infinite for a tween that repeats for ever.
 	function getTotal(length:Float, cycle:Float):Float
 		return cycle <= 0 ? 0 : repeatCount < 0 ? Math.POSITIVE_INFINITY : length + repeatCount * cycle;
 

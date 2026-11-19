@@ -5,7 +5,7 @@ package helix.services.images;
 @:build(helix.platform.macros.EnumNames.build())
 #end
 enum abstract ImageFilter(Int) {
-	/** Takes the nearest pixel: hard edges, for pixel art. */
+	/** Samples the nearest pixel: hard edges, for pixel art. */
 	var Nearest;
 
 	/** Blends the nearest four pixels, weighted by distance and by alpha. */

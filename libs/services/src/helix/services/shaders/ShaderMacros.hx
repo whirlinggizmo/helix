@@ -14,7 +14,7 @@ import sys.io.File;
 using StringTools;
 
 /** The shaders' build-time work, which the macros of `Shader`, `ShaderVariants`, `ShaderValueClasses` and `ShaderBlockCompiler` call:
-	reading the options a call gives, folding text, compiling through the platform's compiler, writing a shader's file, and putting one
+	reading the options a call passes, folding text, compiling through the platform's compiler, writing a shader's file, and putting one
 	static a compile into the program.
 
 	It imports nothing a build macro makes, so it types in the macro context. */
@@ -139,7 +139,7 @@ class ShaderMacros {
 		}
 	}
 
-	// The options a call gives: an object, a static constant, or an array of them composed left to right.
+	// The options a call passes: an object, a static constant, or an array of them composed left to right.
 	static function optionsValue(options:Null<Expr>, pos:Position):Dynamic {
 		if (options == null)
 			return null;
@@ -161,7 +161,7 @@ class ShaderMacros {
 		return out;
 	}
 
-	/** The options a call gives, as `makeExpr` takes them. */
+	/** The options a call passes, as `makeExpr` accepts them. */
 	public static function buildOptions(options:Null<Expr>, pos:Position):ShaderBuildOptions
 		return toBuild(optionsValue(options, pos), pos);
 
@@ -197,7 +197,7 @@ class ShaderMacros {
 		};
 	}
 
-	// A class's static String constants, by name: the texts an angle-bracket include takes.
+	// A class's static String constants, by name: the texts an angle-bracket include includes.
 	static function includeTexts(className:String, pos:Position):Map<String, String> {
 		var type = try Context.getType(className) catch (e:Dynamic) Context.error('shader: no class $className for includes', pos);
 		var out = new Map<String, String>();
@@ -386,7 +386,7 @@ class ShaderMacros {
 	}
 
 	/** Compiles a program: each stage with its own define, the options' defines and a combination's features, includes from texts and the
-		class paths, loose uniforms taken and the shared ones gathered. */
+		class paths, loose uniforms accepted and the shared ones gathered. */
 	public static function compileProgram(vertex:{name:String, text:String}, fragment:{name:String, text:String}, options:ShaderBuildOptions,
 			features:Array<String>, pos:Position):ShaderSource {
 		var js = Context.defined("js") && options.everyTarget != true;
@@ -444,7 +444,7 @@ class ShaderMacros {
 	}
 
 	// Refuses a shared block the shader neither declares nor gathers.
-	// The shared blocks a source takes: those named, less the ones shared only where declared (whereDeclared) that it doesn't declare.
+	// The shared blocks a source uses: those named, less the ones shared only where declared (whereDeclared) that it doesn't declare.
 	static function declaredShared(source:ShaderSource, shared:Null<Array<ShaderSharedBlock>>):Array<ShaderSharedBlock>
 		return shared == null ? [] : [
 			for (s in shared)

@@ -10,7 +10,7 @@ import helix.services.assets.FileSystemSource;
 import helix.services.assets.ManifestCache;
 import helix.services.assets.ServerSource;
 
-/** Shows shipped files patched from a server: a server source with a `ManifestCache`, given the shipped files, listed before them, so a
+/** Shows shipped files patched from a server: a server source with a `ManifestCache`, provided the shipped files, listed before them, so a
 	shipped file the server's manifests list at the same hash is read in place and only what changed is downloaded. The manifests are
 	written as it builds (its hxml's `AssetManifests.write`). It loads two files, each time as a new run would: with nothing kept (the
 	cache cleared first), with the same manifests, and natively after the server is updated, with each connection lost before an answer
@@ -114,7 +114,7 @@ class Main {
 	}
 
 	/** Makes the assets as a run would: the server first, its copies checked by its manifests, and natively the shipped files after it,
-		which the cache is given too, so a shipped file the manifests list at the same hash is read in place. */
+		which the cache is provided too, so a shipped file the manifests list at the same hash is read in place. */
 	static function makeAssets():Assets {
 		#if js
 		return new Assets([

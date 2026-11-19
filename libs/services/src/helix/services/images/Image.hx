@@ -15,10 +15,10 @@ import helix.services.fonts.Glyph2D;
 	image, so calls chain (`image.grayscale().contrast(20)`). Positions are in pixels from the top-left, and what falls outside the image
 	is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
 
-	The operations are raylib's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image,
-	byte for byte, on every target. They are raylib 5.5's, but for the lines and the filled circle (`drawLine`, `drawThickLine`,
-	`drawCircle`), which are 6.2's, as it fixed them. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over
-	them.
+	The operations are raylib's, in its arithmetic: each produces the pixels raylib's function of the same name produces for an
+	R8G8B8A8 image, byte for byte, on every target. They are raylib 5.5's, but for the lines and the filled circle (`drawLine`,
+	`drawThickLine`, `drawCircle`), which are 6.2's, as it fixed them. Shapes overwrite the pixels they cover, as raylib's do;
+	images and text blend over them.
 
 	```haxe
 	var badge = Image.filled(64, 64, 0);
@@ -201,7 +201,7 @@ class Image {
 
 	/** Returns Perlin noise in gray, opaque: fractal Brownian motion over 6 octaves of stb_perlin's noise.
 
-		The same arguments give the same image on every target. The longer side is scaled to keep the noise square.
+		The same arguments produce the same image on every target. The longer side is scaled to keep the noise square.
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
 		@param offsetX  How far it is moved left, in pixels: images side by side at their widths join up.
@@ -303,7 +303,7 @@ class Image {
 
 	/** Returns a rectangle of it.
 
-		The rectangle is clamped to the image; one wholly outside it gives an image 0 by 0.
+		The rectangle is clamped to the image; one wholly outside it produces an image 0 by 0.
 		@param x  The rectangle's left edge, in pixels.
 		@param y  Its top edge.
 		@param width  Its width, in pixels.
@@ -333,10 +333,10 @@ class Image {
 	/** Returns it scaled to a size.
 
 		`Nearest` is raylib's `ImageResizeNN`. `Bilinear` and `Bicubic` are this library's own (raylib's `ImageResize` is stb_image_resize2):
-		they sample each pixel's middle, take the edge pixels beyond the edges, and weight colors by alpha, so clear pixels don't darken
+		they sample each pixel's middle, use the edge pixels beyond the edges, and weight colors by alpha, so clear pixels don't darken
 		the colors beside them.
-		@param width  The width, in pixels; 0 or less gives an image 0 by 0.
-		@param height  The height, in pixels; 0 or less gives an image 0 by 0.
+		@param width  The width, in pixels; 0 or less produces an image 0 by 0.
+		@param height  The height, in pixels; 0 or less produces an image 0 by 0.
 		@param filter  How the pixels between pixels are made.
 		@return  The image. */
 	public function resize(width:Int, height:Int, filter:ImageFilter):Image {
@@ -584,7 +584,7 @@ class Image {
 
 	/** Changes its brightness: the same amount added to red, green and blue; alpha is unchanged.
 
-		A channel taken below 0 becomes 1, not 0, as raylib's does; one taken over 255 becomes 255.
+		A channel pushed below 0 becomes 1, not 0, as raylib's does; one pushed over 255 becomes 255.
 		@param amount  The amount, -255 to 255; clamped to that.
 		@return  This image. */
 	public function brighten(amount:Int):Image {
@@ -623,7 +623,7 @@ class Image {
 		return this;
 	}
 
-	/** Takes its alpha from another image of the same size: the mask's luminance (0.299 red, 0.587 green, 0.114 blue).
+	/** Sets its alpha from another image of the same size: the mask's luminance (0.299 red, 0.587 green, 0.114 blue).
 
 		A white mask leaves it opaque, a black one clear; the mask's own alpha is ignored. A mask of another size changes nothing.
 		@param mask  The mask.
@@ -742,7 +742,7 @@ class Image {
 	/** Applies a square kernel to red, green and blue; alpha is unchanged.
 
 		Each channel is the sum of the pixels around it times the kernel's weights, as fractions of 255, clamped to 0 to 1. A pixel past the
-		left or right edge is taken from the row beside, and one past the top or bottom counts as black, as raylib's does. A kernel of even
+		left or right edge is read from the row beside, and one past the top or bottom counts as black, as raylib's does. A kernel of even
 		width reaches one pixel further up and left.
 		@param kernel  The weights, rows top first: 9 for 3 by 3, 25 for 5 by 5, any square count. Another count changes nothing.
 		@return  This image. */
@@ -1584,7 +1584,7 @@ class Image {
 		0, 1, 1,  0, -1, 1, 0,  1, -1,  0, -1, -1
 	];
 
-	// stb_perlin's permutation (its second copy dropped: an index is taken modulo 256).
+	// stb_perlin's permutation (its second copy dropped: an index is reduced modulo 256).
 	static final PERLIN:Array<Int> = [
 		23, 125, 161, 52, 103, 117, 70, 37, 247, 101, 203, 169, 124, 126, 44, 123, 152, 238, 145, 45, 171, 114, 253, 10, 192, 136, 4, 157, 249, 30, 35, 72,
 		175, 63, 77, 90, 181, 16, 96, 111, 133, 104, 75, 162, 93, 56, 66, 240, 8, 50, 84, 229, 49, 210, 173, 239, 141, 1, 87, 18, 2, 198, 143, 57, 225, 160,

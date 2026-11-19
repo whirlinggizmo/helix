@@ -2,7 +2,7 @@ package helix.services.shaders;
 
 import helix.platform.Sampling;
 
-/** Defines what values for a whole program take besides uniforms: textures, and the blocks and textures they share. `ShaderValues` and
+/** Defines what values for a whole program hold besides uniforms: textures, and the blocks and textures they share. `ShaderValues` and
 	`ShaderVariantValues` implement it.
 
 	Sharing on a values made over a base (`ShaderValues.base`) is its own; what it doesn't share itself it reads from its base, so

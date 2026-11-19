@@ -6,7 +6,7 @@ import helix.services.assets.Assets;
 
 	A shader compiled into the program with `ShaderOptions.file` is watched (`watch`): each time the assets are told its file changed
 	(`Assets.notifyChanged`), the new file replaces it in place. Nothing is compiled while the program runs: the build compiled the
-	file. A program that is only given shaders as files (a mod's) loads them (`load`) and they are watched alike.
+	file. A program that is only provided shaders as files (a mod's) loads them (`load`) and they are watched alike.
 
 	A replacement changes the shader's `source` and reflection and moves its `reloadCount`. Its handles and every `ShaderValues` made
 	for it follow on their own. What was built on the GPU from it is its holder's: comparing `reloadCount` with the count it built at,

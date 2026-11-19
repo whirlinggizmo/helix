@@ -263,7 +263,7 @@ class ShaderPrograms {
 			};
 			made.push(handle);
 		}
-		// The old program goes, its pipelines with it; the new ones take their places.
+		// The old program goes, its pipelines with it; the new ones go in their places.
 		graphics.disposeShader(built.handle);
 		built.handle = program;
 		for (k => p in built.pipelines)

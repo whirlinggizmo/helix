@@ -152,7 +152,7 @@ class Fonts {
 		return () -> aborted = true;
 	}
 
-	/** Returns an opened font's glyphs as antialiased coverage, rasterized during the call, as `rasterize` gives them.
+	/** Returns an opened font's glyphs as antialiased coverage, rasterized during the call, as `rasterize` returns them.
 
 		@param font  The font, from `openFont`.
 		@param size  The pixel height: the font's ascent to its descent.
@@ -177,7 +177,7 @@ class Fonts {
 	}
 
 	/** Returns an opened font's glyphs as signed distances to their outlines, rasterized during the call, as `rasterizeDistanceField`
-		gives them.
+		returns them.
 
 		@param font  The font, from `openFont`.
 		@param size  The pixel height: the font's ascent to its descent.
@@ -214,7 +214,7 @@ class Fonts {
 	}
 
 	/** Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose
-		texels are gray is coverage, so it becomes white with the gray as alpha, as raylib takes it.
+		texels are gray is coverage, so it becomes white with the gray as alpha, as raylib uses it.
 
 		One of `loaded` or `failed` is called once, at a later poll, never during this call.
 		@param path  The .fnt file, as the assets name it.
@@ -260,7 +260,7 @@ class Fonts {
 
 	/** Returns a font made of glyph images, packed onto one atlas as `FontsOptions` says, as `load` packs a TrueType font's: the smallest
 		power-of-two square they fit, white, each glyph's image as alpha. For a program or an engine layer holding a font's glyphs of its
-		own (raylib's default font, the glyphs `rasterize` gives).
+		own (raylib's default font, the glyphs `rasterize` returns).
 
 		@param name  The atlas's name, its image's `path`; "" for none.
 		@param kind  What the glyphs hold.
@@ -270,7 +270,7 @@ class Fonts {
 		@param lineGap  The space between one line's descent and the next line's ascent, in pixels.
 		@param glyphs  Each glyph's image, `width * height` bytes, its place from the pen and its advance.
 		@param kernings  Optional. The kerning pairs; none when omitted.
-		@return  The font, its glyphs in the order given. */
+		@return  The font, its glyphs in the order provided. */
 	public function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:Float, lineGap:Float, glyphs:Array<RasterGlyph>,
 			?kernings:Array<Kerning2D>):Font2D {
 		var padding = options.padding,
@@ -303,7 +303,7 @@ class Fonts {
 		return new Font2D(kind, size, ascent, descent, lineGap, new Image(name, width, width, pixels), made, kernings);
 	}
 
-	// A TrueType font's kerning pairs between the glyphs given, in pixels at a size, as stb_truetype reads them: none for a font it
+	// A TrueType font's kerning pairs between the glyphs provided, in pixels at a size, as stb_truetype reads them: none for a font it
 	// can't read or without kerning.
 	static function kerningsOf(encoded:Bytes, size:Float, glyphs:Array<RasterGlyph>):Array<Kerning2D> {
 		var tables = try new TrueTypeTables(encoded) catch (_:Dynamic) null;

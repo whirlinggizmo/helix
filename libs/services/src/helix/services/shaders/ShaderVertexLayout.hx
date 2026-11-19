@@ -8,9 +8,9 @@ import helix.platform.VertexFormat;
 
 	It is made once, for a kind of mesh, and handed to `ShaderPrograms.getPipeline`, which resolves it for each shader (slots, a matrix a
 	slot a column) once, again after a replacement, and keeps the result: nothing is made per draw. An attribute a shader reads that no
-	buffer feeds reads its constant, or (0, 0, 0, 1) when the layout gives none (platform proposal 8); a constant for an attribute the
+	buffer feeds reads its constant, or (0, 0, 0, 1) when the layout has none (platform proposal 8); a constant for an attribute the
 	shader doesn't read is skipped. A buffer none of whose placements the shader reads is a gap: the pipeline reads nothing from it, and
-	a draw may pass 0 for it. An attribute is floats unless its placement gives another `VertexFormat`: a normal as four signed bytes, the
+	a draw may pass 0 for it. An attribute is floats unless its placement names another `VertexFormat`: a normal as four signed bytes, the
 	weights as four unsigned shorts, below.
 
 	```haxe
@@ -42,8 +42,8 @@ class ShaderVertexLayout {
 		].join(";") + "|" + [for (c in this.constants) '${c.name}/${c.slot}=${c.values.join(",")}'].join(";");
 	}
 
-	/** Returns a one-buffer layout packing some attributes as floats in the order given, as `Shader.computeVertexBuffer` packs them, for a
-		buffer a program fills (a sprite batch's): from a shader, or from a set, whose variants share the attributes' types.
+	/** Returns a one-buffer layout packing some attributes as floats in the order provided, as `Shader.computeVertexBuffer` packs them,
+		for a buffer a program fills (a sprite batch's): from a shader, or from a set, whose variants share the attributes' types.
 
 		@param source  The shader or variants declaring the attributes.
 		@param names  The attributes, in their order in a record.

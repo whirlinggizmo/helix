@@ -10,7 +10,7 @@ import helix.platform.Sampling;
 	snapshot's arrays. A snapshot reuses its bytes and arrays from one capture to the next, so a batcher keeping a pool of them
 	allocates nothing per draw once they have grown.
 
-	A snapshot is of the layout it was captured in. Replacements take effect only at a frame's start (`Shaders.prepareFrame`, then
+	A snapshot is of the layout it was captured in. Replacements apply only at a frame's start (`Shaders.prepareFrame`, then
 	`ShaderPrograms.prepareFrame`), so a snapshot captured and submitted within one frame always meets the program it was captured for;
 	one kept across frames is captured again. */
 class ShaderSnapshot {

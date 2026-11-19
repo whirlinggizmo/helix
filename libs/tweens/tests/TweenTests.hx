@@ -524,7 +524,7 @@ class TweenTests {
 		exact.update(1.5);
 		check(exact.value == .9 && exact.amount == 1 && exact.done, "the last leg ends at amount 1");
 
-		// A repeat takes every leg as one play.
+		// A repeat treats every leg as one play.
 		plain.restart();
 		plain.repeatCount = 1;
 		plain.update(7);
