@@ -324,7 +324,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   Sends the mesh's attributes and the transforms as a buffer each, eight at most. A shader reading every one of raylib's attributes besides the transforms can't be drawn.
 - `UploadMesh`: Sends a mesh's vertices to the GPU, so the mesh can be drawn.
   - `mesh`: The mesh.
-  - `isDynamic`: Whether the mesh will change. Ignored, as `UpdateMeshBuffer` can change any mesh here. raylib names it `dynamic`, a Haxe keyword.
+  - `isDynamic`: Whether the mesh will change. Ignored. Any mesh can be changed through `UpdateMeshBuffer`. raylib names it `dynamic`, a Haxe keyword.
 
   A mesh not sent this way is sent when first drawn, as `LoadModel`'s meshes and the `GenMesh*` meshes are.
 

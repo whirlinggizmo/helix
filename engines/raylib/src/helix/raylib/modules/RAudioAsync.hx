@@ -158,7 +158,7 @@ class RAudioAsync {
 
 		`InitAudioDevice` must come first.
 
-		A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
+		A FLAC file is refused.
 
 		Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
 

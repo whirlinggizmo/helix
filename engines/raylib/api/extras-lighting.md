@@ -134,7 +134,7 @@ static function EndShadowMode():Void
   - `light`: The light, from `CreateLight`.
 - `EnableLightShadows`: Turns a light's shadows on. A light casts none until then. The light's `shadows` say how its shadows are made.
   - `light`: The light, from `CreateLight`.
-  - returns: False when refused, as 4 other lights cast shadows.
+  - returns: False when 4 other lights already cast shadows.
 
   4 lights cast shadows at most. Enabling a fifth's is refused, with a warning, and the fifth casts none. `DisableLightShadows` and `UnloadLight` free a light's place for another.
 - `DisableLightShadows`: Turns a light's shadows off, freeing its place among the 4 lights that may cast them. Its `shadows` are kept.

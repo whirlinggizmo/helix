@@ -12,7 +12,7 @@ import helix.raylib.modules.RGui.*;
 import helix.raylib.modules.RGuiControls.*;
 #end
 
-/** Provides raygui's controls, as raylib 5.5's raygui (4.5-dev, `raygui.h`) draws them and reads the mouse and keys for them.
+/** Provides raygui 4.5-dev's controls (`raygui.h`): drawing each and reading the mouse and keys for it.
 
 	`Raygui` forwards to each (`tools/gen_raylib.py`).
 

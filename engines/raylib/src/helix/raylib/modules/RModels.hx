@@ -964,8 +964,8 @@ class RModels {
 		- Second texture coordinates, bone ids and bone weights 0.
 
 		@param mesh  The mesh.
-		@param isDynamic  Whether the mesh will change. Ignored, as `UpdateMeshBuffer` can change any mesh here. raylib names it
-			`dynamic`, a Haxe keyword. */
+		@param isDynamic  Whether the mesh will change. Ignored. Any mesh can be changed through `UpdateMeshBuffer`. raylib
+			names it `dynamic`, a Haxe keyword. */
 	static function UploadMesh(mesh:Mesh, isDynamic:Bool):Void {
 		Models.upload(mesh);
 	}

@@ -745,7 +745,7 @@ class RAudio {
 
 		`InitAudioDevice` must come first.
 
-		A FLAC file (".flac" or ".FLAC") is refused, as raylib 5.5's default build leaves FLAC out. The music is invalid, and "STREAM: Data format not supported" is logged.
+		A FLAC file (".flac" or ".FLAC") is refused. The music is invalid, and "STREAM: Data format not supported" is logged.
 
 		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV.
 		@param data  The file's bytes; they are kept until the music is unloaded.

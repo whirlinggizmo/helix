@@ -5986,8 +5986,8 @@ class Raylib {
 		- Second texture coordinates, bone ids and bone weights 0.
 
 		@param mesh  The mesh.
-		@param isDynamic  Whether the mesh will change. Ignored, as `UpdateMeshBuffer` can change any mesh here. raylib names it
-			`dynamic`, a Haxe keyword. */
+		@param isDynamic  Whether the mesh will change. Ignored. Any mesh can be changed through `UpdateMeshBuffer`. raylib
+			names it `dynamic`, a Haxe keyword. */
 	public static inline function UploadMesh(mesh:Mesh, isDynamic:Bool):Void
 		RModels.UploadMesh(mesh, isDynamic);
 
@@ -6745,7 +6745,7 @@ class Raylib {
 
 		`InitAudioDevice` must come first.
 
-		A FLAC file (".flac" or ".FLAC") is refused, as raylib 5.5's default build leaves FLAC out. The music is invalid, and "STREAM: Data format not supported" is logged.
+		A FLAC file (".flac" or ".FLAC") is refused. The music is invalid, and "STREAM: Data format not supported" is logged.
 
 		@param fileType  The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV.
 		@param data  The file's bytes; they are kept until the music is unloaded.
@@ -7002,7 +7002,7 @@ class Raylib {
 
 		`InitAudioDevice` must come first.
 
-		A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
+		A FLAC file is refused.
 
 		Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
 
@@ -7651,9 +7651,8 @@ class Raylib {
 		Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit
 		float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the
 		platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves
-		off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's
-		default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer
-		comes at a later frame.
+		off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read
+		("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
 
 		The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or
 		QOA reader; a type known only as the program runs brings every reader.

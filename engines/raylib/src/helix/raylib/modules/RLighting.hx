@@ -121,7 +121,7 @@ class RLighting {
 		`UnloadLight` free a light's place for another.
 
 		@param light  The light, from `CreateLight`.
-		@return  False when refused, as 4 other lights cast shadows. */
+		@return  False when 4 other lights already cast shadows. */
 	static function EnableLightShadows(light:Light):Bool {
 		return helix.raylib.internal.Shadows.addCaster(light);
 	}

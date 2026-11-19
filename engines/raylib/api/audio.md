@@ -210,7 +210,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
 
   `InitAudioDevice` must come first.
 
-  A FLAC file (".flac" or ".FLAC") is refused, as raylib 5.5's default build leaves FLAC out. The music is invalid, and "STREAM: Data format not supported" is logged.
+  A FLAC file (".flac" or ".FLAC") is refused. The music is invalid, and "STREAM: Data format not supported" is logged.
 - `IsMusicValid`: Returns whether music is open, or still opening.
   - `music`: The music.
   - returns: False once its file couldn't be opened, or once it is unloaded.
@@ -346,7 +346,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `loaded`: Receives the wave, its samples its own.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read, as raylib 5.5's default build leaves FLAC out ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
+  A ".wav" file is read as dr_wav reads it, as 16-bit samples at the file's rate and channels (ADPCM and other compressed WAV encodings aren't read). A ".qoa" file is read as qoa.h reads it, as 16-bit samples, bit for bit. An ".ogg" file (Vorbis) is decoded by the platform at its own rate and made 16-bit as stb_vorbis makes its samples, its frames the stream's length, its last page's position. An ".mp3" file is decoded by the platform at its own rate, every frame of it, as raylib 5.5's dr_mp3 decodes it (a first Xing or Info frame is silence, and the encoder's delay and padding a LAME tag records are kept), and made 16-bit and then 32-bit float samples as that dr_mp3 makes them. An MP3's samples are raylib's and an Ogg file's within 1 in 32768 of them where the platform decodes as raylib does. Where its decoders differ, the samples differ in their last bits, and the frames a decoder leaves off an Ogg stream's end (tens of them) are silence. A file of more than 2 channels is mixed to stereo. A ".flac" file isn't read ("WAVE: Data format not supported"). As raylib's, the extension is lower or upper case. The answer comes at a later frame.
 
   The reader is chosen as the program builds when `fileType` is a constant, so a program reading only Ogg files carries no WAV or QOA reader; a type known only as the program runs brings every reader.
 
@@ -377,7 +377,7 @@ static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Vo
 
   `InitAudioDevice` must come first.
 
-  A FLAC file is refused, as raylib 5.5's default build leaves FLAC out.
+  A FLAC file is refused.
 
   Never loaded whole: it is read as it plays (helix-services' `Audio.stream`).
 

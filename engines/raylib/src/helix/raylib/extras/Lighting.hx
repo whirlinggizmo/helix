@@ -191,7 +191,7 @@ class Lighting {
 		`UnloadLight` free a light's place for another.
 
 		@param light  The light, from `CreateLight`.
-		@return  False when refused, as 4 other lights cast shadows. */
+		@return  False when 4 other lights already cast shadows. */
 	public static inline function EnableLightShadows(light:Light):Bool
 		return RLighting.EnableLightShadows(light);
 

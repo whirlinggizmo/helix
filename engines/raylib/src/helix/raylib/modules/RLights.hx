@@ -8,8 +8,8 @@ import helix.raylib.extras.*;
 import helix.raylib.extras.Lighting.*;
 #end
 
-/** Holds the scene's lights, made as raylib 5.5's lighting examples' `rlights.h` makes them. Each is written here, and
-	`helix.raylib.extras.Lighting` forwards to each (`tools/gen_raylib.py`). */
+/** Holds the scene's lights, from `rlights.h` in raylib's lighting examples. `helix.raylib.extras.Lighting` forwards to each
+	function (`tools/gen_raylib.py`). */
 @:noCompletion
 @:allow(helix.raylib)
 class RLights {

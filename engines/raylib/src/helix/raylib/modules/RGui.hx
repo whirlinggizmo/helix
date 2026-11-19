@@ -14,8 +14,8 @@ import helix.raylib.internal.GuiIcons;
 import helix.raylib.modules.RGuiControls.*;
 #end
 
-/** Holds raygui's state, style, icons and tooltips, and the text and rectangle drawing its controls share, as raylib 5.5's raygui
-	(4.5-dev, `raygui.h`) has them.
+/** Holds raygui's state, style, icons and tooltips, and the text and rectangle drawing its controls share, from raygui 4.5-dev
+	(`raygui.h`).
 
 	`Raygui` forwards to each function here (`tools/gen_raylib.py`).
 
