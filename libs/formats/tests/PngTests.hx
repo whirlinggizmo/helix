@@ -2,7 +2,7 @@ import haxe.io.Bytes;
 import helix.formats.png.PngFile;
 
 /** Checks PngFile with the library alone: its files byte for byte as raylib 5.5's stb_image_write writes them (each file's length and
-	CRC-32, taken from stb_image_write compiled with gcc, on the same made-up images), for 1 to 4 channels, a single pixel, odd sizes,
+	CRC-32, produced by stb_image_write compiled with gcc, on the same made-up images), for 1 to 4 channels, a single pixel, odd sizes,
 	and noise stored rather than compressed; each file read back here (its chunks' CRCs, its zlib stream's Adler-32 through
 	`haxe.zip.InflateImpl`, its filters undone) to the pixels written; and what throws. */
 class PngTests {

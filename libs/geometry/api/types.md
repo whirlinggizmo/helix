@@ -353,7 +353,7 @@ function computeRay(viewX:Float, viewY:Float, aspect:Float, ?out:Ray3D):Ray3D
 - `computeViewMatrix`: Returns the matrix that puts the world into the camera's space, its transform undone, its scale ignored.
   - `out`: Optional. The matrix to write into; a new one when omitted.
   - returns: The view matrix.
-- `computeProjectionMatrix`: Returns the matrix that projects the camera's space into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+- `computeProjectionMatrix`: Returns the matrix that projects the camera's space into GL's clip space (depth -1 to 1), which every helix-platform adapter uses.
   - `aspect`: The view's width over its height.
   - `out`: Optional. The matrix to write into; a new one when omitted.
   - returns: The projection matrix.
@@ -369,7 +369,7 @@ function computeRay(viewX:Float, viewY:Float, aspect:Float, ?out:Ray3D):Ray3D
   - `out`: Optional. The vector to write into: x and y from -1 (left, bottom) to 1, z the depth from -1 (near) to 1 (far); a new one when omitted.
   - returns: The point; outside -1 to 1 when it isn't in view.
 
-  A point behind a perspective camera has a depth past 1. One level with its position, which lands nowhere, gives infinities or NaN.
+  A point behind a perspective camera has a depth past 1. One level with its position, which lands nowhere, has infinities or NaN.
 - `computeRay`: Returns the ray from the camera through a point of its view, for picking: from the camera's position for a perspective camera, and from the point on its near plane, along its forward, for an orthographic one.
   - `viewX`: The point's x, -1 at the view's left to 1 at its right.
   - `viewY`: Its y, -1 at the bottom to 1 at the top.
@@ -436,7 +436,7 @@ function getPlane(index:Int, ?out:Plane):Plane
 
 *class* in [`libs/geometry/src/helix/geometry/Geometry2D.hx`](../src/helix/geometry/Geometry2D.hx), `import helix.geometry.Geometry2D;`
 
-Provides tests on points, segments, triangles, polygons and circles in a plane, their points given as plain numbers.
+Provides tests on points, segments, triangles, polygons and circles in a plane, their points passed as plain numbers.
 
 Lines that are parallel within a ten-millionth (by the cross product of their directions) don't cross.
 
@@ -498,7 +498,7 @@ static function intersectsCircleSegment(cx:Float, cy:Float, radius:Float, ax:Flo
 
 *class* in [`libs/geometry/src/helix/geometry/Geometry3D.hx`](../src/helix/geometry/Geometry3D.hx), `import helix.geometry.Geometry3D;`
 
-Provides tests on points, segments and triangles in space, their points given as plain numbers, as `Geometry2D` does in a plane.
+Provides tests on points, segments and triangles in space, their points passed as plain numbers, as `Geometry2D` does in a plane.
 
 ```haxe
 // How far a ball is from a rail, and the point of the rail the ball is nearest.
@@ -551,7 +551,7 @@ static function getClosestPointsBetweenSegments(a1x:Float, a1y:Float, a1z:Float,
   - `cy`: The third corner's y.
   - `cz`: The third corner's z.
   - `out`: Optional. The vector to fill; a new one when omitted.
-  - returns: The nearest point. A triangle of no area is taken as the segment or the point its corners make.
+  - returns: The nearest point. A triangle of no area is treated as the segment or the point its corners make.
 - `getClosestPointsBetweenSegments`: Finds where two segments come nearest each other.
   - `a1x`: The first segment's start x.
   - `a1y`: The first segment's start y.
@@ -567,7 +567,7 @@ static function getClosestPointsBetweenSegments(a1x:Float, a1y:Float, a1z:Float,
   - `b2z`: The second segment's end z.
   - `outA`: Optional. Set to the point on the first segment.
   - `outB`: Optional. Set to the point on the second segment.
-  - returns: How far apart the two points are: 0 when the segments cross. Parallel segments give the first segment's start and the point of the second nearest that start, or the nearest pair of ends when that start is past the second segment.
+  - returns: How far apart the two points are: 0 when the segments cross. Parallel segments produce the first segment's start and the point of the second nearest that start, or the nearest pair of ends when that start is past the second segment.
 
 ## KeyInterpolation
 
@@ -583,9 +583,9 @@ Specifies how an animation's track goes from one key to the next.
 
 *class* in [`libs/geometry/src/helix/geometry/Mesh3D.hx`](../src/helix/geometry/Mesh3D.hx), `import helix.geometry.Mesh3D;`
 
-Represents a mesh: a surface made of triangles, as arrays a GPU or a file takes: positions, and for each vertex its normal, texture coordinates, tangent and color when it has them; and the indices of each triangle's corners, or none when the vertices are the triangles in order. A triangle's front is the side its corners are counterclockwise from.
+Represents a mesh: a surface made of triangles, as arrays a GPU or a file uses: positions, and for each vertex its normal, texture coordinates, tangent and color when it has them; and the indices of each triangle's corners, or none when the vertices are the triangles in order. A triangle's front is the side its corners are counterclockwise from.
 
-The `fromX` functions make the usual shapes, centered on the origin, +y up, a shape about an axis turning about y, and two triangles across each cell of their slices and stacks. Each has normals of length 1 from the shape itself, texture coordinates (u along the slices from 0 to 1, v from the top, 0, to the bottom, 1, as images are stored), indices, and no tangents or colors; the vertices on a seam are doubled, so each side has its own texture coordinates. They use `Trig`, so a shape is the same on every target. Each takes an optional out, last, whose arrays it reuses.
+The `fromX` functions make the usual shapes, centered on the origin, +y up, a shape about an axis turning about y, and two triangles across each cell of their slices and stacks. Each has normals of length 1 from the shape itself, texture coordinates (u along the slices from 0 to 1, v from the top, 0, to the bottom, 1, as images are stored), indices, and no tangents or colors; the vertices on a seam are doubled, so each side has its own texture coordinates. They use `Trig`, so a shape is the same on every target. Each accepts an optional out, last, whose arrays it reuses.
 
 A model read from a file (helix-services' `Model3D`) holds its meshes as these, each with its material's index beside it.
 
@@ -690,9 +690,9 @@ function computeBounds(?out:Aabb3D):Aabb3D
   - `out`: Optional. Set to the merged mesh. May be one of the meshes.
   - returns: The merged mesh.
 
-  A mesh lacking an attribute that another mesh has is given default values: normals (0, 1, 0), texture coordinates (0, 0), white colors, and joint indices 0 with weights 0. A vertex with weights 0 stays where it is when the merged mesh is posed.
+  A mesh lacking an attribute that another mesh has gets default values: normals (0, 1, 0), texture coordinates (0, 0), white colors, and joint indices 0 with weights 0. A vertex with weights 0 stays where it is when the merged mesh is posed.
 
-  Tangents are kept when every mesh has them. The merged mesh has indices when any mesh has them. An empty list gives an empty mesh.
+  Tangents are kept when every mesh has them. The merged mesh has indices when any mesh has them. An empty list makes an empty mesh.
 - `positions`: Gets or sets the positions, x, y and z each.
 - `normals`: Gets or sets the normals, x, y and z a vertex, of length 1; null for none.
 - `texCoords`: Gets or sets the texture coordinates, u and v a vertex; null for none.
@@ -723,7 +723,7 @@ function computeBounds(?out:Aabb3D):Aabb3D
 - `toUnindexed`: Returns the mesh without indices: each triangle's three vertices its own, in order. With `computeNormals` after it, a shape whose triangles' normals are each their own, so its faces look flat.
   - `out`: Optional. Set to the result; may be this one.
   - returns: The mesh.
-- `computeNormals`: Returns normals from the triangles: each vertex's the sum of the triangles it is a corner of, weighted by their areas, made length 1. Given a weld distance, vertices nearer each other than it share one normal, so a shape with doubled vertices on its seams stays smooth across them.
+- `computeNormals`: Returns normals from the triangles: each vertex's the sum of the triangles it is a corner of, weighted by their areas, made length 1. With a weld distance, vertices nearer each other than it share one normal, so a shape with doubled vertices on its seams stays smooth across them.
   - `weldDistance`: Optional. How near vertices share a normal, 0 for those at the very same point. Omitted, none share: a vertex's normal is its own triangles' alone, so a mesh without indices (`toUnindexed`) has a flat normal on each triangle.
   - `out`: Optional. Set to the normals, x, y and z a vertex.
   - returns: The normals; assign them to `normals` to use them.
@@ -731,7 +731,7 @@ function computeBounds(?out:Aabb3D):Aabb3D
   - `out`: Optional. Set to the tangents, x, y, z and w a vertex.
   - returns: The tangents, to assign to `tangents`; null for a mesh without texture coordinates or normals.
 - `computeSkinned`: Returns the mesh moved by its skin: each vertex's position, normal and tangent moved by its joints' matrices (from `Skin3D.computeSkinning`), blended by its weights (linear blend skinning), on the CPU. A vertex whose weights are all 0, or a mesh without joints or weights, is left where it is. Normals and tangents are made length 1 again.
-  - `skinning`: Each of its skin's bones' matrix, as `Skin3D.computeSkinning` gives them.
+  - `skinning`: Each of its skin's bones' matrix, as `Skin3D.computeSkinning` returns them.
   - `out`: Optional. Set to the moved mesh: its positions, normals and tangents its own, reused and grown or shrunk to fit; its other arrays this mesh's own, not copied, so a mesh moved every frame allocates nothing. It may not be this mesh.
   - returns: The moved mesh.
   - throws `String`: The out is this mesh.
@@ -782,7 +782,7 @@ function transform(matrix:Matrix4, ?out:Plane):Plane
   - `normalY`: The direction's y.
   - `normalZ`: The direction's z.
   - `out`: Optional. The plane to fill; a new one when omitted.
-  - returns: The plane. A direction of length 0 gives a plane facing up (+y).
+  - returns: The plane. A direction of length 0 produces a plane facing up (+y).
 - `fromPoints`: Returns the plane through three points, facing the side the points run counterclockwise on.
   - `ax`: The first point's x.
   - `ay`: The first point's y.
@@ -794,7 +794,7 @@ function transform(matrix:Matrix4, ?out:Plane):Plane
   - `cy`: The third point's y.
   - `cz`: The third point's z.
   - `out`: Optional. The plane to fill; a new one when omitted.
-  - returns: The plane. Three points in a line give a plane through the first point, facing up (+y).
+  - returns: The plane. Three points in a line produce a plane through the first point, facing up (+y).
 - `intersectPlanes`: Returns the point three planes share.
   - `a`: The first plane.
   - `b`: The second plane.
@@ -849,7 +849,7 @@ function transform(matrix:Matrix4, ?out:Plane):Plane
 
 Represents a ray: a point it starts from and a direction it goes in, for picking and line of sight.
 
-A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses, its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1, in world units. Given an out, no test allocates.
+A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses, its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1, in world units. With an out, no test allocates.
 
 ```haxe
 function new()
@@ -915,7 +915,7 @@ function intersectMesh(mesh:Mesh3D, ?transform:Matrix4, ?out:RayHit3D):Null<RayH
 - `intersectMesh`: Returns where the ray first meets a mesh's triangles, from either side, as `intersectTriangle` meets each. With a transform, the hit's point, normal and distance are in the ray's space, the world's, as the other tests' are.
   - `mesh`: The mesh.
   - `transform`: Optional. Where the mesh is: its positions are moved by it. Omitted, they are as they are.
-  - `out`: Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) give them.
+  - `out`: Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) list them.
   - returns: The nearest hit; null when it meets none.
 
 ## RayHit3D
@@ -992,7 +992,7 @@ function computeSkinning(world:Array<Matrix4>, ?out:Array<Matrix4>):Array<Matrix
   - `inverseBinds`: Each one's inverse bind matrix.
 - `name`: Gets its name: empty for none.
 - `boneIndices`: Gets the indices of its bones in the skeleton's `bones`.
-- `inverseBinds`: Gets each of its bones' inverse bind matrix, taking a vertex from the mesh's space to the bone's as the mesh was bound.
+- `inverseBinds`: Gets each of its bones' inverse bind matrix, moving a vertex from the mesh's space to the bone's as the mesh was bound.
 - `computeSkinning`: Returns the matrices a mesh of this skin is moved by, from each bone's place in the model (`Skeleton3D.computeWorld`): each of its bones' inverse bind, then its place, so a skinned vertex comes out in the model's space. For a shader's joint matrices, or `Mesh3D.computeSkinned`.
   - `world`: Each of the skeleton's bones' place in the model.
   - `out`: Optional. Set to the matrices, reused, grown or shrunk to fit.
@@ -1090,7 +1090,7 @@ function getBounds(?out:Aabb3D):Aabb3D
   - returns: The union.
 
   An empty sphere adds nothing: the union with one is the other sphere.
-- `transform`: Returns this sphere moved by a matrix: its center moved, its radius scaled by the largest scale the matrix gives an axis.
+- `transform`: Returns this sphere moved by a matrix: its center moved, its radius scaled by the largest scale the matrix applies to an axis.
   - `matrix`: The matrix.
   - `out`: Optional. The sphere to fill; a new one when omitted. It may be this sphere.
   - returns: The moved sphere, which holds every moved point of this sphere unless the matrix shears. An empty sphere stays empty.

@@ -5,9 +5,9 @@ import haxe.io.Bytes;
 
 /** Represents the sound read from a QOA file ("Quite OK Audio"): its rate, channels and 16-bit samples.
 
-	Reading is qoa.h's `qoa_decode` (raylib 5.5's copy), ported, so its samples are those raylib's `LoadWave` gives, bit for bit. A file
-	whose frames end early, or stop being valid, gives the frames read until then, as qoa.h does. A streamed file (its frame count 0)
-	isn't read, as qoa.h doesn't read one.
+	Reading is qoa.h's `qoa_decode` (raylib 5.5's copy), ported, so its samples are those raylib's `LoadWave` returns, bit for bit.
+	A file whose frames end early, or stop being valid, produces the frames read until then, as qoa.h does. A streamed file (its
+	frame count 0) isn't read, as qoa.h doesn't read one.
 
 	```haxe
 	var qoa = QoaFile.read(bytes);
@@ -49,7 +49,7 @@ class QoaFile {
 			rate = (data.get(9) << 16) | (data.get(10) << 8) | data.get(11);
 		if (frames == 0 || channels == 0 || rate == 0)
 			throw "not a QOA file: its frame count, channels or rate is 0";
-		// qoa.h's buffer holds the frames the header gives; an int over 2^31 is negative here, which no file this reads has.
+		// qoa.h's buffer holds the frames the header states; an int over 2^31 is negative here, which no file this reads has.
 		if (frames < 0 || frames > 0x7FFFFFFF / (2 * channels))
 			throw "not a QOA file: too many frames";
 		var out = Bytes.alloc(frames * channels * 2);
@@ -63,15 +63,15 @@ class QoaFile {
 			p += got.bytes;
 			index += got.frames;
 		}
-		// A last frame giving more than the header's count overruns qoa.h's buffer; only the header's are kept here.
+		// A last frame holding more than the header's count overruns qoa.h's buffer; only the header's are kept here.
 		if (index > frames)
 			index = frames;
 		return new QoaFile(rate, channels, index, index == frames ? out : out.sub(0, index * channels * 2));
 	}
 
-	// qoa_decode_frame: decodes the frame at p into out from frame index, returning the bytes it took and the frames it gave; 0 bytes
-	// for a frame that is too short or doesn't match the file. Frames past the file's count would overrun qoa.h's buffer; they aren't
-	// written here.
+	// qoa_decode_frame: decodes the frame at p into out from frame index, returning the bytes it used and the frames it produced; 0
+	// bytes for a frame that is too short or doesn't match the file. Frames past the file's count would overrun qoa.h's buffer;
+	// they aren't written here.
 	static function frame(data:Bytes, p:Int, size:Int, channels:Int, rate:Int, history:Array<Int>, weights:Array<Int>, out:Bytes, index:Int,
 			total:Int):{bytes:Int, frames:Int} {
 		var none = {bytes: 0, frames: 0};

@@ -2,12 +2,12 @@ package helix.math;
 
 import haxe.io.FPHelper;
 
-/** Provides trigonometry that gives the same bits on every target.
+/** Provides trigonometry that returns the same bits on every target.
 
 	A simulation that must play alike on every target (a recorded run's replay, a lockstep game, physics) uses these in place
 	of `Math`'s, whose last bit differs between targets for some angles. Drawing doesn't need them. Results are within a few ulp of
 	`Math`'s. Angles are in radians, of any size: an angle that keeps growing stays as accurate however large it gets. An infinite or NaN
-	angle gives NaN, as do `asin` and `acos` outside -1 to 1.
+	angle returns NaN, as do `asin` and `acos` outside -1 to 1.
 
 	With `-D helix-math-standard-trig` each function is the standard library's (`Math.sin` and the others), which is faster in a
 	browser. A result's last bit may then differ between targets.
@@ -66,7 +66,7 @@ class Trig {
 	// reduceLarge's remainder.
 	static var largeR = 0.;
 
-	// Adding this and taking it away rounds a number below 2^51 to the nearest whole number (1.5 * 2^52: a double that size holds no
+	// Adding this and subtracting it rounds a number below 2^51 to the nearest whole number (1.5 * 2^52: a double that size holds no
 	// fraction), with no call.
 	static inline var ROUND = 6755399441055744.;
 
@@ -117,7 +117,7 @@ class Trig {
 		#end
 	}
 
-	/** Returns the cosine and the sine of an angle together, each as `cos` and `sin` give it, for less than the two calls cost.
+	/** Returns the cosine and the sine of an angle together, each as `cos` and `sin` return it, for less than the two calls cost.
 
 		@param x  The angle, in radians.
 		@param out  Optional. The vector to fill; a new one when omitted.
@@ -284,7 +284,7 @@ class Trig {
 	static inline function quadrant(k:Float):Float
 		return Math.abs(k) <= MAX_K ? k - 4 * (((k * 0.25 - 0.375) + ROUND) - ROUND) : largeQuadrant;
 
-	// r for an x past MAX_K quarter turns, its quarter turns mod 4 left in largeQuadrant. An infinite or NaN x gives NaN, which the
+	// r for an x past MAX_K quarter turns, its quarter turns mod 4 left in largeQuadrant. An infinite or NaN x returns NaN, which the
 	// polynomials pass on.
 	static function remainderLarge(x:Float):Float {
 		if (!Math.isFinite(x)) {
@@ -525,7 +525,7 @@ class Trig {
 	}
 }
 
-/** Holds an angle's cosine and sine, as `Trig.turn` gives them. Its constructor is inline, so one read where it was made is two
+/** Holds an angle's cosine and sine, as `Trig.turn` returns them. Its constructor is inline, so one read where it was made is two
 	locals. */
 private class Turn {
 	/** Gets the cosine. */

@@ -5,10 +5,10 @@ import helix.formats.obj.ObjFile;
 
 /** Checks ObjFile and MtlFile with the library alone, on files written here: positions, texture coordinates and normals and their
 	1-based, negative and forward numbers, those naming what the file lacks counted, w dropped, six-value positions' colors (all or none),
-	faces of 1 or 2 corners kept without triangles, groups (o resetting g, one at each o or g line with faces after it, a name given
+	faces of 1 or 2 corners kept without triangles, groups (o resetting g, one at each o or g line with faces after it, a name used
 	twice two groups, empty ones left out), usemtl across groups, triangle fans, parts by group and by material (repeats joined, faces
 	without triangles left out, faces before usemtl, their order), materials found and stood in for, libraries combined, every MTL
-	statement read (Tr against d, texture options read past, the PBR extension, null for what a file doesn't give), the computed values
+	statement read (Tr against d, texture options read past, the PBR extension, null for what a file doesn't set), the computed values
 	and their defaults, texture paths by statement, paths resolved and normalized, UTF-8 and Latin-1 text (é in names and paths), and refusals naming their line. */
 class ObjTests {
 	static var checks = 0;
@@ -67,7 +67,7 @@ class ObjTests {
 		#end
 	}
 
-	// Positions, texture coordinates and normals, as the file gives them.
+	// Positions, texture coordinates and normals, as the file writes them.
 	static function vertices():Void {
 		var m = obj("# a comment\nv 1 2 3\nv 4 5 6 0.5\n  v\t-7 8e1 .25  # trailing\nvt 0.5 0.25\nvt 1\nvt 0.1 0.2 0.3\nvn 0 0 2\n");
 		check(m.positionCount == 3
@@ -227,7 +227,7 @@ class ObjTests {
 			+ "newmtl only tr\nTr 0.25\nKd 0.5\n" // Tr alone; one value for a color
 			+ "newmtl pbr\nPr 0.3\nPm 0.8\nmap_Pr rough.png\nmap_Pm metal.png\nnorm normal.png\nbump height.png\n"
 			+ "newmtl empty\n"
-			+ "newmtl full\nKd 0 0 0\n" // a name given twice
+			+ "newmtl full\nKd 0 0 0\n" // a name used twice
 			+ "newmtl halo\nd -halo 0.5\nKa spectral file.rfl 1\nNs 1000\n");
 		check(lib.materials.length == 6, "a material at each newmtl, its name the rest of the line");
 		var full = lib.findMaterial("full");
@@ -313,7 +313,7 @@ class ObjTests {
 		check(a.bumpTexturePath == "models/c.png" && b.bumpTexturePath == "models/b.png", "the bump texture: the last of its three statements");
 		check(a.findTexturePath(["bump", "map_bump"]) == "models/c.png" && b.findTexturePath(["bump", "map_bump"]) == "models/a.png",
 			"findTexturePath: the last line of those asked for, in the file's order");
-		// DEFAULT, and stand-ins for names no library gives.
+		// DEFAULT, and stand-ins for names no library defines.
 		var d = MtlMaterial.DEFAULT;
 		check(d != null
 			&& d.name == ""

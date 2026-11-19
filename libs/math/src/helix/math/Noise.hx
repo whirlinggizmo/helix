@@ -18,7 +18,7 @@ class Noise {
 
 	/** Returns Perlin noise at a point.
 
-		A point with whole-number coordinates gives 0. The noise repeats every 256 along each axis.
+		The noise is 0 at a point with whole-number coordinates. The noise repeats every 256 along each axis.
 		@param x  The point's x.
 		@param y  The point's y.
 		@param z  Optional. The point's z; defaults to 0, a 2D slice.
@@ -191,7 +191,7 @@ class Noise {
 		0, 1, 1,  0, -1, 1, 0,  1, -1,  0, -1, -1
 	];
 
-	// stb_perlin's permutation (its second copy dropped: an index is taken modulo 256).
+	// stb_perlin's permutation (its second copy dropped: an index is reduced modulo 256).
 	static final PERMUTATION:Array<Int> = [
 		23, 125, 161, 52, 103, 117, 70, 37, 247, 101, 203, 169, 124, 126, 44, 123, 152, 238, 145, 45, 171, 114, 253, 10, 192, 136, 4, 157, 249, 30, 35, 72,
 		175, 63, 77, 90, 181, 16, 96, 111, 133, 104, 75, 162, 93, 56, 66, 240, 8, 50, 84, 229, 49, 210, 173, 239, 141, 1, 87, 18, 2, 198, 143, 57, 225, 160,

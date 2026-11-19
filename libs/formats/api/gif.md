@@ -17,7 +17,7 @@ Specifies what becomes of a GIF frame's rectangle before the next frame is drawn
 
 *class* in [`libs/formats/src/helix/formats/gif/GifFile.hx`](../src/helix/formats/gif/GifFile.hx), `import helix.formats.gif.GifFile;`
 
-Represents a GIF file (GIF87a or GIF89a): its screen, its global color table and loop count, and its frames as the file gives them.
+Represents a GIF file (GIF87a or GIF89a): its screen, its global color table and loop count, and its frames as the file writes them.
 
 Every frame is read, its LZW data decoded and its interlaced rows put in order, with its graphic control block's transparency, disposal and delay. `computeFrames` draws them onto the screen in turn, as a browser shows them.
 
@@ -48,12 +48,12 @@ function computeFrames():Array<haxe.io.Bytes>
 - `width`: Gets the screen's width, in pixels: the width of every frame `computeFrames` returns.
 - `height`: Gets the screen's height, in pixels.
 - `colors`: Gets the global color table, each color `0xFFRRGGBB`, or null when the file has none.
-- `backgroundIndex`: Gets the global color table's index of the background color, as the file gives it. Browsers don't draw it; the screen starts transparent.
+- `backgroundIndex`: Gets the global color table's index of the background color, as the file writes it. Browsers don't draw it; the screen starts transparent.
 - `loopCount`: Gets the loop count of the file's NETSCAPE2.0 block: 0 to loop forever, or how many times it loops; -1 when the file has none.
 - `frames`: Gets the frames, in the file's order. A file may have none.
 - `computeFrames`: Returns each frame as a browser shows it: the whole screen after the frame is drawn, RGBA, 8 bits a channel, rows top first.
   - returns: Each frame's pixels, `width * height * 4` bytes, in the frames' order.
-  - throws `String`: The frames take over 2 GB.
+  - throws `String`: The frames need over 2 GB.
 
   The screen starts transparent (every byte 0). Each frame is drawn over what the frames before left: its pixels of its transparent index, or of an index past its color table's end, aren't drawn, and the rest are opaque. Before the next frame is drawn, the frame's rectangle is disposed of as its `disposal` says: kept, cleared to transparent, or put back as it was before the frame.
 
@@ -61,7 +61,7 @@ function computeFrames():Array<haxe.io.Bytes>
 
 *class* in [`libs/formats/src/helix/formats/gif/GifFrame.hx`](../src/helix/formats/gif/GifFrame.hx), `import helix.formats.gif.GifFrame;`
 
-Represents one frame of a GIF file as the file gives it: its rectangle of the screen, its color indices and color table, and its graphic control block's transparency, disposal and delay.
+Represents one frame of a GIF file as the file writes it: its rectangle of the screen, its color indices and color table, and its graphic control block's transparency, disposal and delay.
 
 `GifFile.computeFrames` draws the frames onto the screen in turn, as a viewer shows them.
 
@@ -84,7 +84,7 @@ final delay:Float
 - `height`: Gets the rectangle's height, in pixels.
 - `interlaced`: Gets a value indicating whether the file stores the rows interlaced. `indices` holds them in order either way.
 - `colors`: Gets the color table the frame's pixels are drawn from: its own, or else the file's global one. Each color is `0xFFRRGGBB`.
-- `indices`: Gets the color index of each pixel, a byte each, rows top first, `width * height` bytes. An index past the color table's end is as the file gives it.
+- `indices`: Gets the color index of each pixel, a byte each, rows top first, `width * height` bytes. An index past the color table's end is as the file writes it.
 - `transparentIndex`: Gets the index whose pixels aren't drawn, or -1 when every pixel is drawn.
 - `disposal`: Gets what becomes of the rectangle before the next frame is drawn.
-- `delay`: Gets how long the frame shows before the next, in seconds: the file's hundredths of a second. 0 when the file gives none.
+- `delay`: Gets how long the frame shows before the next, in seconds: the file's hundredths of a second. 0 when the file has none.

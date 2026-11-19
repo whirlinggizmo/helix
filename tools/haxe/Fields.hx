@@ -7,7 +7,7 @@ import haxe.macro.Printer;
 /** Writes classes' fields as they are declared, as the compiler parsed them: a JSON array, one object a field, with its class, name, the
 	line it starts on, whether it is static, inline and a macro function, and a function's arguments (name, whether optional, type,
 	default) and result, types as declared, or whether a variable has an initializer. A target's description (haxe -xml) types a macro function's arguments as Dynamic, and omits some; this
-	gives them as written (ExprOf<String>).
+	records them as written (ExprOf<String>).
 
 	--macro Fields.write("fields.json", ["helix.raylib.Raylib", "helix.raylib.Raymath"])
 

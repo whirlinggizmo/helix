@@ -6,7 +6,7 @@ import helix.math.Matrix4;
 	shape's), its closed shapes closed (each edge, its seams' doubled vertices as one, on two triangles), no triangle of no area, its
 	points on the shape, its normals of length 1 and out of it, its texture coordinates 0 to 1; normals computed smooth, welded across
 	seams, and flat once unindexed; tangents along u, square to the normal, their w the way v grows; a transform moving points, turning
-	normals and tangents and, mirrored, turning the triangles round; merging; copying; bounds; and each shape into the mesh given. */
+	normals and tangents and, mirrored, turning the triangles round; merging; copying; bounds; and each shape into the mesh provided. */
 class Mesh3DTests {
 	static var checks = 0;
 
@@ -35,7 +35,7 @@ class Mesh3DTests {
 		return sum / 6;
 	}
 
-	// Whether every edge is on exactly two triangles, once and once the other way, the vertices at one point taken as one.
+	// Whether every edge is on exactly two triangles, once and once the other way, the vertices at one point counted as one.
 	static function closed(m:Mesh3D):Bool {
 		var p = m.positions,
 			ids = new Map<String, Int>(),

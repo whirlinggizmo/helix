@@ -64,7 +64,7 @@ static function uninstall():Void
   - returns: True when the level is at or above the tag's own level, or `Log.level` for a tag without one.
 - `setTagLevel`: Sets a tag's own level, in place of `Log.level` for its messages.
   - `tag`: The tag.
-  - `level`: The least its messages must matter to be written: Off silences it, and null gives it `Log.level` again.
+  - `level`: The least its messages must matter to be written: Off silences it, and null resets it to `Log.level`.
 - `listen`: Adds a listener that receives each line written, for an in-program console, an overlay or a test.
   - `listener`: Receives the line's level and the line as written.
 
@@ -73,7 +73,7 @@ static function uninstall():Void
   - `listener`: The listener.
 - `install`: Routes `trace` through the log as Info, its extra values after the first.
   Calling it again while installed does nothing.
-- `uninstall`: Gives `trace` back what it was before `install`.
+- `uninstall`: Restores `trace` to what it was before `install`.
   If something else replaced `trace` after `install`, that replacement is kept, and the log stops being installed all the same.
 
 ## LogLevel

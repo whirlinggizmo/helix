@@ -3,8 +3,8 @@ package helix.math;
 /** Provides what Haxe's `Math` lacks for a number: clamping, wrapping, snapping, comparing, the least, greatest and size of whole numbers,
 	powers of two, and degrees and radians.
 
-	Each function takes the number first, so a file with `using helix.math.MathTools;` calls each on the number. `clamp`, `wrap` and `snap`
-	give an `Int` for `Int`s and a `Float` for any other numbers.
+	Each function accepts the number first, so a file with `using helix.math.MathTools;` calls each on the number. `clamp`, `wrap`
+	and `snap` return an `Int` for `Int`s and a `Float` for any other numbers.
 
 	```haxe
 	using helix.math.MathTools;
@@ -17,7 +17,7 @@ package helix.math;
 class MathTools {
 	/** Returns a whole number clamped to a range.
 
-		Bounds given in the wrong order are swapped.
+		Bounds provided in the wrong order are swapped.
 		@param value  The number.
 		@param min  The lower bound.
 		@param max  The upper bound.
@@ -33,7 +33,7 @@ class MathTools {
 
 	/** Returns a value clamped to a range.
 
-		Bounds given in the wrong order are swapped.
+		Bounds provided in the wrong order are swapped.
 		@param value  The value.
 		@param min  The lower bound.
 		@param max  The upper bound.
@@ -56,7 +56,7 @@ class MathTools {
 
 	/** Returns a whole number wrapped around into a range, as a column wraps around a row.
 
-		Bounds given in the wrong order are swapped. A range of no size gives `min`.
+		Bounds provided in the wrong order are swapped. A range of no size returns `min`.
 		@param value  The number.
 		@param min  The range's start.
 		@param max  The range's end.
@@ -74,7 +74,7 @@ class MathTools {
 
 	/** Returns a value wrapped around into a range, as an angle wraps around a turn.
 
-		Bounds given in the wrong order are swapped. A range of no size gives `min`.
+		Bounds provided in the wrong order are swapped. A range of no size returns `min`.
 		@param value  The value.
 		@param min  The range's start.
 		@param max  The range's end.
@@ -127,7 +127,7 @@ class MathTools {
 	/** Returns a value bounced back and forth between 0 and a length, as a ball between two walls.
 
 		@param value  The value, of any size.
-		@param length  The far wall. 0 or less gives 0.
+		@param length  The far wall. 0 or less returns 0.
 		@return  The bounced value, 0 to length. */
 	public static function pingPong(value:Float, length:Float):Float {
 		if (!(length > 0))
@@ -155,7 +155,7 @@ class MathTools {
 		return Math.abs(a - b) <= (size > 1 ? tolerance * size : tolerance);
 	}
 
-	/** Returns the lesser of two whole numbers, as an `Int`. `Math.min` gives a `Float`.
+	/** Returns the lesser of two whole numbers, as an `Int`. `Math.min` returns a `Float`.
 
 		@param a  One number.
 		@param b  The other number.
@@ -163,7 +163,7 @@ class MathTools {
 	public static inline function min(a:Int, b:Int):Int
 		return a < b ? a : b;
 
-	/** Returns the greater of two whole numbers, as an `Int`. `Math.max` gives a `Float`.
+	/** Returns the greater of two whole numbers, as an `Int`. `Math.max` returns a `Float`.
 
 		@param a  One number.
 		@param b  The other number.
@@ -171,7 +171,7 @@ class MathTools {
 	public static inline function max(a:Int, b:Int):Int
 		return a > b ? a : b;
 
-	/** Returns a whole number's size, as an `Int`. `Math.abs` gives a `Float`.
+	/** Returns a whole number's size, as an `Int`. `Math.abs` returns a `Float`.
 
 		@param value  The number.
 		@return  The number without its sign. */

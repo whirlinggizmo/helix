@@ -110,7 +110,7 @@ private class StbPngWriter {
 		var zlib = zlibCompress(filt, COMPRESSION_LEVEL);
 		var zlen = zlib.length;
 
-		// Each chunk takes 12 bytes besides its data.
+		// Each chunk uses 12 bytes besides its data.
 		var out = Bytes.alloc(8 + 12 + 13 + 12 + zlen + 12);
 		var o = 0;
 		for (b in [137, 80, 78, 71, 13, 10, 26, 10])
@@ -264,7 +264,7 @@ private class StbPngWriter {
 		var dataLen = data.length;
 		if (quality < 5)
 			quality = 5;
-		// A literal takes at most 9 bits and a match at most 9 a byte; stored blocks take 5 bytes each besides the data.
+		// A literal uses at most 9 bits and a match at most 9 a byte; stored blocks use 5 bytes each besides the data.
 		var capacity = 2 + Std.int(dataLen / 8) * 9 + 16 + 4;
 		var stored = 2 + dataLen + Std.int((dataLen + 32766) / 32767) * 5 + 4;
 		var out = Bytes.alloc(capacity > stored ? capacity : stored);
@@ -403,7 +403,7 @@ private class StbPngWriter {
 			}
 		}
 
-		// The input's Adler-32. stb_image_write reduces every 5552 bytes; reducing more often gives the same sums and keeps them
+		// The input's Adler-32. stb_image_write reduces every 5552 bytes; reducing more often produces the same sums and keeps them
 		// under 2^31.
 		var s1 = 1, s2 = 0;
 		var j = 0;

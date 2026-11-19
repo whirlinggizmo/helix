@@ -2,7 +2,7 @@ import helix.math.Trig;
 import helix.math.Vector2;
 
 /** Checks helix.math.Trig against Math with the library alone: within a few ulp over many angles, and the special values (zeros,
-	infinities, NaN, the quadrants). Whether it gives the same bits on every target is TrigBits' check. */
+	infinities, NaN, the quadrants). Whether it returns the same bits on every target is TrigBits' check. */
 class TrigTests {
 	static var checks = 0;
 
@@ -28,7 +28,7 @@ class TrigTests {
 			return seed / 1073741823.5 - 1;
 		}
 		var both = new Vector2();
-		// The last range reaches the largest angles the three-part reduction takes (about 1.6 million radians).
+		// The last range reaches the largest angles the three-part reduction handles (about 1.6 million radians).
 		for (range in [Math.PI, 100., 10000., 1.6e6]) {
 			var ok = true, okTan = true, okAtan = true, okInverse = true, okBoth = true;
 			for (_ in 0...20000) {

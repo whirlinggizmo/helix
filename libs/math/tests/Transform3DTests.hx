@@ -7,9 +7,9 @@ import helix.math.Vector3;
 /** Checks Transform3D with the library alone: made, copied and reset, each returning itself; its forward, right and up; moved along
 	them, along the ground and toward a point (stopping short of it); turned around its own axes, the pitch locked short of straight up and
 	down, turned to face a point at once or by a step, and swung around one; points carried and its matrix, pinned to rotation matrices
-	computed apart from Haxe; each result into a new value or the one given, alike, even when the one given is its own position; taken back
-	from a matrix, one that mirrors, one that flattens and one that shears (its nearest rotation, as the SVD gives it); and whole numbers
-	multiplied as floats on the interpreter. */
+	computed apart from Haxe; each result into a new value or the one provided, alike, even when the one provided is its own
+	position; recovered from a matrix, one that mirrors, one that flattens and one that shears (its nearest rotation, as the SVD
+	finds it); and whole numbers multiplied as floats on the interpreter. */
 class Transform3DTests {
 	static var checks = 0;
 
@@ -47,7 +47,7 @@ class Transform3DTests {
 		return t;
 	}
 
-	// Runs a result into a new vector, into one given and into the transform's own position: the same each way.
+	// Runs a result into a new vector, into one provided and into the transform's own position: the same each way.
 	static function threeWays(op:(Transform3D, Null<Vector3>) -> Vector3, message:String):Vector3 {
 		var t = sample();
 		var result = op(t, null), given = new Vector3();

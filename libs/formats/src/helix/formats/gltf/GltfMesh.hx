@@ -4,7 +4,7 @@ package helix.formats.gltf;
 
 	A mesh is read from the file's `meshes`, as `GltfFile.meshes` lists them; nodes name it by its index there. */
 class GltfMesh {
-	/** Gets the mesh's name: empty when the file gives none. */
+	/** Gets the mesh's name: empty when the file has none. */
 	public final name:String;
 
 	/** Gets the mesh's primitives, in the file's order. */

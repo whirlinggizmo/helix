@@ -27,7 +27,7 @@ class Spring {
 
 		A time step of 0 or less leaves the value and the velocity unchanged. A value that would pass the target stops at the target.
 		@param target  The target.
-		@param time  About how long the value takes to reach the target, in seconds: the value closes 3/5 of the gap in that time from
+		@param time  About how long the value needs to reach the target, in seconds: the value closes 3/5 of the gap in that time from
 			rest, and 9/10 in twice that time. 0 or less puts the value at the target.
 		@param dt  The time step, in seconds.
 		@return  The value. */

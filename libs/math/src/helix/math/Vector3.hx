@@ -3,7 +3,7 @@ package helix.math;
 /** Represents a vector in 3 dimensions: a position or a direction, as its user means it.
 
 	Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and
-	leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other
+	leaves this one unchanged; provided this vector, it works in place (`v.normalize(v)`). The out may be this vector or any other
 	argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`).
 	`set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one
 	(`length`) a property. `Matrix4` keeps positions and directions apart by its methods: `transformPoint` moves a position,
@@ -73,7 +73,7 @@ class Vector3 {
 	public static function orthoNormalize(first:Vector3, second:Vector3):Void {
 		first.normalize(first);
 		var ax = first.x, ay = first.y, az = first.z;
-		// The plane's normal, then the normal crossed with the first: the second with its part along the first taken out.
+		// The plane's normal, then the normal crossed with the first: the second with its part along the first removed.
 		var nx = ay * second.z - az * second.y,
 			ny = az * second.x - ax * second.z,
 			nz = ax * second.y - ay * second.x;
@@ -192,7 +192,7 @@ class Vector3 {
 	/** Returns 1 divided by each of this vector's coordinates.
 
 		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
-		@return  The inverted vector. A coordinate of 0 gives an infinite one. */
+		@return  The inverted vector. A coordinate of 0 becomes an infinite one. */
 	public function inverse(?out:Vector3):Vector3 {
 		return result(out, 1 / x, 1 / y, 1 / z);
 	}
@@ -401,7 +401,7 @@ class Vector3 {
 	public function dot(other:Vector3):Float
 		return real(x) * other.x + real(y) * other.y + real(z) * other.z;
 
-	/** Returns the distance to another vector, each taken as a position.
+	/** Returns the distance to another vector, each treated as a position.
 
 		@param other  The other vector.
 		@return  The distance. */

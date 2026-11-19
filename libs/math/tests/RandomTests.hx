@@ -1,6 +1,6 @@
 import helix.math.Random;
 
-/** Seeded random numbers (helix.math.Random): the sequence pinned to values raylib 5.5's rprand gives in C (xoshiro128**, seeded by
+/** Seeded random numbers (helix.math.Random): the sequence pinned to values raylib 5.5's rprand returns in C (xoshiro128**, seeded by
 	SplitMix64), so every target's bits match them; seeds, states, ranges, picks, weights and shuffles;
 	bell-shaped numbers, points in and on a circle and a sphere, directions in a cone and rotations, each spread evenly and the same bits
 	on every target. */

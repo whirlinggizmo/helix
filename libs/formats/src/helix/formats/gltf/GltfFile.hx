@@ -7,10 +7,10 @@ import helix.math.Transform3D;
 
 /** Represents a glTF 2.0 model read from a .gltf or GLB file: its nodes, its scene, its meshes, materials and images, as plain data.
 
-	`read` takes the file's bytes and its path. A buffer held in the file (a GLB's BIN chunk, a base64 `data:` URI) is read then; one in a
-	file of its own is listed in `missingBuffers`, its path resolved against the model's, for the caller to fetch and give to `setBuffer`.
-	`nodes`, `sceneNodeIndices` and `materials` are read with the file; `meshes` and `images` read the buffers when asked for, and throw while a
-	buffer they need is missing.
+	`read` accepts the file's bytes and its path. A buffer held in the file (a GLB's BIN chunk, a base64 `data:` URI) is read then;
+	one in a file of its own is listed in `missingBuffers`, its path resolved against the model's, for the caller to fetch and pass
+	to `setBuffer`. `nodes`, `sceneNodeIndices` and `materials` are read with the file; `meshes` and `images` read the buffers when
+	asked for, and throw while a buffer they need is missing.
 
 	Accessors of every component type are read, normalized integers scaled to 0..1 or -1..1; one with no buffer view is zeros, and a
 	sparse accessor throws. Positions and normals are in each mesh's own units: no node's transform is applied. Skins and animations are
@@ -89,7 +89,7 @@ class GltfFile {
 
 	/** Sets a buffer in a file of its own to that file's bytes, so the meshes and images that need it can be read.
 
-		@param bufferIndex  The buffer's index, as `missingBuffers` gives it.
+		@param bufferIndex  The buffer's index, as `missingBuffers` lists it.
 		@param bytes  The buffer's file.
 		@throws String  The index is out of range, or the bytes are fewer than the buffer's `byteLength`. */
 	public function setBuffer(bufferIndex:Int, bytes:Bytes):Void {
@@ -330,7 +330,7 @@ class GltfFile {
 		return m;
 	}
 
-	// A node's translation, rotation and scale: as it gives them, or its matrix taken apart.
+	// A node's translation, rotation and scale: as the file writes them, or its matrix decomposed.
 	static function parts(node:Dynamic, transform:Matrix4):Transform3D {
 		if (field(node, "matrix") != null)
 			return Transform3D.fromMatrix(transform);

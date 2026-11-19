@@ -3,15 +3,15 @@ package helix.geometry;
 import helix.math.Matrix4;
 import helix.math.Trig;
 
-/** Represents a mesh: a surface made of triangles, as arrays a GPU or a file takes: positions, and for each vertex its normal, texture
+/** Represents a mesh: a surface made of triangles, as arrays a GPU or a file uses: positions, and for each vertex its normal, texture
 	coordinates, tangent and color when it has them; and the indices of each triangle's corners, or none when the vertices are the
 	triangles in order. A triangle's front is the side its corners are counterclockwise from.
 
 	The `fromX` functions make the usual shapes, centered on the origin, +y up, a shape about an axis turning about y, and two triangles
 	across each cell of their slices and stacks. Each has normals of length 1 from the shape itself, texture coordinates (u along the
 	slices from 0 to 1, v from the top, 0, to the bottom, 1, as images are stored), indices, and no tangents or colors; the vertices on a
-	seam are doubled, so each side has its own texture coordinates. They use `Trig`, so a shape is the same on every target. Each takes
-	an optional out, last, whose arrays it reuses.
+	seam are doubled, so each side has its own texture coordinates. They use `Trig`, so a shape is the same on every target. Each
+	accepts an optional out, last, whose arrays it reuses.
 
 	A model read from a file (helix-services' `Model3D`) holds its meshes as these, each with its material's index beside it. */
 class Mesh3D {
@@ -320,10 +320,10 @@ class Mesh3D {
 
 	/** Returns the provided meshes merged into one, each mesh's vertices after the previous mesh's.
 
-		A mesh lacking an attribute that another mesh has is given default values: normals (0, 1, 0), texture coordinates (0, 0), white
+		A mesh lacking an attribute that another mesh has gets default values: normals (0, 1, 0), texture coordinates (0, 0), white
 		colors, and joint indices 0 with weights 0. A vertex with weights 0 stays where it is when the merged mesh is posed.
 
-		Tangents are kept when every mesh has them. The merged mesh has indices when any mesh has them. An empty list gives an empty mesh.
+		Tangents are kept when every mesh has them. The merged mesh has indices when any mesh has them. An empty list makes an empty mesh.
 
 		@param meshes  The meshes, in order.
 		@param out  Optional. Set to the merged mesh. May be one of the meshes.
@@ -582,7 +582,7 @@ class Mesh3D {
 	}
 
 	/** Returns normals from the triangles: each vertex's the sum of the triangles it is a corner of, weighted by their areas, made length
-		1. Given a weld distance, vertices nearer each other than it share one normal, so a shape with doubled vertices on its seams stays
+		1. With a weld distance, vertices nearer each other than it share one normal, so a shape with doubled vertices on its seams stays
 		smooth across them.
 
 		@param weldDistance  Optional. How near vertices share a normal, 0 for those at the very same point. Omitted, none share: a
@@ -707,7 +707,7 @@ class Mesh3D {
 		`Skin3D.computeSkinning`), blended by its weights (linear blend skinning), on the CPU. A vertex whose weights are all 0, or a mesh
 		without joints or weights, is left where it is. Normals and tangents are made length 1 again.
 
-		@param skinning  Each of its skin's bones' matrix, as `Skin3D.computeSkinning` gives them.
+		@param skinning  Each of its skin's bones' matrix, as `Skin3D.computeSkinning` returns them.
 		@param out  Optional. Set to the moved mesh: its positions, normals and tangents its own, reused and grown or shrunk to fit; its
 			other arrays this mesh's own, not copied, so a mesh moved every frame allocates nothing. It may not be this mesh.
 		@return  The moved mesh.
@@ -900,7 +900,7 @@ class Mesh3D {
 			}
 	}
 
-	// A mesh to make a shape into, its arrays emptied: the one given, or a new one.
+	// A mesh to make a shape into, its arrays emptied: the one provided, or a new one.
 	static function start(out:Null<Mesh3D>):Mesh3D {
 		if (out == null)
 			out = new Mesh3D();
@@ -933,7 +933,7 @@ class Mesh3D {
 	}
 
 	// Two triangles a cell of a grid of vertices from first, columns + 1 a row, row 0 the top as the front is seen. A row flat (of no
-	// width, a pole) gives its cells one triangle, with the pole's vertex to the cell's right.
+	// width, a pole) makes one triangle of each cell, with the pole's vertex to the cell's right.
 	static function grid(m:Mesh3D, first:Int, columns:Int, rows:Int, flat:Null<Array<Bool>>):Void {
 		for (j in 0...rows)
 			for (i in 0...columns) {

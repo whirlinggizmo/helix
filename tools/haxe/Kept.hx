@@ -3,9 +3,9 @@ import haxe.macro.Context;
 import haxe.macro.Type;
 
 /** Writes what a program's libraries mark `@:keep`, as the compiler typed them: a JSON array of "<type>" or "<type>.<field>", for every
-	class and enum under a package given, in source order. A build with `-dce full` adds `:keep` to every type it keeps, so its `-xml`
-	can't tell a library's own `@:keep` from one the build added; this reads the metadata as written, before dead-code elimination runs.
-	Interfaces and abstracts' implementations are left out: the compiler keeps those itself.
+	class and enum under each package provided, in source order. A build with `-dce full` adds `:keep` to every type it keeps, so
+	its `-xml` can't tell a library's own `@:keep` from one the build added; this reads the metadata as written, before dead-code
+	elimination runs. Interfaces and abstracts' implementations are left out: the compiler keeps those itself.
 
 	--macro Kept.write("kept.json", ["helix."])
 

@@ -11,7 +11,7 @@ class Skin3D {
 	/** Gets the indices of its bones in the skeleton's `bones`. */
 	public final boneIndices:Array<Int>;
 
-	/** Gets each of its bones' inverse bind matrix, taking a vertex from the mesh's space to the bone's as the mesh was bound. */
+	/** Gets each of its bones' inverse bind matrix, moving a vertex from the mesh's space to the bone's as the mesh was bound. */
 	public final inverseBinds:Array<Matrix4>;
 
 	/** Creates a skin.

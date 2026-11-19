@@ -3,7 +3,7 @@ import haxe.io.BytesBuffer;
 import helix.formats.qoa.QoaFile;
 
 /** Checks QoaFile with the library alone: made-up files (their LMS state and slices bytes of a fixed LCG, so the predictions overflow
-	and the samples clamp) read as raylib 5.5's qoa.h reads them, by their frames and the CRC-32 of their samples (taken from qoa.h
+	and the samples clamp) read as raylib 5.5's qoa.h reads them, by their frames and the CRC-32 of their samples (produced by qoa.h
 	compiled with gcc on the same files): one channel and one frame, two channels over two frames, three channels with a last slice
 	part full, a file cut in its second frame and in its first, a second frame of another rate; and what throws. */
 class QoaTests {

@@ -8,7 +8,7 @@ import helix.math.Transform3D;
 	A node is read from the file's `nodes`, as `GltfFile.nodes` lists them; its children and its mesh are indices into `GltfFile.nodes`
 	and `GltfFile.meshes`. A node's world transform is its own composed with its ancestors', from a root in `GltfFile.sceneNodeIndices` down. */
 class GltfNode {
-	/** Gets the node's name: empty when the file gives none. */
+	/** Gets the node's name: empty when the file has none. */
 	public final name:String;
 
 	/** Gets the index of the node's mesh in `GltfFile.meshes`, or -1 when it has none. */
@@ -18,10 +18,10 @@ class GltfNode {
 	public final childIndices:Array<Int>;
 
 	/** Gets the node's transform relative to its parent: its `matrix`, or its scale, then rotation, then translation, applied in that
-		order. Identity when the file gives none. */
+		order. Identity when the file has none. */
 	public final transform:Matrix4;
 
-	/** Gets the node's translation, rotation and scale relative to its parent: as the file gives them, or its matrix taken apart; an
+	/** Gets the node's translation, rotation and scale relative to its parent: as the file writes them, or its matrix decomposed; an
 		animation's channels replace these. */
 	public final local:Transform3D;
 

@@ -84,7 +84,7 @@ class Utf8Text {
 		return text.toString();
 	}
 
-	/** Returns whether the bytes at a position are the given ASCII text, compared byte by byte: a file's tag or magic number, read
+	/** Returns whether the bytes at a position are the provided ASCII text, compared byte by byte: a file's tag or magic number, read
 		without decoding bytes that may not be text.
 
 		@param bytes  The bytes.
@@ -105,7 +105,7 @@ class Utf8Text {
 		var b = bytes.get(at);
 		if (b < 0x80)
 			return b == 0 ? 0 : 1;
-		// A lead byte, its count of continuation bytes, and the least code point it may give (no overlong forms).
+		// A lead byte, its count of continuation bytes, and the least code point it may encode (no overlong forms).
 		var count = 0, least = 0, code = 0;
 		if (b >= 0xC2 && b <= 0xDF) {
 			count = 1;

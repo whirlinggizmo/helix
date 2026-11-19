@@ -118,7 +118,7 @@ class Log {
 	/** Sets a tag's own level, in place of `Log.level` for its messages.
 
 		@param tag  The tag.
-		@param level  The least its messages must matter to be written: Off silences it, and null gives it `Log.level` again. */
+		@param level  The least its messages must matter to be written: Off silences it, and null resets it to `Log.level`. */
 	public static function setTagLevel(tag:String, level:Null<LogLevel>):Void {
 		if (level == null)
 			tagLevels.remove(tag);
@@ -157,7 +157,7 @@ class Log {
 		haxe.Log.trace = ownTrace;
 	}
 
-	/** Gives `trace` back what it was before `install`.
+	/** Restores `trace` to what it was before `install`.
 
 		If something else replaced `trace` after `install`, that replacement is kept, and the log stops being installed all the same. */
 	public static function uninstall():Void {

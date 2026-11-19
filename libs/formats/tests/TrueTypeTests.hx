@@ -4,7 +4,7 @@ import helix.formats.truetype.TrueTypeTables;
 	as the test compiles): its units per em and
 	vertical metrics, a glyph found for a codepoint it has and none for one it lacks, an advance, a box and an empty glyph's, the scale
 	for a pixel height, and what isn't a font; and kerning, on fonts the test makes (three glyphs, for A, B and C): `kern`'s pairs, and
-	`GPOS`'s pair adjustments by pair and by class taking precedence over `kern`, as stb_truetype reads them. (On DejaVu Sans, Liberation
+	`GPOS`'s pair adjustments by pair and by class winning over `kern`, as stb_truetype reads them. (On DejaVu Sans, Liberation
 	Sans, FreeSans and FreeSerif, every pair of U+0020 to U+017E kerned the same as stb_truetype's `GetGlyphKernAdvance`, checked apart.) */
 class TrueTypeTests {
 	static var checks = 0;
@@ -25,7 +25,7 @@ class TrueTypeTests {
 		return b;
 	}
 
-	// A font of the tables given, with a head, hhea, hmtx and cmap of its own: glyphs 1, 2 and 3 for A, B and C.
+	// A font of the tables provided, with a head, hhea, hmtx and cmap of its own: glyphs 1, 2 and 3 for A, B and C.
 	static function made(extra:Map<String, haxe.io.Bytes>):haxe.io.Bytes {
 		var tables = [
 			"head" => words([for (i in 0...27) i == 9 ? 1000 : 0]),

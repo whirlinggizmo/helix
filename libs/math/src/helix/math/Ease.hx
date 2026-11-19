@@ -108,7 +108,7 @@ abstract Ease(EaseCurve) {
 		On hxcpp each `at` of the returned curve allocates, as hxcpp boxes a number passed to a function value. The curves named here
 		allocate nothing.
 
-		@param curve  The function: given a fraction from 0 to 1, returns the eased fraction, 0 at 0 and 1 at 1.
+		@param curve  The function: it accepts a fraction from 0 to 1 and returns the eased fraction, 0 at 0 and 1 at 1.
 		@return  The curve. */
 	public static function of(curve:Float->Float):Ease
 		return new Ease(new FunctionEase(curve));

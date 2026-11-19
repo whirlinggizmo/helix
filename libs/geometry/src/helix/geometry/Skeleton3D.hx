@@ -56,7 +56,7 @@ class Skeleton3D {
 		return out;
 	}
 
-	// An out array of a length: the one given, grown or shrunk, its objects kept, or a new one.
+	// An out array of a length: the one provided, grown or shrunk, its objects kept, or a new one.
 
 	@:allow(helix.geometry)
 	static function fit<T>(out:Null<Array<T>>, length:Int, make:() -> T):Array<T> {

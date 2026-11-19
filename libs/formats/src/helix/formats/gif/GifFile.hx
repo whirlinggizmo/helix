@@ -3,7 +3,7 @@ package helix.formats.gif;
 import haxe.ds.Vector;
 import haxe.io.Bytes;
 
-/** Represents a GIF file (GIF87a or GIF89a): its screen, its global color table and loop count, and its frames as the file gives them.
+/** Represents a GIF file (GIF87a or GIF89a): its screen, its global color table and loop count, and its frames as the file writes them.
 
 	Every frame is read, its LZW data decoded and its interlaced rows put in order, with its graphic control block's transparency,
 	disposal and delay. `computeFrames` draws them onto the screen in turn, as a browser shows them.
@@ -23,7 +23,7 @@ class GifFile {
 	/** Gets the global color table, each color `0xFFRRGGBB`, or null when the file has none. */
 	public final colors:Null<Array<Int>>;
 
-	/** Gets the global color table's index of the background color, as the file gives it. Browsers don't draw it; the screen starts
+	/** Gets the global color table's index of the background color, as the file writes it. Browsers don't draw it; the screen starts
 		transparent. */
 	public final backgroundIndex:Int;
 
@@ -140,7 +140,7 @@ class GifFile {
 		frame's rectangle is disposed of as its `disposal` says: kept, cleared to transparent, or put back as it was before the frame.
 
 		@return  Each frame's pixels, `width * height * 4` bytes, in the frames' order.
-		@throws String  The frames take over 2 GB. */
+		@throws String  The frames need over 2 GB. */
 	public function computeFrames():Array<Bytes> {
 		var size = width * height * 4;
 		if (size * 1.0 * frames.length > 0x7FFFFFFF)

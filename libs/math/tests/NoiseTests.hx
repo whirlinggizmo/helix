@@ -2,11 +2,11 @@ import helix.math.Noise;
 import helix.math.Random;
 
 /** Checks Noise with the library alone: Perlin, simplex and cellular noise and Perlin's octaves summed, each one's range, how smoothly
-	each changes, where each repeats and what a seed changes, and that every target gives the interpreter's bits. */
+	each changes, where each repeats and what a seed changes, and that every target returns the interpreter's bits. */
 class NoiseTests {
 	static var checks = 0;
 
-	// The interpreter's hash of the numbers the last check takes, which Node's and hxcpp's must match.
+	// The interpreter's hash of the numbers the last check uses, which Node's and hxcpp's must match.
 	static inline var PINNED = 974820441;
 
 	static function check(value:Bool, message:String):Void {

@@ -13,7 +13,7 @@ class GltfImage {
 	/** Gets the path of the image's own file, resolved against the model's directory, or null when the model holds it (`encoded`). */
 	public final path:Null<String>;
 
-	/** Gets the image's media type as the file gives it (`image/png`, `image/jpeg`), or null when it gives none. */
+	/** Gets the image's media type as the file writes it (`image/png`, `image/jpeg`), or null when the file has none. */
 	public final mimeType:Null<String>;
 
 	@:allow(helix.formats.gltf)

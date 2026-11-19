@@ -31,7 +31,7 @@ class GltfPrimitive {
 		primitive has none. */
 	public final texCoords:Null<Array<Float>>;
 
-	/** Gets the vertices' colors, `COLOR_0`: red, green, blue and alpha for each vertex, each 0 to 1 (alpha 1 when the file gives three
+	/** Gets the vertices' colors, `COLOR_0`: red, green, blue and alpha for each vertex, each 0 to 1 (alpha 1 when the file has three
 		components), or null when the primitive has none. */
 	public final colors:Null<Array<Float>>;
 

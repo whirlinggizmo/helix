@@ -238,7 +238,7 @@ class QuaternionTests {
 			&& new Quaternion().angle == 0,
 			"its angle, 0 to pi, either sign alike");
 
-		// Each operation into a new rotation (its inputs unchanged), into the one given, and into each argument: the same each way.
+		// Each operation into a new rotation (its inputs unchanged), into the one provided, and into each argument: the same each way.
 		threeWays(a, b, (x, y, out) -> Quaternion.slerp(x, y, .3, out), "slerp");
 		threeWays(a, b, (x, y, out) -> Quaternion.slerp(x, y, -.4, out), "slerp before its start");
 		threeWays(a, close, (x, y, out) -> Quaternion.slerp(x, y, .3, out), "slerp, nearly the same");

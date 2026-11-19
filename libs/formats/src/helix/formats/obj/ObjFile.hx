@@ -2,7 +2,7 @@ package helix.formats.obj;
 
 import haxe.io.Bytes;
 
-/** Represents a Wavefront OBJ model read from an .obj file: its vertex data, its faces and their groups, as the file gives them.
+/** Represents a Wavefront OBJ model read from an .obj file: its vertex data, its faces and their groups, as the file writes them.
 
 	The file's positions, texture coordinates and normals are numbered from 0 in the order of their lines (`v`, `vt`, `vn`); the
 	file's own numbers are turned into these: a positive one names that line of its kind in the whole file, before the face or after
@@ -14,12 +14,12 @@ import haxe.io.Bytes;
 	A face's material is named by the `usemtl` line before it, which holds across `o` and `g` lines until the next `usemtl`. The
 	materials themselves are in the .mtl files `materialLibraryPaths` names, read by `MtlFile`; `computeMaterials` finds each name's.
 	`computeParts` gathers the faces into parts, one for each object, group and material, split into triangles. Points, lines, curves
-	and surfaces are not read; a face of 1 or 2 corners (a point or a line written as a face) is kept as the file writes it, and gives
+	and surfaces are not read; a face of 1 or 2 corners (a point or a line written as a face) is kept as the file writes it, and makes
 	no triangles.
 
-	Values are as the file gives them: texture coordinates are not flipped (v is 0 at the image's bottom, as OBJ has it), normals are
+	Values are as the file writes them: texture coordinates are not flipped (v is 0 at the image's bottom, as OBJ has it), normals are
 	not normalized, and a face's corners go counter-clockwise seen from its front, as OBJ has them. Paths are resolved against the
-	file's directory and normalized: `/` between parts, `.` and `..` taken out; an absolute path is kept as it is, and a `..` above
+	file's directory and normalized: `/` between parts, `.` and `..` removed; an absolute path is kept as it is, and a `..` above
 	the root is kept at its start. The arrays are the file's own, read-only.
 
 	Its text is decoded as UTF-8 when the bytes are UTF-8, and otherwise as Latin-1, each byte the character of its value (U+0000 to
@@ -48,11 +48,11 @@ class ObjFile {
 	public final positionCount:Int;
 
 	/** Gets the positions, three values for each (as every array here, the file's own: read it, don't change it): position i's x, y and z at `positions[3 * i]`, `[3 * i + 1]` and `[3 * i + 2]`. A
-		fourth value a `v` line may give, w, is dropped. */
+		fourth value a `v` line may have, w, is dropped. */
 	public final positions:haxe.ds.ReadOnlyArray<Float>;
 
 	/** Gets the positions' colors, three values for each, red, green and blue from 0 to 1: position i's at `colors[3 * i]` on, so a
-		corner's color is its position's. Null unless every `v` line gives six values (a common extension): a file where only some do
+		corner's color is its position's. Null unless every `v` line has six values (a common extension): a file where only some do
 		has none. */
 	public final colors:Null<haxe.ds.ReadOnlyArray<Float>>;
 
@@ -66,7 +66,7 @@ class ObjFile {
 	/** Gets how many normals the file has: one for each `vn` line. */
 	public final normalCount:Int;
 
-	/** Gets the normals, three values for each: normal i's x, y and z at `normals[3 * i]` on, as the file gives them, not normalized. */
+	/** Gets the normals, three values for each: normal i's x, y and z at `normals[3 * i]` on, as written, not normalized. */
 	public final normals:haxe.ds.ReadOnlyArray<Float>;
 
 	/** Gets how many faces the file has: one for each `f` line. */
@@ -103,23 +103,23 @@ class ObjFile {
 		whose corners all name what it has. */
 	public final missingIndexCount:Int;
 
-	/** Gets the material names the `usemtl` lines give, each once, in the order the file first uses them, matched as written (case
+	/** Gets the material names the `usemtl` lines name, each once, in the order the file first uses them, matched as written (case
 		counts). */
 	public final materialNames:haxe.ds.ReadOnlyArray<String>;
 
-	/** Gets the paths of the .mtl files the `mtllib` lines name, in the file's order, ready to load: a line naming several files gives
+	/** Gets the paths of the .mtl files the `mtllib` lines name, in the file's order, ready to load: a line naming several files adds
 		a path for each, split at spaces, so a file name can't hold one. */
 	public final materialLibraryPaths:haxe.ds.ReadOnlyArray<String>;
 
 	/** Gets the file's groups of faces, in the file's order: the faces before the first `o` or `g` line, and those after each such
-		line up to the next. Each line starts a group of its own, whatever it names, so a name given twice with faces after each
+		line up to the next. Each line starts a group of its own, whatever it names, so a name used twice with faces after each
 		(`g a`, faces, `g a`, faces) is two groups, and so is a name coming back later (`g a`, `g b`, `g a` are three); `computeParts`
 		joins them. A line with no faces after it, before the next such line or the end, starts none: a group has at least 1 face. A
 		`usemtl` line doesn't start a group: a group's faces may have several materials. */
 	public final groups:Array<ObjGroup>;
 
 	/** Returns some faces split into triangles, each polygon a fan from its first corner (corners 0, i and i + 1), as most readers
-		do: a face of n corners gives n - 2 triangles, in the faces' order, and one of 1 or 2 corners gives none.
+		do: a face of n corners makes n - 2 triangles, in the faces' order, and one of 1 or 2 corners makes none.
 
 		@param firstFaceIndex  The first face.
 		@param faceCount  How many faces, from it.
@@ -138,7 +138,7 @@ class ObjFile {
 	}
 
 	/** Returns the material of each name in `materialNames`, from a library: the library's of that name, or, for a name it doesn't
-		give, a material of that name with every value its default (as `MtlMaterial.DEFAULT`'s). Whether a name was found is
+		define, a material of that name with every value its default (as `MtlMaterial.DEFAULT`'s). Whether a name was found is
 		`library.findMaterial(name) != null`.
 
 		@param library  The library: those `materialLibraryPaths` names, read and combined (`MtlFile.combine`).
@@ -155,7 +155,7 @@ class ObjFile {
 
 	/** Returns the faces gathered into parts, each split into triangles as `computeTriangles` splits them: one part for each object,
 		group and material, the faces of a name that comes back later in the file joined to its part. Parts come in the order their
-		first face does. A face giving no triangles (1 or 2 corners) is left out, and so a part has at least one triangle.
+		first face does. A face making no triangles (1 or 2 corners) is left out, and so a part has at least one triangle.
 
 		Faces before any `usemtl` make a part of their own, its `materialIndex` -1 and its `materialName` "".
 

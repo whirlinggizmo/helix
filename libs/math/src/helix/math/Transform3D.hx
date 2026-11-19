@@ -51,8 +51,8 @@ class Transform3D {
 
 	/** Returns the transform of a matrix: its position, rotation and scale.
 
-		A matrix that shears gives the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear
-		lost. One that mirrors gives an x scale less than 0, so the way it faces and its up are kept.
+		A matrix that shears produces the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the
+		shear lost. One that mirrors produces an x scale less than 0, so the way it faces and its up are kept.
 		@param matrix  The matrix.
 		@param out  Optional. The transform to fill; a new one when omitted.
 		@return  The transform. */
@@ -93,7 +93,7 @@ class Transform3D {
 	/** Moves it along the way it faces.
 
 		@param distance  How far, in its parent's units; less than 0 moves it back.
-		@param inWorldPlane  Optional. True to move along the ground, its forward with the height taken out, as a walking camera does;
+		@param inWorldPlane  Optional. True to move along the ground, its forward with the height removed, as a walking camera does;
 			defaults to false.
 		@return  This transform. */
 	public function moveForward(distance:Float, inWorldPlane = false):Transform3D {
@@ -107,7 +107,7 @@ class Transform3D {
 	/** Moves it to its right.
 
 		@param distance  How far, in its parent's units; less than 0 moves it left.
-		@param inWorldPlane  Optional. True to move along the ground, its right with the height taken out; defaults to false.
+		@param inWorldPlane  Optional. True to move along the ground, its right with the height removed; defaults to false.
 		@return  This transform. */
 	public function moveRight(distance:Float, inWorldPlane = false):Transform3D {
 		var right = computeRight(vector());

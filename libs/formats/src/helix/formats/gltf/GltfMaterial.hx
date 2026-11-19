@@ -2,10 +2,10 @@ package helix.formats.gltf;
 
 /** Represents one material of a glTF model: its metallic-roughness factors and the images its textures sample.
 
-	Each texture is given as the index of its image in `GltfFile.images`, the image its glTF texture's `source` names; a sampler, a
-	texture coordinate set other than the first and a texture's transform are not read. Factors the file omits take glTF's defaults. */
+	Each texture is held as the index of its image in `GltfFile.images`, the image its glTF texture's `source` names; a sampler, a
+	texture coordinate set other than the first and a texture's transform are not read. Factors the file omits use glTF's defaults. */
 class GltfMaterial {
-	/** Gets the material's name: empty when the file gives none. */
+	/** Gets the material's name: empty when the file has none. */
 	public final name:String;
 
 	/** Gets whether the material has a `pbrMetallicRoughness` block, which holds its base color, metalness and roughness: when it

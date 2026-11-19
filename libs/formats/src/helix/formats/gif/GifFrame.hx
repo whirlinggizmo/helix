@@ -2,7 +2,7 @@ package helix.formats.gif;
 
 import haxe.io.Bytes;
 
-/** Represents one frame of a GIF file as the file gives it: its rectangle of the screen, its color indices and color table, and its
+/** Represents one frame of a GIF file as the file writes it: its rectangle of the screen, its color indices and color table, and its
 	graphic control block's transparency, disposal and delay.
 
 	`GifFile.computeFrames` draws the frames onto the screen in turn, as a viewer shows them. */
@@ -26,7 +26,7 @@ class GifFrame {
 	public final colors:Array<Int>;
 
 	/** Gets the color index of each pixel, a byte each, rows top first, `width * height` bytes. An index past the color table's end is
-		as the file gives it. */
+		as the file writes it. */
 	public final indices:Bytes;
 
 	/** Gets the index whose pixels aren't drawn, or -1 when every pixel is drawn. */
@@ -35,7 +35,7 @@ class GifFrame {
 	/** Gets what becomes of the rectangle before the next frame is drawn. */
 	public final disposal:GifDisposal;
 
-	/** Gets how long the frame shows before the next, in seconds: the file's hundredths of a second. 0 when the file gives none. */
+	/** Gets how long the frame shows before the next, in seconds: the file's hundredths of a second. 0 when the file has none. */
 	public final delay:Float;
 
 	@:allow(helix.formats.gif)

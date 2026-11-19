@@ -51,7 +51,7 @@ class ObjText {
 		return found;
 	}
 
-	/** Returns the rest of a line after its keyword, its spaces at either end taken off, up to a comment.
+	/** Returns the rest of a line after its keyword, its spaces at either end trimmed, up to a comment.
 
 		@param line  The line.
 		@param keyword  The keyword it starts with, after any spaces.
@@ -102,10 +102,10 @@ class ObjText {
 		return value;
 	}
 
-	/** Returns a path a file names, resolved against the file's directory and normalized: `/` between parts (a `\` taken as one), `.`
-		and `..` taken out, a `..` above the root kept at its start. An absolute path is kept as it is.
+	/** Returns a path a file names, resolved against the file's directory and normalized: `/` between parts (a `\` read as one), `.`
+		and `..` removed, a `..` above the root kept at its start. An absolute path is kept as it is.
 
-		@param path  The path the file gives.
+		@param path  The path the file names.
 		@param file  The file's own path.
 		@return  The path. */
 	static function resolve(path:String, file:String):String {
@@ -115,7 +115,7 @@ class ObjText {
 		return normalize(directory == "" ? path : directory + "/" + path);
 	}
 
-	// A path with `/` between its parts, `.` and `..` taken out, a `..` above the root kept at its start, a leading `/` kept.
+	// A path with `/` between its parts, `.` and `..` removed, a `..` above the root kept at its start, a leading `/` kept.
 	static function normalize(path:String):String {
 		var parts = [], absolute = StringTools.startsWith(path, "/");
 		for (part in StringTools.replace(path, "\\", "/").split("/")) {

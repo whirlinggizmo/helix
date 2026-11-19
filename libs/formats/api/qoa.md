@@ -8,7 +8,7 @@
 
 Represents the sound read from a QOA file ("Quite OK Audio"): its rate, channels and 16-bit samples.
 
-Reading is qoa.h's `qoa_decode` (raylib 5.5's copy), ported, so its samples are those raylib's `LoadWave` gives, bit for bit. A file whose frames end early, or stop being valid, gives the frames read until then, as qoa.h does. A streamed file (its frame count 0) isn't read, as qoa.h doesn't read one.
+Reading is qoa.h's `qoa_decode` (raylib 5.5's copy), ported, so its samples are those raylib's `LoadWave` returns, bit for bit. A file whose frames end early, or stop being valid, produces the frames read until then, as qoa.h does. A streamed file (its frame count 0) isn't read, as qoa.h doesn't read one.
 
 ```haxe
 var qoa = QoaFile.read(bytes);

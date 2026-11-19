@@ -8,7 +8,7 @@
 
 Provides reading a sound file's length, channels and rate from its first bytes, and for some kinds its last, without decoding it.
 
-It reads WAV, Ogg (Vorbis, Opus, FLAC and Speex), FLAC and MP3 (MPEG audio layers I to III). Given the whole file, it reads the start alone; given part of it, the first 64 KiB is enough for all but an MP3 whose tags are larger, and Ogg's length needs the last bytes too, where the last page is.
+It reads WAV, Ogg (Vorbis, Opus, FLAC and Speex), FLAC and MP3 (MPEG audio layers I to III). With the whole file, it reads the start alone; with part of it, the first 64 KiB is enough for all but an MP3 whose tags are larger, and Ogg's length needs the last bytes too, where the last page is.
 
 ```haxe
 var seconds = AudioHeader.readDuration(first64k, last64k, fileSize);

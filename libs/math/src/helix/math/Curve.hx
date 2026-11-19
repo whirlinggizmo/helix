@@ -6,7 +6,7 @@ import helix.math.CurveKind;
 
 	A curve is made by `through`, `bezier` or `polyline`, and its points are fixed once made. It is asked where it is and which way it heads
 	at a parameter t, from 0 at its start to 1 at its end, and how long it is. Equal steps of t are not equal distances along it:
-	`getParameterAtDistance` gives the t at a distance, for moving along it at a steady speed. Points are given flat, x, y or x, y, z each.
+	`getParameterAtDistance` finds the t at a distance, for moving along it at a steady speed. Points are passed flat, x, y or x, y, z each.
 	```haxe
 	var rail = Curve.through([0, 0, 100, 50, 200, 0]);
 	var t = rail.getParameterAtDistance(speed * time);

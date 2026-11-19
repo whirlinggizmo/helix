@@ -4,9 +4,10 @@ import helix.math.Matrix3;
 import helix.math.Vector2;
 
 /** Checks Camera2D with the library alone: made and copied; its view matrix, conversions and bounds pinned to values computed apart
-	from Haxe, the matrix also to raylib 5.5's own 4 x 4 path for the same camera; each result into a new value or one given, alike, even
-	when the one given is its own offset or position; worldToView and viewToWorld undoing each other over turned, zoomed and mirrored
-	cameras; the bounds of a turned, zoomed view holding exactly its corners; and zoom 0, where a point in the view has no place. */
+	from Haxe, the matrix also to raylib 5.5's own 4 x 4 path for the same camera; each result into a new value or one provided,
+	alike, even when the one provided is its own offset or position; worldToView and viewToWorld undoing each other over turned,
+	zoomed and mirrored cameras; the bounds of a turned, zoomed view holding exactly its corners; and zoom 0, where a point in the
+	view has no place. */
 class Camera2DTests {
 	static var checks = 0;
 
@@ -36,7 +37,7 @@ class Camera2DTests {
 		return camera;
 	}
 
-	// Runs a conversion into a new vector, into one given, into the camera's own offset and its own position: the same each way.
+	// Runs a conversion into a new vector, into one provided, into the camera's own offset and its own position: the same each way.
 	static function fourWays(op:(Camera2D, Null<Vector2>) -> Vector2, message:String):Vector2 {
 		var camera = sample();
 		var result = op(camera, null), given = new Vector2();

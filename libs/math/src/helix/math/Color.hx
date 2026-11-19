@@ -159,7 +159,7 @@ class Color {
 		return (most + least) / 510;
 	}
 
-	/** Returns a color's saturation as `fromHsl` takes it. `getSaturation` gives the saturation `fromHsv` takes.
+	/** Returns a color's saturation as `fromHsl` accepts it. `getSaturation` returns the saturation `fromHsv` accepts.
 
 		@param color  The color, as 0xAARRGGBB.
 		@return  The saturation, 0 to 1: 0 for a gray, black or white. */

@@ -3,7 +3,7 @@ package helix.geometry;
 import helix.math.MathTools;
 import helix.math.Vector3;
 
-/** Provides tests on points, segments and triangles in space, their points given as plain numbers, as `Geometry2D` does in a plane.
+/** Provides tests on points, segments and triangles in space, their points passed as plain numbers, as `Geometry2D` does in a plane.
 
 	```haxe
 	// How far a ball is from a rail, and the point of the rail the ball is nearest.
@@ -75,7 +75,7 @@ class Geometry3D {
 		@param cy  The third corner's y.
 		@param cz  The third corner's z.
 		@param out  Optional. The vector to fill; a new one when omitted.
-		@return  The nearest point. A triangle of no area is taken as the segment or the point its corners make. */
+		@return  The nearest point. A triangle of no area is treated as the segment or the point its corners make. */
 	public static function getClosestPointOnTriangle(x:Float, y:Float, z:Float, ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float,
 			cy:Float, cz:Float, ?out:Vector3):Vector3 {
 		if (out == null)
@@ -137,8 +137,8 @@ class Geometry3D {
 		@param b2z  The second segment's end z.
 		@param outA  Optional. Set to the point on the first segment.
 		@param outB  Optional. Set to the point on the second segment.
-		@return  How far apart the two points are: 0 when the segments cross. Parallel segments give the first segment's start and the
-			point of the second nearest that start, or the nearest pair of ends when that start is past the second segment. */
+		@return  How far apart the two points are: 0 when the segments cross. Parallel segments produce the first segment's start
+			and the point of the second nearest that start, or the nearest pair of ends when that start is past the second segment. */
 	public static function getClosestPointsBetweenSegments(a1x:Float, a1y:Float, a1z:Float, a2x:Float, a2y:Float, a2z:Float, b1x:Float, b1y:Float, b1z:Float,
 			b2x:Float, b2y:Float, b2z:Float, ?outA:Vector3, ?outB:Vector3):Float {
 		// Each segment is its start plus a fraction of its direction: s along the first, t along the second (Ericson's Real-Time

@@ -5,8 +5,8 @@ import helix.math.Vector2;
 
 /** Checks Transform2D with the library alone: made, copied and reset, each returning itself; its forward and right; moved along them
 	and toward a point (stopping short of it); turned, turned to face a point at once or by a step, and swung around one; points carried and
-	its matrix, pinned to plain 3 x 3 algebra computed apart from Haxe; each result into a new value or the one given, alike, even when the
-	one given is its own position; and taken back from a matrix. */
+	its matrix, pinned to plain 3 x 3 algebra computed apart from Haxe; each result into a new value or the one provided, alike,
+	even when the one provided is its own position; and recovered from a matrix. */
 class Transform2DTests {
 	static var checks = 0;
 
@@ -33,7 +33,7 @@ class Transform2DTests {
 		return t;
 	}
 
-	// Runs a result into a new vector and into one given, and into the transform's own position: the same each way.
+	// Runs a result into a new vector and into one provided, and into the transform's own position: the same each way.
 	static function twoWays(op:(Transform2D, Null<Vector2>) -> Vector2, message:String):Vector2 {
 		var t = sample();
 		var result = op(t, null), given = new Vector2();

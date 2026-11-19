@@ -41,7 +41,7 @@ static function matchesAscii(bytes:haxe.io.Bytes, at:Int, text:String):Bool
   - returns: The text.
 
   For text that may hold anything, where a stand-in is better than a refusal.
-- `matchesAscii`: Returns whether the bytes at a position are the given ASCII text, compared byte by byte: a file's tag or magic number, read without decoding bytes that may not be text.
+- `matchesAscii`: Returns whether the bytes at a position are the provided ASCII text, compared byte by byte: a file's tag or magic number, read without decoding bytes that may not be text.
   - `bytes`: The bytes.
   - `at`: The position of the first byte.
   - `text`: The ASCII text.

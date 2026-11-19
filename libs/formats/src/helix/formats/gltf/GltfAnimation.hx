@@ -2,7 +2,7 @@ package helix.formats.gltf;
 
 /** Represents a glTF animation: channels, each moving one property of one node by a sampler's keys. */
 class GltfAnimation {
-	/** Gets its name: empty when the file gives none. */
+	/** Gets its name: empty when the file has none. */
 	public final name:String;
 
 	/** Gets its channels. */

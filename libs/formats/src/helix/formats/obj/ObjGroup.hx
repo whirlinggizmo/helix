@@ -3,10 +3,10 @@ package helix.formats.obj;
 /** Represents a run of an OBJ model's faces that are in one object and one group: the faces after an `o` or `g` line, up to the next
 	such line. */
 class ObjGroup {
-	/** Gets the object the faces are in: the name the last `o` line gives, the whole rest of its line, or "" before the first. */
+	/** Gets the object the faces are in: the name the last `o` line names, the whole rest of its line, or "" before the first. */
 	public final objectName:String;
 
-	/** Gets the group the faces are in: the name the last `g` line in this object gives, the whole rest of its line (a line naming
+	/** Gets the group the faces are in: the name the last `g` line in this object names, the whole rest of its line (a line naming
 		several groups keeps them as written), or "" when the object has none yet: an `o` line starts its object with no group. */
 	public final groupName:String;
 

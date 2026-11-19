@@ -2,8 +2,8 @@ import helix.math.Matrix4;
 import helix.math.Trig;
 import helix.math.Vector2;
 
-/** Checks `-D helix-math-standard-trig` with the library alone: each of Trig's functions gives `Math`'s answer, bit for bit, and
-	helix-math's rotations take `Math`'s cosines and sines too. */
+/** Checks `-D helix-math-standard-trig` with the library alone: each of Trig's functions returns `Math`'s answer, bit for bit, and
+	helix-math's rotations use `Math`'s cosines and sines too. */
 class StandardTrigTests {
 	static var checks = 0;
 

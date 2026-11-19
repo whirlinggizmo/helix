@@ -2,7 +2,7 @@ import haxe.io.Bytes;
 import helix.formats.qoi.QoiFile;
 
 /** Checks QoiFile with the library alone: its files byte for byte as raylib 5.5's qoi.h writes them (each file's length and CRC-32,
-	taken from qoi.h compiled with gcc, on the same made-up images), for 3 and 4 channels, a single pixel, runs, the index, small and
+	produced by qoi.h compiled with gcc, on the same made-up images), for 3 and 4 channels, a single pixel, runs, the index, small and
 	larger differences and a changing alpha; each read back to the pixels written, its size, channels and colorspace; a file that ends
 	early; and what throws. */
 class QoiTests {

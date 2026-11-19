@@ -150,7 +150,7 @@ class WavTests {
 		check(wav.samples.compare(samples) == 0, '$what: its samples read back');
 	}
 
-	// A mono file of the given bytes, its format and sample size set.
+	// A mono file of the provided bytes, its format and sample size set.
 	static function mono(tag:Int, data:Array<Int>):WavFile {
 		var samples = Bytes.alloc(data.length);
 		for (i in 0...data.length)

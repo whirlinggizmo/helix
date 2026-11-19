@@ -21,7 +21,7 @@ class MtlFile {
 
 	/** Returns the material of a name.
 
-		@param name  The name, as `newmtl` gives it; case counts.
+		@param name  The name, as `newmtl` names it; case counts.
 		@return  The material, the first when several share the name, or null when there is none of that name. */
 	public function findMaterial(name:String):Null<MtlMaterial> {
 		for (m in materials)
@@ -31,9 +31,9 @@ class MtlFile {
 	}
 
 	/** Returns several libraries as one, as an OBJ model that names them all uses them: their materials in turn, a name already
-		given by an earlier library left out.
+		defined by an earlier library left out.
 
-		@param libraries  The libraries, in the order the model names them; none gives a library with no materials.
+		@param libraries  The libraries, in the order the model names them; none returns a library with no materials.
 		@return  The library. */
 	public static function combine(libraries:Array<MtlFile>):MtlFile {
 		var all = [], names = new Map<String, Bool>();
@@ -118,7 +118,7 @@ class MtlFile {
 		return new MtlFile(materials);
 	}
 
-	// A texture line's path: what follows its options, each option's values read past (`-o`, `-s` and `-t` take up to 3 numbers, `-mm` 2,
+	// A texture line's path: what follows its options, each option's values read past (`-o`, `-s` and `-t` have up to 3 numbers, `-mm` 2,
 	// the rest 1).
 	static function texturePath(text:String, keyword:String, line:Int):String {
 		var rest = ObjText.rest(text, keyword);

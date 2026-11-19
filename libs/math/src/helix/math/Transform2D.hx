@@ -51,7 +51,7 @@ class Transform2D {
 	/** Returns the transform a matrix places, scales and turns by.
 
 		Its rotation and x scale are the matrix's x axis's, and its y scale what the y axis reaches across it, so a matrix that shears
-		loses the shear, and one that mirrors gives a y scale less than 0.
+		loses the shear, and one that mirrors produces a y scale less than 0.
 		@param matrix  The matrix.
 		@param out  Optional. The transform to write into; a new one when omitted.
 		@return  The transform. */

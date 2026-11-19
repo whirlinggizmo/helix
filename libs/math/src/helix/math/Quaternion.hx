@@ -5,8 +5,8 @@ package helix.math;
 	Two rotations blend along the shortest arc (`slerp`), which matrices can't do, so an animation's rotations are kept as these and
 	turned into a matrix to draw. A static `fromX` makes a rotation, and `slerp`, `nlerp` and `compose` make one from others. Each of
 	those, and each operation on a rotation (`append`, `invert`, `normalize`, `transformPoint`, `toMatrix`), writes its result into an
-	optional out, the last argument, and returns it. Without one it makes a new result and leaves this rotation unchanged; given this
-	rotation, it changes it in place (`q.normalize(q)`). The out may be this rotation or any other argument, and calls chain through what
+	optional out, the last argument, and returns it. Without one it makes a new result and leaves this rotation unchanged; provided this
+	rotation, it works in place (`q.normalize(q)`). The out may be this rotation or any other argument, and calls chain through what
 	each returns. `set`, `copyFrom` and `makeIdentity` change this rotation and return it. It uses `Trig`, so a rotation comes out the
 	same on every target. Space is right-handed with +y up, as every 3D type here.
 
@@ -136,7 +136,7 @@ class Quaternion {
 			xz = ux * zy - uy * zx;
 		length = Math.sqrt(xx * xx + xy * xy + xz * xz);
 		if (length == 0) {
-			// Up along the direction, or of length 0: +y, or facing straight up or down, the up a turn from level would give, -z below, +z above.
+			// Up along the direction, or of length 0: +y, or facing straight up or down, the up a turn from level would make, -z below, +z above.
 			if (zx == 0 && zz == 0) {
 				ux = 0;
 				uy = 0;
@@ -159,7 +159,7 @@ class Quaternion {
 
 	/** Returns the shortest turn from one direction to another.
 
-		Opposite directions give half a turn around an axis square to them. A direction of length 0 gives the identity.
+		Opposite directions produce half a turn around an axis square to them. A direction of length 0 produces the identity.
 		@param from  The first direction; it needn't be of length 1.
 		@param to  The second direction.
 		@param out  Optional. The rotation to fill; a new one when omitted.
@@ -199,7 +199,7 @@ class Quaternion {
 
 	/** Returns the rotation of a matrix that is a rotation alone.
 
-		A matrix with a scale or a shear gives a quaternion that isn't a rotation. See `Matrix4.getRotation` for a matrix with a scale.
+		A matrix with a scale or a shear makes a quaternion that isn't a rotation. See `Matrix4.getRotation` for a matrix with a scale.
 
 		@param matrix  The rotation matrix: its three axes of length 1 and square to one another.
 		@param out  Optional. The rotation to fill; a new one when omitted.
@@ -393,7 +393,7 @@ class Quaternion {
 
 	/** Returns the quaternion scaled to length 1, so it is a rotation again after numbers set by hand or many compositions.
 
-		A quaternion of length 0 gives the identity.
+		A quaternion of length 0 produces the identity.
 		@param out  Optional. The rotation to fill; a new one when omitted. It may be this rotation.
 		@return  The rotation. */
 	public function normalize(?out:Quaternion):Quaternion {
@@ -506,7 +506,7 @@ class Quaternion {
 		var cosSecond = Math.sqrt(kk * kk + jk * jk);
 		var second = Trig.atan2(sign * ik, cosSecond), first, last;
 		if (cosSecond < 1e-9) {
-			// The second a quarter turn either way: the first and the last turn around one axis, so the first takes the whole turn.
+			// The second a quarter turn either way: the first and the last turn around one axis, so the first carries the whole turn.
 			first = Trig.atan2(sign * ji, jj);
 			last = 0.;
 		} else {

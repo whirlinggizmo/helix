@@ -3,10 +3,10 @@ import helix.math.Matrix4;
 import helix.math.Quaternion;
 import helix.math.Vector3;
 
-/** Checks Matrix4 with the library alone: made as each kind of transform (into a new matrix or one given), three turns in each of the
-	six orders, combined in order (compose, append, prepend), each operation into a new matrix, itself or its other argument alike, inverted
-	(a singular one refused, unchanged) and transposed, added and subtracted, its trace and determinant, points and directions carried
-	through it, a point through a projection, and a transform taken apart, whole and a part at a time. */
+/** Checks Matrix4 with the library alone: made as each kind of transform (into a new matrix or one provided), three turns in each
+	of the six orders, combined in order (compose, append, prepend), each operation into a new matrix, itself or its other argument
+	alike, inverted (a singular one refused, unchanged) and transposed, added and subtracted, its trace and determinant, points and
+	directions carried through it, a point through a projection, and a transform decomposed, whole and a part at a time. */
 class Matrix4Tests {
 	static var checks = 0;
 

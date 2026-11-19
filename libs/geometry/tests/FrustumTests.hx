@@ -5,7 +5,7 @@ import helix.geometry.Plane;
 import helix.geometry.Sphere;
 
 /** Checks Frustum with the library alone: made holding everything; its planes from a perspective and an orthographic view-projection,
-	pinned to Gribb and Hartmann's planes computed apart from Haxe; copied and filled into the one given; points, spheres and boxes
+	pinned to Gribb and Hartmann's planes computed apart from Haxe; copied and filled into the one provided; points, spheres and boxes
 	inside, outside and straddling each kind, on a plane, past near and far, and an empty box; and a box outside near a corner, counted
 	in as its doc comment allows. */
 class FrustumTests {

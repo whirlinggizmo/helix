@@ -4,9 +4,9 @@ package helix.math;
 	`MathTools` clamps, wraps and snaps a number.
 
 	The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both.
-	Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses
-	`Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets.
-	`Ease` has each curve as a value (`Ease.outCubic`), for a tween or another call to take.
+	Each accepts a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine
+	family uses `Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ
+	between targets. `Ease` has each curve as a value (`Ease.outCubic`), for a tween or another call to accept.
 
 	`damp` and `dampAngle` use `Math.exp`, whose last bit can differ between targets, so a simulation that must replay alike on every
 	target uses `moveToward` or its own integer math instead. Angles are in radians. */

@@ -4,13 +4,13 @@ import helix.math.Matrix4;
 
 /** Represents a glTF skin: the nodes a skinned mesh's vertices follow, and how the mesh was bound to them. */
 class GltfSkin {
-	/** Gets its name: empty when the file gives none. */
+	/** Gets its name: empty when the file has none. */
 	public final name:String;
 
 	/** Gets the indices of its joints in `GltfFile.nodes`; a vertex's `GltfPrimitive.jointIndices` index this. */
 	public final jointIndices:Array<Int>;
 
-	/** Gets each joint's inverse bind matrix, taking a vertex from the mesh's space to the joint's at rest; identities when the file gives
+	/** Gets each joint's inverse bind matrix, moving a vertex from the mesh's space to the joint's at rest; identities when the file has
 		none. */
 	public final inverseBindMatrices:Array<Matrix4>;
 

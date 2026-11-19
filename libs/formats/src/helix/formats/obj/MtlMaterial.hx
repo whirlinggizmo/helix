@@ -3,7 +3,7 @@ package helix.formats.obj;
 import helix.math.MathTools;
 
 /** Represents one material of an .mtl file: its colors, factors and the textures it names, as paths resolved against the file's
-	directory and normalized as `ObjFile`'s are (null for none). A value the file doesn't give is null, and its `computeX` method gives
+	directory and normalized as `ObjFile`'s are (null for none). A value the file doesn't set is null, and its `computeX` method returns
 	the default to draw with. Its colors are arrays the material holds, and the defaults' are shared: read them, don't change them. A
 	texture line's options (`-s`, `-o`, `-bm` and the rest) are read past; only the path is kept.
 
@@ -11,51 +11,51 @@ import helix.math.MathTools;
 	values are absent from older files. Each color is three values, red, green and blue, each usually 0 to 1; a color written with one
 	value is that value three times, as the format has it. */
 class MtlMaterial {
-	/** The material a face uses when it names none: named "", not `defined`, giving no value and no texture, so each `computeX` gives
+	/** The material a face uses when it names none: named "", not `defined`, with no value and no texture, so each `computeX` returns
 		its default (white, opaque). */
 	public static final DEFAULT:MtlMaterial = standIn("");
 
-	/** Gets the name `newmtl` gives it. */
+	/** Gets the name, as `newmtl` writes it. */
 	public final name:String;
 
-	/** Gets whether a library gives it: false for `DEFAULT` and for the stand-in `ObjFile.computeMaterials` makes for a name no
-		library gives. */
+	/** Gets whether a library defines it: false for `DEFAULT` and for the stand-in `ObjFile.computeMaterials` makes for a name no
+		library defines. */
 	public final defined:Bool;
 
-	/** Gets the ambient color (`Ka`), or null when the file gives none: `computeAmbient` gives one either way. */
+	/** Gets the ambient color (`Ka`), or null when the file has none: `computeAmbient` returns one either way. */
 	public final ambient:Null<haxe.ds.ReadOnlyArray<Float>>;
 
-	/** Gets the diffuse color (`Kd`), or null when the file gives none: `computeDiffuse` gives one either way. */
+	/** Gets the diffuse color (`Kd`), or null when the file has none: `computeDiffuse` returns one either way. */
 	public final diffuse:Null<haxe.ds.ReadOnlyArray<Float>>;
 
-	/** Gets the specular color (`Ks`), or null when the file gives none: `computeSpecular` gives one either way. */
+	/** Gets the specular color (`Ks`), or null when the file has none: `computeSpecular` returns one either way. */
 	public final specular:Null<haxe.ds.ReadOnlyArray<Float>>;
 
-	/** Gets the emissive color (`Ke`), or null when the file gives none: `computeEmission` gives one either way. */
+	/** Gets the emissive color (`Ke`), or null when the file has none: `computeEmission` returns one either way. */
 	public final emission:Null<haxe.ds.ReadOnlyArray<Float>>;
 
-	/** Gets the transmission filter (`Tf`), or null when the file gives none: `computeTransmission` gives one either way. */
+	/** Gets the transmission filter (`Tf`), or null when the file has none: `computeTransmission` returns one either way. */
 	public final transmission:Null<haxe.ds.ReadOnlyArray<Float>>;
 
-	/** Gets the specular exponent (`Ns`), usually 0 to 1000, or null when the file gives none: `computeShininess` gives one either
+	/** Gets the specular exponent (`Ns`), usually 0 to 1000, or null when the file has none: `computeShininess` returns one either
 		way. */
 	public final shininess:Null<Float>;
 
-	/** Gets the optical density (`Ni`), the material's index of refraction, or null when the file gives none: `computeOpticalDensity`
-		gives one either way. */
+	/** Gets the optical density (`Ni`), the material's index of refraction, or null when the file has none: `computeOpticalDensity`
+		returns one either way. */
 	public final opticalDensity:Null<Float>;
 
-	/** Gets the opacity, 0 to 1: `d`, or 1 minus `Tr` when only that is given (`d` wins when both are); null when the file gives
-		neither: `computeOpacity` gives one either way. */
+	/** Gets the opacity, 0 to 1: `d`, or 1 minus `Tr` when only that is set (`d` wins when both are); null when the file has
+		neither: `computeOpacity` returns one either way. */
 	public final opacity:Null<Float>;
 
-	/** Gets the illumination model (`illum`), 0 to 10, or null when the file gives none: `computeIllumination` gives one either way. */
+	/** Gets the illumination model (`illum`), 0 to 10, or null when the file has none: `computeIllumination` returns one either way. */
 	public final illumination:Null<Int>;
 
-	/** Gets the roughness (`Pr`), 0 to 1, or null when the file gives none: `computeRoughness` gives one either way. */
+	/** Gets the roughness (`Pr`), 0 to 1, or null when the file has none: `computeRoughness` returns one either way. */
 	public final roughness:Null<Float>;
 
-	/** Gets the metalness (`Pm`), 0 to 1, or null when the file gives none: `computeMetalness` gives one either way. */
+	/** Gets the metalness (`Pm`), 0 to 1, or null when the file has none: `computeMetalness` returns one either way. */
 	public final metalness:Null<Float>;
 
 	/** Gets the ambient texture's path (`map_Ka`). */
@@ -92,62 +92,62 @@ class MtlMaterial {
 	/** Gets the metalness texture's path (`map_Pm`). */
 	public final metalnessTexturePath:Null<String>;
 
-	/** Returns the ambient color to draw with: the file's (`ambient`), or 0, 0, 0 when it gives none.
+	/** Returns the ambient color to draw with: the file's (`ambient`), or 0, 0, 0 when it has none.
 
 		@return  Its red, green and blue. */
 	public function computeAmbient():haxe.ds.ReadOnlyArray<Float>
 		return ambient != null ? ambient : BLACK;
 
-	/** Returns the diffuse color to draw with: the file's (`diffuse`), or 1, 1, 1 when it gives none.
+	/** Returns the diffuse color to draw with: the file's (`diffuse`), or 1, 1, 1 when it has none.
 
 		@return  Its red, green and blue. */
 	public function computeDiffuse():haxe.ds.ReadOnlyArray<Float>
 		return diffuse != null ? diffuse : WHITE;
 
-	/** Returns the specular color to draw with: the file's (`specular`), or 0, 0, 0 when it gives none.
+	/** Returns the specular color to draw with: the file's (`specular`), or 0, 0, 0 when it has none.
 
 		@return  Its red, green and blue. */
 	public function computeSpecular():haxe.ds.ReadOnlyArray<Float>
 		return specular != null ? specular : BLACK;
 
-	/** Returns the emissive color to draw with: the file's (`emission`), or 0, 0, 0 when it gives none.
+	/** Returns the emissive color to draw with: the file's (`emission`), or 0, 0, 0 when it has none.
 
 		@return  Its red, green and blue. */
 	public function computeEmission():haxe.ds.ReadOnlyArray<Float>
 		return emission != null ? emission : BLACK;
 
-	/** Returns the transmission filter to draw with: the file's (`transmission`), or 1, 1, 1 when it gives none, letting all light
+	/** Returns the transmission filter to draw with: the file's (`transmission`), or 1, 1, 1 when it has none, letting all light
 		through.
 
 		@return  Its red, green and blue. */
 	public function computeTransmission():haxe.ds.ReadOnlyArray<Float>
 		return transmission != null ? transmission : WHITE;
 
-	/** Returns the specular exponent to draw with: the file's (`shininess`), or 0 when it gives none.
+	/** Returns the specular exponent to draw with: the file's (`shininess`), or 0 when it has none.
 
 		@return  The exponent. */
 	public function computeShininess():Float
 		return shininess != null ? shininess : 0;
 
-	/** Returns the optical density to draw with: the file's (`opticalDensity`), or 1 when it gives none, as light passes through air.
+	/** Returns the optical density to draw with: the file's (`opticalDensity`), or 1 when it has none, as light passes through air.
 
 		@return  The index of refraction. */
 	public function computeOpticalDensity():Float
 		return opticalDensity != null ? opticalDensity : 1;
 
-	/** Returns the opacity to draw with, 0 to 1 as the file gives it: its own (`opacity`), or 1, opaque, when it gives none.
+	/** Returns the opacity to draw with, 0 to 1 as the file writes it: its own (`opacity`), or 1, opaque, when it has none.
 
 		@return  The opacity. */
 	public function computeOpacity():Float
 		return opacity != null ? opacity : 1;
 
-	/** Returns the illumination model to draw with: the file's (`illumination`), or 0 when it gives none.
+	/** Returns the illumination model to draw with: the file's (`illumination`), or 0 when it has none.
 
 		@return  The model. */
 	public function computeIllumination():Int
 		return illumination != null ? illumination : 0;
 
-	/** Returns the roughness to draw with, 0 to 1: the file's (`roughness`), or one made from the specular exponent when it gives
+	/** Returns the roughness to draw with, 0 to 1: the file's (`roughness`), or one made from the specular exponent when it has
 		none, `1 - sqrt(computeShininess() / 1000)` held to 0 to 1, as Blender reads older files: the shinier, the smoother.
 
 		@return  The roughness. */
@@ -157,7 +157,7 @@ class MtlMaterial {
 		return MathTools.clamp01(1 - Math.sqrt(Math.max(0, computeShininess()) / 1000));
 	}
 
-	/** Returns the metalness to draw with, 0 to 1: the file's (`metalness`), or 0 when it gives none, as older files describe no
+	/** Returns the metalness to draw with, 0 to 1: the file's (`metalness`), or 0 when it has none, as older files describe no
 		metals.
 
 		@return  The metalness. */
@@ -165,8 +165,8 @@ class MtlMaterial {
 		return metalness != null ? MathTools.clamp01(metalness) : 0;
 	}
 
-	/** Returns the normal map to draw with: the file's normal map (`norm`), or its bump texture when it gives none, as most exporters
-		write normal maps there; null when it gives neither.
+	/** Returns the normal map to draw with: the file's normal map (`norm`), or its bump texture when it has none, as most exporters
+		write normal maps there; null when it has neither.
 
 		@return  The path, or null. */
 	public function computeNormalTexturePath():Null<String> {
@@ -175,7 +175,7 @@ class MtlMaterial {
 
 	// A value held to 0 to 1.
 
-	/** Returns the path the last of some texture statements gives, in the file's order: for a reader that takes some of the statements
+	/** Returns the path the last of some texture statements names, in the file's order: for a reader that uses some of the statements
 		a field joins and not others (`bumpTexturePath` is the last of `bump`, `map_bump` and `map_Bump`).
 
 		@param statements  The statements, as the file writes them (case counts): any of `map_Ka`, `map_Kd`, `map_Ks`, `map_Ns`, `map_Ke`,
@@ -196,7 +196,7 @@ class MtlMaterial {
 	static final BLACK:haxe.ds.ReadOnlyArray<Float> = [0, 0, 0];
 	static final WHITE:haxe.ds.ReadOnlyArray<Float> = [1, 1, 1];
 
-	// A material of a name no library gives: not defined, giving nothing.
+	// A material of a name no library defines: not defined, with no values.
 
 	@:allow(helix.formats.obj)
 	static function standIn(name:String):MtlMaterial

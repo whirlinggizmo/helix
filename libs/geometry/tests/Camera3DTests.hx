@@ -7,8 +7,8 @@ import helix.math.Vector3;
 /** Checks Camera3D with the library alone: made and copied; its view matrix, projections, a point projected and the ray through a
 	point in the view, perspective and orthographic, pinned to values computed apart from Haxe (the ray from the inverse view-projection,
 	not the way the camera finds it), the view and projections also to raylib 5.5's MatrixLookAt, MatrixPerspective and MatrixOrtho;
-	its scale and a rotation of another length ignored; each result into a new value or one given, alike, even when the one given is
-	its own position; a point on the ray projecting back to where it was picked; and what its frustum holds. */
+	its scale and a rotation of another length ignored; each result into a new value or one provided, alike, even when the one
+	provided is its own position; a point on the ray projecting back to where it was picked; and what its frustum holds. */
 class Camera3DTests {
 	static var checks = 0;
 
@@ -45,7 +45,7 @@ class Camera3DTests {
 		return camera;
 	}
 
-	// Runs a result into a new vector, into one given and into the camera's own position: the same each way.
+	// Runs a result into a new vector, into one provided and into the camera's own position: the same each way.
 	static function threeWays(orthographic:Bool, op:(Camera3D, Null<Vector3>) -> Vector3, message:String):Vector3 {
 		var camera = sample(orthographic);
 		var result = op(camera, null), given = new Vector3();

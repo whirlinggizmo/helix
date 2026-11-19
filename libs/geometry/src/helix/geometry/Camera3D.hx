@@ -74,7 +74,7 @@ class Camera3D {
 		return view;
 	}
 
-	/** Returns the matrix that projects the camera's space into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+	/** Returns the matrix that projects the camera's space into GL's clip space (depth -1 to 1), which every helix-platform adapter uses.
 
 		@param aspect  The view's width over its height.
 		@param out  Optional. The matrix to write into; a new one when omitted.
@@ -98,7 +98,7 @@ class Camera3D {
 
 	/** Returns where a point in the world lands in the view, from -1 to 1 across and up, with its depth.
 
-		A point behind a perspective camera has a depth past 1. One level with its position, which lands nowhere, gives infinities or NaN.
+		A point behind a perspective camera has a depth past 1. One level with its position, which lands nowhere, has infinities or NaN.
 		@param x  The point's x, in world units.
 		@param y  The point's y.
 		@param z  The point's z.
@@ -144,7 +144,7 @@ class Camera3D {
 		return out;
 	}
 
-	// Its rotation made length 1, so a rotation set by hand still gives a rigid view.
+	// Its rotation made length 1, so a rotation set by hand still makes a rigid view.
 	function turned():Quaternion {
 		if (rotation == null)
 			rotation = new Quaternion();

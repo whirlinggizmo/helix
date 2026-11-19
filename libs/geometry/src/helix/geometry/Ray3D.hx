@@ -8,7 +8,7 @@ import helix.math.Vector3;
 	A ray meets a plane, a sphere, bounds, a triangle or a mesh at most once: the first point at or after its origin. Starting inside a
 	sphere, bounds or a closed mesh, that is where it leaves. Each test returns where, as a `RayHit3D`, or null when the ray misses,
 	its out unchanged. A hit's distance is how far along the direction it is, in the direction's lengths: with a direction of length 1,
-	in world units. Given an out, no test allocates. */
+	in world units. With an out, no test allocates. */
 class Ray3D {
 	/** Gets the point it starts from. */
 	public final origin = new Vector3(0, 0, 0);
@@ -188,7 +188,7 @@ class Ray3D {
 
 		@param mesh  The mesh.
 		@param transform  Optional. Where the mesh is: its positions are moved by it. Omitted, they are as they are.
-		@param out  Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) give them.
+		@param out  Optional. Set to the hit; its `triangleIndex` says which, counted in the order the indices (or the vertices) list them.
 		@return  The nearest hit; null when it meets none. */
 	public function intersectMesh(mesh:Mesh3D, ?transform:Matrix4, ?out:RayHit3D):Null<RayHit3D> {
 		var p = mesh.positions, indices = mesh.indices, m = transform;

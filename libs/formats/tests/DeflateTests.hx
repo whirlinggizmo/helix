@@ -2,7 +2,7 @@ import haxe.io.Bytes;
 import helix.formats.deflate.Deflate;
 
 /** Checks Deflate with the library alone: its streams byte for byte as raylib 5.5's sdefl writes them (each output's length and
-	CRC-32, taken from sdefl compiled with gcc, on the same made-up inputs), at several levels, over raw blocks, a block of each kind,
+	CRC-32, produced by sdefl compiled with gcc, on the same made-up inputs), at several levels, over raw blocks, a block of each kind,
 	and a second 256 KiB block; each stream read back by `haxe.zip.InflateImpl`; empty input; and a level out of range. */
 class DeflateTests {
 	static var checks = 0;

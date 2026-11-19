@@ -13,7 +13,7 @@ class ObjPart {
 		before any `usemtl`. */
 	public final materialIndex:Int;
 
-	/** Gets the material's name, as the file's `usemtl` gives it, or "" for faces before any `usemtl`. */
+	/** Gets the material's name, as the file's `usemtl` names it, or "" for faces before any `usemtl`. */
 	public final materialName:String;
 
 	/** Gets the triangles, three corners each, by their index in the corner arrays (`ObjFile.cornerPositionIndices` and the others). */

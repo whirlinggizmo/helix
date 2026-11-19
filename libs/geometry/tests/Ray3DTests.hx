@@ -10,7 +10,7 @@ import helix.math.Vector3;
 /** Checks Ray3D with the library alone, against hits worked by hand: a plane from either side, along it and behind; a sphere from
 	outside, from inside, behind and missed; bounds through each face, from inside, along a face and empty; a triangle from both sides,
 	on its edge, off it and of no area; a mesh's nearest triangle, moved, and which; distances in the direction's lengths; a ray moved by
-	a transform; and every hit into the one given, a miss leaving it as it was. */
+	a transform; and every hit into the one provided, a miss leaving it as it was. */
 class Ray3DTests {
 	static var checks = 0;
 
@@ -111,7 +111,7 @@ class Ray3DTests {
 		var unindexed = along.intersectMesh(flat, placed);
 		check(unindexed != null && near(unindexed.distance, 9) && unindexed.triangleIndex == hitTriangle, "without indices, the same triangle");
 
-		// Into the hit given; a miss leaves it.
+		// Into the hit provided; a miss leaves it.
 		var given = new RayHit3D();
 		check(toSphere.intersectSphere(new Sphere(0, 0, 0, 2), given) == given && near(given.distance, 8), "a hit into the one given");
 		check(toSphere.intersectSphere(new Sphere(50, 0, 0, 2), given) == null

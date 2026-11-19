@@ -3,7 +3,7 @@ package helix.formats.bmfont;
 /** Represents a bitmap font read from AngelCode BMFont's text format (.fnt): its size and line metrics, its pages, glyphs and kerning
 	pairs, in pixels.
 
-	`read` takes the file's text and its path. The pages are images in files of their own, each path resolved against the .fnt file's
+	`read` accepts the file's text and its path. The pages are images in files of their own, each path resolved against the .fnt file's
 	directory, for the caller to load. Each line is a tag (`info`, `common`, `page`, `char`, `kerning`) and its `key=value` pairs, a value
 	quoted when it holds spaces; unknown tags and keys are skipped, and a key a line omits reads as 0. BMFont's XML and binary formats
 	are not read.
@@ -13,7 +13,7 @@ package helix.formats.bmfont;
 	for (page in font.pages) load(page.path);
 	``` */
 class BmFontFile {
-	/** Gets the font's face name, `info`'s `face`: empty when the file gives none. */
+	/** Gets the font's face name, `info`'s `face`: empty when the file has none. */
 	public final face:String;
 
 	/** Gets the size the font was made at, `info`'s `size`, in pixels: negative when it is the glyphs' cell height rather than the
@@ -109,7 +109,7 @@ class BmFontFile {
 		this.scaleHeight = scaleHeight;
 	}
 
-	// A line's key=value pairs from at on, a quoted value's quotes taken off; a key without a value is empty.
+	// A line's key=value pairs from at on, a quoted value's quotes removed; a key without a value is empty.
 	static function pairs(line:String, at:Int):Map<String, String> {
 		var values = new Map<String, String>();
 		while (at < line.length) {

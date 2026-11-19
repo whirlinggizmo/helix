@@ -63,7 +63,7 @@ class Plane {
 		@param normalY  The direction's y.
 		@param normalZ  The direction's z.
 		@param out  Optional. The plane to fill; a new one when omitted.
-		@return  The plane. A direction of length 0 gives a plane facing up (+y). */
+		@return  The plane. A direction of length 0 produces a plane facing up (+y). */
 	public static function fromPointNormal(x:Float, y:Float, z:Float, normalX:Float, normalY:Float, normalZ:Float, ?out:Plane):Plane {
 		if (out == null)
 			out = new Plane();
@@ -92,7 +92,7 @@ class Plane {
 		@param cy  The third point's y.
 		@param cz  The third point's z.
 		@param out  Optional. The plane to fill; a new one when omitted.
-		@return  The plane. Three points in a line give a plane through the first point, facing up (+y). */
+		@return  The plane. Three points in a line produce a plane through the first point, facing up (+y). */
 	public static function fromPoints(ax:Float, ay:Float, az:Float, bx:Float, by:Float, bz:Float, cx:Float, cy:Float, cz:Float, ?out:Plane):Plane {
 		var e1x = bx - ax, e1y = by - ay, e1z = bz - az;
 		var e2x = cx - ax, e2y = cy - ay, e2z = cz - az;

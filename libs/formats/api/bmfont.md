@@ -38,7 +38,7 @@ final channel:Int
 
 Represents a bitmap font read from AngelCode BMFont's text format (.fnt): its size and line metrics, its pages, glyphs and kerning pairs, in pixels.
 
-`read` takes the file's text and its path. The pages are images in files of their own, each path resolved against the .fnt file's directory, for the caller to load. Each line is a tag (`info`, `common`, `page`, `char`, `kerning`) and its `key=value` pairs, a value quoted when it holds spaces; unknown tags and keys are skipped, and a key a line omits reads as 0. BMFont's XML and binary formats are not read.
+`read` accepts the file's text and its path. The pages are images in files of their own, each path resolved against the .fnt file's directory, for the caller to load. Each line is a tag (`info`, `common`, `page`, `char`, `kerning`) and its `key=value` pairs, a value quoted when it holds spaces; unknown tags and keys are skipped, and a key a line omits reads as 0. BMFont's XML and binary formats are not read.
 
 ```haxe
 var font = BmFontFile.read(text, "fonts/title.fnt");
@@ -63,7 +63,7 @@ final kernings:Array<BmFontKerning>
   - `path`: The file's path, against whose directory its pages' paths are resolved.
   - returns: The font.
   - throws `String`: It is not BMFont's text format (it has no `common` line, or is BMFont's XML or binary format), or a number in it isn't one.
-- `face`: Gets the font's face name, `info`'s `face`: empty when the file gives none.
+- `face`: Gets the font's face name, `info`'s `face`: empty when the file has none.
 - `size`: Gets the size the font was made at, `info`'s `size`, in pixels: negative when it is the glyphs' cell height rather than the em's.
 - `lineHeight`: Gets the distance from one line's top to the next's, `common`'s `lineHeight`, in pixels.
 - `base`: Gets the distance from a line's top to its baseline, `common`'s `base`, in pixels.

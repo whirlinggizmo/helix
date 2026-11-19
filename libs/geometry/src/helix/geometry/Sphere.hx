@@ -234,7 +234,7 @@ class Sphere {
 		return out.set(center.x + dx * shift, center.y + dy * shift, center.z + dz * shift, grown);
 	}
 
-	/** Returns this sphere moved by a matrix: its center moved, its radius scaled by the largest scale the matrix gives an axis.
+	/** Returns this sphere moved by a matrix: its center moved, its radius scaled by the largest scale the matrix applies to an axis.
 
 		@param matrix  The matrix.
 		@param out  Optional. The sphere to fill; a new one when omitted. It may be this sphere.

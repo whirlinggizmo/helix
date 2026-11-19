@@ -98,7 +98,7 @@ static function contrast(color:Int, factor:Float):Int
 - `getLightness`: Returns a color's lightness: halfway between its brightest and darkest channels.
   - `color`: The color, as 0xAARRGGBB.
   - returns: The lightness, 0 (black) to 1 (white).
-- `getHslSaturation`: Returns a color's saturation as `fromHsl` takes it. `getSaturation` gives the saturation `fromHsv` takes.
+- `getHslSaturation`: Returns a color's saturation as `fromHsl` accepts it. `getSaturation` returns the saturation `fromHsv` accepts.
   - `color`: The color, as 0xAARRGGBB.
   - returns: The saturation, 0 to 1: 0 for a gray, black or white.
 - `srgbToLinear`: Returns a channel of an sRGB color as linear light.
@@ -145,7 +145,7 @@ static function contrast(color:Int, factor:Float):Int
 
 Represents a curve through or near points in 2 or 3 dimensions: a camera rail, a patrol path, a projectile's arc.
 
-A curve is made by `through`, `bezier` or `polyline`, and its points are fixed once made. It is asked where it is and which way it heads at a parameter t, from 0 at its start to 1 at its end, and how long it is. Equal steps of t are not equal distances along it: `getParameterAtDistance` gives the t at a distance, for moving along it at a steady speed. Points are given flat, x, y or x, y, z each.
+A curve is made by `through`, `bezier` or `polyline`, and its points are fixed once made. It is asked where it is and which way it heads at a parameter t, from 0 at its start to 1 at its end, and how long it is. Equal steps of t are not equal distances along it: `getParameterAtDistance` finds the t at a distance, for moving along it at a steady speed. Points are passed flat, x, y or x, y, z each.
 
 ```haxe
 var rail = Curve.through([0, 0, 100, 50, 200, 0]);
@@ -331,7 +331,7 @@ function at(t:Float):Float
 - `outBounce`: Gets the curve slow at the end, bouncing to rest: `Interpolate.easeOutBounce`.
 - `inOutBounce`: Gets the curve slow at both ends, bouncing to rest: `Interpolate.easeInOutBounce`.
 - `of`: Returns a curve of a program's own function.
-  - `curve`: The function: given a fraction from 0 to 1, returns the eased fraction, 0 at 0 and 1 at 1.
+  - `curve`: The function: it accepts a fraction from 0 to 1 and returns the eased fraction, 0 at 0 and 1 at 1.
   - returns: The curve.
 
   On hxcpp each `at` of the returned curve allocates, as hxcpp boxes a number passed to a function value. The curves named here allocate nothing.
@@ -358,7 +358,7 @@ Specifies the order three turns around x, y and z are made in. Each order is nam
 
 Provides interpolation: between numbers and angles, along spline pieces, easing curves, smoothing, stepping and easing toward a target. `MathTools` clamps, wraps and snaps a number.
 
-The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both. Each takes a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses `Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets. `Ease` has each curve as a value (`Ease.outCubic`), for a tween or another call to take.
+The easing curves are Robert Penner's, each family in three: `easeIn...` starts slow, `easeOut...` ends slow, `easeInOut...` does both. Each accepts a fraction from 0 to 1 and returns 0 at 0 and 1 at 1; back and elastic go past 0 and 1 on their way. The sine family uses `Trig`, so it is the same on every target; the expo and elastic families use `Math.pow`, whose last bit can differ between targets. `Ease` has each curve as a value (`Ease.outCubic`), for a tween or another call to accept.
 
 `damp` and `dampAngle` use `Math.exp`, whose last bit can differ between targets, so a simulation that must replay alike on every target uses `moveToward` or its own integer math instead. Angles are in radians.
 
@@ -601,7 +601,7 @@ static function easeInOutBounce(t:Float):Float
 
 Provides what Haxe's `Math` lacks for a number: clamping, wrapping, snapping, comparing, the least, greatest and size of whole numbers, powers of two, and degrees and radians.
 
-Each function takes the number first, so a file with `using helix.math.MathTools;` calls each on the number. `clamp`, `wrap` and `snap` give an `Int` for `Int`s and a `Float` for any other numbers.
+Each function accepts the number first, so a file with `using helix.math.MathTools;` calls each on the number. `clamp`, `wrap` and `snap` return an `Int` for `Int`s and a `Float` for any other numbers.
 
 ```haxe
 using helix.math.MathTools;
@@ -639,14 +639,14 @@ static function toDegrees(radians:Float):Float
   - `max`: The upper bound.
   - returns: The number, or the bound the number is past.
 
-  Bounds given in the wrong order are swapped.
+  Bounds provided in the wrong order are swapped.
 - `clamp`: Returns a value clamped to a range.
   - `value`: The value.
   - `min`: The lower bound.
   - `max`: The upper bound.
   - returns: The value, or the bound the value is past.
 
-  Bounds given in the wrong order are swapped.
+  Bounds provided in the wrong order are swapped.
 - `clamp01`: Returns a value clamped to 0 to 1.
   - `value`: The value.
   - returns: The value, 0 below 0, or 1 above 1.
@@ -656,14 +656,14 @@ static function toDegrees(radians:Float):Float
   - `max`: The range's end.
   - returns: The number, from min up to max, max excluded.
 
-  Bounds given in the wrong order are swapped. A range of no size gives `min`.
+  Bounds provided in the wrong order are swapped. A range of no size returns `min`.
 - `wrap`: Returns a value wrapped around into a range, as an angle wraps around a turn.
   - `value`: The value.
   - `min`: The range's start.
   - `max`: The range's end.
   - returns: The value, from min up to max.
 
-  Bounds given in the wrong order are swapped. A range of no size gives `min`.
+  Bounds provided in the wrong order are swapped. A range of no size returns `min`.
 - `wrapAngle`: Returns an angle wrapped to -π up to π.
   - `angle`: The angle, in radians.
   - returns: The same direction, from -π, included, to π, excluded.
@@ -681,7 +681,7 @@ static function toDegrees(radians:Float):Float
   A value halfway between two multiples moves to the greater.
 - `pingPong`: Returns a value bounced back and forth between 0 and a length, as a ball between two walls.
   - `value`: The value, of any size.
-  - `length`: The far wall. 0 or less gives 0.
+  - `length`: The far wall. 0 or less returns 0.
   - returns: The bounced value, 0 to length.
 - `sign`: Returns a value's sign.
   - `value`: The value.
@@ -691,15 +691,15 @@ static function toDegrees(radians:Float):Float
   - `b`: The other value.
   - `tolerance`: The most the values may differ by, multiplied by the larger value's size when that size is over 1.
   - returns: True when the values are that close.
-- `min`: Returns the lesser of two whole numbers, as an `Int`. `Math.min` gives a `Float`.
+- `min`: Returns the lesser of two whole numbers, as an `Int`. `Math.min` returns a `Float`.
   - `a`: One number.
   - `b`: The other number.
   - returns: The lesser.
-- `max`: Returns the greater of two whole numbers, as an `Int`. `Math.max` gives a `Float`.
+- `max`: Returns the greater of two whole numbers, as an `Int`. `Math.max` returns a `Float`.
   - `a`: One number.
   - `b`: The other number.
   - returns: The greater.
-- `abs`: Returns a whole number's size, as an `Int`. `Math.abs` gives a `Float`.
+- `abs`: Returns a whole number's size, as an `Int`. `Math.abs` returns a `Float`.
   - `value`: The number.
   - returns: The number without its sign.
 - `isPowerOfTwo`: Returns whether a whole number is a power of two: 1, 2, 4, 8 and on.
@@ -721,7 +721,7 @@ static function toDegrees(radians:Float):Float
 
 Represents a 2D affine matrix: moving, turning, scaling and shearing points in 2 dimensions.
 
-It is the 3 x 3 matrix whose last row is 0, 0, 1, kept as its six other numbers as a canvas's `setTransform` and Flash's `Matrix` keep them: a point (x, y) goes to (a x + c y + tx, b x + d y + ty). Its operations follow helix-math's out rule: each writes into an optional out, last, and returns it; omitted, it makes a new matrix; given the matrix itself, it works in place. Rotations use `Trig`, so a matrix comes out the same on every target. Angles are radians, a positive one turning from +x toward +y, clockwise on screen where y grows downward.
+It is the 3 x 3 matrix whose last row is 0, 0, 1, kept as its six other numbers as a canvas's `setTransform` and Flash's `Matrix` keep them: a point (x, y) goes to (a x + c y + tx, b x + d y + ty). Its operations follow helix-math's out rule: each writes into an optional out, last, and returns it; omitted, it makes a new matrix; provided the matrix itself, it works in place. Rotations use `Trig`, so a matrix comes out the same on every target. Angles are radians, a positive one turning from +x toward +y, clockwise on screen where y grows downward.
 
 ```haxe
 var model = Matrix3.fromScale(2, 2);
@@ -831,7 +831,7 @@ function toMatrix4(?out:Matrix4):Matrix4
   - `y`: The direction's y.
   - `out`: Optional. The vector to write into; a new one when omitted.
   - returns: The direction.
-- `toMatrix4`: Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader takes a 2D view.
+- `toMatrix4`: Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader accepts a 2D view.
   - `out`: Optional. The matrix to write into; a new one when omitted.
   - returns: The matrix.
 
@@ -841,7 +841,7 @@ function toMatrix4(?out:Matrix4):Matrix4
 
 Represents a 4 x 4 matrix transforming points in 3 dimensions: moving, turning, scaling and projecting them.
 
-It acts on column vectors, and its 16 numbers are `m0` to `m15` by columns, as GPUs take them: row r of column c is number c * 4 + r, and the translation is `m12`, `m13` and `m14`. `toArray` gives the 16 numbers a shader takes. A static `fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix (`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this matrix unchanged; given this matrix, it changes it in place (`m.transpose(m)`). The out may be this matrix or any other argument, and none of them allocates when given one, so a caller can reuse one matrix every frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
+It acts on column vectors, and its 16 numbers are `m0` to `m15` by columns, as GPUs read them: row r of column c is number c * 4 + r, and the translation is `m12`, `m13` and `m14`. `toArray` returns the 16 numbers a shader reads. A static `fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix (`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this matrix unchanged; provided this matrix, it works in place (`m.transpose(m)`). The out may be this matrix or any other argument, and none of them allocates when provided one, so a caller can reuse one matrix every frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use `Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
 
 ```haxe
 var model = Matrix4.fromScale(2, 2, 2);
@@ -926,14 +926,14 @@ function decompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Void
   - `radians`: The angle, counterclockwise looking down the axis toward its origin.
   - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
-- `fromQuaternion`: Returns the rotation a quaternion (x, y, z, w) gives.
+- `fromQuaternion`: Returns the rotation a quaternion (x, y, z, w) describes.
   - `x`: The quaternion's x.
   - `y`: Its y.
   - `z`: Its z.
   - `w`: Its w.
   - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
-- `fromEuler`: Returns the rotation of three turns around x, y and z, each around the world's axes. `Quaternion.fromEuler` gives the same rotation as a quaternion.
+- `fromEuler`: Returns the rotation of three turns around x, y and z, each around the world's axes. `Quaternion.fromEuler` returns the same rotation as a quaternion.
   - `pitch`: The turn around x, in radians.
   - `yaw`: The turn around y, in radians.
   - `roll`: The turn around z, in radians.
@@ -952,14 +952,14 @@ function decompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Void
   - `upZ`: Up.
   - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
-- `fromPerspective`: Returns a perspective projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+- `fromPerspective`: Returns a perspective projection into GL's clip space (depth -1 to 1), which every helix-platform adapter uses.
   - `fovY`: The field of view, top to bottom, in radians.
   - `aspect`: Width over height.
   - `near`: The near plane's distance.
   - `far`: The far plane's distance.
   - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
-- `fromOrthographic`: Returns an orthographic projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+- `fromOrthographic`: Returns an orthographic projection into GL's clip space (depth -1 to 1), which every helix-platform adapter uses.
   - `left`: The left edge.
   - `right`: The right edge.
   - `bottom`: The bottom edge.
@@ -1058,13 +1058,13 @@ function decompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Void
   - `z`: Its z.
   - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The direction.
-- `projectPoint`: Computes where a point goes through a projection: transformed, then divided by the w the matrix gives the point.
+- `projectPoint`: Computes where a point goes through a projection: transformed, then divided by the w the matrix produces for the point.
   - `x`: The point's x.
   - `y`: The point's y.
   - `z`: The point's z.
   - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The point.
-- `toArray`: Returns the matrix's 16 numbers as an array, by columns, as a shader takes them.
+- `toArray`: Returns the matrix's 16 numbers as an array, by columns, as a shader reads them.
   - `out`: Optional. The array to fill; a new one when omitted.
   - `offset`: Optional. Where in the array the first of the 16 numbers goes; defaults to 0.
   - returns: The array.
@@ -1075,18 +1075,18 @@ function decompose(translation:Vector3, rotation:Quaternion, scale:Vector3):Void
   - `out`: Optional. The rotation to fill; a new one when omitted.
   - returns: The rotation.
 
-  A matrix that mirrors is taken as mirrored along x, so the way it faces and its up are kept. See `decompose` for a matrix that shears.
+  A matrix that mirrors is treated as mirrored along x, so the way it faces and its up are kept. See `decompose` for a matrix that shears.
 - `getScale`: Returns the matrix's scale: the lengths of its x, y and z axes.
   - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The scale along x, y and z.
 
-  A matrix that mirrors gives an x scale less than 0. See `decompose` for a matrix that shears.
-- `decompose`: Takes this transform apart into a translation, a rotation and a scale.
+  A matrix that mirrors produces an x scale less than 0. See `decompose` for a matrix that shears.
+- `decompose`: Decomposes this transform into a translation, a rotation and a scale.
   - `translation`: Filled with the translation.
   - `rotation`: Filled with the rotation.
   - `scale`: Filled with the scale along x, y and z.
 
-  A matrix that shears gives the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear lost. One that mirrors gives an x scale less than 0, so the way it faces and its up are kept.
+  A matrix that shears produces the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear lost. One that mirrors produces an x scale less than 0, so the way it faces and its up are kept.
 
 ## Noise
 
@@ -1117,7 +1117,7 @@ static function fractal(x:Float, y:Float, ?z:Float = 0., ?octaves:Int = 6, ?lacu
   - `seed`: Optional. Picks one noise of 256; defaults to 0.
   - returns: The noise, about -1 to 1.
 
-  A point with whole-number coordinates gives 0. The noise repeats every 256 along each axis.
+  The noise is 0 at a point with whole-number coordinates. The noise repeats every 256 along each axis.
 - `simplex`: Returns simplex noise at a point. Simplex noise shows less of the grid's directions than `perlin` does.
   - `x`: The point's x.
   - `y`: The point's y.
@@ -1150,7 +1150,7 @@ static function fractal(x:Float, y:Float, ?z:Float = 0., ?octaves:Int = 6, ?lacu
 
 Represents a rotation in 3 dimensions, as a unit quaternion.
 
-Two rotations blend along the shortest arc (`slerp`), which matrices can't do, so an animation's rotations are kept as these and turned into a matrix to draw. A static `fromX` makes a rotation, and `slerp`, `nlerp` and `compose` make one from others. Each of those, and each operation on a rotation (`append`, `invert`, `normalize`, `transformPoint`, `toMatrix`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this rotation unchanged; given this rotation, it changes it in place (`q.normalize(q)`). The out may be this rotation or any other argument, and calls chain through what each returns. `set`, `copyFrom` and `makeIdentity` change this rotation and return it. It uses `Trig`, so a rotation comes out the same on every target. Space is right-handed with +y up, as every 3D type here.
+Two rotations blend along the shortest arc (`slerp`), which matrices can't do, so an animation's rotations are kept as these and turned into a matrix to draw. A static `fromX` makes a rotation, and `slerp`, `nlerp` and `compose` make one from others. Each of those, and each operation on a rotation (`append`, `invert`, `normalize`, `transformPoint`, `toMatrix`), writes its result into an optional out, the last argument, and returns it. Without one it makes a new result and leaves this rotation unchanged; provided this rotation, it works in place (`q.normalize(q)`). The out may be this rotation or any other argument, and calls chain through what each returns. `set`, `copyFrom` and `makeIdentity` change this rotation and return it. It uses `Trig`, so a rotation comes out the same on every target. Space is right-handed with +y up, as every 3D type here.
 
 ```haxe
 var turn = Quaternion.fromAxisAngle(0, 1, 0, Math.PI / 2);
@@ -1231,13 +1231,13 @@ function toMatrix(?out:Matrix4):Matrix4
   - `out`: Optional. The rotation to fill; a new one when omitted.
   - returns: The rotation.
 
-  Opposite directions give half a turn around an axis square to them. A direction of length 0 gives the identity.
+  Opposite directions produce half a turn around an axis square to them. A direction of length 0 produces the identity.
 - `fromRotationMatrix`: Returns the rotation of a matrix that is a rotation alone.
   - `matrix`: The rotation matrix: its three axes of length 1 and square to one another.
   - `out`: Optional. The rotation to fill; a new one when omitted.
   - returns: The rotation.
 
-  A matrix with a scale or a shear gives a quaternion that isn't a rotation. See `Matrix4.getRotation` for a matrix with a scale.
+  A matrix with a scale or a shear makes a quaternion that isn't a rotation. See `Matrix4.getRotation` for a matrix with a scale.
 - `slerp`: Returns the rotation part way from one rotation to another along the shortest arc, at an even speed (slerp).
   - `from`: The rotation at 0.
   - `to`: The rotation at 1.
@@ -1296,7 +1296,7 @@ function toMatrix(?out:Matrix4):Matrix4
   - `out`: Optional. The rotation to fill; a new one when omitted. It may be this rotation.
   - returns: The rotation.
 
-  A quaternion of length 0 gives the identity.
+  A quaternion of length 0 produces the identity.
 - `transformPoint`: Returns a point turned by this rotation.
   - `x`: The point's x.
   - `y`: The point's y.
@@ -1345,9 +1345,9 @@ function toMatrix(?out:Matrix4):Matrix4
 
 *class* in [`libs/math/src/helix/math/Random.hx`](../src/helix/math/Random.hx), `import helix.math.Random;`
 
-Represents a seeded random number generator that gives the same sequence on every target.
+Represents a seeded random number generator that produces the same sequence on every target.
 
-It is xoshiro128**, its state made from the seed by SplitMix64, as raylib's rprand is, so a seed gives raylib's numbers. It is written in 32-bit integer arithmetic, so the interpreter, JS and hxcpp agree bit for bit. A simulation that must replay alike, such as a recorded run or a lockstep game, draws from one. A program keeps one generator per stream (play, and a title screen's decoration), so that drawing from one doesn't change another's sequence.
+It is xoshiro128**, its state made from the seed by SplitMix64, as raylib's rprand is, so a seed produces raylib's numbers. It is written in 32-bit integer arithmetic, so the interpreter, JS and hxcpp agree bit for bit. A simulation that must replay alike, such as a recorded run or a lockstep game, draws from one. A program keeps one generator per stream (play, and a title screen's decoration), so that drawing from one doesn't change another's sequence.
 
 ```haxe
 var random = new Random(42);
@@ -1355,7 +1355,7 @@ var angle = random.nextRange(0, 2 * Math.PI);
 var card = random.pick(deck);
 ```
 
-The points, directions, rotations and bell-shaped numbers it gives agree on every target too, made with `Trig` and arithmetic alone.
+The points, directions, rotations and bell-shaped numbers it makes agree on every target too, made with `Trig` and arithmetic alone.
 
 Natively the generated C++ is compiled with `-fwrapv` and `-ffp-contract=off` on GCC and clang. Haxe's Int wraps on overflow, and C++'s int doesn't, so without `-fwrapv` a compiler may change the sequence. Without `-ffp-contract=off` fused multiply-adds may change a number's rounding.
 
@@ -1384,7 +1384,7 @@ function nextRotation(?out:Quaternion):Quaternion
 - `new`: Creates a generator.
   - `seed`: Optional. The seed, read as unsigned; defaults to 12345.
 - `seed`: Gets or sets the seed the sequence last started from.
-  Setting it starts the sequence again from that seed. Every seed, 0 among them, gives a sequence of its own.
+  Setting it starts the sequence again from that seed. Every seed, 0 among them, produces a sequence of its own.
 - `state`: Gets or sets where the sequence is now, as xoshiro128**'s four 32-bit words.
   - throws `String`: When set to anything but four words, or to four zeros, from which the sequence would be zeros alone.
 
@@ -1407,7 +1407,7 @@ function nextRotation(?out:Quaternion):Quaternion
   - `max`: The upper bound, excluded.
   - returns: A number from min up to max, or min when they're equal.
 
-  Bounds given in the wrong order are swapped.
+  Bounds provided in the wrong order are swapped.
 - `nextBool`: Returns true with a chance.
   - `chance`: Optional. The chance, from 0 to 1; defaults to 0.5.
   - returns: True with that chance.
@@ -1492,7 +1492,7 @@ function update(target:Float, time:Float, dt:Float):Float
 - `velocity`: Gets or sets how fast the value is changing, per second.
 - `update`: Moves the value toward a target over a time step, the same at any frame rate.
   - `target`: The target.
-  - `time`: About how long the value takes to reach the target, in seconds: the value closes 3/5 of the gap in that time from rest, and 9/10 in twice that time. 0 or less puts the value at the target.
+  - `time`: About how long the value needs to reach the target, in seconds: the value closes 3/5 of the gap in that time from rest, and 9/10 in twice that time. 0 or less puts the value at the target.
   - `dt`: The time step, in seconds.
   - returns: The value.
 
@@ -1541,7 +1541,7 @@ function toMatrix(?out:Matrix3):Matrix3
   - `out`: Optional. The transform to write into; a new one when omitted.
   - returns: The transform.
 
-  Its rotation and x scale are the matrix's x axis's, and its y scale what the y axis reaches across it, so a matrix that shears loses the shear, and one that mirrors gives a y scale less than 0.
+  Its rotation and x scale are the matrix's x axis's, and its y scale what the y axis reaches across it, so a matrix that shears loses the shear, and one that mirrors produces a y scale less than 0.
 - `position`: Gets the position, in its parent's units; the origin until changed.
 - `rotation`: Gets or sets the rotation in radians; 0, facing +x, until set.
 - `scale`: Gets the scale along its own axes; 1 on each until changed.
@@ -1648,7 +1648,7 @@ function toMatrix(?out:Matrix4):Matrix4
   - `out`: Optional. The transform to fill; a new one when omitted.
   - returns: The transform.
 
-  A matrix that shears gives the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear lost. One that mirrors gives an x scale less than 0, so the way it faces and its up are kept.
+  A matrix that shears produces the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear lost. One that mirrors produces an x scale less than 0, so the way it faces and its up are kept.
 - `position`: Gets the position, in its parent's units; the origin until changed.
 - `rotation`: Gets the rotation; the identity until changed.
 - `scale`: Gets the scale along its own axes; 1 on each until changed.
@@ -1668,11 +1668,11 @@ function toMatrix(?out:Matrix4):Matrix4
   - returns: The direction.
 - `moveForward`: Moves it along the way it faces.
   - `distance`: How far, in its parent's units; less than 0 moves it back.
-  - `inWorldPlane`: Optional. True to move along the ground, its forward with the height taken out, as a walking camera does; defaults to false.
+  - `inWorldPlane`: Optional. True to move along the ground, its forward with the height removed, as a walking camera does; defaults to false.
   - returns: This transform.
 - `moveRight`: Moves it to its right.
   - `distance`: How far, in its parent's units; less than 0 moves it left.
-  - `inWorldPlane`: Optional. True to move along the ground, its right with the height taken out; defaults to false.
+  - `inWorldPlane`: Optional. True to move along the ground, its right with the height removed; defaults to false.
   - returns: This transform.
 - `moveUp`: Moves it along its up.
   - `distance`: How far, in its parent's units; less than 0 moves it down.
@@ -1741,9 +1741,9 @@ function toMatrix(?out:Matrix4):Matrix4
 
 *class* in [`libs/math/src/helix/math/Trig.hx`](../src/helix/math/Trig.hx), `import helix.math.Trig;`
 
-Provides trigonometry that gives the same bits on every target.
+Provides trigonometry that returns the same bits on every target.
 
-A simulation that must play alike on every target (a recorded run's replay, a lockstep game, physics) uses these in place of `Math`'s, whose last bit differs between targets for some angles. Drawing doesn't need them. Results are within a few ulp of `Math`'s. Angles are in radians, of any size: an angle that keeps growing stays as accurate however large it gets. An infinite or NaN angle gives NaN, as do `asin` and `acos` outside -1 to 1.
+A simulation that must play alike on every target (a recorded run's replay, a lockstep game, physics) uses these in place of `Math`'s, whose last bit differs between targets for some angles. Drawing doesn't need them. Results are within a few ulp of `Math`'s. Angles are in radians, of any size: an angle that keeps growing stays as accurate however large it gets. An infinite or NaN angle returns NaN, as do `asin` and `acos` outside -1 to 1.
 
 With `-D helix-math-standard-trig` each function is the standard library's (`Math.sin` and the others), which is faster in a browser. A result's last bit may then differ between targets.
 
@@ -1768,7 +1768,7 @@ static function acos(x:Float):Float
 - `tan`: Returns the tangent of an angle.
   - `x`: The angle, in radians.
   - returns: The tangent.
-- `cosSin`: Returns the cosine and the sine of an angle together, each as `cos` and `sin` give it, for less than the two calls cost.
+- `cosSin`: Returns the cosine and the sine of an angle together, each as `cos` and `sin` return it, for less than the two calls cost.
   - `x`: The angle, in radians.
   - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The cosine in x and the sine in y: the point at the angle on a circle of radius 1.
@@ -1789,7 +1789,7 @@ static function acos(x:Float):Float
 
 Represents a vector in 2 dimensions: a position or a direction, as its user means it.
 
-Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `cross`, `distance`) is a method, a number of one (`length`, `angle`) a property.
+Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; provided this vector, it works in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `cross`, `distance`) is a method, a number of one (`length`, `angle`) a property.
 
 It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, and `Trig` for angles, so a vector comes out the same everywhere. Angles are radians, turning from +x toward +y. Its space is its user's.
 
@@ -1897,7 +1897,7 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
   - returns: The negated vector.
 - `inverse`: Returns 1 divided by each of this vector's coordinates.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
-  - returns: The inverted vector. A coordinate of 0 gives an infinite one.
+  - returns: The inverted vector. A coordinate of 0 becomes an infinite one.
 - `normalize`: Returns this vector scaled to length 1, its direction kept.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The vector of length 1, or of length 0.
@@ -1965,7 +1965,7 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 - `cross`: Returns the cross product with another vector, as a number: the product of their lengths and the sine of the angle from this one to the other.
   - `other`: The other vector.
   - returns: The cross product: more than 0 when the other is turned from this one toward +y, 0 when they are parallel.
-- `distance`: Returns the distance to another vector, each taken as a position.
+- `distance`: Returns the distance to another vector, each treated as a position.
   - `other`: The other vector.
   - returns: The distance.
 - `distanceSquared`: Returns the distance to another vector squared, which is quicker to find than the distance and orders distances alike.
@@ -1982,7 +1982,7 @@ function equals(other:Vector2, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 
 Represents a vector in 3 dimensions: a position or a direction, as its user means it.
 
-Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. `Matrix4` keeps positions and directions apart by its methods: `transformPoint` moves a position, `transformDirection` only turns and scales a direction.
+Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; provided this vector, it works in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. `Matrix4` keeps positions and directions apart by its methods: `transformPoint` moves a position, `transformDirection` only turns and scales a direction.
 
 It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, so a vector comes out the same everywhere. Space is right-handed with +y up, as every 3D type here.
 
@@ -2101,7 +2101,7 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
   - returns: The negated vector.
 - `inverse`: Returns 1 divided by each of this vector's coordinates.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
-  - returns: The inverted vector. A coordinate of 0 gives an infinite one.
+  - returns: The inverted vector. A coordinate of 0 becomes an infinite one.
 - `normalize`: Returns this vector scaled to length 1, its direction kept.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The vector of length 1, or of length 0.
@@ -2181,7 +2181,7 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 - `dot`: Returns the dot product with another vector: the product of their lengths and the cosine of the angle between them.
   - `other`: The other vector.
   - returns: The dot product; 0 when they are at right angles.
-- `distance`: Returns the distance to another vector, each taken as a position.
+- `distance`: Returns the distance to another vector, each treated as a position.
   - `other`: The other vector.
   - returns: The distance.
 - `distanceSquared`: Returns the distance to another vector squared, which is quicker to find than the distance and orders distances alike.
@@ -2196,9 +2196,9 @@ function equals(other:Vector3, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
 
 *class* in [`libs/math/src/helix/math/Vector4.hx`](../src/helix/math/Vector4.hx), `import helix.math.Vector4;`
 
-Represents a vector of 4 numbers: a point before its perspective divide, a tangent with its handedness, a plane, or any four a shader takes, as its user means it.
+Represents a vector of 4 numbers: a point before its perspective divide, a tangent with its handedness, a plane, or any four a shader reads, as its user means it.
 
-Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; given this vector, it changes it in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. See `Quaternion` for a rotation, which has four numbers too and its own operations.
+Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and leaves this one unchanged; provided this vector, it works in place (`v.normalize(v)`). The out may be this vector or any other argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`). `set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one (`length`) a property. See `Quaternion` for a rotation, which has four numbers too and its own operations.
 
 It uses only addition, subtraction, multiplication, division and square roots, which agree on every target, so a vector comes out the same everywhere.
 
@@ -2299,7 +2299,7 @@ function equals(other:Vector4, ?tolerance:Float = 0.):Bool = { tolerance : 0. }
   - returns: The negated vector.
 - `inverse`: Returns 1 divided by each of this vector's coordinates.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
-  - returns: The inverted vector. A coordinate of 0 gives an infinite one.
+  - returns: The inverted vector. A coordinate of 0 becomes an infinite one.
 - `normalize`: Returns this vector scaled to length 1, the proportions of its coordinates kept.
   - `out`: Optional. The vector to fill; a new one when omitted. It may be this vector.
   - returns: The vector of length 1, or of length 0.

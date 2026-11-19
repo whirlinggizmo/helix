@@ -2,12 +2,12 @@ package helix.math;
 
 /** Represents a 4 x 4 matrix transforming points in 3 dimensions: moving, turning, scaling and projecting them.
 
-	It acts on column vectors, and its 16 numbers are `m0` to `m15` by columns, as GPUs take them: row r of column c is number
-	c * 4 + r, and the translation is `m12`, `m13` and `m14`. `toArray` gives the 16 numbers a shader takes. A static
+	It acts on column vectors, and its 16 numbers are `m0` to `m15` by columns, as GPUs read them: row r of column c is number
+	c * 4 + r, and the translation is `m12`, `m13` and `m14`. `toArray` returns the 16 numbers a shader reads. A static
 	`fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix
 	(`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it.
-	Without one it makes a new result and leaves this matrix unchanged; given this matrix, it changes it in place (`m.transpose(m)`). The
-	out may be this matrix or any other argument, and none of them allocates when given one, so a caller can reuse one matrix every
+	Without one it makes a new result and leaves this matrix unchanged; provided this matrix, it works in place (`m.transpose(m)`). The
+	out may be this matrix or any other argument, and none of them allocates when provided one, so a caller can reuse one matrix every
 	frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use
 	`Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).
 
@@ -164,7 +164,7 @@ class Matrix4 extends Matrix4Storage {
 			+ c, 0, 0, 0, 0, 1);
 	}
 
-	/** Returns the rotation a quaternion (x, y, z, w) gives.
+	/** Returns the rotation a quaternion (x, y, z, w) describes.
 
 		@param x  The quaternion's x.
 		@param y  Its y.
@@ -183,7 +183,7 @@ class Matrix4 extends Matrix4Storage {
 			- 2 * (a2 + b2), 0, 0, 0, 0, 1);
 	}
 
-	/** Returns the rotation of three turns around x, y and z, each around the world's axes. `Quaternion.fromEuler` gives the same
+	/** Returns the rotation of three turns around x, y and z, each around the world's axes. `Quaternion.fromEuler` returns the same
 		rotation as a quaternion.
 
 		@param pitch  The turn around x, in radians.
@@ -295,7 +295,7 @@ class Matrix4 extends Matrix4Storage {
 			-(zx * eyeX + zy * eyeY + zz * eyeZ), 1);
 	}
 
-	/** Returns a perspective projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+	/** Returns a perspective projection into GL's clip space (depth -1 to 1), which every helix-platform adapter uses.
 
 		@param fovY  The field of view, top to bottom, in radians.
 		@param aspect  Width over height.
@@ -312,7 +312,7 @@ class Matrix4 extends Matrix4Storage {
 		return out.set(near / right, 0, 0, 0, 0, near / top, 0, 0, 0, 0, -(far + near) / depth, -1, 0, 0, -(far * near * 2) / depth, 0);
 	}
 
-	/** Returns an orthographic projection into GL's clip space (depth -1 to 1), which every helix-platform adapter takes.
+	/** Returns an orthographic projection into GL's clip space (depth -1 to 1), which every helix-platform adapter uses.
 
 		@param left  The left edge.
 		@param right  The right edge.
@@ -587,7 +587,7 @@ class Matrix4 extends Matrix4Storage {
 		return out.set(m.n0 * x + m.n4 * y + m.n8 * z, m.n1 * x + m.n5 * y + m.n9 * z, m.n2 * x + m.n6 * y + m.n10 * z);
 	}
 
-	/** Computes where a point goes through a projection: transformed, then divided by the w the matrix gives the point.
+	/** Computes where a point goes through a projection: transformed, then divided by the w the matrix produces for the point.
 
 		@param x  The point's x.
 		@param y  The point's y.
@@ -602,7 +602,7 @@ class Matrix4 extends Matrix4Storage {
 			(m.n2 * x + m.n6 * y + m.n10 * z + m.n14) / w);
 	}
 
-	/** Returns the matrix's 16 numbers as an array, by columns, as a shader takes them.
+	/** Returns the matrix's 16 numbers as an array, by columns, as a shader reads them.
 
 		@param out  Optional. The array to fill; a new one when omitted.
 		@param offset  Optional. Where in the array the first of the 16 numbers goes; defaults to 0.
@@ -644,7 +644,7 @@ class Matrix4 extends Matrix4Storage {
 
 	/** Returns the matrix's rotation, its scale and translation left out.
 
-		A matrix that mirrors is taken as mirrored along x, so the way it faces and its up are kept. See `decompose` for a matrix that
+		A matrix that mirrors is treated as mirrored along x, so the way it faces and its up are kept. See `decompose` for a matrix that
 		shears.
 
 		@param out  Optional. The rotation to fill; a new one when omitted.
@@ -668,7 +668,7 @@ class Matrix4 extends Matrix4Storage {
 
 	/** Returns the matrix's scale: the lengths of its x, y and z axes.
 
-		A matrix that mirrors gives an x scale less than 0. See `decompose` for a matrix that shears.
+		A matrix that mirrors produces an x scale less than 0. See `decompose` for a matrix that shears.
 
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The scale along x, y and z. */
@@ -683,10 +683,10 @@ class Matrix4 extends Matrix4Storage {
 		return out.set(x, Math.sqrt(yx * yx + yy * yy + yz * yz), Math.sqrt(zx * zx + zy * zy + zz * zz));
 	}
 
-	/** Takes this transform apart into a translation, a rotation and a scale.
+	/** Decomposes this transform into a translation, a rotation and a scale.
 
-		A matrix that shears gives the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the shear
-		lost. One that mirrors gives an x scale less than 0, so the way it faces and its up are kept.
+		A matrix that shears produces the nearest rotation (its polar decomposition's) and the scale along that rotation's axes, the
+		shear lost. One that mirrors produces an x scale less than 0, so the way it faces and its up are kept.
 
 		@param translation  Filled with the translation.
 		@param rotation  Filled with the rotation.
@@ -875,7 +875,7 @@ class Matrix4 extends Matrix4Storage {
 	}
 
 	// The rotation nearest a 3 x 3 matrix, by columns, as 9 numbers by columns: its polar decomposition, by Newton's iteration (scaled,
-	// so a matrix scaled very unevenly takes few steps), a mirror taken out of its x axis. A matrix that flattens has none of its own,
+	// so a matrix scaled very unevenly needs few steps), a mirror removed from its x axis. A matrix that flattens has none of its own,
 	// so its columns are made square to one another, longest first, and an axis it lacks is the cross product of the others.
 	static function nearestRotation(m:Array<Float>):Array<Float> {
 		var u = m.copy();
@@ -928,7 +928,7 @@ class Matrix4 extends Matrix4Storage {
 				u[second + i] -= dot * u[first + i];
 			var length = Math.sqrt(u[second] * u[second] + u[second + 1] * u[second + 1] + u[second + 2] * u[second + 2]);
 			if (length < 1e-12) {
-				// Square to the first: the world axis it lies least along, its part along the first taken out.
+				// Square to the first: the world axis it lies least along, its part along the first removed.
 				var ax = Math.abs(u[first]),
 					ay = Math.abs(u[first + 1]),
 					az = Math.abs(u[first + 2]);

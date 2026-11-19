@@ -2,7 +2,7 @@ package helix.geometry;
 
 import helix.math.Vector2;
 
-/** Provides tests on points, segments, triangles, polygons and circles in a plane, their points given as plain numbers.
+/** Provides tests on points, segments, triangles, polygons and circles in a plane, their points passed as plain numbers.
 
 	Lines that are parallel within a ten-millionth (by the cross product of their directions) don't cross. */
 class Geometry2D {

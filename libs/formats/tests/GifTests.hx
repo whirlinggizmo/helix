@@ -3,7 +3,7 @@ import helix.formats.gif.GifDisposal;
 import helix.formats.gif.GifFile;
 
 /** Checks GifFile with the library alone, on the GIF files in `tests/assets/gif` (embedded as the test compiles): each frame composited
-	as Chromium's `ImageDecoder` composites it (each frame's RGBA by its CRC-32, taken from Chromium 1248 through Playwright), and the
+	as Chromium's `ImageDecoder` composites it (each frame's RGBA by its CRC-32, read from Chromium 1248 through Playwright), and the
 	files' screens, color tables, loop counts, rectangles, interlacing, indices, transparency, disposals and delays as they were written.
 	The files: one frame of GIF87a; rectangles kept over the screen; disposal to the background and transparency over it; a background
 	index past 0, transparency in a global and a local table, interlaced rows; Previous after a frame cleared, a frame without a clear

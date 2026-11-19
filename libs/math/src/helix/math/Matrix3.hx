@@ -4,9 +4,9 @@ package helix.math;
 
 	It is the 3 x 3 matrix whose last row is 0, 0, 1, kept as its six other numbers as a canvas's `setTransform` and Flash's `Matrix` keep
 	them: a point (x, y) goes to (a x + c y + tx, b x + d y + ty). Its operations follow helix-math's out rule: each writes into an
-	optional out, last, and returns it; omitted, it makes a new matrix; given the matrix itself, it works in place. Rotations use `Trig`,
-	so a matrix comes out the same on every target. Angles are radians, a positive one turning from +x toward +y, clockwise on screen
-	where y grows downward.
+	optional out, last, and returns it; omitted, it makes a new matrix; provided the matrix itself, it works in place. Rotations use
+	`Trig`, so a matrix comes out the same on every target. Angles are radians, a positive one turning from +x toward +y, clockwise
+	on screen where y grows downward.
 
 	```haxe
 	var model = Matrix3.fromScale(2, 2);
@@ -235,7 +235,7 @@ class Matrix3 {
 		return out == null ? new Vector2(px, py) : out.set(px, py);
 	}
 
-	/** Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader takes a 2D view.
+	/** Returns the matrix as a 4 x 4 one acting on x and y alone, as a shader accepts a 2D view.
 
 		@param out  Optional. The matrix to write into; a new one when omitted.
 		@return  The matrix. */

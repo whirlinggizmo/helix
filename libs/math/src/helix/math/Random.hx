@@ -1,8 +1,8 @@
 package helix.math;
 
-/** Represents a seeded random number generator that gives the same sequence on every target.
+/** Represents a seeded random number generator that produces the same sequence on every target.
 
-	It is xoshiro128**, its state made from the seed by SplitMix64, as raylib's rprand is, so a seed gives raylib's numbers. It is
+	It is xoshiro128**, its state made from the seed by SplitMix64, as raylib's rprand is, so a seed produces raylib's numbers. It is
 	written in 32-bit integer arithmetic, so the interpreter, JS and hxcpp agree bit for bit. A simulation that must replay alike, such
 	as a recorded run or a lockstep game, draws from one. A program keeps one generator per stream (play, and a title screen's
 	decoration), so that drawing from one doesn't change another's sequence.
@@ -12,7 +12,7 @@ package helix.math;
 	var card = random.pick(deck);
 	```
 
-	The points, directions, rotations and bell-shaped numbers it gives agree on every target too, made with `Trig` and arithmetic alone.
+	The points, directions, rotations and bell-shaped numbers it makes agree on every target too, made with `Trig` and arithmetic alone.
 
 	Natively the generated C++ is compiled with `-fwrapv` and `-ffp-contract=off` on GCC and clang. Haxe's Int wraps on overflow, and
 	C++'s int doesn't, so without `-fwrapv` a compiler may change the sequence. Without `-ffp-contract=off` fused multiply-adds may
@@ -33,7 +33,7 @@ class Random {
 
 	/** Gets or sets the seed the sequence last started from.
 
-		Setting it starts the sequence again from that seed. Every seed, 0 among them, gives a sequence of its own. */
+		Setting it starts the sequence again from that seed. Every seed, 0 among them, produces a sequence of its own. */
 	public var seed(default, set):Int;
 
 	function set_seed(value:Int):Int {
@@ -108,7 +108,7 @@ class Random {
 
 	/** Returns the next number in a range.
 
-		Bounds given in the wrong order are swapped.
+		Bounds provided in the wrong order are swapped.
 		@param min  The lower bound, included.
 		@param max  The upper bound, excluded.
 		@return  A number from min up to max, or min when they're equal. */
@@ -351,7 +351,7 @@ class Random {
 		mixedLow = low ^ ((low >>> 31) | (high << 1));
 	}
 
-	// The low 64 bits of a product of two 64-bit numbers, each given as its halves, into productHigh and productLow.
+	// The low 64 bits of a product of two 64-bit numbers, each passed as its halves, into productHigh and productLow.
 	static var productHigh = 0;
 	static var productLow = 0;
 
