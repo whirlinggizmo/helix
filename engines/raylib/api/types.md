@@ -69,7 +69,7 @@ var events:Array<AutomationEvent>
 
 Represents raylib's `BoneInfo`: one bone of a skeleton, its name and its parent.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `BoneInfo` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `BoneInfo`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -95,7 +95,7 @@ function copy(?out:BoneInfo):BoneInfo
 
 Represents raylib's `BoundingBox`: an axis-aligned box by its corners.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `BoundingBox` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `BoundingBox`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -129,7 +129,7 @@ An alias of [`Camera3D`](types.md#camera3d).
 
 Represents raylib's `Camera2D`: its target, where the target shows on the screen, its rotation and its zoom.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Camera2D` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Camera2D`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -159,7 +159,7 @@ function copy(?out:Camera2D):Camera2D
 
 Represents raylib's `Camera3D`, also its `Camera`: the camera's position, its target and its lens.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Camera3D` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Camera3D`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -191,7 +191,7 @@ function copy(?out:Camera3D):Camera3D
 
 Represents raylib's `Color`: red, green, blue and alpha, each 0 to 255.
 
-A value, as in C: assigning one copies it, so changing the copy leaves the original as it was. `c.a = 128` changes the variable or field `c` names.
+A value, as in the C implementation of raylib: assigning a `Color` copies it, so changing the copy leaves the original as it was. `c.a = 128` changes the variable or field `c` names.
 
 ```haxe
 function new(?r:Int = 0, ?g:Int = 0, ?b:Int = 0, ?a:Int = 255)
@@ -399,7 +399,7 @@ Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as ra
 
 `m0` to `m3` is the first column, stored first and sent to shaders first.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Matrix` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Matrix`._
 
 ```haxe
 function new(?m0:Float = 0., ?m4:Float = 0., ?m8:Float = 0., ?m12:Float = 0., ?m1:Float = 0., ?m5:Float = 0., ?m9:Float = 0., ?m13:Float = 0., ?m2:Float = 0., ?m6:Float = 0., ?m10:Float = 0., ?m14:Float = 0., ?m3:Float = 0., ?m7:Float = 0., ?m11:Float = 0., ?m15:Float = 0.)
@@ -625,7 +625,7 @@ var frameCount(get, never):Int
 
 Represents raylib's `NPatchInfo`: how `DrawTextureNPatch` cuts a texture into a nine-patch or a three-patch.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `NPatchInfo` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `NPatchInfo`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -659,7 +659,9 @@ function copy(?out:NPatchInfo):NPatchInfo
 
 Represents raylib's `Quaternion`: a rotation in three dimensions. An alias of helix-math's `Quaternion`. Operations on a `Quaternion` accept an optional `out` argument that receives the result.
 
-A `Vector4` isn't one, as it is in C. Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+Unlike the C implementation of raylib, `Quaternion` and `Vector4` are separate types.
+
+_Note that a `Quaternion` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Quaternion`._
 
 An alias of [`Quaternion`](../../../libs/math/api/types.md#quaternion).
 
@@ -669,7 +671,7 @@ An alias of [`Quaternion`](../../../libs/math/api/types.md#quaternion).
 
 Represents raylib's `Ray`: an origin and a direction.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Ray` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Ray`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -695,7 +697,7 @@ function copy(?out:Ray):Ray
 
 Represents raylib's `RayCollision`: whether and where a ray hit.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `RayCollision` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `RayCollision`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -802,7 +804,7 @@ Its members are on their own page: [raymath.md](raymath.md).
 
 Represents raylib's `Rectangle`: its top-left corner and its size.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Rectangle` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Rectangle`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -959,7 +961,7 @@ An alias of [`Texture`](types.md#texture).
 
 Represents raylib's `Transform`: a translation, a rotation and a scale, as a bone's pose holds them.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Transform` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Transform`._
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
@@ -987,7 +989,7 @@ function copy(?out:Transform):Transform
 
 Represents raylib's `Vector2`: a point or a direction in two dimensions. An alias of helix-math's `Vector2`. Operations on a `Vector2` accept an optional `out` argument that receives the result.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Vector2` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Vector2`._
 
 An alias of [`Vector2`](../../../libs/math/api/types.md#vector2).
 
@@ -997,7 +999,7 @@ An alias of [`Vector2`](../../../libs/math/api/types.md#vector2).
 
 Represents raylib's `Vector3`: a point or a direction in three dimensions. An alias of helix-math's `Vector3`. Operations on a `Vector3` accept an optional `out` argument that receives the result.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Vector3` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Vector3`._
 
 An alias of [`Vector3`](../../../libs/math/api/types.md#vector3).
 
@@ -1007,7 +1009,7 @@ An alias of [`Vector3`](../../../libs/math/api/types.md#vector3).
 
 Represents raylib's `Vector4`: four components. An alias of helix-math's `Vector4`. Operations on a `Vector4` accept an optional `out` argument that receives the result. `Quaternion` is a separate type.
 
-Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
+_Note that a `Vector4` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Vector4`._
 
 An alias of [`Vector4`](../../../libs/math/api/types.md#vector4).
 

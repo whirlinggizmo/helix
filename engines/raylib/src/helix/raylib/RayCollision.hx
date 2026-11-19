@@ -2,7 +2,8 @@ package helix.raylib;
 
 /** Represents raylib's `RayCollision`: whether and where a ray hit.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `RayCollision` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new
+	`RayCollision`._ */
 @:structInit
 class RayCollision {
 	/** Gets or sets a value indicating whether the ray hit. */

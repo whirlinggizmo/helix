@@ -52,7 +52,7 @@ haxe build-native.hxml   # native/Main, with hxcpp and SDL3 installed (CONTRIBUT
 - [docs/CONVENTIONS.md](docs/CONVENTIONS.md): names, units, layout and doc comments.
 - [The API reference](https://whirlinggizmo.github.io/helix/api/index.html), generated from the doc comments. Each library's `api/`
   directory holds the same as Markdown.
-- [docs/benchmarks.md](docs/benchmarks.md): the measurements: speed and size against raylib C, Godot, three.js, Lime and helix-legacy,
+- [docs/benchmarks.md](docs/benchmarks.md): the measurements: speed and size against raylib (C), Godot, three.js, Lime and helix-legacy,
   and each library's web size ladder.
 - [docs/ROADMAP.md](docs/ROADMAP.md): what's next. [docs/DECISIONS.md](docs/DECISIONS.md): why things are the way they are.
 

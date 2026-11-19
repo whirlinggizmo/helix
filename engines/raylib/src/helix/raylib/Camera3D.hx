@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Camera3D`, also its `Camera`: the camera's position, its target and its lens.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `Camera3D` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Camera3D`._ */
 @:structInit
 class Camera3D {
 	/** Gets or sets the camera's position. */

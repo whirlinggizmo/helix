@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Transform`: a translation, a rotation and a scale, as a bone's pose holds them.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `Transform` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Transform`._ */
 @:structInit
 class Transform {
 	/** Gets or sets the translation. */

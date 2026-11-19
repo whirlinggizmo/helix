@@ -10,7 +10,7 @@ import helix.math.Matrix4;
 
 	`m0` to `m3` is the first column, stored first and sent to shaders first.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `Matrix` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Matrix`._ */
 @:forward
 abstract Matrix(Matrix4) from Matrix4 to Matrix4 {
 	/** Gets or sets row 1, column 1. */

@@ -2,8 +2,8 @@ package helix.raylib;
 
 /** Represents raylib's `Color`: red, green, blue and alpha, each 0 to 255.
 
-	A value, as in C: assigning one copies it, so changing the copy leaves the original as it was. `c.a = 128` changes the variable or
-	field `c` names. */
+	A value, as in the C implementation of raylib: assigning a `Color` copies it, so changing the copy leaves the original as it was.
+	`c.a = 128` changes the variable or field `c` names. */
 abstract Color(Int) {
 	/** Gets or sets the red, 0 to 255. */
 	public var r(get, set):Int;

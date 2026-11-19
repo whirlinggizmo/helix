@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Rectangle`: its top-left corner and its size.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `Rectangle` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Rectangle`._ */
 @:structInit
 class Rectangle {
 	/** Gets or sets the left edge. */

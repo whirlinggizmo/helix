@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Ray`: an origin and a direction.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `Ray` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Ray`._ */
 @:structInit
 class Ray {
 	/** Gets or sets the origin. */

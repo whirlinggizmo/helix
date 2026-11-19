@@ -2,7 +2,8 @@ package helix.raylib;
 
 /** Represents raylib's `BoundingBox`: an axis-aligned box by its corners.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `BoundingBox` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new
+	`BoundingBox`._ */
 @:structInit
 class BoundingBox {
 	/** Gets or sets the lowest corner. */

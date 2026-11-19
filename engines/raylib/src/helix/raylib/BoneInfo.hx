@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `BoneInfo`: one bone of a skeleton, its name and its parent.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `BoneInfo` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `BoneInfo`._ */
 @:structInit
 class BoneInfo {
 	/** Gets or sets the name, its node's. */

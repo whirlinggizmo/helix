@@ -2,7 +2,7 @@ package helix.raylib;
 
 /** Represents raylib's `Camera2D`: its target, where the target shows on the screen, its rotation and its zoom.
 
-	Assigning one gives a reference to it, not a copy. See `copy` for a separate one. */
+	_Note that a `Camera2D` is assigned by reference. `copy()` copies into `out` when provided, otherwise into a new `Camera2D`._ */
 @:structInit
 class Camera2D {
 	/** Gets or sets where the target shows, in the screen's pixels. */
