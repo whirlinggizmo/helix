@@ -617,7 +617,7 @@ static macro function EndDrawing():Void
   Up to 15 characters of the file's extension are compared, and the list's first 32 extensions.
 
   An extension in the list without its dot matches as well ("png" as ".png").
-- `GetFileExtension`: Returns a file name's extension, from its last dot: "file.tar.gz" returns ".gz".
+- `GetFileExtension`: Returns a file name's extension, from its last dot: ".gz" for "file.tar.gz".
   - `fileName`: The file name, or a path.
   - returns: The extension with its dot, or null when there is no dot or the name starts with its only one.
 - `GetFileName`: Returns a path's file name, what follows its last `/` or `\`.
@@ -630,12 +630,12 @@ static macro function EndDrawing():Void
   - `filePath`: The path.
   - returns: The directory, without a slash at its end.
 
-  A relative path's directory starts "./": "dir/file.png" returns "./dir", "file.png" returns "./", and "/file.png" returns "/".
+  A relative path's directory starts "./": "./dir" for "dir/file.png", "./" for "file.png", and "/" for "/file.png".
 - `GetPrevDirectoryPath`: Returns the directory a path is in, up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
   - `dirPath`: The path.
   - returns: The directory above it, or "" when there is none.
 
-  "/a/b/" returns "/a", "/a" returns "/" and "abc" returns "".
+  "/a" for "/a/b/", "/" for "/a" and "" for "abc".
 
   Every path is read as a directory's, so a path naming a file returns the file's directory.
 - `IsFileNameValid`: Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not only dots.

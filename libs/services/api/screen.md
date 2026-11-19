@@ -60,8 +60,8 @@ function poll():Void
   - `fit`: How it fits.
 - `width`: Gets the width drawn in, in design pixels: the design's, wider under `Expand` on a wider window, or the window's logical width with no design.
 - `height`: Gets the height drawn in, in design pixels: the design's, taller under `Expand` on a taller window, or the window's logical height with no design.
-- `scaleX`: Gets the framebuffer pixels a design pixel takes across.
-- `scaleY`: Gets the framebuffer pixels a design pixel takes down; `scaleX` unless the fit is `Stretch`.
+- `scaleX`: Gets the framebuffer pixels a design pixel spans across.
+- `scaleY`: Gets the framebuffer pixels a design pixel spans down; `scaleX` unless the fit is `Stretch`.
 - `viewportX`: Gets the left edge of the area drawn in, in framebuffer pixels.
 - `viewportY`: Gets the top edge of the area drawn in, in framebuffer pixels from the top.
 - `viewportWidth`: Gets the width of the area drawn in, in framebuffer pixels.

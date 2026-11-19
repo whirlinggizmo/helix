@@ -10,7 +10,7 @@ Provides on-screen gamepads for phones: sticks and buttons a finger works, read 
 
 The first touch in the window plugs an enabled virtual gamepad in, as does a press of the left mouse button with touch emulation (`EnableTouchEmulation`). A virtual gamepad with a tilt stick (`VirtualStickOptions.tilt`) is plugged in once the tilt is on (`EnableTiltAsync`). Once the virtual gamepad is plugged in, `IsGamepadAvailable` is true for its slot, and its sticks read through `GetGamepadAxisMovement` and its buttons through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`. `IsGamepadVirtual` tells a virtual gamepad from a physical one.
 
-A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
+A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in gets slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
 A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a finger landing on one of them. A finger landing within the blocked bounds (`VirtualGamepadOptions.blockedBounds`) stays a free finger. A free finger counts as the mouse, and as a touch point, as every finger does without a virtual gamepad. A captured finger is neither: the touch functions list the free fingers.
 
@@ -130,7 +130,7 @@ var buttons:Null<Array<VirtualButtonOptions>>
 
 *class* in [`engines/raylib/src/helix/raylib/extras/VirtualStickOptions.hx`](../src/helix/raylib/extras/VirtualStickOptions.hx), `import helix.raylib.extras.VirtualStickOptions;`
 
-Represents how one stick of a virtual gamepad starts and looks (`VirtualGamepadOptions`). A field left out takes the gamepad's options, or their default. Positions and sizes are in the screen's pixels.
+Represents how one stick of a virtual gamepad starts and looks (`VirtualGamepadOptions`). A field left out uses the gamepad's options, or their default. Positions and sizes are in the screen's pixels.
 
 A stick captures a finger landing in its touch zone, even while it has captured another, and releases the earlier finger. A finger the other stick captured stays with the other stick. Where the two zones overlap, the stick that is not currently capturing a finger captures the landing finger, or the left stick when both are free. The stick releases its finger when the window changes size, and when a physical gamepad replaces the virtual gamepad.
 

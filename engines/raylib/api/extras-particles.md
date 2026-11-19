@@ -6,7 +6,7 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Particles.hx`](../src/helix/raylib/extras/Particles.hx), `import helix.raylib.extras.Particles;`
 
-Provides particle emitters, in 3D and in 2D. An emitter's settings are its fields, read each frame, so a program changes one by assigning it. A new emitter already gives off a small fountain of soft white dots that fade. Imported apart: `import helix.raylib.extras.Particles.*;`.
+Provides particle emitters, in 3D and in 2D. An emitter's settings are its fields, read each frame, so a program changes one by assigning it. A new emitter already emits a small fountain of soft white dots that fade. Imported apart: `import helix.raylib.extras.Particles.*;`.
 
 The examples `engines/raylib/examples/extras/particles3d` and `engines/raylib/examples/extras/particles2d` use it.
 
@@ -105,7 +105,7 @@ var spawnHalfSize:Vector2
 var alignToMotion:Bool
 ```
 
-- `position`: Gets or sets where the emitter is, in pixels. `UpdateEmitter2D` gives birth along the way from where it was.
+- `position`: Gets or sets where the emitter is, in pixels. `UpdateEmitter2D` spawns particles along the way from where it was.
 - `direction`: Gets or sets the direction particles are born moving in, its length ignored: up the screen by default. A direction of no length is up the screen.
 - `gravity`: Gets or sets the acceleration every particle feels, in pixels a second squared: none by default.
 - `spawnShape`: Gets or sets where around the position particles are born: `Point` by default.
@@ -128,7 +128,7 @@ var lit:Bool
 var ambient:Color
 ```
 
-- `position`: Gets or sets where the emitter is, in world units. `UpdateEmitter3D` gives birth along the way from where it was.
+- `position`: Gets or sets where the emitter is, in world units. `UpdateEmitter3D` spawns particles along the way from where it was.
 - `direction`: Gets or sets the direction particles are born moving in, its length ignored: up by default. A direction of no length is up.
 - `gravity`: Gets or sets the acceleration every particle feels, in units a second squared: none by default. `(0, -9.8, 0)` for falling sparks.
 - `spawnShape`: Gets or sets where around the position particles are born: `Point` by default.
@@ -201,7 +201,7 @@ var seed:Int
 - `rate`: Gets or sets how many particles are born a second while it's updated, 0 or more: 10 by default. At 0 none are born, and those alive live on.
 - `minLife`: Gets or sets the shortest a particle lives, in seconds: 1 by default.
 - `maxLife`: Gets or sets the longest a particle lives, in seconds: 1 by default. At least `minLife`.
-- `spawnShell`: Gets or sets whether particles are born on the spawn shape's surface rather than inside it: false by default. They are spread evenly over the surface as it looks: a shape flattened by a half size of 0 is its outline, so an ellipsoid of height 0 gives a ring. A `Point` ignores it.
+- `spawnShell`: Gets or sets whether particles are born on the spawn shape's surface rather than inside it: false by default. They are spread evenly over the surface as it looks: a shape flattened by a half size of 0 is its outline, so an ellipsoid of height 0 makes a ring. A `Point` ignores it.
 - `spread`: Gets or sets the half angle of the cone around `direction` particles are thrown within, 0 to 180 degrees: 30 by default. 180 throws them every way.
 - `speed`: Gets or sets how fast particles are born moving, 0 or more: 1 unit a second for an `Emitter3D` and 60 pixels a second for an `Emitter2D` by default.
 - `speedVariance`: Gets or sets how much a particle's speed varies either way, 0 to 1 of `speed`: 0 by default.
@@ -228,7 +228,7 @@ var seed:Int
 - `maxOrbit`: Gets or sets the fastest a particle travels around the emitter, in degrees a second: 0 by default. At least `minOrbit`.
 - `stretch`: Gets or sets how far along its motion on screen a particle stretches, as a streak, in seconds of that motion: 0, square, by default.
 - `blendMode`: Gets or sets how particles are drawn over what's behind: `BLEND_ALPHA` by default, or another of raylib's blend modes.
-- `seed`: Gets or sets the seed of the emitter's random numbers: drawn at its load from raylib's random numbers (`GetRandomValue`'s, which `SetRandomSeed` sets), so emitters differ unless given one. The same seed and fields give the same particles from its load or its clear.
+- `seed`: Gets or sets the seed of the emitter's random numbers: drawn at its load from raylib's random numbers (`GetRandomValue`'s, which `SetRandomSeed` sets), so emitters differ unless one is set. The same seed and fields produce the same particles from its load or its clear.
 
 ## EmitterColorKey
 

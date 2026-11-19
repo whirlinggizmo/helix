@@ -914,6 +914,6 @@ static macro function LoadAutomationEventList(fileName:Null<String>):AutomationE
   ```
 
   The file also holds the shader's shadow variant, which the Lighting extra's shadow pass (`BeginShadowMode`) draws through: its vertex stage, with a fragment stage writing depth alone and cutting at the material's alpha cutoff where the vertex stage passes `fragTexCoord`.
-- `LoadAutomationEventList`: Loads an automation events list from a file, and returns the list once it is read. Given null, returns an empty list to record into, its capacity raylib's 16384.
+- `LoadAutomationEventList`: Loads an automation events list from a file, and returns the list once it is read. With a null `fileName`, returns an empty list to record into, its capacity raylib's 16384.
   - `fileName`: The file, as `ExportAutomationEventList` writes it, or null (or 0, as raylib's examples write it).
   - returns: The list, or an empty one when the file couldn't be read. Why it couldn't is logged.

@@ -6,13 +6,13 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Materials.hx`](../src/helix/raylib/extras/Materials.hx), `import helix.raylib.extras.Materials;`
 
-Provides what a material gives off, where it is cut out, and whether light and shadows fall on it, read by every draw with it: `DrawModel`'s, `DrawMesh`'s and `DrawMeshInstanced`'s, through helix-raylib's default shader and the Lighting extra's lit shaders. Imported apart: `import helix.raylib.extras.Materials.*;`.
+Provides what a material emits, where it is cut out, and whether light and shadows fall on it, read by every draw with it: `DrawModel`'s, `DrawMesh`'s and `DrawMeshInstanced`'s, through helix-raylib's default shader and the Lighting extra's lit shaders. Imported apart: `import helix.raylib.extras.Materials.*;`.
 
 A program's own shader reads them as the uniforms `vec3 emissiveColor` (the color times the intensity), `vec3 modelEmissiveColor` (`SetModelEmissive`'s, 0 for a mesh drawn alone) and `float alphaCutoff`, which `<helix/raylib/shaders/lights.glsl>` and `<helix/raylib/shaders/pbr.glsl>` declare.
 
 The example `engines/raylib/examples/extras/materials` uses it.
 
-### materials: what a material gives off, where it is cut out, and whether light and shadows fall on it
+### materials: what a material emits, where it is cut out, and whether light and shadows fall on it
 
 ```haxe
 static function SetMaterialAlphaCutoff(material:Material, cutoff:Float):Void

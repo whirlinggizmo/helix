@@ -27,19 +27,19 @@ function appendDelay(seconds:Float):ColorTween
 - `new`: Creates a tween of a color, at its start.
   - `from`: The color at the start.
   - `to`: The color at the end.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
 - `from`: Gets or sets the color at the start.
 - `to`: Gets or sets the color at the end: the first leg's end, where `append` added more legs.
 - `value`: Gets the color now, its channels rounded and kept to 0 to 255 where the easing curve overshoots.
 - `append`: Adds a leg: the color fades on from where the tween ended before to another color.
   - `to`: The color at the leg's end.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // To red, a wait, then back to white.
@@ -48,7 +48,7 @@ function appendDelay(seconds:Float):ColorTween
 - `appendDelay`: Adds a wait: the color stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## Ease
 

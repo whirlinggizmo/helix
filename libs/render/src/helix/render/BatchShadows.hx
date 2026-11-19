@@ -49,7 +49,7 @@ class BatchShadows {
 			BatchLighting.makeShadows = attach;
 	}
 
-	/** Gives a batch's lit work its shadows, through the hooks it calls. */
+	/** Adds shadows to a batch's lit work, through the hooks the batch calls. */
 	static function attach(lighting:BatchLighting):Void {
 		var s = new BatchShadows(lighting);
 		lighting.shadowsBegin = s.begin;

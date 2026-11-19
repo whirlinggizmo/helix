@@ -45,7 +45,7 @@ abstract ColorTween(helix.tweens.ColorTween) to helix.tweens.ColorTween to helix
 		@param duration  The seconds the leg lasts, 0 or more.
 		@param ease  Optional. The leg's easing curve; a straight line when omitted.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which claimed the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public inline function append(to:Color, duration:Float, ?ease:Ease):ColorTween {
 		this.append(cast to, duration, ease);
 		return cast this;
@@ -55,7 +55,7 @@ abstract ColorTween(helix.tweens.ColorTween) to helix.tweens.ColorTween to helix
 
 		@param seconds  The seconds to wait, 0 or more.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which claimed the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which fixed the tween's time when placed. */
 	public inline function appendDelay(seconds:Float):ColorTween {
 		this.appendDelay(seconds);
 		return cast this;

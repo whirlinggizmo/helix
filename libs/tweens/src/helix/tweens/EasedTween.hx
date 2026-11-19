@@ -100,7 +100,7 @@ class EasedTween extends Tween {
 	// Adds a leg ending at a value the kind keeps next among its own, or a wait when the curve is null.
 	function addLeg(duration:Float, ease:Null<Ease>):Void {
 		if (owned)
-			throw "The tween is placed in a sequence, which took the tween's time when placed: append to the tween before placing it";
+			throw "The tween is placed in a sequence, which fixed the tween's time when placed: append to the tween before placing it";
 		if (legEnds == null) {
 			legEnds = [];
 			legEases = [];

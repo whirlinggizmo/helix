@@ -10,7 +10,7 @@ Provides small values a game keeps between runs, by key, in one file.
 
 `load` reads the file once. After that, values are read and set in memory, without waiting. A change is written at the next `poll`: everything set in a frame as one file, one write at a time. A value set, or deleted, before the read has finished is held and made once it has, so it wins over what the file kept: a program can save as it starts, before it has asked for anything back.
 
-Set a value when it changes, not as the program ends. A page's end gives a write no time to finish, so what is set there is lost. A native program leaving its loop flushes first, and leaves when the flush answers.
+Set a value when it changes, not as the program ends. A page's end leaves a write no time to finish, so what is set there is lost. A native program leaving its loop flushes first, and leaves when the flush answers.
 
 ```haxe
 saves.load(() -> {
@@ -108,4 +108,4 @@ function dispose():Void
 - `poll`: Starts writing what was set since the last write, unless a write is still in flight.
   Call it once a frame. After a failed write, it waits for another change before trying again.
 - `dispose`: Releases the values. A write in flight still finishes.
-  Call it before disposing the file system it was given.
+  Call it before disposing the file system it was provided.

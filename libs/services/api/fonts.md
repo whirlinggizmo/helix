@@ -56,7 +56,7 @@ function getKerning(first:Int, second:Int):Float
 
 *abstract* in [`libs/services/src/helix/services/fonts/FontKind.hx`](../src/helix/services/fonts/FontKind.hx), `import helix.services.fonts.FontKind;`
 
-Specifies what a font's glyphs hold (`Font2D.kind`): `Fonts.load`, `rasterize` and `loadBmFont` make Coverage, `loadBitmap` and `rasterizeBitmap` Bitmap, `loadDistanceField` and `rasterizeDistanceField` Distance; `packFont` and a `Font2D` a program makes what they are given.
+Specifies what a font's glyphs hold (`Font2D.kind`): `Fonts.load`, `rasterize` and `loadBmFont` make Coverage, `loadBitmap` and `rasterizeBitmap` Bitmap, `loadDistanceField` and `rasterizeDistanceField` Distance; `packFont` and a `Font2D` a program makes what they are provided.
 
 - `FontKind.Coverage`: Antialiased coverage: each texel how much of it the glyph covers.
 - `FontKind.Bitmap`: Coverage made hard-edged: each texel covered or not, for pixel fonts drawn at their own size.
@@ -171,7 +171,7 @@ function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:
   - returns: A function that aborts it; neither callback is called after it, and once one was, it does nothing. A font opened after it is closed.
 
   One of `opened` or `failed` is called once, at a later poll, never during this call.
-- `rasterizeOpened`: Returns an opened font's glyphs as antialiased coverage, rasterized during the call, as `rasterize` gives them.
+- `rasterizeOpened`: Returns an opened font's glyphs as antialiased coverage, rasterized during the call, as `rasterize` returns them.
   - `font`: The font, from `openFont`.
   - `size`: The pixel height: the font's ascent to its descent.
   - `codepoints`: The characters wanted.
@@ -181,21 +181,21 @@ function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:
   - `size`: The pixel height: the font's ascent to its descent.
   - `codepoints`: The characters wanted.
   - returns: A glyph for each codepoint, in their order, and the font's ascent, descent and line gap.
-- `rasterizeDistanceFieldOpened`: Returns an opened font's glyphs as signed distances to their outlines, rasterized during the call, as `rasterizeDistanceField` gives them.
+- `rasterizeDistanceFieldOpened`: Returns an opened font's glyphs as signed distances to their outlines, rasterized during the call, as `rasterizeDistanceField` returns them.
   - `font`: The font, from `openFont`.
   - `size`: The pixel height: the font's ascent to its descent.
   - `codepoints`: The characters wanted.
   - returns: A glyph for each codepoint, in their order, and the font's ascent, descent and line gap.
 - `closeFont`: Closes a font `openFont` opened.
   - `font`: The font.
-- `loadBmFont`: Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose texels are gray is coverage, so it becomes white with the gray as alpha, as raylib takes it.
+- `loadBmFont`: Loads a BMFont: its .fnt (the text format) and its pages, stacked top to bottom onto one atlas. A page with no transparency whose texels are gray is coverage, so it becomes white with the gray as alpha, as raylib uses it.
   - `path`: The .fnt file, as the assets name it.
   - `loaded`: Receives the font: its size the .fnt's line height, its ascent its base.
   - `failed`: Optional. Receives why it couldn't be loaded. When omitted, the failure is logged.
   - returns: A function that aborts the load; neither callback is called after it, and once one was, it does nothing.
 
   One of `loaded` or `failed` is called once, at a later poll, never during this call.
-- `packFont`: Returns a font made of glyph images, packed onto one atlas as `FontsOptions` says, as `load` packs a TrueType font's: the smallest power-of-two square they fit, white, each glyph's image as alpha. For a program or an engine layer holding a font's glyphs of its own (raylib's default font, the glyphs `rasterize` gives).
+- `packFont`: Returns a font made of glyph images, packed onto one atlas as `FontsOptions` says, as `load` packs a TrueType font's: the smallest power-of-two square they fit, white, each glyph's image as alpha. For a program or an engine layer holding a font's glyphs of its own (raylib's default font, the glyphs `rasterize` returns).
   - `name`: The atlas's name, its image's `path`; "" for none.
   - `kind`: What the glyphs hold.
   - `size`: The pixel height of a line from its ascent to its descent.
@@ -204,7 +204,7 @@ function packFont(name:String, kind:FontKind, size:Float, ascent:Float, descent:
   - `lineGap`: The space between one line's descent and the next line's ascent, in pixels.
   - `glyphs`: Each glyph's image, `width * height` bytes, its place from the pen and its advance.
   - `kernings`: Optional. The kerning pairs; none when omitted.
-  - returns: The font, its glyphs in the order given.
+  - returns: The font, its glyphs in the order provided.
 
 ## FontsOptions
 

@@ -304,7 +304,7 @@ class Renderer {
 
 	/** Starts recording a frame, with the screen's pass.
 
-		Given a color, the screen is cleared to it and the farthest depth. Omitted, the program clears nothing: the screen starts as the
+		With a color, the screen is cleared to it and the farthest depth. Omitted, the program clears nothing: the screen starts as the
 		platform starts a frame, opaque black with the farthest depth (`IGraphics.beginFrame` clears every frame, and a swap chain need
 		not keep the last frame's pixels), so a raylib layer's `ClearBackground` is `clearTarget`, and one recorded before any draw of the pass
 		costs nothing past the platform's own clear. The viewport is all of it.

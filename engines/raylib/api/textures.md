@@ -835,7 +835,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `image`: The image.
   - `fileName`: The file; its name, upper case, names the defines and the array.
   - returns: Whether it was written. Why it wasn't is logged.
-- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as the file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, and nothing after it is read; one with no frames, or broken before its first frame ends, fails to load.
+- `LoadImageAsync`: Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as the file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it produces `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its channels, where raylib's keeps a grayscale file grayscale; a QOI file keeps its own channels, RGB or RGBA, as raylib's. A GIF file produces its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, and nothing after it is read; one with no frames, or broken before its first frame ends, fails to load.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the image, its pixels its own.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.
@@ -863,13 +863,13 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `loaded`: Receives the frames.
   - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
 
-  A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some frames gives the frames before the break, as raylib's does; one with no frames, or broken before its first frame ends, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
+  A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some frames produces the frames before the break, as raylib's does; one with no frames, or broken before its first frame ends, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
 
   The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension then. The answer comes at a later frame, never during the call.
 
   An asynchronously loaded image is invalid until `loaded` is called.
 - `LoadImageAnimFromMemoryAsync`: Decodes an animated image file's bytes, answering when they are decoded: helix-raylib's own, in place of raylib's `LoadImageAnimFromMemory`. The frames and their count are `LoadImageAnimAsync`'s, of a GIF file when the type is ".gif" or ".GIF"; any other type is decoded as `LoadImageFromMemoryAsync` decodes it, as one frame. The reader is chosen as the program builds when the type is a constant, as `LoadImageAnimAsync`'s is by the name.
-  - `fileType`: The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
+  - `fileType`: The file's extension: ".gif", or one `LoadImageFromMemoryAsync` accepts.
   - `fileData`: The file's bytes.
   - `dataSize`: How many of them.
   - `frames`: Receives the frame count, in its first element.

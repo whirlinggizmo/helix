@@ -1,5 +1,6 @@
 """List the libraries' public types and members that have no doc comment (docs/CONVENTIONS.md), and fail if there are any; fail if a
-doc comment's note ("Note that ...") isn't in italics; and fail if the code, the examples, the tools or the docs name the earlier C frameworks (wgrender, libwgf, libwgt): what they
+doc comment's note ("Note that ...") isn't in italics; fail if a comment says give or take (given, takes, gives ...) where it means
+provided, accepts or returns; and fail if the code, the examples, the tools or the docs name the earlier C frameworks (wgrender, libwgf, libwgt): what they
 taught is recorded in DECISIONS.md, which may name them, and AGENTS.md, which says where to read them, may too.
 
 Covers each library and engine (libs/<library>/src/helix, engines/<engine>/src/helix). A member that implements an interface's is documented on the
@@ -16,6 +17,10 @@ SOURCES=sorted(p.relative_to(ROOT).as_posix() for p in ROOT.glob('*/*/src/helix'
 NAMED=['libs','engines','tools','helix.py','README.md','CONTRIBUTING.md','GOALS.md','docs/ARCHITECTURE.md','docs/CONVENTIONS.md','docs/PLATFORM.md','docs/PLAN.md','docs/ROADMAP.md','docs/benchmarks.md']
 # A note's paragraph starting without its italics' underscore, at a doc comment's start or a line's.
 NOTE=re.compile(r'^[ \t]*(?:/\*\*[ \t]*)?Note that\b',re.M)
+# Give and take, in a comment's own words: what's quoted (`code`, "a message") is left out.
+GIVE_TAKE=re.compile(r'\b(?:give|gives|given|giving|gave|take|takes|taken|taking|took)\b',re.I)
+COMMENT=re.compile(r'"(?:\\.|[^"\\\n])*"|\'(?:\\.|[^\'\\\n])*\'|/\*.*?\*/|//[^\n]*',re.S)
+QUOTED=re.compile(r'`[^`\n]*`|"[^"\n]*"')
 TYPE=re.compile(r'^\s*(?:@:[^\n]*\s)*(?:extern\s+|final\s+|private\s+)*(class|interface|typedef|enum abstract|enum|abstract)\s+(\w+)')
 MEMBER=re.compile(r'^\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:public\s+|static\s+|inline\s+|override\s+|final\s+|extern\s+|dynamic\s+)*)(function|var|final)\s+(\w+)')
 
@@ -91,6 +96,15 @@ def main():
                 plain.append(f'{path.relative_to(ROOT)}:{path.read_text(encoding="utf-8")[:m.start()+note.start()].count(chr(10))+1}: a note not in italics')
     for item in plain:print(item)
     if plain:print(f'{len(plain)} note(s) not in italics: _Note that ..._',file=sys.stderr)
-    sys.exit(1 if missing or named or plain else 0)
+    worded=[]
+    for path in sorted(p for d in ('libs','engines','tools/haxe') for p in (ROOT/d).rglob('*.hx')):
+        text=path.read_text(encoding='utf-8')
+        for m in COMMENT.finditer(text):
+            if m.group(0)[0] in '"\'':continue
+            for word in GIVE_TAKE.finditer(QUOTED.sub(lambda q:' '*len(q.group(0)),m.group(0))):
+                worded.append(f'{path.relative_to(ROOT)}:{text[:m.start()+word.start()].count(chr(10))+1}: {word.group(0)}')
+    for item in worded:print(item)
+    if worded:print(f'{len(worded)} comment(s) say give or take: provided, accepts, returns (docs/CONVENTIONS.md)',file=sys.stderr)
+    sys.exit(1 if missing or named or plain or worded else 0)
 
 if __name__=='__main__':main()

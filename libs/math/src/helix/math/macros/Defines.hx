@@ -13,7 +13,7 @@ class Defines {
 	public static final ALL:Array<haxe.macro.Compiler.DefineDescription> = [
 		{
 			define: "helix-math-standard-trig",
-			doc: "Makes Trig's functions the standard library's (Math.sin and the others), and with them the cosines and sines helix-math's rotations take. Faster in a browser. A result's last bit may then differ between targets, so a simulation no longer plays alike on each. Off by default."
+			doc: "Makes Trig's functions the standard library's (Math.sin and the others), and with them the cosines and sines helix-math's rotations use. Faster in a browser. A result's last bit may then differ between targets, so a simulation no longer plays alike on each. Off by default."
 		}
 	];
 

@@ -15,7 +15,7 @@ static inline var EPSILON:Float
 - `PI`: Pi, as raymath defines it when raylib hasn't.
 - `DEG2RAD`: Degrees to radians: multiply by it.
 - `RAD2DEG`: Radians to degrees: multiply by it.
-- `EPSILON`: The difference under which raymath's `...Equals` functions take two values as equal.
+- `EPSILON`: The difference under which raymath's `...Equals` functions treat two values as equal.
 
 ## raymath: vectors, matrices and quaternions
 

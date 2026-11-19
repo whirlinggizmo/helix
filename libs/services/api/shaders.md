@@ -8,7 +8,7 @@
 
 Defines finding what a shader, or any variant of a set, declares: `Shader` and `ShaderVariants` implement it, so a by-name layer works over either.
 
-A `get` form throws for a name nothing declares, listing what is declared and, for a path written with brackets, the spelling it takes; a `find` form returns null. On a set, a name is found when any variant declares it.
+A `get` form throws for a name nothing declares, listing what is declared and, for a path written with brackets, the spelling it accepts; a `find` form returns null. On a set, a name is found when any variant declares it.
 
 ```haxe
 var uniforms(get, never):Array<ShaderUniform>
@@ -32,17 +32,17 @@ function findAttribute(name:String):Null<ShaderAttribute>
 - `uniforms`: Gets every uniform's handle: each block member, struct field and field of an array of structs, in block order. On a set, every variant's, each name once.
 - `samplers`: Gets every sampled texture's handle, in slot order; on a set, every variant's, each name once.
 - `hasUniform`: Returns whether a uniform is declared.
-  - `name`: Its path, or the name `Shader.withNames` gave it.
+  - `name`: Its path, or the name `Shader.withNames` assigned it.
   - returns: True when it is declared (on a set, by any variant).
 - `hasSampler`: Returns whether a texture is sampled.
-  - `name`: Its GLSL name, or the name `Shader.withNames` gave it.
+  - `name`: Its GLSL name, or the name `Shader.withNames` assigned it.
   - returns: True when it is declared (on a set, by any variant).
 - `getUniform`: Returns the handle of a uniform.
-  - `name`: Its path (`roughness`, `material.roughness`, `lights.color`), or the name `Shader.withNames` gave it.
+  - `name`: Its path (`roughness`, `material.roughness`, `lights.color`), or the name `Shader.withNames` assigned it.
   - returns: The handle, the same each call.
-  - throws `String`: A name nothing declares; given `lights[0].position`, it names `lights.position` and `getUniformPath`.
+  - throws `String`: A name nothing declares; for `lights[0].position`, it names `lights.position` and `getUniformPath`.
 - `findUniform`: Finds the handle of a uniform that may not be declared.
-  - `name`: Its path, or the name `Shader.withNames` gave it.
+  - `name`: Its path, or the name `Shader.withNames` assigned it.
   - returns: The handle, the same each call, or null.
 - `getUniformPath`: Returns a uniform and element from a path as GLSL writes it, with brackets (`pointLights[1].color`, `bones[3]`), or without.
   - `path`: The path.
@@ -52,11 +52,11 @@ function findAttribute(name:String):Null<ShaderAttribute>
   - `path`: The path.
   - returns: The uniform and the element, or null: for a uniform nothing declares, an index past its elements, a path naming a struct or a struct's element rather than a field (`lights[1]`, `lights`).
 - `getSampler`: Returns the handle of a sampled texture.
-  - `name`: Its GLSL name, or the name `Shader.withNames` gave it.
+  - `name`: Its GLSL name, or the name `Shader.withNames` assigned it.
   - returns: The handle, the same each call.
   - throws `String`: A name nothing declares.
 - `findSampler`: Finds the handle of a sampled texture that may not be declared.
-  - `name`: Its GLSL name, or the name `Shader.withNames` gave it.
+  - `name`: Its GLSL name, or the name `Shader.withNames` assigned it.
   - returns: The handle, or null.
 - `hasSharedBlock`: Returns whether a shared block is named (`ShaderOptions.shared`).
   - `blockName`: The block's name.
@@ -71,7 +71,7 @@ function findAttribute(name:String):Null<ShaderAttribute>
   - `name`: Its GLSL name.
   - returns: The handle, the same each call.
 - `getAttribute`: Returns a vertex attribute (on a set, the first variant's that reads it).
-  - `name`: Its GLSL name, or the name `Shader.withNames` gave it.
+  - `name`: Its GLSL name, or the name `Shader.withNames` assigned it.
   - returns: The attribute.
   - throws `String`: A name nothing declares.
 - `findAttribute`: Finds a vertex attribute that may not be read.
@@ -82,7 +82,7 @@ function findAttribute(name:String):Null<ShaderAttribute>
 
 *interface* in [`libs/services/src/helix/services/shaders/IShaderValues.hx`](../src/helix/services/shaders/IShaderValues.hx), `import helix.services.shaders.IShaderValues;`
 
-Defines what values for a whole program take besides uniforms: textures, and the blocks and textures they share. `ShaderValues` and `ShaderVariantValues` implement it.
+Defines what values for a whole program hold besides uniforms: textures, and the blocks and textures they share. `ShaderValues` and `ShaderVariantValues` implement it.
 
 Sharing on a values made over a base (`ShaderValues.base`) is its own; what it doesn't share itself it reads from its base, so sharing once on a scene's defaults shares on every values made over them, before or after.
 
@@ -132,16 +132,16 @@ A shader is compiled while the program builds, never while it runs: `compile` fr
 
 **Stages.** Both stages are written in one of two forms, told apart by the `#version` line:
 
-- **`#version 450`**, Vulkan-style: attributes may give `layout(location = n)`, blocks and textures `layout(binding = n)`.
-- **`#version 300 es`, or 330 to 440,** as WebGL2 and GL write it: nothing gives a location or a binding, as GLSL ES 3.0 can't, and the compiler places everything; a `binding` or `location` written in this form is refused. GLSL ES 100's `attribute`, `varying`, `gl_FragColor` and `texture2D` are not taken.
+- **`#version 450`**, Vulkan-style: attributes may declare `layout(location = n)`, blocks and textures `layout(binding = n)`.
+- **`#version 300 es`, or 330 to 440,** as WebGL2 and GL write it: nothing declares a location or a binding, as GLSL ES 3.0 can't, and the compiler places everything; a `binding` or `location` written in this form is refused. GLSL ES 100's `attribute`, `varying`, `gl_FragColor` and `texture2D` are not accepted.
 
-**Loose uniforms** (`uniform vec4 tint;`, outside a block) are taken in either form, so a variant's own uniforms, declared under its `#ifdef`, need no block of their own. Both stages' are gathered into one block, `helix_uniforms`, read by both (platform proposal 6): the vertex stage's in the order it declares them (an include's where it is included), then the fragment stage's not already there. A uniform both stages declare loose is one member; declared with two types, it is refused. A program with none has no such block. Every block is laid out by std140, whether or not it says `layout(std140)`.
+**Loose uniforms** (`uniform vec4 tint;`, outside a block) are accepted in either form, so a variant's own uniforms, declared under its `#ifdef`, need no block of their own. Both stages' are gathered into one block, `helix_uniforms`, read by both (platform proposal 6): the vertex stage's in the order it declares them (an include's where it is included), then the fragment stage's not already there. A uniform both stages declare loose is one member; declared with two types, it is refused. A program with none has no such block. Every block is laid out by std140, whether or not it says `layout(std140)`.
 
 **Types.** Blocks hold `float`, `vecN`, `matN`, `int`, `ivecN`, `uint`, `uvecN`, `bool` and `bvecN` members together, structs, and arrays of any of them. Each struct field is a uniform found by its path (`material.roughness`); a field of an array of structs is one uniform whose elements are the array's (`lights.color`). An array inside an array of structs, a `double`, and a sampler array (`sampler2D maps[4]`) are refused, naming them.
 
-**Placement**, where nothing gives it. Blocks and textures are numbered apart: blocks 0 to 3 in each stage (platform proposal 10, as SDL_GPU binds four a stage; a block both stages read takes a slot in each), textures 0 to 11, as every adapter binds them; one past them is refused. Named blocks without a binding take the lowest free block bindings in the order declared, then `helix_uniforms`, then the shared blocks gathered from loose uniforms (`ShaderSharedBlock.uniforms`). Textures without a binding take the lowest free texture bindings, in the order declared. Attributes without a location take the lowest free locations in the order declared, a matrix a location a column. A block both stages declare alike is one block at one binding, read by both. Since everything is found by name, and a pipeline names the uniform it flips by its place (`ShaderPipelineState.flipUniform`, platform proposal 9), no rule of placement is the program's to keep: `findUniformPlace` says where a uniform is, and a library with a rule of its own passes a `check`.
+**Placement**, where nothing declares it. Blocks and textures are numbered apart: blocks 0 to 3 in each stage (platform proposal 10, as SDL_GPU binds four a stage; a block both stages read uses a slot in each), textures 0 to 11, as every adapter binds them; one past them is refused. Named blocks without a binding get the lowest free block bindings in the order declared, then `helix_uniforms`, then the shared blocks gathered from loose uniforms (`ShaderSharedBlock.uniforms`). Textures without a binding get the lowest free texture bindings, in the order declared. Attributes without a location get the lowest free locations in the order declared, a matrix a location a column. A block both stages declare alike is one block at one binding, read by both. Since everything is found by name, and a pipeline names the uniform it flips by its place (`ShaderPipelineState.flipUniform`, platform proposal 9), no rule of placement is the program's to keep: `findUniformPlace` says where a uniform is, and a library with a rule of its own passes a `check`.
 
-**Includes and defines.** A quoted `#include` resolves beside the including file, then in `ShaderOptions.includeDirectories`; one in angle brackets in the texts `ShaderOptions.includes` names, then in each of the build's class paths (`#include <helix/draw/color.glsl>`). No stage declares the include extension: the compiler enables it. Defines are given to the compiler, so a line in an error is the file's; each stage also has `HELIX_VERTEX` or `HELIX_FRAGMENT`.
+**Includes and defines.** A quoted `#include` resolves beside the including file, then in `ShaderOptions.includeDirectories`; one in angle brackets in the texts `ShaderOptions.includes` names, then in each of the build's class paths (`#include <helix/draw/color.glsl>`). No stage declares the include extension: the compiler enables it. Defines are passed to the compiler, so a line in an error is the file's; each stage also has `HELIX_VERTEX` or `HELIX_FRAGMENT`.
 
 **Macros and the program's own types.** The service's types that hold macros import nothing with a build macro, so they type in the macro context. A program's own class holding a macro, or calling one at its class level, that also names a platform enum built by a macro (`Sampling`'s `Filter`) puts that use under `#if !macro`, or keeps the macro in a class of its own, as `ShaderValueClasses` is.
 
@@ -203,7 +203,7 @@ function withNames(names:Map<String, String>):Shader
   - `options`: Optional. Defines, includes, shared blocks, a check, and a file: a constant object, at the call or a class's static constant (`LitShader.OPTIONS`), so options many calls share live in one place.
   - returns: The shader.
 
-  A browser build carries GLSL ES 300 alone; a native build GLSL 410 and SDL_GPU's dialects besides. Both stages are given: a layer whose users may leave one out (raylib's `LoadShader(null, "x.fs")`) supplies its own default, through `makeExpr`.
+  A browser build carries GLSL ES 300 alone; a native build GLSL 410 and SDL_GPU's dialects besides. Both stages are required: a layer whose users may leave one out (raylib's `LoadShader(null, "x.fs")`) supplies its own default, through `makeExpr`.
 - `compileText`: Compiles a vertex and a fragment stage from GLSL text known while the program builds, and returns the shader as a value in the program.
   - `vertex`: The vertex stage's GLSL.
   - `fragment`: The fragment stage's GLSL.
@@ -211,39 +211,39 @@ function withNames(names:Map<String, String>):Shader
   - returns: The shader.
 
   Each stage's text is a string literal, a static `String` constant of a class (`static inline final` or `static final` with a constant value), or such strings joined with `+`, so a class can keep its GLSL where it is used (`StandardMaterial.VERTEX`). A quoted `#include` resolves beside the file declaring the text: the call's for a literal, the constant's class's for a constant.
-- `source`: Gets the compiled program in every dialect the build's adapters take, as `IGraphics.createShader` takes it, with its reflection: its blocks' members (`ShaderBlock.members`) and its attributes' types.
-- `attributes`: Gets the vertex attributes, by slot: entry i is the attribute at slot i, so a matrix, which takes a slot a column from its own, is the entry at each of its columns' slots, the same record each time.
+- `source`: Gets the compiled program in every dialect the build's adapters accept, as `IGraphics.createShader` accepts it, with its reflection: its blocks' members (`ShaderBlock.members`) and its attributes' types.
+- `attributes`: Gets the vertex attributes, by slot: entry i is the attribute at slot i, so a matrix, which uses a slot a column from its own, is the entry at each of its columns' slots, the same record each time.
 - `uniforms`: Gets every uniform's handle, in block order.
 - `samplers`: Gets every sampled texture's handle, in slot order.
 - `reloadCount`: Gets the number of times a change of its file has replaced it in place (`Shaders.watch`): 0 until then.
   After a replacement, `source` and the reflection are the new file's, and every handle and values made for it follows on its own. What was built on the GPU from it is its holder's to build again (`ShaderPrograms` does). A shader `withNames` made from it is replaced with it. A replacement happens at `Shaders.prepareFrame`, never mid-frame. Code that acts on one adds a `reloadListeners` function rather than watching this count.
 - `reloadListeners`: Gets the functions called after each replacement in place, once the reflection, every handle and every values made for it have followed, in the order added: a program adds and removes its own (`reloadListeners.push(f)`, `reloadListeners.remove(f)`). Each receives the shader. A rejected replacement (`reloadError`) calls none.
-- `reloadError`: Gets why the last replacement wasn't taken, or null when it was: a file that doesn't read or holds another kind of shader or other features (`Shaders`), or a replaced program the GPU refused (`ShaderPrograms`). The shader, and what was built from it, stay as they were, and this says so where a holder can see it as well as in the log.
+- `reloadError`: Gets why the last replacement wasn't applied, or null when it was: a file that doesn't read or holds another kind of shader or other features (`Shaders`), or a replaced program the GPU refused (`ShaderPrograms`). The shader, and what was built from it, stay as they were, and this says so where a holder can see it as well as in the log.
 - `filePath`: Gets the asset path of its file (`ShaderOptions.file`), which `Shaders.watch` watches, or null when it was compiled without one. It is set whatever the build, whether or not the build wrote the file.
 - `hasUniform`: Returns whether the shader declares a uniform.
-  - `name`: Its path, or the name `withNames` gave it.
+  - `name`: Its path, or the name `withNames` assigned it.
   - returns: True when it is declared.
 - `hasSharedBlock`: Returns whether the shader shares a block (`ShaderOptions.shared`): names it shared and declares it.
   - `blockName`: The block's name.
   - returns: True when it does.
-- `reserveUniform`: Returns a handle for a uniform the shader may declare now or only after a replacement, for code written ahead of the GLSL: one not declared now is `declared` false, keeps what is written through it, and binds when a replacement declares it, its type then the declaration's. A value kept that the declared type doesn't take is logged and dropped.
-  - `name`: Its path, or the name `withNames` gave it.
+- `reserveUniform`: Returns a handle for a uniform the shader may declare now or only after a replacement, for code written ahead of the GLSL: one not declared now is `declared` false, keeps what is written through it, and binds when a replacement declares it, its type then the declaration's. A value kept that the declared type doesn't accept is logged and dropped.
+  - `name`: Its path, or the name `withNames` assigned it.
   - returns: The handle, the same each call; the declared one's when the shader declares it.
 - `reserveUniformPath`: Returns a uniform and element for a path as GLSL writes it (`pointLights[1].color`) that the shader may declare only after a replacement, binding as `reserveUniform` does.
   - `path`: The path.
   - returns: The uniform and the element, the same object for the same path.
 - `reserveSampler`: Returns a handle for a texture the shader may sample now or only after a replacement, binding, its kind then the declaration's, when a replacement declares it.
-  - `name`: Its GLSL name, or the name `withNames` gave it.
+  - `name`: Its GLSL name, or the name `withNames` assigned it.
   - returns: The handle, the same each call.
 - `hasSampler`: Returns whether the shader samples a texture.
-  - `name`: Its GLSL name, or the name `withNames` gave it.
+  - `name`: Its GLSL name, or the name `withNames` assigned it.
   - returns: True when it is declared.
 - `getUniform`: Returns the handle of a uniform the shader declares.
-  - `name`: Its path (`roughness`, `material.roughness`, `lights.color`), or the name `withNames` gave it.
+  - `name`: Its path (`roughness`, `material.roughness`, `lights.color`), or the name `withNames` assigned it.
   - returns: The handle, the same each call.
-  - throws `String`: A name the shader doesn't declare, listing those it does; given `lights[0].position`, it names `lights.position` and `getUniformPath`.
+  - throws `String`: A name the shader doesn't declare, listing those it does; for `lights[0].position`, it names `lights.position` and `getUniformPath`.
 - `findUniform`: Finds the handle of a uniform the shader may not declare.
-  - `name`: Its path, or the name `withNames` gave it.
+  - `name`: Its path, or the name `withNames` assigned it.
   - returns: The handle, the same each call, or null.
 - `getUniformPath`: Returns a uniform and element from a path as GLSL writes it, with brackets (`pointLights[1].color`, `bones[3]`), or without.
   - `path`: The path.
@@ -253,29 +253,29 @@ function withNames(names:Map<String, String>):Shader
   - `path`: The path.
   - returns: The uniform and the element, or null: for a uniform the shader doesn't declare, an index past its elements, a path naming a struct or a struct's element rather than a field (`lights[1]`, `lights`), or a sampler's name.
 - `getSampler`: Returns the handle of a texture the shader samples.
-  - `name`: Its GLSL name, or the name `withNames` gave it.
+  - `name`: Its GLSL name, or the name `withNames` assigned it.
   - returns: The handle, the same each call.
   - throws `String`: A name the shader doesn't declare, listing those it does.
 - `findSampler`: Finds the handle of a texture the shader may not sample.
-  - `name`: Its GLSL name, or the name `withNames` gave it.
+  - `name`: Its GLSL name, or the name `withNames` assigned it.
   - returns: The handle, or null.
 - `findUniformPlace`: Returns where a uniform is in this shader: its block's slot and its byte offset, as a pipeline's flip (proposal 9) or a check reads them.
   - `uniform`: The uniform.
   - returns: The slot and offset, the first block's when two stages' blocks hold it, or null when this shader doesn't declare it.
 - `getAttribute`: Returns a vertex attribute the shader reads.
-  - `name`: Its GLSL name, or the name `withNames` gave it.
+  - `name`: Its GLSL name, or the name `withNames` assigned it.
   - returns: The attribute, with its slot and type.
   - throws `String`: A name the shader doesn't declare, listing those it does.
 - `findAttribute`: Finds a vertex attribute the shader may not read.
-  - `name`: Its GLSL name, or the name `withNames` gave it.
+  - `name`: Its GLSL name, or the name `withNames` assigned it.
   - returns: The attribute, or null.
-- `computeVertexBuffer`: Returns the layout of a vertex buffer built for this shader, its records holding the attributes named, packed as floats in the order given.
-  - `names`: The attributes, in their order in a record, by GLSL name or the name `withNames` gave them.
+- `computeVertexBuffer`: Returns the layout of a vertex buffer built for this shader, its records holding the attributes named, packed as floats in the order provided.
+  - `names`: The attributes, in their order in a record, by GLSL name or the name `withNames` assigned them.
   - `instanced`: Optional. Whether the buffer steps once an instance; defaults to false.
   - returns: The buffer's layout: its stride, the sum of the attributes' sizes, and an attribute a column.
   - throws `String`: A name the shader doesn't declare, or an integer attribute (`ivec4`), which the platform can't feed yet.
 
-  It suits a buffer a program fills for this shader (a sprite batch's, a variant's own). A mesh whose records are laid out already, drawn by any shader, is a `ShaderVertexLayout` (`ShaderVertexLayout.fromAttributes` packs one the same way for any shader). Each attribute takes its type's floats (`ShaderValueType.componentCount` times `columnCount`), and a matrix a `VertexAttribute` a column at consecutive slots, as `PipelineDesc.buffers` takes them.
+  It suits a buffer a program fills for this shader (a sprite batch's, a variant's own). A mesh whose records are laid out already, drawn by any shader, is a `ShaderVertexLayout` (`ShaderVertexLayout.fromAttributes` packs one the same way for any shader). Each attribute holds its type's floats (`ShaderValueType.componentCount` times `columnCount`), and a matrix a `VertexAttribute` a column at consecutive slots, as `PipelineDesc.buffers` accepts them.
 
   ```haxe
   var layout = shader.computeVertexBuffer(["position", "normal", "texCoord"]);   // 32-byte records
@@ -291,7 +291,7 @@ function withNames(names:Map<String, String>):Shader
   - returns: The shader with the names changed.
   - throws `String`: Two names mapped to one, or a new name that another attribute, uniform or texture of the same kind already has.
 
-  The program is the same: only the names the finds and gets take change. A renamed thing is found by its new name alone; a struct's name renames the paths that start with it (`light` the `light.color`); a name in the map that the shader doesn't declare is skipped, so one map serves shaders that declare different parts of it. The shader returned is replaced with it; this one is unchanged.
+  The program is the same: only the names the finds and gets accept change. A renamed thing is found by its new name alone; a struct's name renames the paths that start with it (`light` the `light.color`); a name in the map that the shader doesn't declare is skipped, so one map serves shaders that declare different parts of it. The shader returned is replaced with it; this one is unchanged.
 
   ```haxe
   // raylib's names, as helix-draw fills them
@@ -307,8 +307,8 @@ function withNames(names:Map<String, String>):Shader
 
 Represents one of a shader's vertex attributes: the vertex stage's input at a slot, which a pipeline's `VertexAttribute` feeds.
 
-- `type:ShaderValueType`: Its type, which says how many floats a record gives it (`Vec3` three).
-- `slot:Int`: Its slot, its `layout(location = n)`: what `VertexAttribute.slot` names. A matrix takes a slot a column from it, each column fed as an attribute of its own.
+- `type:ShaderValueType`: Its type, which says how many floats a record holds for it (`Vec3` three).
+- `slot:Int`: Its slot, its `layout(location = n)`: what `VertexAttribute.slot` names. A matrix uses a slot a column from it, each column fed as an attribute of its own.
 - `glslName:String`: The input's name in the GLSL.
 - `active:Bool`: Whether the vertex stage's code reads it, as the compiler finds; one unread is still reflected and fed.
 
@@ -356,7 +356,7 @@ Represents how `Shader.makeExpr` and `ShaderVariants.makeExpr` compile, for a li
 
 - `shared:Null<Array<ShaderSharedBlock>>`: The blocks whose values are shared, as `ShaderOptions.shared`. Optional; none by default.
 - `points:Null<Bool>`: Whether the compiler wraps the vertex stage to write a point size of 1, as `ShaderOptions.points`. Optional; false by default.
-- `includes:Null<Map<String, String>>`: Texts an angle-bracket `#include` takes by name, before the build's class paths are looked in. Optional; none by default.
+- `includes:Null<Map<String, String>>`: Texts an angle-bracket `#include` includes by name, before the build's class paths are looked in. Optional; none by default.
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own. Optional; none by default.
 - `file:Null<String>`: The asset path of the file, as `ShaderOptions.file`. Optional; no file by default.
 - `everyTarget:Null<Bool>`: Whether the program is compiled for every target, whatever the build's: GLSL ES, GLSL 410 and SDL_GPU's stages, for a file one page and one native program both load. Optional; false by default, the build's target's alone.
@@ -368,7 +368,7 @@ Represents how `Shader.makeExpr` and `ShaderVariants.makeExpr` compile, for a li
 
 *abstract* in [`libs/services/src/helix/services/shaders/ShaderFeatures.hx`](../src/helix/services/shaders/ShaderFeatures.hx), `import helix.services.shaders.ShaderFeatures;`
 
-Represents a set of a `ShaderVariants`' features, the defines its variants differ by, as bits: `ShaderVariants.getShader` takes it.
+Represents a set of a `ShaderVariants`' features, the defines its variants differ by, as bits: `ShaderVariants.getShader` accepts it.
 
 A feature is a name alone, defined as 1 when on and not defined when off; a define with a value is a shared define (`ShaderOptions.defines`), the same in every variant. A set's features come from its variants (`ShaderVariants.getFeature`), or as static constants of a class `ShaderValueClasses.buildVariants` made (`LitValues.SKINNED | LitValues.INSTANCED`), so the compiler checks the names.
 
@@ -407,7 +407,7 @@ function hasFeatures(other:ShaderFeatures):Bool
 
 *typedef* in [`libs/services/src/helix/services/shaders/ShaderOptions.hx`](../src/helix/services/shaders/ShaderOptions.hx), `import helix.services.shaders.ShaderOptions;`
 
-Represents how a build-time compile at a call compiles: every macro that compiles a shader takes it, as a constant object written at the call or a class's static constant holding one (`static final OPTIONS:ShaderOptions = {...}`), so options several calls share live in one place. An array of them composes, left to right: `[Lit.OPTIONS, {file: "shaders/lit.shader"}]` takes `Lit.OPTIONS` and sets `file`; a later array (`defines`, `shared`) is added to an earlier one, a later value replaces an earlier one.
+Represents how a build-time compile at a call compiles: every macro that compiles a shader accepts it, as a constant object written at the call or a class's static constant holding one (`static final OPTIONS:ShaderOptions = {...}`), so options several calls share live in one place. An array of them composes, left to right: `[Lit.OPTIONS, {file: "shaders/lit.shader"}]` uses `Lit.OPTIONS` and sets `file`; a later array (`defines`, `shared`) is added to an earlier one, a later value replaces an earlier one.
 
 ```haxe
 Shader.compile("lit.vert", "lit.frag", {defines: ["MAX_LIGHTS=8"], includes: "three.ShaderChunk", shared: [{name: "Frame"}],
@@ -416,7 +416,7 @@ file: "shaders/lit.shader"});
 
 - `shared:Null<Array<ShaderSharedBlock>>`: The blocks whose values are shared (`ShaderBlockValues`): a block the shader declares, or loose uniforms gathered into one. Optional; none by default. A values drawn while a shared block is shared neither on it nor on its base throws, so a frame's data is never silently 0, and a typed values class leaves a shared block's members out (`ShaderValueClasses.buildBlock` makes the block's own).
 - `points:Null<Bool>`: Whether the compiler wraps the vertex stage so it writes a point size of 1 after the stage's own `main`, whatever the stage wrote, so a pipeline may draw it as points (`ShaderPipelineState.primitive` `Points`, which the platform refuses over any other shader). Optional; false by default.
-- `includes:Null<String>`: A class whose static `String` constants (`static inline final` or `static final` with a constant value) are texts an angle-bracket `#include` takes by the constant's name: `#include <common>` takes `common`. It is named as Haxe names it from the call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module. Optional; none by default. An included text may include others. They are looked in before the build's class paths.
+- `includes:Null<String>`: A class whose static `String` constants (`static inline final` or `static final` with a constant value) are texts an angle-bracket `#include` includes by the constant's name: `#include <common>` includes `common`. It is named as Haxe names it from the call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module. Optional; none by default. An included text may include others. They are looked in before the build's class paths.
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own, relative to the file holding the call. Optional; none by default.
 - `file:Null<String>`: The asset path of a file holding the compiled shader (`shaders/lit.shader`), which `Shaders.watch` watches, so the shader is replaced in place when the file changes. Optional; no file by default.
 - `defines:Null<Array<String>>`: Names defined in both stages, each `NAME` (defined as 1) or `NAME=VALUE`. Optional; none by default. Each stage also has its own: `HELIX_VERTEX` in the vertex stage, `HELIX_FRAGMENT` in the fragment stage, so a file both include tells them apart.
@@ -478,9 +478,9 @@ final flipUniform:String
 function with(values:{primitive:Null<Primitive>, indexed:Null<Bool>, flipUniform:Null<String>, flip:Null<ClipFlip>, depthWrite:Null<Bool>, depthTest:Null<DepthTest>, depthOnly:Null<Bool>, cull:Null<CullFace>, colorWrite:Null<ColorChannels>, clockwise:Null<Bool>, blend:Null<Blend>}):ShaderPipelineState
 ```
 
-- `new`: Creates a state, each value given or as `OPAQUE` has it.
+- `new`: Creates a state, each value provided or as `OPAQUE` has it.
   - `values`: Optional. The values that differ from `OPAQUE`'s.
-- `OPAQUE`: Opaque triangles, indexed, depth tested and written, back faces culled, the uniform `viewProjection` flipped for a render target: the name a library's shaders use. A layer whose shaders name it otherwise gives its own (raylib's `mvp`: `OPAQUE.with({flipUniform: "mvp"})`).
+- `OPAQUE`: Opaque triangles, indexed, depth tested and written, back faces culled, the uniform `viewProjection` flipped for a render target: the name a library's shaders use. A layer whose shaders name it otherwise provides its own (raylib's `mvp`: `OPAQUE.with({flipUniform: "mvp"})`).
 - `ALPHA`: As `OPAQUE`, blended by alpha, depth not written.
 - `ADDITIVE`: As `ALPHA`, adding light.
 - `SPRITES`: 2D: blended by alpha, no depth, nothing culled, `projection` flipped.
@@ -495,7 +495,7 @@ function with(values:{primitive:Null<Primitive>, indexed:Null<Bool>, flipUniform
 - `depthOnly`: Gets whether the draws write depth alone, for a shadow pass.
 - `colorWrite`: Gets the color channels the draws write.
 - `flip`: Gets how a draw into a render target is turned the right way up: `ViewProjection` a matrix's y row, `ClipScale` a vec4 clip scale the shader multiplies `gl_Position` by, `None` nothing.
-  A shader is flipped only through a uniform it reads, one of those two; `ShaderOptions.clipScale` gives any shader one (`CLIP_SCALE`). A flipped draw's winding is reversed with it, by the adapter, so `clockwise` and `cull` mean what they say in a target and on the screen alike. A shadow pass is never flipped: a shadow map is stored bottom first, as clip space maps to it (`IGraphics.createShadowMap`).
+  A shader is flipped only through a uniform it reads, one of those two; `ShaderOptions.clipScale` adds one to any shader (`CLIP_SCALE`). A flipped draw's winding is reversed with it, by the adapter, so `clockwise` and `cull` mean what they say in a target and on the screen alike. A shadow pass is never flipped: a shadow map is stored bottom first, as clip space maps to it (`IGraphics.createShadowMap`).
 - `flipUniform`: Gets the uniform `flip` reads, by name. `ShaderPrograms` finds its place in each shader (`Shader.findUniformPlace`), again after a replacement, and the pipeline names that place (platform proposal 9); `ShaderPrograms.getPipeline` refuses a shader without it unless `flip` is `None`.
 - `with`: Returns this state with some values changed; this one is unchanged.
   - `values`: The values that differ.
@@ -577,11 +577,11 @@ function dispose():Void
 
 *class* in [`libs/services/src/helix/services/shaders/ShaderSampler.hx`](../src/helix/services/shaders/ShaderSampler.hx), `import helix.services.shaders.ShaderSampler;`
 
-Represents a texture a shader samples, found once by name, which `writeTexture` and `shareTexture` take.
+Represents a texture a shader samples, found once by name, which `writeTexture` and `shareTexture` accept.
 
-`getSampler` and `findSampler` (`IShaderHandles`) return it. The same name gives the same handle each time, updated in place when its shader is reloaded, and it works on values of any shader, resolved there once by name. A sampler array (`uniform sampler2D maps[4]`) is refused while the program builds: every adapter binds one texture a slot.
+`getSampler` and `findSampler` (`IShaderHandles`) return it. The same name returns the same handle each time, updated in place when its shader is reloaded, and it works on values of any shader, resolved there once by name. A sampler array (`uniform sampler2D maps[4]`) is refused while the program builds: every adapter binds one texture a slot.
 
-A sampler given no texture reads the platform's clear texture of its kind (`IGraphics.draw`): 0 in every channel for 2D, cube, array and data textures, and for a shadow map one cleared to the farthest depth, so a comparison reads lit (1). A render target sampled in a later pass reads the right way up on every adapter (stored top row first, texture coordinates from 0 at the top).
+A sampler with no texture reads the platform's clear texture of its kind (`IGraphics.draw`): 0 in every channel for 2D, cube, array and data textures, and for a shadow map one cleared to the farthest depth, so a comparison reads lit (1). A render target sampled in a later pass reads the right way up on every adapter (stored top row first, texture coordinates from 0 at the top).
 
 A texture handle is an `Int`, so the values can't tell its kind: one of another kind than `kind` is the program's mistake, which `IGraphics.draw` refuses.
 
@@ -593,7 +593,7 @@ var active(default, null):Bool
 var declared(default, null):Bool
 ```
 
-- `name`: Gets the name it is found by: its GLSL name, or the name `Shader.withNames` gave it.
+- `name`: Gets the name it is found by: its GLSL name, or the name `Shader.withNames` assigned it.
 - `kind`: Gets the kind of texture it reads.
 - `slot`: Gets its texture slot in its shader, as `IGraphics.draw`'s `textures` holds it; on a set's handle, the first variant's.
 - `active`: Gets a value indicating whether its shader's code samples it, as the compiler finds; one unsampled is still reflected and bound.
@@ -623,7 +623,7 @@ function toString():String
 
 Represents what a scene, or one pass of it, shares with every material drawn in it, whatever their shaders: its shared blocks (a camera, the lights) and shared textures (a shadow map), by name.
 
-A values reads a shared block or texture from, in order: what it shares itself, its base's (and its base's base), then its scene (`IShaderValues.scene`), its own or else its base's. So a material made once is drawn in any scene by giving its draw that scene, and one scene binds every material in it:
+A values reads a shared block or texture from, in order: what it shares itself, its base's (and its base's base), then its scene (`IShaderValues.scene`), its own or else its base's. So a material made once is drawn in any scene by passing its draw that scene, and one scene binds every material in it:
 
 ```haxe
 var main = new ShaderScene();
@@ -677,7 +677,7 @@ function findSharedTexture(samplerName:String):Null<ShaderSharedTexture>
 
 Represents a block whose values many shaders share (`ShaderBlockValues`), named in `ShaderOptions.shared`.
 
-A block the shader declares is named alone (`{name: "Frame"}`). Loose uniforms are gathered into one by naming them (`{name: "Lights", uniforms: ["lights", "ambient", "viewPos"]}`), so a shader written with loose uniforms, as raylib's `lighting.fs` is, shares them without its GLSL changing: they become one block both stages read, laid out in the order given, each uniform's declaration taken from wherever the stages declare it.
+A block the shader declares is named alone (`{name: "Frame"}`). Loose uniforms are gathered into one by naming them (`{name: "Lights", uniforms: ["lights", "ambient", "viewPos"]}`), so a shader written with loose uniforms, as raylib's `lighting.fs` is, shares them without its GLSL changing: they become one block both stages read, laid out in the order provided, each uniform's declaration read from wherever the stages declare it.
 
 - `whereDeclared:Null<Bool>`: Whether the block is shared only where the shader declares it, and left out where it doesn't. Optional; false when omitted, when a block the shader doesn't declare stops the build. A library naming its own blocks for every shader it compiles sets it, so the compiled shader decides, not the library reading its text.
 - `uniforms:Null<Array<String>>`: Loose uniforms gathered into the block, by name, a struct array whole (`lights`). Optional; when omitted, the shader declares the block itself.
@@ -715,7 +715,7 @@ Represents a copy of values as a draw would read them now, for a batcher that re
 
 A draw through `IGraphics.draw` reads the values during the call, so a draw made at once needs none of this. A recorded draw does: `ShaderValues.capture` fills a snapshot with the bytes, textures and samplings as they are, and the recorded draw submits the snapshot's arrays. A snapshot reuses its bytes and arrays from one capture to the next, so a batcher keeping a pool of them allocates nothing per draw once they have grown.
 
-A snapshot is of the layout it was captured in. Replacements take effect only at a frame's start (`Shaders.prepareFrame`, then `ShaderPrograms.prepareFrame`), so a snapshot captured and submitted within one frame always meets the program it was captured for; one kept across frames is captured again.
+A snapshot is of the layout it was captured in. Replacements apply only at a frame's start (`Shaders.prepareFrame`, then `ShaderPrograms.prepareFrame`), so a snapshot captured and submitted within one frame always meets the program it was captured for; one kept across frames is captured again.
 
 ```haxe
 function new()
@@ -733,9 +733,9 @@ final samplings:Array<Sampling>
 
 *class* in [`libs/services/src/helix/services/shaders/ShaderUniform.hx`](../src/helix/services/shaders/ShaderUniform.hx), `import helix.services.shaders.ShaderUniform;`
 
-Represents a uniform, found once by name, which the values' `write` methods take: a block member, a struct's field, or a field of an array of structs.
+Represents a uniform, found once by name, which the values' `write` methods accept: a block member, a struct's field, or a field of an array of structs.
 
-`getUniform` and `findUniform` (`IShaderHandles`) return it. The same name gives the same handle each time. It is never looked up again: when its shader is replaced in place (`Shader.reloadCount`), the shader updates it. A handle works on values of any shader, as on another variant of its set or a shader sharing its block: it is resolved there once, by name, and kept.
+`getUniform` and `findUniform` (`IShaderHandles`) return it. The same name returns the same handle each time. It is never looked up again: when its shader is replaced in place (`Shader.reloadCount`), the shader updates it. A handle works on values of any shader, as on another variant of its set or a shader sharing its block: it is resolved there once, by name, and kept.
 
 An array of structs is not indexed by name. Each of its fields is one uniform whose elements are the array's (`lights.color`, with `elementCount` 4), so per-frame code builds no strings: `values.writeVector3(lightColor, r, g, b, i)`. A by-name layer holding paths like `lights[1].color` turns each into a handle and an element once (`getUniformPath`).
 
@@ -749,12 +749,12 @@ var active(default, null):Bool
 var declared(default, null):Bool
 ```
 
-- `name`: Gets the name it is found by: its GLSL path (`roughness`, `material.roughness`, `lights.color`), or the name `Shader.withNames` gave it.
+- `name`: Gets the name it is found by: its GLSL path (`roughness`, `material.roughness`, `lights.color`), or the name `Shader.withNames` assigned it.
 - `type`: Gets its type: its declaration's, or, for one reserved (`reserveUniform`) and not declared yet, `Float` until it is.
 - `elementCount`: Gets the number of elements: 1, an array's length, or the length of the array of structs it is a field of.
 - `blockName`: Gets the GLSL name of the block it is in: a named block, a shared block's (`ShaderSharedBlock.name`), or `helix_uniforms` for a loose uniform.
 - `shared`: Gets a value indicating whether its block is shared (`ShaderOptions.shared`), so it is written on a `ShaderBlockValues`.
-- `active`: Gets a value indicating whether its shader's code reads it, as the compiler finds: GL's `glGetUniformLocation` gives -1 for one that isn't, which a layer matching GL (helix-raylib) does too. Every declared uniform is reflected, read or not. It is the whole uniform's: an array read at any element is active, as the compiler can't tell which elements a dynamic index reads.
+- `active`: Gets a value indicating whether its shader's code reads it, as the compiler finds: GL's `glGetUniformLocation` returns -1 for one that isn't, which a layer matching GL (helix-raylib) does too. Every declared uniform is reflected, read or not. It is the whole uniform's: an array read at any element is active, as the compiler can't tell which elements a dynamic index reads.
 - `declared`: Gets a value indicating whether its shader declares it now. False after a reload removed it, or in a variant without it: values written through it are then kept, and written once a reload brings it back.
 
 ## ShaderUniformPath
@@ -771,7 +771,7 @@ final uniform:ShaderUniform
 final elementIndex:Int
 ```
 
-- `path`: Gets the path as given.
+- `path`: Gets the path as provided.
 - `uniform`: Gets the uniform it names (`pointLights.color`).
 - `elementIndex`: Gets the index of the element it names: the index in its brackets, or 0.
 
@@ -781,7 +781,7 @@ final elementIndex:Int
 
 Provides writing uniform values by handle, which `ShaderValues`, `ShaderBlockValues` and `ShaderVariantValues` share.
 
-Each `write` method takes a `ShaderUniform`, found once (`getUniform`), and writes the value at its std140 offset at once, so nothing is looked up or converted when it draws. Every name here starts with `write`, so a typed class's generated `setX` members (`ShaderValueClasses`) never meet one, whatever a uniform is called.
+Each `write` method accepts a `ShaderUniform`, found once (`getUniform`), and writes the value at its std140 offset at once, so nothing is looked up or converted when it draws. Every name here starts with `write`, so a typed class's generated `setX` members (`ShaderValueClasses`) never meet one, whatever a uniform is called.
 
 A value of the wrong kind for the uniform's type (a float for a `mat4`, an element past its end) throws, naming the uniform: it is the program's mistake. A handle the values' shader doesn't declare now (`ShaderUniform.declared` false, in a variant without it or after a reload removed it) is kept and written once the shader declares it.
 
@@ -899,7 +899,7 @@ Specifies the GLSL type of a uniform or a vertex attribute, as its GLSL name.
 
 - `ShaderValueType.Float`: One float.
 - `ShaderValueType.Vec2`: Two floats.
-- `ShaderValueType.Vec3`: Three floats; in a block it takes 16 bytes' alignment and 12 of room.
+- `ShaderValueType.Vec3`: Three floats; in a block it has 16 bytes' alignment and 12 of room.
 - `ShaderValueType.Vec4`: Four floats.
 - `ShaderValueType.Mat2`: A 2x2 matrix of floats, by columns, each column 16 bytes in a block.
 - `ShaderValueType.Mat3`: A 3x3 matrix of floats, by columns, each column 16 bytes in a block.
@@ -924,14 +924,14 @@ var integer(get, never):Bool
 ```
 
 - `componentCount`: Gets the number of components in one column: 1 for a scalar, 2 to 4 for a vector, a matrix's rows.
-- `columnCount`: Gets the number of columns: a matrix's 2 to 4, and 1 for anything else. As a vertex attribute, a matrix takes a slot a column.
+- `columnCount`: Gets the number of columns: a matrix's 2 to 4, and 1 for anything else. As a vertex attribute, a matrix uses a slot a column.
 - `integer`: Gets a value indicating whether it holds integers, unsigned integers or bools rather than floats.
 
 ## ShaderValues
 
 *class* in [`libs/services/src/helix/services/shaders/ShaderValues.hx`](../src/helix/services/shaders/ShaderValues.hx), `import helix.services.shaders.ShaderValues;`, extends `ShaderUniformValues`, implements `IShaderValues`
 
-Represents values for one shader's uniforms and textures, kept as `IGraphics.draw` takes them.
+Represents values for one shader's uniforms and textures, kept as `IGraphics.draw` accepts them.
 
 Each uniform block is kept as its bytes at its declared size, by slot; each texture slot as a texture handle and its sampling. A draw hands the three arrays over as they are:
 
@@ -939,9 +939,9 @@ Each uniform block is kept as its bytes at its declared size, by slot; each text
 graphics.draw(pipeline.handle, [vertices], null, indices, 0, 6, 0, 1, values.textures, values.samplings, values.uniforms);
 ```
 
-`IGraphics.draw` reads them during the call, so a value changed between two draws gives each its own. Values are written by handle (`ShaderUniformValues`' `write` methods, `writeTexture`).
+`IGraphics.draw` reads them during the call, so a value changed between two draws reaches each draw as it was then. Values are written by handle (`ShaderUniformValues`' `write` methods, `writeTexture`).
 
-**Layers.** A values made over a base reads, for each uniform and texture it hasn't written and each block and texture it hasn't shared, the base's as they are now. A block it hasn't written into is the base's own bytes, shared by reference, so nothing is copied. Its first write into one of the base's blocks gives it its own copy of that block (copy on write), which takes the base's later changes to the block's other uniforms at its next read, once a change, never per draw. A base may itself have a base.
+**Layers.** A values made over a base reads, for each uniform and texture it hasn't written and each block and texture it hasn't shared, the base's as they are now. A block it hasn't written into is the base's own bytes, shared by reference, so nothing is copied. Its first write into one of the base's blocks creates its own copy of that block (copy on write), which receives the base's later changes to the block's other uniforms at its next read, once a change, never per draw. A base may itself have a base.
 
 The layers a program makes: a scene's defaults; each material over them, its values written once; and a draw's own values over the material, its per-draw uniforms (a model's matrix, its bones) written each draw. A material-wide write then never reaches what a draw wrote, and a renderer keeps one draw values per shader, its `base` set to each draw's material, so nothing is allocated per draw:
 
@@ -1033,11 +1033,11 @@ Represents how a set of variants compiles: `ShaderOptions`, and which combinatio
 
 - `shared:Null<Array<ShaderSharedBlock>>`: The blocks whose values are shared (`ShaderBlockValues`): a block the shader declares, or loose uniforms gathered into one. Optional; none by default. A values drawn while a shared block is shared neither on it nor on its base throws, so a frame's data is never silently 0, and a typed values class leaves a shared block's members out (`ShaderValueClasses.buildBlock` makes the block's own).
 - `points:Null<Bool>`: Whether the compiler wraps the vertex stage so it writes a point size of 1 after the stage's own `main`, whatever the stage wrote, so a pipeline may draw it as points (`ShaderPipelineState.primitive` `Points`, which the platform refuses over any other shader). Optional; false by default.
-- `includes:Null<String>`: A class whose static `String` constants (`static inline final` or `static final` with a constant value) are texts an angle-bracket `#include` takes by the constant's name: `#include <common>` takes `common`. It is named as Haxe names it from the call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module. Optional; none by default. An included text may include others. They are looked in before the build's class paths.
+- `includes:Null<String>`: A class whose static `String` constants (`static inline final` or `static final` with a constant value) are texts an angle-bracket `#include` includes by the constant's name: `#include <common>` includes `common`. It is named as Haxe names it from the call's file: `ShaderChunk`, `three.ShaderChunk`, or `three.Chunks.Standard` for a type in another type's module. Optional; none by default. An included text may include others. They are looked in before the build's class paths.
 - `includeDirectories:Null<Array<String>>`: Directories a quoted `#include` looks in after the including file's own, relative to the file holding the call. Optional; none by default.
 - `file:Null<String>`: The asset path of a file holding the compiled shader (`shaders/lit.shader`), which `Shaders.watch` watches, so the shader is replaced in place when the file changes. Optional; no file by default.
 - `defines:Null<Array<String>>`: Names defined in both stages, each `NAME` (defined as 1) or `NAME=VALUE`. Optional; none by default. Each stage also has its own: `HELIX_VERTEX` in the vertex stage, `HELIX_FRAGMENT` in the fragment stage, so a file both include tells them apart.
-- `combinations:Null<Array<Array<String>>>`: The combinations to compile, each a list of features (`[]` for none on). Optional; omitted, every combination of the features is compiled, at most 8 features (256 variants), and a larger set must give its combinations.
+- `combinations:Null<Array<Array<String>>>`: The combinations to compile, each a list of features (`[]` for none on). Optional; omitted, every combination of the features is compiled, at most 8 features (256 variants), and a larger set must list its combinations.
 - `clipScale:Null<Bool>`: Whether the compiler wraps the vertex stage so a draw into a render target is turned the right way up whatever the shader writes: it declares a loose `vec4 helix_clipScale` and multiplies `gl_Position` by it, component by component, after the stage's own `main`. Optional; false by default. A pipeline flips it with `flip: ClipScale, flipUniform: "helix_clipScale"` (`ShaderPipelineState.CLIP_SCALE`): a layer whose users write their own vertex stages (helix-raylib) needs no named matrix.
 - `check:Null<String>`: A static function `Shader->Null<String>`, by its dotted path (`helix.draw.ShaderRules.check`), run on the compiled shader while the program builds: it returns why the shader breaks a library's rules, which stops the build at the call, or null. Optional; no check by default.
 
@@ -1167,12 +1167,12 @@ function getSampler(name:String):ShaderSampler
 function findSampler(name:String):Null<ShaderSampler>
 ```
 
-- `new`: Creates variants from shaders compiled with the features given, as the macros do.
+- `new`: Creates variants from shaders compiled with the features provided, as the macros do.
   - `featureNames`: The features, in bit order.
   - `variantFeatures`: Each shader's features.
   - `shaders`: The shaders, by the same index.
   - `filePath`: Optional. The asset path of their file.
-  - throws `String`: Arrays of different lengths, or one combination given twice.
+  - throws `String`: Arrays of different lengths, or one combination listed twice.
 - `compile`: Compiles a vertex and a fragment stage once for each combination of features while the program builds, and returns the variants as a value in the program.
   - `vertex`: The vertex stage's file, relative to the file holding the call.
   - `fragment`: The fragment stage's file, relative to the file holding the call.
@@ -1188,14 +1188,14 @@ function findSampler(name:String):Null<ShaderSampler>
   - `options`: Optional. The combinations, defines, includes, shared blocks, a check, and a file.
   - returns: The variants.
 
-  Each stage's text is as `Shader.compileText` takes it.
+  Each stage's text is as `Shader.compileText` accepts it.
 - `featureNames`: Gets the features, in order: feature i is bit i of a `ShaderFeatures`.
 - `shaders`: Gets the variants compiled, in the order of `variantFeatures`.
 - `variantFeatures`: Gets each variant's features, by its index in `shaders`.
 - `uniforms`: Gets every uniform's handle any variant declares, each name once.
 - `samplers`: Gets every sampled texture's handle any variant declares, each name once.
 - `filePath`: Gets the asset path of the variants' file (`ShaderOptions.file`), which `Shaders.watchVariants` watches, or null. It is set whatever the build.
-- `reloadError`: Gets why the last change of the variants' file wasn't taken (another set of features, a file that doesn't read), or null.
+- `reloadError`: Gets why the last change of the variants' file wasn't applied (another set of features, a file that doesn't read), or null.
 - `reloadCount`: Gets the number of times a change of the variants' file has replaced them in place, each variant's `reloadCount` moving with it.
 - `reloadListeners`: Gets the functions called after each replacement of the variants in place, once every variant, handle and values has followed, in the order added. Each variant's own `Shader.reloadListeners` are called too.
 - `getFeature`: Returns a feature by name, as a set of one.
@@ -1242,9 +1242,9 @@ function findSampler(name:String):Null<ShaderSampler>
   - `features`: The combination.
   - returns: The variant, or null.
 - `getUniform`: Returns the handle of a uniform any variant declares, which works on every variant's values.
-  - `name`: Its path, or the name `Shader.withNames` gave it.
+  - `name`: Its path, or the name `Shader.withNames` assigned it.
   - returns: The handle, the same each call.
-  - throws `String`: A name no variant declares; given `lights[0].position`, it names `lights.position` and `getUniformPath`.
+  - throws `String`: A name no variant declares; for `lights[0].position`, it names `lights.position` and `getUniformPath`.
 - `findUniform`: Finds the handle of a uniform that no variant may declare.
   - `name`: Its path.
   - returns: The handle, or null.
@@ -1269,9 +1269,9 @@ function findSampler(name:String):Null<ShaderSampler>
 
 Represents the value an attribute reads when no buffer feeds it, as raylib's `rlSetVertexAttributeDefault` sets one (a vertex color white): the same for every vertex.
 
-- `values:Array<Float>`: The value's components, up to four; the rest are 0, 0, 1 as GL's default (0, 0, 0, 1) has them. A matrix attribute takes four a column, column by column (16 for a `mat4`): past four, each four are the next slot's.
-- `slot:Null<Int>`: The attribute's slot. Optional; one of `name` and `slot` is given.
-- `name:Null<String>`: The attribute's name. Optional; one of `name` and `slot` is given.
+- `values:Array<Float>`: The value's components, up to four; the rest are 0, 0, 1 as GL's default (0, 0, 0, 1) has them. A matrix attribute has four a column, column by column (16 for a `mat4`): past four, each four are the next slot's.
+- `slot:Null<Int>`: The attribute's slot. Optional; one of `name` and `slot` is set.
+- `name:Null<String>`: The attribute's name. Optional; one of `name` and `slot` is set.
 
 ## ShaderVertexLayout
 
@@ -1279,7 +1279,7 @@ Represents the value an attribute reads when no buffer feeds it, as raylib's `rl
 
 Represents how a mesh's vertex buffers hold its attributes, by name, for any shader drawing it: each buffer's stride, whether it steps per instance, and where each attribute is; and what an attribute no buffer feeds reads.
 
-It is made once, for a kind of mesh, and handed to `ShaderPrograms.getPipeline`, which resolves it for each shader (slots, a matrix a slot a column) once, again after a replacement, and keeps the result: nothing is made per draw. An attribute a shader reads that no buffer feeds reads its constant, or (0, 0, 0, 1) when the layout gives none (platform proposal 8); a constant for an attribute the shader doesn't read is skipped. A buffer none of whose placements the shader reads is a gap: the pipeline reads nothing from it, and a draw may pass 0 for it. An attribute is floats unless its placement gives another `VertexFormat`: a normal as four signed bytes, the weights as four unsigned shorts, below.
+It is made once, for a kind of mesh, and handed to `ShaderPrograms.getPipeline`, which resolves it for each shader (slots, a matrix a slot a column) once, again after a replacement, and keeps the result: nothing is made per draw. An attribute a shader reads that no buffer feeds reads its constant, or (0, 0, 0, 1) when the layout has none (platform proposal 8); a constant for an attribute the shader doesn't read is skipped. A buffer none of whose placements the shader reads is a gap: the pipeline reads nothing from it, and a draw may pass 0 for it. An attribute is floats unless its placement names another `VertexFormat`: a normal as four signed bytes, the weights as four unsigned shorts, below.
 
 ```haxe
 var skinnedMesh = new ShaderVertexLayout([{stride: 40, placements: [
@@ -1299,7 +1299,7 @@ function computeBuffers(shader:Shader):Array<VertexBuffer>
 - `new`: Creates a layout.
   - `buffers`: Each buffer's stride in bytes, whether it steps per instance (false when omitted), and its placements.
   - `constants`: Optional. What attributes no buffer feeds read; none by default.
-- `fromAttributes`: Returns a one-buffer layout packing some attributes as floats in the order given, as `Shader.computeVertexBuffer` packs them, for a buffer a program fills (a sprite batch's): from a shader, or from a set, whose variants share the attributes' types.
+- `fromAttributes`: Returns a one-buffer layout packing some attributes as floats in the order provided, as `Shader.computeVertexBuffer` packs them, for a buffer a program fills (a sprite batch's): from a shader, or from a set, whose variants share the attributes' types.
   - `source`: The shader or variants declaring the attributes.
   - `names`: The attributes, in their order in a record.
   - `instanced`: Optional. Whether the buffer steps once an instance; defaults to false.
@@ -1318,11 +1318,11 @@ function computeBuffers(shader:Shader):Array<VertexBuffer>
 
 Represents where an attribute is in a vertex buffer's records, at a byte offset: by name, or by slot for a layer that numbers attributes as GL does (raylib's `rlSetVertexAttribute`).
 
-- `slot:Null<Int>`: The attribute's slot, its `layout(location = n)`, for a shader whose slots the layer fixes. Optional; one of `name` and `slot` is given.
+- `slot:Null<Int>`: The attribute's slot, its `layout(location = n)`, for a shader whose slots the layer fixes. Optional; one of `name` and `slot` is set.
 - `optional:Null<Bool>`: Whether a shader may leave it unread, as an unlit shader leaves a mesh's normals, unread meaning not declared or declared and not read alike; its bytes are then skipped. Optional; false by default, and an undeclared placement not marked so is refused.
 - `offset:Int`: Its byte offset in a record.
-- `name:Null<String>`: The attribute's name: its GLSL name, or the name `Shader.withNames` gave it. Optional; one of `name` and `slot` is given.
-- `format:Null<VertexFormat>`: How a record holds it (`VertexFormat`): floats, half floats, or normalized integers read as floats. A format of fewer components than the attribute takes reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them (a `Float3` position fed into a `vec4` input reads w 1, as GL feeds it); one of more reads the first ones (a `Byte4Norm` normal into a `vec3`). A matrix takes it for each column, each column its `bytes` after the last. Optional; the attribute's own floats when omitted (`Float3` for a `vec3`, a `Float4` a column for a `mat4`).
+- `name:Null<String>`: The attribute's name: its GLSL name, or the name `Shader.withNames` assigned it. Optional; one of `name` and `slot` is set.
+- `format:Null<VertexFormat>`: How a record holds it (`VertexFormat`): floats, half floats, or normalized integers read as floats. A format of fewer components than the attribute has reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them (a `Float3` position fed into a `vec4` input reads w 1, as GL feeds it); one of more reads the first ones (a `Byte4Norm` normal into a `vec3`). A matrix uses it for each column, each column its `bytes` after the last. Optional; the attribute's own floats when omitted (`Float3` for a `vec3`, a `Float4` a column for a `mat4`).
 
 ## Shaders
 
@@ -1330,7 +1330,7 @@ Represents where an attribute is in a vertex buffer's records, at a byte offset:
 
 Provides shaders replaced in place when their files change, and shaders that are only files, through the assets.
 
-A shader compiled into the program with `ShaderOptions.file` is watched (`watch`): each time the assets are told its file changed (`Assets.notifyChanged`), the new file replaces it in place. Nothing is compiled while the program runs: the build compiled the file. A program that is only given shaders as files (a mod's) loads them (`load`) and they are watched alike.
+A shader compiled into the program with `ShaderOptions.file` is watched (`watch`): each time the assets are told its file changed (`Assets.notifyChanged`), the new file replaces it in place. Nothing is compiled while the program runs: the build compiled the file. A program that is only provided shaders as files (a mod's) loads them (`load`) and they are watched alike.
 
 A replacement changes the shader's `source` and reflection and moves its `reloadCount`. Its handles and every `ShaderValues` made for it follow on their own. What was built on the GPU from it is its holder's: comparing `reloadCount` with the count it built at, the holder disposes its program (and the pipelines made with it, which `IGraphics.disposeShader` disposes) and builds again, as `ShaderPrograms` does. A file that no longer reads, or holds a shader of another kind (one shader where variants were, or other features), leaves the shader as it was: its `reloadError` says why, and the log says so with the path.
 

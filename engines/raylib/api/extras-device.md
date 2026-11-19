@@ -32,8 +32,8 @@ static function IsPlatformWeb():Bool
 - `TILT_STATUS_STARTING`: The tilt was asked for (`EnableTiltAsync`), and the first reading is awaited. The first reading turns the tilt on. After a second and a half without a reading, the tilt is unavailable.
 - `TILT_STATUS_ON`: The tilt is read.
 - `TILT_STATUS_REFUSED`: Permission was refused.
-- `TILT_STATUS_UNAVAILABLE`: The device gives no readings: there is no sensor, or none answered.
-- `TILT_STATUS_NEEDS_HTTPS`: The program isn't served securely, and the system gives no readings.
+- `TILT_STATUS_UNAVAILABLE`: The device reports no readings: there is no sensor, or none answered.
+- `TILT_STATUS_NEEDS_HTTPS`: The program isn't served securely, and the system reports no readings.
 - `IsPlatformWeb`: Returns whether the program is built for a browser page rather than natively. See `GetPlatformOS` for naming the operating system.
   - returns: True in a page.
 

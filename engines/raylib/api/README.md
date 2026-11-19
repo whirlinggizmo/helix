@@ -63,7 +63,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [Lighting](extras-lighting.md): Provides the scene's lights, their shadows, and lit shaders, built in: `LoadLightingShader`, raylib's lighting examples' `lighting.vs` and `lighting.fs`, which shine every material alike, and `LoadPbrShader`, which draws a glTF's materials as authored, metallic-roughness.
     - [Light](extras-lighting.md#light)
     - [ShadowOptions](extras-lighting.md#shadowoptions)
-  - [Materials](extras-materials.md): Provides what a material gives off, where it is cut out, and whether light and shadows fall on it, read by every draw with it: `DrawModel`'s, `DrawMesh`'s and `DrawMeshInstanced`'s, through helix-raylib's default shader and the Lighting extra's lit shaders.
+  - [Materials](extras-materials.md): Provides what a material emits, where it is cut out, and whether light and shadows fall on it, read by every draw with it: `DrawModel`'s, `DrawMesh`'s and `DrawMeshInstanced`'s, through helix-raylib's default shader and the Lighting extra's lit shaders.
   - [Models](extras-models.md): Provides what raylib has no call for on models: a model's bounds as posed, which raylib's `GetModelBoundingBox` leaves at the bind pose (`GetModelBoundingBoxPosed`), models merged into one (`LoadModelFromModels`), and two animations blended bone by bone (`UpdateModelAnimationMasked`, `GetModelBoneMask`).
   - [Particles](extras-particles.md): Provides particle emitters, in 3D and in 2D.
     - [Emitter2D](extras-particles.md#emitter2d)

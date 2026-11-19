@@ -30,7 +30,7 @@ class BatchLighting {
 			Batch3D.makeLighting = attach;
 	}
 
-	/** Gives a batch its lit work, through the hooks it calls. */
+	/** Adds a batch's lit work, through the hooks the batch calls. */
 	static function attach(batch:Batch3D):Void {
 		var l = new BatchLighting(batch);
 		batch.lightingBegin = l.begin;

@@ -6,7 +6,7 @@
 
 *class* in [`engines/raylib/src/helix/raylib/AudioStream.hx`](../src/helix/raylib/AudioStream.hx), `import helix.raylib.AudioStream;`
 
-Represents raylib's `AudioStream`: samples a program makes as it goes, played as `UpdateAudioStream` gives them.
+Represents raylib's `AudioStream`: samples a program makes as it goes, played as `UpdateAudioStream` receives them.
 
 It has two buffers of `SetAudioStreamBufferSizeDefault` frames each, 1470 until set. Each update fills one while the other plays.
 
@@ -17,7 +17,7 @@ var channels(default, null):Int
 ```
 
 - `sampleRate`: Gets the sample rate, in frames a second.
-- `sampleSize`: Gets the bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
+- `sampleSize`: Gets the bits in a sample: 8 (unsigned), 16 (signed) or 32 (float).
 - `channels`: Gets the number of channels: 1 is mono, 2 stereo.
 
 ## AutomationEvent
@@ -87,7 +87,7 @@ function copy(?out:BoneInfo):BoneInfo
 - `parent`: Gets or sets the parent, by its index in the same bones, or -1 for a root.
 - `copy`: Returns a separate copy.
   - `out`: Optional. The BoneInfo to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## BoundingBox
 
@@ -113,7 +113,7 @@ function copy(?out:BoundingBox):BoundingBox
 - `max`: Gets or sets the highest corner.
 - `copy`: Returns a separate copy. Its corners are copied too.
   - `out`: Optional. The BoundingBox to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## Camera
 
@@ -151,7 +151,7 @@ function copy(?out:Camera2D):Camera2D
 - `zoom`: Gets or sets the zoom, 1 for none.
 - `copy`: Returns a separate copy. Its offset and target are copied too.
   - `out`: Optional. The Camera2D to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## Camera3D
 
@@ -183,7 +183,7 @@ function copy(?out:Camera3D):Camera3D
 - `projection`: Gets or sets the projection: `CAMERA_PERSPECTIVE` or `CAMERA_ORTHOGRAPHIC`.
 - `copy`: Returns a separate copy. Its position, target and up are copied too.
   - `out`: Optional. The Camera3D to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## Color
 
@@ -260,7 +260,7 @@ var glyphs:Array<GlyphInfo>
 
 *class* in [`engines/raylib/src/helix/raylib/GlyphInfo.hx`](../src/helix/raylib/GlyphInfo.hx), `import helix.raylib.GlyphInfo;`
 
-Represents one character of a `Font`: its code point, where it sits against the pen, how far the pen moves after it, and its image. `Font.glyphs` holds a font's, and `GetGlyphInfo` gives one.
+Represents one character of a `Font`: its code point, where it sits against the pen, how far the pen moves after it, and its image. `Font.glyphs` holds a font's, and `GetGlyphInfo` returns one.
 
 ```haxe
 function new()
@@ -282,7 +282,7 @@ var image:Image
 
 *class* in [`engines/raylib/src/helix/raylib/GuiStyleProp.hx`](../src/helix/raylib/GuiStyleProp.hx), `import helix.raylib.GuiStyleProp;`
 
-Represents one property of raygui's style, as raygui's `GuiStyleProp` holds it for a style written as code: the control, the property and its value, as `GuiSetStyle` takes them.
+Represents one property of raygui's style, as raygui's `GuiStyleProp` holds it for a style written as code: the control, the property and its value, as `GuiSetStyle` accepts them.
 
 ```haxe
 function new(?controlId:Int = 0, ?propertyId:Int = 0, ?propertyValue:Int = 0)
@@ -460,7 +460,7 @@ function copy(?out:Matrix):Matrix
   - `matrix`: The numbers, each named as a `Matrix`'s.
 - `copy`: Returns a separate copy.
   - `out`: Optional. The Matrix to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## Mesh
 
@@ -503,7 +503,7 @@ var boneCount:Int
 
   `GenMeshTangents` makes them.
 - `colors`: Gets or sets the colors, r, g, b and a a vertex, 0 to 255, or null for white.
-- `indices`: Gets or sets the indices, three a triangle, or null for vertices taken three at a time.
+- `indices`: Gets or sets the indices, three a triangle, or null for vertices read three at a time.
 - `animVertices`: Gets or sets the vertices' positions after `UpdateModelAnimation` last moved them, x, y and z a vertex, or null until it has.
   Worked out on the CPU when first read after a call that moved them, from the pose that call left, as raylib's `UpdateModelAnimation` moves them.
 
@@ -516,12 +516,12 @@ var boneCount:Int
   A shader reads them as floats, in the attribute `vertexBoneIds` (raylib 5.5's name) or `vertexBoneIndices` (6.2's).
 - `boneWeights`: Gets or sets how much each of a vertex's four bones moves it, or null for none.
   A shader reads them in the attribute `vertexBoneWeights`.
-- `boneMatrices`: Gets or sets the bones' matrices, by bone, each taking a vertex from where the skin was bound to where the bone is now, or null for a mesh without bones.
+- `boneMatrices`: Gets or sets the bones' matrices, by bone, each moving a vertex from where the skin was bound to where the bone is now, or null for a mesh without bones.
   `UpdateModelAnimationBones` sets them. Shared by a model's meshes.
 
-  A draw gives them to a shader declaring `uniform mat4 boneMatrices[N]`.
+  A draw passes them to a shader declaring `uniform mat4 boneMatrices[N]`.
 
-  A shader including `<helix/raylib/shaders/skinning.glsl>` reads the pose the model received at its last `UpdateModelAnimation` or `UpdateModelAnimationBones`, not this array. Giving one model's array to another model's meshes poses nothing, so each model needs its own call.
+  A shader including `<helix/raylib/shaders/skinning.glsl>` reads the pose the model received at its last `UpdateModelAnimation` or `UpdateModelAnimationBones`, not this array. Assigning one model's array to another model's meshes poses nothing, so each model needs its own call.
 - `boneCount`: Gets or sets the number of bones, the model's.
 
 ## Model
@@ -561,7 +561,7 @@ var bindPose:Null<Array<Transform>>
 - `bones`: Gets or sets the bones, or null without a skin.
   The file's first skin's joints, in its order, each parent the nearest joint above it.
 - `bindPose`: Gets or sets each bone's transform in the model as the skin was bound to it, or null without a skin.
-  Each is its inverse bind matrix inverted, or its node's at rest for a file that gives none.
+  Each is its inverse bind matrix inverted, or its node's at rest for a file that has none.
 
 ## ModelAnimation
 
@@ -651,7 +651,7 @@ function copy(?out:NPatchInfo):NPatchInfo
 - `layout`: Gets or sets the layout (`NPATCH_*`): nine patches, or three across or down.
 - `copy`: Returns a separate copy. Its source rectangle is copied too.
   - `out`: Optional. The NPatchInfo to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## Quaternion
 
@@ -689,7 +689,7 @@ function copy(?out:Ray):Ray
 - `direction`: Gets or sets the direction, of length 1.
 - `copy`: Returns a separate copy. Its position and direction are copied too.
   - `out`: Optional. The Ray to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## RayCollision
 
@@ -719,7 +719,7 @@ function copy(?out:RayCollision):RayCollision
 - `normal`: Gets or sets the surface's normal there.
 - `copy`: Returns a separate copy. Its point and normal are copied too.
   - `out`: Optional. The RayCollision to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## Raygui
 
@@ -826,7 +826,7 @@ function copy(?out:Rectangle):Rectangle
 - `height`: Gets or sets the height.
 - `copy`: Returns a separate copy.
   - `out`: Optional. The Rectangle to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## RenderTexture
 
@@ -981,7 +981,7 @@ function copy(?out:Transform):Transform
 - `scale`: Gets or sets the scale on each axis.
 - `copy`: Returns a separate copy. Its vectors are copied too.
   - `out`: Optional. The Transform to copy into, so nothing is made; a new one when omitted.
-  - returns: The copy: out, when given.
+  - returns: The copy: out, when provided.
 
 ## Vector2
 
@@ -1107,11 +1107,11 @@ var data:Null<haxe.io.Bytes>
 - `new`: Creates a wave's record, its fields zero and its data null unless provided, as raylib's `Wave wave = { 0 }` is.
   - `frameCount`: The number of frames.
   - `sampleRate`: The frames a second.
-  - `sampleSize`: The bits a sample takes.
+  - `sampleSize`: The bits in a sample.
   - `channels`: The number of channels.
   - `data`: Optional. The samples.
 - `frameCount`: Gets or sets the number of frames, a sample for each channel.
 - `sampleRate`: Gets or sets the frames a second.
-- `sampleSize`: Gets or sets the bits a sample takes: 8, 16 or 32.
+- `sampleSize`: Gets or sets the bits in a sample: 8, 16 or 32.
 - `channels`: Gets or sets the number of channels: 1 is mono, 2 stereo.
 - `data`: Gets or sets the samples, or null for none.

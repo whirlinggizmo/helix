@@ -70,7 +70,7 @@ A program draws its scene into a render target, an RGBA16F one for HDR (`Rendere
 
 1. its **linear** effects (`ScreenEffect.linear`: `BloomEffect`, a linear `ShaderEffect`), in their order in `effects`, on linear light; 2. the **resolve**: the renderer's `exposure`, then its `toneMapping`, then the sRGB encode, every chain's, so a chain with no effects is the resolve alone; the same pair `Batch3D` applies drawing straight into an sRGB target, read at each `draw`; 3. its **display** effects (`ColorGradeEffect`, `FxaaEffect`, a `ShaderEffect`), in their order, on encoded colors, the last drawn into the current pass.
 
-An RGBA8 source is display colors already: it is decoded for the linear effects and not tone mapped. Each step but the last draws into an intermediate target the chain keeps, sized to the source, as a target pass recorded before the current one, so `draw` may be called in the middle of the screen's pass. It runs no loop and reads no clock: the time it is given is what effects animate by.
+An RGBA8 source is display colors already: it is decoded for the linear effects and not tone mapped. Each step but the last draws into an intermediate target the chain keeps, sized to the source, as a target pass recorded before the current one, so `draw` may be called in the middle of the screen's pass. It runs no loop and reads no clock: the time passed to it is what effects animate by.
 
 ```haxe
 var scene = renderer.createRenderTarget(width, height, Rgba16f);
@@ -129,23 +129,23 @@ function draw(frame:ScreenFrame):Void
 
 - `compileShader`: Compiles a fragment stage over the screen triangle, for a pass over a whole frame (`ShaderEffect`, `ScreenFrame.drawPass`).
   - `fragment`: The fragment stage's file, relative to the file holding the call.
-  - `options`: Optional. Defines, includes and a file to watch, as `Shader.compile` takes them.
+  - `options`: Optional. Defines, includes and a file to watch, as `Shader.compile` accepts them.
   - returns: The shader, for a `ShaderValues` over it.
 
-  It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class lists declared with another type stops the build at the call. The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or `#version 450` (Vulkan's), the screen triangle's vertex stage given in the same form; GLSL ES 100 is not taken. The vertex stage passes `texCoord` (vec2), 0 to 1 across the frame, v down, read by name.
+  It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class lists declared with another type stops the build at the call. The fragment stage is GLSL as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440 (GL's form), or `#version 450` (Vulkan's), the screen triangle's vertex stage provided in the same form; GLSL ES 100 is not accepted. The vertex stage passes `texCoord` (vec2), 0 to 1 across the frame, v down, read by name.
 - `compileShaderStages`: Compiles a vertex and a fragment stage, both the program's, for a pass over a whole frame (`ShaderEffect`, `ScreenFrame.drawPass`).
   - `vertex`: The vertex stage's file, relative to the file holding the call.
   - `fragment`: The fragment stage's file, relative to the file holding the call.
   - `options`: Optional. Defines, includes and a file to watch.
   - returns: The shader, for a `ShaderValues` over it.
 
-  It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class lists declared with another type stops the build at the call. Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or `#version 450`. The vertex stage is drawn for the three corners of one triangle covering the frame.
+  It compiles while the program builds, as helix-services' `Shader.compile` compiles one, and returns it as a value in the program: its vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class lists declared with another type stops the build at the call. Both stages are GLSL in one form, as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440, or `#version 450`. The vertex stage is drawn for the three corners of one triangle covering the frame.
 - `enabled`: Gets or sets a value indicating whether the chain draws it: true until set.
 - `linear`: Gets a value indicating whether it works on linear light, before the chain's resolve, rather than on encoded colors after it.
 - `intermediates`: Gets the intermediate targets it draws through before its result, each its size as a fraction of the frame's each way (0.5 half, at least a pixel): empty for an effect of one pass. The chain makes them RGBA16F for a linear effect, RGBA8 otherwise.
 - `drawIntermediates`: Draws its passes before its result into the frame's intermediates; nothing for an effect of one pass.
   - `frame`: What it draws from and into.
-- `draw`: Draws its result over the target the chain gives it, reading the frame's source and its intermediates.
+- `draw`: Draws its result over the target the chain provides, reading the frame's source and its intermediates.
   - `frame`: What it draws from.
 
 ## ScreenFrame
@@ -166,9 +166,9 @@ function drawPass(values:ShaderValues, source:Texture2D, ?target:RenderTarget2D)
 - `source`: Gets the frame the effect changes: the source, or the step before's result.
 - `width`: Gets the frame's width, in pixels.
 - `height`: Gets the frame's height, in pixels.
-- `time`: Gets the seconds `PostProcess.draw` was given.
+- `time`: Gets the seconds passed to `PostProcess.draw`.
 - `intermediates`: Gets the effect's intermediate targets, in the order of its `ScreenEffect.intermediates`.
-- `drawPass`: Draws a screen shader once over a whole target, reading a texture as `sourceTexture` (its size, in texels, as `sourceSize`) and `time`, filled by name over the values given.
+- `drawPass`: Draws a screen shader once over a whole target, reading a texture as `sourceTexture` (its size, in texels, as `sourceSize`) and `time`, filled by name over the values provided.
   - `values`: The values over the shader: a shader from `ScreenEffect.compileShader`, and its own uniforms.
   - `source`: The texture it reads.
   - `target`: Optional. The intermediate to draw into; the effect's result when omitted.

@@ -358,7 +358,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `font`: The font.
   - `fileName`: The file.
   - returns: Whether it was written. Why it wasn't is logged.
-- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program builds as `LoadImageAsync`'s is.
+- `LoadFontAsync`: Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType file produces its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program builds as `LoadImageAsync`'s is.
   - `fileName`: The file, as the program names it.
   - `loaded`: Receives the font.
   - `failed`: Optional. Receives why it couldn't be loaded; when omitted, it is logged.

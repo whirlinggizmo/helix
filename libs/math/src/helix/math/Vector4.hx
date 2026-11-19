@@ -4,7 +4,7 @@ package helix.math;
 	shader reads, as its user means it.
 
 	Each operation writes its result into an optional out, the last argument, and returns it. Without one it makes a new vector and
-	leaves this one unchanged; provided this vector, it works in place (`v.normalize(v)`). The out may be this vector or any other
+	leaves this one unchanged; with this vector as the out, it works in place (`v.normalize(v)`). The out may be this vector or any other
 	argument, as every input is read before anything is written, and calls chain through what each returns (`a.add(b, a).scale(2, a)`).
 	`set` and `copyFrom` change this vector and return it. A number made from vectors (`dot`, `distance`) is a method, a number of one
 	(`length`) a property. See `Quaternion` for a rotation, which has four numbers too and its own operations.

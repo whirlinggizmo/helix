@@ -59,7 +59,7 @@ class RenderView {
 		];
 	}
 
-	/** Takes the matrices and the rectangle, and works out the rest. */
+	/** Accepts the matrices and the rectangle, and works out the rest. */
 	function set(view:Matrix4, projection:Matrix4, x:Int, y:Int, width:Int, height:Int):Void {
 		this.view.copyFrom(view);
 		this.projection.copyFrom(projection);
@@ -77,7 +77,7 @@ class RenderView {
 			eyeX = eyeY = eyeZ = 0;
 	}
 
-	/** Takes what the target, the renderer and the fog say. */
+	/** Reads what the target, the renderer and the fog say. */
 	function setLook(linearTarget:Bool, exposureStops:Float, toneMapping:ToneMapping, fog:Null<Fog3D>):Void {
 		this.linearTarget = linearTarget;
 		exposure = Math.pow(2, exposureStops);

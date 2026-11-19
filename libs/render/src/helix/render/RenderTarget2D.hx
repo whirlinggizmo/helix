@@ -81,7 +81,7 @@ class RenderTarget2D extends Texture2D {
 	override function isTarget():Bool
 		return true;
 
-	// Takes another texture's place: a copy made on write, or a resize.
+	// Replaces the texture with another: a copy made on write, or a resize.
 
 	@:allow(helix.render)
 	function moveTo(fresh:Int):Void {

@@ -115,7 +115,7 @@ function dispose():Void
 - `poll`: Steps the fades to the current time and releases the voices that ended.
   Call it once a frame.
 - `dispose`: Stops every voice, unloads every sound and disposes every queue.
-  Call it before disposing the output, decoder and `Assets` it was given.
+  Call it before disposing the output, decoder and `Assets` it was provided.
 
 ## AudioEffects
 
@@ -300,7 +300,7 @@ function stop():Void
   - `seconds`: The position in seconds from the start, 0 or more.
   - returns: False, changing nothing, when the voice has ended, is a queue's, or can't be moved there.
 
-  A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved, nor, in a page, a stream from a server that doesn't take range requests.
+  A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved, nor, in a page, a stream from a server that doesn't accept range requests.
 - `fadeTo`: Fades the voice's own volume to another over some real time, on a curve the ear hears as even (in decibels).
   - `volume`: The volume to end at, 0 to 1.
   - `seconds`: The fade's length, in real seconds. 0 or less sets the volume at once.

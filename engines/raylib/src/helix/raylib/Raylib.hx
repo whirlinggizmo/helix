@@ -1975,7 +1975,7 @@ class Raylib {
 	public static inline function IsFileExtension(fileName:String, ext:String):Bool
 		return RCore.IsFileExtension(fileName, ext);
 
-	/** Returns a file name's extension, from its last dot: "file.tar.gz" returns ".gz".
+	/** Returns a file name's extension, from its last dot: ".gz" for "file.tar.gz".
 
 		@param fileName  The file name, or a path.
 		@return  The extension with its dot, or null when there is no dot or the name starts with its only one. */
@@ -1998,7 +1998,7 @@ class Raylib {
 
 	/** Returns the directory of a path, up to its last `/` or `\`.
 
-		A relative path's directory starts "./": "dir/file.png" returns "./dir", "file.png" returns "./", and "/file.png" returns "/".
+		A relative path's directory starts "./": "./dir" for "dir/file.png", "./" for "file.png", and "/" for "/file.png".
 
 		@param filePath  The path.
 		@return  The directory, without a slash at its end. */
@@ -2007,7 +2007,7 @@ class Raylib {
 
 	/** Returns the directory a path is in, up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
 
-		"/a/b/" returns "/a", "/a" returns "/" and "abc" returns "".
+		"/a" for "/a/b/", "/" for "/a" and "" for "abc".
 
 		Every path is read as a directory's, so a path naming a file returns the file's directory.
 

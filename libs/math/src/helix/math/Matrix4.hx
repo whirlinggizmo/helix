@@ -6,7 +6,7 @@ package helix.math;
 	c * 4 + r, and the translation is `m12`, `m13` and `m14`. `toArray` returns the 16 numbers a shader reads. A static
 	`fromX` makes a matrix of one kind, and `compose` one transform followed by another. Each of those, and each operation on a matrix
 	(`append`, `invert`, `transpose`, `transformPoint`), writes its result into an optional out, the last argument, and returns it.
-	Without one it makes a new result and leaves this matrix unchanged; provided this matrix, it works in place (`m.transpose(m)`). The
+	Without one it makes a new result and leaves this matrix unchanged; with this matrix as the out, it works in place (`m.transpose(m)`). The
 	out may be this matrix or any other argument, and none of them allocates when provided one, so a caller can reuse one matrix every
 	frame and chain calls through what each returns. `makeIdentity` and `copyFrom` change this matrix and return it. Rotations use
 	`Trig`, so a matrix comes out the same on every target. The formulas are raymath's (raylib 5.5, zlib, `vendor/raylib/LICENSE`).

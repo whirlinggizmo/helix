@@ -10,7 +10,7 @@ Represents an image in memory: its size and its pixels, 8-bit RGBA.
 
 An image is made here, loaded by `Images.load`, or decoded by `Images.decode`; then changed, drawn into and copied, and made a texture. What changes the size (cropping, resizing, rotating) returns a new image; everything else changes the pixels in place and returns the image, so calls chain (`image.grayscale().contrast(20)`). Positions are in pixels from the top-left, and what falls outside the image is skipped. Colors are 0xAARRGGBB, as `helix.math.Color` reads them.
 
-The operations are raylib's, in its arithmetic: each gives the pixels raylib's function of the same name gives an R8G8B8A8 image, byte for byte, on every target. They are raylib 5.5's, but for the lines and the filled circle (`drawLine`, `drawThickLine`, `drawCircle`), which are 6.2's, as it fixed them. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over them.
+The operations are raylib's, in its arithmetic: each produces the pixels raylib's function of the same name produces for an R8G8B8A8 image, byte for byte, on every target. They are raylib 5.5's, but for the lines and the filled circle (`drawLine`, `drawThickLine`, `drawCircle`), which are 6.2's, as it fixed them. Shapes overwrite the pixels they cover, as raylib's do; images and text blend over them.
 
 ```haxe
 var badge = Image.filled(64, 64, 0);
@@ -136,7 +136,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `scale`: How much of the noise it shows across the image: larger is finer.
   - returns: The image.
 
-  The same arguments give the same image on every target. The longer side is scaled to keep the noise square.
+  The same arguments produce the same image on every target. The longer side is scaled to keep the noise square.
 - `cellular`: Returns cellular (Worley) noise in gray, opaque: each pixel's distance to the nearest of points scattered one to a tile.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
@@ -161,14 +161,14 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `height`: Its height.
   - returns: The image.
 
-  The rectangle is clamped to the image; one wholly outside it gives an image 0 by 0.
+  The rectangle is clamped to the image; one wholly outside it produces an image 0 by 0.
 - `resize`: Returns it scaled to a size.
-  - `width`: The width, in pixels; 0 or less gives an image 0 by 0.
-  - `height`: The height, in pixels; 0 or less gives an image 0 by 0.
+  - `width`: The width, in pixels; 0 or less produces an image 0 by 0.
+  - `height`: The height, in pixels; 0 or less produces an image 0 by 0.
   - `filter`: How the pixels between pixels are made.
   - returns: The image.
 
-  `Nearest` is raylib's `ImageResizeNN`. `Bilinear` and `Bicubic` are this library's own (raylib's `ImageResize` is stb_image_resize2): they sample each pixel's middle, take the edge pixels beyond the edges, and weight colors by alpha, so clear pixels don't darken the colors beside them.
+  `Nearest` is raylib's `ImageResizeNN`. `Bilinear` and `Bicubic` are this library's own (raylib's `ImageResize` is stb_image_resize2): they sample each pixel's middle, use the edge pixels beyond the edges, and weight colors by alpha, so clear pixels don't darken the colors beside them.
 - `resizeCanvas`: Returns it on a canvas of another size.
   - `width`: The canvas's width, in pixels.
   - `height`: The canvas's height, in pixels.
@@ -215,7 +215,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `amount`: The amount, -255 to 255; clamped to that.
   - returns: This image.
 
-  A channel taken below 0 becomes 1, not 0, as raylib's does; one taken over 255 becomes 255.
+  A channel pushed below 0 becomes 1, not 0, as raylib's does; one pushed over 255 becomes 255.
 - `replaceColor`: Changes every pixel of one color to another.
   - `from`: The color changed, as 0xAARRGGBB, alpha included.
   - `to`: The color it becomes.
@@ -224,7 +224,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `color`: The color, as 0xAARRGGBB.
   - `threshold`: The threshold, 0 to 1, in 255ths: the rest of it is dropped.
   - returns: This image.
-- `maskAlpha`: Takes its alpha from another image of the same size: the mask's luminance (0.299 red, 0.587 green, 0.114 blue).
+- `maskAlpha`: Sets its alpha from another image of the same size: the mask's luminance (0.299 red, 0.587 green, 0.114 blue).
   - `mask`: The mask.
   - returns: This image.
 
@@ -238,7 +238,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `kernel`: The weights, rows top first: 9 for 3 by 3, 25 for 5 by 5, any square count. Another count changes nothing.
   - returns: This image.
 
-  Each channel is the sum of the pixels around it times the kernel's weights, as fractions of 255, clamped to 0 to 1. A pixel past the left or right edge is taken from the row beside, and one past the top or bottom counts as black, as raylib's does. A kernel of even width reaches one pixel further up and left.
+  Each channel is the sum of the pixels around it times the kernel's weights, as fractions of 255, clamped to 0 to 1. A pixel past the left or right edge is read from the row beside, and one past the top or bottom counts as black, as raylib's does. A kernel of even width reaches one pixel further up and left.
 - `dither`: Dithers it to fewer bits a channel (Floyd-Steinberg), its pixels left 8-bit at the levels those bits hold.
   - `redBits`: Red's bits, 0 to 8; clamped to that. 8 keeps its levels.
   - `greenBits`: Green's bits.
@@ -366,7 +366,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
 
 Specifies how `Image.resize` makes the pixels between the source's pixels.
 
-- `ImageFilter.Nearest`: Takes the nearest pixel: hard edges, for pixel art.
+- `ImageFilter.Nearest`: Samples the nearest pixel: hard edges, for pixel art.
 - `ImageFilter.Bilinear`: Blends the nearest four pixels, weighted by distance and by alpha.
 - `ImageFilter.Bicubic`: Blends the nearest sixteen pixels on a Catmull-Rom curve, weighted by alpha: sharper than `Bilinear`, for photographs.
 
@@ -382,7 +382,7 @@ function toString():String
 
 Provides images by path: each file found through the assets, decoded off the main thread where the platform can, into pixels.
 
-Images draws nothing and holds nothing on the GPU: what a program draws with is its own (`IGraphics.createTexture` takes an image's pixels as they are). The program polls it once a frame, as it does the decoder.
+Images draws nothing and holds nothing on the GPU: what a program draws with is its own (`IGraphics.createTexture` accepts an image's pixels as they are). The program polls it once a frame, as it does the decoder.
 
 ```haxe
 var images = new Images(decoder, assets);

@@ -29,19 +29,19 @@ function appendDelay(seconds:Float):ColorTween
 - `new`: Creates a tween of a color, at its start.
   - `from`: The color at the start.
   - `to`: The color at the end.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
 - `from`: Gets or sets the color at the start.
 - `to`: Gets or sets the color at the end: the first leg's end, where `append` added more legs.
 - `value`: Gets the color now, its channels rounded and kept to 0 to 255 where the easing curve overshoots.
 - `append`: Adds a leg: the color fades on from where the tween ended before to another color.
   - `to`: The color at the leg's end.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // To red, a wait, then back to white.
@@ -50,7 +50,7 @@ function appendDelay(seconds:Float):ColorTween
 - `appendDelay`: Adds a wait: the color stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## EasedTween
 
@@ -73,7 +73,7 @@ var amount(default, null):Float
 ```
 
 - `new`: Creates a tween at its start.
-  - `duration`: The seconds one play takes, 0 or more. A play of 0 seconds jumps to its end.
+  - `duration`: The seconds one play lasts, 0 or more. A play of 0 seconds jumps to its end.
   - `ease`: Optional. The easing curve, one of `Ease`'s (`Ease.outBounce`) or a function of the program's own (`Ease.of`); a straight line when omitted.
 - `ease`: Gets or sets the easing curve: the first leg's, where a kind's `append` added more legs.
 - `amount`: Gets how far along the move is, by the easing curve: 0 at the start and 1 at the end. A curve that overshoots (`Ease.outBack`) passes 1 on the way.
@@ -104,19 +104,19 @@ function appendDelay(seconds:Float):FloatTween
 - `new`: Creates a tween of a number, at its start.
   - `from`: The value at the start.
   - `to`: The value at the end.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
 - `from`: Gets or sets the value at the start.
 - `to`: Gets or sets the value at the end: the first leg's end, where `append` added more legs.
 - `value`: Gets the value now: `from` until the tween starts, and the last leg's end once the tween ends.
 - `append`: Adds a leg: the value moves on from where the tween ended before to another value.
   - `to`: The value at the leg's end.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // Across in 2 seconds, a second's wait, back in 2 and a second's wait, for ever.
@@ -129,7 +129,7 @@ function appendDelay(seconds:Float):FloatTween
 - `appendDelay`: Adds a wait: the value stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## QuaternionTween
 
@@ -155,7 +155,7 @@ function appendDelay(seconds:Float):QuaternionTween
 - `new`: Creates a tween of a rotation, at its start.
   - `from`: The rotation at the start. The tween keeps a copy.
   - `to`: The rotation at the end. The tween keeps a copy.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
   - `out`: Optional. The rotation each `update` writes, which may be `from` or `to`; a new one when omitted.
 - `from`: Gets the rotation at the start, the tween's own. Setting its components moves the start.
@@ -163,12 +163,12 @@ function appendDelay(seconds:Float):QuaternionTween
 - `value`: Gets the rotation each `update` writes: the `out` the tween was made with, or the tween's own.
 - `append`: Adds a leg: the rotation moves on from where the tween ended before to another rotation.
   - `to`: The rotation at the leg's end. The tween keeps a copy.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // To one side, then to the other.
@@ -177,7 +177,7 @@ function appendDelay(seconds:Float):QuaternionTween
 - `appendDelay`: Adds a wait: the rotation stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## Tween
 
@@ -212,7 +212,7 @@ function finish():Void
 function cancel():Void
 ```
 
-- `duration`: Gets the seconds one play takes: a kind's legs and waits together, or what a sequence's tweens add up to.
+- `duration`: Gets the seconds one play lasts: a kind's legs and waits together, or what a sequence's tweens add up to.
 - `delay`: Gets or sets the seconds the tween waits before its first play. Defaults to 0.
 - `repeatCount`: Gets or sets how many more times the tween plays after the first: 0 for none, -1 for ever. Defaults to 0.
 - `repeatDelay`: Gets or sets the seconds the tween waits before each repeat. Defaults to 0.
@@ -270,7 +270,7 @@ function insertCall(seconds:Float, call:() -> Void):TweenSequence
   - returns: This sequence.
   - throws `String`: A tween already placed in a sequence.
 
-  The tween takes the time its delay, its duration and its repeats add up to when it is placed, at its `timeScale` then. Nothing placed after a tween that repeats for ever is reached.
+  The tween lasts the time its delay, its duration and its repeats add up to when it is placed, at its `timeScale` then. Nothing placed after a tween that repeats for ever is reached.
 - `join`: Places a tween to start when the tween placed before it starts.
   - `tween`: The tween, or another sequence.
   - returns: This sequence.
@@ -351,7 +351,7 @@ function appendDelay(seconds:Float):Vector2CurveTween
 
 - `new`: Creates a tween along a curve, at the curve's start.
   - `curve`: The curve, in 2 dimensions. The tween keeps the curve itself.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
   - `out`: Optional. The vector each `update` writes; a new one when omitted.
   - throws `String`: A curve in 3 dimensions.
@@ -363,12 +363,12 @@ function appendDelay(seconds:Float):Vector2CurveTween
 - `direction`: Gets the way the curve heads at `value`, of length 1, which each `update` writes. It is the curve's own heading, whichever way the point moves.
 - `append`: Adds a leg: the point moves on from where the tween ended before to another place along the curve.
   - `to`: Where along the curve the leg ends, as a fraction of the curve's length. A fraction less than the leg's start moves the point back along the curve.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // Half way along, a wait, then on to the end.
@@ -379,7 +379,7 @@ function appendDelay(seconds:Float):Vector2CurveTween
 - `appendDelay`: Adds a wait: the point stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## Vector2Tween
 
@@ -405,7 +405,7 @@ function appendDelay(seconds:Float):Vector2Tween
 - `new`: Creates a tween of a vector, at its start.
   - `from`: The vector at the start. The tween keeps a copy.
   - `to`: The vector at the end. The tween keeps a copy.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
   - `out`: Optional. The vector each `update` writes, which may be `from` or `to`; a new one when omitted.
 - `from`: Gets the vector at the start, the tween's own. Setting its components moves the start.
@@ -413,12 +413,12 @@ function appendDelay(seconds:Float):Vector2Tween
 - `value`: Gets the vector each `update` writes: the `out` the tween was made with, or the tween's own.
 - `append`: Adds a leg: the vector moves on from where the tween ended before to another vector.
   - `to`: The vector at the leg's end. The tween keeps a copy.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // In from the left, a wait, then out to the right.
@@ -427,7 +427,7 @@ function appendDelay(seconds:Float):Vector2Tween
 - `appendDelay`: Adds a wait: the vector stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## Vector3CurveTween
 
@@ -457,7 +457,7 @@ function appendDelay(seconds:Float):Vector3CurveTween
 
 - `new`: Creates a tween along a curve, at the curve's start.
   - `curve`: The curve, in 3 dimensions. The tween keeps the curve itself.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
   - `out`: Optional. The vector each `update` writes; a new one when omitted.
   - throws `String`: A curve in 2 dimensions.
@@ -469,12 +469,12 @@ function appendDelay(seconds:Float):Vector3CurveTween
 - `direction`: Gets the way the curve heads at `value`, of length 1, which each `update` writes. It is the curve's own heading, whichever way the point moves.
 - `append`: Adds a leg: the point moves on from where the tween ended before to another place along the curve.
   - `to`: Where along the curve the leg ends, as a fraction of the curve's length. A fraction less than the leg's start moves the point back along the curve.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // Half way along, a wait, then on to the end.
@@ -485,7 +485,7 @@ function appendDelay(seconds:Float):Vector3CurveTween
 - `appendDelay`: Adds a wait: the point stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## Vector3Tween
 
@@ -511,7 +511,7 @@ function appendDelay(seconds:Float):Vector3Tween
 - `new`: Creates a tween of a vector, at its start.
   - `from`: The vector at the start. The tween keeps a copy.
   - `to`: The vector at the end. The tween keeps a copy.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
   - `out`: Optional. The vector each `update` writes, which may be `from` or `to`; a new one when omitted.
 - `from`: Gets the vector at the start, the tween's own. Setting its components moves the start.
@@ -519,12 +519,12 @@ function appendDelay(seconds:Float):Vector3Tween
 - `value`: Gets the vector each `update` writes: the `out` the tween was made with, or the tween's own.
 - `append`: Adds a leg: the vector moves on from where the tween ended before to another vector.
   - `to`: The vector at the leg's end. The tween keeps a copy.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // Up, a wait at the top, then down again.
@@ -533,7 +533,7 @@ function appendDelay(seconds:Float):Vector3Tween
 - `appendDelay`: Adds a wait: the vector stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
 ## Vector4Tween
 
@@ -560,7 +560,7 @@ function appendDelay(seconds:Float):Vector4Tween
 - `new`: Creates a tween of a vector, at its start.
   - `from`: The vector at the start. The tween keeps a copy.
   - `to`: The vector at the end. The tween keeps a copy.
-  - `duration`: The seconds one play takes, 0 or more.
+  - `duration`: The seconds one play lasts, 0 or more.
   - `ease`: Optional. The easing curve; a straight line when omitted.
   - `out`: Optional. The vector each `update` writes, which may be `from` or `to`; a new one when omitted.
 - `from`: Gets the vector at the start, the tween's own. Setting its components moves the start.
@@ -568,12 +568,12 @@ function appendDelay(seconds:Float):Vector4Tween
 - `value`: Gets the vector each `update` writes: the `out` the tween was made with, or the tween's own.
 - `append`: Adds a leg: the vector moves on from where the tween ended before to another vector.
   - `to`: The vector at the leg's end. The tween keeps a copy.
-  - `duration`: The seconds the leg takes, 0 or more.
+  - `duration`: The seconds the leg lasts, 0 or more.
   - `ease`: Optional. The leg's easing curve; a straight line when omitted.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.
 
-  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and `ease` stay the first leg's.
+  The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to` and `ease` stay the first leg's.
 
   ```haxe
   // To warm, then on to dark.
@@ -582,4 +582,4 @@ function appendDelay(seconds:Float):Vector4Tween
 - `appendDelay`: Adds a wait: the vector stays where the tween ended before, for some seconds.
   - `seconds`: The seconds to wait, 0 or more.
   - returns: This tween.
-  - throws `String`: A tween placed in a sequence, which took the tween's time when placed.
+  - throws `String`: A tween placed in a sequence, which fixed the tween's time when placed.

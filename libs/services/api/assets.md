@@ -20,11 +20,11 @@ Specifies a place `Assets` finds files. Construct a `FileSystemSource` or a `Ser
 
 Provides files by path, from a file system on this machine or from an HTTP server whose files it keeps copies of.
 
-It asks its sources in order, and the first that has the path answers. A file missing from one source is looked for in the next. A game whose files never change lists its file system alone (`FileSystemSource`). A game patched from a server lists the server first, with a `ManifestCache` given the shipped files, and its shipped files after it. A shipped file that the server's manifest lists at the same hash is then read in place, and only what changed is downloaded. A page, whose files are on the server that served it, lists a `ServerSource` at "".
+It asks its sources in order, and the first that has the path answers. A file missing from one source is looked for in the next. A game whose files never change lists its file system alone (`FileSystemSource`). A game patched from a server lists the server first, with a `ManifestCache` provided the shipped files, and its shipped files after it. A shipped file that the server's manifest lists at the same hash is then read in place, and only what changed is downloaded. A page, whose files are on the server that served it, lists a `ServerSource` at "".
 
 A path is plain names joined by `/`, as in `IFileSystem` (`FilePath`), from every source: a server is never asked for one the file systems would refuse, so a name fails alike on every target. Each call answers once, on the main thread, in a later poll, never during the call. The failure callback is optional; when it is omitted, the failure is logged with the path.
 
-The program polls the assets once a frame, with the HTTP client and file systems it was given. Downloads and copies finish in their polls, and what Assets answers with nothing of theirs to wait on (a file held in memory, a refused path) in its own. Assets that are never polled answer nothing.
+The program polls the assets once a frame, with the HTTP client and file systems it was provided. Downloads and copies finish in their polls, and what Assets answers with nothing of theirs to wait on (a file held in memory, a refused path) in its own. Assets that are never polled answer nothing.
 
 A file can change while the program runs, as a development server's do. Assets doesn't watch for it: whoever knows a file changed calls `notifyChanged` with its path, or `notifyUrlChanged` with the URL it was served at, and each `watch` of that path receives the new bytes. A page's development build wires hotreload-hx in one line, `reloader.assetsChanged = urls -> for (url in urls) assets.notifyUrlChanged(url);`. Natively nothing calls it, and there is no watcher.
 
@@ -86,13 +86,13 @@ function dispose():Void
   - `url`: The URL, absolute or from the server's root, as a development server reports it.
 
   The URL is matched against each `ServerSource`'s, resolved against the page's location in a page (a source `"assets/"` on a page at `http://localhost:8080/` serves `/assets/shaders/glow.shader` as `shaders/glow.shader`); a URL no source serves is skipped.
-- `locate`: Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` takes.
+- `locate`: Finds a file to be played as it is read, without loading it whole, in the form `IAudio.openStream` accepts.
   - `path`: The file's path.
   - `located`: Receives the source, and a release function to call once when the source is no longer read.
   - `failed`: Optional. Receives why the file can't be found.
   - returns: The abort: nothing is called after it.
 
-  A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise, natively, it plays as it downloads, and the copy is kept; in a page it is located once it is kept. A native download asks for the file's last 64 KiB first and then the rest, so the stream's length can be read before it has all arrived, as a browser's media element does. A server that doesn't take range requests sends the whole file at the first request.
+  A file system's file is located where it is. A server's file is its kept copy when there is one. Otherwise, natively, it plays as it downloads, and the copy is kept; in a page it is located once it is kept. A native download asks for the file's last 64 KiB first and then the rest, so the stream's length can be read before it has all arrived, as a browser's media element does. A server that doesn't accept range requests sends the whole file at the first request.
 - `clearCache`: Empties each server source's cache, so its files are downloaded again.
   - `cleared`: Optional. Called once the caches are empty.
   - `failed`: Optional. Receives why a cache can't be emptied. When omitted, the failure is logged.
@@ -105,7 +105,7 @@ function dispose():Void
 - `poll`: Answers what finished with nothing of the platform's to wait on: a file held in memory, a refused path, a clearCache or deleteCopy.
   The program calls it once a frame, with the HTTP client's and file systems' polls.
 - `dispose`: Aborts every load and locate in flight.
-  Call it before disposing the HTTP client and file systems it was given.
+  Call it before disposing the HTTP client and file systems it was provided.
 
 ## FileSystemSource
 

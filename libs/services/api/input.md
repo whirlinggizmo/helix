@@ -8,7 +8,7 @@
 
 Provides actions, which are names the game reads, such as "jump" or "left", each bound to keys, mouse buttons, gamepads and tilt.
 
-Any of an action's bindings works it. Actions reads the devices it was created over, so it is current once they are polled. It has no `poll` of its own. A binding to a device it wasn't given, or a name with no bindings, reads as not held, with a value of 0.
+Any of an action's bindings works it. Actions reads the devices it was created over, so it is current once they are polled. It has no `poll` of its own. A binding to a device it wasn't provided, or a name with no bindings, reads as not held, with a value of 0.
 
 ```haxe
 var keyboard = new Keyboard(events, keyboardAdapter), gamepads = new Gamepads(events, gamepadsAdapter);
@@ -145,7 +145,7 @@ var deadZone(default, set):Float
 - `isConnected`: Returns whether a gamepad is in a slot.
   - `slot`: The slot, 0 to 3.
   - returns: True when one is connected there.
-- `getName`: Returns a gamepad's name, as its maker gives it.
+- `getName`: Returns a gamepad's name, as its maker names it.
   - `slot`: The slot, 0 to 3.
   - returns: The name, or "" for an empty slot.
 - `isButtonDown`: Returns whether a button is held.
@@ -342,7 +342,7 @@ function isButtonReleased(button:MouseButton):Bool
 
 Provides the device's tilt, from level and turned with the screen, for a game steered by tilting a phone or a tablet.
 
-The program constructs one over its `IEvents` and its `ITilt`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need permission, asked at the next tap, so a game asks before the tap that starts play. Level is taken once the device is held steady, and the tilt reads 0 until then (`calibrating`). Natively it is unavailable.
+The program constructs one over its `IEvents` and its `ITilt`, calls `requestAccess`, and calls `poll` once a frame, as `Keyboard` is. A page may need permission, asked at the next tap, so a game asks before the tap that starts play. Level is measured once the device is held steady, and the tilt reads 0 until then (`calibrating`). Natively it is unavailable.
 
 ```haxe
 var tilt = new Tilt(events, tiltAdapter);
@@ -376,13 +376,13 @@ function poll():Void
   A page may need permission, which is asked at the next tap. `status` follows each change: WaitingForTap while a tap is awaited, Starting until the first reading, then On. A game shows "tap to allow tilt" while the tilt waits for a tap.
 - `releaseAccess`: Stops the readings, and reads 0 from then. A permission granted stays granted, so a later `requestAccess` usually starts without asking again.
 - `status`: Gets the tilt's status: Off, WaitingForTap, Starting, On, Refused, Unavailable or NeedsHttps. Defaults to Off.
-- `calibrating`: Gets a value indicating whether level is being taken.
-  Level is taken once the device is held within 3 degrees for half a second: when the tilt starts, after the screen turns, and after `calibrate`. The tilt reads 0 meanwhile.
-- `ready`: Gets a value indicating whether the tilt steers: `status` is On and level is taken (`calibrating` is false).
-- `calibrate`: Takes level again from how the device is held next, as a game's "Level" button does.
+- `calibrating`: Gets a value indicating whether level is being measured.
+  Level is measured once the device is held within 3 degrees for half a second: when the tilt starts, after the screen turns, and after `calibrate`. The tilt reads 0 meanwhile.
+- `ready`: Gets a value indicating whether the tilt steers: `status` is On and level is measured (`calibrating` is false).
+- `calibrate`: Measures level again from how the device is held next, as a game's "Level" button does.
 - `getAxis`: Returns how far the device is tilted from level along an axis, turned with the screen.
   - `axis`: The axis: X across the screen, right positive; Y up and down it, down positive.
-  - returns: -1 to 1, where `range` degrees reads 1; 0 while level is being taken, or when the tilt isn't on.
+  - returns: -1 to 1, where `range` degrees reads 1; 0 while level is being measured, or when the tilt isn't on.
 - `range`: Gets or sets how many degrees of tilt read 1. Clamped to at least 1. Defaults to 30.
 - `poll`: Reads the events the last `IEvents.poll` delivered: the tilt's status and its readings. Call it once a frame.
 
@@ -511,11 +511,11 @@ final radius:Null<Float>
 
 Provides an on-screen gamepad worked by the fingers, read as a gamepad in a slot.
 
-The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and gives the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both through `Actions`, as any gamepad's do.
+The program constructs one over its `Touch`, `IWindow` and `IGamepads`, and passes the virtual gamepad to `Gamepads` in place of the `IGamepads`. The program calls `poll` once a frame, after `Touch.poll` and before `Gamepads.poll`. The virtual gamepad's sticks read through `Gamepads.getAxis` and its buttons through `Gamepads.isButtonDown`, `isButtonPressed` and `isButtonReleased`, and both through `Actions`, as any gamepad's do.
 
 The first touch in the window plugs the virtual gamepad in, as does a press of the left mouse button with touch emulation (`Touch.emulated`). A virtual gamepad with a tilt stick is plugged in while the tilt stick reads the tilt. A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. Physical gamepads fill the slots from 0, whatever slot the virtual gamepad is in. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again. `GamepadConnected` and `GamepadDisconnected` come from physical gamepads alone.
 
-Positions and sizes are framebuffer pixels, as `Touch` gives them. `Touch` lists every finger, a finger holding a stick or a button included. Drawing is the engine's: each button and each `Fixed` stick while `visible` is true, each other stick while `held`, and each stick's hint while `hintVisible` is true. A tilt stick (`VirtualStick.tilt`) isn't drawn, and has no hint.
+Positions and sizes are framebuffer pixels, as `Touch` reports them. `Touch` lists every finger, a finger holding a stick or a button included. Drawing is the engine's: each button and each `Fixed` stick while `visible` is true, each other stick while `held`, and each stick's hint while `hintVisible` is true. A tilt stick (`VirtualStick.tilt`) isn't drawn, and has no hint.
 
 ```haxe
 var virtualGamepad = new VirtualGamepad(touch, window, gamepadsAdapter, 0);
@@ -571,7 +571,7 @@ function dispose():Void
 - `left`: Gets the left stick, read as `LeftX` and `LeftY`.
 - `right`: Gets the right stick, read as `RightX` and `RightY`.
 - `tilt`: Gets or sets the tilt a tilt stick reads (`VirtualStick.tilt`), polled by the program before the virtual gamepad. While the tilt is null, a tilt stick reads 0.
-- `buttons`: Gets the buttons, as the options gave them.
+- `buttons`: Gets the buttons, as the options set them.
 - `blockedBounds`: Gets or sets bounds where a landing finger stays free, even within a stick's touch zone, such as a GUI button's bounds. The blocked bounds follow changes to these bounds' fields. A finger holding a stick keeps the stick when the finger moves into a blocked bound.
 - `poll`: Reads the fingers `Touch` read this frame, and moves each stick and button. Call it once a frame, after `Touch.poll`.
 - `isConnected`: Returns whether a gamepad is in a slot. The virtual gamepad's slot is true while the virtual gamepad is plugged in or a physical gamepad is there. See `physicalConnected` for telling them apart.
@@ -687,7 +687,7 @@ Specifies where a virtual stick's base goes.
 
 *class* in [`libs/services/src/helix/services/input/VirtualStickOptions.hx`](../src/helix/services/input/VirtualStickOptions.hx), `import helix.services.input.VirtualStickOptions;`
 
-Represents how one stick of a `VirtualGamepad` starts. A field left out takes the gamepad's options, or their default.
+Represents how one stick of a `VirtualGamepad` starts. A field left out uses the gamepad's options, or their default.
 
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 

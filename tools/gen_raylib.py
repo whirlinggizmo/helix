@@ -94,7 +94,7 @@ TARGETS = {
         ('RLights', "lights: the scene's lights, made as raylib's lighting examples' rlights.h makes them"),
         ('RLighting', "lighting: the lit and PBR shaders and a light's shadows"),
     ], None, 'Lighting'),
-    'extras/Materials.hx': ([('RMaterials', "materials: what a material gives off, where it is cut out, and whether light and shadows fall on it")], None, 'Materials'),
+    'extras/Materials.hx': ([('RMaterials', "materials: what a material emits, where it is cut out, and whether light and shadows fall on it")], None, 'Materials'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
     'extras/Device.hx': ([('RDevice', "device: the safe area, the device, the window's abilities, orientation and tilt")], None, 'Device'),
     'extras/Assets.hx': ([('RAssets', "assets: the asset host, and files ensured ahead of raylib's loads")], None, 'Assets'),
