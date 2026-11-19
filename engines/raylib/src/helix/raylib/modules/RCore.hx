@@ -392,16 +392,20 @@ class RCore {
 
 	/** Returns the window's place on the desktop.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  Its left and top edges, in pixels. */
-	static function GetWindowPosition():Vector2 {
-		return new Vector2(Runtime.window.x, Runtime.window.y);
+	static function GetWindowPosition(?out:Vector2):Vector2 {
+		var window = Runtime.window;
+		return out == null ? new Vector2(window.x, window.y) : out.set(window.x, window.y);
 	}
 
 	/** Returns how many of the display's pixels a pixel drawn covers, across and down, 2 on most phones and high-density displays.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The scale. */
-	static function GetWindowScaleDPI():Vector2 {
-		return new Vector2(Runtime.window.pixelRatio, Runtime.window.pixelRatio);
+	static function GetWindowScaleDPI(?out:Vector2):Vector2 {
+		var ratio = Runtime.window.pixelRatio;
+		return out == null ? new Vector2(ratio, ratio) : out.set(ratio, ratio);
 	}
 
 	/** Returns the number of monitors.
@@ -421,9 +425,12 @@ class RCore {
 	/** Returns a monitor's top-left corner on the desktop.
 
 		@param monitor  The monitor.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The corner, in pixels. */
-	static function GetMonitorPosition(monitor:Int):Vector2 {
-		return new Vector2(Runtime.window.getMonitorX(monitor), Runtime.window.getMonitorY(monitor));
+	static function GetMonitorPosition(monitor:Int, ?out:Vector2):Vector2 {
+		var x = Runtime.window.getMonitorX(monitor),
+			y = Runtime.window.getMonitorY(monitor);
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** Returns a monitor's width.
@@ -888,33 +895,42 @@ class RCore {
 
 		@return  The x. */
 	static function GetMouseX():Int {
-		return Std.int(GetMousePosition().x);
+		return Std.int(GetMousePosition(scratch2D).x);
 	}
 
 	/** Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
 
 		@return  The y. */
 	static function GetMouseY():Int {
-		return Std.int(GetMousePosition().y);
+		return Std.int(GetMousePosition(scratch2D).y);
 	}
 
 	/** Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
 
 		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position. */
-	static function GetMousePosition():Vector2 {
-		var played = Runtime.played;
-		if (played != null)
-			return new Vector2((played.mouseX + mouseOffsetX) * mouseScaleX, (played.mouseY + mouseOffsetY) * mouseScaleY);
-		pointer();
-		return new Vector2((lastPointerX + mouseOffsetX) * mouseScaleX, (lastPointerY + mouseOffsetY) * mouseScaleY);
+	static function GetMousePosition(?out:Vector2):Vector2 {
+		var played = Runtime.played, x, y;
+		if (played != null) {
+			x = (played.mouseX + mouseOffsetX) * mouseScaleX;
+			y = (played.mouseY + mouseOffsetY) * mouseScaleY;
+		} else {
+			pointer();
+			x = (lastPointerX + mouseOffsetX) * mouseScaleX;
+			y = (lastPointerY + mouseOffsetY) * mouseScaleY;
+		}
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
-	// The pointer's position, as the devices have it, in the screen's pixels.
-	static function realPointer():Vector2 {
+	// A vector reused by the getters that read one coordinate of a position.
+	static final scratch2D = new Vector2();
+
+	// The pointer's position, as the devices have it, in the screen's pixels, into out or a new vector.
+	static function realPointer(?out:Vector2):Vector2 {
 		pointer();
-		return new Vector2(lastPointerX, lastPointerY);
+		return out == null ? new Vector2(lastPointerX, lastPointerY) : out.set(lastPointerX, lastPointerY);
 	}
 
 	// Brings the pointer's position up to date: the first finger's while one is down, else the mouse's once it moves, in the screen's pixels.
@@ -989,18 +1005,19 @@ class RCore {
 	/** Returns how far the wheel turned this frame, in both directions, right and forward positive. See `GetMouseWheelMove` for reading the
 		larger direction alone.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The notches. */
-	static function GetMouseWheelMoveV():Vector2 {
+	static function GetMouseWheelMoveV(?out:Vector2):Vector2 {
 		var played = Runtime.played;
 		if (played != null)
-			return new Vector2(played.wheelX, played.wheelY);
-		return realWheel();
+			return out == null ? new Vector2(played.wheelX, played.wheelY) : out.set(played.wheelX, played.wheelY);
+		return realWheel(out);
 	}
 
-	// How far the wheel turned this frame, as the mouse has it.
-	static function realWheel():Vector2 {
+	// How far the wheel turned this frame, as the mouse has it, into out or a new vector.
+	static function realWheel(?out:Vector2):Vector2 {
 		var mouse = Runtime.mouse();
-		return new Vector2(mouse.wheelX, mouse.wheelY);
+		return out == null ? new Vector2(mouse.wheelX, mouse.wheelY) : out.set(mouse.wheelX, mouse.wheelY);
 	}
 
 	/** Shows the cursor. */
@@ -1099,15 +1116,19 @@ class RCore {
 		return index < Runtime.touch().fingers.length;
 	}
 
-	// Where a finger is, by its place, as the touch has it, in the screen's pixels. The first, while none is down, is the pointer.
-	static function realTouchPosition(index:Int):Vector2 {
+	// Where a finger is, by its place, as the touch has it, in the screen's pixels, into out or a new vector. The first, while none is
+	// down, is the pointer.
+	static function realTouchPosition(index:Int, ?out:Vector2):Vector2 {
 		var touch = Runtime.touch();
 		if (index == 0 && touch.fingers.length == 0)
-			return realPointer();
-		if (index < 0 || index >= touch.fingers.length)
-			return new Vector2();
-		var id = touch.fingers[index];
-		return new Vector2(Runtime.screen.toDesignX(touch.getX(id)), Runtime.screen.toDesignY(touch.getY(id)));
+			return realPointer(out);
+		var x = 0., y = 0.;
+		if (index >= 0 && index < touch.fingers.length) {
+			var id = touch.fingers[index];
+			x = Runtime.screen.toDesignX(touch.getX(id));
+			y = Runtime.screen.toDesignY(touch.getY(id));
+		}
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** Returns a finger's position, in the screen's pixels.
@@ -1116,12 +1137,17 @@ class RCore {
 		(`import helix.raylib.extras.VirtualGamepad.*;`) for on-screen sticks read as a gamepad's.
 
 		@param index  Which finger, 0 for the first down.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position, or (0, 0) when fewer are down. */
-	static function GetTouchPosition(index:Int):Vector2 {
+	static function GetTouchPosition(index:Int, ?out:Vector2):Vector2 {
 		var played = Runtime.played;
-		if (played != null)
-			return index >= 0 && index < 8 ? new Vector2(played.touchX[index], played.touchY[index]) : new Vector2();
-		return realTouchPosition(index);
+		if (played != null) {
+			var down = index >= 0 && index < 8;
+			var x = down ? played.touchX[index] : 0.,
+				y = down ? played.touchY[index] : 0.;
+			return out == null ? new Vector2(x, y) : out.set(x, y);
+		}
+		return realTouchPosition(index, out);
 	}
 
 	/** Returns a finger's id, which stays the same while it is down.
@@ -1137,14 +1163,14 @@ class RCore {
 
 		@return  The x. */
 	static function GetTouchX():Int {
-		return Std.int(GetTouchPosition(0).x);
+		return Std.int(GetTouchPosition(0, scratch2D).x);
 	}
 
 	/** Returns the first finger's y, in the screen's pixels, the mouse's while no finger is down.
 
 		@return  The y. */
 	static function GetTouchY():Int {
-		return Std.int(GetTouchPosition(0).y);
+		return Std.int(GetTouchPosition(0, scratch2D).y);
 	}
 
 	/** Sets which gestures are detected.
@@ -1192,10 +1218,11 @@ class RCore {
 
 	/** Returns the drag, from where the finger landed to where it is, in fractions of the screen.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	static function GetGestureDragVector():Vector2 {
+	static function GetGestureDragVector(?out:Vector2):Vector2 {
 		var gestures = Runtime.gestures();
-		return new Vector2(gestures.dragX, gestures.dragY);
+		return out == null ? new Vector2(gestures.dragX, gestures.dragY) : out.set(gestures.dragX, gestures.dragY);
 	}
 
 	/** Returns the last swipe's angle.
@@ -1207,10 +1234,11 @@ class RCore {
 
 	/** Returns the pinch, from the first finger to the second, in fractions of the screen.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	static function GetGesturePinchVector():Vector2 {
+	static function GetGesturePinchVector(?out:Vector2):Vector2 {
 		var gestures = Runtime.gestures();
-		return new Vector2(gestures.pinchX, gestures.pinchY);
+		return out == null ? new Vector2(gestures.pinchX, gestures.pinchY) : out.set(gestures.pinchX, gestures.pinchY);
 	}
 
 	/** Returns the pinch's angle.
@@ -2403,7 +2431,7 @@ class RCore {
 		the screen one way up.
 
 		@param script  The JavaScript. */
-	@:unsupported("emscripten_run_script: Unsupported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
+	@:unsupported("emscripten_run_script: Unsupported. See GetWindowSafeArea(?out:Rectangle) for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
 	static function emscripten_run_script(script:String):Void {
 		throw "emscripten_run_script is unsupported";
 	}
@@ -2622,29 +2650,33 @@ class RCore {
 	/** Returns a 2D camera's transform, from the world to the screen.
 
 		@param camera  The camera.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	static function GetCameraMatrix2D(camera:Camera2D):Matrix {
-		return camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix4();
+	static function GetCameraMatrix2D(camera:Camera2D, ?out:Matrix):Matrix {
+		return camera2D(camera).computeViewMatrix(viewMatrix2D).toMatrix4(out);
 	}
 
 	/** Returns where a point in a 2D camera's world is on the screen.
 
 		@param position  The point.
 		@param camera  The camera.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be position.
 		@return  The screen position. */
-	static function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2 {
+	static function GetWorldToScreen2D(position:Vector2, camera:Camera2D, ?out:Vector2):Vector2 {
 		var p = camera2D(camera).worldToView(position.x, position.y, point2D);
-		return new Vector2(p.x, p.y);
+		return out == null ? new Vector2(p.x, p.y) : out.set(p.x, p.y);
 	}
 
 	/** Returns where a screen position is in a 2D camera's world.
 
 		@param position  The screen position.
 		@param camera  The camera.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be position.
 		@return  The point, or NaN at zoom 0. */
-	static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2 {
+	static function GetScreenToWorld2D(position:Vector2, camera:Camera2D, ?out:Vector2):Vector2 {
 		var p = camera2D(camera).viewToWorld(position.x, position.y, point2D);
-		return p == null ? new Vector2(Math.NaN, Math.NaN) : new Vector2(p.x, p.y);
+		var x = p == null ? Math.NaN : p.x, y = p == null ? Math.NaN : p.y;
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	// raylib's Camera2D as helix-math's, reused: its target the position, its rotation in radians and negated (raylib's turns the world,
@@ -2940,9 +2972,10 @@ class RCore {
 	/** Returns a camera's view, as `BeginMode3D` uses it.
 
 		@param camera  The camera.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	static function GetCameraMatrix(camera:Camera3D):Matrix {
-		return camera3D(camera).computeViewMatrix();
+	static function GetCameraMatrix(camera:Camera3D, ?out:Matrix):Matrix {
+		return camera3D(camera).computeViewMatrix(out);
 	}
 
 	/** Returns the ray from a camera through a screen position, for picking. See `GetScreenToWorldRayEx` for casting through a view of
@@ -2950,9 +2983,10 @@ class RCore {
 
 		@param position  The screen position.
 		@param camera  The camera.
+		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
-	static function GetScreenToWorldRay(position:Vector2, camera:Camera3D):Ray {
-		return GetScreenToWorldRayEx(position, camera, GetScreenWidth(), GetScreenHeight());
+	static function GetScreenToWorldRay(position:Vector2, camera:Camera3D, ?out:Ray):Ray {
+		return GetScreenToWorldRayEx(position, camera, GetScreenWidth(), GetScreenHeight(), out);
 	}
 
 	/** Returns the ray from a camera through a position in a view of a size, such as a render texture's.
@@ -2961,32 +2995,39 @@ class RCore {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
+		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
-	static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray {
+	static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int, ?out:Ray):Ray {
 		var x = 2 * position.x / width - 1,
 			y = 1 - 2 * position.y / height,
 			aspect = width / height;
 		var picked = camera3D(camera).computeRay(x, y, aspect, ray3D);
 		var origin = picked.origin, direction = picked.direction;
-		return new Ray(new Vector3(origin.x, origin.y, origin.z), new Vector3(direction.x, direction.y, direction.z));
+		if (out == null)
+			return new Ray(new Vector3(origin.x, origin.y, origin.z), new Vector3(direction.x, direction.y, direction.z));
+		out.position.set(origin.x, origin.y, origin.z);
+		out.direction.set(direction.x, direction.y, direction.z);
+		return out;
 	}
 
 	/** Returns the ray from a camera through a screen position, under raylib's old name for `GetScreenToWorldRay`.
 
 		@param position  The screen position.
 		@param camera  The camera.
+		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
-	static function GetMouseRay(position:Vector2, camera:Camera3D):Ray {
-		return GetScreenToWorldRay(position, camera);
+	static function GetMouseRay(position:Vector2, camera:Camera3D, ?out:Ray):Ray {
+		return GetScreenToWorldRay(position, camera, out);
 	}
 
 	/** Returns where a point in the world is on the screen. See `GetWorldToScreenEx` for placing it in a view of another size.
 
 		@param position  The point.
 		@param camera  The camera.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The screen position. */
-	static function GetWorldToScreen(position:Vector3, camera:Camera3D):Vector2 {
-		return GetWorldToScreenEx(position, camera, GetScreenWidth(), GetScreenHeight());
+	static function GetWorldToScreen(position:Vector3, camera:Camera3D, ?out:Vector2):Vector2 {
+		return GetWorldToScreenEx(position, camera, GetScreenWidth(), GetScreenHeight(), out);
 	}
 
 	/** Returns where a point in the world is in a view of a size.
@@ -2995,10 +3036,12 @@ class RCore {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position in the view, or infinite or NaN for a point level with a perspective camera's position. */
-	static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2 {
+	static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int, ?out:Vector2):Vector2 {
 		var p = camera3D(camera).project(position.x, position.y, position.z, width / height, point3D);
-		return new Vector2((p.x + 1) / 2 * width, (1 - p.y) / 2 * height);
+		var x = (p.x + 1) / 2 * width, y = (1 - p.y) / 2 * height;
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	// raylib's Camera3D as helix-math's, reused: its position, turned to face its target with its up kept as near as it can be (an up
@@ -3028,11 +3071,15 @@ class RCore {
 
 		A `SetMousePosition` this frame is part of the movement.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The movement. */
-	static function GetMouseDelta():Vector2 {
+	static function GetMouseDelta(?out:Vector2):Vector2 {
 		var played = Runtime.played;
-		if (played != null)
-			return new Vector2((played.mouseX - played.previousMouseX) * mouseScaleX, (played.mouseY - played.previousMouseY) * mouseScaleY);
+		if (played != null) {
+			var x = (played.mouseX - played.previousMouseX) * mouseScaleX,
+				y = (played.mouseY - played.previousMouseY) * mouseScaleY;
+			return out == null ? new Vector2(x, y) : out.set(x, y);
+		}
 		// From where the mouse was last seen in an earlier frame, before SetMouseOffset.
 		pointer();
 		var frame = Runtime.frames;
@@ -3043,7 +3090,9 @@ class RCore {
 		}
 		seenX = lastPointerX;
 		seenY = lastPointerY;
-		return new Vector2((lastPointerX - previousX) * mouseScaleX, (lastPointerY - previousY) * mouseScaleY);
+		var x = (lastPointerX - previousX) * mouseScaleX,
+			y = (lastPointerY - previousY) * mouseScaleY;
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	// ---- VR stereo rendering ----

@@ -11,10 +11,10 @@ static function DrawTextPro(font:Font, text:String, position:Vector2, origin:Vec
 static function DrawTextCodepoint(font:Font, codepoint:Int, position:Vector2, fontSize:Float, tint:Color):Void
 static function DrawTextCodepoints(font:Font, codepoints:Array<Int>, codepointCount:Int, position:Vector2, fontSize:Float, spacing:Float, tint:Color):Void
 static function SetTextLineSpacing(spacing:Int):Void
-static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
+static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float, ?out:Vector2):Vector2
 static function GetGlyphIndex(font:Font, codepoint:Int):Int
 static function GetGlyphInfo(font:Font, codepoint:Int):GlyphInfo
-static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
+static function GetGlyphAtlasRec(font:Font, codepoint:Int, ?out:Rectangle):Rectangle
 static function GetFontDefault():Font
 static function IsFontValid(font:Font):Bool
 static function UnloadFont(font:Font):Void
@@ -110,6 +110,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `text`: The text.
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, in pixels.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The size, in pixels; 0 by 0 for no text, a font with no texture or a null font.
 - `GetGlyphIndex`: Returns the index of a character's glyph in a font.
   - `font`: The font.
@@ -124,6 +125,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 - `GetGlyphAtlasRec`: Returns where a character's glyph is on its font's texture, as `GetGlyphIndex` finds it.
   - `font`: The font.
   - `codepoint`: The character.
+  - `out`: Optional. The rectangle to fill; a new one when omitted.
   - returns: The rectangle, in texels; 0 by 0 at 0, 0 for a font that isn't valid (`IsFontValid`).
 - `GetFontDefault`: Returns raylib's default font, made at the first call.
   - returns: The font.

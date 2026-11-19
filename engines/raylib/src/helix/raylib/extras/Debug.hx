@@ -100,9 +100,10 @@ class Debug {
 		Sized for the widest values, so it is the same from frame to frame.
 
 		@param style  What to show and how.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The width and height, in pixels. */
-	public static inline function MeasureFrameStats(style:FrameStatsStyle):Vector2
-		return RDebug.MeasureFrameStats(style);
+	public static inline function MeasureFrameStats(style:FrameStatsStyle, ?out:Vector2):Vector2
+		return RDebug.MeasureFrameStats(style, out);
 
 	/** Returns the stats of the last half second's frames, the half second DrawFrameStats shows the frame time over.
 		See `StartFrameStatsRecording` for recording the frames of the program's choosing.

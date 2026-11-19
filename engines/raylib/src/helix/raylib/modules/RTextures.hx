@@ -205,9 +205,14 @@ class RTextures {
 	/** Returns a color as four numbers, 0 to 1 each.
 
 		@param color  The color.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  Red, green, blue and alpha as x, y, z and w. */
-	static function ColorNormalize(color:Color):Vector4 {
-		return new Vector4(color.r / 255, color.g / 255, color.b / 255, color.a / 255);
+	static function ColorNormalize(color:Color, ?out:Vector4):Vector4 {
+		var r = color.r / 255,
+			g = color.g / 255,
+			b = color.b / 255,
+			a = color.a / 255;
+		return out == null ? new Vector4(r, g, b, a) : out.set(r, g, b, a);
 	}
 
 	/** Returns a color from four numbers, 0 to 1 each.
@@ -257,9 +262,10 @@ class RTextures {
 	/** Returns a color's hue, saturation and value.
 
 		@param color  The color; its alpha is ignored.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The hue in degrees, 0 to 360, as x; the saturation and value, 0 to 1 each, as y and z. A gray's hue and saturation are 0. */
-	static function ColorToHSV(color:Color):Vector3 {
-		var hsv = new Vector3();
+	static function ColorToHSV(color:Color, ?out:Vector3):Vector3 {
+		var hsv = out == null ? new Vector3() : out.set(0, 0, 0);
 		var r = f32(color.r / 255),
 			g = f32(color.g / 255),
 			b = f32(color.b / 255);
@@ -2065,13 +2071,27 @@ class RTextures {
 
 		@param image  The image.
 		@param threshold  The threshold, 0 to 1.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The rectangle, in pixels; all zero when no pixel is over it. */
-	static function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle {
-		if (image.width == 0 || image.height == 0)
-			return new Rectangle();
-		var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
-		var border = new helix.services.images.Image("", image.width, image.height, pixels).getAlphaBorder(threshold);
-		return border.isEmpty ? new Rectangle() : new Rectangle(border.minX, border.minY, border.width, border.height);
+	static function GetImageAlphaBorder(image:Image, threshold:Float, ?out:Rectangle):Rectangle {
+		var x = 0., y = 0., width = 0., height = 0.;
+		if (image.width != 0 && image.height != 0) {
+			var pixels = Pixels.colors(image.data, image.width, image.height, image.format);
+			var border = new helix.services.images.Image("", image.width, image.height, pixels).getAlphaBorder(threshold);
+			if (!border.isEmpty) {
+				x = border.minX;
+				y = border.minY;
+				width = border.width;
+				height = border.height;
+			}
+		}
+		if (out == null)
+			return new Rectangle(x, y, width, height);
+		out.x = x;
+		out.y = y;
+		out.width = width;
+		out.height = height;
+		return out;
 	}
 
 	/** Returns a pixel's color, as `LoadImageColors` reads it.

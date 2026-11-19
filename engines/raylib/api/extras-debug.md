@@ -15,7 +15,7 @@ static function DrawModelSkeleton(model:Model, position:Vector3, scale:Float, co
 static function DrawModelBoundingBoxPosed(model:Model, position:Vector3, scale:Float, color:Color):Void
 static function DrawFrameStats(posX:Int, posY:Int, fontSize:Int):Void
 static function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void
-static function MeasureFrameStats(style:FrameStatsStyle):Vector2
+static function MeasureFrameStats(style:FrameStatsStyle, ?out:Vector2):Vector2
 static function GetFrameStats():FrameStats
 static function StartFrameStatsRecording():Void
 static function StopFrameStatsRecording():FrameStats
@@ -76,6 +76,7 @@ static function StopFrameStatsRecording():FrameStats
   ```
 - `MeasureFrameStats`: Returns the size DrawFrameStatsEx draws a style's stats in, for placing them (at a corner, say).
   - `style`: What to show and how.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The width and height, in pixels.
 
   The size includes the padding.

@@ -23,10 +23,17 @@ class RDevice {
 
 		Where nothing covers the window, as on a desktop, it is the whole window.
 
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The safe area. */
-	static function GetWindowSafeArea():Rectangle {
+	static function GetWindowSafeArea(?out:Rectangle):Rectangle {
 		var screen = Runtime.screen;
-		return new Rectangle(screen.safeAreaX, screen.safeAreaY, screen.safeAreaWidth, screen.safeAreaHeight);
+		if (out == null)
+			return new Rectangle(screen.safeAreaX, screen.safeAreaY, screen.safeAreaWidth, screen.safeAreaHeight);
+		out.x = screen.safeAreaX;
+		out.y = screen.safeAreaY;
+		out.width = screen.safeAreaWidth;
+		out.height = screen.safeAreaHeight;
+		return out;
 	}
 
 	// ---- Device ----
@@ -174,10 +181,12 @@ class RDevice {
 
 		The tilt is 0 until readings arrive, and while level is being measured (`IsTiltCalibrating`).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The tilt. */
-	static function GetTilt():Vector2 {
+	static function GetTilt(?out:Vector2):Vector2 {
 		var tilt = Runtime.tilt();
-		return new Vector2(tilt.getAxis(X), tilt.getAxis(Y));
+		var x = tilt.getAxis(X), y = tilt.getAxis(Y);
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** Sets the angle, in degrees, that reads as a full tilt of 1. It defaults to 30.

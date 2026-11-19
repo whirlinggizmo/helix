@@ -42,7 +42,7 @@ static function IsPlatformWeb():Bool
 ### device: the safe area, the device, the window's abilities, orientation and tilt
 
 ```haxe
-static function GetWindowSafeArea():Rectangle
+static function GetWindowSafeArea(?out:Rectangle):Rectangle
 static function GetPlatformOS():String
 static function IsTouchAvailable():Bool
 static function IsFinePointerAvailable():Bool
@@ -55,7 +55,7 @@ static function SetScreenOrientationAsync(orientation:Int, ?done:() -> Void, ?fa
 static function GetScreenOrientation():Int
 static function EnableTiltAsync(?done:() -> Void, ?failed:String -> Void):Void
 static function DisableTilt():Void
-static function GetTilt():Vector2
+static function GetTilt(?out:Vector2):Vector2
 static function SetTiltRange(degrees:Float):Void
 static function GetTiltStatus():Int
 static function IsTiltCalibrating():Bool
@@ -64,6 +64,7 @@ static function CalibrateTilt():Void
 ```
 
 - `GetWindowSafeArea`: Returns the part of the window no notch, rounded corner or system bar covers, in the screen's coordinates as `GetScreenWidth` measures them.
+  - `out`: Optional. The rectangle to fill; a new one when omitted.
   - returns: The safe area.
 
   A HUD and buttons go inside it.
@@ -124,6 +125,7 @@ static function CalibrateTilt():Void
 - `DisableTilt`: Stops the tilt's readings. See `EnableTiltAsync` for asking for them.
   A permission granted stays granted.
 - `GetTilt`: Returns the tilt from level, turned with the screen, each axis -1 to 1. See `CalibrateTilt` for setting what reads as level.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The tilt.
 
   x is across the screen and y is down it.

@@ -4,7 +4,6 @@ package helix.raylib.modules;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 import helix.math.Matrix4;
-import helix.geometry.Aabb2D;
 import helix.geometry.Geometry2D;
 import helix.math.Interpolate;
 import helix.raylib.internal.DefaultFont;
@@ -62,9 +61,10 @@ class RShapes {
 
 	/** Returns the rectangle of the shapes texture that the filled shapes sample.
 
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The rectangle, in pixels. */
-	static function GetShapesTextureRectangle():Rectangle {
-		return new Rectangle(texShapesRec.x, texShapesRec.y, texShapesRec.width, texShapesRec.height);
+	static function GetShapesTextureRectangle(?out:Rectangle):Rectangle {
+		return texShapesRec.copy(out);
 	}
 
 	// ---- Shapes ----
@@ -1346,9 +1346,12 @@ class RShapes {
 		@param startPos  The start.
 		@param endPos  The end.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be startPos or endPos.
 		@return  The point. */
-	static function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):Vector2 {
-		return new Vector2(startPos.x * (1 - t) + endPos.x * t, startPos.y * (1 - t) + endPos.y * t);
+	static function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float, ?out:Vector2):Vector2 {
+		var x = startPos.x * (1 - t) + endPos.x * t,
+			y = startPos.y * (1 - t) + endPos.y * t;
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** Returns a point on one piece of a B-spline, between the middle two of four points.
@@ -1358,9 +1361,12 @@ class RShapes {
 		@param p3  The third.
 		@param p4  The fourth.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the four.
 		@return  The point. */
-	static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2 {
-		return new Vector2(Interpolate.bSpline(p1.x, p2.x, p3.x, p4.x, t), Interpolate.bSpline(p1.y, p2.y, p3.y, p4.y, t));
+	static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2 {
+		var x = Interpolate.bSpline(p1.x, p2.x, p3.x, p4.x, t),
+			y = Interpolate.bSpline(p1.y, p2.y, p3.y, p4.y, t);
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** Returns a point on one piece of a Catmull-Rom spline, through the middle two of four points.
@@ -1370,9 +1376,12 @@ class RShapes {
 		@param p3  The end.
 		@param p4  The fourth point, which steers it.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the four.
 		@return  The point. */
-	static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2 {
-		return new Vector2(Interpolate.catmullRom(p1.x, p2.x, p3.x, p4.x, t), Interpolate.catmullRom(p1.y, p2.y, p3.y, p4.y, t));
+	static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2 {
+		var x = Interpolate.catmullRom(p1.x, p2.x, p3.x, p4.x, t),
+			y = Interpolate.catmullRom(p1.y, p2.y, p3.y, p4.y, t);
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** Returns a point on a quadratic Bezier curve.
@@ -1381,9 +1390,12 @@ class RShapes {
 		@param c2  The control point.
 		@param p3  The end.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the three.
 		@return  The point. */
-	static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2 {
-		return new Vector2(Interpolate.quadraticBezier(p1.x, c2.x, p3.x, t), Interpolate.quadraticBezier(p1.y, c2.y, p3.y, t));
+	static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float, ?out:Vector2):Vector2 {
+		var x = Interpolate.quadraticBezier(p1.x, c2.x, p3.x, t),
+			y = Interpolate.quadraticBezier(p1.y, c2.y, p3.y, t);
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** Returns a point on a cubic Bezier curve.
@@ -1393,9 +1405,12 @@ class RShapes {
 		@param c3  The end's control point.
 		@param p4  The end.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the four.
 		@return  The point. */
-	static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2 {
-		return new Vector2(Interpolate.cubicBezier(p1.x, c2.x, c3.x, p4.x, t), Interpolate.cubicBezier(p1.y, c2.y, c3.y, p4.y, t));
+	static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2 {
+		var x = Interpolate.cubicBezier(p1.x, c2.x, c3.x, p4.x, t),
+			y = Interpolate.cubicBezier(p1.y, c2.y, c3.y, p4.y, t);
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	// ---- Collisions ----
@@ -1504,8 +1519,17 @@ class RShapes {
 		@param pointCount  How many of them it has, 3 or more.
 		@return  True when it is inside. */
 	static function CheckCollisionPointPoly(point:Vector2, points:Array<Vector2>, pointCount:Int):Bool {
-		return Geometry2D.isPointInPolygon(point.x, point.y, [for (i in 0...pointCount) for (axis in [points[i].x, points[i].y]) axis]);
+		var flat = polygonCorners;
+		flat.resize(pointCount * 2);
+		for (i in 0...pointCount) {
+			flat[i * 2] = points[i].x;
+			flat[i * 2 + 1] = points[i].y;
+		}
+		return Geometry2D.isPointInPolygon(point.x, point.y, flat);
 	}
+
+	// The corners CheckCollisionPointPoly reads, flat, reused.
+	static final polygonCorners:Array<Float> = [];
 
 	/** Returns whether two lines, each between two points, cross, and where.
 
@@ -1516,27 +1540,32 @@ class RShapes {
 		@param collisionPoint  Set to where they cross, when they do; null leaves it out.
 		@return  True when they cross. */
 	static function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool {
-		var at = new helix.math.Vector2();
-		if (!Geometry2D.intersectSegments(startPos1.x, startPos1.y, endPos1.x, endPos1.y, startPos2.x, startPos2.y, endPos2.x, endPos2.y, at))
-			return false;
-		if (collisionPoint != null) {
-			collisionPoint.x = at.x;
-			collisionPoint.y = at.y;
-		}
-		return true;
+		return Geometry2D.intersectSegments(startPos1.x, startPos1.y, endPos1.x, endPos1.y, startPos2.x, startPos2.y, endPos2.x, endPos2.y, collisionPoint);
 	}
 
 	/** Returns where two rectangles overlap.
 
 		@param rec1  One rectangle.
 		@param rec2  The other.
+		@param out  Optional. The rectangle to fill; a new one when omitted. It may be rec1 or rec2.
 		@return  The overlap, or an empty rectangle at 0, 0 when they don't. */
-	static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle {
-		var overlap = new Aabb2D().set(rec1.x, rec1.y, rec1.x + rec1.width, rec1.y + rec1.height)
-			.intersection(new Aabb2D().set(rec2.x, rec2.y, rec2.x + rec2.width, rec2.y + rec2.height));
-		// raylib's: rectangles that only touch don't overlap.
-		return overlap.width > 0
-			&& overlap.height > 0 ? new Rectangle(overlap.minX, overlap.minY, overlap.width, overlap.height) : new Rectangle();
+	static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle, ?out:Rectangle):Rectangle {
+		var right1 = rec1.x + rec1.width, bottom1 = rec1.y + rec1.height;
+		var right2 = rec2.x + rec2.width, bottom2 = rec2.y + rec2.height;
+		var left = rec1.x > rec2.x ? rec1.x : rec2.x,
+			top = rec1.y > rec2.y ? rec1.y : rec2.y;
+		var right = right1 < right2 ? right1 : right2,
+			bottom = bottom1 < bottom2 ? bottom1 : bottom2;
+		// raylib's: rectangles that only touch don't overlap, and neither does a rectangle of negative size.
+		if (!(left < right && top < bottom))
+			left = top = right = bottom = 0;
+		if (out == null)
+			return new Rectangle(left, top, right - left, bottom - top);
+		out.x = left;
+		out.y = top;
+		out.width = right - left;
+		out.height = bottom - top;
+		return out;
 	}
 
 	// ---- What the shapes share ----

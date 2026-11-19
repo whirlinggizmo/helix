@@ -75,6 +75,9 @@ class DeviceTests {
 		window.insetLeft = window.insetTop = window.insetBottom = 0;
 		safe = GetWindowSafeArea();
 		check(safe.x == 0 && safe.y == 0 && safe.width == 800 && safe.height == 600, 'no insets, the whole window: $safe');
+		var area = new Rectangle(1, 1, 1, 1);
+		check(GetWindowSafeArea(area) == area && area != safe && area.x == 0 && area.y == 0 && area.width == 800 && area.height == 600,
+			'GetWindowSafeArea fills out: $area');
 
 		// The device.
 		var devices = new FakeDevices();
@@ -127,6 +130,8 @@ class DeviceTests {
 		frame();
 		tilt = GetTilt();
 		check(Math.abs(tilt.x - .25) < 1e-9 && Math.abs(tilt.y - .5) < 1e-9, 'the tilt over 60 degrees: $tilt');
+		var tilted = new Vector2();
+		check(GetTilt(tilted) == tilted && tilted != tilt && tilted.x == tilt.x && tilted.y == tilt.y, 'GetTilt fills out: $tilted');
 		CalibrateTilt();
 		tilt = GetTilt();
 		check(tilt.x == 0 && tilt.y == 0, "level calibrated again, reading 0 meanwhile");

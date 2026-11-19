@@ -6,7 +6,7 @@
 ```haxe
 static function SetShapesTexture(texture:Texture2D, source:Rectangle):Void
 static function GetShapesTexture():Texture2D
-static function GetShapesTextureRectangle():Rectangle
+static function GetShapesTextureRectangle(?out:Rectangle):Rectangle
 static function DrawPixel(posX:Int, posY:Int, color:Color):Void
 static function DrawPixelV(position:Vector2, color:Color):Void
 static function DrawLine(startPosX:Int, startPosY:Int, endPosX:Int, endPosY:Int, color:Color):Void
@@ -54,11 +54,11 @@ static function DrawSplineSegmentBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Ve
 static function DrawSplineSegmentCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, thick:Float, color:Color):Void
 static function DrawSplineSegmentBezierQuadratic(p1:Vector2, c2:Vector2, p3:Vector2, thick:Float, color:Color):Void
 static function DrawSplineSegmentBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, thick:Float, color:Color):Void
-static function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):Vector2
-static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
-static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
-static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
-static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
+static function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float, ?out:Vector2):Vector2
+static function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2
+static function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2
+static function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float, ?out:Vector2):Vector2
+static function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2
 static function CheckCollisionRecs(rec1:Rectangle, rec2:Rectangle):Bool
 static function CheckCollisionCircles(center1:Vector2, radius1:Float, center2:Vector2, radius2:Float):Bool
 static function CheckCollisionCircleRec(center:Vector2, radius:Float, rec:Rectangle):Bool
@@ -69,7 +69,7 @@ static function CheckCollisionPointTriangle(point:Vector2, p1:Vector2, p2:Vector
 static function CheckCollisionPointLine(point:Vector2, p1:Vector2, p2:Vector2, threshold:Int):Bool
 static function CheckCollisionPointPoly(point:Vector2, points:Array<Vector2>, pointCount:Int):Bool
 static function CheckCollisionLines(startPos1:Vector2, endPos1:Vector2, startPos2:Vector2, endPos2:Vector2, collisionPoint:Vector2):Bool
-static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
+static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle, ?out:Rectangle):Rectangle
 ```
 
 - `SetShapesTexture`: Sets the texture, and the rectangle of it, that the filled shapes sample.
@@ -82,6 +82,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 - `GetShapesTexture`: Returns the filled shapes' texture, raylib's default white pixel unless `SetShapesTexture` set another.
   - returns: The texture.
 - `GetShapesTextureRectangle`: Returns the rectangle of the shapes texture that the filled shapes sample.
+  - `out`: Optional. The rectangle to fill; a new one when omitted.
   - returns: The rectangle, in pixels.
 - `DrawPixel`: Draws one pixel.
   - `posX`: The x.
@@ -358,6 +359,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `startPos`: The start.
   - `endPos`: The end.
   - `t`: How far along, 0 at the start to 1 at the end.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be startPos or endPos.
   - returns: The point.
 - `GetSplinePointBasis`: Returns a point on one piece of a B-spline, between the middle two of four points.
   - `p1`: The first point.
@@ -365,6 +367,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `p3`: The third.
   - `p4`: The fourth.
   - `t`: How far along, 0 at the start to 1 at the end.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the four.
   - returns: The point.
 - `GetSplinePointCatmullRom`: Returns a point on one piece of a Catmull-Rom spline, through the middle two of four points.
   - `p1`: The first point, which steers it.
@@ -372,12 +375,14 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `p3`: The end.
   - `p4`: The fourth point, which steers it.
   - `t`: How far along, 0 at the start to 1 at the end.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the four.
   - returns: The point.
 - `GetSplinePointBezierQuad`: Returns a point on a quadratic Bezier curve.
   - `p1`: The start.
   - `c2`: The control point.
   - `p3`: The end.
   - `t`: How far along, 0 at the start to 1 at the end.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the three.
   - returns: The point.
 - `GetSplinePointBezierCubic`: Returns a point on a cubic Bezier curve.
   - `p1`: The start.
@@ -385,6 +390,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
   - `c3`: The end's control point.
   - `p4`: The end.
   - `t`: How far along, 0 at the start to 1 at the end.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be any of the four.
   - returns: The point.
 - `CheckCollisionRecs`: Returns whether two rectangles overlap. See `GetCollisionRec` for finding where they overlap.
   - `rec1`: One rectangle.
@@ -445,4 +451,5 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 - `GetCollisionRec`: Returns where two rectangles overlap.
   - `rec1`: One rectangle.
   - `rec2`: The other.
+  - `out`: Optional. The rectangle to fill; a new one when omitted. It may be rec1 or rec2.
   - returns: The overlap, or an empty rectangle at 0, 0 when they don't.

@@ -68,16 +68,16 @@ static function IsMaterialValid(material:Material):Bool
 static function UnloadMaterial(material:Material):Void
 static function SetMaterialTexture(material:Material, mapType:Int, texture:Texture2D):Void
 static function SetModelMeshMaterial(model:Model, meshId:Int, materialId:Int):Void
-static function GetMeshBoundingBox(mesh:Mesh):BoundingBox
-static function GetModelBoundingBox(model:Model):BoundingBox
+static function GetMeshBoundingBox(mesh:Mesh, ?out:BoundingBox):BoundingBox
+static function GetModelBoundingBox(model:Model, ?out:BoundingBox):BoundingBox
 static function CheckCollisionBoxes(box1:BoundingBox, box2:BoundingBox):Bool
 static function CheckCollisionSpheres(center1:Vector3, radius1:Float, center2:Vector3, radius2:Float):Bool
 static function CheckCollisionBoxSphere(box:BoundingBox, center:Vector3, radius:Float):Bool
-static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision
-static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision
-static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
-static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
-static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
+static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float, ?out:RayCollision):RayCollision
+static function GetRayCollisionBox(ray:Ray, box:BoundingBox, ?out:RayCollision):RayCollision
+static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix, ?out:RayCollision):RayCollision
+static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, ?out:RayCollision):RayCollision
+static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3, ?out:RayCollision):RayCollision
 static macro function ExportMesh(mesh:Mesh, fileName:String):Bool
 static macro function ExportMeshAsCode(mesh:Mesh, fileName:String):Bool
 static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?failed:String -> Void):Void
@@ -528,11 +528,13 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `materialId`: The material.
 - `GetMeshBoundingBox`: Returns a mesh's bounds, the least and the most of its positions.
   - `mesh`: The mesh.
+  - `out`: Optional. The box to fill; a new one when omitted.
   - returns: The box.
 
   Returns a box of zeros for a mesh without positions.
 - `GetModelBoundingBox`: Returns a model's bounds, its meshes' boxes together with the least and most corners moved by its transform, as raylib's does.
   - `model`: The model.
+  - `out`: Optional. The box to fill; a new one when omitted.
   - returns: The box.
 
   A turned model's box is not its bounds. Transforming its eight corners produces those.
@@ -555,6 +557,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `ray`: The ray.
   - `center`: The sphere's center.
   - `radius`: Its radius.
+  - `out`: Optional. The collision to fill, its point and normal in place; a new one when omitted.
   - returns: The hit.
 
   From inside, the hit's normal points in.
@@ -565,6 +568,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 - `GetRayCollisionBox`: Returns where a ray meets a box, as raylib's does.
   - `ray`: The ray.
   - `box`: The box.
+  - `out`: Optional. The collision to fill, its point and normal in place; a new one when omitted.
   - returns: The hit.
 
   From inside the box, returns the way out, its distance negative and its normal pointing in.
@@ -574,12 +578,14 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `ray`: The ray.
   - `mesh`: The mesh, with its positions.
   - `transform`: The transform.
+  - `out`: Optional. The collision to fill, its point and normal in place; a new one when omitted.
   - returns: The hit.
 - `GetRayCollisionTriangle`: Returns where a ray meets a triangle from either side, its normal that of the corners read counterclockwise.
   - `ray`: The ray.
   - `p1`: A corner.
   - `p2`: The next.
   - `p3`: The last.
+  - `out`: Optional. The collision to fill, its point and normal in place; a new one when omitted.
   - returns: The hit.
 
   Uses Möller and Trumbore's test, as raylib's does.
@@ -589,6 +595,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `p2`: The next, counterclockwise.
   - `p3`: The next.
   - `p4`: The last.
+  - `out`: Optional. The collision to fill, its point and normal in place; a new one when omitted.
   - returns: The hit.
 - `ExportMesh`: Writes a mesh as an OBJ file, and returns once it is written. See `ExportMeshAsCode` for writing a C header.
   - `mesh`: The mesh, with positions, texture coordinates and normals.

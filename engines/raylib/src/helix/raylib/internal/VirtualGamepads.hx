@@ -75,11 +75,12 @@ class VirtualGamepads implements IPollable {
 		@param right  The right stick, else the left.
 		@param knob  The knob, else the base.
 		@return  Its center. */
-	public function stickPoint(right:Bool, knob:Bool):Vector2 {
+	public function stickPoint(right:Bool, knob:Bool, ?out:Vector2):Vector2 {
 		var stick = right ? service.right : service.left,
 			screen = Runtime.screen;
-		return knob ? new Vector2(screen.toDesignX(stick.knobX),
-			screen.toDesignY(stick.knobY)) : new Vector2(screen.toDesignX(stick.baseX), screen.toDesignY(stick.baseY));
+		var x = screen.toDesignX(knob ? stick.knobX : stick.baseX),
+			y = screen.toDesignY(knob ? stick.knobY : stick.baseY);
+		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 
 	/** The slot it's in. */

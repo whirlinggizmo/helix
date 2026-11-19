@@ -1802,19 +1802,30 @@ class RModels {
 		Returns a box of zeros for a mesh without positions.
 
 		@param mesh  The mesh.
+		@param out  Optional. The box to fill; a new one when omitted.
 		@return  The box. */
-	static function GetMeshBoundingBox(mesh:Mesh):BoundingBox {
+	static function GetMeshBoundingBox(mesh:Mesh, ?out:BoundingBox):BoundingBox {
 		var v = mesh.vertices;
-		if (v == null)
-			return new BoundingBox(new Vector3(), new Vector3());
-		var minVertex = new Vector3(v[0], v[1], v[2]),
-			maxVertex = new Vector3(v[0], v[1], v[2]);
-		for (i in 1...mesh.vertexCount) {
-			var p = new Vector3(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
-			minVertex = Vector3Min(minVertex, p);
-			maxVertex = Vector3Max(maxVertex, p);
+		var minX = 0., minY = 0., minZ = 0., maxX = 0., maxY = 0., maxZ = 0.;
+		if (v != null) {
+			minX = maxX = v[0];
+			minY = maxY = v[1];
+			minZ = maxZ = v[2];
+			for (i in 1...mesh.vertexCount) {
+				var x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
+				minX = minX < x ? minX : x;
+				minY = minY < y ? minY : y;
+				minZ = minZ < z ? minZ : z;
+				maxX = maxX > x ? maxX : x;
+				maxY = maxY > y ? maxY : y;
+				maxZ = maxZ > z ? maxZ : z;
+			}
 		}
-		return new BoundingBox(minVertex, maxVertex);
+		if (out == null)
+			return new BoundingBox(new Vector3(minX, minY, minZ), new Vector3(maxX, maxY, maxZ));
+		out.min.set(minX, minY, minZ);
+		out.max.set(maxX, maxY, maxZ);
+		return out;
 	}
 
 	/** Returns a model's bounds, its meshes' boxes together with the least and most corners moved by its transform, as raylib's
@@ -1823,23 +1834,44 @@ class RModels {
 		A turned model's box is not its bounds. Transforming its eight corners produces those.
 
 		@param model  The model.
+		@param out  Optional. The box to fill; a new one when omitted.
 		@return  The box. */
-	static function GetModelBoundingBox(model:Model):BoundingBox {
-		var bounds = new BoundingBox(new Vector3(), new Vector3());
-		if (model.meshCount > 0) {
-			bounds = GetMeshBoundingBox(model.meshes[0]);
-			for (i in 1...model.meshCount) {
-				var other = GetMeshBoundingBox(model.meshes[i]);
-				bounds.min = new Vector3(bounds.min.x < other.min.x ? bounds.min.x : other.min.x, bounds.min.y < other.min.y ? bounds.min.y : other.min.y,
-					bounds.min.z < other.min.z ? bounds.min.z : other.min.z);
-				bounds.max = new Vector3(bounds.max.x > other.max.x ? bounds.max.x : other.max.x, bounds.max.y > other.max.y ? bounds.max.y : other.max.y,
-					bounds.max.z > other.max.z ? bounds.max.z : other.max.z);
+	static function GetModelBoundingBox(model:Model, ?out:BoundingBox):BoundingBox {
+		var minX = 0., minY = 0., minZ = 0., maxX = 0., maxY = 0., maxZ = 0.;
+		for (i in 0...model.meshCount) {
+			var box = GetMeshBoundingBox(model.meshes[i], meshBounds), min = box.min, max = box.max;
+			if (i == 0) {
+				minX = min.x;
+				minY = min.y;
+				minZ = min.z;
+				maxX = max.x;
+				maxY = max.y;
+				maxZ = max.z;
+				continue;
 			}
+			minX = minX < min.x ? minX : min.x;
+			minY = minY < min.y ? minY : min.y;
+			minZ = minZ < min.z ? minZ : min.z;
+			maxX = maxX > max.x ? maxX : max.x;
+			maxY = maxY > max.y ? maxY : max.y;
+			maxZ = maxZ > max.z ? maxZ : max.z;
 		}
-		bounds.min = Vector3Transform(bounds.min, model.transform);
-		bounds.max = Vector3Transform(bounds.max, model.transform);
-		return bounds;
+		return transformedBox(minX, minY, minZ, maxX, maxY, maxZ, model.transform, out);
 	}
+
+	// A box's least and most corners moved by a transform, as raylib moves a model's box, into out or a new box.
+	static function transformedBox(minX:Float, minY:Float, minZ:Float, maxX:Float, maxY:Float, maxZ:Float, transform:Matrix,
+			out:Null<BoundingBox>):BoundingBox {
+		var m:Matrix4 = transform;
+		if (out == null)
+			return new BoundingBox(m.transformPoint(minX, minY, minZ), m.transformPoint(maxX, maxY, maxZ));
+		m.transformPoint(minX, minY, minZ, out.min);
+		m.transformPoint(maxX, maxY, maxZ, out.max);
+		return out;
+	}
+
+	// The box GetModelBoundingBox reads each mesh's into, reused.
+	static final meshBounds = new BoundingBox();
 
 	// A par_shapes mesh as raylib converts it: three vertices a triangle, each with its point's position, normal and texture coordinates.
 	static function fromParMesh(m:ParMesh):Mesh {
@@ -1924,33 +1956,25 @@ class RModels {
 		@param ray  The ray.
 		@param center  The sphere's center.
 		@param radius  Its radius.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision {
-		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
-		var raySpherePos = Vector3Subtract(center, ray.position);
-		var vector = Vector3DotProduct(raySpherePos, ray.direction);
-		var distanceToCenter = Vector3Length(raySpherePos);
+	static function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float, ?out:RayCollision):RayCollision {
+		var raySpherePos = center.subtract(ray.position, hitOffset);
+		var vector = raySpherePos.dot(ray.direction);
+		var distanceToCenter = raySpherePos.length;
 		var d = radius * radius - (distanceToCenter * distanceToCenter - vector * vector);
 		// The ray's line meets the sphere; from inside, the hit is on the far side.
 		if (d >= 0.0) {
-			var hitDistance, point, normal;
-			if (distanceToCenter < radius) {
-				hitDistance = vector + Math.sqrt(d);
-				point = Vector3Add(ray.position, Vector3Scale(ray.direction, hitDistance));
-				normal = Vector3Negate(Vector3Normalize(Vector3Subtract(point, center)));
-			} else {
-				hitDistance = vector - Math.sqrt(d);
-				point = Vector3Add(ray.position, Vector3Scale(ray.direction, hitDistance));
-				normal = Vector3Normalize(Vector3Subtract(point, center));
-			}
-			if (hitDistance >= 0.0) {
-				collision.hit = true;
-				collision.point = point;
-				collision.normal = normal;
-				collision.distance = hitDistance;
-			}
+			var inside = distanceToCenter < radius;
+			var hitDistance = inside ? vector + Math.sqrt(d) : vector - Math.sqrt(d);
+			var point = ray.position.add(ray.direction.scale(hitDistance, hitPoint), hitPoint);
+			var normal = point.subtract(center, hitNormal).normalize(hitNormal);
+			if (inside)
+				normal.negate(normal);
+			if (hitDistance >= 0.0)
+				return collisionOf(true, hitDistance, point, normal, out);
 		}
-		return collision;
+		return collisionOf(false, 0, zeroVector, zeroVector, out);
 	}
 
 	/** Returns where a ray meets a box, as raylib's does.
@@ -1961,40 +1985,34 @@ class RModels {
 
 		@param ray  The ray.
 		@param box  The box.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	static function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision {
-		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
-		var position = ray.position, direction = ray.direction;
+	static function GetRayCollisionBox(ray:Ray, box:BoundingBox, ?out:RayCollision):RayCollision {
+		var position = ray.position, direction = ray.direction, min = box.min, max = box.max;
 		// From inside, the distance is negative, as if the ray were turned round, so it is turned round.
-		var insideBox = position.x > box.min.x && position.x < box.max.x && position.y > box.min.y && position.y < box.max.y && position.z > box.min.z
-			&& position.z < box.max.z;
+		var insideBox = position.x > min.x && position.x < max.x && position.y > min.y && position.y < max.y && position.z > min.z && position.z < max.z;
 		if (insideBox)
-			direction = Vector3Negate(direction);
-		var t = [for (_ in 0...11) 0.];
-		t[8] = 1.0 / direction.x;
-		t[9] = 1.0 / direction.y;
-		t[10] = 1.0 / direction.z;
-		t[0] = (box.min.x - position.x) * t[8];
-		t[1] = (box.max.x - position.x) * t[8];
-		t[2] = (box.min.y - position.y) * t[9];
-		t[3] = (box.max.y - position.y) * t[9];
-		t[4] = (box.min.z - position.z) * t[10];
-		t[5] = (box.max.z - position.z) * t[10];
-		t[6] = fmaxf(fmaxf(fminf(t[0], t[1]), fminf(t[2], t[3])), fminf(t[4], t[5]));
-		t[7] = fminf(fminf(fmaxf(t[0], t[1]), fmaxf(t[2], t[3])), fmaxf(t[4], t[5]));
-		collision.hit = !(t[7] < 0 || t[6] > t[7]);
-		collision.distance = t[6];
-		collision.point = Vector3Add(position, Vector3Scale(direction, collision.distance));
+			direction = direction.negate(hitOffset);
+		var t8 = 1.0 / direction.x,
+			t9 = 1.0 / direction.y,
+			t10 = 1.0 / direction.z;
+		var t0 = (min.x - position.x) * t8,
+			t1 = (max.x - position.x) * t8,
+			t2 = (min.y - position.y) * t9,
+			t3 = (max.y - position.y) * t9,
+			t4 = (min.z - position.z) * t10,
+			t5 = (max.z - position.z) * t10;
+		var t6 = fmaxf(fmaxf(fminf(t0, t1), fminf(t2, t3)), fminf(t4, t5));
+		var t7 = fminf(fminf(fmaxf(t0, t1), fmaxf(t2, t3)), fmaxf(t4, t5));
+		var hit = !(t7 < 0 || t6 > t7);
+		var point = position.add(direction.scale(t6, hitPoint), hitPoint);
 		// The normal: from the box's center to the point, scaled to a cube a little over 2 across, each part cut to an integer.
-		var normal = Vector3Subtract(collision.point, Vector3Lerp(box.min, box.max, 0.5));
-		normal = Vector3Divide(Vector3Scale(normal, 2.01), Vector3Subtract(box.max, box.min));
-		normal = new Vector3(truncate(normal.x), truncate(normal.y), truncate(normal.z));
-		collision.normal = Vector3Normalize(normal);
-		if (insideBox) {
-			collision.distance *= -1.0;
-			collision.normal = Vector3Negate(collision.normal);
-		}
-		return collision;
+		var normal = point.subtract(Vector3.lerp(min, max, 0.5, hitNormal), hitNormal);
+		normal.scale(2.01, normal).divide(max.subtract(min, boxSize), normal);
+		normal.set(truncate(normal.x), truncate(normal.y), truncate(normal.z)).normalize(normal);
+		if (insideBox)
+			normal.negate(normal);
+		return collisionOf(hit, insideBox ? t6 * -1.0 : t6, point, normal, out);
 	}
 
 	/** Returns where a ray first meets a mesh moved by a transform, at the nearest of the mesh's triangles.
@@ -2002,26 +2020,26 @@ class RModels {
 		@param ray  The ray.
 		@param mesh  The mesh, with its positions.
 		@param transform  The transform.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision {
-		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
+	static function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix, ?out:RayCollision):RayCollision {
 		var v = mesh.vertices;
 		if (v == null)
-			return collision;
-		var t:Matrix4 = transform;
-		function corner(i:Int):Vector3 {
-			var p = t.transformPoint(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
-			return new Vector3(p.x, p.y, p.z);
-		}
+			return collisionOf(false, 0, zeroVector, zeroVector, out);
+		var m:Matrix4 = transform,
+			nearest = meshNearest,
+			indices = mesh.indices;
+		collisionOf(false, 0, zeroVector, zeroVector, nearest);
 		for (k in 0...mesh.triangleCount) {
-			var a = mesh.indices == null ? k * 3 : mesh.indices[k * 3],
-				b = mesh.indices == null ? k * 3 + 1 : mesh.indices[k * 3 + 1],
-				c = mesh.indices == null ? k * 3 + 2 : mesh.indices[k * 3 + 2];
-			var hit = GetRayCollisionTriangle(ray, corner(a), corner(b), corner(c));
-			if (hit.hit && (!collision.hit || collision.distance > hit.distance))
-				collision = hit;
+			var a = indices == null ? k * 3 : indices[k * 3],
+				b = indices == null ? k * 3 + 1 : indices[k * 3 + 1],
+				c = indices == null ? k * 3 + 2 : indices[k * 3 + 2];
+			var hit = GetRayCollisionTriangle(ray, m.transformPoint(v[a * 3], v[a * 3 + 1], v[a * 3 + 2], cornerA),
+				m.transformPoint(v[b * 3], v[b * 3 + 1], v[b * 3 + 2], cornerB), m.transformPoint(v[c * 3], v[c * 3 + 1], v[c * 3 + 2], cornerC), meshTriangle);
+			if (hit.hit && (!nearest.hit || nearest.distance > hit.distance))
+				hit.copy(nearest);
 		}
-		return collision;
+		return collisionOf(nearest.hit, nearest.distance, nearest.point, nearest.normal, out);
 	}
 
 	/** Returns where a ray meets a triangle from either side, its normal that of the corners read counterclockwise.
@@ -2032,33 +2050,33 @@ class RModels {
 		@param p1  A corner.
 		@param p2  The next.
 		@param p3  The last.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision {
+	static function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, ?out:RayCollision):RayCollision {
 		var EPSILON = 0.000001;
-		var collision = new RayCollision(false, 0, new Vector3(), new Vector3());
-		var edge1 = Vector3Subtract(p2, p1), edge2 = Vector3Subtract(p3, p1);
-		var p = Vector3CrossProduct(ray.direction, edge2);
-		var det = Vector3DotProduct(edge1, p);
+		var edge1 = p2.subtract(p1, triangleEdge1),
+			edge2 = p3.subtract(p1, triangleEdge2);
+		var p = ray.direction.cross(edge2, triangleP);
+		var det = edge1.dot(p);
 		// Parallel to it, or in its plane.
 		if (det > -EPSILON && det < EPSILON)
-			return collision;
+			return collisionOf(false, 0, zeroVector, zeroVector, out);
 		var invDet = 1.0 / det;
-		var tv = Vector3Subtract(ray.position, p1);
-		var u = Vector3DotProduct(tv, p) * invDet;
+		var tv = ray.position.subtract(p1, triangleT);
+		var u = tv.dot(p) * invDet;
 		if (u < 0.0 || u > 1.0)
-			return collision;
-		var q = Vector3CrossProduct(tv, edge1);
-		var v = Vector3DotProduct(ray.direction, q) * invDet;
+			return collisionOf(false, 0, zeroVector, zeroVector, out);
+		var q = tv.cross(edge1, triangleQ);
+		var v = ray.direction.dot(q) * invDet;
 		if (v < 0.0 || (u + v) > 1.0)
-			return collision;
-		var t = Vector3DotProduct(edge2, q) * invDet;
+			return collisionOf(false, 0, zeroVector, zeroVector, out);
+		var t = edge2.dot(q) * invDet;
 		if (t > EPSILON) {
-			collision.hit = true;
-			collision.distance = t;
-			collision.normal = Vector3Normalize(Vector3CrossProduct(edge1, edge2));
-			collision.point = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
+			var normal = edge1.cross(edge2, hitNormal).normalize(hitNormal);
+			var point = ray.position.add(ray.direction.scale(t, hitPoint), hitPoint);
+			return collisionOf(true, t, point, normal, out);
 		}
-		return collision;
+		return collisionOf(false, 0, zeroVector, zeroVector, out);
 	}
 
 	/** Returns where a ray meets a quad, as two triangles: p1, p2 and p4, then p2, p3 and p4.
@@ -2068,13 +2086,45 @@ class RModels {
 		@param p2  The next, counterclockwise.
 		@param p3  The next.
 		@param p4  The last.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision {
-		var collision = GetRayCollisionTriangle(ray, p1, p2, p4);
-		if (!collision.hit)
-			collision = GetRayCollisionTriangle(ray, p2, p3, p4);
-		return collision;
+	static function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3, ?out:RayCollision):RayCollision {
+		// The first triangle's collision is kept apart, so the second triangle reads the corners before out is written.
+		var first = GetRayCollisionTriangle(ray, p1, p2, p4, quadFirst);
+		if (first.hit)
+			return collisionOf(true, first.distance, first.point, first.normal, out);
+		return GetRayCollisionTriangle(ray, p2, p3, p4, out);
 	}
+
+	// A collision, its point and normal copied, into out (its point and normal set in place) or a new collision.
+	static function collisionOf(hit:Bool, distance:Float, point:Vector3, normal:Vector3, out:Null<RayCollision>):RayCollision {
+		if (out == null)
+			return new RayCollision(hit, distance, point.copy(), normal.copy());
+		out.hit = hit;
+		out.distance = distance;
+		point.copy(out.point);
+		normal.copy(out.normal);
+		return out;
+	}
+
+	// The vectors and collisions the ray collisions work in, reused, so out is written only once every input is read. zeroVector stays
+	// 0.
+	static final zeroVector = new Vector3();
+	static final hitPoint = new Vector3();
+	static final hitNormal = new Vector3();
+	static final hitOffset = new Vector3();
+	static final boxSize = new Vector3();
+	static final triangleEdge1 = new Vector3();
+	static final triangleEdge2 = new Vector3();
+	static final triangleP = new Vector3();
+	static final triangleT = new Vector3();
+	static final triangleQ = new Vector3();
+	static final cornerA = new Vector3();
+	static final cornerB = new Vector3();
+	static final cornerC = new Vector3();
+	static final meshTriangle = new RayCollision();
+	static final meshNearest = new RayCollision();
+	static final quadFirst = new RayCollision();
 
 	// C's cast of a float to int, toward 0, kept a float.
 	static function truncate(x:Float):Float

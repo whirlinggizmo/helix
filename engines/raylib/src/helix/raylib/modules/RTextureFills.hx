@@ -50,7 +50,7 @@ class RTextureFills {
 		@param dest  Where the fill is drawn, in pixels.
 		@param amount  How full, clamped to [0, 1].
 		@param fillDirection  A `TEXTURE_FILL_` value.
-		@param out  Optional. The vector to fill, or null for a new one.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  out, or the new vector: x and y in screen pixels, as dest's, z a radial fill's angle and 0 for the others. */
 	static function GetTextureFillEdge(dest:Rectangle, amount:Float, fillDirection:Int, ?out:Vector3):Vector3 {
 		return edge(dest, amount, fillDirection, dest.width / 2, dest.height / 2, 0, 360, out);
@@ -65,7 +65,7 @@ class RTextureFills {
 		@param origin  The point a radial fill turns about, from dest's top-left, in pixels, as `DrawTexturePro`'s origin.
 		@param startAngle  Where a radial fill starts, in degrees clockwise from straight up, wrapped to [0, 360).
 		@param fillDegrees  How far a full radial fill sweeps, in degrees, clamped to [0, 360].
-		@param out  Optional. The vector to fill, or null for a new one.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  out, or the new vector. */
 	static function GetTextureFillEdgeEx(dest:Rectangle, amount:Float, fillDirection:Int, origin:Vector2, startAngle:Float, fillDegrees:Float,
 			?out:Vector3):Vector3 {

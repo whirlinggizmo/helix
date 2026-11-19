@@ -50,6 +50,10 @@ class TouchTests {
 		var tap = GetMousePosition();
 		check(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && tap.x == 120 && tap.y == 140,
 			"a finger landing and lifting within a frame presses and releases the mouse there");
+		var into = new Vector2();
+		check(GetMousePosition(into) == into && into != tap && into.x == 120 && into.y == 140, "GetMousePosition fills out");
+		into.set(0, 0);
+		check(GetTouchPosition(0, into) == into && into.x == 120 && into.y == 140, "GetTouchPosition fills out");
 		frame();
 		check(!IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !IsMouseButtonReleased(MOUSE_BUTTON_LEFT), "the frame after the tap: neither");
 

@@ -1307,15 +1307,17 @@ class Raylib {
 
 	/** Returns the window's place on the desktop.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  Its left and top edges, in pixels. */
-	public static inline function GetWindowPosition():Vector2
-		return RCore.GetWindowPosition();
+	public static inline function GetWindowPosition(?out:Vector2):Vector2
+		return RCore.GetWindowPosition(out);
 
 	/** Returns how many of the display's pixels a pixel drawn covers, across and down, 2 on most phones and high-density displays.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The scale. */
-	public static inline function GetWindowScaleDPI():Vector2
-		return RCore.GetWindowScaleDPI();
+	public static inline function GetWindowScaleDPI(?out:Vector2):Vector2
+		return RCore.GetWindowScaleDPI(out);
 
 	/** Returns the number of monitors.
 
@@ -1332,9 +1334,10 @@ class Raylib {
 	/** Returns a monitor's top-left corner on the desktop.
 
 		@param monitor  The monitor.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The corner, in pixels. */
-	public static inline function GetMonitorPosition(monitor:Int):Vector2
-		return RCore.GetMonitorPosition(monitor);
+	public static inline function GetMonitorPosition(monitor:Int, ?out:Vector2):Vector2
+		return RCore.GetMonitorPosition(monitor, out);
 
 	/** Returns a monitor's width.
 
@@ -1640,9 +1643,10 @@ class Raylib {
 
 		`SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position. */
-	public static inline function GetMousePosition():Vector2
-		return RCore.GetMousePosition();
+	public static inline function GetMousePosition(?out:Vector2):Vector2
+		return RCore.GetMousePosition(out);
 
 	/** Moves the mouse to a place on the screen.
 
@@ -1673,9 +1677,10 @@ class Raylib {
 	/** Returns how far the wheel turned this frame, in both directions, right and forward positive. See `GetMouseWheelMove` for reading the
 		larger direction alone.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The notches. */
-	public static inline function GetMouseWheelMoveV():Vector2
-		return RCore.GetMouseWheelMoveV();
+	public static inline function GetMouseWheelMoveV(?out:Vector2):Vector2
+		return RCore.GetMouseWheelMoveV(out);
 
 	/** Shows the cursor. */
 	public static inline function ShowCursor():Void
@@ -1737,9 +1742,10 @@ class Raylib {
 		(`import helix.raylib.extras.VirtualGamepad.*;`) for on-screen sticks read as a gamepad's.
 
 		@param index  Which finger, 0 for the first down.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position, or (0, 0) when fewer are down. */
-	public static inline function GetTouchPosition(index:Int):Vector2
-		return RCore.GetTouchPosition(index);
+	public static inline function GetTouchPosition(index:Int, ?out:Vector2):Vector2
+		return RCore.GetTouchPosition(index, out);
 
 	/** Returns a finger's id, which stays the same while it is down.
 
@@ -1793,9 +1799,10 @@ class Raylib {
 
 	/** Returns the drag, from where the finger landed to where it is, in fractions of the screen.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function GetGestureDragVector():Vector2
-		return RCore.GetGestureDragVector();
+	public static inline function GetGestureDragVector(?out:Vector2):Vector2
+		return RCore.GetGestureDragVector(out);
 
 	/** Returns the last swipe's angle.
 
@@ -1805,9 +1812,10 @@ class Raylib {
 
 	/** Returns the pinch, from the first finger to the second, in fractions of the screen.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function GetGesturePinchVector():Vector2
-		return RCore.GetGesturePinchVector();
+	public static inline function GetGesturePinchVector(?out:Vector2):Vector2
+		return RCore.GetGesturePinchVector(out);
 
 	/** Returns the pinch's angle.
 
@@ -2271,25 +2279,28 @@ class Raylib {
 	/** Returns a 2D camera's transform, from the world to the screen.
 
 		@param camera  The camera.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function GetCameraMatrix2D(camera:Camera2D):Matrix
-		return RCore.GetCameraMatrix2D(camera);
+	public static inline function GetCameraMatrix2D(camera:Camera2D, ?out:Matrix):Matrix
+		return RCore.GetCameraMatrix2D(camera, out);
 
 	/** Returns where a point in a 2D camera's world is on the screen.
 
 		@param position  The point.
 		@param camera  The camera.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be position.
 		@return  The screen position. */
-	public static inline function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2
-		return RCore.GetWorldToScreen2D(position, camera);
+	public static inline function GetWorldToScreen2D(position:Vector2, camera:Camera2D, ?out:Vector2):Vector2
+		return RCore.GetWorldToScreen2D(position, camera, out);
 
 	/** Returns where a screen position is in a 2D camera's world.
 
 		@param position  The screen position.
 		@param camera  The camera.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be position.
 		@return  The point, or NaN at zoom 0. */
-	public static inline function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2
-		return RCore.GetScreenToWorld2D(position, camera);
+	public static inline function GetScreenToWorld2D(position:Vector2, camera:Camera2D, ?out:Vector2):Vector2
+		return RCore.GetScreenToWorld2D(position, camera, out);
 
 	/** Draws in 3D through a camera until `EndMode3D`, testing depth (rlgl's `rlEnableDepthTest`).
 
@@ -2341,18 +2352,20 @@ class Raylib {
 	/** Returns a camera's view, as `BeginMode3D` uses it.
 
 		@param camera  The camera.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function GetCameraMatrix(camera:Camera3D):Matrix
-		return RCore.GetCameraMatrix(camera);
+	public static inline function GetCameraMatrix(camera:Camera3D, ?out:Matrix):Matrix
+		return RCore.GetCameraMatrix(camera, out);
 
 	/** Returns the ray from a camera through a screen position, for picking. See `GetScreenToWorldRayEx` for casting through a view of
 		another size.
 
 		@param position  The screen position.
 		@param camera  The camera.
+		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
-	public static inline function GetScreenToWorldRay(position:Vector2, camera:Camera3D):Ray
-		return RCore.GetScreenToWorldRay(position, camera);
+	public static inline function GetScreenToWorldRay(position:Vector2, camera:Camera3D, ?out:Ray):Ray
+		return RCore.GetScreenToWorldRay(position, camera, out);
 
 	/** Returns the ray from a camera through a position in a view of a size, such as a render texture's.
 
@@ -2360,25 +2373,28 @@ class Raylib {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
+		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
-	public static inline function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray
-		return RCore.GetScreenToWorldRayEx(position, camera, width, height);
+	public static inline function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int, ?out:Ray):Ray
+		return RCore.GetScreenToWorldRayEx(position, camera, width, height, out);
 
 	/** Returns the ray from a camera through a screen position, under raylib's old name for `GetScreenToWorldRay`.
 
 		@param position  The screen position.
 		@param camera  The camera.
+		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
-	public static inline function GetMouseRay(position:Vector2, camera:Camera3D):Ray
-		return RCore.GetMouseRay(position, camera);
+	public static inline function GetMouseRay(position:Vector2, camera:Camera3D, ?out:Ray):Ray
+		return RCore.GetMouseRay(position, camera, out);
 
 	/** Returns where a point in the world is on the screen. See `GetWorldToScreenEx` for placing it in a view of another size.
 
 		@param position  The point.
 		@param camera  The camera.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The screen position. */
-	public static inline function GetWorldToScreen(position:Vector3, camera:Camera3D):Vector2
-		return RCore.GetWorldToScreen(position, camera);
+	public static inline function GetWorldToScreen(position:Vector3, camera:Camera3D, ?out:Vector2):Vector2
+		return RCore.GetWorldToScreen(position, camera, out);
 
 	/** Returns where a point in the world is in a view of a size.
 
@@ -2386,17 +2402,19 @@ class Raylib {
 		@param camera  The camera.
 		@param width  The view's width.
 		@param height  The view's height.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position in the view, or infinite or NaN for a point level with a perspective camera's position. */
-	public static inline function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2
-		return RCore.GetWorldToScreenEx(position, camera, width, height);
+	public static inline function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int, ?out:Vector2):Vector2
+		return RCore.GetWorldToScreenEx(position, camera, width, height, out);
 
 	/** Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`).
 
 		A `SetMousePosition` this frame is part of the movement.
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The movement. */
-	public static inline function GetMouseDelta():Vector2
-		return RCore.GetMouseDelta();
+	public static inline function GetMouseDelta(?out:Vector2):Vector2
+		return RCore.GetMouseDelta(out);
 
 	/** Starts drawing for both eyes of a head-mounted display, with the config's projections and view offsets (`rlEnableStereoRender`).
 
@@ -3084,9 +3102,10 @@ class Raylib {
 
 	/** Returns the rectangle of the shapes texture that the filled shapes sample.
 
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The rectangle, in pixels. */
-	public static inline function GetShapesTextureRectangle():Rectangle
-		return RShapes.GetShapesTextureRectangle();
+	public static inline function GetShapesTextureRectangle(?out:Rectangle):Rectangle
+		return RShapes.GetShapesTextureRectangle(out);
 
 	/** Draws one pixel.
 
@@ -3559,9 +3578,10 @@ class Raylib {
 		@param startPos  The start.
 		@param endPos  The end.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be startPos or endPos.
 		@return  The point. */
-	public static inline function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float):Vector2
-		return RShapes.GetSplinePointLinear(startPos, endPos, t);
+	public static inline function GetSplinePointLinear(startPos:Vector2, endPos:Vector2, t:Float, ?out:Vector2):Vector2
+		return RShapes.GetSplinePointLinear(startPos, endPos, t, out);
 
 	/** Returns a point on one piece of a B-spline, between the middle two of four points.
 
@@ -3570,9 +3590,10 @@ class Raylib {
 		@param p3  The third.
 		@param p4  The fourth.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the four.
 		@return  The point. */
-	public static inline function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
-		return RShapes.GetSplinePointBasis(p1, p2, p3, p4, t);
+	public static inline function GetSplinePointBasis(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2
+		return RShapes.GetSplinePointBasis(p1, p2, p3, p4, t, out);
 
 	/** Returns a point on one piece of a Catmull-Rom spline, through the middle two of four points.
 
@@ -3581,9 +3602,10 @@ class Raylib {
 		@param p3  The end.
 		@param p4  The fourth point, which steers it.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the four.
 		@return  The point. */
-	public static inline function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float):Vector2
-		return RShapes.GetSplinePointCatmullRom(p1, p2, p3, p4, t);
+	public static inline function GetSplinePointCatmullRom(p1:Vector2, p2:Vector2, p3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2
+		return RShapes.GetSplinePointCatmullRom(p1, p2, p3, p4, t, out);
 
 	/** Returns a point on a quadratic Bezier curve.
 
@@ -3591,9 +3613,10 @@ class Raylib {
 		@param c2  The control point.
 		@param p3  The end.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the three.
 		@return  The point. */
-	public static inline function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float):Vector2
-		return RShapes.GetSplinePointBezierQuad(p1, c2, p3, t);
+	public static inline function GetSplinePointBezierQuad(p1:Vector2, c2:Vector2, p3:Vector2, t:Float, ?out:Vector2):Vector2
+		return RShapes.GetSplinePointBezierQuad(p1, c2, p3, t, out);
 
 	/** Returns a point on a cubic Bezier curve.
 
@@ -3602,9 +3625,10 @@ class Raylib {
 		@param c3  The end's control point.
 		@param p4  The end.
 		@param t  How far along, 0 at the start to 1 at the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be any of the four.
 		@return  The point. */
-	public static inline function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float):Vector2
-		return RShapes.GetSplinePointBezierCubic(p1, c2, c3, p4, t);
+	public static inline function GetSplinePointBezierCubic(p1:Vector2, c2:Vector2, c3:Vector2, p4:Vector2, t:Float, ?out:Vector2):Vector2
+		return RShapes.GetSplinePointBezierCubic(p1, c2, c3, p4, t, out);
 
 	/** Returns whether two rectangles overlap. See `GetCollisionRec` for finding where they overlap.
 
@@ -3706,9 +3730,10 @@ class Raylib {
 
 		@param rec1  One rectangle.
 		@param rec2  The other.
+		@param out  Optional. The rectangle to fill; a new one when omitted. It may be rec1 or rec2.
 		@return  The overlap, or an empty rectangle at 0, 0 when they don't. */
-	public static inline function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
-		return RShapes.GetCollisionRec(rec1, rec2);
+	public static inline function GetCollisionRec(rec1:Rectangle, rec2:Rectangle, ?out:Rectangle):Rectangle
+		return RShapes.GetCollisionRec(rec1, rec2, out);
 
 	// ---- rtextures: textures, render textures and colors (raylib/RTextures.hx) ----
 
@@ -3798,9 +3823,10 @@ class Raylib {
 	/** Returns a color as four numbers, 0 to 1 each.
 
 		@param color  The color.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  Red, green, blue and alpha as x, y, z and w. */
-	public static inline function ColorNormalize(color:Color):Vector4
-		return RTextures.ColorNormalize(color);
+	public static inline function ColorNormalize(color:Color, ?out:Vector4):Vector4
+		return RTextures.ColorNormalize(color, out);
 
 	/** Returns a color from four numbers, 0 to 1 each.
 
@@ -3843,9 +3869,10 @@ class Raylib {
 	/** Returns a color's hue, saturation and value.
 
 		@param color  The color; its alpha is ignored.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The hue in degrees, 0 to 360, as x; the saturation and value, 0 to 1 each, as y and z. A gray's hue and saturation are 0. */
-	public static inline function ColorToHSV(color:Color):Vector3
-		return RTextures.ColorToHSV(color);
+	public static inline function ColorToHSV(color:Color, ?out:Vector3):Vector3
+		return RTextures.ColorToHSV(color, out);
 
 	/** Returns the color of a hue, saturation and value, its alpha 255.
 
@@ -4494,9 +4521,10 @@ class Raylib {
 
 		@param image  The image.
 		@param threshold  The threshold, 0 to 1.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The rectangle, in pixels; all zero when no pixel is over it. */
-	public static inline function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle
-		return RTextures.GetImageAlphaBorder(image, threshold);
+	public static inline function GetImageAlphaBorder(image:Image, threshold:Float, ?out:Rectangle):Rectangle
+		return RTextures.GetImageAlphaBorder(image, threshold, out);
 
 	/** Returns a pixel's color, as `LoadImageColors` reads it.
 
@@ -5047,9 +5075,10 @@ class Raylib {
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
 		@param spacing  The space between letters, in pixels.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The size, in pixels; 0 by 0 for no text, a font with no texture or a null font. */
-	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2
-		return RText.MeasureTextEx(font, text, fontSize, spacing);
+	public static inline function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float, ?out:Vector2):Vector2
+		return RText.MeasureTextEx(font, text, fontSize, spacing, out);
 
 	/** Returns the index of a character's glyph in a font.
 
@@ -5073,9 +5102,10 @@ class Raylib {
 
 		@param font  The font.
 		@param codepoint  The character.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The rectangle, in texels; 0 by 0 at 0, 0 for a font that isn't valid (`IsFontValid`). */
-	public static inline function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle
-		return RText.GetGlyphAtlasRec(font, codepoint);
+	public static inline function GetGlyphAtlasRec(font:Font, codepoint:Int, ?out:Rectangle):Rectangle
+		return RText.GetGlyphAtlasRec(font, codepoint, out);
 
 	/** Returns raylib's default font, made at the first call.
 
@@ -6270,9 +6300,10 @@ class Raylib {
 		Returns a box of zeros for a mesh without positions.
 
 		@param mesh  The mesh.
+		@param out  Optional. The box to fill; a new one when omitted.
 		@return  The box. */
-	public static inline function GetMeshBoundingBox(mesh:Mesh):BoundingBox
-		return RModels.GetMeshBoundingBox(mesh);
+	public static inline function GetMeshBoundingBox(mesh:Mesh, ?out:BoundingBox):BoundingBox
+		return RModels.GetMeshBoundingBox(mesh, out);
 
 	/** Returns a model's bounds, its meshes' boxes together with the least and most corners moved by its transform, as raylib's
 		does.
@@ -6280,9 +6311,10 @@ class Raylib {
 		A turned model's box is not its bounds. Transforming its eight corners produces those.
 
 		@param model  The model.
+		@param out  Optional. The box to fill; a new one when omitted.
 		@return  The box. */
-	public static inline function GetModelBoundingBox(model:Model):BoundingBox
-		return RModels.GetModelBoundingBox(model);
+	public static inline function GetModelBoundingBox(model:Model, ?out:BoundingBox):BoundingBox
+		return RModels.GetModelBoundingBox(model, out);
 
 	/** Returns whether two boxes overlap, touching included.
 
@@ -6322,9 +6354,10 @@ class Raylib {
 		@param ray  The ray.
 		@param center  The sphere's center.
 		@param radius  Its radius.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	public static inline function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float):RayCollision
-		return RModels.GetRayCollisionSphere(ray, center, radius);
+	public static inline function GetRayCollisionSphere(ray:Ray, center:Vector3, radius:Float, ?out:RayCollision):RayCollision
+		return RModels.GetRayCollisionSphere(ray, center, radius, out);
 
 	/** Returns where a ray meets a box, as raylib's does.
 
@@ -6334,18 +6367,20 @@ class Raylib {
 
 		@param ray  The ray.
 		@param box  The box.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	public static inline function GetRayCollisionBox(ray:Ray, box:BoundingBox):RayCollision
-		return RModels.GetRayCollisionBox(ray, box);
+	public static inline function GetRayCollisionBox(ray:Ray, box:BoundingBox, ?out:RayCollision):RayCollision
+		return RModels.GetRayCollisionBox(ray, box, out);
 
 	/** Returns where a ray first meets a mesh moved by a transform, at the nearest of the mesh's triangles.
 
 		@param ray  The ray.
 		@param mesh  The mesh, with its positions.
 		@param transform  The transform.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	public static inline function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
-		return RModels.GetRayCollisionMesh(ray, mesh, transform);
+	public static inline function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix, ?out:RayCollision):RayCollision
+		return RModels.GetRayCollisionMesh(ray, mesh, transform, out);
 
 	/** Returns where a ray meets a triangle from either side, its normal that of the corners read counterclockwise.
 
@@ -6355,9 +6390,10 @@ class Raylib {
 		@param p1  A corner.
 		@param p2  The next.
 		@param p3  The last.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	public static inline function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3):RayCollision
-		return RModels.GetRayCollisionTriangle(ray, p1, p2, p3);
+	public static inline function GetRayCollisionTriangle(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, ?out:RayCollision):RayCollision
+		return RModels.GetRayCollisionTriangle(ray, p1, p2, p3, out);
 
 	/** Returns where a ray meets a quad, as two triangles: p1, p2 and p4, then p2, p3 and p4.
 
@@ -6366,9 +6402,10 @@ class Raylib {
 		@param p2  The next, counterclockwise.
 		@param p3  The next.
 		@param p4  The last.
+		@param out  Optional. The collision to fill, its point and normal in place; a new one when omitted.
 		@return  The hit. */
-	public static inline function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3):RayCollision
-		return RModels.GetRayCollisionQuad(ray, p1, p2, p3, p4);
+	public static inline function GetRayCollisionQuad(ray:Ray, p1:Vector3, p2:Vector3, p3:Vector3, p4:Vector3, ?out:RayCollision):RayCollision
+		return RModels.GetRayCollisionQuad(ray, p1, p2, p3, p4, out);
 
 	// ---- rmodels: the model, material and animation loads and mesh writes in place of rmodels' that wait (raylib/RModelsAsync.hx) ----
 
@@ -7349,7 +7386,7 @@ class Raylib {
 
 	/** Unsupported. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up. */
 	public static macro function emscripten_run_script(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script: Unsupported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
+		return helix.platform.macros.Build.unsupported("emscripten_run_script: Unsupported. See GetWindowSafeArea(?out:Rectangle) for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
 			macro {});
 
 	/** Unsupported. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held. */

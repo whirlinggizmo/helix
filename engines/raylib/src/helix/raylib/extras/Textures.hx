@@ -120,7 +120,7 @@ class Textures {
 		@param dest  Where the fill is drawn, in pixels.
 		@param amount  How full, clamped to [0, 1].
 		@param fillDirection  A `TEXTURE_FILL_` value.
-		@param out  Optional. The vector to fill, or null for a new one.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  out, or the new vector: x and y in screen pixels, as dest's, z a radial fill's angle and 0 for the others. */
 	public static inline function GetTextureFillEdge(dest:Rectangle, amount:Float, fillDirection:Int, ?out:Vector3):Vector3
 		return RTextureFills.GetTextureFillEdge(dest, amount, fillDirection, out);
@@ -134,7 +134,7 @@ class Textures {
 		@param origin  The point a radial fill turns about, from dest's top-left, in pixels, as `DrawTexturePro`'s origin.
 		@param startAngle  Where a radial fill starts, in degrees clockwise from straight up, wrapped to [0, 360).
 		@param fillDegrees  How far a full radial fill sweeps, in degrees, clamped to [0, 360].
-		@param out  Optional. The vector to fill, or null for a new one.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  out, or the new vector. */
 	public static inline function GetTextureFillEdgeEx(dest:Rectangle, amount:Float, fillDirection:Int, origin:Vector2, startAngle:Float, fillDegrees:Float,
 			?out:Vector3):Vector3
@@ -197,7 +197,7 @@ class Textures {
 
 		@param atlas  The atlas.
 		@param name  The image's name, as the atlas's file names it, extension and all: `sword.png`.
-		@param out  Optional. The rectangle to fill, or null for a new one.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  out, or the new rectangle, in pixels of the atlas's texture, or an empty rectangle when refused. */
 	public static inline function GetTextureAtlasRectangle(atlas:TextureAtlas, name:String, ?out:Rectangle):Rectangle
 		return RTextureAtlases.GetTextureAtlasRectangle(atlas, name, out);
@@ -227,7 +227,7 @@ class Textures {
 
 		@param target  The render texture.
 		@param integerScale  Whether its size is a whole multiple of the render texture's.
-		@param out  Optional. The rectangle to fill, or null for a new one.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  out, or the new rectangle, in screen pixels. */
 	public static inline function GetRenderTextureFitRectangle(target:RenderTexture2D, integerScale:Bool, ?out:Rectangle):Rectangle
 		return RRenderTextureFit.GetRenderTextureFitRectangle(target, integerScale, out);

@@ -35,9 +35,10 @@ class Models {
 		most corners are then moved by the model's transform (a turned model's box is not its bounds).
 
 		@param model  The model.
+		@param out  Optional. The box to fill; a new one when omitted.
 		@return  The box. */
-	public static inline function GetModelBoundingBoxPosed(model:Model):BoundingBox
-		return RModelsPosed.GetModelBoundingBoxPosed(model);
+	public static inline function GetModelBoundingBoxPosed(model:Model, ?out:BoundingBox):BoundingBox
+		return RModelsPosed.GetModelBoundingBoxPosed(model, out);
 
 	// ---- models: models merged into one (raylib/RModelsMerged.hx) ----
 

@@ -71,9 +71,10 @@ class Device {
 
 		Where nothing covers the window, as on a desktop, it is the whole window.
 
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The safe area. */
-	public static inline function GetWindowSafeArea():Rectangle
-		return RDevice.GetWindowSafeArea();
+	public static inline function GetWindowSafeArea(?out:Rectangle):Rectangle
+		return RDevice.GetWindowSafeArea(out);
 
 	/** Returns the operating system's name in lowercase, or "" where the platform names none. See `IsPlatformWeb` for whether the program
 		is built for a page.
@@ -193,9 +194,10 @@ class Device {
 
 		The tilt is 0 until readings arrive, and while level is being measured (`IsTiltCalibrating`).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The tilt. */
-	public static inline function GetTilt():Vector2
-		return RDevice.GetTilt();
+	public static inline function GetTilt(?out:Vector2):Vector2
+		return RDevice.GetTilt(out);
 
 	/** Sets the angle, in degrees, that reads as a full tilt of 1. It defaults to 30.
 

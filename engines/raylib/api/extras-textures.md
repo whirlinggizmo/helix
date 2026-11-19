@@ -85,7 +85,7 @@ static function GetTextureFillEdgeEx(dest:Rectangle, amount:Float, fillDirection
   - `dest`: Where the fill is drawn, in pixels.
   - `amount`: How full, clamped to [0, 1].
   - `fillDirection`: A `TEXTURE_FILL_` value.
-  - `out`: Optional. The vector to fill, or null for a new one.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: out, or the new vector: x and y in screen pixels, as dest's, z a radial fill's angle and 0 for the others.
 - `GetTextureFillEdgeEx`: Returns the middle of a fill's moving edge, as `GetTextureFillEdge` does, for a radial fill turning about an origin, starting at an angle and sweeping part of the circle.
   - `dest`: Where the fill is drawn, in pixels.
@@ -94,7 +94,7 @@ static function GetTextureFillEdgeEx(dest:Rectangle, amount:Float, fillDirection
   - `origin`: The point a radial fill turns about, from dest's top-left, in pixels, as `DrawTexturePro`'s origin.
   - `startAngle`: Where a radial fill starts, in degrees clockwise from straight up, wrapped to [0, 360).
   - `fillDegrees`: How far a full radial fill sweeps, in degrees, clamped to [0, 360].
-  - `out`: Optional. The vector to fill, or null for a new one.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: out, or the new vector.
 
 ### textures: tiled draws, nine-patches whose edges repeat, and textured polygons
@@ -142,7 +142,7 @@ static function GetTextureAtlasRectangle(atlas:TextureAtlas, name:String, ?out:R
 - `GetTextureAtlasRectangle`: Returns the rectangle of an image in an atlas, for a draw's source. Refused, with the name logged, for a name the atlas lacks.
   - `atlas`: The atlas.
   - `name`: The image's name, as the atlas's file names it, extension and all: `sword.png`.
-  - `out`: Optional. The rectangle to fill, or null for a new one.
+  - `out`: Optional. The rectangle to fill; a new one when omitted.
   - returns: out, or the new rectangle, in pixels of the atlas's texture, or an empty rectangle when refused.
 
 ### textures: a render texture fitted to the screen, and the mouse read in its pixels
@@ -163,7 +163,7 @@ static function GetRenderTextureFitRectangle(target:RenderTexture2D, integerScal
 - `GetRenderTextureFitRectangle`: Returns where `DrawRenderTextureFit` draws a render texture on the screen.
   - `target`: The render texture.
   - `integerScale`: Whether its size is a whole multiple of the render texture's.
-  - `out`: Optional. The rectangle to fill, or null for a new one.
+  - `out`: Optional. The rectangle to fill; a new one when omitted.
   - returns: out, or the new rectangle, in screen pixels.
 
 ## TextureAtlas

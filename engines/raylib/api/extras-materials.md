@@ -42,7 +42,7 @@ static function SetModelEmissive(model:Model, color:Color, intensity:Float):Void
   Read at each draw by `LoadPbrShader`'s and `LoadLightingShader`'s draws, and by helix-raylib's default shader, which draws exactly as raylib's while the material emits no light.
 - `GetMaterialEmissive`: Returns the light a material emits, as `SetMaterialEmissive` set it or its glTF file set it: its color times its intensity, red, green and blue, 0 for none.
   - `material`: The material.
-  - `out`: Optional. The vector filled; a new one when omitted.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: out, or the new vector.
 - `SetMaterialUnlit`: Sets whether a material is unlit: drawn in its albedo, the map's times its color, with no light and no shadow falling on it, as a glowing lamp, a sky or a sign drawn in the world is. A glTF material marked by glTF's `KHR_materials_unlit` loads unlit. Lit until set.
   - `material`: The material.

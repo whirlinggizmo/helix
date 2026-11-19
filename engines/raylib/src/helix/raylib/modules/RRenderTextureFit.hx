@@ -43,7 +43,7 @@ class RRenderTextureFit {
 
 		@param target  The render texture.
 		@param integerScale  Whether its size is a whole multiple of the render texture's.
-		@param out  Optional. The rectangle to fill, or null for a new one.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  out, or the new rectangle, in screen pixels. */
 	static function GetRenderTextureFitRectangle(target:RenderTexture2D, integerScale:Bool, ?out:Rectangle):Rectangle {
 		if (out == null)

@@ -78,10 +78,13 @@ class RVirtualGamepad {
 
 		@param gamepad  The slot, 0 to 3.
 		@param stick  `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The base's center. (0, 0) without a virtual gamepad in the slot. */
-	static function GetVirtualStickBase(gamepad:Int, stick:Int):Vector2 {
+	static function GetVirtualStickBase(gamepad:Int, stick:Int, ?out:Vector2):Vector2 {
 		var made = VirtualGamepads.inSlot(gamepad);
-		return made != null ? made.stickPoint(stick == 1, false) : new Vector2(0, 0);
+		if (made != null)
+			return made.stickPoint(stick == 1, false, out);
+		return out == null ? new Vector2(0, 0) : out.set(0, 0);
 	}
 
 	/** Returns where a stick's knob is, in the screen's pixels: under the finger, held within the radius of the base. A tilt stick's knob
@@ -89,10 +92,13 @@ class RVirtualGamepad {
 
 		@param gamepad  The slot, 0 to 3.
 		@param stick  `VIRTUAL_STICK_LEFT` or `VIRTUAL_STICK_RIGHT`.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The knob's center. (0, 0) without a virtual gamepad in the slot. */
-	static function GetVirtualStickKnob(gamepad:Int, stick:Int):Vector2 {
+	static function GetVirtualStickKnob(gamepad:Int, stick:Int, ?out:Vector2):Vector2 {
 		var made = VirtualGamepads.inSlot(gamepad);
-		return made != null ? made.stickPoint(stick == 1, true) : new Vector2(0, 0);
+		if (made != null)
+			return made.stickPoint(stick == 1, true, out);
+		return out == null ? new Vector2(0, 0) : out.set(0, 0);
 	}
 	#end
 }

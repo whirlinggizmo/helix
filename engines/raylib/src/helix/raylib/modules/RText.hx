@@ -194,14 +194,15 @@ class RText {
 		@param text  The text.
 		@param fontSize  The height of a line, in pixels.
 		@param spacing  The space between letters, in pixels.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The size, in pixels; 0 by 0 for no text, a font with no texture or a null font. */
-	static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float):Vector2 {
+	static function MeasureTextEx(font:Font, text:String, fontSize:Float, spacing:Float, ?out:Vector2):Vector2 {
 		if (font == null) {
 			refuseNull("MeasureTextEx");
-			return new Vector2();
+			return out == null ? new Vector2() : out.set(0, 0);
 		}
 		if (font.texture == null || font.texture.id == 0 || text == null || text.length == 0)
-			return new Vector2();
+			return out == null ? new Vector2() : out.set(0, 0);
 		// raylib's float arithmetic, each step rounded to single precision.
 		inline function f32(x:Float):Float
 			return helix.raylib.internal.Pixels.f32(x);
@@ -225,7 +226,8 @@ class RText {
 		}
 		if (widest < width)
 			widest = width;
-		return new Vector2(f32(f32(widest * scale) + f32((most - 1) * f32(spacing))), height);
+		var x = f32(f32(widest * scale) + f32((most - 1) * f32(spacing)));
+		return out == null ? new Vector2(x, height) : out.set(x, height);
 	}
 
 	/** Returns the index of a character's glyph in a font.
@@ -261,9 +263,16 @@ class RText {
 
 		@param font  The font.
 		@param codepoint  The character.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  The rectangle, in texels; 0 by 0 at 0, 0 for a font that isn't valid (`IsFontValid`). */
-	static function GetGlyphAtlasRec(font:Font, codepoint:Int):Rectangle {
-		return IsFontValid(font) ? font.recs[GetGlyphIndex(font, codepoint)] : new Rectangle();
+	static function GetGlyphAtlasRec(font:Font, codepoint:Int, ?out:Rectangle):Rectangle {
+		// A copy, so a later call filling the result leaves the font's own rectangle alone.
+		if (IsFontValid(font))
+			return font.recs[GetGlyphIndex(font, codepoint)].copy(out);
+		if (out == null)
+			return new Rectangle();
+		out.x = out.y = out.width = out.height = 0;
+		return out;
 	}
 
 	/** Returns raylib's default font, made at the first call.

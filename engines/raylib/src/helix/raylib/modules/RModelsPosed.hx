@@ -19,8 +19,9 @@ class RModelsPosed {
 		most corners are then moved by the model's transform (a turned model's box is not its bounds).
 
 		@param model  The model.
+		@param out  Optional. The box to fill; a new one when omitted.
 		@return  The box. */
-	static function GetModelBoundingBoxPosed(model:Model):BoundingBox {
+	static function GetModelBoundingBoxPosed(model:Model, ?out:BoundingBox):BoundingBox {
 		var minX = Math.POSITIVE_INFINITY,
 			minY = Math.POSITIVE_INFINITY,
 			minZ = Math.POSITIVE_INFINITY;
@@ -74,8 +75,7 @@ class RModelsPosed {
 		}
 		if (minX > maxX)
 			minX = minY = minZ = maxX = maxY = maxZ = 0;
-		return new BoundingBox(Vector3Transform(new Vector3(minX, minY, minZ), model.transform),
-			Vector3Transform(new Vector3(maxX, maxY, maxZ), model.transform));
+		return RModels.transformedBox(minX, minY, minZ, maxX, maxY, maxZ, model.transform, out);
 	}
 	#end
 }

@@ -88,7 +88,7 @@ class RMaterials {
 		red, green and blue, 0 for none.
 
 		@param material  The material.
-		@param out  Optional. The vector filled; a new one when omitted.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  out, or the new vector. */
 	static function GetMaterialEmissive(material:Material, ?out:Vector3):Vector3 {
 		if (out == null)

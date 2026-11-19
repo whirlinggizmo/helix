@@ -26,7 +26,7 @@ class RTextureAtlases {
 
 		@param atlas  The atlas.
 		@param name  The image's name, as the atlas's file names it, extension and all: `sword.png`.
-		@param out  Optional. The rectangle to fill, or null for a new one.
+		@param out  Optional. The rectangle to fill; a new one when omitted.
 		@return  out, or the new rectangle, in pixels of the atlas's texture, or an empty rectangle when refused. */
 	static function GetTextureAtlasRectangle(atlas:TextureAtlas, name:String, ?out:Rectangle):Rectangle {
 		if (out == null)

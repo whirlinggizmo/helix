@@ -63,6 +63,36 @@ class FontTests {
 		check(rec != null && rec.width == 0 && rec.height == 0, "GetGlyphAtlasRec: an empty rectangle");
 		check(GetGlyphInfo(GetFontDefault(), "H".code).value == "H".code, "a valid font's glyph, as before");
 
+		// With an out: filled and returned, zeroed where the result is 0 by 0.
+		var measured = new Vector2(3, 3);
+		check(MeasureTextEx(none, "Hi", 10, 1, measured) == measured
+			&& measured.x == 0
+			&& measured.y == 0, 'MeasureTextEx: out zeroed: $measured');
+		var font = GetFontDefault(),
+			alone = MeasureTextEx(font, "Hi\nthere", 10, 1);
+		check(MeasureTextEx(font, "Hi\nthere", 10, 1, measured) == measured
+			&& measured != alone
+			&& measured.x == alone.x
+			&& measured.y == alone.y,
+			'MeasureTextEx: out filled as a new vector is: $measured');
+		var atlas = new Rectangle(9, 9, 9, 9);
+		check(GetGlyphAtlasRec(none, "H".code, atlas) == atlas
+			&& atlas.x == 0
+			&& atlas.y == 0
+			&& atlas.width == 0
+			&& atlas.height == 0,
+			"GetGlyphAtlasRec: out zeroed");
+		var own = font.recs[GetGlyphIndex(font, "H".code)],
+			copied = GetGlyphAtlasRec(font, "H".code);
+		check(GetGlyphAtlasRec(font, "H".code, atlas) == atlas
+			&& atlas.x == own.x
+			&& atlas.y == own.y
+			&& atlas.width == own.width
+			&& atlas.height == own.height,
+			"GetGlyphAtlasRec: out filled with the glyph's rectangle");
+		copied.width = -1;
+		check(copied != own && own.width == atlas.width, "GetGlyphAtlasRec: a copy, changed without changing the font");
+
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

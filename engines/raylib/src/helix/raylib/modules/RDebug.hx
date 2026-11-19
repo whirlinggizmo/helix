@@ -230,13 +230,14 @@ class RDebug {
 		Sized for the widest values, so it is the same from frame to frame.
 
 		@param style  What to show and how.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The width and height, in pixels. */
-	static function MeasureFrameStats(style:FrameStatsStyle):Vector2 {
+	static function MeasureFrameStats(style:FrameStatsStyle, ?out:Vector2):Vector2 {
 		var size = fontSizeOf(style);
 		var lines = linesOf(style);
 		if (lines.length == 0)
-			return new Vector2(0, 0);
-		return measure(style, lines, style.font != null ? style.font : GetFontDefault(), size);
+			return out == null ? new Vector2(0, 0) : out.set(0, 0);
+		return measure(style, lines, style.font != null ? style.font : GetFontDefault(), size, out);
 	}
 
 	/** Returns the stats of the last half second's frames, the half second DrawFrameStats shows the frame time over.
@@ -344,7 +345,7 @@ class RDebug {
 	}
 
 	// The size of the lines: each part's width (a number's, its slot's) added up, the widest line's, so it is the same whatever the numbers.
-	static function measure(style:FrameStatsStyle, lines:Array<Array<Part>>, font:Font, size:Int):Vector2 {
+	static function measure(style:FrameStatsStyle, lines:Array<Array<Part>>, font:Font, size:Int, ?out:Vector2):Vector2 {
 		var digit = widestDigit(font, size, style.spacing);
 		var widest = 0.;
 		for (line in lines) {
@@ -354,7 +355,9 @@ class RDebug {
 			if (w > widest)
 				widest = w;
 		}
-		return new Vector2(widest + style.padding * 2, lines.length * size + style.padding * 2);
+		var width = widest + style.padding * 2,
+			height = lines.length * size + style.padding * 2;
+		return out == null ? new Vector2(width, height) : out.set(width, height);
 	}
 
 	// The font's widest digit at a size.

@@ -31,11 +31,11 @@ static function ToggleFullscreen():Void
 static function ToggleBorderlessWindowed():Void
 static function SetWindowPosition(x:Int, y:Int):Void
 static function SetWindowMonitor(monitor:Int):Void
-static function GetWindowPosition():Vector2
-static function GetWindowScaleDPI():Vector2
+static function GetWindowPosition(?out:Vector2):Vector2
+static function GetWindowScaleDPI(?out:Vector2):Vector2
 static function GetMonitorCount():Int
 static function GetCurrentMonitor():Int
-static function GetMonitorPosition(monitor:Int):Vector2
+static function GetMonitorPosition(monitor:Int, ?out:Vector2):Vector2
 static function GetMonitorWidth(monitor:Int):Int
 static function GetMonitorHeight(monitor:Int):Int
 static function GetMonitorName(monitor:Int):String
@@ -75,11 +75,11 @@ static function IsMouseButtonReleased(button:Int):Bool
 static function IsMouseButtonUp(button:Int):Bool
 static function GetMouseX():Int
 static function GetMouseY():Int
-static function GetMousePosition():Vector2
+static function GetMousePosition(?out:Vector2):Vector2
 static function SetMousePosition(x:Int, y:Int):Void
 static function SetMouseOffset(offsetX:Int, offsetY:Int):Void
 static function SetMouseScale(scaleX:Float, scaleY:Float):Void
-static function GetMouseWheelMoveV():Vector2
+static function GetMouseWheelMoveV(?out:Vector2):Vector2
 static function ShowCursor():Void
 static function HideCursor():Void
 static function IsCursorHidden():Bool
@@ -89,7 +89,7 @@ static function IsCursorOnScreen():Bool
 static function SetMouseCursor(cursor:Int):Void
 static function GetMouseWheelMove():Float
 static function GetTouchPointCount():Int
-static function GetTouchPosition(index:Int):Vector2
+static function GetTouchPosition(index:Int, ?out:Vector2):Vector2
 static function GetTouchPointId(index:Int):Int
 static function GetTouchX():Int
 static function GetTouchY():Int
@@ -97,9 +97,9 @@ static function SetGesturesEnabled(flags:Int):Void
 static function IsGestureDetected(gesture:Int):Bool
 static function GetGestureDetected():Int
 static function GetGestureHoldDuration():Float
-static function GetGestureDragVector():Vector2
+static function GetGestureDragVector(?out:Vector2):Vector2
 static function GetGestureDragAngle():Float
-static function GetGesturePinchVector():Vector2
+static function GetGesturePinchVector(?out:Vector2):Vector2
 static function GetGesturePinchAngle():Float
 static function SetGamepadVibration(gamepad:Int, leftMotor:Float, rightMotor:Float, duration:Float):Void
 static function SetGamepadMappings(mappings:String):Int
@@ -151,20 +151,20 @@ static function SetTraceLogLevel(logLevel:Int):Void
 static function SetTraceLogCallback(callback:Null<(logLevel:Int, text:String) -> Void>):Void
 static function BeginMode2D(camera:Camera2D):Void
 static function EndMode2D():Void
-static function GetCameraMatrix2D(camera:Camera2D):Matrix
-static function GetWorldToScreen2D(position:Vector2, camera:Camera2D):Vector2
-static function GetScreenToWorld2D(position:Vector2, camera:Camera2D):Vector2
+static function GetCameraMatrix2D(camera:Camera2D, ?out:Matrix):Matrix
+static function GetWorldToScreen2D(position:Vector2, camera:Camera2D, ?out:Vector2):Vector2
+static function GetScreenToWorld2D(position:Vector2, camera:Camera2D, ?out:Vector2):Vector2
 static function BeginMode3D(camera:Camera3D):Void
 static function EndMode3D():Void
 static function UpdateCamera(camera:Camera3D, mode:Int):Void
 static function UpdateCameraPro(camera:Camera, movement:Vector3, rotation:Vector3, zoom:Float):Void
-static function GetCameraMatrix(camera:Camera3D):Matrix
-static function GetScreenToWorldRay(position:Vector2, camera:Camera3D):Ray
-static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int):Ray
-static function GetMouseRay(position:Vector2, camera:Camera3D):Ray
-static function GetWorldToScreen(position:Vector3, camera:Camera3D):Vector2
-static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int):Vector2
-static function GetMouseDelta():Vector2
+static function GetCameraMatrix(camera:Camera3D, ?out:Matrix):Matrix
+static function GetScreenToWorldRay(position:Vector2, camera:Camera3D, ?out:Ray):Ray
+static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int, ?out:Ray):Ray
+static function GetMouseRay(position:Vector2, camera:Camera3D, ?out:Ray):Ray
+static function GetWorldToScreen(position:Vector3, camera:Camera3D, ?out:Vector2):Vector2
+static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int, ?out:Vector2):Vector2
+static function GetMouseDelta(?out:Vector2):Vector2
 static function BeginVrStereoMode(config:VrStereoConfig):Void
 static function EndVrStereoMode():Void
 static function LoadVrStereoConfig(device:VrDeviceInfo):VrStereoConfig
@@ -301,8 +301,10 @@ static macro function EndDrawing():Void
 
   `GetCurrentMonitor` reports it once the window is there. Where the window can't be moved, a monitor other than its own is refused. A refusal is logged.
 - `GetWindowPosition`: Returns the window's place on the desktop.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: Its left and top edges, in pixels.
 - `GetWindowScaleDPI`: Returns how many of the display's pixels a pixel drawn covers, across and down, 2 on most phones and high-density displays.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The scale.
 - `GetMonitorCount`: Returns the number of monitors.
   - returns: The count, at least 1.
@@ -310,6 +312,7 @@ static macro function EndDrawing():Void
   - returns: Its index.
 - `GetMonitorPosition`: Returns a monitor's top-left corner on the desktop.
   - `monitor`: The monitor.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The corner, in pixels.
 - `GetMonitorWidth`: Returns a monitor's width.
   - `monitor`: The monitor.
@@ -456,6 +459,7 @@ static macro function EndDrawing():Void
 - `GetMouseY`: Returns the mouse's y, in the screen's pixels, the first finger's while one is down.
   - returns: The y.
 - `GetMousePosition`: Returns the mouse's position, in the screen's pixels, the first finger's while one is down.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The position.
 
   `SetMouseOffset`'s offset is added first, then `SetMouseScale`'s scale applied.
@@ -473,6 +477,7 @@ static macro function EndDrawing():Void
   - `scaleX`: The scale across.
   - `scaleY`: The scale down.
 - `GetMouseWheelMoveV`: Returns how far the wheel turned this frame, in both directions, right and forward positive. See `GetMouseWheelMove` for reading the larger direction alone.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The notches.
 - `ShowCursor`: Shows the cursor.
 - `HideCursor`: Hides the cursor over the window.
@@ -494,6 +499,7 @@ static macro function EndDrawing():Void
   - returns: The count.
 - `GetTouchPosition`: Returns a finger's position, in the screen's pixels.
   - `index`: Which finger, 0 for the first down.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The position, or (0, 0) when fewer are down.
 
   While no finger is down, the first is where the mouse is. See `EnableVirtualGamepad` (`import helix.raylib.extras.VirtualGamepad.*;`) for on-screen sticks read as a gamepad's.
@@ -520,10 +526,12 @@ static macro function EndDrawing():Void
 - `GetGestureHoldDuration`: Returns how long the hold has lasted.
   - returns: The seconds, or 0 when the gesture isn't `GESTURE_HOLD`.
 - `GetGestureDragVector`: Returns the drag, from where the finger landed to where it is, in fractions of the screen.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The vector.
 - `GetGestureDragAngle`: Returns the last swipe's angle.
   - returns: The degrees, counterclockwise from right.
 - `GetGesturePinchVector`: Returns the pinch, from the first finger to the second, in fractions of the screen.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The vector.
 - `GetGesturePinchAngle`: Returns the pinch's angle.
   - returns: The degrees, counterclockwise from right.
@@ -773,14 +781,17 @@ static macro function EndDrawing():Void
 - `EndMode2D`: Goes back to drawing in the screen's pixels.
 - `GetCameraMatrix2D`: Returns a 2D camera's transform, from the world to the screen.
   - `camera`: The camera.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 - `GetWorldToScreen2D`: Returns where a point in a 2D camera's world is on the screen.
   - `position`: The point.
   - `camera`: The camera.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be position.
   - returns: The screen position.
 - `GetScreenToWorld2D`: Returns where a screen position is in a 2D camera's world.
   - `position`: The screen position.
   - `camera`: The camera.
+  - `out`: Optional. The vector to fill; a new one when omitted. It may be position.
   - returns: The point, or NaN at zoom 0.
 - `BeginMode3D`: Draws in 3D through a camera until `EndMode3D`, testing depth (rlgl's `rlEnableDepthTest`).
   - `camera`: The camera.
@@ -815,32 +826,39 @@ static macro function EndDrawing():Void
   Then moves forward and right along the ground and up along the camera's up, then toward its target, the distance kept above 0.
 - `GetCameraMatrix`: Returns a camera's view, as `BeginMode3D` uses it.
   - `camera`: The camera.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 - `GetScreenToWorldRay`: Returns the ray from a camera through a screen position, for picking. See `GetScreenToWorldRayEx` for casting through a view of another size.
   - `position`: The screen position.
   - `camera`: The camera.
+  - `out`: Optional. The ray to fill; a new one when omitted.
   - returns: The ray.
 - `GetScreenToWorldRayEx`: Returns the ray from a camera through a position in a view of a size, such as a render texture's.
   - `position`: The position in the view.
   - `camera`: The camera.
   - `width`: The view's width.
   - `height`: The view's height.
+  - `out`: Optional. The ray to fill; a new one when omitted.
   - returns: The ray.
 - `GetMouseRay`: Returns the ray from a camera through a screen position, under raylib's old name for `GetScreenToWorldRay`.
   - `position`: The screen position.
   - `camera`: The camera.
+  - `out`: Optional. The ray to fill; a new one when omitted.
   - returns: The ray.
 - `GetWorldToScreen`: Returns where a point in the world is on the screen. See `GetWorldToScreenEx` for placing it in a view of another size.
   - `position`: The point.
   - `camera`: The camera.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The screen position.
 - `GetWorldToScreenEx`: Returns where a point in the world is in a view of a size.
   - `position`: The point.
   - `camera`: The camera.
   - `width`: The view's width.
   - `height`: The view's height.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The position in the view, or infinite or NaN for a point level with a perspective camera's position.
 - `GetMouseDelta`: Returns how far the mouse moved since the last frame, in the screen's pixels times the mouse's scale (`SetMouseScale`).
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The movement.
 
   A `SetMousePosition` this frame is part of the movement.

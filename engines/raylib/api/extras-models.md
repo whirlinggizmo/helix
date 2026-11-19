@@ -19,11 +19,12 @@ static inline var BLEND_ROTATION_MODEL:Int
 ### models: a skinned model's bounds as posed
 
 ```haxe
-static function GetModelBoundingBoxPosed(model:Model):BoundingBox
+static function GetModelBoundingBoxPosed(model:Model, ?out:BoundingBox):BoundingBox
 ```
 
 - `GetModelBoundingBoxPosed`: Returns a model's bounds as its last `UpdateModelAnimation` (or `UpdateModelAnimationEx`) posed it: `GetModelBoundingBox`'s box, each skinned mesh bounded by its vertices where its bones put them rather than where the skin was bound. A mesh never posed, or without bones, counts as it is, and so does a vertex no bone weights. It is exact whatever shader draws the mesh, as it works the positions out from the pose itself, allocating nothing; that is each skinned vertex moved by its bones, on the CPU, each call. As `GetModelBoundingBox`, its least and most corners are then moved by the model's transform (a turned model's box is not its bounds).
   - `model`: The model.
+  - `out`: Optional. The box to fill; a new one when omitted.
   - returns: The box.
 
 ### models: models merged into one

@@ -12,13 +12,13 @@ static function DrawTextureV(texture:Texture2D, position:Vector2, tint:Color):Vo
 static function DrawTextureEx(texture:Texture2D, position:Vector2, rotation:Float, scale:Float, tint:Color):Void
 static function DrawTextureRec(texture:Texture2D, source:Rectangle, position:Vector2, tint:Color):Void
 static function DrawTexturePro(texture:Texture2D, source:Rectangle, dest:Rectangle, origin:Vector2, rotation:Float, tint:Color):Void
-static function ColorNormalize(color:Color):Vector4
+static function ColorNormalize(color:Color, ?out:Vector4):Vector4
 static function ColorFromNormalized(normalized:Vector4):Color
 static function Fade(color:Color, alpha:Float):Color
 static function ColorAlpha(color:Color, alpha:Float):Color
 static function ColorIsEqual(col1:Color, col2:Color):Bool
 static function ColorToInt(color:Color):Int
-static function ColorToHSV(color:Color):Vector3
+static function ColorToHSV(color:Color, ?out:Vector3):Vector3
 static function ColorFromHSV(hue:Float, saturation:Float, value:Float):Color
 static function ColorTint(color:Color, tint:Color):Color
 static function ColorBrightness(color:Color, factor:Float):Color
@@ -83,7 +83,7 @@ static function LoadImageColors(image:Image):Array<Color>
 static function LoadImagePalette(image:Image, maxPaletteSize:Int, colorCount:Array<Int>):Array<Color>
 static function UnloadImageColors(colors:Array<Color>):Void
 static function UnloadImagePalette(colors:Array<Color>):Void
-static function GetImageAlphaBorder(image:Image, threshold:Float):Rectangle
+static function GetImageAlphaBorder(image:Image, threshold:Float, ?out:Rectangle):Rectangle
 static function GetImageColor(image:Image, x:Int, y:Int):Color
 static function ImageClearBackground(dst:Image, color:Color):Void
 static function ImageDrawPixel(dst:Image, posX:Int, posY:Int, color:Color):Void
@@ -173,6 +173,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   A negative source width or height flips the part.
 - `ColorNormalize`: Returns a color as four numbers, 0 to 1 each.
   - `color`: The color.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: Red, green, blue and alpha as x, y, z and w.
 - `ColorFromNormalized`: Returns a color from four numbers, 0 to 1 each.
   - `normalized`: Red, green, blue and alpha as x, y, z and w.
@@ -194,6 +195,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - returns: Red in the top byte, alpha in the bottom; a red of 128 or more makes it negative.
 - `ColorToHSV`: Returns a color's hue, saturation and value.
   - `color`: The color; its alpha is ignored.
+  - `out`: Optional. The vector to fill; a new one when omitted.
   - returns: The hue in degrees, 0 to 360, as x; the saturation and value, 0 to 1 each, as y and z. A gray's hue and saturation are 0.
 - `ColorFromHSV`: Returns the color of a hue, saturation and value, its alpha 255.
   - `hue`: The hue, in degrees, 0 to 360.
@@ -566,6 +568,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 - `GetImageAlphaBorder`: Returns the smallest rectangle holding every pixel whose alpha is over a threshold.
   - `image`: The image.
   - `threshold`: The threshold, 0 to 1.
+  - `out`: Optional. The rectangle to fill; a new one when omitted.
   - returns: The rectangle, in pixels; all zero when no pixel is over it.
 - `GetImageColor`: Returns a pixel's color, as `LoadImageColors` reads it.
   - `image`: The image.
