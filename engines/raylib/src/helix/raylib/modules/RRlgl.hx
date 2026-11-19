@@ -135,23 +135,28 @@ class RRlgl {
 
 	/** Returns the view, which is the screen's, `BeginMode2D`'s or `BeginMode3D`'s.
 
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	static function rlGetMatrixModelview():Matrix {
-		return new Matrix4().copyFrom(Runtime.frame.view);
+	static function rlGetMatrixModelview(?out:Matrix):Matrix {
+		return (out == null ? new Matrix4() : out).copyFrom(Runtime.frame.view);
 	}
 
 	/** Returns the projection.
 
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	static function rlGetMatrixProjection():Matrix {
-		return new Matrix4().copyFrom(Runtime.frame.projection);
+	static function rlGetMatrixProjection(?out:Matrix):Matrix {
+		return (out == null ? new Matrix4() : out).copyFrom(Runtime.frame.projection);
 	}
 
 	/** Returns the transform `rlPushMatrix` started, or the identity when none is pushed.
 
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	static function rlGetMatrixTransform():Matrix {
-		return pushed ? new Matrix4().copyFrom(transform) : new Matrix4();
+	static function rlGetMatrixTransform(?out:Matrix):Matrix {
+		if (out == null)
+			out = new Matrix4();
+		return pushed ? out.copyFrom(transform) : out.makeIdentity();
 	}
 
 	/** Sets the view.
@@ -747,9 +752,12 @@ class RRlgl {
 		Zero until set, and for an eye other than 0 or 1.
 
 		@param eye  The eye: 0, drawn in the left half, or 1.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	static function rlGetMatrixProjectionStereo(eye:Int):Matrix {
-		return eye == 0 || eye == 1 ? new Matrix4().copyFrom(helix.raylib.internal.Stereo.projections[eye]) : new Matrix();
+	static function rlGetMatrixProjectionStereo(eye:Int, ?out:Matrix):Matrix {
+		if (out == null)
+			out = new Matrix4();
+		return out.copyFrom(eye == 0 || eye == 1 ? helix.raylib.internal.Stereo.projections[eye] : zeroMatrix);
 	}
 
 	/** Returns an eye's view offset in stereo rendering, as `rlSetMatrixViewOffsetStereo` set it.
@@ -757,9 +765,12 @@ class RRlgl {
 		Zero until set, and for an eye other than 0 or 1.
 
 		@param eye  The eye: 0, drawn in the left half, or 1.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	static function rlGetMatrixViewOffsetStereo(eye:Int):Matrix {
-		return eye == 0 || eye == 1 ? new Matrix4().copyFrom(helix.raylib.internal.Stereo.offsets[eye]) : new Matrix();
+	static function rlGetMatrixViewOffsetStereo(eye:Int, ?out:Matrix):Matrix {
+		if (out == null)
+			out = new Matrix4();
+		return out.copyFrom(eye == 0 || eye == 1 ? helix.raylib.internal.Stereo.offsets[eye] : zeroMatrix);
 	}
 
 	/** Sets each eye's projection in stereo rendering, used in place of the projection from the batch's next flush.
@@ -1688,6 +1699,8 @@ class RRlgl {
 	static var pushed = false;
 	static final transform = new Matrix4();
 	static final stack:Array<Matrix4> = [];
+	// The stereo getters' answer for an eye other than 0 or 1: all zero, as raylib's Matrix starts.
+	static final zeroMatrix:Matrix4 = new Matrix();
 	// The corners of the quad being added, 0 to 3.
 	static var quadCorners = 0;
 	static var u = 0.;

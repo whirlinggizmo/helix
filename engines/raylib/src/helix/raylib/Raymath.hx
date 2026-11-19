@@ -14,7 +14,10 @@ import helix.raylib.modules.RMath;
 	```haxe
 	import helix.raylib.Raylib.*;
 	import helix.raylib.Raymath.*;
-	``` */
+	```
+
+	Each function returning a vector, a quaternion, a matrix or an array has an optional out as its last argument. With one, the result
+	is written into it and it is returned, so a call each frame allocates nothing. The out may be any argument of its type. */
 class Raymath {
 	// ---- Constants ----
 
@@ -96,47 +99,53 @@ class Raymath {
 
 	/** Returns (0, 0).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function Vector2Zero():Vector2
-		return RMath.Vector2Zero();
+	public static inline function Vector2Zero(?out:Vector2):Vector2
+		return RMath.Vector2Zero(out);
 
 	/** Returns (1, 1).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function Vector2One():Vector2
-		return RMath.Vector2One();
+	public static inline function Vector2One(?out:Vector2):Vector2
+		return RMath.Vector2One(out);
 
 	/** Returns the sum of two vectors.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The sum. */
-	public static inline function Vector2Add(v1:Vector2, v2:Vector2):Vector2
-		return RMath.Vector2Add(v1, v2);
+	public static inline function Vector2Add(v1:Vector2, v2:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Add(v1, v2, out);
 
 	/** Returns a vector with a value added to each component.
 
 		@param v  The vector.
 		@param add  The value.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The sum. */
-	public static inline function Vector2AddValue(v:Vector2, add:Float):Vector2
-		return RMath.Vector2AddValue(v, add);
+	public static inline function Vector2AddValue(v:Vector2, add:Float, ?out:Vector2):Vector2
+		return RMath.Vector2AddValue(v, add, out);
 
 	/** Returns one vector less another.
 
 		@param v1  The first.
 		@param v2  The one subtracted from it.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The difference. */
-	public static inline function Vector2Subtract(v1:Vector2, v2:Vector2):Vector2
-		return RMath.Vector2Subtract(v1, v2);
+	public static inline function Vector2Subtract(v1:Vector2, v2:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Subtract(v1, v2, out);
 
 	/** Returns a vector with a value subtracted from each component.
 
 		@param v  The vector.
 		@param sub  The value.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The difference. */
-	public static inline function Vector2SubtractValue(v:Vector2, sub:Float):Vector2
-		return RMath.Vector2SubtractValue(v, sub);
+	public static inline function Vector2SubtractValue(v:Vector2, sub:Float, ?out:Vector2):Vector2
+		return RMath.Vector2SubtractValue(v, sub, out);
 
 	/** Returns a vector's length.
 
@@ -200,88 +209,99 @@ class Raymath {
 
 		@param v  The vector.
 		@param scale  The scale.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The scaled vector. */
-	public static inline function Vector2Scale(v:Vector2, scale:Float):Vector2
-		return RMath.Vector2Scale(v, scale);
+	public static inline function Vector2Scale(v:Vector2, scale:Float, ?out:Vector2):Vector2
+		return RMath.Vector2Scale(v, scale, out);
 
 	/** Returns two vectors multiplied component by component.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The product. */
-	public static inline function Vector2Multiply(v1:Vector2, v2:Vector2):Vector2
-		return RMath.Vector2Multiply(v1, v2);
+	public static inline function Vector2Multiply(v1:Vector2, v2:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Multiply(v1, v2, out);
 
 	/** Returns a vector pointing the other way.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The negated vector. */
-	public static inline function Vector2Negate(v:Vector2):Vector2
-		return RMath.Vector2Negate(v);
+	public static inline function Vector2Negate(v:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Negate(v, out);
 
 	/** Returns one vector divided by another, component by component.
 
 		@param v1  The one divided.
 		@param v2  The one dividing it.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The quotient. */
-	public static inline function Vector2Divide(v1:Vector2, v2:Vector2):Vector2
-		return RMath.Vector2Divide(v1, v2);
+	public static inline function Vector2Divide(v1:Vector2, v2:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Divide(v1, v2, out);
 
 	/** Returns a vector of length 1 in the same direction, or (0, 0) for (0, 0).
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The direction. */
-	public static inline function Vector2Normalize(v:Vector2):Vector2
-		return RMath.Vector2Normalize(v);
+	public static inline function Vector2Normalize(v:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Normalize(v, out);
 
 	/** Returns a point transformed by a matrix, the point at z 0.
 
 		@param v  The point.
 		@param mat  The matrix.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The transformed point's x and y. */
-	public static inline function Vector2Transform(v:Vector2, mat:Matrix):Vector2
-		return RMath.Vector2Transform(v, mat);
+	public static inline function Vector2Transform(v:Vector2, mat:Matrix, ?out:Vector2):Vector2
+		return RMath.Vector2Transform(v, mat, out);
 
 	/** Returns a point part of the way from one to another.
 
 		@param v1  The start.
 		@param v2  The end.
 		@param amount  0 for the start, 1 for the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The point. */
-	public static inline function Vector2Lerp(v1:Vector2, v2:Vector2, amount:Float):Vector2
-		return RMath.Vector2Lerp(v1, v2, amount);
+	public static inline function Vector2Lerp(v1:Vector2, v2:Vector2, amount:Float, ?out:Vector2):Vector2
+		return RMath.Vector2Lerp(v1, v2, amount, out);
 
 	/** Returns a direction reflected off a surface.
 
 		@param v  The direction.
 		@param normal  The surface's normal, of length 1.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or normal.
 		@return  The reflected direction. */
-	public static inline function Vector2Reflect(v:Vector2, normal:Vector2):Vector2
-		return RMath.Vector2Reflect(v, normal);
+	public static inline function Vector2Reflect(v:Vector2, normal:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Reflect(v, normal, out);
 
 	/** Returns the least of two vectors' components, each on its own.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The vector of the least. */
-	public static inline function Vector2Min(v1:Vector2, v2:Vector2):Vector2
-		return RMath.Vector2Min(v1, v2);
+	public static inline function Vector2Min(v1:Vector2, v2:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Min(v1, v2, out);
 
 	/** Returns the most of two vectors' components, each on its own.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The vector of the most. */
-	public static inline function Vector2Max(v1:Vector2, v2:Vector2):Vector2
-		return RMath.Vector2Max(v1, v2);
+	public static inline function Vector2Max(v1:Vector2, v2:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Max(v1, v2, out);
 
 	/** Returns a vector turned by an angle, from x toward y.
 
 		@param v  The vector.
 		@param angle  The angle, in radians.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The turned vector. */
-	public static inline function Vector2Rotate(v:Vector2, angle:Float):Vector2
-		return RMath.Vector2Rotate(v, angle);
+	public static inline function Vector2Rotate(v:Vector2, angle:Float, ?out:Vector2):Vector2
+		return RMath.Vector2Rotate(v, angle, out);
 
 	/** Returns a point moved toward a target by at most a distance.
 
@@ -290,34 +310,38 @@ class Raymath {
 		@param v  The point.
 		@param target  The target.
 		@param maxDistance  The most it moves.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or target.
 		@return  The moved point. */
-	public static inline function Vector2MoveTowards(v:Vector2, target:Vector2, maxDistance:Float):Vector2
-		return RMath.Vector2MoveTowards(v, target, maxDistance);
+	public static inline function Vector2MoveTowards(v:Vector2, target:Vector2, maxDistance:Float, ?out:Vector2):Vector2
+		return RMath.Vector2MoveTowards(v, target, maxDistance, out);
 
 	/** Returns 1 divided by each of a vector's components.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The inverted vector. */
-	public static inline function Vector2Invert(v:Vector2):Vector2
-		return RMath.Vector2Invert(v);
+	public static inline function Vector2Invert(v:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Invert(v, out);
 
 	/** Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least components.
 		@param max  The most.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v, min or max.
 		@return  The vector. */
-	public static inline function Vector2Clamp(v:Vector2, min:Vector2, max:Vector2):Vector2
-		return RMath.Vector2Clamp(v, min, max);
+	public static inline function Vector2Clamp(v:Vector2, min:Vector2, max:Vector2, ?out:Vector2):Vector2
+		return RMath.Vector2Clamp(v, min, max, out);
 
 	/** Returns a vector with its length kept between two values. A vector of length 0 stays 0. The two values in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least length.
 		@param max  The most length.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The vector. */
-	public static inline function Vector2ClampValue(v:Vector2, min:Float, max:Float):Vector2
-		return RMath.Vector2ClampValue(v, min, max);
+	public static inline function Vector2ClampValue(v:Vector2, min:Float, max:Float, ?out:Vector2):Vector2
+		return RMath.Vector2ClampValue(v, min, max, out);
 
 	/** Returns whether two vectors are equal but for rounding, each component as `FloatEquals` compares it.
 
@@ -332,84 +356,95 @@ class Raymath {
 		@param v  The direction, of length 1.
 		@param n  The surface's normal, of length 1.
 		@param r  The ratio of the refractive indices, the one it leaves over the one it enters.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or n.
 		@return  The bent direction. */
-	public static inline function Vector2Refract(v:Vector2, n:Vector2, r:Float):Vector2
-		return RMath.Vector2Refract(v, n, r);
+	public static inline function Vector2Refract(v:Vector2, n:Vector2, r:Float, ?out:Vector2):Vector2
+		return RMath.Vector2Refract(v, n, r, out);
 
 	/** Returns (0, 0, 0).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function Vector3Zero():Vector3
-		return RMath.Vector3Zero();
+	public static inline function Vector3Zero(?out:Vector3):Vector3
+		return RMath.Vector3Zero(out);
 
 	/** Returns (1, 1, 1).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function Vector3One():Vector3
-		return RMath.Vector3One();
+	public static inline function Vector3One(?out:Vector3):Vector3
+		return RMath.Vector3One(out);
 
 	/** Returns the sum of two vectors.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The sum. */
-	public static inline function Vector3Add(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Add(v1, v2);
+	public static inline function Vector3Add(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Add(v1, v2, out);
 
 	/** Returns a vector with a value added to each component.
 
 		@param v  The vector.
 		@param add  The value.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The sum. */
-	public static inline function Vector3AddValue(v:Vector3, add:Float):Vector3
-		return RMath.Vector3AddValue(v, add);
+	public static inline function Vector3AddValue(v:Vector3, add:Float, ?out:Vector3):Vector3
+		return RMath.Vector3AddValue(v, add, out);
 
 	/** Returns one vector less another.
 
 		@param v1  The first.
 		@param v2  The one subtracted from it.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The difference. */
-	public static inline function Vector3Subtract(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Subtract(v1, v2);
+	public static inline function Vector3Subtract(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Subtract(v1, v2, out);
 
 	/** Returns a vector with a value subtracted from each component.
 
 		@param v  The vector.
 		@param sub  The value.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The difference. */
-	public static inline function Vector3SubtractValue(v:Vector3, sub:Float):Vector3
-		return RMath.Vector3SubtractValue(v, sub);
+	public static inline function Vector3SubtractValue(v:Vector3, sub:Float, ?out:Vector3):Vector3
+		return RMath.Vector3SubtractValue(v, sub, out);
 
 	/** Returns a vector scaled.
 
 		@param v  The vector.
 		@param scalar  The scale.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The scaled vector. */
-	public static inline function Vector3Scale(v:Vector3, scalar:Float):Vector3
-		return RMath.Vector3Scale(v, scalar);
+	public static inline function Vector3Scale(v:Vector3, scalar:Float, ?out:Vector3):Vector3
+		return RMath.Vector3Scale(v, scalar, out);
 
 	/** Returns two vectors multiplied component by component.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The product. */
-	public static inline function Vector3Multiply(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Multiply(v1, v2);
+	public static inline function Vector3Multiply(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Multiply(v1, v2, out);
 
 	/** Returns the cross product.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The product. */
-	public static inline function Vector3CrossProduct(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3CrossProduct(v1, v2);
+	public static inline function Vector3CrossProduct(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3CrossProduct(v1, v2, out);
 
 	/** Returns a vector perpendicular to another: its cross product with the axis the vector is least along.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The perpendicular vector. */
-	public static inline function Vector3Perpendicular(v:Vector3):Vector3
-		return RMath.Vector3Perpendicular(v);
+	public static inline function Vector3Perpendicular(v:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Perpendicular(v, out);
 
 	/** Returns a vector's length.
 
@@ -460,40 +495,45 @@ class Raymath {
 	/** Returns a vector pointing the other way.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The negated vector. */
-	public static inline function Vector3Negate(v:Vector3):Vector3
-		return RMath.Vector3Negate(v);
+	public static inline function Vector3Negate(v:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Negate(v, out);
 
 	/** Returns one vector divided by another, component by component.
 
 		@param v1  The one divided.
 		@param v2  The one dividing it.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The quotient. */
-	public static inline function Vector3Divide(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Divide(v1, v2);
+	public static inline function Vector3Divide(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Divide(v1, v2, out);
 
 	/** Returns a vector of length 1 in the same direction, or the vector itself when its length is 0.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The direction. */
-	public static inline function Vector3Normalize(v:Vector3):Vector3
-		return RMath.Vector3Normalize(v);
+	public static inline function Vector3Normalize(v:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Normalize(v, out);
 
 	/** Returns the part of one vector along another.
 
 		@param v1  The vector.
 		@param v2  The direction it is projected onto.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The projection. */
-	public static inline function Vector3Project(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Project(v1, v2);
+	public static inline function Vector3Project(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Project(v1, v2, out);
 
 	/** Returns the part of one vector across another: the vector less its projection.
 
 		@param v1  The vector.
 		@param v2  The direction removed from it.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The rejection. */
-	public static inline function Vector3Reject(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Reject(v1, v2);
+	public static inline function Vector3Reject(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Reject(v1, v2, out);
 
 	/** Makes two vectors of length 1 and at right angles to each other, the first keeping its direction (Gram-Schmidt).
 
@@ -506,26 +546,29 @@ class Raymath {
 
 		@param v  The point.
 		@param mat  The matrix.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The transformed point. */
-	public static inline function Vector3Transform(v:Vector3, mat:Matrix):Vector3
-		return RMath.Vector3Transform(v, mat);
+	public static inline function Vector3Transform(v:Vector3, mat:Matrix, ?out:Vector3):Vector3
+		return RMath.Vector3Transform(v, mat, out);
 
 	/** Returns a vector turned by a quaternion.
 
 		@param v  The vector.
 		@param q  The quaternion, of length 1.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The turned vector. */
-	public static inline function Vector3RotateByQuaternion(v:Vector3, q:Quaternion):Vector3
-		return RMath.Vector3RotateByQuaternion(v, q);
+	public static inline function Vector3RotateByQuaternion(v:Vector3, q:Quaternion, ?out:Vector3):Vector3
+		return RMath.Vector3RotateByQuaternion(v, q, out);
 
 	/** Returns a vector turned about an axis.
 
 		@param v  The vector.
 		@param axis  The axis.
 		@param angle  The angle, in radians.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or axis.
 		@return  The turned vector. */
-	public static inline function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float):Vector3
-		return RMath.Vector3RotateByAxisAngle(v, axis, angle);
+	public static inline function Vector3RotateByAxisAngle(v:Vector3, axis:Vector3, angle:Float, ?out:Vector3):Vector3
+		return RMath.Vector3RotateByAxisAngle(v, axis, angle, out);
 
 	/** Returns a point moved toward a target by at most a distance.
 
@@ -534,18 +577,20 @@ class Raymath {
 		@param v  The point.
 		@param target  The target.
 		@param maxDistance  The most it moves.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or target.
 		@return  The moved point. */
-	public static inline function Vector3MoveTowards(v:Vector3, target:Vector3, maxDistance:Float):Vector3
-		return RMath.Vector3MoveTowards(v, target, maxDistance);
+	public static inline function Vector3MoveTowards(v:Vector3, target:Vector3, maxDistance:Float, ?out:Vector3):Vector3
+		return RMath.Vector3MoveTowards(v, target, maxDistance, out);
 
 	/** Returns a point part of the way from one to another.
 
 		@param v1  The start.
 		@param v2  The end.
 		@param amount  0 for the start, 1 for the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The point. */
-	public static inline function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float):Vector3
-		return RMath.Vector3Lerp(v1, v2, amount);
+	public static inline function Vector3Lerp(v1:Vector3, v2:Vector3, amount:Float, ?out:Vector3):Vector3
+		return RMath.Vector3Lerp(v1, v2, amount, out);
 
 	/** Returns a point part of the way along a cubic Hermite curve, from one point to another, leaving and arriving along tangents.
 
@@ -554,33 +599,37 @@ class Raymath {
 		@param v2  The end.
 		@param tangent2  The tangent arriving at it.
 		@param amount  0 for the start, 1 for the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1, tangent1, v2 or tangent2.
 		@return  The point. */
-	public static inline function Vector3CubicHermite(v1:Vector3, tangent1:Vector3, v2:Vector3, tangent2:Vector3, amount:Float):Vector3
-		return RMath.Vector3CubicHermite(v1, tangent1, v2, tangent2, amount);
+	public static inline function Vector3CubicHermite(v1:Vector3, tangent1:Vector3, v2:Vector3, tangent2:Vector3, amount:Float, ?out:Vector3):Vector3
+		return RMath.Vector3CubicHermite(v1, tangent1, v2, tangent2, amount, out);
 
 	/** Returns a direction reflected off a surface.
 
 		@param v  The direction.
 		@param normal  The surface's normal, of length 1.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or normal.
 		@return  The reflected direction. */
-	public static inline function Vector3Reflect(v:Vector3, normal:Vector3):Vector3
-		return RMath.Vector3Reflect(v, normal);
+	public static inline function Vector3Reflect(v:Vector3, normal:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Reflect(v, normal, out);
 
 	/** Returns the least of two vectors' components, each on its own.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The vector of the least. */
-	public static inline function Vector3Min(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Min(v1, v2);
+	public static inline function Vector3Min(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Min(v1, v2, out);
 
 	/** Returns the most of two vectors' components, each on its own.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The vector of the most. */
-	public static inline function Vector3Max(v1:Vector3, v2:Vector3):Vector3
-		return RMath.Vector3Max(v1, v2);
+	public static inline function Vector3Max(v1:Vector3, v2:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Max(v1, v2, out);
 
 	/** Returns a point's barycentric coordinates in a triangle: how much of each corner it is made of.
 
@@ -588,9 +637,10 @@ class Raymath {
 		@param a  The first corner.
 		@param b  The second.
 		@param c  The third.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be p, a, b or c.
 		@return  How much of a (x), b (y) and c (z). */
-	public static inline function Vector3Barycenter(p:Vector3, a:Vector3, b:Vector3, c:Vector3):Vector3
-		return RMath.Vector3Barycenter(p, a, b, c);
+	public static inline function Vector3Barycenter(p:Vector3, a:Vector3, b:Vector3, c:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Barycenter(p, a, b, c, out);
 
 	/** Returns a point in normalized device coordinates (each from -1 to 1) mapped back into the world, through a view and a projection.
 
@@ -599,48 +649,54 @@ class Raymath {
 		@param source  The point.
 		@param projection  The projection.
 		@param view  The view.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be source.
 		@return  The point in the world. */
-	public static inline function Vector3Unproject(source:Vector3, projection:Matrix, view:Matrix):Vector3
-		return RMath.Vector3Unproject(source, projection, view);
+	public static inline function Vector3Unproject(source:Vector3, projection:Matrix, view:Matrix, ?out:Vector3):Vector3
+		return RMath.Vector3Unproject(source, projection, view, out);
 
 	/** Returns a vector's components as an array: x, y, z.
 
 		@param v  The vector.
+		@param out  Optional. The array to fill; a new one when omitted.
 		@return  The array. */
-	public static inline function Vector3ToFloatV(v:Vector3):Array<Float>
-		return RMath.Vector3ToFloatV(v);
+	public static inline function Vector3ToFloatV(v:Vector3, ?out:Array<Float>):Array<Float>
+		return RMath.Vector3ToFloatV(v, out);
 
 	/** Returns a vector's components as an array: x, y, z. raymath's macro for `Vector3ToFloatV`'s array, the same here.
 
 		@param vec  The vector.
+		@param out  Optional. The array to fill; a new one when omitted.
 		@return  The array. */
-	public static inline function Vector3ToFloat(vec:Vector3):Array<Float>
-		return RMath.Vector3ToFloat(vec);
+	public static inline function Vector3ToFloat(vec:Vector3, ?out:Array<Float>):Array<Float>
+		return RMath.Vector3ToFloat(vec, out);
 
 	/** Returns 1 divided by each of a vector's components.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The inverted vector. */
-	public static inline function Vector3Invert(v:Vector3):Vector3
-		return RMath.Vector3Invert(v);
+	public static inline function Vector3Invert(v:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Invert(v, out);
 
 	/** Returns a vector with each component kept between two others'. A component's two bounds in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least components.
 		@param max  The most.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v, min or max.
 		@return  The vector. */
-	public static inline function Vector3Clamp(v:Vector3, min:Vector3, max:Vector3):Vector3
-		return RMath.Vector3Clamp(v, min, max);
+	public static inline function Vector3Clamp(v:Vector3, min:Vector3, max:Vector3, ?out:Vector3):Vector3
+		return RMath.Vector3Clamp(v, min, max, out);
 
 	/** Returns a vector with its length kept between two values. A vector of length 0 stays 0. The two values in the wrong order are swapped.
 
 		@param v  The vector.
 		@param min  The least length.
 		@param max  The most length.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The vector. */
-	public static inline function Vector3ClampValue(v:Vector3, min:Float, max:Float):Vector3
-		return RMath.Vector3ClampValue(v, min, max);
+	public static inline function Vector3ClampValue(v:Vector3, min:Float, max:Float, ?out:Vector3):Vector3
+		return RMath.Vector3ClampValue(v, min, max, out);
 
 	/** Returns whether two vectors are equal but for rounding, each component as `FloatEquals` compares it.
 
@@ -655,53 +711,60 @@ class Raymath {
 		@param v  The direction, of length 1.
 		@param n  The surface's normal, of length 1.
 		@param r  The ratio of the refractive indices, the one it leaves over the one it enters.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or n.
 		@return  The bent direction. */
-	public static inline function Vector3Refract(v:Vector3, n:Vector3, r:Float):Vector3
-		return RMath.Vector3Refract(v, n, r);
+	public static inline function Vector3Refract(v:Vector3, n:Vector3, r:Float, ?out:Vector3):Vector3
+		return RMath.Vector3Refract(v, n, r, out);
 
 	/** Returns (0, 0, 0, 0).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function Vector4Zero():Vector4
-		return RMath.Vector4Zero();
+	public static inline function Vector4Zero(?out:Vector4):Vector4
+		return RMath.Vector4Zero(out);
 
 	/** Returns (1, 1, 1, 1).
 
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
-	public static inline function Vector4One():Vector4
-		return RMath.Vector4One();
+	public static inline function Vector4One(?out:Vector4):Vector4
+		return RMath.Vector4One(out);
 
 	/** Returns the sum of two vectors.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The sum. */
-	public static inline function Vector4Add(v1:Vector4, v2:Vector4):Vector4
-		return RMath.Vector4Add(v1, v2);
+	public static inline function Vector4Add(v1:Vector4, v2:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Add(v1, v2, out);
 
 	/** Returns a vector with a value added to each component.
 
 		@param v  The vector.
 		@param add  The value.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The sum. */
-	public static inline function Vector4AddValue(v:Vector4, add:Float):Vector4
-		return RMath.Vector4AddValue(v, add);
+	public static inline function Vector4AddValue(v:Vector4, add:Float, ?out:Vector4):Vector4
+		return RMath.Vector4AddValue(v, add, out);
 
 	/** Returns one vector less another.
 
 		@param v1  The first.
 		@param v2  The one subtracted from it.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The difference. */
-	public static inline function Vector4Subtract(v1:Vector4, v2:Vector4):Vector4
-		return RMath.Vector4Subtract(v1, v2);
+	public static inline function Vector4Subtract(v1:Vector4, v2:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Subtract(v1, v2, out);
 
 	/** Returns a vector with a value subtracted from each component.
 
 		@param v  The vector.
 		@param add  The value.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The difference. */
-	public static inline function Vector4SubtractValue(v:Vector4, add:Float):Vector4
-		return RMath.Vector4SubtractValue(v, add);
+	public static inline function Vector4SubtractValue(v:Vector4, add:Float, ?out:Vector4):Vector4
+		return RMath.Vector4SubtractValue(v, add, out);
 
 	/** Returns a vector's length.
 
@@ -745,64 +808,72 @@ class Raymath {
 
 		@param v  The vector.
 		@param scale  The scale.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The scaled vector. */
-	public static inline function Vector4Scale(v:Vector4, scale:Float):Vector4
-		return RMath.Vector4Scale(v, scale);
+	public static inline function Vector4Scale(v:Vector4, scale:Float, ?out:Vector4):Vector4
+		return RMath.Vector4Scale(v, scale, out);
 
 	/** Returns two vectors multiplied component by component.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The product. */
-	public static inline function Vector4Multiply(v1:Vector4, v2:Vector4):Vector4
-		return RMath.Vector4Multiply(v1, v2);
+	public static inline function Vector4Multiply(v1:Vector4, v2:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Multiply(v1, v2, out);
 
 	/** Returns a vector pointing the other way.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The negated vector. */
-	public static inline function Vector4Negate(v:Vector4):Vector4
-		return RMath.Vector4Negate(v);
+	public static inline function Vector4Negate(v:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Negate(v, out);
 
 	/** Returns one vector divided by another, component by component.
 
 		@param v1  The one divided.
 		@param v2  The one dividing it.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The quotient. */
-	public static inline function Vector4Divide(v1:Vector4, v2:Vector4):Vector4
-		return RMath.Vector4Divide(v1, v2);
+	public static inline function Vector4Divide(v1:Vector4, v2:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Divide(v1, v2, out);
 
 	/** Returns a vector of length 1 in the same direction, or (0, 0, 0, 0) for (0, 0, 0, 0).
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The direction. */
-	public static inline function Vector4Normalize(v:Vector4):Vector4
-		return RMath.Vector4Normalize(v);
+	public static inline function Vector4Normalize(v:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Normalize(v, out);
 
 	/** Returns the least of two vectors' components, each on its own.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The vector of the least. */
-	public static inline function Vector4Min(v1:Vector4, v2:Vector4):Vector4
-		return RMath.Vector4Min(v1, v2);
+	public static inline function Vector4Min(v1:Vector4, v2:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Min(v1, v2, out);
 
 	/** Returns the most of two vectors' components, each on its own.
 
 		@param v1  One.
 		@param v2  The other.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The vector of the most. */
-	public static inline function Vector4Max(v1:Vector4, v2:Vector4):Vector4
-		return RMath.Vector4Max(v1, v2);
+	public static inline function Vector4Max(v1:Vector4, v2:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Max(v1, v2, out);
 
 	/** Returns a point part of the way from one to another.
 
 		@param v1  The start.
 		@param v2  The end.
 		@param amount  0 for the start, 1 for the end.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v1 or v2.
 		@return  The point. */
-	public static inline function Vector4Lerp(v1:Vector4, v2:Vector4, amount:Float):Vector4
-		return RMath.Vector4Lerp(v1, v2, amount);
+	public static inline function Vector4Lerp(v1:Vector4, v2:Vector4, amount:Float, ?out:Vector4):Vector4
+		return RMath.Vector4Lerp(v1, v2, amount, out);
 
 	/** Returns a point moved toward a target by at most a distance.
 
@@ -811,16 +882,18 @@ class Raymath {
 		@param v  The point.
 		@param target  The target.
 		@param maxDistance  The most it moves.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v or target.
 		@return  The moved point. */
-	public static inline function Vector4MoveTowards(v:Vector4, target:Vector4, maxDistance:Float):Vector4
-		return RMath.Vector4MoveTowards(v, target, maxDistance);
+	public static inline function Vector4MoveTowards(v:Vector4, target:Vector4, maxDistance:Float, ?out:Vector4):Vector4
+		return RMath.Vector4MoveTowards(v, target, maxDistance, out);
 
 	/** Returns 1 divided by each of a vector's components.
 
 		@param v  The vector.
+		@param out  Optional. The vector to fill; a new one when omitted. It may be v.
 		@return  The inverted vector. */
-	public static inline function Vector4Invert(v:Vector4):Vector4
-		return RMath.Vector4Invert(v);
+	public static inline function Vector4Invert(v:Vector4, ?out:Vector4):Vector4
+		return RMath.Vector4Invert(v, out);
 
 	/** Returns whether two vectors are equal but for rounding, each component as `FloatEquals` compares it.
 
@@ -847,110 +920,124 @@ class Raymath {
 	/** Returns a matrix transposed.
 
 		@param mat  The matrix.
+		@param out  Optional. The matrix to fill; a new one when omitted. It may be mat.
 		@return  Its transpose. */
-	public static inline function MatrixTranspose(mat:Matrix):Matrix
-		return RMath.MatrixTranspose(mat);
+	public static inline function MatrixTranspose(mat:Matrix, ?out:Matrix):Matrix
+		return RMath.MatrixTranspose(mat, out);
 
 	/** Returns a matrix's inverse.
 
 		A matrix without an inverse produces a matrix of NaN.
 
 		@param mat  The matrix.
+		@param out  Optional. The matrix to fill; a new one when omitted. It may be mat.
 		@return  Its inverse. */
-	public static inline function MatrixInvert(mat:Matrix):Matrix
-		return RMath.MatrixInvert(mat);
+	public static inline function MatrixInvert(mat:Matrix, ?out:Matrix):Matrix
+		return RMath.MatrixInvert(mat, out);
 
 	/** Returns the identity matrix.
 
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixIdentity():Matrix
-		return RMath.MatrixIdentity();
+	public static inline function MatrixIdentity(?out:Matrix):Matrix
+		return RMath.MatrixIdentity(out);
 
 	/** Returns the sum of two matrices.
 
 		@param left  One.
 		@param right  The other.
+		@param out  Optional. The matrix to fill; a new one when omitted. It may be left or right.
 		@return  The sum. */
-	public static inline function MatrixAdd(left:Matrix, right:Matrix):Matrix
-		return RMath.MatrixAdd(left, right);
+	public static inline function MatrixAdd(left:Matrix, right:Matrix, ?out:Matrix):Matrix
+		return RMath.MatrixAdd(left, right, out);
 
 	/** Returns one matrix less another.
 
 		@param left  The first.
 		@param right  The one subtracted from it.
+		@param out  Optional. The matrix to fill; a new one when omitted. It may be left or right.
 		@return  The difference. */
-	public static inline function MatrixSubtract(left:Matrix, right:Matrix):Matrix
-		return RMath.MatrixSubtract(left, right);
+	public static inline function MatrixSubtract(left:Matrix, right:Matrix, ?out:Matrix):Matrix
+		return RMath.MatrixSubtract(left, right, out);
 
 	/** Returns two matrices multiplied: left, then right.
 
 		@param left  The first.
 		@param right  The second.
+		@param out  Optional. The matrix to fill; a new one when omitted. It may be left or right.
 		@return  The product. */
-	public static inline function MatrixMultiply(left:Matrix, right:Matrix):Matrix
-		return RMath.MatrixMultiply(left, right);
+	public static inline function MatrixMultiply(left:Matrix, right:Matrix, ?out:Matrix):Matrix
+		return RMath.MatrixMultiply(left, right, out);
 
 	/** Returns a translation.
 
 		@param x  Along x.
 		@param y  Along y.
 		@param z  Along z.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixTranslate(x:Float, y:Float, z:Float):Matrix
-		return RMath.MatrixTranslate(x, y, z);
+	public static inline function MatrixTranslate(x:Float, y:Float, z:Float, ?out:Matrix):Matrix
+		return RMath.MatrixTranslate(x, y, z, out);
 
 	/** Returns a rotation about an axis.
 
 		@param axis  The axis.
 		@param angle  The angle, in radians.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixRotate(axis:Vector3, angle:Float):Matrix
-		return RMath.MatrixRotate(axis, angle);
+	public static inline function MatrixRotate(axis:Vector3, angle:Float, ?out:Matrix):Matrix
+		return RMath.MatrixRotate(axis, angle, out);
 
 	/** Returns a rotation about x.
 
 		@param angle  The angle, in radians.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixRotateX(angle:Float):Matrix
-		return RMath.MatrixRotateX(angle);
+	public static inline function MatrixRotateX(angle:Float, ?out:Matrix):Matrix
+		return RMath.MatrixRotateX(angle, out);
 
 	/** Returns a rotation about y.
 
 		@param angle  The angle, in radians.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixRotateY(angle:Float):Matrix
-		return RMath.MatrixRotateY(angle);
+	public static inline function MatrixRotateY(angle:Float, ?out:Matrix):Matrix
+		return RMath.MatrixRotateY(angle, out);
 
 	/** Returns a rotation about z.
 
 		@param angle  The angle, in radians.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixRotateZ(angle:Float):Matrix
-		return RMath.MatrixRotateZ(angle);
+	public static inline function MatrixRotateZ(angle:Float, ?out:Matrix):Matrix
+		return RMath.MatrixRotateZ(angle, out);
 
 	/** Returns a rotation by three angles that turns a point about z, then y, then x. See `MatrixRotateZYX` for turning in the reverse
 		order.
 
 		@param angle  The angles, in radians.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixRotateXYZ(angle:Vector3):Matrix
-		return RMath.MatrixRotateXYZ(angle);
+	public static inline function MatrixRotateXYZ(angle:Vector3, ?out:Matrix):Matrix
+		return RMath.MatrixRotateXYZ(angle, out);
 
 	/** Returns a rotation by three angles that turns a point about x, then y, then z, the reverse of `MatrixRotateXYZ`.
 
 		@param angle  The angles, in radians.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixRotateZYX(angle:Vector3):Matrix
-		return RMath.MatrixRotateZYX(angle);
+	public static inline function MatrixRotateZYX(angle:Vector3, ?out:Matrix):Matrix
+		return RMath.MatrixRotateZYX(angle, out);
 
 	/** Returns a scale.
 
 		@param x  Along x.
 		@param y  Along y.
 		@param z  Along z.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixScale(x:Float, y:Float, z:Float):Matrix
-		return RMath.MatrixScale(x, y, z);
+	public static inline function MatrixScale(x:Float, y:Float, z:Float, ?out:Matrix):Matrix
+		return RMath.MatrixScale(x, y, z, out);
 
 	/** Returns a perspective projection by its near plane's edges.
 
@@ -960,9 +1047,10 @@ class Raymath {
 		@param top  Its top.
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixFrustum(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix
-		return RMath.MatrixFrustum(left, right, bottom, top, nearPlane, farPlane);
+	public static inline function MatrixFrustum(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float, ?out:Matrix):Matrix
+		return RMath.MatrixFrustum(left, right, bottom, top, nearPlane, farPlane, out);
 
 	/** Returns a perspective projection.
 
@@ -970,9 +1058,10 @@ class Raymath {
 		@param aspect  Width over height.
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float):Matrix
-		return RMath.MatrixPerspective(fovY, aspect, nearPlane, farPlane);
+	public static inline function MatrixPerspective(fovY:Float, aspect:Float, nearPlane:Float, farPlane:Float, ?out:Matrix):Matrix
+		return RMath.MatrixPerspective(fovY, aspect, nearPlane, farPlane, out);
 
 	/** Returns an orthographic projection.
 
@@ -982,71 +1071,80 @@ class Raymath {
 		@param top  Top.
 		@param nearPlane  The near plane.
 		@param farPlane  The far plane.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float):Matrix
-		return RMath.MatrixOrtho(left, right, bottom, top, nearPlane, farPlane);
+	public static inline function MatrixOrtho(left:Float, right:Float, bottom:Float, top:Float, nearPlane:Float, farPlane:Float, ?out:Matrix):Matrix
+		return RMath.MatrixOrtho(left, right, bottom, top, nearPlane, farPlane, out);
 
 	/** Returns a view looking from eye at target.
 
 		@param eye  Where from.
 		@param target  What at.
 		@param up  Up.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix
-		return RMath.MatrixLookAt(eye, target, up);
+	public static inline function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3, ?out:Matrix):Matrix
+		return RMath.MatrixLookAt(eye, target, up, out);
 
 	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader accepts them.
 
 		@param mat  The matrix.
+		@param out  Optional. The array to fill; a new one when omitted.
 		@return  The array. */
-	public static inline function MatrixToFloatV(mat:Matrix):Array<Float>
-		return RMath.MatrixToFloatV(mat);
+	public static inline function MatrixToFloatV(mat:Matrix, ?out:Array<Float>):Array<Float>
+		return RMath.MatrixToFloatV(mat, out);
 
 	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` accept them. raymath's macro for
 		`MatrixToFloatV`'s array, the same here.
 
 		@param mat  The matrix.
+		@param out  Optional. The array to fill; a new one when omitted.
 		@return  The array. */
-	public static inline function MatrixToFloat(mat:Matrix):Array<Float>
-		return RMath.MatrixToFloat(mat);
+	public static inline function MatrixToFloat(mat:Matrix, ?out:Array<Float>):Array<Float>
+		return RMath.MatrixToFloat(mat, out);
 
 	/** Returns the sum of two quaternions.
 
 		@param q1  One.
 		@param q2  The other.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1 or q2.
 		@return  The sum. */
-	public static inline function QuaternionAdd(q1:Quaternion, q2:Quaternion):Quaternion
-		return RMath.QuaternionAdd(q1, q2);
+	public static inline function QuaternionAdd(q1:Quaternion, q2:Quaternion, ?out:Quaternion):Quaternion
+		return RMath.QuaternionAdd(q1, q2, out);
 
 	/** Returns a quaternion with a value added to each component.
 
 		@param q  The quaternion.
 		@param add  The value.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q.
 		@return  The sum. */
-	public static inline function QuaternionAddValue(q:Quaternion, add:Float):Quaternion
-		return RMath.QuaternionAddValue(q, add);
+	public static inline function QuaternionAddValue(q:Quaternion, add:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionAddValue(q, add, out);
 
 	/** Returns one quaternion less another.
 
 		@param q1  The first.
 		@param q2  The one subtracted from it.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1 or q2.
 		@return  The difference. */
-	public static inline function QuaternionSubtract(q1:Quaternion, q2:Quaternion):Quaternion
-		return RMath.QuaternionSubtract(q1, q2);
+	public static inline function QuaternionSubtract(q1:Quaternion, q2:Quaternion, ?out:Quaternion):Quaternion
+		return RMath.QuaternionSubtract(q1, q2, out);
 
 	/** Returns a quaternion with a value subtracted from each component.
 
 		@param q  The quaternion.
 		@param sub  The value.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q.
 		@return  The difference. */
-	public static inline function QuaternionSubtractValue(q:Quaternion, sub:Float):Quaternion
-		return RMath.QuaternionSubtractValue(q, sub);
+	public static inline function QuaternionSubtractValue(q:Quaternion, sub:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionSubtractValue(q, sub, out);
 
 	/** Returns the identity quaternion.
 
+		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
-	public static inline function QuaternionIdentity():Quaternion
-		return RMath.QuaternionIdentity();
+	public static inline function QuaternionIdentity(?out:Quaternion):Quaternion
+		return RMath.QuaternionIdentity(out);
 
 	/** Returns a quaternion's length.
 
@@ -1058,67 +1156,75 @@ class Raymath {
 	/** Returns a quaternion of length 1 in the same direction, or the identity when its length is 0.
 
 		@param q  The quaternion.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q.
 		@return  The normalized quaternion. */
-	public static inline function QuaternionNormalize(q:Quaternion):Quaternion
-		return RMath.QuaternionNormalize(q);
+	public static inline function QuaternionNormalize(q:Quaternion, ?out:Quaternion):Quaternion
+		return RMath.QuaternionNormalize(q, out);
 
 	/** Returns the rotation back from a quaternion's.
 
 		@param q  The quaternion, of length 1.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q.
 		@return  Its inverse. */
-	public static inline function QuaternionInvert(q:Quaternion):Quaternion
-		return RMath.QuaternionInvert(q);
+	public static inline function QuaternionInvert(q:Quaternion, ?out:Quaternion):Quaternion
+		return RMath.QuaternionInvert(q, out);
 
 	/** Returns two quaternions multiplied: the rotation q2, then q1.
 
 		@param q1  The first.
 		@param q2  The second.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1 or q2.
 		@return  The product. */
-	public static inline function QuaternionMultiply(q1:Quaternion, q2:Quaternion):Quaternion
-		return RMath.QuaternionMultiply(q1, q2);
+	public static inline function QuaternionMultiply(q1:Quaternion, q2:Quaternion, ?out:Quaternion):Quaternion
+		return RMath.QuaternionMultiply(q1, q2, out);
 
 	/** Returns a quaternion scaled.
 
 		@param q  The quaternion.
 		@param mul  The scale.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q.
 		@return  The scaled quaternion. */
-	public static inline function QuaternionScale(q:Quaternion, mul:Float):Quaternion
-		return RMath.QuaternionScale(q, mul);
+	public static inline function QuaternionScale(q:Quaternion, mul:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionScale(q, mul, out);
 
 	/** Returns one quaternion divided by another, component by component.
 
 		@param q1  The one divided.
 		@param q2  The one dividing it.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1 or q2.
 		@return  The quotient. */
-	public static inline function QuaternionDivide(q1:Quaternion, q2:Quaternion):Quaternion
-		return RMath.QuaternionDivide(q1, q2);
+	public static inline function QuaternionDivide(q1:Quaternion, q2:Quaternion, ?out:Quaternion):Quaternion
+		return RMath.QuaternionDivide(q1, q2, out);
 
 	/** Returns a quaternion part of the way from one to another, component by component.
 
 		@param q1  The start.
 		@param q2  The end.
 		@param amount  0 for the start, 1 for the end.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1 or q2.
 		@return  The quaternion. */
-	public static inline function QuaternionLerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
-		return RMath.QuaternionLerp(q1, q2, amount);
+	public static inline function QuaternionLerp(q1:Quaternion, q2:Quaternion, amount:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionLerp(q1, q2, amount, out);
 
 	/** Returns a quaternion part of the way from one to another the short way round, component by component, then normalized.
 
 		@param q1  The start.
 		@param q2  The end.
 		@param amount  0 for the start, 1 for the end.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1 or q2.
 		@return  The quaternion. */
-	public static inline function QuaternionNlerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
-		return RMath.QuaternionNlerp(q1, q2, amount);
+	public static inline function QuaternionNlerp(q1:Quaternion, q2:Quaternion, amount:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionNlerp(q1, q2, amount, out);
 
 	/** Returns a rotation part of the way from one to another at a steady turn, the short way round (spherical linear interpolation).
 
 		@param q1  The start.
 		@param q2  The end.
 		@param amount  0 for the start, 1 for the end.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1 or q2.
 		@return  The quaternion. */
-	public static inline function QuaternionSlerp(q1:Quaternion, q2:Quaternion, amount:Float):Quaternion
-		return RMath.QuaternionSlerp(q1, q2, amount);
+	public static inline function QuaternionSlerp(q1:Quaternion, q2:Quaternion, amount:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionSlerp(q1, q2, amount, out);
 
 	/** Returns a rotation part of the way along a cubic Hermite curve, from one quaternion to another, leaving and arriving along tangents,
 		normalized.
@@ -1128,9 +1234,11 @@ class Raymath {
 		@param q2  The end.
 		@param inTangent2  The tangent arriving at it.
 		@param t  0 for the start, 1 for the end.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q1, outTangent1, q2 or inTangent2.
 		@return  The quaternion. */
-	public static inline function QuaternionCubicHermiteSpline(q1:Quaternion, outTangent1:Quaternion, q2:Quaternion, inTangent2:Quaternion, t:Float):Quaternion
-		return RMath.QuaternionCubicHermiteSpline(q1, outTangent1, q2, inTangent2, t);
+	public static inline function QuaternionCubicHermiteSpline(q1:Quaternion, outTangent1:Quaternion, q2:Quaternion, inTangent2:Quaternion, t:Float,
+			?out:Quaternion):Quaternion
+		return RMath.QuaternionCubicHermiteSpline(q1, outTangent1, q2, inTangent2, t, out);
 
 	/** Returns the rotation turning one direction to another.
 
@@ -1140,23 +1248,26 @@ class Raymath {
 
 		@param from  The direction turned from.
 		@param to  The direction turned to.
+		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion, of length 1; the identity when either direction is all 0. */
-	public static inline function QuaternionFromVector3ToVector3(from:Vector3, to:Vector3):Quaternion
-		return RMath.QuaternionFromVector3ToVector3(from, to);
+	public static inline function QuaternionFromVector3ToVector3(from:Vector3, to:Vector3, ?out:Quaternion):Quaternion
+		return RMath.QuaternionFromVector3ToVector3(from, to, out);
 
 	/** Returns a rotation matrix's rotation as a quaternion.
 
 		@param mat  The matrix.
+		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
-	public static inline function QuaternionFromMatrix(mat:Matrix):Quaternion
-		return RMath.QuaternionFromMatrix(mat);
+	public static inline function QuaternionFromMatrix(mat:Matrix, ?out:Quaternion):Quaternion
+		return RMath.QuaternionFromMatrix(mat, out);
 
 	/** Returns a quaternion's rotation as a matrix.
 
 		@param q  The quaternion.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function QuaternionToMatrix(q:Quaternion):Matrix
-		return RMath.QuaternionToMatrix(q);
+	public static inline function QuaternionToMatrix(q:Quaternion, ?out:Matrix):Matrix
+		return RMath.QuaternionToMatrix(q, out);
 
 	/** Returns the rotation about an axis as a quaternion, normalized.
 
@@ -1164,9 +1275,10 @@ class Raymath {
 
 		@param axis  The axis.
 		@param angle  The angle, in radians.
+		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
-	public static inline function QuaternionFromAxisAngle(axis:Vector3, angle:Float):Quaternion
-		return RMath.QuaternionFromAxisAngle(axis, angle);
+	public static inline function QuaternionFromAxisAngle(axis:Vector3, angle:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionFromAxisAngle(axis, angle, out);
 
 	/** Finds a quaternion's rotation as an axis and an angle about it.
 
@@ -1183,9 +1295,10 @@ class Raymath {
 		@param pitch  About x, in radians.
 		@param yaw  About y.
 		@param roll  About z.
+		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
-	public static inline function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaternion
-		return RMath.QuaternionFromEuler(pitch, yaw, roll);
+	public static inline function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float, ?out:Quaternion):Quaternion
+		return RMath.QuaternionFromEuler(pitch, yaw, roll, out);
 
 	/** Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` accepts them.
 
@@ -1193,17 +1306,19 @@ class Raymath {
 		turn.
 
 		@param q  The quaternion, of length 1.
+		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The angles, in radians. */
-	public static inline function QuaternionToEuler(q:Quaternion):Vector3
-		return RMath.QuaternionToEuler(q);
+	public static inline function QuaternionToEuler(q:Quaternion, ?out:Vector3):Vector3
+		return RMath.QuaternionToEuler(q, out);
 
 	/** Returns a quaternion's four components transformed by a matrix, as a point with w.
 
 		@param q  The quaternion.
 		@param mat  The matrix.
+		@param out  Optional. The quaternion to fill; a new one when omitted. It may be q.
 		@return  The transformed quaternion. */
-	public static inline function QuaternionTransform(q:Quaternion, mat:Matrix):Quaternion
-		return RMath.QuaternionTransform(q, mat);
+	public static inline function QuaternionTransform(q:Quaternion, mat:Matrix, ?out:Quaternion):Quaternion
+		return RMath.QuaternionTransform(q, mat, out);
 
 	/** Returns whether two quaternions are the same rotation but for rounding: equal as `FloatEquals` compares each component, or one
 		the other negated.

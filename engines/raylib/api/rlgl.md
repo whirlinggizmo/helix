@@ -498,9 +498,9 @@ static function rlScalef(x:Float, y:Float, z:Float):Void
 static function rlMultMatrixf(matf:Array<Float>):Void
 static function rlOrtho(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void
 static function rlFrustum(left:Float, right:Float, bottom:Float, top:Float, znear:Float, zfar:Float):Void
-static function rlGetMatrixModelview():Matrix
-static function rlGetMatrixProjection():Matrix
-static function rlGetMatrixTransform():Matrix
+static function rlGetMatrixModelview(?out:Matrix):Matrix
+static function rlGetMatrixProjection(?out:Matrix):Matrix
+static function rlGetMatrixTransform(?out:Matrix):Matrix
 static function rlSetMatrixModelview(view:Matrix):Void
 static function rlSetMatrixProjection(proj:Matrix):Void
 static function rlGetCullDistanceNear():Float
@@ -553,8 +553,8 @@ static function rlGetPixelFormatName(format:Int):String
 static function rlEnableStereoRender():Void
 static function rlDisableStereoRender():Void
 static function rlIsStereoRenderEnabled():Bool
-static function rlGetMatrixProjectionStereo(eye:Int):Matrix
-static function rlGetMatrixViewOffsetStereo(eye:Int):Matrix
+static function rlGetMatrixProjectionStereo(eye:Int, ?out:Matrix):Matrix
+static function rlGetMatrixViewOffsetStereo(eye:Int, ?out:Matrix):Matrix
 static function rlSetMatrixProjectionStereo(right:Matrix, left:Matrix):Void
 static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
 ```
@@ -601,10 +601,13 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `znear`: The near plane.
   - `zfar`: The far plane.
 - `rlGetMatrixModelview`: Returns the view, which is the screen's, `BeginMode2D`'s or `BeginMode3D`'s.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 - `rlGetMatrixProjection`: Returns the projection.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 - `rlGetMatrixTransform`: Returns the transform `rlPushMatrix` started, or the identity when none is pushed.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 - `rlSetMatrixModelview`: Sets the view.
   - `view`: The matrix.
@@ -824,11 +827,13 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - returns: True when it is.
 - `rlGetMatrixProjectionStereo`: Returns an eye's projection in stereo rendering, as `rlSetMatrixProjectionStereo` set it.
   - `eye`: The eye: 0, drawn in the left half, or 1.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 
   Zero until set, and for an eye other than 0 or 1.
 - `rlGetMatrixViewOffsetStereo`: Returns an eye's view offset in stereo rendering, as `rlSetMatrixViewOffsetStereo` set it.
   - `eye`: The eye: 0, drawn in the left half, or 1.
+  - `out`: Optional. The matrix to fill; a new one when omitted.
   - returns: The matrix.
 
   Zero until set, and for an eye other than 0 or 1.

@@ -796,6 +796,8 @@ import helix.raylib.Raylib.*;
 import helix.raylib.Raymath.*;
 ```
 
+Each function returning a vector, a quaternion, a matrix or an array has an optional out as its last argument. With one, the result is written into it and it is returned, so a call each frame allocates nothing. The out may be any argument of its type.
+
 Its members are on their own page: [raymath.md](raymath.md).
 
 ## Rectangle

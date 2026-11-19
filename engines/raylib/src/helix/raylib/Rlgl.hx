@@ -725,21 +725,24 @@ class Rlgl {
 
 	/** Returns the view, which is the screen's, `BeginMode2D`'s or `BeginMode3D`'s.
 
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function rlGetMatrixModelview():Matrix
-		return RRlgl.rlGetMatrixModelview();
+	public static inline function rlGetMatrixModelview(?out:Matrix):Matrix
+		return RRlgl.rlGetMatrixModelview(out);
 
 	/** Returns the projection.
 
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function rlGetMatrixProjection():Matrix
-		return RRlgl.rlGetMatrixProjection();
+	public static inline function rlGetMatrixProjection(?out:Matrix):Matrix
+		return RRlgl.rlGetMatrixProjection(out);
 
 	/** Returns the transform `rlPushMatrix` started, or the identity when none is pushed.
 
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function rlGetMatrixTransform():Matrix
-		return RRlgl.rlGetMatrixTransform();
+	public static inline function rlGetMatrixTransform(?out:Matrix):Matrix
+		return RRlgl.rlGetMatrixTransform(out);
 
 	/** Sets the view.
 
@@ -1177,18 +1180,20 @@ class Rlgl {
 		Zero until set, and for an eye other than 0 or 1.
 
 		@param eye  The eye: 0, drawn in the left half, or 1.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function rlGetMatrixProjectionStereo(eye:Int):Matrix
-		return RRlgl.rlGetMatrixProjectionStereo(eye);
+	public static inline function rlGetMatrixProjectionStereo(eye:Int, ?out:Matrix):Matrix
+		return RRlgl.rlGetMatrixProjectionStereo(eye, out);
 
 	/** Returns an eye's view offset in stereo rendering, as `rlSetMatrixViewOffsetStereo` set it.
 
 		Zero until set, and for an eye other than 0 or 1.
 
 		@param eye  The eye: 0, drawn in the left half, or 1.
+		@param out  Optional. The matrix to fill; a new one when omitted.
 		@return  The matrix. */
-	public static inline function rlGetMatrixViewOffsetStereo(eye:Int):Matrix
-		return RRlgl.rlGetMatrixViewOffsetStereo(eye);
+	public static inline function rlGetMatrixViewOffsetStereo(eye:Int, ?out:Matrix):Matrix
+		return RRlgl.rlGetMatrixViewOffsetStereo(eye, out);
 
 	/** Sets each eye's projection in stereo rendering, used in place of the projection from the batch's next flush.
 
