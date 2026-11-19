@@ -43,8 +43,8 @@ class Defaults {
 	}
 
 	/** Returns raylib's default shader reading a material's values (the Materials extra's): its fragment stage cutting the material out
-		below its alpha cutoff and adding the light it and its model give off. The Materials extra draws through it a material drawn with
-		the default shader that is cut out or gives off light, so a program not using the extra links none of it. */
+		below its alpha cutoff and adding the light it and its model emit. The Materials extra draws through it a material drawn with
+		the default shader that is cut out or emits light, so a program not using the extra links none of it. */
 	public static macro function materialShader():ExprOf<helix.services.shaders.Shader> {
 		var pos = Context.currentPos();
 		return ShaderMacro.program("raylib default vertex shader", null, "helix-raylib material fragment shader",

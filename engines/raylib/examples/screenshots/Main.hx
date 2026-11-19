@@ -1,10 +1,10 @@
 import helix.raylib.Raylib.*;
 
 /** Screenshots saved to files in the directory the program's files are read from, so `LoadImage` reads them back: the first frame,
-	taken before it is drawn; a frame part way through, its clear but not the gold drawn after; and the frame last shown, taken between
-	frames. Natively each file is read back and its colors at the window's left and right quarters printed. In a page each screenshot is
-	downloaded, which the page can't read back, so it prints nothing. The `quit_after_frame` option (`--quit_after_frame=60` natively,
-	`?quit_after_frame=60` in a page) quits it after that frame. */
+	captured before it is drawn; a frame part way through, its clear but not the gold drawn after; and the frame last shown, captured
+	between frames. Natively each file is read back and its colors at the window's left and right quarters printed. In a page each
+	screenshot is downloaded, which the page can't read back, so it prints nothing. The `quit_after_frame` option
+	(`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits it after that frame. */
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: screenshots");

@@ -294,7 +294,7 @@ class Wait {
 		the answer.
 
 		@param refusal  The message refusing the call in a function used as a value.
-		@param ask  A function asking, given what to call with the answer.
+		@param ask  A function asking, receiving what to call with the answer.
 		@return  The expansion. */
 	public static function answer(refusal:String, ask:Expr):Expr {
 		var wait = call(refusal, macro helix.raylib.internal.Runtime.answered($ask));
@@ -307,7 +307,7 @@ class Wait {
 		@param refusal  The message refusing the call in a function used as a value.
 		@param asked  The section's function.
 		@param args  The call's arguments, raylib's.
-		@param isVoid  Whether the call has no value, its section's `answer` taking none.
+		@param isVoid  Whether the call has no value, its section's `answer` accepting none.
 		@return  The expansion. */
 	public static function section(refusal:String, asked:Expr, args:Array<Expr>, isVoid:Bool):Expr {
 		// Binding the arguments evaluates them before the wait, outside the function asking.

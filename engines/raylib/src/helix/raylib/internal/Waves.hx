@@ -2,13 +2,13 @@ package helix.raylib.internal;
 
 import haxe.io.Bytes;
 
-/** Holds what helix-raylib's wave readers do to the platform's decoded samples to give raylib's: Ogg's floats made 16-bit as stb_vorbis
-	makes them; an MP3's Xing, Info or VBRI tag hidden, so the decoder reads every frame as raylib 5.5's dr_mp3 does, and its floats
-	made dr_mp3's 16-bit steps. */
+/** Holds what helix-raylib's wave readers do to the platform's decoded samples to produce raylib's: Ogg's floats made 16-bit as
+	stb_vorbis makes them; an MP3's Xing, Info or VBRI tag hidden, so the decoder reads every frame as raylib 5.5's dr_mp3 does, and
+	its floats made dr_mp3's 16-bit steps. */
 @:noCompletion
 class Waves {
-	/** Returns the rate a sound file's header records (helix-formats' `AudioHeader.readSampleRate`, given its first 64 KiB), the rate
-		raylib keeps and helix-raylib asks the platform's decoder for.
+	/** Returns the rate a sound file's header records (helix-formats' `AudioHeader.readSampleRate`, passed its first 64 KiB), the
+		rate raylib keeps and helix-raylib asks the platform's decoder for.
 
 		@param data  The file.
 		@return  The frames a second, or 0 when the header can't be read. */
@@ -19,7 +19,7 @@ class Waves {
 		rounded to the nearest, a half to even (its float addition of 384), and held to -32768 to 32767.
 
 		@param floats  The 32-bit float samples.
-		@param count  How many samples to give: those past the floats are silence.
+		@param count  How many samples to return: those past the floats are silence.
 		@return  The 16-bit samples, little-endian. */
 	public static function toInt16(floats:Bytes, count:Int):Bytes {
 		var out = Bytes.alloc(count * 2), given = Std.int(floats.length / 4);
@@ -57,11 +57,11 @@ class Waves {
 		return copy;
 	}
 
-	/** Returns an MP3's decoded floats as raylib 5.5's dr_mp3 (0.6.39) gives them: decoded to 16-bit samples (minimp3's integer output on
-		x86-64: each scaled by 32768, held to -32768 to 32767 and rounded to the nearest, a half to even, as its SSE loop converts, but
-		every 16th frame, which its scalar synth_pair converts, a half added and truncated toward zero, then a step down below zero), then
-		made floats again over 32768. A first frame of silence goes before them when the decoder left out the frame of a hidden tag
-		(`hideMp3Tag`), as Chromium does, so the frames are dr_mp3's: one for each frame of the file.
+	/** Returns an MP3's decoded floats as raylib 5.5's dr_mp3 (0.6.39) produces them: decoded to 16-bit samples (minimp3's integer output
+		on x86-64: each scaled by 32768, held to -32768 to 32767 and rounded to the nearest, a half to even, as its SSE loop converts,
+		but every 16th frame, which its scalar synth_pair converts, a half added and truncated toward zero, then a step down below zero),
+		then made floats again over 32768. A first frame of silence goes before them when the decoder left out the frame of a hidden
+		tag (`hideMp3Tag`), as Chromium does, so the frames are dr_mp3's: one for each frame of the file.
 
 		@param floats  The 32-bit float samples decoded.
 		@param channelCount  The channels they hold.
@@ -136,7 +136,7 @@ class Waves {
 		0,  8, 16, 24,  32,  40,  48,  56,  64,  80,  96, 112, 128, 144, 160
 	];
 
-	// Whether the bytes at p are the ASCII text given.
+	// Whether the bytes at p are the ASCII text provided.
 	static function matches(bytes:Bytes, p:Int, text:String):Bool {
 		if (p + text.length > bytes.length)
 			return false;

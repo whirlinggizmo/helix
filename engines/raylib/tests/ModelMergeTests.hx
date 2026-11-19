@@ -7,8 +7,8 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 
 /** Checks `LoadModelFromModels` on graphics that count what is live: meshes whose materials differ only in diffuse color
-	merged into one with the colors in the vertices, other materials kept apart, the provided models unchanged, normals given to a mesh
-	without, a merge without a skeleton baking the transforms and having no bones, and one with a skeleton taking its bones, renumbering
+	merged into one with the colors in the vertices, other materials kept apart, the provided models unchanged, normals added to a mesh
+	without, a merge without a skeleton baking the transforms and having no bones, and one with a skeleton using its bones, renumbering
 	each model's by name, following the nearest ancestor, rebinding a model bound elsewhere, placing a model without bones, and being
 	posed by an animation of the skeleton; and the three refusals. */
 @:access(helix.raylib.Mesh)
@@ -30,7 +30,7 @@ class ModelMergeTests {
 	static function atRest(?x:Float = 0, ?y:Float = 0, ?z:Float = 0):Transform
 		return new Transform(new Vector3(x, y, z), new Quaternion(0, 0, 0, 1), new Vector3(1, 1, 1));
 
-	// A cube of the color, its vertices following the one bone, of the bones given with their parents.
+	// A cube of the color, its vertices following the one bone, of the bones provided with their parents.
 	static function part(color:Color, ?names:Array<String>, ?parents:Array<Int>, follows = 0):Model {
 		var mesh = GenMeshCube(1, 1, 1);
 		var model = LoadModelFromMesh(mesh);

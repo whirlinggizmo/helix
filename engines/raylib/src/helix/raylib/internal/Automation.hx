@@ -77,7 +77,7 @@ class Automation implements PlayedInput {
 	/** What the frame counter events are stamped with is ahead of helix-raylib's frames, as `SetAutomationEventBaseFrame` sets it. */
 	public var frameOffset = 0;
 
-	/** The number in the next screenshot's name an event takes. */
+	/** The number in the next screenshot's name an event uses. */
 	public var screenshots = 0;
 
 	/** Each key down, by its number on the platform (`KEY_*`, a right-hand modifier as the left-hand one), and as the last frame had it. */
@@ -176,7 +176,7 @@ class Automation implements PlayedInput {
 	// Whether the recording runs as each frame ends.
 	var recorded = false;
 
-	// After each poll: the last frame's state kept as the previous, and each state taken from the devices where they changed it.
+	// After each poll: the last frame's state kept as the previous, and each state read from the devices where they changed it.
 	function mirror():Void {
 		for (k in 0...KEYS) {
 			previousKeys[k] = keys[k];
@@ -245,8 +245,8 @@ class Automation implements PlayedInput {
 		}
 	}
 
-	/** Returns a gamepad's axis as raylib's `GetGamepadAxisMovement` gives it: its value while the gamepad is connected, else -1 for a
-		trigger and 0 for the rest.
+	/** Returns a gamepad's axis as raylib's `GetGamepadAxisMovement` returns it: its value while the gamepad is connected, else -1 for
+		a trigger and 0 for the rest.
 
 		@param gamepad  The gamepad.
 		@param axis  The axis.

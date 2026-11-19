@@ -1,7 +1,7 @@
 package helix.raylib;
 
 /** Represents one character of a `Font`: its code point, where it sits against the pen, how far the pen moves after it, and its
-	image. `Font.glyphs` holds a font's, and `GetGlyphInfo` gives one. */
+	image. `Font.glyphs` holds a font's, and `GetGlyphInfo` returns one. */
 class GlyphInfo {
 	/** Gets or sets the character's code point (Unicode). */
 	public var value:Int = 0;

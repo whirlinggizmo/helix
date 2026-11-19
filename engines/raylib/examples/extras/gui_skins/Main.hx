@@ -5,7 +5,7 @@ import helix.raylib.extras.GuiSkins.*;
 
 /** Skins raygui's controls (`helix.raylib.extras.GuiSkins`): a settings panel of buttons, a slider, a checkbox and a progress bar, each
 	part drawn from Kenney's UI Pack (CC0, `web/assets/License.txt`) as a nine-patch, so its corners keep their shape at any size, in the pack's font. The
-	buttons take their four states from one sheet (`web/assets/button.png`: normal, focused, pressed, disabled, top down), their faces on a
+	buttons read their four states from one sheet (`web/assets/button.png`: normal, focused, pressed, disabled, top down), their faces on a
 	lip their text stays centered on, the pressed face pushed down onto it with its text. Each button shows an icon from the pack
 	before its text, and a round button of images alone, which answers on its face and not its clear corners, sets the volume to
 	full. The

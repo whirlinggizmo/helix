@@ -26,15 +26,15 @@ abstract ColorTween(helix.tweens.ColorTween) to helix.tweens.ColorTween to helix
 
 		@param from  The color at the start.
 		@param to  The color at the end.
-		@param duration  The seconds one play takes, 0 or more.
+		@param duration  The seconds one play lasts, 0 or more.
 		@param ease  Optional. The easing curve; a straight line when omitted. */
 	public inline function new(from:Color, to:Color, duration:Float, ?ease:Ease)
 		this = new helix.tweens.ColorTween(cast from, cast to, duration, ease);
 
 	/** Adds a leg: the color fades on from where the tween ended before to another color.
 
-		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek take every leg as one play. `from`, `to` and
-		`ease` stay the first leg's.
+		The tween's `duration` grows by the leg's seconds, so a repeat, a yoyo and a seek treat every leg as one play. `from`, `to`
+		and `ease` stay the first leg's.
 
 		```haxe
 		// To red, a wait, then back to white.
@@ -42,10 +42,10 @@ abstract ColorTween(helix.tweens.ColorTween) to helix.tweens.ColorTween to helix
 		```
 
 		@param to  The color at the leg's end.
-		@param duration  The seconds the leg takes, 0 or more.
+		@param duration  The seconds the leg lasts, 0 or more.
 		@param ease  Optional. The leg's easing curve; a straight line when omitted.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which claimed the tween's time when placed. */
 	public inline function append(to:Color, duration:Float, ?ease:Ease):ColorTween {
 		this.append(cast to, duration, ease);
 		return cast this;
@@ -55,7 +55,7 @@ abstract ColorTween(helix.tweens.ColorTween) to helix.tweens.ColorTween to helix
 
 		@param seconds  The seconds to wait, 0 or more.
 		@return  This tween.
-		@throws String  A tween placed in a sequence, which took the tween's time when placed. */
+		@throws String  A tween placed in a sequence, which claimed the tween's time when placed. */
 	public inline function appendDelay(seconds:Float):ColorTween {
 		this.appendDelay(seconds);
 		return cast this;

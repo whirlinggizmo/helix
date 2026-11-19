@@ -23,7 +23,7 @@ class BoneInfo {
 	/** Returns a separate copy.
 
 		@param out  Optional. The BoneInfo to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public function copy(?out:BoneInfo):BoneInfo {
 		if (out == null)
 			return new BoneInfo(name, parent);

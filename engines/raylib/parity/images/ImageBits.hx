@@ -3,8 +3,8 @@ import helix.raylib.Raylib.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 
-// helix-raylib's GIF images, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py. Where raylib gives an image of no frames or
-// no data, or a texture of id 0 (a file it can't read), helix-raylib's load fails: its failure is printed as 0 frames, or none.
+// helix-raylib's GIF images, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py. Where raylib returns an image of no frames
+// or no data, or a texture of id 0 (a file it can't read), helix-raylib's load fails: its failure is printed as 0 frames, or none.
 @:access(helix.raylib.internal.Runtime)
 class ImageBits {
 	static function pump(done:Void->Bool) {
@@ -45,7 +45,7 @@ class ImageBits {
 		return data;
 	}
 
-	// An image LoadImageAsync or LoadImageFromMemoryAsync gives, as ref.c prints raylib's: its failure as none.
+	// An image LoadImageAsync or LoadImageFromMemoryAsync returns, as ref.c prints raylib's: its failure as none.
 	static function still(name:String, load:(loaded:Image->Void, failed:String->Void)->Void) {
 		var image:Null<Image> = null, done = false;
 		load(i -> {
@@ -59,7 +59,7 @@ class ImageBits {
 			Parity.image(name, image);
 	}
 
-	// A texture LoadTextureAsync gives, as ref.c prints raylib's: its failure as none, else its pixels read back.
+	// A texture LoadTextureAsync returns, as ref.c prints raylib's: its failure as none, else its pixels read back.
 	static function texture(name:String, load:(loaded:Texture2D->Void, failed:String->Void)->Void) {
 		var t:Null<Texture2D> = null, done = false;
 		load(loaded -> {
@@ -79,7 +79,7 @@ class ImageBits {
 		UnloadTexture(t);
 	}
 
-	// A font LoadFontAsync gives, as ref.c prints raylib's.
+	// A font LoadFontAsync returns, as ref.c prints raylib's.
 	static function font(name:String, load:(loaded:Font->Void, failed:String->Void)->Void) {
 		var f:Null<Font> = null, done = false;
 		load(loaded -> {

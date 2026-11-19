@@ -43,10 +43,10 @@ class Device {
 	/** Permission was refused. */
 	public static inline final TILT_STATUS_REFUSED = 4;
 
-	/** The device gives no readings: there is no sensor, or none answered. */
+	/** The device reports no readings: there is no sensor, or none answered. */
 	public static inline final TILT_STATUS_UNAVAILABLE = 5;
 
-	/** The program isn't served securely, and the system gives no readings. */
+	/** The program isn't served securely, and the system reports no readings. */
 	public static inline final TILT_STATUS_NEEDS_HTTPS = 6;
 
 	/** Returns whether the program is built for a browser page rather than natively. See `GetPlatformOS` for naming the operating

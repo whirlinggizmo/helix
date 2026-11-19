@@ -15,8 +15,8 @@ import helix.services.time.Time;
 	the later draws on top, and is copied to the screen without blending as it ends. Every frame after draws into the target and is
 	copied to the screen, its scissors at the framebuffer's scale, so a read between frames holds the frame last shown; a frame drawn
 	without a clear or a read is black. Once the framebuffer's size changes, the target is made again at it, and a read before the next
-	frame is black. A new window's first read, between frames, is black. Before `InitWindow`, the screen read logs why and gives an empty
-	image. Run by helix.py test on Node and natively. */
+	frame is black. A new window's first read, between frames, is black. Before `InitWindow`, the screen read logs why and returns an
+	empty image. Run by helix.py test on Node and natively. */
 @:access(helix.raylib.internal.Runtime)
 class ScreenReadTests {
 	public static var checks = 0;

@@ -4,9 +4,9 @@ import haxe.io.Int32Array;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
 
-/** Checks the numbers a shader's uniform takes from a value (`SetShaderValue`, `SetShaderValueV`): an array, a number, a vector, a
+/** Checks the numbers a shader's uniform reads from a value (`SetShaderValue`, `SetShaderValueV`): an array, a number, a vector, a
 	`Color` for a vec4, and a `haxe.io` typed array's or `Bytes`' memory read as the uniform's type, a view into part of its buffer
-	among them; any other value gives none. */
+	among them; any other value produces none. */
 @:access(helix.raylib.modules.RModels)
 class ShaderValueTests {
 	static var checks = 0;

@@ -3,7 +3,7 @@ package helix.raylib.internal;
 import helix.services.shaders.ShaderUniform;
 
 /** Holds the PBR shader on the GPU (`LoadPbrShader`), and its skinned twin: a program whose draws also write the material's values, and
-	give a normal-mapped mesh its tangents first. Only `LoadPbrShader` makes one, so a program without it links none of it. */
+	compute a normal-mapped mesh's tangents first. Only `LoadPbrShader` makes one, so a program without it links none of it. */
 @:noCompletion
 class LitProgram extends Program {
 	// The uniforms of the material's values, found when first written: null for one the shader doesn't declare.

@@ -11,7 +11,7 @@ import helix.raylib.internal.Runtime;
 /** Checks the scene's lights (the Lighting extra's `CreateLight`), on graphics that count what is live: each draw through a
 	shader declaring `lights` is lit by the lights reaching its bounds most, 8 of more than 8, best first, the rest off; a range keeps a
 	far lamp off a draw; a spot light's cone keeps it off what it points away from; more than 4 lights light one draw; `UnloadLight`
-	takes a light out; a light moves by its fields alone; a shader of 4 lights gets the best 4; `DrawMeshInstanced` scores against all
+	removes a light; a light moves by its fields alone; a shader of 4 lights gets the best 4; `DrawMeshInstanced` scores against all
 	its instances; immediate shapes drawn through a lit shader are lit by their vertices' bounds; and the light's fields (intensity,
 	range, cone) reach the next draw once assigned, each clamped to its range there. */
 @:access(helix.raylib.internal.Runtime)
@@ -149,7 +149,7 @@ class LightingTests {
 		for (light in six)
 			UnloadLight(light);
 
-		// A directional light reaches everything, a spot light only what its cone takes in.
+		// A directional light reaches everything, a spot light only what its cone covers.
 		var sun = CreateLight(LIGHT_DIRECTIONAL, new Vector3(0, 10, 0), Vector3Zero(), WHITE, shader);
 		var spot = CreateLight(LIGHT_SPOT, new Vector3(0, 5, 0), new Vector3(0, 0, 0), WHITE, shader);
 		DrawModel(cube, Vector3Zero(), 1, WHITE);

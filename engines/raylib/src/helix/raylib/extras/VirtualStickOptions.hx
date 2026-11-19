@@ -2,7 +2,7 @@ package helix.raylib.extras;
 
 import helix.raylib.*;
 
-/** Represents how one stick of a virtual gamepad starts and looks (`VirtualGamepadOptions`). A field left out takes the gamepad's options, or their default.
+/** Represents how one stick of a virtual gamepad starts and looks (`VirtualGamepadOptions`). A field left out uses the gamepad's options, or their default.
 	Positions and sizes are in the screen's pixels.
 
 	A stick captures a finger landing in its touch zone, even while it has captured another, and releases the earlier finger. A finger the

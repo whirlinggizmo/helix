@@ -1,5 +1,6 @@
-/** Checks `Sys.args` as helix-raylib gives it in a page: the URL's query as a command line, each `name=value` as `--name=value` and a bare
-	`name` as `--name`, in order and decoded, and none without a query. Natively `Sys` is Haxe's own, and the test only reads it. */
+/** Checks `Sys.args` as helix-raylib provides it in a page: the URL's query as a command line, each `name=value` as `--name=value`
+	and a bare `name` as `--name`, in order and decoded, and none without a query. Natively `Sys` is Haxe's own, and the test only
+	reads it. */
 class SysTests {
 	static var checks = 0;
 

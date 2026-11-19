@@ -57,7 +57,7 @@ class Pixels {
 		return (r & 255) | (g & 255) << 8 | (b & 255) << 16 | (a & 255) << 24;
 	}
 
-	/** A packed color as 0xAARRGGBB, as helix-services' images take colors. */
+	/** A packed color as 0xAARRGGBB, as helix-services' images hold colors. */
 	public static inline function argb(rgba:Int):Int {
 		return (rgba & 0xff00ff00) | ((rgba >> 16) & 255) | ((rgba & 255) << 16);
 	}
@@ -116,8 +116,8 @@ class Pixels {
 		return r & 0xFFFF;
 	}
 
-	/** raylib's `LoadImageColors`: an image's pixels as 8-bit RGBA, `width * height * 4` bytes. A compressed format gives clear black,
-		and a warning.
+	/** raylib's `LoadImageColors`: an image's pixels as 8-bit RGBA, `width * height * 4` bytes. A compressed format produces clear
+		black, and a warning.
 
 		@param data  The pixels.
 		@param width  The width.
@@ -191,7 +191,7 @@ class Pixels {
 	}
 
 	/** raylib 6.2's `LoadImageDataNormalized`: an image's pixels as floats, red, green, blue and alpha, 0 to 1 for the integer formats.
-		A compressed format gives zeros, and a warning.
+		A compressed format produces zeros, and a warning.
 
 		@param data  The pixels.
 		@param count  How many.
@@ -252,7 +252,7 @@ class Pixels {
 		return out;
 	}
 
-	/** raylib's `ImageFormat`, from the floats `normalized` gives: the pixels in a format, or null for a format it doesn't write.
+	/** raylib's `ImageFormat`, from the floats `normalized` returns: the pixels in a format, or null for a format it doesn't write.
 
 		@param pixels  Four floats a pixel.
 		@param count  How many pixels.

@@ -43,7 +43,7 @@ class Light {
 	public var attenuationLoc:Int = 0;
 
 	/** Gets or sets how bright the light is (the Lighting extra's): its color times the intensity. Clamped to 0 or more; 1 by
-		default. 0 gives no light, as `enabled` false does. */
+		default. 0 makes no light, as `enabled` false does. */
 	public var intensity:Float = 1;
 
 	/** Gets or sets how far a point or spot light reaches, in world units (the Lighting extra's). The light dims with distance, fading
@@ -60,7 +60,7 @@ class Light {
 	public var outerAngle:Float = 45;
 
 	/** Gets the light's shadow options (the Lighting extra's): how its shadows are made, each field its default until set. Each shadow
-		pass reads the fields, and a field set takes effect at the next pass, whether or not the light casts shadows yet. See
+		pass reads the fields, and a field set applies at the next pass, whether or not the light casts shadows yet. See
 		`EnableLightShadows` for turning the light's shadows on. */
 	public var shadows(get, null):ShadowOptions;
 

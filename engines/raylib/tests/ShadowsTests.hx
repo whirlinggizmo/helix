@@ -11,14 +11,14 @@ import helix.raylib.internal.Runtime;
 
 /** Checks the Lighting extra's shadows on graphics that count what is live: casting off until `EnableLightShadows` turns it on, and
 	a light's `shadows` set alone casting nothing; the shadows' defaults filled, out-of-range fields clamped where the pass reads them,
-	and a field written after casting is on taking effect at the next pass; a pass made for each map
+	and a field written after casting is on applying at the next pass; a pass made for each map
 	of each light casting (a directional light's cascades, a spot light's one map, a point light's six faces) into one shadow map of
 	their layers, as large as the largest asked, each pass the whole layer; the casters drawn into the maps their bounds reach and
 	nowhere else, through a depth-only pipeline, a cut-out material's alpha cutoff and a program's own vertex stage's uniforms reaching
 	its shadow draw, a posed model cast through its caster's skinned twin, the batch cast too; a fifth light's shadows refused with a
-	warning and `EnableLightShadows` returning false, a light turned off freeing its place and keeping its options; the lit draws after the pass given the shadows (their
-	lights' shadow, the matrices, the strengths, the map), and `shadowed` false written for a material shadows don't fall on; a frame
-	without the pass keeping the last one's shadows. */
+	warning and `EnableLightShadows` returning false, a light turned off freeing its place and keeping its options; the lit draws after the pass receiving the shadows
+	(their lights' shadow, the matrices, the strengths, the map), and `shadowed` false written for a material shadows don't fall on;
+	a frame without the pass keeping the last one's shadows. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
@@ -119,7 +119,7 @@ class ShadowsTests {
 		EndShadowMode();
 		frame.draw(800, 450, true);
 
-		// A field written after casting is on: taken at the next pass.
+		// A field written after casting is on: applied at the next pass.
 		o.mapSize = 1024;
 		o.cascadeCount = 2;
 		o.distance = 30;
@@ -242,7 +242,7 @@ class ShadowsTests {
 		SetShaderValue(sway, GetShaderLocation(sway, "sway"), 0.5, SHADER_UNIFORM_FLOAT);
 		DrawModel(tree, Vector3Zero(), 1, WHITE);
 		check(drawnFloat(treeCaster, passes[8].draws[2], "sway") == 0.5, "the uniform as it is at each draw");
-		// A model posed by UpdateModelAnimation casts through its caster's skinned twin, given its first bone.
+		// A model posed by UpdateModelAnimation casts through its caster's skinned twin, receiving its first bone.
 		var posed = LoadModelFromMesh(GenMeshCube(1, 1, 1));
 		var bones = posed.meshes[0];
 		bones.boneIds = [for (k in 0...bones.vertexCount * 4) 0];
@@ -270,7 +270,7 @@ class ShadowsTests {
 		EndShadowMode();
 		frame.draw(800, 450, true);
 
-		// A fifth light's shadows refused with a warning; one light turned off, another taking its place; an unloaded light's let go of.
+		// A fifth light's shadows refused with a warning; one light turned off, another in its place; an unloaded light's let go of.
 		var fourth = CreateLight(LIGHT_DIRECTIONAL, new Vector3(4, 8, 0), Vector3Zero(), WHITE, shader);
 		EnableLightShadows(fourth);
 		var fifth = CreateLight(LIGHT_DIRECTIONAL, new Vector3(0, 8, 4), Vector3Zero(), WHITE, shader);

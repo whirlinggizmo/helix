@@ -9,7 +9,7 @@ import helix.raylib.internal.Program;
 import helix.raylib.internal.Runtime;
 
 /** Checks the Materials extra, on graphics that count what is live: each setter and getter, its defaults and ranges; the default shader
-	drawing a material as raylib's until it is cut out or gives off light, then through its variant, its values written; a model's
+	drawing a material as raylib's until it is cut out or emits light, then through its variant, its values written; a model's
 	emission added to its materials' own at `DrawModel`, not at `DrawMesh`, and an intensity of 0 leaving the model as authored; the lit
 	and PBR shaders' draws writing every value; and a glTF material's `MASK` and `alphaCutoff`, `emissiveFactor` and
 	`KHR_materials_unlit` loaded into them. */
@@ -96,7 +96,7 @@ class MaterialsTests {
 		SetMaterialEmissive(material, WHITE, 0);
 		check(GetMaterialEmissive(material).x == 0, "an intensity of 0 gives off nothing");
 
-		// The default shader: raylib's while a material is neither cut out nor gives off light, then its variant.
+		// The default shader: raylib's while a material is neither cut out nor emits light, then its variant.
 		var defaultProgram = Runtime.frame.defaultProgram;
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(drewThrough(defaultProgram), "a plain material draws through raylib's default shader");

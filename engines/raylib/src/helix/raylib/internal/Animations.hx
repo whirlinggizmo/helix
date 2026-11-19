@@ -18,7 +18,7 @@ class Animations {
 
 	// A bone's rotation part way between two rotations, chosen as raylib's QuaternionSlerp chooses it, which the poses of raylib's C
 	// are matched by: the first rotation when the two are one to C's floats, the straight line between two near each other (nlerp,
-	// which takes no trigonometry), and the arc between the rest (slerp).
+	// which needs no trigonometry), and the arc between the rest (slerp).
 	static inline function rotationBetween(from:Quaternion, to:Quaternion, amount:Float, ?out:Quaternion):Quaternion {
 		var cos = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
 		// Each product and sum rounded to a float, as C's are.
@@ -249,7 +249,7 @@ class Animations {
 
 	// raylib 6.2's GetPoseAtTimeGLTF: a sampler's value at a time, size 3 (translation, scale) or 4 (a rotation); null for an
 	// interpolation it doesn't know. Before the first key the first interval's start; at or past the last, the last interval, clamped
-	// (step then gives the second last key, as raylib's does).
+	// (step then returns the second last key, as raylib's does).
 	static function poseAtTime(interpolation:String, input:Array<Float>, output:Array<Float>, time:Float, size:Int):Null<Array<Float>> {
 		var type = switch interpolation {
 			case "STEP": 0;
@@ -377,7 +377,7 @@ class Animations {
 		}
 	}
 
-	/** Poses a model by two animations mixed, as raylib 6.2's `UpdateModelAnimationBonesEx`: each at its frame as `updateBones` takes
+	/** Poses a model by two animations mixed, as raylib 6.2's `UpdateModelAnimationBonesEx`: each at its frame as `updateBones` reads
 		one, then the two lerped and slerped by the blend. Nothing for a blend outside 0 to 1 or an animation without frames.
 
 		@param model  The model.
@@ -391,7 +391,7 @@ class Animations {
 			return;
 		if (animA.frameCount <= 0 || animA.framePoses == null || animB.frameCount <= 0 || animB.framePoses == null || !(blend >= 0 && blend <= 1))
 			return;
-		// raylib wraps the frame before taking its fraction, so a frame past the end mixes with a fraction above 1, clamped.
+		// raylib wraps the frame before computing its fraction, so a frame past the end mixes with a fraction above 1, clamped.
 		var currentFrameA = truncate(frameA) % animA.frameCount;
 		var nextFrameA = currentFrameA + 1;
 		var blendA = MathTools.clamp(frameA - currentFrameA, 0, 1);
@@ -425,7 +425,7 @@ class Animations {
 	}
 
 	/** Poses a model by two animations mixed bone by bone (helix-raylib's `UpdateModelAnimationMasked`): each bone's pose relative to its
-		parent taken from each animation's frame as `updateBonesEx` takes them, mixed by its weight times blend, then put in the model by
+		parent read from each animation's frame as `updateBonesEx` reads them, mixed by its weight times blend, then put in the model by
 		its parents as `buildPoseFromParentJoints` puts them. With `BLEND_ROTATION_MODEL`, a weighted bone's rotation is instead each
 		animation's own in the model, mixed by its weight. The blend is clamped to [0, 1]. Refused for a model without bones or an
 		animation without frames. Refused, with the reason logged, for a mask or an animation of another count of bones than the model's.
@@ -436,7 +436,7 @@ class Animations {
 		@param animB  The second animation.
 		@param frameB  Its frame, fractional.
 		@param boneWeights  Each bone's share of the second, 0 to 1.
-		@param blend  How much of the second the weighted bones take.
+		@param blend  How much of the second the weighted bones receive.
 		@param rotationSpace  `BLEND_ROTATION_LOCAL` (0) or `BLEND_ROTATION_MODEL` (1).
 		@return  False when refused. */
 	public static function updateBonesMasked(model:Model, animA:ModelAnimation, frameA:Float, animB:ModelAnimation, frameB:Float, boneWeights:Array<Float>,
@@ -504,7 +504,7 @@ class Animations {
 	static final modelB = new Quaternion(0, 0, 0, 1);
 
 	// An animation's frames relative to each bone's parent, worked out from its frames in the model the first time and kept on it: each
-	// bone's pose taken back out of its parent's, the inverse of buildPoseFromParentJoints.
+	// bone's pose separated from its parent's, the inverse of buildPoseFromParentJoints.
 	static function localFrames(anim:ModelAnimation):Array<Array<Transform>> {
 		if (anim.localPoses != null)
 			return anim.localPoses;
@@ -556,7 +556,7 @@ class Animations {
 		out.translation.z += pt.z;
 	}
 
-	// out = a pose in the model taken back out of its parent's: composeInto undone.
+	// out = a pose in the model separated from its parent's: composeInto undone.
 	static function uncomposeInto(parent:Transform, pose:Transform, out:Transform):Void {
 		var pr = parent.rotation, ps = parent.scale, pt = parent.translation;
 		var r = pose.rotation, s = pose.scale, t = pose.translation;

@@ -28,7 +28,7 @@ class Transform {
 	/** Returns a separate copy. Its vectors are copied too.
 
 		@param out  Optional. The Transform to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public function copy(?out:Transform):Transform {
 		if (out == null)
 			return new Transform(translation.copy(), rotation.copy(), scale.copy());

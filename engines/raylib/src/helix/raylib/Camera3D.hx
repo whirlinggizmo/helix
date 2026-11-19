@@ -38,7 +38,7 @@ class Camera3D {
 	/** Returns a separate copy. Its position, target and up are copied too.
 
 		@param out  Optional. The Camera3D to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public function copy(?out:Camera3D):Camera3D {
 		if (out == null)
 			return new Camera3D(position.copy(), target.copy(), up.copy(), fovy, projection);

@@ -20,7 +20,7 @@ class ProgramCode {
 	/** Returns the code of each class of the program's among `types`: each field's, its constructor's and its static initialization's.
 		An extern class has none.
 
-		@param types  The types `Context.onAfterTyping` gives. */
+		@param types  The types `Context.onAfterTyping` provides. */
 	public static function bodies(types:Array<ModuleType>):Array<TypedExpr> {
 		var out = [];
 		for (type in types) {

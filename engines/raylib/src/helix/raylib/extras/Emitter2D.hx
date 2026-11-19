@@ -5,7 +5,7 @@ import helix.raylib.*;
 /** Represents a 2D particle emitter, made by `LoadEmitter2D`. */
 @:allow(helix.raylib)
 class Emitter2D extends Emitter {
-	/** Gets or sets where the emitter is, in pixels. `UpdateEmitter2D` gives birth along the way from where it was. */
+	/** Gets or sets where the emitter is, in pixels. `UpdateEmitter2D` spawns particles along the way from where it was. */
 	public var position:Vector2 = new Vector2(0, 0);
 
 	/** Gets or sets the direction particles are born moving in, its length ignored: up the screen by default. A direction of no

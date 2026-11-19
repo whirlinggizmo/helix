@@ -33,7 +33,7 @@ class Rectangle {
 	/** Returns a separate copy.
 
 		@param out  Optional. The Rectangle to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public function copy(?out:Rectangle):Rectangle {
 		if (out == null)
 			return new Rectangle(x, y, width, height);

@@ -25,7 +25,7 @@ class Material {
 	/** Gets four values for a shader's own use. */
 	public var params:Array<Float>;
 
-	// The Materials extra's values (helix.raylib.extras.Materials), each draw's: the alpha cutoff, 0 for none; the light given off, red,
+	// The Materials extra's values (helix.raylib.extras.Materials), each draw's: the alpha cutoff, 0 for none; the light emitted, red,
 	// green and blue, its color times its intensity; whether it is unlit; whether shadows fall on it. A glTF file's are loaded into them.
 	@:allow(helix.raylib)
 	var alphaCutoff = 0.;

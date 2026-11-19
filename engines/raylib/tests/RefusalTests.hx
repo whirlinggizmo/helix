@@ -7,7 +7,7 @@ import helix.services.screen.Screen;
 /** Checks helix-raylib's warnings when the platform refuses a request: `SetMousePosition` where the cursor can't be moved (a page) and where
 	the system refuses, and `SetGamepadVibration` on a gamepad that can't shake. Each warns once a run for each reason, however often it is
 	called; the position asked for is still recorded, as raylib's; an empty gamepad slot and a request granted warn of nothing. On devices the
-	test sets (services' `FakeDevices`), the program's log taken by the test. */
+	test sets (services' `FakeDevices`), the program's log read by the test. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.modules.RCore)
 class RefusalTests {

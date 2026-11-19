@@ -39,7 +39,7 @@ class Mesh {
 	/** Gets or sets the colors, r, g, b and a a vertex, 0 to 255, or null for white. */
 	public var colors:Null<Array<Int>> = null;
 
-	/** Gets or sets the indices, three a triangle, or null for vertices taken three at a time. */
+	/** Gets or sets the indices, three a triangle, or null for vertices read three at a time. */
 	public var indices:Null<Array<Int>> = null;
 
 	/** Gets or sets the vertices' positions after `UpdateModelAnimation` last moved them, x, y and z a vertex, or null until it has.
@@ -68,16 +68,16 @@ class Mesh {
 		A shader reads them in the attribute `vertexBoneWeights`. */
 	public var boneWeights:Null<Array<Float>> = null;
 
-	/** Gets or sets the bones' matrices, by bone, each taking a vertex from where the skin was bound to where the bone is now, or null for
+	/** Gets or sets the bones' matrices, by bone, each moving a vertex from where the skin was bound to where the bone is now, or null for
 		a mesh without bones.
 
 		`UpdateModelAnimationBones` sets them. Shared by a model's meshes.
 
-		A draw gives them to a shader declaring `uniform mat4 boneMatrices[N]`.
+		A draw passes them to a shader declaring `uniform mat4 boneMatrices[N]`.
 
 		A shader including `<helix/raylib/shaders/skinning.glsl>` reads the pose the model received at its last `UpdateModelAnimation` or
-		`UpdateModelAnimationBones`, not this array. Giving one model's array to another model's meshes poses nothing, so each model needs
-		its own call. */
+		`UpdateModelAnimationBones`, not this array. Assigning one model's array to another model's meshes poses nothing, so each model
+		needs its own call. */
 	public var boneMatrices:Null<Array<Matrix>> = null;
 
 	/** Gets or sets the number of bones, the model's. */

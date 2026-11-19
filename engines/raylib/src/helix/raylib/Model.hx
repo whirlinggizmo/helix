@@ -36,7 +36,7 @@ class Model {
 
 	/** Gets or sets each bone's transform in the model as the skin was bound to it, or null without a skin.
 
-		Each is its inverse bind matrix inverted, or its node's at rest for a file that gives none. */
+		Each is its inverse bind matrix inverted, or its node's at rest for a file that has none. */
 	public var bindPose:Null<Array<Transform>> = null;
 
 	// The pose UpdateModelAnimation last set, by bone (raylib 6.2's currentPose); null until a call sets it (Animations.setPose), so a
@@ -56,7 +56,7 @@ class Model {
 	@:allow(helix.raylib)
 	var inverseBindKeys:Array<Float> = [];
 
-	// The light the whole model gives off, red, green and blue, added to its materials' at each DrawModel (the Materials extra's
+	// The light the whole model emits, red, green and blue, added to its materials' at each DrawModel (the Materials extra's
 	// SetModelEmissive); null until set.
 	@:allow(helix.raylib)
 	var emissive:Null<Array<Float>>;

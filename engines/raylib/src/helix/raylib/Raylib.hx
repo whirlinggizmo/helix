@@ -7433,9 +7433,9 @@ class Raylib {
 	// ---- Image files, read by the readers the program names ----
 
 	/** Loads an image file, answering when it is decoded: helix-raylib's own, in place of raylib's `LoadImage`, as the
-		file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it gives `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever its
-		channels, where raylib's gives a grayscale file grayscale; a QOI file gives its own channels, RGB or RGBA, as raylib's. A GIF
-		file gives its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, and nothing after it is read;
+		file is read later. A PNG, JPEG, BMP or TGA file is decoded by the platform, so it produces `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8` whatever
+		its channels, where raylib's keeps a grayscale file grayscale; a QOI file keeps its own channels, RGB or RGBA, as raylib's. A
+		GIF file produces its first frame, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, and nothing after it is read;
 		one with no frames, or broken before its first frame ends, fails to load.
 
 		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
@@ -7498,11 +7498,12 @@ class Raylib {
 		(`GetPixelDataSize(width, height, format)` bytes each), and `frames[0]` is set to how many before `loaded` is called. Their
 		delays and loop count aren't kept.
 
-		A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last, its
-		transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put back as it
-		was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the global table's
-		background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some frames gives the frames
-		before the break, as raylib's does; one with no frames, or broken before its first frame ends, fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
+		A GIF file's frames are composited as raylib 5.5's are: the screen starts transparent; each frame is drawn over the last,
+		its transparent pixels not drawn; a frame disposed of to the background, or to the previous frame, has its rectangle put
+		back as it was before it was drawn; and when the file's background index isn't 0, what the first frame doesn't cover is the
+		global table's background color, opaque, its red and blue swapped (black with no such color). A GIF file broken after some
+		frames produces the frames before the break, as raylib's does; one with no frames, or broken before its first frame ends,
+		fails to load. Any other file loads as `LoadImageAsync` loads it, as one frame.
 
 		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
 		naming no GIF file carries no GIF reader; a name known only as the program runs brings both, the reader chosen by its extension
@@ -7526,7 +7527,7 @@ class Raylib {
 
 		An asynchronously loaded image is invalid until `loaded` is called.
 
-		@param fileType  The file's extension: ".gif", or one `LoadImageFromMemoryAsync` takes.
+		@param fileType  The file's extension: ".gif", or one `LoadImageFromMemoryAsync` accepts.
 		@param fileData  The file's bytes.
 		@param dataSize  How many of them.
 		@param frames  Receives the frame count, in its first element.
@@ -7540,10 +7541,10 @@ class Raylib {
 	// ---- Fonts, read by the readers the program names ----
 
 	/** Loads a font file, answering when its glyphs are ready: helix-raylib's own, in place of raylib's `LoadFont`. A TrueType or OpenType
-		file gives its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked onto
-		one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key from the
-		space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as the program
-		builds as `LoadImageAsync`'s is.
+		file produces its printable ASCII at 32 pixels; a BMFont (.fnt, the text format) its characters and pages, the pages stacked
+		onto one texture, as raylib's; an image (PNG, JPEG, BMP, TGA, QOI, or a GIF file's first frame) its glyphs on a `MAGENTA` key
+		from the space on, as `LoadFontFromImage` reads them; each drawn with `TEXTURE_FILTER_POINT`. The GIF reader is chosen as
+		the program builds as `LoadImageAsync`'s is.
 
 		An asynchronously loaded font is invalid until `loaded` is called.
 
@@ -7560,18 +7561,18 @@ class Raylib {
 		library and its textures), answering when it is ready: helix-raylib's own, in place of raylib's `LoadModel`. A file loaded again,
 		while a load of it lives, shares its meshes' GPU buffers and its textures, with materials of its own.
 
-		An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or `o`
-		line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces before
-		any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a normal, or naming
-		one the file doesn't have, given (0, 1, 0), one without texture coordinates (0, 0), the others' v turned (1 - v), and one naming
-		a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file gives; each mesh's material its
-		last face's, or 0 when that is no material of the library. Its materials are the library's, read as `LoadMaterialsAsync` reads
-		them, of the file's last `mtllib` line; with no library, or one that can't be read (logged), the model has raylib's default
-		material alone. raylib counts the start of each group in the file's `f` lines against the triangles it has made, so a polygon, or
-		a face of 1 or 2 corners, before a group moves the group's first mesh; helix-raylib does too. An empty file fails to load, as one
-		raylib can't read. Where raylib's reading is broken, helix-raylib reads the file as the format has it, and a file that breaks the
-		format fails to load (docs/DECISIONS.md 28). IQM, VOX and M3D models aren't read (docs/DECISIONS.md 27).
-
+		An OBJ file is read as raylib 6.2's `LoadOBJ` reads it: its polygons split into fans of triangles; a new mesh at each `g` or
+		`o` line with faces after it, and where a face's material differs from the face before's, unless that face had none (faces
+		before any `usemtl` join the next material's mesh); its vertices its triangles' corners, unindexed; a corner without a
+		normal, or naming one the file doesn't have, set to (0, 1, 0), one without texture coordinates (0, 0), the others' v turned
+		(1 - v), and one naming a position the file doesn't have (0, 0, 0); every vertex's color white, whatever colors the file
+		holds; each mesh's material its last face's, or 0 when that is no material of the library. Its materials are the library's,
+		read as `LoadMaterialsAsync` reads them, of the file's last `mtllib` line; with no library, or one that can't be read
+		(logged), the model has raylib's default material alone. raylib counts the start of each group in the file's `f` lines
+		against the triangles it has made, so a polygon, or a face of 1 or 2 corners, before a group moves the group's first mesh;
+		helix-raylib does too. An empty file fails to load, as one raylib can't read. Where raylib's reading is broken, helix-raylib
+		reads the file as the format has it, and a file that breaks the format fails to load (docs/DECISIONS.md 28). IQM, VOX and
+		M3D models aren't read (docs/DECISIONS.md 27).
 		The file's reader is chosen as the program builds when its name is a constant (a string, or constants joined with +), so a program
 		naming only glTF files carries no OBJ reader, and one naming only OBJ files no glTF reader; a name known only as the program runs
 		brings both, the reader chosen by its extension then.
@@ -7662,7 +7663,7 @@ class Raylib {
 	// ---- Automation events ----
 
 	/** Loads an automation events list from a file, and returns the list once it is read.
-		Given null, returns an empty list to record into, its capacity raylib's 16384.
+		With a null `fileName`, returns an empty list to record into, its capacity raylib's 16384.
 
 		@param fileName  The file, as `ExportAutomationEventList` writes it, or null (or 0, as raylib's examples write it).
 		@return  The list, or an empty one when the file couldn't be read. Why it couldn't is logged. */

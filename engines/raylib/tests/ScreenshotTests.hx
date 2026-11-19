@@ -49,7 +49,7 @@ class ScreenshotTests {
 @:build(helix.raylib.internal.Wait.build())
 @:access(helix.raylib.internal.Runtime)
 class Screenshots {
-	/** Takes every screenshot and checks it.
+	/** Captures every screenshot and checks it.
 
 		@return  The checks made. */
 	public static function all():Int {

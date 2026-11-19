@@ -22,7 +22,7 @@ class ModelAnimation {
 	/** Gets or sets the name, the file's, or empty. */
 	public var name:String = "";
 
-	// Each frame's pose relative to each bone's parent, worked out from framePoses the first time UpdateModelAnimationMasked takes the
+	// Each frame's pose relative to each bone's parent, worked out from framePoses the first time UpdateModelAnimationMasked uses the
 	// animation (Animations.localFrames); null until then.
 	@:allow(helix.raylib)
 	var localPoses:Null<Array<Array<Transform>>> = null;

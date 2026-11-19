@@ -6,14 +6,14 @@ import haxe.macro.Type;
 
 /** Writes, as the program builds, a call to every function of `helix.raylib.Raylib`, `Raymath`, `Rlgl`, `Raygui` and `helix.raylib.extras` a program can call, read from
 	the compiler's types of them, so the size ladder's last rung links all of helix-raylib. Each argument is `Everything.value` and each result
-	goes to `Everything.result`, both of no type, so nothing a call is given or returns is known as the program builds and nothing is
-	folded away. The functions that refuse to compile (a section's `@:unsupported` or `@:unimplemented`) are left out; the macro functions
-	that wait (`LoadSound`) are called as the others are; those that choose a reader by a constant file name (DECISIONS 29) are called by
-	hand in `Main`, once for each reader, and named in `BY_HAND`, so any other macro function added to helix-raylib and not called fails
-	the build here. A build step (`BUILD_STEPS`) is left out.
+	goes to `Everything.result`, both of no type, so nothing a call is provided or returns is known as the program builds and nothing
+	is folded away. The functions that refuse to compile (a section's `@:unsupported` or `@:unimplemented`) are left out; the macro
+	functions that wait (`LoadSound`) are called as the others are; those that choose a reader by a constant file name (DECISIONS 29) are
+	called by hand in `Main`, once for each reader, and named in `BY_HAND`, so any other macro function added to helix-raylib and not
+	called fails the build here. A build step (`BUILD_STEPS`) is left out.
 	It runs as a `--macro`, not in a program. */
 class Everything {
-	/** What every generated call is given: unknown as the program builds. */
+	/** What every generated call is provided: unknown as the program builds. */
 	public static var value:Dynamic = null;
 
 	/** Where every generated call's result goes, so none is dropped as unused. */
@@ -144,7 +144,7 @@ class Everything {
 	}
 
 	#if macro
-	// A call to a facade's function with every argument Everything.value (a rest argument given none), its result kept.
+	// A call to a facade's function with every argument Everything.value (a rest argument provided none), its result kept.
 	static function call(facade:String, f:ClassField):Expr {
 		var path = facade.split(".").concat([f.name]);
 		return switch Context.follow(f.type) {

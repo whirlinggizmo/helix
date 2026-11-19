@@ -18,7 +18,7 @@ import helix.raylib.modules.RVirtualGamepad;
 	through `IsGamepadButtonDown`, `IsGamepadButtonPressed` and `IsGamepadButtonReleased`.
 	`IsGamepadVirtual` tells a virtual gamepad from a physical one.
 
-	A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in takes
+	A physical gamepad plugged into the virtual gamepad's slot replaces the virtual gamepad. The first physical gamepad plugged in gets
 	slot 0. The next touch after the physical gamepad is unplugged plugs the virtual gamepad in again.
 
 	A free finger is a finger that is not currently captured. A stick captures a finger landing in its touch zone, and the buttons a

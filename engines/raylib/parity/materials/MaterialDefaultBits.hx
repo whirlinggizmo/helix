@@ -5,7 +5,7 @@ import helix.raylib.internal.Runtime;
 import helix.raylib.internal.Textures;
 
 // helix-raylib's materials, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py. Where ref.c sees a texture freed or kept by
-// whether GL takes its name again, this sees its pixels gone or there (Textures.imageOf).
+// whether GL reuses its name, this sees its pixels gone or there (Textures.imageOf).
 @:access(helix.raylib.internal.Runtime)
 class MaterialDefaultBits {
 	static function line(s:String)
@@ -70,7 +70,7 @@ class MaterialDefaultBits {
 		line('noshader valid ${valid(new Material(@:privateAccess new Shader(0, [], null), LoadMaterialDefault().maps))}');
 		line('nomaps valid ${valid(new Material(shader, null))}');
 
-		// A material given a texture on two maps, the texture unloaded, then the material.
+		// A material with a texture on two maps, the texture unloaded, then the material.
 		var checked = GenImageChecked(4, 4, 1, 1, RED, BLUE);
 		var own = LoadTextureFromImage(checked), id = own.id;
 		var u = LoadMaterialDefault();
@@ -85,7 +85,7 @@ class MaterialDefaultBits {
 		Parity.image("unloaded default", white);
 		line('unloaded freed ${Textures.imageOf(id) == null ? 1 : 0}');
 
-		// A model given a texture, the texture unloaded, then the model.
+		// A model with a texture, the texture unloaded, then the model.
 		var tex = LoadTextureFromImage(checked), texId = tex.id;
 		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
 		cube.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = tex;

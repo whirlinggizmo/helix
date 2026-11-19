@@ -6,7 +6,7 @@ import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
 import helix.raylib.internal.Textures;
 
-/** Checks what helix-raylib does when the GPU's context is lost and given back (Event.GraphicsLost, Event.GraphicsRestored), on graphics
+/** Checks what helix-raylib does when the GPU's context is lost and restored (Event.GraphicsLost, Event.GraphicsRestored), on graphics
 	that count what is made: nothing throws while it is lost; at the restore the frame's own texture and buffer are made again, a file's
 	texture is decoded again from its bytes and sent when next drawn, a font's atlas is sent again from the pixels it kept, a mesh is
 	sent again when next drawn, a render texture keeps the handle the platform remade, a data texture is left to the platform, a
@@ -114,7 +114,7 @@ class RestoreTests {
 			targets = graphics.targetCreations,
 			dataTextures = graphics.dataTextureCreations;
 
-		// Lost: the platform takes every call; helix-raylib changes nothing.
+		// Lost: the platform accepts every call; helix-raylib changes nothing.
 		Runtime.graphicsLost();
 		check(Textures.handle(file.id) == fileGpu && Textures.handle(pixels.id) == pixelsGpu, "lost: handles as they were");
 		Models.upload(mesh);

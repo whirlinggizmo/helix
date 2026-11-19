@@ -132,7 +132,7 @@ abstract Matrix(Matrix4) from Matrix4 to Matrix4 {
 	/** Returns a separate copy.
 
 		@param out  Optional. The Matrix to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public inline function copy(?out:Matrix):Matrix
 		return (out == null ? new Matrix4() : (out : Matrix4)).copyFrom(this);
 

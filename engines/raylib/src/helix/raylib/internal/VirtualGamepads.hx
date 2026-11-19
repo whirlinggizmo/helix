@@ -9,8 +9,8 @@ import helix.raylib.extras.VirtualButtonOptions;
 import helix.raylib.extras.VirtualGamepadOptions;
 import helix.raylib.extras.VirtualStickOptions;
 
-/** A virtual gamepad in a slot, as `EnableVirtualGamepad` made it: the service's, given its options when enabled and its rectangles,
-	positions and radii in framebuffer pixels each frame, and drawn over the frame as `EndDrawing` ends it. */
+/** A virtual gamepad in a slot, as `EnableVirtualGamepad` made it: the service's, passed its options when enabled and its
+	rectangles, positions and radii in framebuffer pixels each frame, and drawn over the frame as `EndDrawing` ends it. */
 @:noCompletion
 @:allow(helix.raylib)
 class VirtualGamepads implements IPollable {
@@ -30,7 +30,7 @@ class VirtualGamepads implements IPollable {
 		return null;
 	}
 
-	/** Enables the virtual gamepad in a slot with options: the one there takes them, or one is made in front of the gamepads.
+	/** Enables the virtual gamepad in a slot with options: the one there uses them, or one is made in front of the gamepads.
 
 		@param slot  The slot.
 		@param options  The options, or null for the defaults. */
@@ -85,7 +85,7 @@ class VirtualGamepads implements IPollable {
 	/** The slot it's in. */
 	public final slot:Int;
 
-	// The blocked bounds as the program gave them, and in framebuffer pixels; each stick's look and rectangles; and each button's.
+	// The blocked bounds as the program set them, and in framebuffer pixels; each stick's look and rectangles; and each button's.
 	var rects:Array<Rectangle> = [];
 	final blocked:Array<Aabb2D> = [];
 	final left:Stick;
@@ -132,7 +132,7 @@ class VirtualGamepads implements IPollable {
 	}
 }
 
-// One stick's look and rectangles, which the service doesn't know: taken when the virtual gamepad is enabled, the rectangles read each
+// One stick's look and rectangles, which the service doesn't know: read when the virtual gamepad is enabled, the rectangles read each
 // frame.
 private class Stick {
 	final stick:VirtualStick;
@@ -153,7 +153,7 @@ private class Stick {
 		this.stick = stick;
 	}
 
-	// Takes the stick's look and rectangles, its own options else the gamepad's, and gives the service the rest.
+	// Keeps the stick's look and rectangles, its own options else the gamepad's, and returns the rest for the service.
 	public function take(all:VirtualGamepadOptions, own:Null<VirtualStickOptions>):helix.services.input.VirtualStickOptions {
 		var mine:VirtualStickOptions = own != null ? own : {};
 		radius = mine.radius != null ? mine.radius : 60;
@@ -223,7 +223,7 @@ private class Stick {
 			new Rectangle(at.x - radius, at.y - radius, radius * 2, radius * 2), new Vector2(0, 0), 0, tint);
 }
 
-// One button's look and position, which the service doesn't know: taken when the virtual gamepad is enabled, the position and radius read
+// One button's look and position, which the service doesn't know: read when the virtual gamepad is enabled, the position and radius read
 // each frame.
 private class Button {
 	public var button:Null<helix.services.input.VirtualButton> = null;
@@ -238,7 +238,7 @@ private class Button {
 	final downTexture:Null<Texture2D>;
 	final center = new helix.math.Vector2();
 
-	// Takes the button's options, its colors defaulting to the gamepad's ring and knob colors.
+	// Keeps the button's options, its colors defaulting to the gamepad's ring and knob colors.
 	public function new(own:VirtualButtonOptions, all:VirtualGamepadOptions) {
 		this.own = own;
 		radius = own.radius != null ? own.radius : 40;

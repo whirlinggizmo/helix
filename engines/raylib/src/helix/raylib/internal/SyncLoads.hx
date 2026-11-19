@@ -4,10 +4,10 @@ package helix.raylib.internal;
 /** Answers raylib's synchronous loads (`LoadTexture`, `LoadImage`, `LoadSound` and the rest) the one way: a file in memory, ensured
 	(`EnsureAssetAsync`) or brought in by an async load this run, is built at once. Natively one that isn't is brought in during the call,
 	the load waiting for its async form. In a page it can't be, the browser reading its cache and decoding only asynchronously: the load
-	logs why and gives raylib's empty result, as raylib's load of a missing file does. */
+	logs why and returns raylib's empty result, as raylib's load of a missing file does. */
 @:noCompletion
 class SyncLoads {
-	/** Returns what a synchronous load gives.
+	/** Returns a synchronous load's result.
 
 		@param path  The file, normalized.
 		@param ready  Whether the file is in memory as the build needs it.

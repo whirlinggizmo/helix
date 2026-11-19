@@ -4,10 +4,10 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 import helix.services.screen.Screen;
 
-/** Checks the text functions given a null font, as a program's font is until its `...Async` load's `loaded` is called, on graphics that keep
-	nothing: the draws and `MeasureTextEx` refused, the reason logged the first time alone, drawing nothing and measuring 0 by 0;
-	`IsFontValid` false; the glyph lookups giving index 0, an empty glyph and an empty rectangle; and a font with no texture drawn as the
-	default font, as before. Run by helix.py test on Node and natively. */
+/** Checks the text functions when provided a null font, as a program's font is until its `...Async` load's `loaded` is called, on graphics
+	that keep nothing: the draws and `MeasureTextEx` refused, the reason logged the first time alone, drawing nothing and measuring
+	0 by 0; `IsFontValid` false; the glyph lookups returning index 0, an empty glyph and an empty rectangle; and a font with no texture
+	drawn as the default font, as before. Run by helix.py test on Node and natively. */
 @:access(helix.raylib.internal.Frame)
 class FontTests {
 	static var checks = 0;

@@ -5,9 +5,9 @@ import haxe.macro.Compiler;
 import haxe.macro.Context;
 import haxe.macro.Type;
 
-/** With `-D helix-raylib-portable-sys`, gives a page a `Sys` and holds a program to what a page can answer: the `Sys` calls a page has
-	no answer for, Haxe's file calls (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the type `Single` are refused on every target, each refusal
-	naming what to use, so a program that builds natively builds for the page. A page's `Sys` is the library's
+/** With `-D helix-raylib-portable-sys`, adds a `Sys` to a page and holds a program to what a page can answer: the `Sys` calls a page
+	has no answer for, Haxe's file calls (`sys.io.File`, `sys.FileSystem`), `sys.io.Process` and the type `Single` are refused on every target, each
+	refusal naming what to use, so a program that builds natively builds for the page. A page's `Sys` is the library's
 	`_std/Sys.js.hx` (the program's options from the URL's query, the console and the clock), and its `Single`, put on the class path for JS, where Haxe
 	has none. For JS the `sys` package is allowed, so a program naming it gets the refusal; any other part of it is refused there too.
 	Without the define a build is Haxe's as shipped. Run by the library's `extraParams.hxml`. */

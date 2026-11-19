@@ -7,7 +7,7 @@ import helix.services.images.Image;
 /** Holds every texture a program has, by the id its `Texture2D` carries: one GPU texture for each file however often it is loaded,
 	counted by its holders (docs/DECISIONS.md 25) and freed when the last lets go, and sent to the GPU when first drawn rather than when
 	loaded; a cubemap (`fromCube`) is one too. A holder is the program, from each load of it (`fromImage`, `fromDecoded`, `fromEncoded`,
-	`fromHandle`, `fromCube`) until `releaseHeld`, or a material map given it (`retain`, `release`); the program's holds are counted apart
+	`fromHandle`, `fromCube`) until `releaseHeld`, or a material map using it (`retain`, `release`); the program's holds are counted apart
 	too, so `UnloadTexture` on a map's copy lets go of one of them first. */
 @:noCompletion
 class Textures {
@@ -16,7 +16,7 @@ class Textures {
 	public static inline final DEFAULT = 1;
 
 	static var next = DEFAULT + 1;
-	// Whether a lost GPU context is given back (IGraphics: in a page; natively it isn't recovered), so a texture of no file keeps its
+	// Whether a lost GPU context is restored (IGraphics: in a page; natively it isn't recovered), so a texture of no file keeps its
 	// pixels for the restore.
 	static inline var RESTORES = #if js true #else false #end;
 	static final entries = new Map<Int, Entry>();
@@ -87,7 +87,7 @@ class Textures {
 
 	/** Returns the id of a texture kept by a key of its own, a model's image's (`Models.give`), shared with its earlier makes while any
 		holds it, held by the program. It is made from the image decoded for the GPU, which goes to the GPU as it is when first drawn and is
-		disposed then, or from pixels made of it (`derive`). With no picture, and after the GPU's context is lost and given back
+		disposed then, or from pixels made of it (`derive`). With no picture, and after the GPU's context is lost and restored
 		(`graphicsRestored`), the image file is decoded again (`Runtime.decoding`), the texture drawn as nothing until it is.
 
 		@param key  The key.
@@ -169,8 +169,8 @@ class Textures {
 		return e == null ? 0 : e.height;
 	}
 
-	// Takes a texture's pixels from its image decoded for the GPU, as its own, when a program touches them before it is drawn: the picture
-	// is let go of, a load of the file again decoding it again.
+	// Claims a texture's pixels from its image decoded for the GPU, as its own, when a program touches them before it is drawn: the
+	// picture is let go of, a load of the file again decoding it again.
 	static function materialize(e:Entry):Void {
 		var picture = e.decoded;
 		if (picture == null)
@@ -256,8 +256,8 @@ class Textures {
 			e.keep = true;
 	}
 
-	/** Sends every texture again, after the GPU's context was lost and given back (`Event.GraphicsRestored`): its GPU copy is gone, so each
-		goes to the GPU again when next drawn, from what is in memory. A file's is decoded again from its bytes (`Runtime.fetchImage`), or taken
+	/** Sends every texture again, after the GPU's context was lost and restored (`Event.GraphicsRestored`): its GPU copy is gone, so each
+		goes to the GPU again when next drawn, from what is in memory. A file's is decoded again from its bytes (`Runtime.fetchImage`), or made
 		from its pixels when a program asked for them; a model's image's from its file's bytes kept with it (`fromEncoded`); one kept
 		(`keepPixels`) from them; a render texture's handle the platform remade, blank. The rest, pixels sent once and let go of
 		(`LoadTextureFromImage`'s, a cubemap's), can't come back: each is drawn as nothing and warned of once. */
@@ -345,7 +345,7 @@ class Textures {
 
 	static final cubeHandles = new Map<Int, Bool>();
 
-	/** Returns whether a file's texture (or a key's, as `fromImage` takes it) is held, so a load of it shares it.
+	/** Returns whether a file's texture (or a key's, as `fromImage` accepts it) is held, so a load of it shares it.
 
 		@param path  The file, or the key.
 		@return  True when it is. */
@@ -551,7 +551,7 @@ class Textures {
 	}
 
 	/** Makes a texture's mipmaps, as GL's `glGenerateMipmap` makes them (`Mipmaps`): in memory while it isn't on the GPU yet; else from its
-		pixels read back from the GPU, a texture of them taking its place, the old one freed once the frame is drawn (draws asked for
+		pixels read back from the GPU, a texture of them replacing it, the old one freed once the frame is drawn (draws asked for
 		before read the old). One updated this frame (`update`) is read once the frame is drawn, so the update is in its mipmaps.
 
 		@param id  The texture's id. */
@@ -624,7 +624,7 @@ class Textures {
 		return true;
 	}
 
-	/** Takes one more holder of a texture: a load of its file again, or a material map given it.
+	/** Counts one more holder of a texture: a load of its file again, or a material map using it.
 
 		@param id  The texture's id. */
 	public static function retain(id:Int):Void {

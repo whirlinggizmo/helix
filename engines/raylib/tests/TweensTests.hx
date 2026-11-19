@@ -41,7 +41,7 @@ class TweensTests {
 		flash.update(1);
 		check(flash.value == BLANK && flash.done, "to its end");
 
-		// A set and a sequence take a color tween as any tween, and a set gives the tween back as a color tween.
+		// A set and a sequence accept a color tween as any tween, and a set returns the tween as a color tween.
 		var tweens = new Tweens();
 		var blink = tweens.add(new ColorTween(WHITE, BLANK, 2));
 		var grow = tweens.add(new FloatTween(1, 3, 2));

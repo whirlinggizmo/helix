@@ -7,7 +7,7 @@ import helix.platform.IPollable;
 	called on the main thread until the stream holds two buffers ahead of what is heard. */
 @:noCompletion
 class AudioStreams implements IPollable {
-	/** The streams with a callback, in the order they were given one. */
+	/** The streams with a callback, in the order they received one. */
 	public final streams:Array<helix.raylib.AudioStream> = [];
 
 	/** Creates it, holding none. */

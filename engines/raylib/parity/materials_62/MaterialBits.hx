@@ -23,7 +23,7 @@ class MaterialBits {
 		throw "never answered";
 	}
 
-	// A texture as ref.c prints it, its pixels read back (LoadImageFromTextureAsync gives them RGBA).
+	// A texture as ref.c prints it, its pixels read back (LoadImageFromTextureAsync returns them RGBA).
 	static function texture(key:String, t:Texture2D) {
 		if (t.id == 0) {
 			line('$key none');

@@ -13,7 +13,7 @@ import helix.raylib.modules.RMath.*;
 
 	- through a shader including `<helix/raylib/shaders/skinning.glsl>` (raylib's default shader is drawn through its skinned twin,
 	  `Defaults.skinnedShader`, written every uniform the default is), on the GPU: the draw's bones are written into the frame's bone palette, a data texture of four texels a
-	  bone, 64 bones a row, uploaded once before the frame's passes, and the draw is given its first bone (`boneOffset`), so one model
+	  bone, 64 bones a row, uploaded once before the frame's passes, and the draw receives its first bone (`boneOffset`), so one model
 	  drawn in many poses in one frame draws each as it was asked for;
 	- through a shader reading the bone ids itself (raylib's `skinning.vs`), as it is: drawn with `boneMatrices`;
 	- through any other shader, on the CPU, as raylib 6.2's `UpdateModelAnimationVertexBuffers`: every vertex moved, and the mesh's
@@ -30,7 +30,7 @@ class Skinning {
 	// The frame the hooks are installed in.
 	static var installed:Null<Frame>;
 
-	// The calls that have posed, each mesh posed by one given its number (MeshPose.stamp).
+	// The calls that have posed, each mesh posed by one marked with its number (MeshPose.stamp).
 	static var stamp = 0;
 
 	// The twin's locations, by SHADER_LOC_*: none set, so its maps bind as the default shader's (texture0 to texture2).
@@ -54,8 +54,8 @@ class Skinning {
 		`Mesh.animVertices` reach installed the first time.
 
 		@param model  The model, its bone matrices just computed.
-		@param bonesOnly  Whether only the meshes whose shader reads the bones itself take the pose (`UpdateModelAnimationBones`, as
-			raylib 6.2's moves no vertex): the rest keep the pose they had, or their bind pose. */
+		@param bonesOnly  Whether only the meshes whose shader reads the bones itself receive the pose (`UpdateModelAnimationBones`,
+			as raylib 6.2's moves no vertex): the rest keep the pose they had, or their bind pose. */
 	public static function pose(model:Model, bonesOnly = false):Void {
 		if (installed != Runtime.frame) {
 			// A window made again (CloseWindow, InitWindow) has a frame and a GPU of its own.

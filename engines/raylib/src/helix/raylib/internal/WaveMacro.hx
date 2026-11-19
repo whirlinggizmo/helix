@@ -38,7 +38,7 @@ class WaveMacro {
 		return Wait.placed(macro @:privateAccess helix.raylib.modules.RAudioAsync.loadWaveFromMemory($fileType, $fileData, $dataSize, $read, $loaded, $failed));
 	}
 
-	// A file name's extension as raylib's GetFileExtension gives it: from its last dot, none when the dot leads the name.
+	// A file name's extension as raylib's GetFileExtension returns it: from its last dot, none when the dot leads the name.
 	static function extension(name:String):String {
 		var dot = name.lastIndexOf(".");
 		return dot <= 0 ? "" : name.substr(dot);

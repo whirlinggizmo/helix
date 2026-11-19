@@ -71,7 +71,7 @@ class Shadows {
 	static var mapGraphics:Null<helix.platform.IGraphics> = null;
 	// The shadow map's texture id (Textures.fromHandle), bound to the receivers' shadow samplers (ShadowSlots).
 	static var mapId = 0;
-	// What each program a lit draw is drawn through was given: the pass it was given the shadows of, and its uniforms of them.
+	// What each program a lit draw is drawn through received: the pass whose shadows it received, and its uniforms of them.
 	static final receivers = new Map<Program, Receiver>();
 	// Each pass's number, from 1, which a receiver's stamp is checked against.
 	static var stamp = 0;
@@ -144,7 +144,7 @@ class Shadows {
 		purge();
 		SceneLights.receiving = receive;
 		var camera3D = helix.raylib.modules.RCore.camera3D(camera);
-		// The screen's shape, as BeginMode3D's projection takes it on the screen.
+		// The screen's shape, as BeginMode3D's projection reads it on the screen.
 		var screen = Runtime.screen;
 		var width = screen == null ? frame.width : screen.width,
 			height = screen == null ? frame.height : screen.height;
@@ -490,7 +490,7 @@ class Shadows {
 
 	/** Returns the shader the shadow pass draws through in a program's place, made with its first draw there: a compiled shader's
 		shadow variant, or for a built-in shader the default vertex stage's, with its skinned twin, which place a vertex as each of them
-		does. Its program is a twin of the program's (`Program.mirror`), given every uniform the program is, and writes depth alone.
+		does. Its program is a twin of the program's (`Program.mirror`), written every uniform the program is, and writes depth alone.
 
 		@param p  The program. */
 	public static function casterOf(p:Program):helix.raylib.Shader {
@@ -542,7 +542,7 @@ class Shadows {
 	}
 }
 
-// What a program receiving the shadows was given: the pass whose shadows it holds, and its uniforms of them, by the indices of FIELDS.
+// What a program receiving the shadows was sent: the pass whose shadows it holds, and its uniforms of them, by the indices of FIELDS.
 private class Receiver {
 	public var stamp = 0;
 	public final fields:Array<Null<ShaderUniform>>;

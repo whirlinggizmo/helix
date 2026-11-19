@@ -63,7 +63,7 @@ class SceneLights {
 			lights.push(light);
 	}
 
-	/** Takes a light out of the scene.
+	/** Removes a light from the scene.
 
 		@param light  The light. */
 	public static function remove(light:helix.raylib.extras.Light):Void
@@ -241,8 +241,8 @@ class SceneLights {
 			s *= window * window / (d2 > 0.01 ? d2 : 0.01);
 		}
 		if (light.type == SPOT) {
-			// The cone toward the bounds' sphere: the angle from the cone's middle to their center, less the angle their radius takes
-			// up, so a spot over part of a wide floor reaches it; a light within the sphere reaches it whatever its cone.
+			// The cone toward the bounds' sphere: the angle from the cone's middle to their center, less the angle their radius
+			// covers, so a spot over part of a wide floor reaches it; a light within the sphere reaches it whatever its cone.
 			var tx = (box[0] + box[3]) / 2 - px,
 				ty = (box[1] + box[4]) / 2 - py,
 				tz = (box[2] + box[5]) / 2 - pz;

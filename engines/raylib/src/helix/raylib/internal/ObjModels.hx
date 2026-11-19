@@ -153,7 +153,7 @@ class ObjModels {
 	/** Returns a library's materials as raylib's `ProcessMaterialsOBJ` makes them, each held once: raylib's default material, then the
 		diffuse texture (`map_Kd`), or with none the diffuse color (`Kd`, alpha 255); the specular texture (`map_Ks`) and color (`Ks`);
 		the normal map the bump texture (`bumpTexture`), its color white and its value the specular exponent (`Ns`); the emission
-		color (`Ke`); the height map the displacement texture (`disp`); each value 0 but the normal map's. What the file doesn't give is
+		color (`Ke`); the height map the displacement texture (`disp`); each value 0 but the normal map's. What the file doesn't set is
 		tinyobj_loader_c's default: each color black, the specular exponent 1. A color's bytes are raylib's
 		(unsigned char)(f*255). A texture is its file's, decoded already (`Runtime.picture`) and sent to the GPU as a texture loaded by
 		name is (`Textures.fromDecoded`), shared with every load of the file; one that couldn't be read is none (id 0). With no materials, a model has the default material alone (`LoadOBJ`).
@@ -166,7 +166,7 @@ class ObjModels {
 
 	static function material(m:MtlMaterial, shader:Shader):Material {
 		var material = Models.defaultMaterial(shader), maps = material.maps;
-		// tinyobj_loader_c's colors: black where the file gives none.
+		// tinyobj_loader_c's colors: black where the file has none.
 		function color(c:Null<haxe.ds.ReadOnlyArray<Float>>):Color
 			return c == null ? new Color(0, 0, 0, 255) : new Color(Models.byte(c[0]), Models.byte(c[1]), Models.byte(c[2]), 255);
 		function texture(map:MaterialMap, path:String):Void {
@@ -213,7 +213,7 @@ class ObjModels {
 		if (bump != null)
 			texture(normal, bump);
 		normal.color = new Color(255, 255, 255, 255);
-		// tinyobj_loader_c's specular exponent: 1 where the file gives none.
+		// tinyobj_loader_c's specular exponent: 1 where the file has none.
 		normal.value = Pixels.f32(m.shininess != null ? m.shininess : 1);
 		maps[Raylib.MATERIAL_MAP_EMISSION].color = color(m.emission);
 		if (m.displacementTexturePath != null)

@@ -3,7 +3,7 @@ package helix.raylib.internal;
 import helix.services.shaders.ShaderUniform;
 
 /** Writes a material's values (the Materials extra's) into each draw through a shader declaring them: `emissiveColor`, the light the
-	material gives off; `modelEmissiveColor`, the light its model gives off (`SetModelEmissive`), 0 for a draw of a mesh alone;
+	material emits; `modelEmissiveColor`, the light its model emits (`SetModelEmissive`), 0 for a draw of a mesh alone;
 	`alphaCutoff`; `unlitValue`, 1 for an unlit material; and `shadowed`, 1 when shadows fall on it.
 
 	Set as the draws' hook (`RModels.surfacing`) by the first lit or PBR shader and the first compiled shader declaring one of them, so a
@@ -41,7 +41,7 @@ class Surfaces {
 
 		@param p  The program.
 		@param material  The material.
-		@param modelEmissive  The light its model gives off, red, green and blue; null for none. */
+		@param modelEmissive  The light its model emits, red, green and blue; null for none. */
 	public static function write(p:Program, material:helix.raylib.Material, modelEmissive:Null<Array<Float>>):Void {
 		writeOne(p, material, modelEmissive);
 		if (p.twin != null)

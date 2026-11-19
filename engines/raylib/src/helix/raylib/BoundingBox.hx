@@ -24,7 +24,7 @@ class BoundingBox {
 	/** Returns a separate copy. Its corners are copied too.
 
 		@param out  Optional. The BoundingBox to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public function copy(?out:BoundingBox):BoundingBox {
 		if (out == null)
 			return new BoundingBox(min.copy(), max.copy());

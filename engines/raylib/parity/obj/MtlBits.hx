@@ -4,8 +4,8 @@ import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
 import helix.raylib.internal.Textures;
 
-// helix-raylib's MTL materials, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py. Where raylib's LoadMaterials gives none for a
-// file it can't read, LoadMaterialsAsync fails: its failure is printed as a count of 0.
+// helix-raylib's MTL materials, printed as ref.c prints raylib 5.5's, for tools/test_raylib_parity.py. Where raylib's LoadMaterials returns none for
+// a file it can't read, LoadMaterialsAsync fails: its failure is printed as a count of 0.
 @:access(helix.raylib.internal.Runtime)
 class MtlBits {
 	static function line(s:String)
@@ -24,7 +24,7 @@ class MtlBits {
 		throw "never answered";
 	}
 
-	// A texture as ref.c prints it, its pixels read back (LoadImageFromTextureAsync gives them RGBA).
+	// A texture as ref.c prints it, its pixels read back (LoadImageFromTextureAsync returns them RGBA).
 	static function texture(key:String, t:Texture2D) {
 		if (t.id == 0) {
 			line('$key none');
@@ -41,7 +41,7 @@ class MtlBits {
 		Parity.image(key, im);
 	}
 
-	// How many materials a file gives: its failure 0.
+	// How many materials a file holds: its failure 0.
 	static function count(file:String):Int {
 		var found:Null<Int> = null;
 		LoadMaterialsAsync(file, ms -> found = ms.length, _ -> found = 0);

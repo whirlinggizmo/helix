@@ -17,14 +17,14 @@ using StringTools;
 	and `vertexBoneWeights`, and a `mat4` of the instances' transforms for `DrawMeshInstanced` (raylib's example's `instanceTransform`,
 	after the others, a location a column), loose uniforms such as `mvp` and `colDiffuse`, and the textures `texture0` to `texture2`.
 	What raylib's GLSL needs before helix-services compiles it is done here: GLSL 100 written as 330 (`attribute`, `varying`,
-	`gl_FragColor` and `texture2D`), a stage left out given rlgl's default, the attributes declared in raylib's order, so each takes
-	the location rlgl gives it, and each array uniform in a block of its own, so the rest stay within the 4 KiB of a block SDL_GPU's
-	Vulkan reads, and each uniform's initializer taken out, its value written when the shader is made (`compileFile`), as GL
+	`gl_FragColor` and `texture2D`), a stage left out replaced by rlgl's default, the attributes declared in raylib's order, so each
+	gets the location rlgl assigns it, and each array uniform in a block of its own, so the rest stay within the 4 KiB of a block
+	SDL_GPU's Vulkan reads, and each uniform's initializer removed, its value written when the shader is made (`compileFile`), as GL
 	sets it when it links. The rest is the service's: GL's form, loose uniforms gathered, every type in its block, and the vertex
 	stage wrapped with a clip scale (`ShaderOptions.clipScale`), which the platform turns over in a pass into a render target, and to
 	write a point size of 1 (`ShaderOptions.points`), so any shader can draw in rlgl's point mode, as GL draws points with any shader. */
 class ShaderMacro {
-	/** raylib's attributes, in the order their locations are given. */
+	/** raylib's attributes, in the order their locations are assigned. */
 	static final ATTRIBUTES = [
 		"vertexPosition",
 		"vertexTexCoord",
@@ -120,7 +120,7 @@ class ShaderMacro {
 	static var ending = false;
 
 	// A raylib shader's stages as helix-services compiles them: raylib's GLSL adapted, the default for a stage left out, and the
-	// attributes and what the stages pass checked. With initials, each uniform's initializer is taken out of the text, which the service
+	// attributes and what the stages pass checked. With initials, each uniform's initializer is removed from the text, which the service
 	// refuses them in, and added there; without, an initializer is refused.
 	static function stages(vsName:String, vs:Null<String>, fsName:String, fs:Null<String>, pos:Position,
 			?initials:Array<{name:String, numbers:Array<Float>}>):{vertex:{name:String, text:String}, fragment:{name:String, text:String}} {
@@ -176,7 +176,7 @@ class ShaderMacro {
 			{name: 'helix-raylib $fsFile', text: builtIn(fsFile, pos)}, {clipScale: true}, pos);
 	}
 
-	// A stage with its uniforms' initializers taken out, each uniform's name and value added to initials. A value is a constant: numbers,
+	// A stage with its uniforms' initializers removed, each uniform's name and value added to initials. A value is a constant: numbers,
 	// true and false, and GLSL's constructors of them (float, int, vec2, ivec3, mat4 and the rest), as GL evaluates it.
 	static function initialize(text:String, name:String, pos:Position, initials:Array<{name:String, numbers:Array<Float>}>):String {
 		var declaration = ~/^([ \t]*uniform\s+(?:(?:lowp|mediump|highp)\s+)?(\w+)\s+(\w+))\s*=\s*([^;]*);/gm;

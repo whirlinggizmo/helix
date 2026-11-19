@@ -3,9 +3,9 @@ package helix.raylib.internal;
 import haxe.io.Bytes;
 import helix.platform.IFileSystem;
 
-/** Holds the files raylib's `SetLoadFileDataCallback` gives, as a file system read first, before the program's own files: what the
-	callback answers is the file, and a file it doesn't answer (null) is missing here, so the next source is read. It answers at the
-	next poll, as every file system does, and can't be written. */
+/** Holds the files raylib's `SetLoadFileDataCallback` supplies, as a file system read first, before the program's own files: what
+	the callback answers is the file, and a file it doesn't answer (null) is missing here, so the next source is read. It answers at
+	the next poll, as every file system does, and can't be written. */
 @:noCompletion
 class CallbackFiles implements IFileSystem {
 	/** The program's callback, or null for none. */

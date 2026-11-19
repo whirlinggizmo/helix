@@ -11,9 +11,10 @@ import helix.raylib.modules.RGuiSkins;
 /** Checks helix-raylib's skins for raygui (`helix.raylib.extras.GuiSkins`), on graphics that keep nothing: no hook until a skin is set, so
 	a program setting none draws as raygui does; a skinned button drawing exactly the vertices `DrawTextureNPatch` draws for its state's
 	patch, normal, focused, pressed (falling back to focused) and disabled (falling back to normal); a skin set on `DEFAULT` set on every
-	control, a control's own after it kept; a sheet cut down and across; a skin put back after one call; a one-call skin taken by the
-	next call alone; the text offsets a sheet's lip and lift give, and a base moving its control's text; icon textures laid out by
-	their width; a button of images and its click mask; and `GuiClearSkins` drawing flat again. The controls are locked (`GuiLock`), so the state is the one `GuiSetState` gives, with no mouse. */
+	control, a control's own after it kept; a sheet cut down and across; a skin put back after one call; a one-call skin used by the
+	next call alone; the text offsets a sheet's lip and lift produce, and a base moving its control's text; icon textures laid out
+	by their width; a button of images and its click mask; and `GuiClearSkins` drawing flat again. The controls are locked
+	(`GuiLock`), so the state is the one `GuiSetState` sets, with no mouse. */
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.modules.RGui)
 @:access(helix.raylib.modules.RGuiSkins)
@@ -116,7 +117,7 @@ class GuiSkinsTests {
 		DrawTextureNPatch(sheet, patch(0), bounds, new Vector2(0, 0), 0, WHITE);
 		check(back == drawn(), "the skin put back");
 
-		// A one-call skin: the next call takes it, the one after draws GuiSetSkin's again.
+		// A one-call skin: the next call uses it, the one after draws GuiSetSkin's again.
 		GuiSetSkinOnce(BUTTON, GUI_SKIN_BASE, GuiSkinFromTexture(sheet, patch(64)));
 		GuiButton(bounds, "");
 		check(drawn() == once, "the next call takes the one-call skin");

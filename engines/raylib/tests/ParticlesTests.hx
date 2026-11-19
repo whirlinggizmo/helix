@@ -12,10 +12,10 @@ import helix.raylib.internal.Runtime;
 import helix.services.time.Time;
 
 /** Checks the Particles extra on graphics that count what is live: an emitter's defaults; births by its rate over time, bursts and the
-	most alive; a prewarm; a clear restarting from the seed, and a seed giving the same particles; a birth field changing only the
-	particles born after it, and a field over a life changing those alive; each field held to its range where read; the size and color
-	curves and the palette; the flipbook; a 2D emitter joining the batch of a `DrawTexture` of its texture; one instanced draw a 3D
-	emitter; and an unload freeing what the GPU holds. Run by helix.py test on Node and in hxcpp. */
+	most alive; a prewarm; a clear restarting from the seed, and a seed producing the same particles; a birth field changing only
+	the particles born after it, and a field over a life changing those alive; each field held to its range where read; the size and
+	color curves and the palette; the flipbook; a 2D emitter joining the batch of a `DrawTexture` of its texture; one instanced draw
+	a 3D emitter; and an unload freeing what the GPU holds. Run by helix.py test on Node and in hxcpp. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Program)
@@ -171,7 +171,7 @@ class ParticlesTests {
 		var xs = [for (p in alive(moving)) p[Emitters.X]];
 		check(xs.length == 8 && xs[4] == 1 && xs[5] == 2 && xs[6] == 3 && xs[7] == 4, 'an even trail: $xs');
 
-		// A burst, whatever the rate; the most alive, the oldest giving way.
+		// A burst, whatever the rate; the most alive, the oldest replaced.
 		var burst = LoadEmitter3D(8);
 		burst.rate = 0;
 		EmitParticles3D(burst, 3);
@@ -194,7 +194,7 @@ class ParticlesTests {
 		PrewarmEmitter3D(warm, -1);
 		check(warm.particleCount >= 9, "a prewarm of no time");
 
-		// The same seed and fields give the same particles; a clear starts again from the seed.
+		// The same seed and fields produce the same particles; a clear starts again from the seed.
 		var a = LoadEmitter3D(64), b = LoadEmitter3D(64);
 		for (x in [a, b]) {
 			x.seed = 7;
@@ -394,8 +394,9 @@ class ParticlesTests {
 		check([for (p in inside) if (radial(p, 3, 2, 1) < 0.5) p].length > 25, "throughout the ellipsoid");
 		var shell = shaped(Ellipsoid, 3, 2, 1, true);
 		check([for (p in shell) if (Math.abs(radial(p, 3, 2, 1) - 1) > 1e-6) p].length == 0, "on the ellipsoid's surface");
-		// Spread over the surface as it looks, by area: of 400, about 162 where |z| is over 0.7 of its radius, the broad faces, and about 90
-		// where |x| is, the narrow ends (the surface's areas there, integrated apart); a sphere's points stretched would give about 120 each.
+		// Spread over the surface as it looks, by area: of 400, about 162 where |z| is over 0.7 of its radius, the broad faces, and
+		// about 90 where |x| is, the narrow ends (the surface's areas there, integrated apart); a sphere's points stretched would
+		// number about 120 each.
 		var broad = [for (p in shell) if (Math.abs(p[Emitters.Z]) > 0.7) p].length,
 			ends = [for (p in shell) if (Math.abs(p[Emitters.X]) > 2.1) p].length;
 		check(Math.abs(broad - 162) < 30 && Math.abs(ends - 90) < 30, 'by area over the surface: $broad on the broad faces and $ends on the ends');
@@ -608,8 +609,8 @@ class ParticlesTests {
 		EmitParticles2D(tinted, 60);
 		check([for (p in alive(tinted)) if ((Std.int(p[Emitters.SLOT]) & 255) >= 8) p].length == 0, "8 palette colors at most");
 
-		// The same seed gives the same particles on every target: hashes of a seeded run's births and particles, written here, the same on
-		// Node and in hxcpp. The fields reach every random number and every transcendental of the simulation.
+		// The same seed produces the same particles on every target: hashes of a seeded run's births and particles, written here, the same
+		// on Node and in hxcpp. The fields reach every random number and every transcendental of the simulation.
 		var seeded3 = LoadEmitter3D(256);
 		seeded3.seed = 1234;
 		seeded3.spawnShape = Ellipsoid;

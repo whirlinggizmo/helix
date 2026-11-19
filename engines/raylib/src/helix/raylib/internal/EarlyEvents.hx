@@ -4,15 +4,15 @@ import helix.platform.Event;
 import helix.platform.IEvents;
 
 /** Reads the platform's events for the frame when raylib does, at its end (`EndDrawing`'s `PollInputEvents`), and looks at them as the
-	frame begins (`BeginDrawing`) too, for the GPU's context being lost or given back, which the frame must know before it draws: the
+	frame begins (`BeginDrawing`) too, for the GPU's context being lost or restored, which the frame must know before it draws: the
 	platform drops textures and static buffers at a restore, so a draw naming one before the frame has remade it is refused.
 
-	What the look at the start takes is delivered again by the end's `poll`, so the devices and the screen see every event once, in
+	What the look at the start reads is delivered again by the end's `poll`, so the devices and the screen see every event once, in
 	order. */
 @:noCompletion
 class EarlyEvents implements IEvents {
 	final inner:IEvents;
-	// What the frame's start took from the platform, delivered with the rest at its end.
+	// What the frame's start read from the platform, delivered with the rest at its end.
 	var held:Array<Event> = [];
 	var delivered:Array<Event> = [];
 
@@ -23,11 +23,11 @@ class EarlyEvents implements IEvents {
 		this.inner = inner;
 	}
 
-	/** Takes what the platform has so far and acts on the GPU's context: `lost` for `GraphicsLost`, `restored` for `GraphicsRestored`.
-		Everything taken waits for the next `poll`.
+	/** Reads what the platform has so far and acts on the GPU's context: `lost` for `GraphicsLost`, `restored` for `GraphicsRestored`.
+		Everything read waits for the next `poll`.
 
 		@param lost  What runs for the context lost.
-		@param restored  What runs for the context given back. */
+		@param restored  What runs for the context restored. */
 	public function peek(lost:Void->Void, restored:Void->Void):Void {
 		inner.poll();
 		for (event in inner.events) {

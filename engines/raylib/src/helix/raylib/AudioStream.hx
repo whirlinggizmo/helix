@@ -1,13 +1,13 @@
 package helix.raylib;
 
-/** Represents raylib's `AudioStream`: samples a program makes as it goes, played as `UpdateAudioStream` gives them.
+/** Represents raylib's `AudioStream`: samples a program makes as it goes, played as `UpdateAudioStream` receives them.
 
 	It has two buffers of `SetAudioStreamBufferSizeDefault` frames each, 1470 until set. Each update fills one while the other plays. */
 class AudioStream {
 	/** Gets the sample rate, in frames a second. */
 	public var sampleRate(default, null):Int;
 
-	/** Gets the bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float). */
+	/** Gets the bits in a sample: 8 (unsigned), 16 (signed) or 32 (float). */
 	public var sampleSize(default, null):Int;
 
 	/** Gets the number of channels: 1 is mono, 2 stereo. */

@@ -14,9 +14,9 @@ import helix.services.time.Time;
 	two-bone model's bones are, posed and unposed, scaled and moved as DrawModel places it; the posed box drawn at its corners; the
 	stats' size following the style's fields, the font size scaling with the screen's height and a size under 1 refused; what is drawn
 	matching what is measured; the frame time's mean and p95 over a half second of a ring that wraps; the draws, triangles and state
-	changes of a frame with known draws; the colors against a target, a given one, SetTargetFPS's and the monitor's; and the stats read,
-	over the last half second and over a recording, which starts at the EndDrawing after its start, starts again at a second start and
-	keeps its latest 65536 frames. */
+	changes of a frame with known draws; the colors against a target, a provided one, SetTargetFPS's and the monitor's; and the stats
+	read, over the last half second and over a recording, which starts at the EndDrawing after its start, starts again at a second
+	start and keeps its latest 65536 frames. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)

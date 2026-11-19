@@ -60,7 +60,7 @@ class Frame {
 		"vertexBoneWeights" => 8
 	];
 
-	/** rlgl's modes, as `rlBegin` takes them and a run of the batch keeps its vertices in: lines, triangles, and quads of four
+	/** rlgl's modes, as `rlBegin` accepts them and a run of the batch keeps its vertices in: lines, triangles, and quads of four
 		vertices each, drawn as two triangles through `quadIndices`. */
 	public static inline final LINES = 1;
 
@@ -105,9 +105,9 @@ class Frame {
 	var spriteQuad = 0;
 	var spriteIndices = 0;
 
-	/** Gives the sprite shader (`Defaults.spriteShader`): set by `Sprites.register` as a module adding quads starts, null in a program
-		adding none, which then links neither the shader nor the sprite path. It has no initial value, so Frame's own start (hxcpp boots
-		the classes in its order) never resets what the module set. */
+	/** Returns the sprite shader (`Defaults.spriteShader`): set by `Sprites.register` as a module adding quads starts, null in a
+		program adding none, which then links neither the shader nor the sprite path. It has no initial value, so Frame's own start
+		(hxcpp boots the classes in its order) never resets what the module set. */
 	public static var spriteShader:Null<Void->helix.services.shaders.Shader>;
 
 	/** Lights a run of immediate vertices drawn through a program (`SceneLights`), set by the first `CreateLight`, null in a program
@@ -182,14 +182,14 @@ class Frame {
 	/** Whether the next triangles are drawn as their edges, rlgl's `rlEnableWireMode`. */
 	public var wire = false;
 
-	/** Gives the points a run of the batch's triangles is drawn as, in rlgl's point mode (`rlEnablePointMode`): null while it is off.
-		`rlEnablePointMode` sets it to `pointsOfRun`, so a program drawing no points links none of it. It receives the run's first vertex,
-		its vertex count and whether they are quads, and returns the first vertex and the count of the points. */
+	/** Returns the points a run of the batch's triangles is drawn as, in rlgl's point mode (`rlEnablePointMode`): null while it is
+		off. `rlEnablePointMode` sets it to `pointsOfRun`, so a program drawing no points links none of it. It receives the run's first
+		vertex, its vertex count and whether they are quads, and returns the first vertex and the count of the points. */
 	public var pointRun:Null<(first:Int, count:Int, quads:Bool) -> Array<Int>> = null;
 
-	/** Gives the points a mesh's triangles are drawn as, in rlgl's point mode: null while it is off. `rlEnablePointMode` sets it to
-		`pointsOfMesh`. It receives the mesh, its transform and whether it is drawn as instances, and returns the index buffer of the points
-		(0 for none: the vertices in order) and their count. */
+	/** Returns the points a mesh's triangles are drawn as, in rlgl's point mode: null while it is off. `rlEnablePointMode` sets it
+		to `pointsOfMesh`. It receives the mesh, its transform and whether it is drawn as instances, and returns the index buffer of the
+		points (0 for none: the vertices in order) and their count. */
 	public var pointMesh:Null<(mesh:helix.raylib.Mesh, model:Matrix4, instanced:Bool) -> Array<Int>> = null;
 
 	/** Whether the next draws blend as `blend` says, rlgl's `rlEnableColorBlend`; when not, they draw over what is there. */
@@ -302,7 +302,7 @@ class Frame {
 	}
 
 	// The snapshots of the frame's draws' blocks, one a draw, kept from frame to frame so a draw allocates nothing once a frame's worth
-	// exist: each is taken again after the frame is drawn.
+	// exist: each is reused after the frame is drawn.
 	final snapshots:Array<helix.services.shaders.ShaderSnapshot> = [];
 	var snapshotCount = 0;
 
@@ -403,7 +403,7 @@ class Frame {
 		return shadow;
 	}
 
-	/** Makes the next draws go into a pass, one `addShadowPass` gave or `currentPass` read, without flushing the batch.
+	/** Makes the next draws go into a pass, one `addShadowPass` returned or `currentPass` read, without flushing the batch.
 
 		@param target  The pass. */
 	public function drawInto(target:Any):Void
@@ -791,7 +791,7 @@ class Frame {
 		constants = graphics.createStaticBuffer(record, CONSTANT_BYTES, false);
 	}
 
-	/** Makes the frame's own GPU things again after the GPU's context was lost and given back (`Event.GraphicsRestored`): the white
+	/** Makes the frame's own GPU things again after the GPU's context was lost and restored (`Event.GraphicsRestored`): the white
 		texture and the constants, gone with the context; the quads' indices, made again when next needed. The vertex buffer, the programs
 		and the pipelines keep their handles, remade by the platform. */
 	public function graphicsRestored():Void {
@@ -852,7 +852,7 @@ class Frame {
 	}
 
 	/** Adds a quad of one texture, one color and a rectangle of the texture, its corners in rlgl's order (`DrawTexturePro`'s): a sprite
-		record when it draws as one (the default shader, flat under the transform pushed, the sprite shader given), else its four vertices.
+		record when it draws as one (the default shader, flat under the transform pushed, the sprite shader set), else its four vertices.
 		What `vertex` decides from four calls, decided at once.
 
 		@param texture  The texture.
@@ -1241,7 +1241,7 @@ class Frame {
 		var pipeline = p.cached(key);
 		if (pipeline == -1)
 			pipeline = meshPipeline(p, key, primitive, indexed, instances);
-		// The draw's textures and buffers, from the frame's pool: read when the frame is drawn, taken again after.
+		// The draw's textures and buffers, from the frame's pool: read when the frame is drawn, reused after.
 		var bound = p.bindTextures(ints());
 		for (slot => t in textures)
 			if (t >= 0 && slot < bound.length)
@@ -1249,7 +1249,7 @@ class Frame {
 		for (i in 0...bound.length)
 			if (bound[i] == 0)
 				bound[i] = white;
-		// A buffer an attribute: the platform takes eight, as many as raylib's attributes.
+		// A buffer an attribute: the platform accepts eight, as many as raylib's attributes.
 		var names = p.attributes, buffers = ints();
 		for (i => name in names)
 			if (isMatrix(names, i))
@@ -1370,7 +1370,7 @@ class Frame {
 	final meshKeys:Array<Null<String>> = [];
 	var meshKeysState:Null<String> = null;
 
-	// The frame's mesh draws, and the arrays its draws hold, kept from frame to frame and taken again after the frame is drawn.
+	// The frame's mesh draws, and the arrays its draws hold, kept from frame to frame and reused after the frame is drawn.
 	final drawPool:Array<Draw> = [];
 	var drawCount = 0;
 	final intPool:Array<Array<Int>> = [];
@@ -1418,7 +1418,7 @@ class Frame {
 		x2 = Math.round(x2 * w);
 		y2 = Math.round(y2 * h);
 		var area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
-		// GL takes a triangle as facing it only when its area is above 0.
+		// GL treats a triangle as facing it only when its area is above 0.
 		return cullFront ? area > 0 : area <= 0;
 	}
 
@@ -1685,7 +1685,7 @@ private class Update {
 private class Draw {
 	public var pipeline:Int;
 	// The buffers by the pipeline's slots, or null for the frame's own: the batch's vertices and the constants, or for a sprite run
-	// (sprite) the quad and the sprites' records, both taken when the frame is drawn, as their buffers may be remade before.
+	// (sprite) the quad and the sprites' records, both read when the frame is drawn, as their buffers may be remade before.
 	public var buffers:Null<Array<Int>>;
 	public var sprite:Bool = false;
 	public var indices:Int;

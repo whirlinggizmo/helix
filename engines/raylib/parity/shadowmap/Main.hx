@@ -55,7 +55,7 @@ class Main {
 			BeginDrawing();
 			if (ready) {
 				// CAMERA_ORBITAL's turn of a frame at 60 frames a second, and the left key's turn of the light, as scene.c turns them; held
-				// after the third frame, so a page's screenshot, taken later, shows it.
+				// after the third frame, so a page's screenshot, captured later, shows it.
 				if (frame <= 2) {
 					SetShaderValue(shadowShader, shadowShader.locs[SHADER_LOC_VECTOR_VIEW], [cam.position.x, cam.position.y, cam.position.z],
 						SHADER_UNIFORM_VEC3);

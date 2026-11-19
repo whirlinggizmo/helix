@@ -7,8 +7,8 @@ import helix.raylib.internal.Runtime;
 	drop's reading is set as the program starts, so a drop before either is first called is read; a drop's files are listed under
 	helix-raylib's own paths, which the assets read; the next drop's replace them; `UnloadDroppedFiles` lets go of the list, the files staying;
 	a dropped file that isn't text read by `LoadFileTextAsync` as raylib's `LoadFileText` reads it. On
-	a window whose dropped files the test sets (services' `FakeWindow`), without events: a drop is given as `Runtime`'s poll gives one, and
-	its files read at the window's next answer, as the platform reads them at the next poll. */
+	a window whose dropped files the test sets (services' `FakeWindow`), without events: a drop is delivered as `Runtime`'s poll delivers
+	one, and its files read at the window's next answer, as the platform reads them at the next poll. */
 @:access(helix.raylib.internal.Runtime)
 class DropTests {
 	static var checks = 0;

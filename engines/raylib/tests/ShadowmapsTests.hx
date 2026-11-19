@@ -9,7 +9,7 @@ import helix.raylib.internal.Textures;
 import helix.services.time.Time;
 
 /** Checks `extras.Shadowmaps`: `LoadShadowmapRenderTexture` makes a render target whose depth is a texture, its `depth` that texture and
-	its `texture` empty; a shader given the depth by `SetShaderValueTexture` binds it in the screen's draws and the white texture in the
+	its `texture` empty; a shader set the depth by `SetShaderValueTexture` binds it in the screen's draws and the white texture in the
 	draws into the render texture itself, a light casting the Lighting extra's shadows or not; `UnloadShadowmapRenderTexture` and
 	`UnloadRenderTexture` free the target and its depth once, either called again doing nothing. Run by helix.py test on the
 	interpreter and Node. */

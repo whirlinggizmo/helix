@@ -50,7 +50,7 @@ class Answers {
 	/** Asks the platform, answering as it does, at a later poll. A request it can't ask is refused at a later poll, saying why not.
 
 		@param name  The call, named in a refusal.
-		@param asking  Asks the platform, given what to call once it is granted or refused; returns false when it can't be asked.
+		@param asking  Asks the platform, receiving what to call once granted or refused; returns false when it can't be asked.
 		@param why  Why it can't be asked.
 		@param done  Called once it is granted, or null.
 		@param failed  Receives why it was refused, or null to log it. */

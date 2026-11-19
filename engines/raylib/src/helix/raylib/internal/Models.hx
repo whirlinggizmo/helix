@@ -72,7 +72,7 @@ class Models {
 	static function bufferBytes(mesh:Mesh, index:Int):Int
 		return mesh.vertexCount * SIZES[index] * (index == 3 ? 1 : 4);
 
-	// A buffer's bytes as the GPU takes them: the bytes UpdateMeshBuffer last left, or the mesh's numbers as 32-bit floats (colors a byte
+	// A buffer's bytes as the GPU reads them: the bytes UpdateMeshBuffer last left, or the mesh's numbers as 32-bit floats (colors a byte
 	// each, as raylib's, read as UByte4Norm), those it lacks its default; the indices (6) as 32-bit integers.
 	static function bytesOf(mesh:Mesh, index:Int):Bytes {
 		var kept = mesh.gpu.contents[index];
@@ -181,7 +181,7 @@ class Models {
 		return mesh.gpu.edgeBuffer;
 	}
 
-	/** Takes one more holder of a mesh: a model it is put in.
+	/** Counts one more holder of a mesh: a model it is put in.
 
 		@param mesh  The mesh, or null for nothing. */
 	public static function retainMesh(mesh:Null<Mesh>):Void
@@ -204,7 +204,7 @@ class Models {
 	static final uploaded:Array<MeshGpu> = [];
 	static var restoring = false;
 
-	/** Forgets every mesh's GPU buffers after the GPU's context was lost and given back (`Event.GraphicsRestored`): static buffers are
+	/** Forgets every mesh's GPU buffers after the GPU's context was lost and restored (`Event.GraphicsRestored`): static buffers are
 		gone with it, so each mesh is sent again when next drawn (`upload`), from its vertices and the bytes `UpdateMeshBuffer` left
 		(`MeshGpu.contents`). */
 	public static function graphicsRestored():Void {
@@ -237,7 +237,7 @@ class Models {
 			gpu.contents[i] = null;
 	}
 
-	/** Takes one more holder of a material: a model it is put in.
+	/** Counts one more holder of a material: a model it is put in.
 
 		@param material  The material, or null for nothing. */
 	public static function retainMaterial(material:Null<Material>):Void
@@ -269,7 +269,7 @@ class Models {
 			texture.id = 0;
 	}
 
-	/** Lets go of the program's hold on a texture (`UnloadTexture`), its id set to 0. Given a map's copy (`Texture2D.mapped`), it lets
+	/** Lets go of the program's hold on a texture (`UnloadTexture`), its id set to 0. For a map's copy (`Texture2D.mapped`), it lets
 		go of one of the program's holds when there is one, else of the map's, and leaves the id while the texture lives, as the map still
 		draws it.
 
@@ -295,7 +295,7 @@ class Models {
 		}
 	}
 
-	/** Takes one more holder of a shader: a material given it. The default shader isn't counted.
+	/** Counts one more holder of a shader: a material using it. The default shader isn't counted.
 
 		@param shader  The shader. */
 	public static function retainShader(shader:Shader):Void
@@ -310,7 +310,7 @@ class Models {
 		if (!shader.spent)
 			dropShader(shader, false);
 
-	/** Lets go of the program's hold on a shader (`UnloadShader`): given a material's copy (`Shader.mapped`), one of the program's holds
+	/** Lets go of the program's hold on a shader (`UnloadShader`): for a material's copy (`Shader.mapped`), one of the program's holds
 		when there is one, else the material's. Its id and program are cleared when it is the program's own record or the program is
 		freed. The default shader stays.
 
@@ -359,7 +359,7 @@ class Models {
 	}
 
 	// A file's model as read, its meshes made once (`template`), each with a holder of GPU buffers its loads share (holders 0 until a
-	// load's mesh takes it); none of it counted.
+	// load's mesh uses it); none of it counted.
 	static function templateOf(read:Model3D, attached:Null<Array<Int>>):Model {
 		var meshes = [], meshMaterial = [];
 		for (i => found in read.meshes) {
@@ -399,7 +399,7 @@ class Models {
 	}
 
 	// A load's materials: material 0 raylib's default, then the file's, as raylib numbers them and as raylib 6.2 reads them (`material`).
-	// The first load's materials take the model's decoded images; what no material names is freed then.
+	// The first load's materials own the model's decoded images; what no material names is freed then.
 	static function materialsOf(read:Model3D, shader:Shader):Array<Material> {
 		var materials = [defaultMaterial(shader)].concat([for (m in read.materials) material(read, m, shader)]);
 		read.dispose();
@@ -412,8 +412,8 @@ class Models {
 	// which raylib sets only when the material has that image and helix-raylib always (DECISIONS 71); the normal, occlusion and emissive
 	// images; the emissive factor, alpha 255, only when it has an emissive image. A factor's byte is raylib's (unsigned char)(f*255), in floats. An image that couldn't be decoded leaves its
 	// map as it was. Each texture is kept by its image's file, or the model's path and the image's index (and the split's name), so the
-	// loads of a file share it while any holds it; the first load takes the image decoded for the GPU from the model, and a texture made
-	// after it is gone decodes the image's file again (Textures.fromEncoded).
+	// loads of a file share it while any holds it; the first load claims the image decoded for the GPU from the model, and a texture
+	// made after it is gone decodes the image's file again (Textures.fromEncoded).
 	static function material(read:Model3D, m:GltfMaterial, shader:Shader):Material {
 		var material = defaultMaterial(shader), maps = material.maps;
 		// The Materials extra's values: unlit, the mask's cutoff, the emissive factor (linear, as the PBR shader reads it).
@@ -424,8 +424,8 @@ class Models {
 		material.emissiveBlue = m.emissiveFactor[2];
 		if (!m.hasPbrMetallicRoughness)
 			return material;
-		// The images decoded for the GPU this material took from the model and still owns, by index: the metallic-roughness image is read
-		// for its split first, then given whole to a map naming it too, and what no map took is disposed at the end.
+		// The images decoded for the GPU this material claimed from the model and still owns, by index: the metallic-roughness image is
+		// read for its split first, then passed whole to a map naming it too, and what no map claimed is disposed at the end.
 		var owned = new Map<Int, IDecodedImage>();
 		function picture(index:Int):Null<IDecodedImage> {
 			if (owned.exists(index))
@@ -487,8 +487,8 @@ class Models {
 		return material;
 	}
 
-	/** Gives a map the texture of one of a model's images, kept by a key (`Textures.fromEncoded`): the map holds it, the making's hold let
-		go.
+	/** Puts on a map the texture of one of a model's images, kept by a key (`Textures.fromEncoded`): the map holds it, the making's hold
+		let go.
 
 		@param map  The map.
 		@param key  The texture's key: the image's file, or the model's path and the image's index.
@@ -496,7 +496,7 @@ class Models {
 		@param format  Its pixel format, as raylib numbers them.
 		@param picture  The image decoded for the GPU, or null when a load holds the texture already or to decode the file now. Without
 			`derive` the texture owns it; with `derive` it stays the caller's.
-		@param derive  Optional. Makes the texture's pixels of the decoded image, as `Textures.fromEncoded` takes it. */
+		@param derive  Optional. Makes the texture's pixels of the decoded image, as `Textures.fromEncoded` accepts it. */
 	public static function give(map:MaterialMap, key:String, image:ModelImage3D, format:Int, picture:Null<IDecodedImage>, ?derive:IDecodedImage->Image):Void {
 		var id = Textures.fromEncoded(key, image.encoded, picture, derive);
 		map.texture = new Texture2D(id, image.width, image.height, 1, format);
@@ -514,10 +514,11 @@ class Models {
 	public static function byte(f:Float):Int
 		return Std.int(Pixels.f32(Pixels.f32(f) * 255)) & 255;
 
-	// raylib 6.2's LoadGLTF's skin part: the first skin's joints as the bones, each parent the nearest joint above it; the bind pose each
-	// inverse bind matrix inverted, or the joint's world transform at rest when the file gives none (the models service gives identities
-	// then, so a skin whose matrices are all exactly identity is taken as one without); each mesh's joints and weights as its bone ids
-	// and weights (a joint above 255 cut to a byte, with raylib's warning), a mesh without joints on a bone's child all that bone's.
+	// raylib 6.2's LoadGLTF's skin part: the first skin's joints as the bones, each parent the nearest joint above it; the bind
+	// pose each inverse bind matrix inverted, or the joint's world transform at rest when the file has none (the models service
+	// returns identities then, so a skin whose matrices are all exactly identity is treated as one without); each mesh's joints and
+	// weights as its bone ids and weights (a joint above 255 cut to a byte, with raylib's warning), a mesh without joints on a
+	// bone's child all that bone's.
 	static function skeleton(model:Model, read:Model3D, attached:Null<Array<Int>>):Void {
 		var bones = read.skeleton;
 		if (bones == null || read.skins.length == 0)
@@ -577,8 +578,8 @@ class Models {
 		animated(model);
 	}
 
-	/** Gives a model whose bones the program set, such as a model of a mesh, its bone matrices at rest, as a loaded model has them, so the
-		animation calls pose it. Nothing for a model that has them or has no bones.
+	/** Fills in the bone matrices at rest of a model whose bones the program set, such as a model of a mesh, as a loaded model has them,
+		so the animation calls pose it. Nothing for a model that has them or has no bones.
 
 		@param model  The model. */
 	public static function posable(model:Model):Void {
@@ -586,7 +587,8 @@ class Models {
 			animated(model);
 	}
 
-	// A model's bone matrices, at rest: identities, every mesh's boneMatrices those (raylib 5.5 gives each mesh of a skinned model its own).
+	// A model's bone matrices, at rest: identities, every mesh's boneMatrices those (raylib 5.5 allocates its own for each mesh of
+	// a skinned model).
 	static function animated(model:Model):Void {
 		if (model.boneCount == 0)
 			return;

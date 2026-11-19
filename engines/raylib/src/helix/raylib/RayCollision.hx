@@ -34,7 +34,7 @@ class RayCollision {
 	/** Returns a separate copy. Its point and normal are copied too.
 
 		@param out  Optional. The RayCollision to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public function copy(?out:RayCollision):RayCollision {
 		if (out == null)
 			return new RayCollision(hit, distance, point.copy(), normal.copy());

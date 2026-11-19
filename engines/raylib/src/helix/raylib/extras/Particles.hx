@@ -8,7 +8,7 @@ import helix.raylib.modules.RParticles;
 #end
 
 /** Provides particle emitters, in 3D and in 2D. An emitter's settings are its fields, read each frame, so a program changes one by
-	assigning it. A new emitter already gives off a small fountain of soft white dots that fade. Imported apart:
+	assigning it. A new emitter already emits a small fountain of soft white dots that fade. Imported apart:
 	`import helix.raylib.extras.Particles.*;`.
 
 	The examples `engines/raylib/examples/extras/particles3d` and `engines/raylib/examples/extras/particles2d` use it.

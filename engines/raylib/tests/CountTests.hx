@@ -6,13 +6,13 @@ import helix.raylib.internal.Runtime;
 import helix.raylib.internal.Textures;
 
 /** Checks helix-raylib's counting of what models hold (docs/DECISIONS.md 25), on graphics that count what is live: a texture the program
-	unloads after giving it to a model, one given straight to a map and unloaded through it, a material shared by two models, a mesh
-	replaced, a material unloaded before its model, a mesh LoadModelFromMesh takes over, two loads of one glTF file, and a texture copied
-	out of a map freed with its model, where raylib leaks it; two loads unloaded in either order, UnloadTexture on one load's texture
-	leaving the other's, a lone load's UnloadMaterial freeing its textures, a load after the last re-reading the file; a shader shared by
-	two models' materials, the program unloading it first and last; two loads of an OBJ file sharing its textures and buffers, and an MTL
-	file's materials, held by the program, sharing a texture the program loaded; a cubemap in a model's cubemap map, as raylib's skybox
-	holds one; IQM, VOX and M3D files refused. Nothing is freed while held, nothing twice, and nothing
+	unloads after assigning it to a model, one assigned straight to a map and unloaded through it, a material shared by two models,
+	a mesh replaced, a material unloaded before its model, a mesh LoadModelFromMesh claims, two loads of one glTF file, and a texture
+	copied out of a map freed with its model, where raylib leaks it; two loads unloaded in either order, UnloadTexture on one load's
+	texture leaving the other's, a lone load's UnloadMaterial freeing its textures, a load after the last re-reading the file; a shader
+	shared by two models' materials, the program unloading it first and last; two loads of an OBJ file sharing its textures and buffers,
+	and an MTL file's materials, held by the program, sharing a texture the program loaded; a cubemap in a model's cubemap map, as
+	raylib's skybox holds one; IQM, VOX and M3D files refused. Nothing is freed while held, nothing twice, and nothing
 	is left. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Textures)
@@ -133,7 +133,7 @@ class CountTests {
 		check(lone.id == 0 && !alive(id), "alone: UnloadTexture frees it");
 		clean("alone");
 
-		// raylib's pattern: a texture given to a model, unloaded, then the model.
+		// raylib's pattern: a texture assigned to a model, unloaded, then the model.
 		var model = LoadModelFromMesh(cube()), tex = texture();
 		id = tex.id;
 		model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = tex;
@@ -145,7 +145,7 @@ class CountTests {
 		check(!alive(id) && mesh.refs == 0 && material.refs == 0 && model.meshCount == 0, "assigned: UnloadModel frees it, the mesh and material");
 		clean("assigned");
 
-		// A texture given straight to a map, unloaded through the map.
+		// A texture assigned straight to a map, unloaded through the map.
 		model = LoadModelFromMesh(cube());
 		model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture();
 		id = model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id;
@@ -155,7 +155,7 @@ class CountTests {
 		check(!alive(id), "through the map: UnloadModel frees it");
 		clean("through the map");
 
-		// raylib's skybox: a cubemap given to a model's cubemap map, unloaded through the map, then the model.
+		// raylib's skybox: a cubemap assigned to a model's cubemap map, unloaded through the map, then the model.
 		model = LoadModelFromMesh(cube());
 		var sky = LoadTextureCubemap(GenImageColor(2, 12, RED), CUBEMAP_LAYOUT_AUTO_DETECT);
 		id = sky.id;
@@ -199,7 +199,7 @@ class CountTests {
 		check(m1.refs == 0 && m2.refs == 0, "replaced: nothing below 0");
 		clean("replaced");
 
-		// A material unloaded before its model; a mesh LoadModelFromMesh took over, unloaded after it.
+		// A material unloaded before its model; a mesh LoadModelFromMesh claimed, unloaded after it.
 		mesh = cube();
 		model = LoadModelFromMesh(mesh);
 		check(mesh.refs == 1, "taken over: LoadModelFromMesh takes the program's hold");

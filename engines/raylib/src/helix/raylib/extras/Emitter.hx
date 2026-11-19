@@ -20,7 +20,7 @@ class Emitter {
 	public var maxLife:Float = 1;
 
 	/** Gets or sets whether particles are born on the spawn shape's surface rather than inside it: false by default. They are spread
-		evenly over the surface as it looks: a shape flattened by a half size of 0 is its outline, so an ellipsoid of height 0 gives a
+		evenly over the surface as it looks: a shape flattened by a half size of 0 is its outline, so an ellipsoid of height 0 makes a
 		ring. A `Point` ignores it. */
 	public var spawnShell:Bool = false;
 
@@ -121,8 +121,8 @@ class Emitter {
 	public var blendMode:Int = Raylib.BLEND_ALPHA;
 
 	/** Gets or sets the seed of the emitter's random numbers: drawn at its load from raylib's random numbers (`GetRandomValue`'s,
-		which `SetRandomSeed` sets), so emitters differ unless given one. The same seed and fields give the same particles from its load
-		or its clear. */
+		which `SetRandomSeed` sets), so emitters differ unless one is set. The same seed and fields produce the same particles from its
+		load or its clear. */
 	public var seed:Int = 0;
 
 	// The particles, a ring of `capacity` slots: SLOT floats each in `slots` (born, life, x, y, z, vx, vy, vz, size scale, spin in

@@ -7,10 +7,10 @@ import helix.raylib.internal.Runtime;
 /** Checks `UpdateModelAnimationMasked` and `GetModelBoneMask` on a chain of three bones (a root, a spine on it, an arm on the spine) and
 	two animations of one frame: the first raising the root by one, as a run's hips, the second turning the spine a quarter about z. A
 	blend of 0 poses the first, every bone weighted 1 at a blend of 1 the second, and a blend of 2 is clamped to 1. The spine's mask
-	keeps the first's root and takes the second's spine and arm relative to their parents: the spine follows the raised root. Under a
+	keeps the first's root and uses the second's spine and arm relative to their parents: the spine follows the raised root. Under a
 	root turned a quarter, the spine turns with the root relative to its parent, and keeps the second's facing with the rotation in the
 	model. Another rotation space, or a mask of another count of bones, leaves the model as it was. The mask is the spine's branch,
-	fills the array given, and is 0 for a bone the model hasn't. */
+	fills the array provided, and is 0 for a bone the model hasn't. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.Model)
 class AnimationMaskTests {
@@ -34,8 +34,8 @@ class AnimationMaskTests {
 		return [new BoneInfo("root", -1), new BoneInfo("spine", 0), new BoneInfo("arm", 1)];
 	}
 
-	// A cube skinned to the root, its model given the chain's bones at rest: the root at the origin, the spine one up, the arm one along
-	// x from it.
+	// A cube skinned to the root, its model set to the chain's bones at rest: the root at the origin, the spine one up, the arm one
+	// along x from it.
 	static function chain():Model {
 		var mesh = GenMeshCube(1, 1, 1);
 		mesh.boneIds = [for (k in 0...mesh.vertexCount * 4) 0];

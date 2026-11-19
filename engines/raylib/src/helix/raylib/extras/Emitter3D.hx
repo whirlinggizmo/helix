@@ -5,7 +5,7 @@ import helix.raylib.*;
 /** Represents a 3D particle emitter, made by `LoadEmitter3D`. */
 @:allow(helix.raylib)
 class Emitter3D extends Emitter {
-	/** Gets or sets where the emitter is, in world units. `UpdateEmitter3D` gives birth along the way from where it was. */
+	/** Gets or sets where the emitter is, in world units. `UpdateEmitter3D` spawns particles along the way from where it was. */
 	public var position:Vector3 = new Vector3(0, 0, 0);
 
 	/** Gets or sets the direction particles are born moving in, its length ignored: up by default. A direction of no length is up. */

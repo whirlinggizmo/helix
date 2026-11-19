@@ -11,9 +11,9 @@ import helix.raylib.internal.Textures;
 
 /** Checks `LoadPbrShader`'s draws, on graphics that count what is live: its locations name its samplers, each set to its map's unit, so a
 	material's map with a texture is bound at it, one without reads white and a missing normal map a flat normal; each draw writes the
-	material's metalness, roughness and emissive values, and gives a normal-mapped mesh its tangents; a material marked unlit writes
-	unlitValue 1; a posed model's draw, through the skinned twin, binds and writes the same; each light starts at intensity 1, and a
-	light's range and intensity (the Lighting extra's) are written into the draw's lights. */
+	material's metalness, roughness and emissive values, and computes a normal-mapped mesh's tangents; a material marked unlit
+	writes unlitValue 1; a posed model's draw, through the skinned twin, binds and writes the same; each light starts at intensity
+	1, and a light's range and intensity (the Lighting extra's) are written into the draw's lights. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
 @:access(helix.raylib.internal.Models)

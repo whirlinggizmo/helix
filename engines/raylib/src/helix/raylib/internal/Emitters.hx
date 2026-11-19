@@ -13,8 +13,8 @@ import helix.raylib.extras.Emitter3D;
 /** Runs the Particles extra's emitters on the CPU: births (where, how fast, how long each lives, within the emitter's fields), and a 2D
 	emitter's motion and its quads in the frame's batch. A 3D emitter's particles are drawn from their births by `EmitterDraws`.
 
-	Births draw from the emitter's own random numbers and take their trigonometry from `Trig`, so a seed gives the same particles on
-	every target. Linked by the Particles extra's calls alone. */
+	Births draw from the emitter's own random numbers and use `Trig` for their trigonometry, so a seed produces the same particles
+	on every target. Linked by the Particles extra's calls alone. */
 @:noCompletion
 @:access(helix.raylib.extras.Emitter)
 @:access(helix.raylib.extras.Emitter2D)
@@ -98,7 +98,7 @@ class Emitters {
 		settle(e);
 	}
 
-	/** Gives off particles at once at a position, at the emitter's time now.
+	/** Emits particles at once at a position, at the emitter's time now.
 
 		@param e  The emitter.
 		@param count  How many; none for 0 or less.
@@ -137,7 +137,7 @@ class Emitters {
 			update(e, seconds / steps, x, y, z, flat);
 	}
 
-	/** Takes away every particle, and starts the emitter's random numbers again from its seed at the next birth.
+	/** Removes every particle, and starts the emitter's random numbers again from its seed at the next birth.
 
 		@param e  The emitter. */
 	public static function clear(e:Emitter):Void {
@@ -196,7 +196,7 @@ class Emitters {
 	static final point2 = new Vector2();
 	static final point3 = new Vector3();
 
-	// A particle born at a time and place, in the slot after the newest, the oldest's when every slot is taken; its offset, velocity,
+	// A particle born at a time and place, in the slot after the newest, the oldest's when every slot is full; its offset, velocity,
 	// life, size, spin, phase and tint from the emitter's birth fields.
 	static function birth(e:Emitter, when:Float, x:Float, y:Float, z:Float, flat:Bool):Void {
 		var e3:Null<Emitter3D> = flat ? null : cast e;
@@ -288,7 +288,7 @@ class Emitters {
 		e.tints[slot] = tint;
 	}
 
-	// The spawn shape's half sizes, read at a birth, and the offset a shape gives it.
+	// The spawn shape's half sizes, read at a birth, and the offset a shape produces for it.
 	static final half:Array<Float> = [0, 0, 0];
 	static final offset:Array<Float> = [0, 0, 0];
 	// The axes of the half sizes over 0, and their count: the shape's own dimensions.
@@ -303,7 +303,7 @@ class Emitters {
 				axes[axisCount++] = i;
 	}
 
-	// The most tries at a point over a curved surface, before the last tried is taken.
+	// The most tries at a point over a curved surface, before the last tried is used.
 	static inline final TRIES = 32;
 
 	// An offset in a box (a rectangle in 2D) of the half sizes, or on its surface: a face picked by its area (an edge by its length, an

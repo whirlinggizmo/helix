@@ -23,7 +23,7 @@ class Ray {
 	/** Returns a separate copy. Its position and direction are copied too.
 
 		@param out  Optional. The Ray to copy into, so nothing is made; a new one when omitted.
-		@return  The copy: out, when given. */
+		@return  The copy: out, when provided. */
 	public function copy(?out:Ray):Ray {
 		if (out == null)
 			return new Ray(position.copy(), direction.copy());

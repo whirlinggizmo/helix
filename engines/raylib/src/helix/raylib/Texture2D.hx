@@ -27,8 +27,9 @@ class Texture2D {
 	@:allow(helix.raylib)
 	var rendered = false;
 
-	// A material map's copy (`MaterialMap.texture`), which holds the map's count: `UnloadTexture` given it lets go of one of the program's
-	// holds when there is one, else of the map's (`spent`), and leaves its id while the texture lives, as the map still draws it.
+	// A material map's copy (`MaterialMap.texture`), which holds the map's count: `UnloadTexture` called with it lets go of one of
+	// the program's holds when there is one, else of the map's (`spent`), and leaves its id while the texture lives, as the map
+	// still draws it.
 	@:allow(helix.raylib)
 	var mapped = false;
 

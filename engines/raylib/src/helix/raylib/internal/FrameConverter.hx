@@ -10,11 +10,11 @@ import haxe.io.Bytes;
 	run as miniaudio's data converter runs them, in its 4096-byte blocks, with its arithmetic: single precision where it is single, its
 	fixed point for 16-bit filtering, mixing and resampling. Its quirks are kept: a 16-bit mix down to one channel divides a negative
 	sum as unsigned, and 32-bit floats become 16-bit samples by its x86-64 SSE2 path wherever its buffers are 16-byte aligned, which
-	saturates a sample below -1 to -32768 where its plain path clips to -32767. Every buffer is taken to start aligned, as `malloc`'s
-	and the converter's own do. */
+	saturates a sample below -1 to -32768 where its plain path clips to -32767. Every buffer is assumed to start aligned, as
+	`malloc`'s and the converter's own do. */
 @:noCompletion
 class FrameConverter {
-	/** Returns the frames a conversion is expected to give, as `ma_convert_frames` returns them when given no output.
+	/** Returns the frames a conversion is expected to produce, as `ma_convert_frames` returns them when no output is provided.
 
 		@param frameCountIn  The frames converted.
 		@param formatIn  The input's sample size in bits.
@@ -35,7 +35,7 @@ class FrameConverter {
 		return converter.expected(frameCountIn);
 	}
 
-	/** Converts frames, as `ma_convert_frames` converts them into an output it is given.
+	/** Converts frames, as `ma_convert_frames` converts them into the output provided.
 
 		@param out  Receives the frames, interleaved, little-endian.
 		@param frameCountOut  The most frames written.
@@ -66,13 +66,13 @@ class FrameConverter {
 		return converter.process(input, frameCountIn, out, frameCountOut < 0 ? 0 : frameCountOut);
 	}
 
-	// The bytes a sample of raylib's sample size takes in miniaudio: u8, s16, else f32.
+	// The bytes a sample of raylib's sample size uses in miniaudio: u8, s16, else f32.
 	static function formatOf(sampleSize:Int):Int {
 		return sampleSize == 8 ? 1 : sampleSize == 16 ? 2 : 4;
 	}
 }
 
-/** The data converter: its configuration's steps and its execution path. Formats are the bytes a sample takes: 1 (u8), 2 (s16) or 4
+/** The data converter: its configuration's steps and its execution path. Formats are the bytes in a sample: 1 (u8), 2 (s16) or 4
 	(f32). */
 private class Converter {
 	static inline final BLOCK = 4096;
@@ -402,8 +402,8 @@ private class Samples {
 	}
 }
 
-/** miniaudio's channel converter with no channel maps given (its default, Microsoft's, for both) and its default (rectangular) mix: one
-	channel spread to all, all averaged into one, or a weight for each pair. */
+/** miniaudio's channel converter with no channel maps provided (its default, Microsoft's, for both) and its default (rectangular) mix:
+	one channel spread to all, all averaged into one, or a weight for each pair. */
 private class Channels {
 	// Planes: left, right, front, back, bottom, top; by channel position (MA_CHANNEL_*), floats as miniaudio's table holds them.
 	static final PLANES:Array<Float> = [
@@ -561,7 +561,7 @@ private class Channels {
 private class Resampler {
 	public final channels:Int;
 
-	/** The input frames the last `process` took, and the output frames it gave. */
+	/** The input frames the last `process` consumed, and the output frames it produced. */
 	public var consumed = 0;
 
 	public var produced = 0;

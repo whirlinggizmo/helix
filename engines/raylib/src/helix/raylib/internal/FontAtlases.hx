@@ -42,7 +42,7 @@ class FontAtlases {
 		}
 		var image = new Image(memory.pixels, memory.width, memory.height, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
 		if (texture.format == PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA || texture.format == PIXELFORMAT_UNCOMPRESSED_GRAYSCALE) {
-			// Gray textures are white with their gray in red: taken back as they were sent.
+			// Gray textures are white with their gray in red: read back as they were sent.
 			var alpha = texture.format == PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA,
 				count = image.width * image.height;
 			var out = haxe.io.Bytes.alloc(count * (alpha ? 2 : 1));

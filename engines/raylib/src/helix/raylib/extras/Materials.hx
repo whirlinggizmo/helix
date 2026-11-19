@@ -7,7 +7,7 @@ package helix.raylib.extras;
 import helix.raylib.modules.RMaterials;
 #end
 
-/** Provides what a material gives off, where it is cut out, and whether light and shadows fall on it, read by every draw with it:
+/** Provides what a material emits, where it is cut out, and whether light and shadows fall on it, read by every draw with it:
 	`DrawModel`'s, `DrawMesh`'s and `DrawMeshInstanced`'s, through helix-raylib's default shader and the Lighting extra's lit shaders.
 	Imported apart: `import helix.raylib.extras.Materials.*;`.
 

@@ -140,8 +140,8 @@ class Program {
 		return s == null ? -1 : s.slot;
 	}
 
-	/** Returns a uniform's or texture's location, as GL gives it: -1 for a name the shader doesn't declare, or declares and doesn't read.
-		A path into an array (`lights[1].color`) has a location of its own.
+	/** Returns a uniform's or texture's location, as GL returns it: -1 for a name the shader doesn't declare, or declares and doesn't
+		read. A path into an array (`lights[1].color`) has a location of its own.
 
 		@param name  Its name.
 		@return  The location, or -1. */
@@ -184,7 +184,7 @@ class Program {
 	}
 
 	/** Writes numbers to a uniform, from its element, as many whole elements as they hold (a matrix by columns), integers and bools
-		as their numbers taken whole, as GL's `glUniform` takes them.
+		as whole numbers, as GL's `glUniform` accepts them.
 
 		@param location  Its location.
 		@param numbers  The numbers, in GLSL's order. */
@@ -328,11 +328,11 @@ class Program {
 
 	/** Returns the pipeline made for a way, or -1 when none is made yet, without making one.
 
-		@param key  The way, as `pipeline` takes it. */
+		@param key  The way, as `pipeline` accepts it. */
 	public function cached(key:String):Int
 		return pipelines.exists(key) ? pipelines.get(key) : -1;
 
-	/** How many hold it (docs/DECISIONS.md 25): the program from `LoadShader` until `UnloadShader`, and each material given it. It is
+	/** How many hold it (docs/DECISIONS.md 25): the program from `LoadShader` until `UnloadShader`, and each material using it. It is
 		freed when the last lets go; the default program is never counted. */
 	public var refs = 1;
 

@@ -14,7 +14,7 @@ class Wave {
 	/** Gets or sets the frames a second. */
 	public var sampleRate:Int;
 
-	/** Gets or sets the bits a sample takes: 8, 16 or 32. */
+	/** Gets or sets the bits in a sample: 8, 16 or 32. */
 	public var sampleSize:Int;
 
 	/** Gets or sets the number of channels: 1 is mono, 2 stereo. */
@@ -27,7 +27,7 @@ class Wave {
 
 		@param frameCount  The number of frames.
 		@param sampleRate  The frames a second.
-		@param sampleSize  The bits a sample takes.
+		@param sampleSize  The bits in a sample.
 		@param channels  The number of channels.
 		@param data  Optional. The samples. */
 	public function new(frameCount:Int = 0, sampleRate:Int = 0, sampleSize:Int = 0, channels:Int = 0, ?data:haxe.io.Bytes) {

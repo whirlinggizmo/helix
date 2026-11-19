@@ -184,14 +184,15 @@ class Runtime {
 		main();
 	}
 
-	/** The asset host the build gives (`-D helix-raylib-asset-host`), null without one. Set as the program starts. */
+	/** The asset host the build sets (`-D helix-raylib-asset-host`), null without one. Set as the program starts. */
 	public static var builtHost:Null<String> = null;
 
 	/** The asset host the program sets (`SetAssetHost`), null until it does. */
 	public static var programHost:Null<String> = null;
 
-	/** Returns the asset host in use, the first given of: the option `asset_host`, the program's (`SetAssetHost`), the build's
-		(`-D helix-raylib-asset-host`), and the default, natively `../web` beside the program's directory, in a page the page's own.
+	/** Returns the asset host in use, the first of these that is set: the option `asset_host`, the program's (`SetAssetHost`), the
+		build's (`-D helix-raylib-asset-host`), and the default, natively `../web` beside the program's directory, in a page the
+		page's own.
 
 		@return  The host: a URL, or a directory relative to the program's. */
 	public static function assetHost():String {
@@ -419,7 +420,7 @@ class Runtime {
 		#end
 	}
 
-	/** Calls a function at the next poll: an answer that is ready now, given later, as every answer is.
+	/** Calls a function at the next poll: an answer that is ready now, delivered later, as every answer is.
 
 		@param f  The function. */
 	public static function later(f:Void->Void):Void {
@@ -428,7 +429,7 @@ class Runtime {
 
 	static var waiting:Array<Void->Void> = [];
 
-	/** Returns a file's bytes, as the program's load callback gives them or an async load brought them in.
+	/** Returns a file's bytes, as the program's load callback returns them or an async load brought them in.
 
 		@param path  The file.
 		@return  Its bytes, or null when it isn't in memory. */
@@ -525,7 +526,7 @@ class Runtime {
 		@param height  The window's height, natively.
 		@param title  The window's title. */
 	public static function open(width:Int, height:Int, title:String):Void {
-		// SetConfigFlags' hints, as raylib takes them: 4 samples for FLAG_MSAA_4X_HINT, and vsync only for FLAG_VSYNC_HINT natively.
+		// SetConfigFlags' hints, as raylib reads them: 4 samples for FLAG_MSAA_4X_HINT, and vsync only for FLAG_VSYNC_HINT natively.
 		var flags = helix.raylib.modules.RCore.configFlags;
 		var samples = flags & helix.raylib.Raylib.FLAG_MSAA_4X_HINT != 0 ? 4 : 1;
 		#if js
@@ -564,7 +565,7 @@ class Runtime {
 		screen = new helix.services.screen.Screen(window, events);
 		devices.push(screen);
 		time = new Time(system);
-		// raylib's frame time isn't capped: a frame that took a second says so.
+		// raylib's frame time isn't capped: a frame that lasted a second says so.
 		time.maxDelta = Math.POSITIVE_INFINITY;
 		pollEvents();
 		time.poll();
@@ -599,7 +600,7 @@ class Runtime {
 		keyboard().textInput = true;
 	}
 
-	/** Gets the mouse, made when first asked for, with the touch, as raylib takes the first finger for the mouse. */
+	/** Gets the mouse, made when first asked for, with the touch, as raylib treats the first finger as the mouse. */
 	public static function mouse():Mouse {
 		if (mouseService == null) {
 			#if js
@@ -854,7 +855,7 @@ class Runtime {
 
 	/** In a page, the wait a load makes: asks, and answers when the asked does, polling the services meanwhile.
 
-		@param ask  Asks, given what to call with the answer.
+		@param ask  Asks, receiving what to call with the answer.
 		@return  A promise of the answer. */
 	@:helix.raylib.waits
 	public static function answered<T>(ask:(T->Void)->Void):js.lib.Promise<T> {
@@ -878,7 +879,7 @@ class Runtime {
 
 	/** In a page, the wait a call without a value makes (a write): asks, and answers when the asked says it is done.
 
-		@param ask  Asks, given what to call once it is done.
+		@param ask  Asks, receiving what to call once it is done.
 		@return  A promise of its end. */
 	@:helix.raylib.waits
 	public static function finished(ask:(Void->Void)->Void):js.lib.Promise<Dynamic> {
@@ -888,7 +889,7 @@ class Runtime {
 
 	/** Natively, the wait a call without a value makes (a write): asks, and returns once the asked says it is done.
 
-		@param ask  Asks, given what to call once it is done. */
+		@param ask  Asks, receiving what to call once it is done. */
 	@:helix.raylib.waits
 	public static function finished(ask:(Void->Void)->Void):Void {
 		answered((answer:Dynamic->Void) -> ask(() -> answer(null)));
@@ -896,7 +897,7 @@ class Runtime {
 
 	/** Natively, the wait a load makes: asks, and returns the answer, polling the services until it comes.
 
-		@param ask  Asks, given what to call with the answer.
+		@param ask  Asks, receiving what to call with the answer.
 		@return  The answer. */
 	@:helix.raylib.waits
 	public static function answered<T>(ask:(T->Void)->Void):T {
@@ -918,7 +919,7 @@ class Runtime {
 	#if helix_raylib_frame_stats
 	/** The frames `-D helix-raylib-frame-stats` records, from the `frame_stats` option (`--frame_stats=120,1200`): recording starts as
 		frame `statsFrom` ends, and stops as frame `statsTo` ends, printing the stats as one line and closing the window; 0 when not
-		given. */
+		provided. */
 	public static var statsFrom = 0;
 
 	public static var statsTo = 0;
@@ -928,7 +929,7 @@ class Runtime {
 	static function measureFrames():Void {
 		if (statsTo <= 0)
 			return;
-		// The frames before take their times, so the first one recorded has its start.
+		// The frames before are timed too, so the first one recorded has its start.
 		if (frames < statsFrom)
 			@:privateAccess helix.raylib.modules.RDebug.hook();
 		else if (frames == statsFrom) {
@@ -1041,7 +1042,7 @@ class Runtime {
 		#end
 	}
 
-	// Polls the platform and the services, then gives the answers that were ready.
+	// Polls the platform and the services, then delivers the answers that were ready.
 	static function pollAnswers():Void {
 		pollAll();
 		if (waiting.length > 0) {
@@ -1057,15 +1058,15 @@ class Runtime {
 			p.poll();
 	}
 
-	/** Begins a frame's drawing (`BeginDrawing`): a look at the events so far for the GPU's context lost or given back, acted on before
+	/** Begins a frame's drawing (`BeginDrawing`): a look at the events so far for the GPU's context lost or restored, acted on before
 		the frame draws (`EarlyEvents`), the rest waiting for `poll`. */
 	public static function beginDrawing():Void {
 		if (early != null)
 			early.peek(graphicsLost, graphicsRestored);
 	}
 
-	/** The GPU's context is gone (`Event.GraphicsLost`): said once. The platform takes every call and draws nothing until it is back, so
-		nothing else changes. */
+	/** The GPU's context is gone (`Event.GraphicsLost`): said once. The platform accepts every call and draws nothing until it is back,
+		so nothing else changes. */
 	public static function graphicsLost():Void {
 		log(3, "DISPLAY: GPU context lost: drawing nothing until it is restored");
 	}
@@ -1085,8 +1086,8 @@ class Runtime {
 	}
 
 	/** Frees what was made, and closes the window where the program owns one. In a page, which a program can't close, the canvas is
-		cleared and stays so, and the page's input is the page's again: the input adapters made are disposed (`closing`), taking their
-		listeners and the styles they set with them. */
+		cleared and stays so, and the page's input is the page's again: the input adapters made are disposed (`closing`), removing
+		their listeners and the styles they set. */
 	public static function close():Void {
 		// The screenshots TakeScreenshot asked for with no frame ended since.
 		for (asked in screenshotsAsked)

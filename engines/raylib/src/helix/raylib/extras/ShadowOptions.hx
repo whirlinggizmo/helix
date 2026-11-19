@@ -36,7 +36,7 @@ class ShadowOptions {
 	/** Gets or sets how soft a shadow's edge is, in texels: 1 by default. Clamped to 0 to 8. 0 is hard. */
 	public var softness:Float = 1;
 
-	/** Gets or sets how much of the light a shadow takes away: 1 by default. Clamped to 0 to 1. */
+	/** Gets or sets how much of the light a shadow removes: 1 by default. Clamped to 0 to 1. */
 	public var strength:Float = 1;
 
 	// Made by a light, as its shadows are first read (Light.shadows).

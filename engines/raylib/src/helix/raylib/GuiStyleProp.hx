@@ -1,7 +1,7 @@
 package helix.raylib;
 
 /** Represents one property of raygui's style, as raygui's `GuiStyleProp` holds it for a style written as code: the control, the property
-	and its value, as `GuiSetStyle` takes them. */
+	and its value, as `GuiSetStyle` accepts them. */
 class GuiStyleProp {
 	/** Gets or sets the control (`DEFAULT`, `BUTTON` and the rest). */
 	public var controlId:Int;
