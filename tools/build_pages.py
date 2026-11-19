@@ -11,14 +11,16 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / 'build/site'
+# The reference's address, as the README links its pages.
+API = 'https://whirlinggizmo.github.io/helix/api/'
 INDEX = '''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>helix</title>
+<title>HeliX</title>
 <meta http-equiv="refresh" content="0; url=api/index.html">
 </head>
-<body><a href="api/index.html">helix API</a></body>
+<body><a href="api/index.html">HeliX API</a></body>
 </html>
 '''
 
@@ -60,53 +62,55 @@ def grouped(nav):
     return nav[:content.start(1)] + '<ul class="nav nav-list">' + ''.join(groups) + '</ul>' + nav[content.end(1):]
 
 
-MODULES = 'helix.raylib.modules'
-
-
-def module_pages(nav):
-    """Raylib's module pages (gen_apidoc's helix.raylib.modules, a page of Raylib's functions for each of raylib's modules) as Raylib's
-    own in the tree: after Raylib, in raylib's order, each named as gen_apidoc's module_label names it, and the modules folder gone."""
+def raylib_folder(nav):
+    """Raylib's place in the tree: an item that opens Raylib's page and holds its sections, its constants and each of raylib's modules
+    (gen_apidoc's RAYLIB_SECTIONS), each linked to its place on the page."""
     import gen_apidoc
-    import gen_raylib
-    folder = re.search(r'<li class="expando ?"><a class="nav-header"[^>]*><i class="fa fa-folder"></i>modules</a><ul class="nav nav-list">', nav)
-    whole = top_items(nav[folder.start():])[0]
-    items = top_items(whole[folder.end() - folder.start():-len('</ul></li>')])
-    by_name = {re.search(r'data_path="' + re.escape(MODULES) + r'\.(\w+)"', item).group(1): item for item in items}
-    pages = []
-    for name, _ in gen_raylib.TARGETS['Raylib.hx'][0]:
-        label = gen_apidoc.module_label(name)
-        item = by_name.pop(name)
-        item = re.sub(r'data_path="[^"]*"', f'data_path="helix.raylib.Raylib.{label[len("Raylib: "):]}"', item, count=1)
-        item = re.sub(r'title="[^"]*">\w+<span class="pack">&nbsp;-&nbsp;[\w.]+</span>', f'title="{label}">{label}', item, count=1)
-        pages.append(item)
-    if by_name:
-        sys.exit('pages: module pages raylib has no module for: ' + ', '.join(sorted(by_name)))
-    nav = nav.replace(whole, '', 1)
     raylib = re.search(r'<li data_path="helix\.raylib\.Raylib">.*?</li>', nav)
-    return nav[:raylib.end()] + ''.join(pages) + nav[raylib.end():]
+    href = '::rootPath::helix/raylib/Raylib.html'
+    # nav.js holds the tree in a string quoted with ', so the titles have none.
+    sections = [('constants', 'Raylib: constants and colors')] + [(module, f'Raylib: {module} functions') for module, _ in gen_apidoc.RAYLIB_SECTIONS]
+    items = ''.join(f'<li data_path="helix.raylib.Raylib.{name}"><a class="treeLink" href="{href}#{name}" title="{title}">{name}</a></li>'
+                    for name, title in sections)
+    folder = (f'<li class="expando raylib-sections" data-page="helix/raylib/Raylib.html"><a class="nav-header" href="#" onclick="return toggleCollapsed(this)">'
+              f'<i class="fa fa-folder"></i>Raylib</a><ul class="nav nav-list">{items}</ul></li>')
+    return nav[:raylib.start()] + folder + nav[raylib.end():], raylib.group(0)
 
 
-def module_page(page, name):
-    """A raylib module page headed as Raylib's: its title and heading gen_apidoc's module_label, under the class Raylib, not a
-    package."""
+def raylib_sections(page):
+    """Raylib's page with its sections: a contents list after its description, its constants' anchor, and each of raylib's modules
+    headed before its first function, with raylib.h's group headings before the first function under each."""
     import gen_apidoc
-    label = gen_apidoc.module_label(name)
-    page = page.replace(f'<title>{MODULES}.{name} - ', f'<title>{label} - ', 1)
-    return re.sub(r'<h1><small>class</small> ' + name + r'</h1><h4><small>package <a href="([^"]*?)modules/index\.html">[\w.]+</a></small></h4>',
-                  lambda m: f'<h1>{label}</h1><h4><small>functions of <a href="{m.group(1)}Raylib.html">helix.raylib.Raylib</a></small></h4>', page, count=1)
+    contents = ['<div class="raylib-contents"><p><a href="#constants">Constants and colors</a></p>']
+    for module, headings in gen_apidoc.RAYLIB_SECTIONS:
+        page = heading_before(page, headings[0][0], f'<h2 class="raylib-module"><a name="{module}"></a>{module}</h2>')
+        for name, heading in headings:
+            page = heading_before(page, name, f'<h4 class="raylib-group">{heading}</h4>')
+        groups = ' · '.join(f'<a href="#{name}">{heading}</a>' for name, heading in headings)
+        contents.append(f'<p><a href="#{module}"><b>{module}</b></a>: {groups}</p>')
+    contents.append('</div>')
+    variables = '<h3 class="section">Static variables</h3>'
+    if variables not in page:
+        sys.exit('pages: Raylib\'s page has no constants')
+    return page.replace(variables, ''.join(contents) + '<a name="constants"></a>' + variables, 1)
 
 
-def members(api):
+def heading_before(page, name, heading):
+    """page with heading before the entry name."""
+    anchor = f'<div class="field "><a name="{name}"></a>'
+    if anchor not in page:
+        sys.exit(f'pages: no entry {name} for the heading {heading}')
+    return page.replace(anchor, heading + anchor, 1)
+
+
+def members(api, items):
     """Every documented member of the reference's types, as items of the tree the search reads and the tree hides: each named as its
-    type and itself (Raylib.ToggleFullscreen, Sphere.contains), linked to its entry. A raylib module page's members are Raylib's."""
-    items = []
+    type and itself (Raylib.ToggleFullscreen, Sphere.contains), linked to its entry, after the items given."""
     for page in sorted(api.rglob('*.html')):
         relative = page.relative_to(api).as_posix()
         if page.name == 'index.html' or not relative.startswith('helix/'):
             continue
         path = relative[:-len('.html')].replace('/', '.')
-        if path.startswith(MODULES + '.'):
-            path = 'helix.raylib.Raylib'
         owner, package = path.rsplit('.', 1)[1], path.rsplit('.', 1)[0]
         seen = set()
         for name in re.findall(r'<div class="field[^"]*"><a name="(\w+)"></a>', page.read_text(encoding='utf-8')):
@@ -118,13 +122,55 @@ def members(api):
     return '<li class="expando member-index"><ul class="nav nav-list">' + ''.join(items) + '</ul></li>'
 
 
+def descriptions():
+    """Each library's description, as the README's table gives it, by the library's name (helix-raylib)."""
+    return dict(re.findall(r'^\| \[(helix-[\w-]+)\]\([^)]*\) \| ([^|]*?) \|', (ROOT / 'README.md').read_text(encoding='utf-8'), re.M))
+
+
+def library_page(page, name, package):
+    """A library's package page headed with the library's name, its package and its description, as the README's table gives it."""
+    import html
+    heading = f'<h1>{package} </h1>'
+    if heading not in page:
+        sys.exit(f'pages: {package}\'s page has no heading')
+    return page.replace(heading, f'<h1>{name}</h1><h4><small>package {package}</small></h4><p>{html.escape(descriptions().get(name, "").rstrip("."))}.</p>', 1)
+
+
+def package_page(page, package, description):
+    """A package's page headed with its last name, its package and its description, as its library's README describes it."""
+    import html
+    heading = f'<h1>{package} </h1>'
+    if heading not in page:
+        sys.exit(f'pages: {package}\'s page has no heading')
+    # A sentence's first letter capitalized, but a library's name (helix-tweens), and code in backticks as code.
+    about = description.rstrip('.') if description.startswith('helix') else description[0].upper() + description[1:].rstrip('.')
+    about = re.sub(r'`([^`]*)`', r'<code>\1</code>', html.escape(about))
+    return page.replace(heading, f'<h1>{package.rsplit(".", 1)[1]}</h1><h4><small>package {package}</small></h4><p>{about}.</p>', 1)
+
+
+def introduction():
+    """The README's paragraphs before its first section, as HTML: links (the API's own relative to the reference), bold, code and
+    quotes."""
+    import html
+    text = re.search(r'^# helix\n(.*?)^## ', (ROOT / 'README.md').read_text(encoding='utf-8'), re.M | re.S).group(1)
+    out = []
+    for paragraph in (p.strip() for p in text.split('\n\n') if p.strip()):
+        quoted = paragraph.startswith('> ')
+        line = html.escape(' '.join(l.removeprefix('> ').strip() for l in paragraph.split('\n')), quote=False)
+        line = re.sub(r'\[([^]]*)\]\(([^)]*)\)', lambda m: f'<a href="{m.group(2).removeprefix(API)}">{m.group(1)}</a>', line)
+        line = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', line)
+        line = re.sub(r'`([^`]*)`', r'<code>\1</code>', line)
+        out.append(f'<blockquote><p>{line}</p></blockquote>' if quoted else f'<p>{line}</p>')
+    return out
+
+
 def overview(page):
     """The reference's first page as the README lays the libraries out: Libraries, then Engines, each library bottom to top
     (tools/check_layers.py), named, linked to its package's page and described as the README's table describes it."""
     import check_layers
     import html
-    described = dict(re.findall(r'^\| \[(helix-[\w-]+)\]\([^)]*\) \| ([^|]*?) \|', (ROOT / 'README.md').read_text(encoding='utf-8'), re.M))
-    body = ['<h1>helix</h1>']
+    described = descriptions()
+    body = ['<h1>HeliX</h1>'] + introduction()
     for title, directory in (('Libraries', 'libs/'), ('Engines', 'engines/')):
         body += [f'<h2>{title}</h2>', '<table class="table table-condensed"><tbody>']
         for name, source, roots, _ in check_layers.LAYERS:
@@ -134,7 +180,8 @@ def overview(page):
                             f'<td>{html.escape(described.get(name, ""))}</td></tr>')
         body.append('</tbody></table>')
     content = re.search(r'<h1>helix </h1>.*?</table>', page, re.S)
-    return page[:content.start()] + ''.join(body) + page[content.end():]
+    page = page[:content.start()] + ''.join(body) + page[content.end():]
+    return page.replace('<title>helix - HeliX API</title>', '<title>HeliX API</title>', 1)
 
 
 def main():
@@ -149,15 +196,24 @@ def main():
     shutil.copytree(gen_apidoc.OUT, SITE / 'api', ignore=shutil.ignore_patterns('xml', 'unused*'))
     first = SITE / 'api/index.html'
     first.write_text(overview(first.read_text(encoding='utf-8')), encoding='utf-8')
+    import check_layers
+    for name, _, roots, _ in check_layers.LAYERS:
+        page = SITE / 'api' / roots[0].replace('.', '/') / 'index.html'
+        page.write_text(library_page(page.read_text(encoding='utf-8'), name, roots[0]), encoding='utf-8')
+    # A library's other packages, as its README's table of them describes each (helix.raylib.extras).
+    for _, source, roots, _ in check_layers.LAYERS:
+        readme = (ROOT / source).parent / 'README.md'
+        for package, description in re.findall(r'^\| `(helix(?:\.\w+)+)` \| ([^|]*?) \|$', readme.read_text(encoding='utf-8'), re.M):
+            page = SITE / 'api' / package.replace('.', '/') / 'index.html'
+            if package not in roots and page.exists():
+                page.write_text(package_page(page.read_text(encoding='utf-8'), package, description), encoding='utf-8')
     nav = SITE / 'api/nav.js'
-    tree = module_pages(grouped(nav.read_text(encoding='utf-8')))
+    # Raylib's own item is the search's, as its place in the tree is its sections.
+    tree, raylib = raylib_folder(grouped(nav.read_text(encoding='utf-8')))
     content = re.search(r"var navContent='(.*)';", tree, re.S)
-    nav.write_text(tree[:content.end(1) - len('</ul>')] + members(SITE / 'api') + tree[content.end(1) - len('</ul>'):], encoding='utf-8')
-    for page in (SITE / 'api' / MODULES.replace('.', '/')).glob('*.html'):
-        if page.name == 'index.html':
-            page.unlink()
-        else:
-            page.write_text(module_page(page.read_text(encoding='utf-8'), page.stem), encoding='utf-8')
+    nav.write_text(tree[:content.end(1) - len('</ul>')] + members(SITE / 'api', [raylib]) + tree[content.end(1) - len('</ul>'):], encoding='utf-8')
+    page = SITE / 'api/helix/raylib/Raylib.html'
+    page.write_text(raylib_sections(page.read_text(encoding='utf-8')), encoding='utf-8')
     # Each page loads explorer.js after dox's index.js, from the same root.
     shutil.copy(ROOT / 'tools/site/explorer.js', SITE / 'api')
     for page in (SITE / 'api').rglob('*.html'):

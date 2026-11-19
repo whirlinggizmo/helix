@@ -8,7 +8,7 @@ import helix.raylib.internal.Runtime;
 
 using StringTools;
 
-/** Provides where the program's files come from, and ensures them ahead of raylib's loads: helix-raylib's own.
+/** Provides the path to the asset host, and ensures assets are available for raylib's `Load*` functions.
 
 	`helix.raylib.extras.Assets` forwards to each member (`tools/gen_raylib.py`). */
 @:noCompletion
@@ -17,16 +17,16 @@ class RAssets {
 	#if !macro
 	// ---- Asset host ----
 
-	/** Sets where the program's files come from, unless the option `asset_host` gives a host. Files ensured before the call stay
+	/** Sets where the program's assets come from, unless the option `asset_host` gives a host. Assets ensured before the call stay
 		ensured.
 
 		The host is the first given of: the option `asset_host` (`--asset_host=https://example.com/game/` on the command line,
 		the environment variable HELIX_ASSET_HOST, `?asset_host=...` in a page's query), this call, the build's define
 		(`-D helix-raylib-asset-host=...`), and the default: natively `../web` beside the program's directory, in a page the page's own.
 
-		A URL's files are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.
+		A URL's assets are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.
 
-		Every file is read from the host, as a web server reads one from its own root: a name starting with `/` from the host's root,
+		Every asset is read from the host, as a web server reads a file from its own root: a name starting with `/` from the host's root,
 		`.` and `..` followed, and nothing above the host. A name whose `..` climbs above it fails as a missing file does.
 
 		@param host  A URL (`https://...`, `http://...`), or a directory, relative to the program's directory when relative. */
@@ -43,21 +43,28 @@ class RAssets {
 
 	// ---- Ensuring ----
 
-	/** Asynchronously ensures a file: makes it local, fetching it from the asset host and keeping it in the program's cache when it isn't
-		there, and decodes it into memory by its kind, so raylib's load of it answers at once on every target. An image is decoded to its
-		pixels, a sound file to its wave, a glTF, GLB or OBJ file to its model (its images decoded) and a glTF file's animations
-		read, an .mtl file to its materials, a TrueType or OpenType font opened to be rasterized at any size, a BMFont read with its
-		pages, a compiled shader (a .shader file, as `CompileShaderFile` writes it) read. Any other file is kept as its bytes.
+	/** Asynchronously ensures an asset is available for raylib's `Load*` functions. Ensuring an asset fetches its bytes (if absent) from
+		the asset host into the program's cache, then decodes the asset into memory. See `EnsureAssetsAsync` for ensuring several assets
+		in parallel.
 
-		A file already ensured is ensured at once, though `ensured` is still called after the call returns. Several calls made in a row
-		fetch and decode their files together, never one after another. See `EnsureAssetsAsync` for several files at once.
+		Each kind of asset is decoded to:
 
-		Without an ensure, natively a load reads and decodes its file during the call. In a page a load of a file not ensured in this
-		run fails as raylib's load of a missing file does, logging why: the browser reads its cache and decodes only asynchronously.
+		- an image: its pixels.
+		- a sound: its wave.
+		- a glTF, GLB or OBJ model: the model, with its images decoded and a glTF model's animations read.
+		- an .mtl material library: its materials.
+		- a TrueType or OpenType font: a font ready to be rasterized at any size.
+		- a BMFont: the font with its pages.
+		- a compiled shader (a .shader file from `CompileShaderFile`): the shader.
+		- any other asset: its bytes, unchanged.
 
-		@param fileName  The file's name, relative to the asset host.
-		@param ensured  Called once the file is ensured.
-		@param failed  Optional. Called with why the file can't be ensured, in place of `ensured`; when omitted, it is logged. */
+		Ensuring an asset already ensured doesn't refetch it, and the `ensured` callback is still called. Sequential `EnsureAssetAsync`
+		calls fetch and decode their assets in parallel.
+
+		@param fileName  The asset's file name, relative to the asset host.
+		@param ensured  Called once the asset is ensured.
+		@param failed  Optional. Called with the reason the asset can't be ensured, in place of `ensured`. When omitted, the reason is
+			logged. */
 	static function EnsureAssetAsync(fileName:String, ensured:Void->Void, ?failed:String->Void):Void {
 		var path = RCore.normalize(fileName);
 		if (Runtime.ensured.exists(path)) {
@@ -74,14 +81,13 @@ class RAssets {
 		});
 	}
 
-	/** Asynchronously ensures several files together, as `EnsureAssetAsync` does each, fetching and decoding them all at once: for the
-		files a program loads as it starts, or a loading screen.
+	/** Asynchronously ensures several assets in parallel, each as `EnsureAssetAsync` does.
 
-		@param fileNames  The files' names, relative to the asset host.
-		@param ensured  Called once every file is ensured.
-		@param failed  Optional. Called with why a file can't be ensured, once, in place of `ensured`; when omitted, it is logged. The other
-			files ensured stay ensured.
-		@param progress  Optional. Called as each file is ensured, with how many are and how many there are. */
+		@param fileNames  The assets' file names, relative to the asset host.
+		@param ensured  Called once every asset is ensured.
+		@param failed  Optional. Called once, with the reason an asset can't be ensured, in place of `ensured`. When omitted, the reason
+			is logged. The assets already ensured stay ensured.
+		@param progress  Optional. Called as each asset is ensured, with the number ensured and the total. */
 	static function EnsureAssetsAsync(fileNames:Array<String>, ensured:Void->Void, ?failed:String->Void, ?progress:(done:Int, total:Int) -> Void):Void {
 		var paths:Array<String> = [];
 		for (name in fileNames) {
@@ -111,24 +117,23 @@ class RAssets {
 			});
 	}
 
-	/** Returns whether a file has been ensured in this run (`EnsureAssetAsync`), so a load of it answers at once on every target.
+	/** Returns whether an asset has been ensured in this run (`EnsureAssetAsync`).
 
-		@param fileName  The file's name, relative to the asset host.
-		@return  True when it has. */
+		@param fileName  The asset's file name, relative to the asset host.
+		@return  True when the asset has been ensured. */
 	static function IsAssetEnsured(fileName:String):Bool {
 		return Runtime.ensured.exists(RCore.normalize(fileName));
 	}
 
 	// ---- Releasing ----
 
-	/** Lets go of what ensuring a file kept in memory: its bytes and what was decoded from it. A load of it then behaves as one of a file
-		never ensured. What a load already made from it (a texture, a sound) is the program's, let go of by raylib's unloads, and stays.
-		The program's cache keeps its copy of a fetched file, so ensuring it again needs no fetch.
+	/** Releases an ensured asset's bytes and decoded data from memory. A load of the asset then behaves as a load of an asset never
+		ensured. What a load already made from the asset (a texture, a sound) stays, released by raylib's `Unload*` functions. The
+		program's cache keeps the asset's fetched bytes, and ensuring the asset again doesn't refetch it.
 
-		Each load of an ensured file makes its own texture, sound, model or materials from what was decoded, which stays until it is
-		released: a program releases a level's files when the player leaves for the menu.
+		A program releases a level's assets when the player leaves the level.
 
-		@param fileName  The file's name, relative to the asset host. */
+		@param fileName  The asset's file name, relative to the asset host. */
 	static function ReleaseAsset(fileName:String):Void {
 		var path = RCore.normalize(fileName);
 		Runtime.ensured.remove(path);
@@ -152,9 +157,9 @@ class RAssets {
 		Runtime.forgetPicture(path);
 	}
 
-	/** Lets go of several files' ensured data, as `ReleaseAsset` does each.
+	/** Releases several assets, each as `ReleaseAsset` does.
 
-		@param fileNames  The files' names, relative to the asset host. */
+		@param fileNames  The assets' file names, relative to the asset host. */
 	static function ReleaseAssets(fileNames:Array<String>):Void {
 		for (name in fileNames)
 			ReleaseAsset(name);

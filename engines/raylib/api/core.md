@@ -740,7 +740,10 @@ static macro function EndDrawing():Void
 
   Records:
 
-  - every key, mouse button and finger held. - the mouse's moves, the wheel's and the fingers'. - the gamepads' buttons held and axes off rest. - the gesture.
+  - every key, mouse button and finger held.
+  - the mouse's moves, the wheel's and the fingers'.
+  - the gamepads' buttons held and axes off rest.
+  - the gesture.
 
   A full list (16384 events) records no more.
 - `StopAutomationEventRecording`: Stops recording.
@@ -790,7 +793,9 @@ static macro function EndDrawing():Void
 
   `CAMERA_FREE`, `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON`:
 
-  - turn by the mouse, the right stick and the arrow keys, the look stopping short of straight up and down. - roll by Q and E. - move by WASD and the left stick, 5.4 units a second.
+  - turn by the mouse, the right stick and the arrow keys, the look stopping short of straight up and down.
+  - roll by Q and E.
+  - move by WASD and the left stick, 5.4 units a second.
 
   `CAMERA_FIRST_PERSON` and `CAMERA_THIRD_PERSON` move along the ground, and `CAMERA_THIRD_PERSON` turns about its target.
 
@@ -855,7 +860,9 @@ static macro function EndDrawing():Void
 
   The config holds:
 
-  - each eye's projection, from the field of view the lenses' distortion widens, shifted by the lenses' offset from the eyes' halves of the screen, between the clip planes (`rlSetClipPlanes`). - each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward. - the lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
+  - each eye's projection, from the field of view the lenses' distortion widens, shifted by the lenses' offset from the eyes' halves of the screen, between the clip planes (`rlSetClipPlanes`).
+  - each eye's view offset, half the interpupillary distance to its side, 0.075 up and 0.045 forward.
+  - the lens and screen centers and scales a distortion shader reads (raylib's `distortion330.fs`).
 - `UnloadVrStereoConfig`: Frees a stereo config.
   - `config`: The config.
 
@@ -912,7 +919,9 @@ static macro function EndDrawing():Void
 
   The modes:
 
-  - `BLEND_ALPHA`, alpha blended by the same factors as the color. - `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`. - `BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE`, with the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set.
+  - `BLEND_ALPHA`, alpha blended by the same factors as the color.
+  - `BLEND_ADDITIVE`, `BLEND_MULTIPLIED`, `BLEND_ADD_COLORS`, `BLEND_SUBTRACT_COLORS` and `BLEND_ALPHA_PREMULTIPLY`.
+  - `BLEND_CUSTOM` and `BLEND_CUSTOM_SEPARATE`, with the factors `rlSetBlendFactors` and `rlSetBlendFactorsSeparate` last set.
 
   Changing the mode draws the batch first, as does setting a custom mode again after its factors changed. Setting the mode already set changes nothing.
 

@@ -303,7 +303,8 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   Binds the material's maps as raylib does:
 
-  - The first three at `texture0` to `texture2`. - Each other map with a texture at the sampler `shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to the map's index with `SetShaderValue`. raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
+  - The first three at `texture0` to `texture2`.
+  - Each other map with a texture at the sampler `shader.locs[SHADER_LOC_MAP_DIFFUSE + index]` names, or at a sampler set to the map's index with `SetShaderValue`. raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
 
   Binds a cubemap (`LoadTextureCubemap`) to a `samplerCube` for `MATERIAL_MAP_CUBEMAP`, `MATERIAL_MAP_IRRADIANCE` and `MATERIAL_MAP_PREFILTER`, and a 2D texture to a `sampler2D` for the rest. A texture of the other kind binds nothing.
 - `DrawMeshInstanced`: Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
@@ -329,7 +330,11 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   An attribute the mesh has no array for reads a default in a shader:
 
-  - Texture coordinates 0, 0. - Normals 0, 0, 1. - Colors white. - Tangents 1, 0, 0, 1. - Second texture coordinates, bone ids and bone weights 0.
+  - Texture coordinates 0, 0.
+  - Normals 0, 0, 1.
+  - Colors white.
+  - Tangents 1, 0, 0, 1.
+  - Second texture coordinates, bone ids and bone weights 0.
 - `UpdateMeshBuffer`: Changes part of one of a mesh's buffers on the GPU, leaving the mesh's own arrays unchanged, as raylib's does.
   - `mesh`: The mesh, uploaded by `UploadMesh` or drawn once. One that isn't changes nothing.
   - `index`: The buffer: 0 positions, 1 texture coordinates, 2 normals, 3 colors, 4 tangents, 5 second texture coordinates, 6 indices. One the mesh has no array for changes nothing.
@@ -422,7 +427,10 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   Splits the texture in four:
 
-  - Walls' right and front faces from its top left. - Walls' left and back faces from its top right. - Tops from its bottom left. - Bottoms from its bottom right.
+  - Walls' right and front faces from its top left.
+  - Walls' left and back faces from its top right.
+  - Tops from its bottom left.
+  - Bottoms from its bottom right.
 
   Makes three vertices a triangle, with no indices.
 - `GenMeshTangents`: Computes a mesh's tangents from its positions, texture coordinates and normals.
@@ -462,13 +470,17 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   Moves a mesh by its material's shader:
 
-  - Under raylib's default shader, on the GPU by a skinned version of that shader. - Under a shader of the program's own that declares the bone inputs as raylib's `skinning.vs` does (`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or includes `<helix/raylib/shaders/skinning.glsl>`, on the GPU by that shader. - Under a shader of the program's own without them, on the CPU, every vertex each call.
+  - Under raylib's default shader, on the GPU by a skinned version of that shader.
+  - Under a shader of the program's own that declares the bone inputs as raylib's `skinning.vs` does (`vertexBoneIds`, `vertexBoneWeights` and `uniform mat4 boneMatrices[N]`), or includes `<helix/raylib/shaders/skinning.glsl>`, on the GPU by that shader.
+  - Under a shader of the program's own without them, on the CPU, every vertex each call.
 
   Moving on the CPU is slow for many vertices or many models. A lighting shader of the program's own draws an animated model fastest when it declares `skinning.vs`'s inputs or includes `skinning.glsl`.
 
   `skinning.glsl` declares:
 
-  - The bone inputs and the frame's bone palette. - `mat4 helixSkin()`, the vertex's skin matrix, as in `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`. - `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves one.
+  - The bone inputs and the frame's bone palette.
+  - `mat4 helixSkin()`, the vertex's skin matrix, as in `gl_Position = mvp*helixSkin()*vec4(vertexPosition, 1.0);`.
+  - `vec3 helixSkinNormal(vec3 normal)`, a normal moved as raylib moves one.
 
   `animVertices` and `animNormals` hold the moved positions and normals, worked out on the CPU when first read. Each normal is moved by its bones' matrices inverted and transposed, not normalized.
 
@@ -487,7 +499,10 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   The material has:
 
-  - The default shader. - A diffuse map of raylib's default texture, a 1x1 white pixel. - White diffuse and specular colors. - Empty other maps.
+  - The default shader.
+  - A diffuse map of raylib's default texture, a 1x1 white pixel.
+  - White diffuse and specular colors.
+  - Empty other maps.
 
   A model the material is put in holds it too.
 - `IsMaterialValid`: Returns whether a material has maps and a shader, so it can draw.
@@ -625,7 +640,11 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
 
   Each starts as raylib's default material, and reads these fields as raylib's `ProcessMaterialsOBJ` does:
 
-  - `map_Kd`, the diffuse texture, or with none MTL's `Kd`, the diffuse color (alpha 255). - `map_Ks` and MTL's `Ks`, the specular texture and color. - `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is MTL's `Ns`, the specular exponent. - MTL's `Ke`, the emission color. - `disp`, the height map's texture.
+  - `map_Kd`, the diffuse texture, or with none MTL's `Kd`, the diffuse color (alpha 255).
+  - `map_Ks` and MTL's `Ks`, the specular texture and color.
+  - `bump` or `map_bump`, the normal map's texture. The normal map's color is white and its value is MTL's `Ns`, the specular exponent.
+  - MTL's `Ke`, the emission color.
+  - `disp`, the height map's texture.
 
   A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular exponent is 1.
 

@@ -9,7 +9,7 @@ import haxe.macro.Expr;
 import helix.raylib.modules.RMath;
 #end
 
-/** Provides raymath's API, as raylib 5.5's `raymath.h` names it. As in raylib, it is imported apart from `Raylib`:
+/** Provides raymath's API from `raymath.h`. Imported alongside `Raylib`:
 
 	```haxe
 	import helix.raylib.Raylib.*;

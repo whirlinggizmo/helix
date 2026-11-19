@@ -205,8 +205,8 @@ def type_text(node,known):
 TAG=re.compile(r'^\s*@(param|return|returns|throws|exception|see|since|deprecated)\s+(.*)$')
 
 def doc_parts(node):
-    """A doc comment as (summary, remarks, tags): the first paragraph, the paragraphs after it (fenced code kept as written, prose
-    joined), and the Javadoc-style tags at the end, each (name, value, text); value is the parameter's name for param and throws."""
+    """A doc comment as (summary, remarks, tags): the first paragraph, the paragraphs after it (fenced code kept as written, a list
+    an item a line, prose joined), and the Javadoc-style tags at the end, each (name, value, text); value is the parameter's name for param and throws."""
     d=node.find('haxe_doc')
     if d is None or not (d.text or '').strip():return '','',[]
     lines=[l.strip() for l in d.text.strip().split('\n')]
@@ -233,8 +233,16 @@ def doc_parts(node):
         else:
             if not paragraphs:paragraphs.append([])
             paragraphs[-1].append(line)
-    paragraphs=['\n'.join(p) if p and p[0].startswith('```') else ' '.join(p) for p in paragraphs if p]
+    paragraphs=['\n'.join(p) if p and p[0].startswith('```') else listed(p) if p and p[0].startswith('- ') else ' '.join(p) for p in paragraphs if p]
     return (paragraphs[0] if paragraphs else ''),'\n\n'.join(paragraphs[1:]),tags
+
+def listed(lines):
+    """A list's lines as its items, each on a line of its own, a line that starts no item joined to the one before."""
+    items=[]
+    for line in lines:
+        if line.startswith('- ') or not items:items.append(line)
+        else:items[-1]+=' '+line
+    return '\n'.join(items)
 
 def doc_text(node):
     """A doc comment's summary, one paragraph."""
@@ -389,38 +397,106 @@ def paged(path,members):
     out=['Its members are on their own pages:','']+links if len(links)>1 else [f'Its members are on their own page: [{name}.md]({name}.md).']
     return out+['']+sectioned([],(named,refused))
 
-def module_label(name):
-    """A raylib module page's name: Raylib and the module's words, as RCore's 'Raylib: core' and RTexturesAsync's 'Raylib: textures
-    async'."""
-    return 'Raylib: '+' '.join(word.lower() for word in re.findall(r'[A-Z][a-z]*',name[1:]))
+# The sections of Raylib's functions in the HTML, one for each of raylib's modules as its cheatsheet has them: each one's name and the
+# sections of gen_raylib's Raylib.hx whose functions it holds (a module's own and the calls helix-raylib writes in place of its calls that wait).
+RAYLIB_MODULES=(('core',('RCore','RWindowAsync','RFilesAsync','RCompiledShaders')),('shapes',('RShapes',)),('textures',('RTextures','RTexturesAsync')),
+    ('text',('RText','RTextAsync')),('models',('RModels','RModelsAsync')),('audio',('RAudio','RAudioAsync')))
+# raylib 5.5's groups of functions, as raylib.h's comments head them: each group's first function, its heading and its module.
+RAYLIB_GROUPS=(('InitWindow','Window-related functions','core'),('ShowCursor','Cursor-related functions','core'),
+    ('ClearBackground','Drawing-related functions','core'),('LoadVrStereoConfig','VR stereo config functions for VR simulator','core'),
+    ('LoadShader','Shader management functions','core'),('GetScreenToWorldRay','Screen-space-related functions','core'),
+    ('SetTargetFPS','Timing-related functions','core'),('SwapScreenBuffer','Custom frame control functions','core'),
+    ('SetRandomSeed','Random values generation functions','core'),('TakeScreenshot','Misc. functions','core'),
+    ('LoadFileData','Files management functions','core'),('FileExists','File system functions','core'),
+    ('IsKeyPressed','Input-related functions: keyboard','core'),('IsGamepadAvailable','Input-related functions: gamepads','core'),
+    ('IsMouseButtonPressed','Input-related functions: mouse','core'),('GetTouchX','Input-related functions: touch','core'),
+    ('SetGesturesEnabled','Gestures and touch handling functions','core'),('UpdateCamera','Camera system functions','core'),
+    ('SetShapesTexture','Basic shapes drawing functions','shapes'),('DrawSplineLinear','Splines drawing functions','shapes'),
+    ('GetSplinePointLinear','Spline segment point evaluation functions','shapes'),
+    ('CheckCollisionRecs','Basic shapes collision detection functions','shapes'),('LoadImage','Image loading functions','textures'),
+    ('GenImageColor','Image generation functions','textures'),('ImageCopy','Image manipulation functions','textures'),
+    ('ImageClearBackground','Image drawing functions','textures'),('LoadTexture','Texture loading functions','textures'),
+    ('GenTextureMipmaps','Texture configuration functions','textures'),('DrawTexture','Texture drawing functions','textures'),
+    ('ColorIsEqual','Color/pixel related functions','textures'),('GetFontDefault','Font loading/unloading functions','text'),
+    ('DrawFPS','Text drawing functions','text'),('SetTextLineSpacing','Text font info functions','text'),
+    ('LoadUTF8','Text codepoints management functions','text'),('TextCopy','Text strings management functions','text'),
+    ('DrawLine3D','Basic geometric 3D shapes drawing functions','models'),('LoadModel','Model management functions','models'),
+    ('DrawModel','Model drawing functions','models'),('UploadMesh','Mesh management functions','models'),
+    ('GenMeshPoly','Mesh generation functions','models'),('LoadMaterials','Material loading/unloading functions','models'),
+    ('LoadModelAnimations','Model animations loading/unloading functions','models'),('CheckCollisionSpheres','Collision detection functions','models'),
+    ('InitAudioDevice','Audio device management functions','audio'),('LoadWave','Wave/Sound loading/unloading functions','audio'),
+    ('PlaySound','Wave/Sound management functions','audio'),('LoadMusicStream','Music management functions','audio'),
+    ('LoadAudioStream','AudioStream management functions','audio'))
+# Where a call of helix-raylib's own goes that isn't raylib's call and Async: after the call named.
+RAYLIB_AFTER={'GetMouseRay':'GetScreenToWorldRay','LoadSavedFileDataAsync':'SaveFileData','LoadSavedFileTextAsync':'SaveFileText',
+    'SavedFileExistsAsync':'FileExists','LoadCompiledShader':'LoadShaderFromMemory','LoadCompiledShaderAsync':'LoadCompiledShader',
+    'LoadCompiledShaderFromMemory':'LoadCompiledShaderAsync'}
+# What for_dox wrote: Raylib's modules in order, each with its groups' headings, each by the first function under it
+# ([(module, [(function, heading)])]).
+RAYLIB_SECTIONS=[]
 
 def for_dox(source,output):
-    """The description dox reads: source's, with Raylib's functions moved to a class for each of raylib's modules (the module classes of
-    helix.raylib.modules, each with the functions it writes), so the HTML has a page for each, as the Markdown does. Raylib keeps its
-    constants and links the modules. As text, as merged() is."""
+    """The description dox reads: source's, with Raylib's functions in raylib's order: by module (RAYLIB_MODULES), then raylib.h's
+    order, the ones helix-raylib refuses among them, and each call written in place of one right after it. RAYLIB_SECTIONS holds the
+    modules and their groups. As text, as merged() is."""
     import gen_raylib
     text=source.read_text(encoding='utf-8')
-    named,refused=LAYOUT['helix.raylib.Raylib']
-    skipped={n for kind in refused.values() for n in kind}
+    named,_=LAYOUT['helix.raylib.Raylib']
     raylib=re.search(r'^\t<class path="helix\.raylib\.Raylib" [^>]*file="([^"]*)">\n(.*?)^\t</class>\n',text,re.M|re.S)
-    folder=Path(raylib.group(1)).parent/'modules'
-    sections=gen_raylib.TARGETS['Raylib.hx'][0]
-    moved={title:[] for _,title in sections}
+    order=[f['name'] for f in json.loads((ROOT/'engines/raylib/vendor/raylib/raylib_api.json').read_text(encoding='utf-8'))['functions']]
+    index={name:i for i,name in enumerate(order)}
+    starts=[(index[first],heading,module) for first,heading,module in RAYLIB_GROUPS]
+    def group(name):
+        return max((s for s in starts if s[0]<=index[name]),default=None)
+    titles={title:name for name,title in gen_raylib.TARGETS['Raylib.hx'][0]}
+    module_of={section:where for where,sections in RAYLIB_MODULES for section in sections}
+    def parent(name):
+        return name[:-len('Async')] if name.endswith('Async') and name[:-len('Async')] in index else RAYLIB_AFTER.get(name)
+    members={module:{} for module,_ in RAYLIB_MODULES}
     kept=raylib.group(2)
+    def module(name):
+        # raylib's call in its group's module, as raylib.h groups it; a call of helix-raylib's own beside the call it's written for.
+        while name not in index and parent(name):
+            name=parent(name)
+        return group(name)[2] if name in index and group(name) else None
     for member in re.finditer(r'^\t\t<(\w+)\b(?:[^>]*?/>|[^>]*>.*?</\1>)\n',raylib.group(2),re.M|re.S):
-        title=named.get(member.group(1))
-        if title in moved and member.group(1) not in skipped:
-            moved[title].append(member.group(0));kept=kept.replace(member.group(0),'',1)
-    links=', '.join(f'[{module_label(name)}](modules/{name}.html)' for name,_ in sections)
-    kept=re.sub(r'</haxe_doc>(\n\t\t<meta>(?:(?!</haxe_doc>).)*)?$',lambda m:f"\n\nIts functions are on a page for each of raylib's modules: {links}.</haxe_doc>"+(m.group(1) or ''),kept,count=1,flags=re.S)
-    blocks=[]
-    for name,title in sections:
-        # The module class's own description gives way to the functions it writes, as Raylib's.
+        name=member.group(1)
+        if module_of.get(titles.get(named.get(name))) is None and name not in index:
+            continue
+        where=module(name)
+        if where is None:
+            sys.exit(f'gen_apidoc: {name} has no place among Raylib\'s modules')
+        members[where][name]=member.group(0);kept=kept.replace(member.group(0),'',1)
+    for name,_ in gen_raylib.TARGETS['Raylib.hx'][0]:
+        # The module class's own description gives way to Raylib's sections.
         text=re.sub(r'^\t<class path="helix\.raylib\.modules\.'+name+r'" .*?^\t</class>\n','',text,count=1,flags=re.M|re.S)
-        blocks.append(f'\t<class path="helix.raylib.modules.{name}" params="" file="{folder/(name+".hx")}">\n'+''.join(moved[title])
-                      +f"\t\t<haxe_doc>raylib's {title}. They are `Raylib`'s functions, called with `import helix.raylib.Raylib.*;`.</haxe_doc>\n\t</class>\n")
-    text=text.replace(raylib.group(0),raylib.group(0).replace(raylib.group(2),kept),1)
-    output.write_text(text[:text.rindex('</haxe>')]+''.join(blocks)+'</haxe>\n',encoding='utf-8')
+    functions=[]
+    RAYLIB_SECTIONS.clear()
+    for where,_ in RAYLIB_MODULES:
+        mine=members[where]
+        after={}
+        for name in mine:
+            if name not in index:
+                after.setdefault(parent(name),[]).append(name)
+        ordered=[]
+        def place(name):
+            ordered.append(name)
+            for child in after.pop(name,[]):
+                place(child)
+        for name in order:
+            if name in mine:
+                place(name)
+        if after:
+            sys.exit(f'gen_apidoc: Raylib\'s {where} has no place for {", ".join(n for kids in after.values() for n in kids)}')
+        headings,last=[],None
+        for name in ordered:
+            here=group(name if name in index else next(n for n in reversed(ordered[:ordered.index(name)]) if n in index))
+            if here and here!=last:
+                headings.append((name,here[1]));last=here
+        RAYLIB_SECTIONS.append((where,headings))
+        functions+=[mine[n] for n in ordered]
+    text=text.replace(raylib.group(0),raylib.group(0).replace(raylib.group(2),''.join(functions)+kept),1)
+    output.write_text(text,encoding='utf-8')
 
 def merged(js,cpp,output):
     """One description from both targets': js's, and cpp's adapters; writes it to output, the description the reference is made from.
@@ -665,7 +741,7 @@ def generate(check=False):
     commit=described.stdout.strip() if described.returncode==0 else 'main'
     for_dox(OUT/'xml/api.xml',OUT/'xml/dox.xml')
     subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/dox.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix/blob/{commit}/',
-        '--title','helix API','--toplevel-package','helix','--keep-field-order','-D','website','https://github.com/whirlinggizmo/helix'],cwd=ROOT,env=env,check=True)
+        '--title','HeliX API','--toplevel-package','helix','--keep-field-order','-D','website','https://github.com/whirlinggizmo/helix'],cwd=ROOT,env=env,check=True)
     print('API reference:',OUT/'index.html','and each library\'s api/')
 
 if __name__=='__main__':main()

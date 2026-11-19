@@ -1574,7 +1574,9 @@ Represents how a light's shadows are made: its shadow map's size and reach, its 
 
 Each `DirectionalLight3D`, `SpotLight3D` and `PointLight3D` has one (`Light3D.shadow`), used while its `castsShadow` is set. A casting light's map is drawn before the pass its batch draws in, from the meshes drawn with `Batch3D.castShadows` on, and read by the meshes drawn with `receiveShadows` on.
 
-- **Directional:** a square map, or up to 4 cascades, over what the camera sees out to `distance` (or over `bounds`), its texels snapped to the world so its edges hold still as the camera moves and turns. - **Spot:** one map over its cone, out to its range or `distance`, the nearer. - **Point:** six maps, one a cube face, out to its range or `distance`.
+- **Directional:** a square map, or up to 4 cascades, over what the camera sees out to `distance` (or over `bounds`), its texels snapped to the world so its edges hold still as the camera moves and turns.
+- **Spot:** one map over its cone, out to its range or `distance`, the nearer.
+- **Point:** six maps, one a cube face, out to its range or `distance`.
 
 Bias is in shadow-map texels, so it holds whatever the map's size and reach: a constant, plus a slope where the light grazes the surface, and the lookup moved off the surface along its normal by `normalOffset` texels, more where the light grazes. A shadow fades out over the last tenth of the map, so it never ends at an edge.
 

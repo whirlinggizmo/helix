@@ -110,7 +110,9 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
 
   The conversion:
 
-  - turns integers to floats and back without dithering. - mixes channels by miniaudio's standard speaker layouts. - changes the rate by miniaudio's linear resampler, low-pass filtered.
+  - turns integers to floats and back without dithering.
+  - mixes channels by miniaudio's standard speaker layouts.
+  - changes the rate by miniaudio's linear resampler, low-pass filtered.
 
   A wave that can't be converted is unchanged, and a warning is logged.
 - `LoadWaveSamples`: Returns a wave's samples as numbers from -1 to 1, as raylib's does.
@@ -119,7 +121,10 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
 
   Each sample size maps as:
 
-  - 8-bit: less 128, over 128. - 16-bit: over 32768. - 32-bit: unchanged. - any other size: 0.
+  - 8-bit: less 128, over 128.
+  - 16-bit: over 32768.
+  - 32-bit: unchanged.
+  - any other size: 0.
 - `UnloadWaveSamples`: Frees samples `LoadWaveSamples` returned.
   - `samples`: The samples.
 
@@ -146,7 +151,9 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
 
   Releases the sound's reference to its samples; they're freed when the last held reference, a load or an alias, is released:
 
-  - a sound loaded from a file: its load's reference to the file's decoded sound. - a sound made from a wave: its own reference to its samples. - an alias: as `UnloadSoundAlias` releases it.
+  - a sound loaded from a file: its load's reference to the file's decoded sound.
+  - a sound made from a wave: its own reference to its samples.
+  - an alias: as `UnloadSoundAlias` releases it.
 
   Its aliases play on.
 - `UnloadSoundAlias`: Frees an alias, stopping it, and releases its reference to its source's samples. They're freed when it held the last.
@@ -383,7 +390,8 @@ static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Vo
 
   The extension chooses the format:
 
-  - ".wav": 8, 16 and 24-bit samples as integers, 32-bit as floats, as raylib's dr_wav writes them. - ".raw": the samples unchanged.
+  - ".wav": 8, 16 and 24-bit samples as integers, 32-bit as floats, as raylib's dr_wav writes them.
+  - ".raw": the samples unchanged.
 
   A ".qoa" file is refused, though raylib writes one.
 
@@ -396,6 +404,7 @@ static function ExportWaveAsCodeAsync(wave:Wave, fileName:String, ?done:() -> Vo
 
   The header holds:
 
-  - the frame count, sample rate, sample size and channel count, as defines. - the samples, as an array of floats with 4 places for 32-bit samples, else of bytes, 20 a line.
+  - the frame count, sample rate, sample size and channel count, as defines.
+  - the samples, as an array of floats with 4 places for 32-bit samples, else of bytes, 20 a line.
 
   The file is written by `SaveFileTextAsync`.

@@ -36,7 +36,13 @@ var params:Array<Int>
 - `new`: Creates an event, its fields zero.
 - `frame`: Gets or sets the frame of the event.
 - `type`: Gets or sets what happened, by raylib's AutomationEventType number.
-  - 1 and 2: a key up and down. - 5 and 6: a mouse button up and down. - 7: the mouse moved. 8: the wheel. - 11 and 12: a gamepad button up and down. 13: a gamepad axis. - 14 and 15: a finger up and down. 16: a finger moved. 17: a gesture. - 18 to 21: the window closed, maximized, minimized and resized. - 22: a screenshot. 23: the target frames a second.
+  - 1 and 2: a key up and down.
+  - 5 and 6: a mouse button up and down.
+  - 7: the mouse moved. 8: the wheel.
+  - 11 and 12: a gamepad button up and down. 13: a gamepad axis.
+  - 14 and 15: a finger up and down. 16: a finger moved. 17: a gesture.
+  - 18 to 21: the window closed, maximized, minimized and resized.
+  - 22: a screenshot. 23: the target frames a second.
 - `params`: Gets or sets the event's four parameters, by its type: a key, a button, a position, a gamepad and its button or axis and value (times 32768), a size.
 
 ## AutomationEventList
@@ -387,7 +393,7 @@ var value:Float
 
 *abstract* in [`engines/raylib/src/helix/raylib/Matrix.hx`](../src/helix/raylib/Matrix.hx), `import helix.raylib.Matrix;`
 
-Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as raylib's is. It is helix-math's `Matrix4` under raylib's names, so it has that type's operations too, each taking an out to fill, and passes for one without a copy.
+Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as raylib's is. Wraps helix-math's `Matrix4` as raylib's `Matrix`. Operations on a `Matrix` accept an optional `out` argument that receives the result. A `Matrix` is passed as a `Matrix4` without a copy.
 
 `m0, m4, m8, m12` is the first row.
 
@@ -651,7 +657,7 @@ function copy(?out:NPatchInfo):NPatchInfo
 
 *typedef* in [`engines/raylib/src/helix/raylib/Quaternion.hx`](../src/helix/raylib/Quaternion.hx), `import helix.raylib.Quaternion;`
 
-Represents raylib's `Quaternion`: a rotation in three dimensions. It is helix-math's `Quaternion`, so it has that type's operations too, each taking an out to fill. A new one is the identity.
+Represents raylib's `Quaternion`: a rotation in three dimensions. An alias of helix-math's `Quaternion`. Operations on a `Quaternion` accept an optional `out` argument that receives the result.
 
 A `Vector4` isn't one, as it is in C. Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
@@ -717,14 +723,20 @@ function copy(?out:RayCollision):RayCollision
 
 *class* in [`engines/raylib/src/helix/raylib/Raygui.hx`](../src/helix/raylib/Raygui.hx), `import helix.raylib.Raygui;`
 
-Provides raygui's API, raylib's immediate-mode GUI, as raylib 5.5's `raygui.h` (raygui 4.5-dev) names it. As in raylib, it is imported apart from `Raylib`:
+Provides raygui's API, raylib's immediate-mode GUI, from `raygui.h`. Imported alongside `Raylib`:
 
 ```haxe
 import helix.raylib.Raylib.*;
 import helix.raylib.Raygui.*;
 ```
 
-A value a control changes is passed in a one-element array, as raygui takes a pointer: `GuiCheckBox(bounds, "On", checked)` with `var checked = [false];`. So is a `Color`, a value. A struct a control changes (`Vector2`, `Rectangle`, `Vector3`) is changed in place.
+_Note that controls that change the value of an `Int`, `Float`, `Bool`, `String` or `Color` argument expect the argument provided within a single element array:_
+
+```haxe
+var checked = [false];
+GuiCheckBox(bounds, "On", checked);
+if (checked[0]) ...
+```
 
 Its members are on their own page: [raygui.md](raygui.md).
 
@@ -738,9 +750,9 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 *class* in [`engines/raylib/src/helix/raylib/Raylib.hx`](../src/helix/raylib/Raylib.hx), `import helix.raylib.Raylib;`
 
-Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them. Imported with `import helix.raylib.Raylib.*;`.
+Provides raylib 5.5's functions, constants and colors from `raylib.h`. Imported with `import helix.raylib.Raylib.*;`.
 
-Note that a program loops as raylib's does: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
+_Note that a program loops as raylib's does: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`._
 
 Its members are on their own pages:
 
@@ -762,14 +774,12 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 *class* in [`engines/raylib/src/helix/raylib/Raylib6.hx`](../src/helix/raylib/Raylib6.hx), `import helix.raylib.Raylib6;`
 
-Provides the calls raylib 6.0 adds to raylib 5.5's, which helix-raylib's `Raylib` is, each with raylib 6.0's name, signature and behavior. Imported apart from `Raylib`:
+Provides a collection of functions introduced with raylib 6.0. Imported alongside `Raylib`:
 
 ```haxe
 import helix.raylib.Raylib.*;
 import helix.raylib.Raylib6.*;
 ```
-
-When helix-raylib's `Raylib` becomes raylib 6's, these move into it and this class goes.
 
 Its members are on their own page: [raylib6.md](raylib6.md).
 
@@ -777,7 +787,7 @@ Its members are on their own page: [raylib6.md](raylib6.md).
 
 *class* in [`engines/raylib/src/helix/raylib/Raymath.hx`](../src/helix/raylib/Raymath.hx), `import helix.raylib.Raymath;`
 
-Provides raymath's API, as raylib 5.5's `raymath.h` names it. As in raylib, it is imported apart from `Raylib`:
+Provides raymath's API from `raymath.h`. Imported alongside `Raylib`:
 
 ```haxe
 import helix.raylib.Raylib.*;
@@ -852,7 +862,7 @@ An alias of [`RenderTexture`](types.md#rendertexture).
 
 *class* in [`engines/raylib/src/helix/raylib/Rlgl.hx`](../src/helix/raylib/Rlgl.hx), `import helix.raylib.Rlgl;`
 
-Provides rlgl's API, as raylib 5.5's `rlgl.h` names it. As in raylib, it is imported apart from `Raylib`:
+Provides rlgl's API from `rlgl.h`. Imported alongside `Raylib`:
 
 ```haxe
 import helix.raylib.Raylib.*;
@@ -975,7 +985,7 @@ function copy(?out:Transform):Transform
 
 *typedef* in [`engines/raylib/src/helix/raylib/Vector2.hx`](../src/helix/raylib/Vector2.hx), `import helix.raylib.Vector2;`
 
-Represents raylib's `Vector2`: a point or a direction in two dimensions. It is helix-math's `Vector2`, so it has that type's operations too, each taking an out to fill.
+Represents raylib's `Vector2`: a point or a direction in two dimensions. An alias of helix-math's `Vector2`. Operations on a `Vector2` accept an optional `out` argument that receives the result.
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
@@ -985,7 +995,7 @@ An alias of [`Vector2`](../../../libs/math/api/types.md#vector2).
 
 *typedef* in [`engines/raylib/src/helix/raylib/Vector3.hx`](../src/helix/raylib/Vector3.hx), `import helix.raylib.Vector3;`
 
-Represents raylib's `Vector3`: a point or a direction in three dimensions. It is helix-math's `Vector3`, so it has that type's operations too, each taking an out to fill.
+Represents raylib's `Vector3`: a point or a direction in three dimensions. An alias of helix-math's `Vector3`. Operations on a `Vector3` accept an optional `out` argument that receives the result.
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 
@@ -995,7 +1005,7 @@ An alias of [`Vector3`](../../../libs/math/api/types.md#vector3).
 
 *typedef* in [`engines/raylib/src/helix/raylib/Vector4.hx`](../src/helix/raylib/Vector4.hx), `import helix.raylib.Vector4;`
 
-Represents raylib's `Vector4`: four components. It is helix-math's `Vector4`, so it has that type's operations too, each taking an out to fill. A `Quaternion` is a type of its own.
+Represents raylib's `Vector4`: four components. An alias of helix-math's `Vector4`. Operations on a `Vector4` accept an optional `out` argument that receives the result. `Quaternion` is a separate type.
 
 Assigning one gives a reference to it, not a copy. See `copy` for a separate one.
 

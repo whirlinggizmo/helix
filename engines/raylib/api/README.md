@@ -53,7 +53,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [VrStereoConfig](types.md#vrstereoconfig)
   - [Wave](types.md#wave)
 - `helix.raylib.extras`
-  - [Assets](extras-assets.md): Provides where the program's files come from, and ensures them ahead of raylib's loads, so `LoadTexture`, `LoadSound`, `LoadModel` and the rest answer at once, as in raylib.
+  - [Assets](extras-assets.md): Provides the path to the asset host, and ensures assets are available for raylib's `Load*` functions.
   - [Debug](extras-debug.md): Provides drawing for looking at what a program does: a model's skeleton as posed, its posed bounds, and the frame's cost.
     - [FrameStats](extras-debug.md#framestats)
     - [FrameStatsStyle](extras-debug.md#framestatsstyle)

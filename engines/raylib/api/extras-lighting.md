@@ -147,7 +147,9 @@ static function EndShadowMode():Void
 
   Draw the casters as the frame draws them, models and meshes posed and placed the same. Each draw runs its own shader's vertex stage, so a caster swaying, skinned or instanced there casts its shadow as it is drawn, and writes depth alone. A material with an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps take what was drawn once, less the draws whose bounds fall outside a map's view.
 
-  - **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow. - **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage without it casts its whole shape. - **Cost:** every cascade and every face of a point light draws the casters again. A point light's shadows cost about six times a directional light's single map.
+  - **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow.
+  - **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage without it casts its whole shape.
+  - **Cost:** every cascade and every face of a point light draws the casters again. A point light's shadows cost about six times a directional light's single map.
 - `EndShadowMode`: Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows.
 
 ## Light

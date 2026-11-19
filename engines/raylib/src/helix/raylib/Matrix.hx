@@ -2,8 +2,9 @@ package helix.raylib;
 
 import helix.math.Matrix4;
 
-/** Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as raylib's is. It is helix-math's `Matrix4` under
-	raylib's names, so it has that type's operations too, each taking an out to fill, and passes for one without a copy.
+/** Represents raylib's `Matrix`: 4 by 4, named by rows and stored by columns, as raylib's is. Wraps helix-math's `Matrix4` as raylib's
+	`Matrix`. Operations on a `Matrix` accept an optional `out` argument that receives the result. A `Matrix` is passed as a `Matrix4`
+	without a copy.
 
 	`m0, m4, m8, m12` is the first row.
 

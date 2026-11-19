@@ -132,7 +132,8 @@ A shader is compiled while the program builds, never while it runs: `compile` fr
 
 **Stages.** Both stages are written in one of two forms, told apart by the `#version` line:
 
-- **`#version 450`**, Vulkan-style: attributes may give `layout(location = n)`, blocks and textures `layout(binding = n)`. - **`#version 300 es`, or 330 to 440,** as WebGL2 and GL write it: nothing gives a location or a binding, as GLSL ES 3.0 can't, and the compiler places everything; a `binding` or `location` written in this form is refused. GLSL ES 100's `attribute`, `varying`, `gl_FragColor` and `texture2D` are not taken.
+- **`#version 450`**, Vulkan-style: attributes may give `layout(location = n)`, blocks and textures `layout(binding = n)`.
+- **`#version 300 es`, or 330 to 440,** as WebGL2 and GL write it: nothing gives a location or a binding, as GLSL ES 3.0 can't, and the compiler places everything; a `binding` or `location` written in this form is refused. GLSL ES 100's `attribute`, `varying`, `gl_FragColor` and `texture2D` are not taken.
 
 **Loose uniforms** (`uniform vec4 tint;`, outside a block) are taken in either form, so a variant's own uniforms, declared under its `#ifdef`, need no block of their own. Both stages' are gathered into one block, `helix_uniforms`, read by both (platform proposal 6): the vertex stage's in the order it declares them (an include's where it is included), then the fragment stage's not already there. A uniform both stages declare loose is one member; declared with two types, it is refused. A program with none has no such block. Every block is laid out by std140, whether or not it says `layout(std140)`.
 

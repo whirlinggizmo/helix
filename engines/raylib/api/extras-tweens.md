@@ -6,7 +6,7 @@
 
 *abstract* in [`engines/raylib/src/helix/raylib/extras/tweens/ColorTween.hx`](../src/helix/raylib/extras/tweens/ColorTween.hx), `import helix.raylib.extras.tweens.ColorTween;`
 
-Represents a `Color` fading from one color to another, each of its four channels on its own. It is helix-tweens' `ColorTween` taking and giving raylib's `Color`, so it has that type's members too, and is placed in a sequence or added to a set as one.
+Represents a `Color` fading from one color to another, each of its four channels on its own. Wraps helix-tweens' `ColorTween`, accepting raylib's `Color`. It is placed in a sequence or added to a set like any tween.
 
 ```haxe
 var flash = new ColorTween(WHITE, RED, 0.2, Ease.outQuad);

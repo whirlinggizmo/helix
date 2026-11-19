@@ -1,5 +1,5 @@
-"""List the libraries' public types and members that have no doc comment (docs/CONVENTIONS.md), and fail if there are any; and
-fail if the code, the examples, the tools or the docs name the earlier C frameworks (wgrender, libwgf, libwgt): what they
+"""List the libraries' public types and members that have no doc comment (docs/CONVENTIONS.md), and fail if there are any; fail if a
+doc comment's note ("Note that ...") isn't in italics; and fail if the code, the examples, the tools or the docs name the earlier C frameworks (wgrender, libwgf, libwgt): what they
 taught is recorded in DECISIONS.md, which may name them, and AGENTS.md, which says where to read them, may too.
 
 Covers each library and engine (libs/<library>/src/helix, engines/<engine>/src/helix). A member that implements an interface's is documented on the
@@ -14,6 +14,8 @@ EARLIER=re.compile(r'wgrender|libwgf|libwgt',re.I)
 # (AGENTS.md, which says where to read them).
 SOURCES=sorted(p.relative_to(ROOT).as_posix() for p in ROOT.glob('*/*/src/helix') if p.parts[-4] in ('libs','engines'))
 NAMED=['libs','engines','tools','helix.py','README.md','CONTRIBUTING.md','GOALS.md','docs/ARCHITECTURE.md','docs/CONVENTIONS.md','docs/PLATFORM.md','docs/PLAN.md','docs/ROADMAP.md','docs/benchmarks.md']
+# A note's paragraph starting without its italics' underscore, at a doc comment's start or a line's.
+NOTE=re.compile(r'^[ \t]*(?:/\*\*[ \t]*)?Note that\b',re.M)
 TYPE=re.compile(r'^\s*(?:@:[^\n]*\s)*(?:extern\s+|final\s+|private\s+)*(class|interface|typedef|enum abstract|enum|abstract)\s+(\w+)')
 MEMBER=re.compile(r'^\s*(?:@:[\w.]+(?:\([^)]*\))?\s*)*((?:public\s+|static\s+|inline\s+|override\s+|final\s+|extern\s+|dynamic\s+)*)(function|var|final)\s+(\w+)')
 
@@ -82,6 +84,13 @@ def main():
                 if EARLIER.search(line):named.append(f'{path.relative_to(ROOT)}:{number}: {line.strip()[:100]}')
     for item in named:print(item)
     if named:print(f'{len(named)} line(s) name the earlier frameworks; they belong in DECISIONS.md and AGENTS.md alone',file=sys.stderr)
-    sys.exit(1 if missing or named else 0)
+    plain=[]
+    for path in sorted(p for d in SOURCES for p in (ROOT/d).rglob('*.hx')):
+        for m in re.finditer(r'/\*\*.*?\*/',path.read_text(encoding='utf-8'),re.S):
+            for note in NOTE.finditer(m.group(0)):
+                plain.append(f'{path.relative_to(ROOT)}:{path.read_text(encoding="utf-8")[:m.start()+note.start()].count(chr(10))+1}: a note not in italics')
+    for item in plain:print(item)
+    if plain:print(f'{len(plain)} note(s) not in italics: _Note that ..._',file=sys.stderr)
+    sys.exit(1 if missing or named or plain else 0)
 
 if __name__=='__main__':main()

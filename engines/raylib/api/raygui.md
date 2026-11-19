@@ -922,7 +922,9 @@ static function GuiDrawIcon(iconId:Int, posX:Int, posY:Int, pixelSize:Int, color
 
   The bits are laid out as:
 
-  - eight 32-bit words an icon, the icon's first at `ICON_*` times 8 - two 16-pixel rows a word - bit 0 the leftmost pixel of the word's first row
+  - eight 32-bit words an icon, the icon's first at `ICON_*` times 8
+  - two 16-pixel rows a word
+  - bit 0 the leftmost pixel of the word's first row
 - `GuiDrawIcon`: Draws an icon, each of its pixels a square.
   - `iconId`: The icon (`ICON_*`).
   - `posX`: Its left edge, in pixels.
@@ -1116,7 +1118,10 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
 
   In edit mode, a click places the cursor, and these keys move the cursor and delete, repeating while held:
 
-  - Home and End - the arrows - Delete and Backspace - Control-Backspace, which deletes a word
+  - Home and End
+  - the arrows
+  - Delete and Backspace
+  - Control-Backspace, which deletes a word
 - `GuiSpinner`: Draws a spinner, a value box between buttons that step its value down and up. See `GuiValueBox` for drawing the value box alone.
   - `bounds`: The spinner, its buttons included.
   - `text`: Its label, beside it, or null.

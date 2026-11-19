@@ -256,7 +256,10 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   The filters:
 
-  - `TEXTURE_FILTER_POINT`, the default: the nearest texel, of the nearest mipmap. - `TEXTURE_FILTER_BILINEAR`: the nearest four texels blended, of the nearest mipmap. - `TEXTURE_FILTER_TRILINEAR`: the nearest four of the two nearest mipmaps blended. Without mipmaps it is `TEXTURE_FILTER_BILINEAR`, with a warning. - `TEXTURE_FILTER_ANISOTROPIC_4X`, `8X` and `16X`: up to that many texels read along a surface seen at a slant, the filter left as it was. The GPU uses the anisotropy only with `TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
+  - `TEXTURE_FILTER_POINT`, the default: the nearest texel, of the nearest mipmap.
+  - `TEXTURE_FILTER_BILINEAR`: the nearest four texels blended, of the nearest mipmap.
+  - `TEXTURE_FILTER_TRILINEAR`: the nearest four of the two nearest mipmaps blended. Without mipmaps it is `TEXTURE_FILTER_BILINEAR`, with a warning.
+  - `TEXTURE_FILTER_ANISOTROPIC_4X`, `8X` and `16X`: up to that many texels read along a surface seen at a slant, the filter left as it was. The GPU uses the anisotropy only with `TEXTURE_FILTER_TRILINEAR` on a mipmapped texture.
 
   A cubemap (`LoadTextureCubemap`) is left unchanged.
 - `GenTextureMipmaps`: Makes a texture's mipmaps, down to 1 by 1, and sets `texture.mipmaps` to their count.
@@ -383,7 +386,9 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   A channel the format lacks is taken from another, with a warning:
 
-  - a one-channel format: its only channel - gray and alpha: its alpha - an RGB format: its red
+  - a one-channel format: its only channel
+  - gray and alpha: its alpha
+  - an RGB format: its red
 - `ImageText`: Returns text in raylib's default font as an RGBA image.
   - `text`: The text.
   - `fontSize`: The height of a line, in pixels.
@@ -431,7 +436,10 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   The formats with alpha change:
 
-  - gray and alpha - R5G5B5A1: the alpha bit tested against a threshold of 0.5, the color's channels cut to 5 bits, unscaled - R4G4B4A4: the alpha's 4 bits tested against the threshold in 16 steps, the color's channels cut to 4 bits, unscaled - RGBA, and its 32-bit and 16-bit float forms
+  - gray and alpha
+  - R5G5B5A1: the alpha bit tested against a threshold of 0.5, the color's channels cut to 5 bits, unscaled
+  - R4G4B4A4: the alpha's 4 bits tested against the threshold in 16 steps, the color's channels cut to 4 bits, unscaled
+  - RGBA, and its 32-bit and 16-bit float forms
 
   Another format is unchanged.
 - `ImageAlphaMask`: Sets an image's alpha from the grayscale of a mask the same size.
@@ -726,7 +734,11 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   The layouts:
 
-  - `CUBEMAP_LAYOUT_LINE_VERTICAL`: a column, +X, -X, +Y, -Y, +Z, -Z from the top. A face is the image's height over 6. - `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: a row, in that order from the left. A face is the image's width over 6. - `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: 3 faces wide, 4 high, +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right of it. A face is the image's width over 3. - `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: 4 faces wide, 3 high, +Y at the top of the second column, then -X, +Z, +X, -Z across, then -Y below +Z. A face is the image's width over 4. - `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout the image's shape gives. A shape it doesn't know gives no cubemap, with a warning.
+  - `CUBEMAP_LAYOUT_LINE_VERTICAL`: a column, +X, -X, +Y, -Y, +Z, -Z from the top. A face is the image's height over 6.
+  - `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: a row, in that order from the left. A face is the image's width over 6.
+  - `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: 3 faces wide, 4 high, +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right of it. A face is the image's width over 3.
+  - `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: 4 faces wide, 3 high, +Y at the top of the second column, then -X, +Z, +X, -Z across, then -Y below +Z. A face is the image's width over 4.
+  - `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout the image's shape gives. A shape it doesn't know gives no cubemap, with a warning.
 
   Each face's rows run top first, as GL's cube faces take them.
 
@@ -920,7 +932,9 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
 
   The file's extension chooses the format:
 
-  - ".png": any uncompressed format. A format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA. - ".qoi": RGB or RGBA alone. - ".raw": the pixels as they are.
+  - ".png": any uncompressed format. A format other than 8-bit grayscale, grayscale and alpha, RGB or RGBA is written as RGBA.
+  - ".qoi": RGB or RGBA alone.
+  - ".raw": the pixels as they are.
 
   The file is kept as `SaveFileDataAsync` keeps it. `TakeScreenshot` writes a real file.
 - `ExportImageAsCodeAsync`: Asynchronously writes an image as a C header through `SaveFileTextAsync`, replacing raylib's `ExportImageAsCode`. See `ExportImageAsync` for writing a PNG, QOI or raw file.
@@ -931,4 +945,5 @@ static function ExportImageAsCodeAsync(image:Image, fileName:String, ?done:() ->
 
   The header holds:
 
-  - the image's size and format, as defines. - its first level's pixels, as an array of bytes, 20 a line.
+  - the image's size and format, as defines.
+  - its first level's pixels, as an array of bytes, 20 a line.

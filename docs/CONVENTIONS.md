@@ -231,6 +231,8 @@ Code is written to be read, by people and agents, not packed.
     - **What happens, not what doesn't.** A sentence says what happens to what's there: "A touch within a blocked bound is
       considered a mouse click", not "a finger there takes no stick". No "nothing" as a subject, and no sentence about a call that
       changes nothing.
+    - **A note is in italics.** A fact the reader could miss and has to act on starts "Note that" and is set in italics,
+      `_Note that ..._`, a code block it introduces after it. `tools/check_docs.py` checks it.
     - **One word for one thing, the API's own.** `blockedBounds` is "the blocked bounds" throughout, never also a box, a rectangle
       or an area. A side effect says what changes ("The zone follows changes to this rectangle's fields"), not a "so" clause.
 

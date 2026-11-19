@@ -1,5 +1,14 @@
 // Opens the API reference's tree down to the page shown and marks its type or package, and makes each folder a link to its page. Added to each page by tools/build_pages.py, after dox's index.js.
 $(function () {
+	// The theme's toggle shows a sun in the dark theme and a moon in the light one.
+	var toggled = window.toggleTheme, themeIcon = function () {
+		$("#theme-toggle i").toggleClass("fa-sun-o", isDarkTheme()).toggleClass("fa-moon-o", !isDarkTheme());
+	};
+	window.toggleTheme = function () {
+		toggled();
+		themeIcon();
+	};
+	themeIcon();
 	var root = new URL(dox.rootPath, location.href).href;
 	if (location.href.indexOf(root) != 0)
 		return;
@@ -7,7 +16,10 @@ $(function () {
 	// name closes it, and its icon opens or closes it.
 	$("#nav li.expando").each(function () {
 		var depth = $(this).parents("li.expando").length, href = root + "index.html";
-		if (depth > 0) {
+		// Raylib's sections open its page, as their folder's name (tools/build_pages.py).
+		if ($(this).attr("data-page"))
+			href = root + $(this).attr("data-page");
+		else if (depth > 0) {
 			var link = $(this).find("a.treeLink")[0];
 			if (link == null)
 				return;
@@ -18,8 +30,10 @@ $(function () {
 			return $(e.target).is("i") || folder.hasClass("expanded") ? toggleCollapsed(this) : true;
 		});
 	});
+	// The side column stays in view as the page scrolls.
+	// The footer's link, the tables' folder icons and the theme's toggle are light in the dark theme (dox's own are black and #222).
 	// The members' items are for the search alone (tools/build_pages.py), never shown in the tree.
-	$("head").append("<style>#nav a.nav-header.current{background:#999;color:#fff}.dark-theme #nav a.nav-header.current{background:#269}#nav li.member-index{display:none}</style>");
+	$("head").append("<style>#nav a.nav-header.current{background:#999;color:#fff}.dark-theme #nav a.nav-header.current{background:#269}.dark-theme .copyright a{color:#CCC !important}.dark-theme .table .fa{color:#888}.dark-theme #theme-toggle{color:#CCC !important}#nav li.member-index{display:none}@media (min-width:768px){.main-content .span3{position:sticky;top:20px}}h2.raylib-module{margin-top:2em;border-bottom:2px solid #ccc;padding-bottom:.2em}h4.raylib-group{margin:1.5em 0 .5em;border-bottom:1px solid #ddd;padding-bottom:.2em}.raylib-contents p{margin:.3em 0}</style>");
 	var parts = location.href.slice(root.length).split(/[?#]/)[0].split("/");
 	var file = parts.pop();
 	var open = function (branch) {
@@ -41,18 +55,28 @@ $(function () {
 		var branch = list.children("li.expando").filter(function () {
 			return $(this).children("a.nav-header").text() == parts[i];
 		}).first();
-		// A page with no folder of its own in the tree (Raylib's module pages, listed beside Raylib) is marked where its folder's would be.
 		if (!branch.length)
 			break;
 		open(branch);
 		list = branch.children("ul");
 	}
-	// A package's page marks its folder.
+	// A package's page marks its folder, and Raylib's page its sections' folder, opened.
+	var page = location.href.split(/[?#]/)[0];
+	var sections = list.find("li.expando").filter(function () {
+		return $(this).attr("data-page") && root + $(this).attr("data-page") == page;
+	});
 	if (file == "index.html")
 		list.parent("li.expando").children("a.nav-header").addClass("current");
-	else
-		list.children("li").filter(function () {
+	else if (sections.length) {
+		open(sections.parents("li.expando").addBack());
+		sections.children("a.nav-header").addClass("current");
+	} else
+		open(list.find("li").filter(function () {
 			var link = $(this).children("a.treeLink")[0];
-			return link != null && link.href.split(/[?#]/)[0] == location.href.split(/[?#]/)[0];
-		}).addClass("active");
+			return link != null && link.href.split(/[?#]/)[0] == page;
+		}).addClass("active").parents("li.expando"));
+	// The tree's box scrolls to what's marked.
+	var column = $("#nav").closest(".sidebar-nav")[0], marked = $("#nav a.nav-header.current, #nav li.active > a").first();
+	if (column && marked.length)
+		column.scrollTop = marked.offset().top - $(column).offset().top - column.clientHeight / 3;
 });

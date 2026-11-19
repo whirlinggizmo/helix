@@ -23,7 +23,7 @@ HeliX is a suite of libraries and engines for Haxe game development.  It provide
 
 | Engine | Description | API | Dependencies |
 |---|---|---|---|
-| [helix-raylib](engines/raylib/README.md) | raylib 5.5's API over the services and the platform | [API](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) | helix-services, helix-platform, helix-geometry, helix-tweens, helix-math |
+| [helix-raylib](engines/raylib/README.md) | A 2D and 3D engine mirroring raylib 5.5's API. Also includes the raymath, rlgl and raygui APIs | [API](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) | helix-services, helix-platform, helix-geometry, helix-tweens, helix-math |
 
 ## Try it
 

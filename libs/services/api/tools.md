@@ -60,7 +60,11 @@ Provides the build macros that make typed values classes, as sokol-shdc's genera
 
 **Members.** For each uniform a class gains members named for its path, the parts joined in camel case (`material.roughness` as `MaterialRoughness`, `lights.color` as `LightsColor`). A member of a block with no instance name is named alone (`uniform Glow { vec4 tint; };` gives `Tint`); with one, the instance name leads (`... } glow;` gives `GlowTint`). Loose uniforms are named alone.
 
-- A scalar (`float`, `int`, `uint`, `bool`): `setX(value)`. - A vector: `setX(x, y, ...)` with its components. A `vec3` or `vec4` whose name holds `color`, `colour` or `tint` (any case) also gets `setXArgb(color)` from 0xAARRGGBB as stored and `setXLinearArgb(color)` decoded to linear light (`writeLinearColor`), and no other vector does: a position has no color form. - A matrix: `setX(matrix)` for a `mat4`, `setX(values)` with its floats by columns for a `mat2` or `mat3`. - An array, or a field of an array of structs: the same, the element's index first (`setLightsRange(i, 10)`). - A texture: `setX(texture, ?sampling)` and `shareX(shared)` for a `ShaderSharedTexture`.
+- A scalar (`float`, `int`, `uint`, `bool`): `setX(value)`.
+- A vector: `setX(x, y, ...)` with its components. A `vec3` or `vec4` whose name holds `color`, `colour` or `tint` (any case) also gets `setXArgb(color)` from 0xAARRGGBB as stored and `setXLinearArgb(color)` decoded to linear light (`writeLinearColor`), and no other vector does: a position has no color form.
+- A matrix: `setX(matrix)` for a `mat4`, `setX(values)` with its floats by columns for a `mat2` or `mat3`.
+- An array, or a field of an array of structs: the same, the element's index first (`setLightsRange(i, 10)`).
+- A texture: `setX(texture, ?sampling)` and `shareX(shared)` for a `ShaderSharedTexture`.
 
 Every generated member starts with `set` or `share`, and nothing of the values classes does but `shareBlock`, `shareTexture` and their `unshare` forms (their handle methods are `write`), so any uniform's name works (`color`, `matrix`, `texture`); a texture named `block` or `texture` (`shareBlock`, `shareTexture`) fails the build, as do two uniforms whose members would share a name. A uniform of a shared block (`ShaderOptions.shared`) gets no member on a shader's or a material's class: it is written once on the block's own class (`buildBlock`).
 
@@ -109,7 +113,8 @@ static macro function buildBlock(source:String, blockName:String):Array<Field>
 
   What it gains besides `VARIANTS` and the feature constants depends on what it extends:
 
-  - `ShaderValues`: values for one variant, and a constructor `new(features, ?base, ?scene)`. - `ShaderVariantValues`: one material's values across every variant, and a constructor `new(?base, ?scene)`. Its `getValues(features)` returns the class named by `values`, typed values for one variant, so a draw's own uniforms keep their types.
+  - `ShaderValues`: values for one variant, and a constructor `new(features, ?base, ?scene)`.
+  - `ShaderVariantValues`: one material's values across every variant, and a constructor `new(?base, ?scene)`. Its `getValues(features)` returns the class named by `values`, typed values for one variant, so a draw's own uniforms keep their types.
 
   On values for a variant without a member, the member keeps the value and writes nothing, as a handle does.
 

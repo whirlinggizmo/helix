@@ -26,154 +26,154 @@ import helix.raylib.modules.RTexturesAsync;
 import helix.raylib.modules.RWindowAsync;
 #end
 
-/** Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them. Imported with `import helix.raylib.Raylib.*;`.
+/** Provides raylib 5.5's functions, constants and colors from `raylib.h`. Imported with `import helix.raylib.Raylib.*;`.
 
-	Note that a program loops as raylib's does: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`. */
+	_Note that a program loops as raylib's does: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`._ */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
 	/** Key: NULL, used for no key pressed. */
 	public static inline final KEY_NULL = 0;
 
-	/** Key: '. */
+	/** Key: `'` */
 	public static inline final KEY_APOSTROPHE = 39;
 
-	/** Key: ,. */
+	/** Key: `,` */
 	public static inline final KEY_COMMA = 44;
 
-	/** Key: -. */
+	/** Key: `-` */
 	public static inline final KEY_MINUS = 45;
 
-	/** Key: . */
+	/** Key: `.` */
 	public static inline final KEY_PERIOD = 46;
 
-	/** Key: /. */
+	/** Key: `/` */
 	public static inline final KEY_SLASH = 47;
 
-	/** Key: 0. */
+	/** Key: `0` */
 	public static inline final KEY_ZERO = 48;
 
-	/** Key: 1. */
+	/** Key: `1` */
 	public static inline final KEY_ONE = 49;
 
-	/** Key: 2. */
+	/** Key: `2` */
 	public static inline final KEY_TWO = 50;
 
-	/** Key: 3. */
+	/** Key: `3` */
 	public static inline final KEY_THREE = 51;
 
-	/** Key: 4. */
+	/** Key: `4` */
 	public static inline final KEY_FOUR = 52;
 
-	/** Key: 5. */
+	/** Key: `5` */
 	public static inline final KEY_FIVE = 53;
 
-	/** Key: 6. */
+	/** Key: `6` */
 	public static inline final KEY_SIX = 54;
 
-	/** Key: 7. */
+	/** Key: `7` */
 	public static inline final KEY_SEVEN = 55;
 
-	/** Key: 8. */
+	/** Key: `8` */
 	public static inline final KEY_EIGHT = 56;
 
-	/** Key: 9. */
+	/** Key: `9` */
 	public static inline final KEY_NINE = 57;
 
-	/** Key: ;. */
+	/** Key: `;` */
 	public static inline final KEY_SEMICOLON = 59;
 
-	/** Key: =. */
+	/** Key: `=` */
 	public static inline final KEY_EQUAL = 61;
 
-	/** Key: A | a. */
+	/** Key: `A` | `a` */
 	public static inline final KEY_A = 65;
 
-	/** Key: B | b. */
+	/** Key: `B` | `b` */
 	public static inline final KEY_B = 66;
 
-	/** Key: C | c. */
+	/** Key: `C` | `c` */
 	public static inline final KEY_C = 67;
 
-	/** Key: D | d. */
+	/** Key: `D` | `d` */
 	public static inline final KEY_D = 68;
 
-	/** Key: E | e. */
+	/** Key: `E` | `e` */
 	public static inline final KEY_E = 69;
 
-	/** Key: F | f. */
+	/** Key: `F` | `f` */
 	public static inline final KEY_F = 70;
 
-	/** Key: G | g. */
+	/** Key: `G` | `g` */
 	public static inline final KEY_G = 71;
 
-	/** Key: H | h. */
+	/** Key: `H` | `h` */
 	public static inline final KEY_H = 72;
 
-	/** Key: I | i. */
+	/** Key: `I` | `i` */
 	public static inline final KEY_I = 73;
 
-	/** Key: J | j. */
+	/** Key: `J` | `j` */
 	public static inline final KEY_J = 74;
 
-	/** Key: K | k. */
+	/** Key: `K` | `k` */
 	public static inline final KEY_K = 75;
 
-	/** Key: L | l. */
+	/** Key: `L` | `l` */
 	public static inline final KEY_L = 76;
 
-	/** Key: M | m. */
+	/** Key: `M` | `m` */
 	public static inline final KEY_M = 77;
 
-	/** Key: N | n. */
+	/** Key: `N` | `n` */
 	public static inline final KEY_N = 78;
 
-	/** Key: O | o. */
+	/** Key: `O` | `o` */
 	public static inline final KEY_O = 79;
 
-	/** Key: P | p. */
+	/** Key: `P` | `p` */
 	public static inline final KEY_P = 80;
 
-	/** Key: Q | q. */
+	/** Key: `Q` | `q` */
 	public static inline final KEY_Q = 81;
 
-	/** Key: R | r. */
+	/** Key: `R` | `r` */
 	public static inline final KEY_R = 82;
 
-	/** Key: S | s. */
+	/** Key: `S` | `s` */
 	public static inline final KEY_S = 83;
 
-	/** Key: T | t. */
+	/** Key: `T` | `t` */
 	public static inline final KEY_T = 84;
 
-	/** Key: U | u. */
+	/** Key: `U` | `u` */
 	public static inline final KEY_U = 85;
 
-	/** Key: V | v. */
+	/** Key: `V` | `v` */
 	public static inline final KEY_V = 86;
 
-	/** Key: W | w. */
+	/** Key: `W` | `w` */
 	public static inline final KEY_W = 87;
 
-	/** Key: X | x. */
+	/** Key: `X` | `x` */
 	public static inline final KEY_X = 88;
 
-	/** Key: Y | y. */
+	/** Key: `Y` | `y` */
 	public static inline final KEY_Y = 89;
 
-	/** Key: Z | z. */
+	/** Key: `Z` | `z` */
 	public static inline final KEY_Z = 90;
 
-	/** Key: [. */
+	/** Key: `[` */
 	public static inline final KEY_LEFT_BRACKET = 91;
 
-	/** Key: '\'. */
+	/** Key: `\` */
 	public static inline final KEY_BACKSLASH = 92;
 
-	/** Key: ]. */
+	/** Key: `]` */
 	public static inline final KEY_RIGHT_BRACKET = 93;
 
-	/** Key: `. */
+	/** Key: `` ` `` */
 	public static inline final KEY_GRAVE = 96;
 
 	/** Key: Space. */
@@ -299,55 +299,55 @@ class Raylib {
 	/** Key: KB menu. */
 	public static inline final KEY_KB_MENU = 348;
 
-	/** Key: Keypad 0. */
+	/** Key: Keypad `0` */
 	public static inline final KEY_KP_0 = 320;
 
-	/** Key: Keypad 1. */
+	/** Key: Keypad `1` */
 	public static inline final KEY_KP_1 = 321;
 
-	/** Key: Keypad 2. */
+	/** Key: Keypad `2` */
 	public static inline final KEY_KP_2 = 322;
 
-	/** Key: Keypad 3. */
+	/** Key: Keypad `3` */
 	public static inline final KEY_KP_3 = 323;
 
-	/** Key: Keypad 4. */
+	/** Key: Keypad `4` */
 	public static inline final KEY_KP_4 = 324;
 
-	/** Key: Keypad 5. */
+	/** Key: Keypad `5` */
 	public static inline final KEY_KP_5 = 325;
 
-	/** Key: Keypad 6. */
+	/** Key: Keypad `6` */
 	public static inline final KEY_KP_6 = 326;
 
-	/** Key: Keypad 7. */
+	/** Key: Keypad `7` */
 	public static inline final KEY_KP_7 = 327;
 
-	/** Key: Keypad 8. */
+	/** Key: Keypad `8` */
 	public static inline final KEY_KP_8 = 328;
 
-	/** Key: Keypad 9. */
+	/** Key: Keypad `9` */
 	public static inline final KEY_KP_9 = 329;
 
-	/** Key: Keypad . */
+	/** Key: Keypad `.` */
 	public static inline final KEY_KP_DECIMAL = 330;
 
-	/** Key: Keypad /. */
+	/** Key: Keypad `/` */
 	public static inline final KEY_KP_DIVIDE = 331;
 
-	/** Key: Keypad *. */
+	/** Key: Keypad `*` */
 	public static inline final KEY_KP_MULTIPLY = 332;
 
-	/** Key: Keypad -. */
+	/** Key: Keypad `-` */
 	public static inline final KEY_KP_SUBTRACT = 333;
 
-	/** Key: Keypad +. */
+	/** Key: Keypad `+` */
 	public static inline final KEY_KP_ADD = 334;
 
 	/** Key: Keypad Enter. */
 	public static inline final KEY_KP_ENTER = 335;
 
-	/** Key: Keypad =. */
+	/** Key: Keypad `=` */
 	public static inline final KEY_KP_EQUAL = 336;
 
 	/** Key: Android back button. */

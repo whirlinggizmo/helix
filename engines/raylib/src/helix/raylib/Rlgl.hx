@@ -9,7 +9,7 @@ import haxe.macro.Expr;
 import helix.raylib.modules.RRlgl;
 #end
 
-/** Provides rlgl's API, as raylib 5.5's `rlgl.h` names it. As in raylib, it is imported apart from `Raylib`:
+/** Provides rlgl's API from `rlgl.h`. Imported alongside `Raylib`:
 
 	```haxe
 	import helix.raylib.Raylib.*;

@@ -119,53 +119,53 @@ static inline var KEY_VOLUME_DOWN:Int
 ```
 
 - `KEY_NULL`: Key: NULL, used for no key pressed.
-- `KEY_APOSTROPHE`: Key: '.
-- `KEY_COMMA`: Key: ,.
-- `KEY_MINUS`: Key: -.
-- `KEY_PERIOD`: Key: .
-- `KEY_SLASH`: Key: /.
-- `KEY_ZERO`: Key: 0.
-- `KEY_ONE`: Key: 1.
-- `KEY_TWO`: Key: 2.
-- `KEY_THREE`: Key: 3.
-- `KEY_FOUR`: Key: 4.
-- `KEY_FIVE`: Key: 5.
-- `KEY_SIX`: Key: 6.
-- `KEY_SEVEN`: Key: 7.
-- `KEY_EIGHT`: Key: 8.
-- `KEY_NINE`: Key: 9.
-- `KEY_SEMICOLON`: Key: ;.
-- `KEY_EQUAL`: Key: =.
-- `KEY_A`: Key: A | a.
-- `KEY_B`: Key: B | b.
-- `KEY_C`: Key: C | c.
-- `KEY_D`: Key: D | d.
-- `KEY_E`: Key: E | e.
-- `KEY_F`: Key: F | f.
-- `KEY_G`: Key: G | g.
-- `KEY_H`: Key: H | h.
-- `KEY_I`: Key: I | i.
-- `KEY_J`: Key: J | j.
-- `KEY_K`: Key: K | k.
-- `KEY_L`: Key: L | l.
-- `KEY_M`: Key: M | m.
-- `KEY_N`: Key: N | n.
-- `KEY_O`: Key: O | o.
-- `KEY_P`: Key: P | p.
-- `KEY_Q`: Key: Q | q.
-- `KEY_R`: Key: R | r.
-- `KEY_S`: Key: S | s.
-- `KEY_T`: Key: T | t.
-- `KEY_U`: Key: U | u.
-- `KEY_V`: Key: V | v.
-- `KEY_W`: Key: W | w.
-- `KEY_X`: Key: X | x.
-- `KEY_Y`: Key: Y | y.
-- `KEY_Z`: Key: Z | z.
-- `KEY_LEFT_BRACKET`: Key: [.
-- `KEY_BACKSLASH`: Key: '\'.
-- `KEY_RIGHT_BRACKET`: Key: ].
-- `KEY_GRAVE`: Key: `.
+- `KEY_APOSTROPHE`: Key: `'`
+- `KEY_COMMA`: Key: `,`
+- `KEY_MINUS`: Key: `-`
+- `KEY_PERIOD`: Key: `.`
+- `KEY_SLASH`: Key: `/`
+- `KEY_ZERO`: Key: `0`
+- `KEY_ONE`: Key: `1`
+- `KEY_TWO`: Key: `2`
+- `KEY_THREE`: Key: `3`
+- `KEY_FOUR`: Key: `4`
+- `KEY_FIVE`: Key: `5`
+- `KEY_SIX`: Key: `6`
+- `KEY_SEVEN`: Key: `7`
+- `KEY_EIGHT`: Key: `8`
+- `KEY_NINE`: Key: `9`
+- `KEY_SEMICOLON`: Key: `;`
+- `KEY_EQUAL`: Key: `=`
+- `KEY_A`: Key: `A` | `a`
+- `KEY_B`: Key: `B` | `b`
+- `KEY_C`: Key: `C` | `c`
+- `KEY_D`: Key: `D` | `d`
+- `KEY_E`: Key: `E` | `e`
+- `KEY_F`: Key: `F` | `f`
+- `KEY_G`: Key: `G` | `g`
+- `KEY_H`: Key: `H` | `h`
+- `KEY_I`: Key: `I` | `i`
+- `KEY_J`: Key: `J` | `j`
+- `KEY_K`: Key: `K` | `k`
+- `KEY_L`: Key: `L` | `l`
+- `KEY_M`: Key: `M` | `m`
+- `KEY_N`: Key: `N` | `n`
+- `KEY_O`: Key: `O` | `o`
+- `KEY_P`: Key: `P` | `p`
+- `KEY_Q`: Key: `Q` | `q`
+- `KEY_R`: Key: `R` | `r`
+- `KEY_S`: Key: `S` | `s`
+- `KEY_T`: Key: `T` | `t`
+- `KEY_U`: Key: `U` | `u`
+- `KEY_V`: Key: `V` | `v`
+- `KEY_W`: Key: `W` | `w`
+- `KEY_X`: Key: `X` | `x`
+- `KEY_Y`: Key: `Y` | `y`
+- `KEY_Z`: Key: `Z` | `z`
+- `KEY_LEFT_BRACKET`: Key: `[`
+- `KEY_BACKSLASH`: Key: `\`
+- `KEY_RIGHT_BRACKET`: Key: `]`
+- `KEY_GRAVE`: Key: `` ` ``
 - `KEY_SPACE`: Key: Space.
 - `KEY_ESCAPE`: Key: Esc.
 - `KEY_ENTER`: Key: Enter.
@@ -207,23 +207,23 @@ static inline var KEY_VOLUME_DOWN:Int
 - `KEY_RIGHT_ALT`: Key: Alt right.
 - `KEY_RIGHT_SUPER`: Key: Super right.
 - `KEY_KB_MENU`: Key: KB menu.
-- `KEY_KP_0`: Key: Keypad 0.
-- `KEY_KP_1`: Key: Keypad 1.
-- `KEY_KP_2`: Key: Keypad 2.
-- `KEY_KP_3`: Key: Keypad 3.
-- `KEY_KP_4`: Key: Keypad 4.
-- `KEY_KP_5`: Key: Keypad 5.
-- `KEY_KP_6`: Key: Keypad 6.
-- `KEY_KP_7`: Key: Keypad 7.
-- `KEY_KP_8`: Key: Keypad 8.
-- `KEY_KP_9`: Key: Keypad 9.
-- `KEY_KP_DECIMAL`: Key: Keypad .
-- `KEY_KP_DIVIDE`: Key: Keypad /.
-- `KEY_KP_MULTIPLY`: Key: Keypad *.
-- `KEY_KP_SUBTRACT`: Key: Keypad -.
-- `KEY_KP_ADD`: Key: Keypad +.
+- `KEY_KP_0`: Key: Keypad `0`
+- `KEY_KP_1`: Key: Keypad `1`
+- `KEY_KP_2`: Key: Keypad `2`
+- `KEY_KP_3`: Key: Keypad `3`
+- `KEY_KP_4`: Key: Keypad `4`
+- `KEY_KP_5`: Key: Keypad `5`
+- `KEY_KP_6`: Key: Keypad `6`
+- `KEY_KP_7`: Key: Keypad `7`
+- `KEY_KP_8`: Key: Keypad `8`
+- `KEY_KP_9`: Key: Keypad `9`
+- `KEY_KP_DECIMAL`: Key: Keypad `.`
+- `KEY_KP_DIVIDE`: Key: Keypad `/`
+- `KEY_KP_MULTIPLY`: Key: Keypad `*`
+- `KEY_KP_SUBTRACT`: Key: Keypad `-`
+- `KEY_KP_ADD`: Key: Keypad `+`
 - `KEY_KP_ENTER`: Key: Keypad Enter.
-- `KEY_KP_EQUAL`: Key: Keypad =.
+- `KEY_KP_EQUAL`: Key: Keypad `=`
 - `KEY_BACK`: Key: Android back button.
 - `KEY_MENU`: Key: Android menu button.
 - `KEY_VOLUME_UP`: Key: Android volume up button.
