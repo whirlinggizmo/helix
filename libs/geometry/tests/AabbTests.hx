@@ -82,7 +82,7 @@ class AabbTests {
 		check(nearest.x == 1 && nearest.y == 0 && nearest.z == -1, "3D: the nearest point to one outside, on an edge");
 		var given = new Vector3();
 		check(crate.getClosestPoint(.5, 1.5, -.5, given) == given && given.x == .5 && given.y == 1.5 && given.z == -.5,
-			"3D: the nearest point to one inside is the point, into the vector given");
+			"3D: the nearest point to one inside is the point, into the vector provided");
 		check(crate.getClosestPoint(-9, 9, 9, given) == given
 			&& given.x == -1
 			&& given.y == 2

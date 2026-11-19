@@ -42,7 +42,7 @@ class TrigTests {
 			}
 			check(ok, 'sin and cos agree with Math within ±$range');
 			check(okTan, 'tan agrees with Math within ±$range');
-			check(okBoth, 'cosSin gives cos and sin to the bit within ±$range');
+			check(okBoth, 'cosSin returns cos and sin to the bit within ±$range');
 			check(okAtan, 'atan2 agrees with Math within ±$range');
 			check(okInverse, "asin and acos agree with Math");
 		}
@@ -70,7 +70,7 @@ class TrigTests {
 		for (row in large) {
 			check(close(Trig.sin(row[0]), row[1], 2) && close(Trig.cos(row[0]), row[2], 2), 'sin and cos of ${row[0]} as glibc\'s');
 			check(Trig.cosSin(row[0], both) == both && both.x == Trig.cos(row[0]) && both.y == Trig.sin(row[0]),
-				'cosSin of ${row[0]} gives cos and sin to the bit, into its out');
+				'cosSin of ${row[0]} returns cos and sin to the bit, into its out');
 		}
 		// And many more against Math, where the C runtime reduces large angles exactly (not Windows').
 		if (#if sys Sys.systemName() != "Windows" #else true #end) {
@@ -94,7 +94,7 @@ class TrigTests {
 		var made = Trig.cosSin(-0.),
 			endless = Trig.cosSin(Math.NEGATIVE_INFINITY);
 		check(made != both && made.x == 1 && 1 / made.y < 0 && Math.isNaN(endless.x) && Math.isNaN(endless.y),
-			"cosSin makes a vector without an out, keeps a zero's sign and gives NaN for an infinite angle");
+			"cosSin makes a vector without an out, keeps a zero's sign and returns NaN for an infinite angle");
 		check(Math.isNaN(Trig.asin(1.5)) && Math.isNaN(Trig.acos(-1.0000001)) && Trig.asin(1) == Math.PI / 2 && close(Trig.acos(-1), Math.PI),
 			"asin and acos at and past the ends");
 		check(Trig.atan2(0, -1) == Math.PI && Trig.atan2(-0., -1) == -Math.PI && Trig.atan2(1, 0) == Math.PI / 2 && Trig.atan2(-1, 0) == -Math.PI / 2,

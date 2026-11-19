@@ -39,7 +39,7 @@ class RandomTests {
 		// Two generators from one seed agree; a state resumes a sequence.
 		var a = new Random(7), b = new Random(7);
 		for (_ in 0...10)
-			check(a.next() == b.next(), "The same seed gives the same sequence");
+			check(a.next() == b.next(), "The same seed produces the same sequence");
 		var kept = a.state;
 		var ahead = [for (_ in 0...5) a.next()];
 		b.state = kept;
@@ -64,7 +64,7 @@ class RandomTests {
 		var seen = [false, false, false];
 		for (_ in 0...100)
 			seen[r.nextInt(3)] = true;
-		check(seen[0] && seen[1] && seen[2], "nextInt(3) gives each of 0, 1 and 2");
+		check(seen[0] && seen[1] && seen[2], "nextInt(3) returns each of 0, 1 and 2");
 		check(r.nextInt(1) == 0 && r.nextInt(0) == 0 && r.nextInt(-4) == 0, "nextInt of 1 or less is 0");
 		var inRange = true;
 		for (_ in 0...100) {
@@ -82,7 +82,7 @@ class RandomTests {
 		check(!r.nextBool(0) && r.nextBool(1), "nextBool with 0 is never, with 1 always");
 
 		// Picks, weights, shuffles.
-		check(r.pick([]) == null && r.pick([4]) == 4, "pick gives null for nothing and the one item for one");
+		check(r.pick([]) == null && r.pick([4]) == 4, "pick returns null for nothing and the one item for one");
 		var counts = [0, 0, 0];
 		for (_ in 0...3000)
 			counts[r.pickWeighted([1, 0, 3])]++;
@@ -115,14 +115,14 @@ class RandomTests {
 			squares += (g - 10) * (g - 10);
 		}
 		check(Math.abs(sum / 20000 - 10) < .01
-			&& Math.abs(Math.sqrt(squares / 20000) - .5) < .01, "nextGaussian: a middle and a deviation given");
+			&& Math.abs(Math.sqrt(squares / 20000) - .5) < .01, "nextGaussian: a middle and a deviation provided");
 		var logs = true;
 		for (n in [1, 2, 3, 1000, 65536, 5931641, 11863283, 11863284, 16777215, 16777216]) {
 			var x = n / 16777216;
 			if (Math.abs(@:privateAccess Random.log(x) - Math.log(x)) > 4e-16 * Math.abs(Math.log(x)))
 				logs = false;
 		}
-		check(logs && @:privateAccess Random.log(1) == 0, "the logarithm nextGaussian takes is Math.log's but for the last bit");
+		check(logs && @:privateAccess Random.log(1) == 0, "the logarithm nextGaussian uses is Math.log's but for the last bit");
 
 		// Points in and on a circle.
 		var p2 = new helix.math.Vector2(), inner = 0;
@@ -193,9 +193,9 @@ class RandomTests {
 			r.nextInCone(axis, .3, p3);
 			check(Math.abs(p3.length - 1) < 1e-12 && p3.dot(axis) / 5 >= Math.cos(.3) - 1e-12, "nextInCone: around an axis");
 		}
-		check(r.nextInCone(middle, .6, middle) == middle && Math.abs(middle.length - 1) < 1e-12, "nextInCone: into the middle given");
+		check(r.nextInCone(middle, .6, middle) == middle && Math.abs(middle.length - 1) < 1e-12, "nextInCone: into the middle provided");
 		var still = new Random(5), drawn = new Random(5);
-		check(still.nextInCone(new helix.math.Vector3(), 1).length == 0, "nextInCone: a middle of length 0 gives a length of 0");
+		check(still.nextInCone(new helix.math.Vector3(), 1).length == 0, "nextInCone: a middle of length 0 returns a length of 0");
 		drawn.nextInCone(unit, 1);
 		check(still.nextBits() == drawn.nextBits(), "and draws as many numbers as any other");
 
@@ -224,8 +224,8 @@ class RandomTests {
 			&& one.nextOnSphere(2).equals(other.nextOnSphere(2, p3))
 			&& one.nextInCone(unit, 1).equals(other.nextInCone(unit, 1, p3))
 			&& one.nextRotation().equals(other.nextRotation(q)),
-			"each gives the same with a vector to fill as without");
-		check(other.nextInCircle(1, p2) == p2 && other.nextInSphere(1, p3) == p3 && other.nextRotation(q) == q, "each returns the one given");
+			"each returns the same with a vector to fill as without");
+		check(other.nextInCircle(1, p2) == p2 && other.nextInSphere(1, p3) == p3 && other.nextRotation(q) == q, "each returns the one provided");
 		var bits = haxe.io.Bytes.alloc(8 * 16 * 200);
 		var at = 0;
 		inline function note(v:Float):Void {

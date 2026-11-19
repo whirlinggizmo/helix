@@ -144,7 +144,7 @@ class GifFile {
 	public function computeFrames():Array<Bytes> {
 		var size = width * height * 4;
 		if (size * 1.0 * frames.length > 0x7FFFFFFF)
-			throw 'GIF frames of $width x $height pixels, ${frames.length} of them, take over 2 GB';
+			throw 'GIF frames of $width x $height pixels, ${frames.length} of them, need over 2 GB';
 		var screen = Bytes.alloc(size), result = [];
 		for (frame in frames) {
 			var before = frame.disposal == GifDisposal.Previous ? screen.sub(0, size) : null;

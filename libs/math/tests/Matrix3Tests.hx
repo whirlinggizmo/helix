@@ -49,10 +49,10 @@ class Matrix3Tests {
 			"set and made the identity, returning itself");
 		check(at(Matrix3.fromTranslation(3, -4).transformPoint(1, 2, p), 4, -2)
 			&& Matrix3.fromTranslation(3, -4).transformPoint(1, 2, p) == p,
-			"a translation moves a point, into the vector given");
+			"a translation moves a point, into the vector provided");
 		check(at(Matrix3.fromTranslation(3, -4).transformDirection(1, 2), 1, 2), "a direction isn't moved");
 		check(at(Matrix3.fromScale(2, 3).transformPoint(1, 1), 2, 3), "a scale");
-		check(at(Matrix3.fromRotation(Math.PI / 2).transformPoint(1, 0), 0, 1), "a quarter turn takes +x to +y");
+		check(at(Matrix3.fromRotation(Math.PI / 2).transformPoint(1, 0), 0, 1), "a quarter turn moves +x to +y");
 		var into = new Matrix3();
 		check(Matrix3.fromScale(1, 2, into) == into
 			&& into.d == 2
@@ -60,7 +60,7 @@ class Matrix3Tests {
 			&& Matrix3.fromTranslation(1, 2, into) == into
 			&& into.a == 1
 			&& into.ty == 2,
-			"a builder fills the matrix given and returns it");
+			"a builder fills the matrix provided and returns it");
 
 		// Pinned: plain 3 x 3 algebra in Python (math.sin and math.cos), apart from Haxe and Trig.
 		var m1 = Matrix3.fromScale(2, 3).appendRotation(.7).appendTranslation(5, -6),
@@ -148,7 +148,7 @@ class Matrix3Tests {
 		var big = m1.toMatrix4(), given = new Matrix4();
 		var q = big.transformPoint(1.25, -2.5, 7);
 		check(at(new Vector2(q.x, q.y), 11.743738122493903, -10.125772186539436) && q.z == 7, "as a 4 x 4 matrix: the same point, z kept");
-		check(m1.toMatrix4(given) == given && given.m12 == m1.tx && given.m4 == m1.c && given.m15 == 1, "into the one given");
+		check(m1.toMatrix4(given) == given && given.m12 == m1.tx && given.m4 == m1.c && given.m15 == 1, "into the one provided");
 
 		// The interpreter multiplies Ints passed for Floats as Ints; whole numbers this large must still multiply as floats.
 		var large = new Matrix3().set(100000, 0, 0, 100000, 0, 0);

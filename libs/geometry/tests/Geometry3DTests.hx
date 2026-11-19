@@ -50,7 +50,7 @@ class Geometry3DTests {
 		check(at(Geometry3D.getClosestPointOnSegment(9, 9, 9, 1, 2, 3, 1, 2, 3), 1, 2, 3), "a segment of no length: its start");
 		var point = new Vector3();
 		check(Geometry3D.getClosestPointOnSegment(5, 1, 0, 0, 0, 0, 10, 0, 0, point) == point
-			&& at(point, 5, 0, 0), "into the vector given");
+			&& at(point, 5, 0, 0), "into the vector provided");
 		check(near(Geometry3D.getDistanceToSegment(3, 3, 4, 0, 0, 0, 10, 0, 0), 5)
 			&& near(Geometry3D.getDistanceToSegment(-3, 4, 0, 0, 0, 0, 10, 0, 0), 5)
 			&& near(Geometry3D.getDistanceToSegment(10, 0, 12, 0, 0, 0, 10, 0, 0), 12)
@@ -68,7 +68,7 @@ class Geometry3DTests {
 		check(onTriangle(7, 7, 7) != point
 			&& Geometry3D.getClosestPointOnTriangle(1, 1, 5, 0, 0, 0, 4, 0, 0, 0, 4, 0, point) == point
 			&& at(point, 1, 1, 0),
-			"into the vector given");
+			"into the vector provided");
 		check(at(Geometry3D.getClosestPointOnTriangle(3, 1, 0, 0, 0, 0, 2, 0, 0, 4, 0, 0), 3, 0, 0),
 			"a triangle of no area, its corners in a line: that segment");
 		check(at(Geometry3D.getClosestPointOnTriangle(3, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2), 2, 2, 2), "a triangle of one point: that point");

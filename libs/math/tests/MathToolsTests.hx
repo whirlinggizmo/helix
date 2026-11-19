@@ -25,8 +25,8 @@ class MathToolsTests {
 		check(MathTools.clamp(5., 0, 3) == 3 && MathTools.clamp(-1., 0, 3) == 0 && MathTools.clamp(2.5, 0, 3) == 2.5, "clamp: over, under and within");
 		check(MathTools.clamp(2., 3, 0) == 2 && MathTools.clamp(7., 3, 0) == 3, "clamp: bounds in the wrong order are swapped");
 		check(isInt(MathTools.clamp(9, 0, 7)) && MathTools.clamp(9, 0, 7) == 7 && MathTools.clamp(-2, 0, 7) == 0 && MathTools.clamp(4, 7, 0) == 4,
-			"clamp: whole numbers give an Int");
-		check(MathTools.clamp(3, 0, 2.5) == 2.5, "clamp: a whole number between a Float's bounds gives a Float");
+			"clamp: whole numbers return an Int");
+		check(MathTools.clamp(3, 0, 2.5) == 2.5, "clamp: a whole number between a Float's bounds returns a Float");
 		check(Math.isNaN(MathTools.clamp(Math.NaN, 0, 1)), "clamp: NaN stays NaN");
 		check(MathTools.clamp01(1.5) == 1 && MathTools.clamp01(-.5) == 0 && MathTools.clamp01(.25) == .25, "clamp01");
 
@@ -35,10 +35,10 @@ class MathToolsTests {
 			"wrap: over, under, at the end and within");
 		check(near(MathTools.wrap(4, -Math.PI, Math.PI), 4 - 2 * Math.PI) && MathTools.wrap(7., 2, 5) == 4, "wrap: a range not from 0");
 		check(MathTools.wrap(370., 360, 0) == 10 && MathTools.wrap(0., 360, 0) == 0, "wrap: bounds in the wrong order are swapped");
-		check(MathTools.wrap(9., 4, 4) == 4, "wrap: a range of no size gives its start");
+		check(MathTools.wrap(9., 4, 4) == 4, "wrap: a range of no size returns its start");
 		check(isInt(MathTools.wrap(8, 0, 8)) && MathTools.wrap(8, 0, 8) == 0 && MathTools.wrap(-1, 0, 8) == 7 && MathTools.wrap(-17, 0, 8) == 7
 			&& MathTools.wrap(5, 0, 8) == 5 && MathTools.wrap(7, 2, 5) == 4 && MathTools.wrap(1, 2, 5) == 4,
-			"wrap: whole numbers give an Int");
+			"wrap: whole numbers return an Int");
 		check(MathTools.wrap(9, 8, 0) == 1 && MathTools.wrap(9, 4, 4) == 4, "wrap: whole numbers, with swapped bounds and a range of no size");
 		check(near(MathTools.wrapAngle(3 * Math.PI), -Math.PI)
 			&& near(MathTools.wrapAngle(-3.5 * Math.PI), .5 * Math.PI)
@@ -52,12 +52,12 @@ class MathToolsTests {
 		check(isInt(MathTools.snap(37, 16)) && MathTools.snap(37, 16) == 32 && MathTools.snap(40, 16) == 48 && MathTools.snap(41, 16) == 48
 			&& MathTools.snap(-37, 16) == -32 && MathTools.snap(-40, 16) == -32 && MathTools.snap(-41, 16) == -48 && MathTools.snap(48, 16) == 48
 			&& MathTools.snap(5, 0) == 5,
-			"snap: whole numbers give an Int");
+			"snap: whole numbers return an Int");
 
 		check(MathTools.pingPong(1, 4) == 1 && MathTools.pingPong(4, 4) == 4 && MathTools.pingPong(5, 4) == 3 && MathTools.pingPong(8, 4) == 0
 			&& MathTools.pingPong(9, 4) == 1 && MathTools.pingPong(-1, 4) == 1 && MathTools.pingPong(-5, 4) == 3,
 			"pingPong: out, back and out again, below 0 too");
-		check(MathTools.pingPong(3, 0) == 0 && MathTools.pingPong(3, -2) == 0, "pingPong: a length of 0 or less gives 0");
+		check(MathTools.pingPong(3, 0) == 0 && MathTools.pingPong(3, -2) == 0, "pingPong: a length of 0 or less returns 0");
 
 		check(MathTools.sign(2.5) == 1 && MathTools.sign(-.001) == -1 && MathTools.sign(0) == 0 && MathTools.sign(Math.NaN) == 0, "sign");
 		check(isInt(MathTools.sign(-3.5)) && MathTools.sign(-7) == -1, "sign: an Int, of a whole number too");

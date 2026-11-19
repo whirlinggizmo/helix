@@ -74,7 +74,7 @@ class TrueTypeTests {
 			"GPOS" => list.getBytes(),
 			"kern" => words([0, 1, 0, 24, 1, 1, 0, 0, 0, 1, 2, 0x10000 - 999])
 		]));
-		check(gpos.kerning(1, 2) == -40 && gpos.kerning(1, 3) == -10, 'GPOS: by pairs, taking precedence over the kern table: ${gpos.kerning(1, 2)}');
+		check(gpos.kerning(1, 2) == -40 && gpos.kerning(1, 3) == -10, 'GPOS: by pairs, ahead of the kern table: ${gpos.kerning(1, 2)}');
 		check(gpos.kerning(2, 1) == 25 && gpos.kerning(3, 1) == 25 && gpos.kerning(2, 3) == 0 && gpos.kerning(1, 1) == 0,
 			"GPOS: by classes; a class pair of none, and a glyph no lookup covers, 0");
 		check(gpos.canKern(1) && gpos.canKern(2) && gpos.canKern(3), "GPOS: the glyphs its lookups cover start a pair");

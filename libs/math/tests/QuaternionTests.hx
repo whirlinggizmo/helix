@@ -45,7 +45,7 @@ class QuaternionTests {
 		var result = op(x, y, null);
 		check(result != x && result != y && identical(x, a) && identical(y, b), '$message: into a new rotation, its inputs unchanged');
 		var given = new Quaternion(9, 9, 9, 9);
-		check(op(copy(a), copy(b), given) == given && identical(given, result), '$message: into the one given');
+		check(op(copy(a), copy(b), given) == given && identical(given, result), '$message: into the one provided');
 		var source = copy(a);
 		check(op(source, copy(b), source) == source && identical(source, result), '$message: into the first');
 		var other = copy(b);
@@ -67,16 +67,16 @@ class QuaternionTests {
 		check(is(axis, [0.0916432962, 0.183286592, 0.274929881, 0.939372838], 1e-6), "and raylib's QuaternionFromAxisAngle");
 		check(is(Quaternion.fromAxisAngle(0, 0, 0, 2), [0, 0, 0, 1]), "an axis of length 0: the identity");
 		var into = new Quaternion();
-		check(Quaternion.fromAxisAngle(0, 1, 0, Math.PI, into) == into && is(into, [0, 1, 0, 0], 1e-15), "into the one given");
+		check(Quaternion.fromAxisAngle(0, 1, 0, Math.PI, into) == into && is(into, [0, 1, 0, 0], 1e-15), "into the one provided");
 		check(at(Quaternion.fromAxisAngle(0, 0, 1, Math.PI / 2).transformPoint(1, 0, 0), 0, 1, 0, 1e-15),
-			"a quarter turn around +z takes +x to +y, counterclockwise looking down the axis");
+			"a quarter turn around +z turns +x to +y, counterclockwise looking down the axis");
 
 		var euler = Quaternion.fromEuler(.3, -1.1, 2);
 		check(turnsAs(euler, [0.5037217006570683, -0.17203483724321522, 0.7515219958692853, 0.3897218915925781]), "from three turns: pinned");
 		check(is(euler, [0.503721714, -0.17203483, 0.751522005, 0.38972187], 1e-6), "and raylib's QuaternionFromEuler");
 		var steps = Quaternion.fromAxisAngle(1, 0, 0, .3).append(Quaternion.fromAxisAngle(0, 1, 0, -1.1)).append(Quaternion.fromAxisAngle(0, 0, 1, 2));
 		check(is(euler, [steps.x, steps.y, steps.z, steps.w]), "around x, then y, then z, each the world's");
-		check(Quaternion.fromEuler(.3, -1.1, 2, ZYX, into) == into && identical(into, euler), "into the one given");
+		check(Quaternion.fromEuler(.3, -1.1, 2, ZYX, into) == into && identical(into, euler), "into the one provided");
 		var angles = euler.toEuler();
 		check(at(angles, .3, -1.1, 2), "its turns back");
 		check(at(angles, 0.300000012, -1.0999999, 1.99999988, 1e-6), "and raylib's QuaternionToEuler");
@@ -85,7 +85,7 @@ class QuaternionTests {
 			check(at(back, turns[0], turns[1], turns[2], 1e-12), 'its turns back: ${turns}');
 		}
 		var given = new Vector3();
-		check(euler.toEuler(ZYX, given) == given && given.equals(angles), "its turns, into the vector given");
+		check(euler.toEuler(ZYX, given) == given && given.equals(angles), "its turns, into the vector provided");
 		for (yaw in [Math.PI / 2, -Math.PI / 2]) {
 			var locked = Quaternion.fromEuler(.4, yaw, .3),
 				back = locked.toEuler();
@@ -106,10 +106,10 @@ class QuaternionTests {
 		check(near(look.transformPoint(1, 0, 0).y, 0)
 			&& look.transformPoint(0, 1, 0).y > 0, "its right level, its up as near +y as it can be");
 		var lookUp = Quaternion.fromLookRotation(1, 2, -3, 0, 0, 5);
-		check(near(lookUp.transformPoint(1, 0, 0).z, 0) && lookUp.transformPoint(0, 1, 0).z > 0, "an up given");
+		check(near(lookUp.transformPoint(1, 0, 0).z, 0) && lookUp.transformPoint(0, 1, 0).z > 0, "an up provided");
 		var down = Quaternion.fromLookRotation(0, -2, 0);
 		check(at(down.transformPoint(0, 0, -1), 0, -1, 0) && at(down.transformPoint(0, 1, 0), 0, 0, -1),
-			"facing straight down, up along it: its up -z, as a turn down from level gives");
+			"facing straight down, up along it: its up -z, as a turn down from level produces");
 		var upward = Quaternion.fromLookRotation(0, 3, 0, 0, -1, 0);
 		check(at(upward.transformPoint(0, 0, -1), 0, 1, 0)
 			&& at(upward.transformPoint(0, 1, 0), 0, 0, 1), "facing straight up: its up +z");
@@ -117,7 +117,7 @@ class QuaternionTests {
 		check(at(sideways.transformPoint(0, 0, -1), 1, 0, 0)
 			&& at(sideways.transformPoint(0, 1, 0), 0, 1, 0), "an up along the direction: +y");
 		check(is(Quaternion.fromLookRotation(0, 0, 0, 1, 0, 0), [0, 0, 0, 1]), "a direction of length 0: the identity");
-		check(Quaternion.fromLookRotation(1, 2, -3, 0, 1, 0, into) == into && identical(into, look), "into the one given");
+		check(Quaternion.fromLookRotation(1, 2, -3, 0, 1, 0, into) == into && identical(into, look), "into the one provided");
 
 		var from = new Vector3(1, 2, 3), to = new Vector3(-2, .5, 1);
 		var between = Quaternion.fromBetween(from, to);
@@ -134,7 +134,7 @@ class QuaternionTests {
 		check(Quaternion.fromBetween(slant, back).transformPoint(slant.x, slant.y, slant.z).equals(back, 1e-12), "opposite and slanted");
 		check(is(Quaternion.fromBetween(from, from), [0, 0, 0, 1], 1e-15), "the same direction: the identity");
 		check(is(Quaternion.fromBetween(new Vector3(), to), [0, 0, 0, 1]), "a direction of length 0: the identity");
-		check(Quaternion.fromBetween(from, to, into) == into && identical(into, between), "into the one given");
+		check(Quaternion.fromBetween(from, to, into) == into && identical(into, between), "into the one provided");
 
 		var a = Quaternion.fromAxisAngle(1, 0, 0, .4);
 		b = Quaternion.fromAxisAngle(0, 1, 1, 2.1);
@@ -145,7 +145,7 @@ class QuaternionTests {
 		check(is(Quaternion.fromRotationMatrix(rotation), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789], 1e-15),
 			"from a rotation matrix: pinned");
 		check(Quaternion.fromRotationMatrix(rotation, into) == into
-			&& identical(into, Quaternion.fromRotationMatrix(rotation)), "into the one given");
+			&& identical(into, Quaternion.fromRotationMatrix(rotation)), "into the one provided");
 		for (turn in [
 			Matrix4.fromRotation(1, 0, 0, 3),
 			Matrix4.fromRotation(0, 1, 0, 3),
@@ -160,7 +160,7 @@ class QuaternionTests {
 			"the rotation of a matrix that scales and moves: its scale and translation left out");
 		var mirrored = Matrix4.fromScale(-1, 1, 1).append(rotation);
 		check(turnsAs(mirrored.getRotation(), [0.0916432938695913, 0.1832865877391826, 0.2749298816087739, 0.9393727128473789]),
-			"the rotation of one that mirrors: the mirror taken as its x's scale");
+			"the rotation of one that mirrors: the mirror read as its x's scale");
 		for (made in [
 			a,
 			b,
@@ -172,7 +172,7 @@ class QuaternionTests {
 				&& turnsAs(made.toMatrix().getRotation(), [made.x, made.y, made.z, made.w], 1e-14),
 				"its matrix and back");
 		check(rotation.getRotation(into) == into
-			&& turnsAs(into, [axis.x, axis.y, axis.z, axis.w]), "a matrix's rotation into the one given");
+			&& turnsAs(into, [axis.x, axis.y, axis.z, axis.w]), "a matrix's rotation into the one provided");
 
 		// Blends, the shorter way round.
 		check(is(Quaternion.slerp(a, b, .3), [
@@ -222,7 +222,7 @@ class QuaternionTests {
 		check(at(b.transformPoint(1.5, -2, .25), 0.6160885357678314, 0.6085236627865849, -2.3585236627865847), "a point turned: pinned");
 		check(at(b.transformPoint(1.5, -2, .25), 0.616088688, 0.608523607, -2.35852361, 1e-6), "and raylib's Vector3RotateByQuaternion");
 		check(b.transformPoint(1.5, -2, .25, given) == given && at(given, 0.6160885357678314, 0.6085236627865849, -2.3585236627865847),
-			"a point turned, into the vector given");
+			"a point turned, into the vector provided");
 		var m = b.toMatrix().toArray();
 		var pinned = [
 			-0.5048461045998576, 0.6103811967411634, -0.6103811967411634, 0, -0.6103811967411634, 0.24757694770007121, 0.7524230522999288, 0,
@@ -231,7 +231,7 @@ class QuaternionTests {
 		check([for (i in 0...16) near(m[i], pinned[i])].indexOf(false) < 0, "its matrix: pinned, and raylib's QuaternionToMatrix");
 		var matrix = new Matrix4();
 		check(b.toMatrix(matrix) == matrix && matrix.transformPoint(1.5, -2, .25).equals(b.transformPoint(1.5, -2, .25), 1e-15),
-			"its matrix, into the one given, turning as it does");
+			"its matrix, into the one provided, turning as it does");
 		check(near(Quaternion.fromAxisAngle(3, -1, 2, 2.5).angle, 2.5)
 			&& near(Quaternion.fromAxisAngle(3, -1, 2, 4).angle, Math.PI * 2 - 4)
 			&& near(negated.angle, b.angle)
@@ -369,7 +369,7 @@ class QuaternionTests {
 					'the order $name: the turns read back make the rotation again');
 			}
 			var back = Quaternion.fromEuler(.3, -.7, 1.1, order).toEuler(order);
-			check(at(back, .3, -.7, 1.1), 'the order $name: turns within the ranges read back as given');
+			check(at(back, .3, -.7, 1.1), 'the order $name: turns within the ranges read back as provided');
 			for (quarter in [Math.PI / 2, -Math.PI / 2]) {
 				var turns = [.4, .9, .3];
 				turns[seconds[index]] = quarter;
@@ -382,7 +382,7 @@ class QuaternionTests {
 					'the order $name, its second turn a quarter turn: the last turn 0, the first carrying the whole turn');
 			}
 		}
-		check(identical(Quaternion.fromEuler(.3, -1.1, 2), Quaternion.fromEuler(.3, -1.1, 2, ZYX)), "no order given: x, then y, then z");
+		check(identical(Quaternion.fromEuler(.3, -1.1, 2), Quaternion.fromEuler(.3, -1.1, 2, ZYX)), "no order provided: x, then y, then z");
 		var first = Quaternion.fromAxisAngle(0, 0, 1, 1.1),
 			then = Quaternion.fromAxisAngle(0, 1, 0, -.7),
 			last = Quaternion.fromAxisAngle(1, 0, 0, .3);
@@ -392,9 +392,9 @@ class QuaternionTests {
 		}), "XYZ: around z first, then y, then x");
 		var ordered = new Quaternion(9, 9, 9, 9);
 		check(Quaternion.fromEuler(.3, -.7, 1.1, YXZ, ordered) == ordered && identical(ordered, Quaternion.fromEuler(.3, -.7, 1.1, YXZ)),
-			"an order, into the one given");
+			"an order, into the one provided");
 		var readInto = new Vector3();
-		check(ordered.toEuler(YXZ, readInto) == readInto && at(readInto, .3, -.7, 1.1), "an order's turns, into the vector given");
+		check(ordered.toEuler(YXZ, readInto) == readInto && at(readInto, .3, -.7, 1.1), "an order's turns, into the vector provided");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

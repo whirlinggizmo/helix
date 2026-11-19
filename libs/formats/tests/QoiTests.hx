@@ -113,7 +113,7 @@ class QoiTests {
 		check(thrown(() -> QoiFile.read(huge)), "over 400 million pixels throws");
 		check(thrown(() -> QoiFile.write(8, 8, 2, image)), "writing 2 channels throws");
 		check(thrown(() -> QoiFile.write(0, 8, 4, image)), "writing no width throws");
-		check(thrown(() -> QoiFile.write(9, 8, 4, image)), "writing more pixels than given throws");
+		check(thrown(() -> QoiFile.write(9, 8, 4, image)), "writing more pixels than the image holds throws");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

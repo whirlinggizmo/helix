@@ -250,10 +250,10 @@ class WavFile {
 		if (sampleRate < 1 || channelCount < 1 || channelCount > 0xFFFF)
 			throw 'A WAV file of $channelCount channels at $sampleRate frames a second: the rate must be 1 or more, the channels 1 to 65535';
 		if (sampleSize != 8 && sampleSize != 16 && sampleSize != 24 && sampleSize != 32)
-			throw 'A WAV file of $sampleSize-bit samples: it takes 8, 16, 24 or 32';
+			throw 'A WAV file of $sampleSize-bit samples: WAV accepts 8, 16, 24 or 32';
 		var dataSize = frameCount * channelCount * (sampleSize >> 3);
 		if (frameCount < 0 || samples.length < dataSize)
-			throw 'A WAV file of $frameCount frames of $channelCount channels needs $dataSize bytes, given ${samples.length}';
+			throw 'A WAV file of $frameCount frames of $channelCount channels needs $dataSize bytes, provided ${samples.length}';
 		var padding = dataSize & 1;
 		var out = Bytes.alloc(44 + dataSize + padding);
 		out.blit(0, Bytes.ofString("RIFF"), 0, 4);

@@ -37,7 +37,7 @@ class Transform2DTests {
 	static function twoWays(op:(Transform2D, Null<Vector2>) -> Vector2, message:String):Vector2 {
 		var t = sample();
 		var result = op(t, null), given = new Vector2();
-		check(op(sample(), given) == given && given.equals(result) && t.position.equals(sample().position), '$message: into a new vector or the one given');
+		check(op(sample(), given) == given && given.equals(result) && t.position.equals(sample().position), '$message: into a new vector or the one provided');
 		var own = sample();
 		check(op(own, own.position) == own.position && own.position.equals(result), '$message: into its own position');
 		return result;
@@ -69,7 +69,7 @@ class Transform2DTests {
 			0.3108049841353322,
 			3,
 			-4
-		]), "its matrix, into the one given");
+		]), "its matrix, into the one provided");
 		var point = twoWays((t, out) -> t.transformPoint(1.5, 2, out), "transformPoint");
 		check(at(point, 4.081502995184509, -1.0284093028468853), "a point carried: pinned");
 		check(point.equals(sample().toMatrix().transformPoint(1.5, 2)), "a point carried as its matrix carries it");
@@ -115,7 +115,7 @@ class Transform2DTests {
 			check(is(back.toMatrix(), [matrix.a, matrix.b, matrix.c, matrix.d, matrix.tx, matrix.ty]), "back from its matrix, the same matrix");
 		}
 		var back = Transform2D.fromMatrix(sample().toMatrix(), t);
-		check(back == t && at(t.position, 3, -4) && near(t.rotation, .9) && at(t.scale, 2, .5), "back from its matrix into the one given: what made it");
+		check(back == t && at(t.position, 3, -4) && near(t.rotation, .9) && at(t.scale, 2, .5), "back from its matrix into the one provided: what made it");
 		var mirrored = Transform2D.fromMatrix(Matrix3.fromScale(1, -1));
 		check(mirrored.rotation == 0 && at(mirrored.scale, 1, -1), "a mirroring matrix: y's scale less than 0");
 		var sheared = Transform2D.fromMatrix(new Matrix3().set(2, 0, 1, 3, 0, 0));

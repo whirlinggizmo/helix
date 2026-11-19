@@ -125,10 +125,10 @@ class QoiFile {
 		if (width < 1 || height < 1 || !fits(width, height))
 			throw 'A QOI of $width x $height pixels: both must be 1 or more, and 400 million pixels at most';
 		if (channelCount != 3 && channelCount != 4)
-			throw 'A QOI of $channelCount channels: it takes 3 or 4';
+			throw 'A QOI of $channelCount channels: QOI accepts 3 or 4';
 		var pxLen = width * height * channelCount;
 		if (pixels.length < pxLen)
-			throw 'A QOI of $width x $height x $channelCount needs $pxLen bytes, given ${pixels.length}';
+			throw 'A QOI of $width x $height x $channelCount needs $pxLen bytes, provided ${pixels.length}';
 
 		var bytes = Bytes.alloc(width * height * (channelCount + 1) + HEADER_SIZE + PADDING.length);
 		var p = 0;

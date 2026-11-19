@@ -88,7 +88,7 @@ class VectorTests {
 		var zero = new Vector2().normalize();
 		check(zero.x == 0 && zero.y == 0, "2D: a vector of length 0 normalized stays 0");
 		var turned = three2([1., 0], q, (a, b, out) -> a.rotate(Math.PI / 2, out), "2D rotate");
-		check(near(turned.x, 0) && near(turned.y, 1), "2D a quarter turn takes +x to +y");
+		check(near(turned.x, 0) && near(turned.y, 1), "2D a quarter turn moves +x to +y");
 		check(turned.x == Trig.cos(Math.PI / 2) && turned.y == Trig.sin(Math.PI / 2), "2D turned through Trig");
 		var mid = three2([0., 10], [10., 20], (a, b, out) -> Vector2.lerp(a, b, .25, out), "2D lerp");
 		check(mid.x == 2.5 && mid.y == 12.5, "2D lerp");
@@ -115,7 +115,7 @@ class VectorTests {
 		var given = new Vector2();
 		check(Vector2.fromAngle(0, given) == given
 			&& given.x == 1
-			&& given.y == 0, "2D from an angle, its length 1, into the vector given");
+			&& given.y == 0, "2D from an angle, its length 1, into the vector provided");
 
 		// 3D.
 		var e = new Vector3();

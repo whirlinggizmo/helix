@@ -78,7 +78,7 @@ class ObjTests {
 		check(m.normalCount == 1 && same(m.normals, [0.0, 0, 2]), "normals not normalized");
 		check(m.faceCount == 0 && m.cornerCount == 0 && m.groups.length == 0, "no faces");
 		var c = obj("v 0 0 0 1 0.5 0\nv 1 0 0 0 1 0.25\n");
-		check(same(c.colors, [1.0, 0.5, 0, 0, 1, 0.25]), "six values give colors");
+		check(same(c.colors, [1.0, 0.5, 0, 0, 1, 0.25]), "six values set colors");
 		check(obj("v 0 0 0 1 0.5 0\nv 1 0 0\n").colors == null, "colors only when every position has them");
 		check(obj("").positionCount == 0 && obj("").colors == null, "an empty file");
 		// Points, lines, curves, smoothing and unknown statements are read past.
@@ -265,7 +265,7 @@ class ObjTests {
 		check(near(full.computeRoughness(), 1 - Math.sqrt(0.25)) && full.computeMetalness() == 0, "roughness from Ns, metalness 0");
 		var tr = lib.findMaterial("only tr");
 		check(tr != null && near(tr.opacity, 0.75), "Tr alone: opacity 1 - Tr");
-		check(same(tr.diffuse, [0.5, 0.5, 0.5]), "one value for a color gives all three");
+		check(same(tr.diffuse, [0.5, 0.5, 0.5]), "one value for a color sets all three");
 		var pbr = lib.findMaterial("pbr");
 		check(pbr.roughness == 0.3 && pbr.metalness == 0.8 && pbr.computeRoughness() == 0.3 && pbr.computeMetalness() == 0.8, "Pr and Pm");
 		check(pbr.roughnessTexturePath == "models/rough.png"
@@ -288,7 +288,7 @@ class ObjTests {
 			&& empty.diffuseTexturePath == null
 			&& empty.findTexturePath(["map_Kd", "bump"]) == null
 			&& empty.computeNormalTexturePath() == null,
-			"null for what the file doesn't give");
+			"null for what the file doesn't set");
 		check(same(empty.computeAmbient(), [0.0, 0, 0])
 			&& same(empty.computeDiffuse(), [1.0, 1, 1])
 			&& same(empty.computeSpecular(), [0.0, 0, 0])
@@ -323,7 +323,7 @@ class ObjTests {
 			&& same(d.computeDiffuse(), [1.0, 1, 1])
 			&& d.computeOpacity() == 1
 			&& d.diffuseTexturePath == null,
-			"DEFAULT: nothing given, computed white and opaque, no textures, not defined");
+			"DEFAULT: nothing set, computed white and opaque, no textures, not defined");
 		var model = obj("v 0 0 0\nv 1 0 0\nv 0 1 0\nusemtl pbr\nf 1 2 3\nusemtl missing\nf 1 2 3\nusemtl full\nf 1 2 3\n");
 		var found = model.computeMaterials(lib);
 		check(found.length == 3 && found[0] == pbr && found[2] == full, "computeMaterials: the library's, in materialNames' order");
@@ -331,7 +331,7 @@ class ObjTests {
 			&& !found[1].defined
 			&& found[1].diffuse == null
 			&& same(found[1].computeDiffuse(), [1.0, 1, 1]),
-			"a stand-in, named, not defined, giving nothing");
+			"a stand-in, named, not defined, setting nothing");
 	}
 
 	// Libraries combined, as an OBJ naming several uses them.
@@ -339,9 +339,9 @@ class ObjTests {
 		var a = mtl("newmtl wood\nKd 1 0 0\nnewmtl stone\nKd 0 1 0\n", "a.mtl");
 		var b = mtl("newmtl stone\nKd 0 0 1\nnewmtl metal\nKd 1 1 0\n", "b.mtl");
 		var both = MtlFile.combine([a, b]);
-		check(same([for (m in both.materials) m.name], ["wood", "stone", "metal"]), "combine: in turn, a name given before left out");
+		check(same([for (m in both.materials) m.name], ["wood", "stone", "metal"]), "combine: in turn, a name seen before left out");
 		check(same(both.findMaterial("stone").diffuse, [0.0, 1, 0]), "combine: the first library's wins");
-		check(MtlFile.combine([]).materials.length == 0, "combine: none gives an empty library");
+		check(MtlFile.combine([]).materials.length == 0, "combine: none returns an empty library");
 		var m = obj("mtllib a.mtl b.mtl\nmtllib ../shared/c.mtl\nv 0 0 0\n", "models/cars/m.obj");
 		check(same(m.materialLibraryPaths, ["models/cars/a.mtl", "models/cars/b.mtl", "models/shared/c.mtl"]),
 			"mtllib: several on a line, paths resolved and normalized");
@@ -352,12 +352,12 @@ class ObjTests {
 		function path(name:String, file:String):String
 			return mtl('newmtl a\nmap_Kd $name\n', file).materials[0].diffuseTexturePath;
 		check(path("tex.png", "m.mtl") == "tex.png", "a file with no directory");
-		check(path("./img/../tex.png", "a/b/m.mtl") == "a/b/tex.png", "./ and .. taken out");
+		check(path("./img/../tex.png", "a/b/m.mtl") == "a/b/tex.png", "./ and .. removed");
 		check(path("..\\..\\..\\tex.png", "a/b/m.mtl") == "../tex.png", "a backslash as a /, a .. above the root kept at its start");
 		check(path("../../x/tex.png", "../m.mtl") == "../../../x/tex.png", "..s kept at the start");
 		check(path("/abs/tex.png", "a/m.mtl") == "/abs/tex.png"
 			&& path("C:\\tex\\a.png", "a/m.mtl") == "C:\\tex\\a.png", "an absolute path kept as it is");
-		check(path("img//tex.png", "a//b/m.mtl") == "a/b/img/tex.png", "empty parts taken out");
+		check(path("img//tex.png", "a//b/m.mtl") == "a/b/img/tex.png", "empty parts removed");
 	}
 
 	// UTF-8 text, line endings and a byte order mark.

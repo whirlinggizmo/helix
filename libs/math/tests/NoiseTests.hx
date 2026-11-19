@@ -43,7 +43,7 @@ class NoiseTests {
 				differs++;
 		}
 		check(least < -.7 && least > -1.05 && most > .7 && most < 1.05, "perlin: about -1 to 1");
-		check(smooth, "perlin: near points give near numbers");
+		check(smooth, "perlin: near points produce near numbers");
 		check(repeats, "perlin: the noise again 256 along an axis, and 256 seeds on");
 		check(differs > 3900, "perlin: another seed, another noise");
 		check(Noise.perlin(.3, .7) == Noise.perlin(.3, .7, 0, 0)
@@ -69,7 +69,7 @@ class NoiseTests {
 				differs++;
 		}
 		check(least < -.7 && least > -1 && most > .7 && most < 1, "simplex: about -1 to 1");
-		check(smooth, "simplex: near points give near numbers");
+		check(smooth, "simplex: near points produce near numbers");
 		check(repeats, "simplex: the noise again 768 along an axis, and 256 seeds on");
 		check(differs > 3900, "simplex: another seed, another noise");
 		check(Noise.simplex(.3, .7) == Noise.simplex(.3, .7, 0, 0) && Noise.simplex(.3, .7) != Noise.simplex(.3, .7, .5),

@@ -149,7 +149,7 @@ class Mesh3DTests {
 			&& given.triangleCount == 8 * 4 * 2 - 16
 			&& Mesh3D.fromBox(1, 1, 1, given) == given
 			&& given.vertexCount == 24,
-			"a shape into the mesh given, again");
+			"a shape into the mesh provided, again");
 
 		// Hemisphere.
 		var dome = Mesh3D.fromHemisphere(2, 16, 6);
@@ -304,9 +304,9 @@ class Mesh3DTests {
 			&& filled.normals[24 * 3 + 1] == 1
 			&& filled.normals[24 * 3] == 0
 			&& filled.texCoords[24 * 2] == 0,
-			"merged: normals and texture coordinates given to the mesh without");
+			"merged: normals and texture coordinates added to the mesh without");
 		check(filled.colors[24 * 4] == 1 && filled.colors[24 * 4 + 3] == 1 && filled.triangleCount == 13,
-			"merged: white given to the mesh without colors, indexed with it");
+			"merged: white added to the mesh without colors, indexed with it");
 		check(Mesh3D.merge([]).vertexCount == 0 && Mesh3D.merge([]).indices == null, "merged: an empty list, an empty mesh");
 		var single = Mesh3D.merge([bare]);
 		check(single != bare && single.vertexCount == 3 && single.normals == null && single.indices == null, "merged: one mesh, a copy of what it has");
@@ -335,7 +335,7 @@ class Mesh3DTests {
 		check(sphere.positions[0] != 99 && copy.vertexCount == sphere.vertexCount, "copied: its own arrays");
 		var bounds = new Aabb3D();
 		check(sphere.computeBounds(bounds) == bounds
-			&& new Mesh3D().computeBounds().isEmpty, "bounds into those given; none for no positions");
+			&& new Mesh3D().computeBounds().isEmpty, "bounds into those provided; none for no positions");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

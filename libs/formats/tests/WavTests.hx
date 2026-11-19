@@ -280,7 +280,7 @@ class WavTests {
 		check(thrown(() -> WavFile.read(half)), "16-bit floating point throws");
 		check(thrown(() -> WavFile.write(8000, 1, 12, 1, Bytes.alloc(2))), "writing 12-bit samples throws");
 		check(thrown(() -> WavFile.write(0, 1, 16, 1, Bytes.alloc(2))), "writing a rate of 0 throws");
-		check(thrown(() -> WavFile.write(8000, 2, 16, 2, Bytes.alloc(7))), "writing fewer samples than given throws");
+		check(thrown(() -> WavFile.write(8000, 2, 16, 2, Bytes.alloc(7))), "writing fewer samples than the frame count needs throws");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

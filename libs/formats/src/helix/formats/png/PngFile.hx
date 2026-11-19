@@ -29,9 +29,9 @@ class PngFile {
 		if (width < 1 || height < 1)
 			throw 'A PNG of $width x $height pixels: both must be 1 or more';
 		if (channelCount < 1 || channelCount > 4)
-			throw 'A PNG of $channelCount channels: it takes 1 to 4';
+			throw 'A PNG of $channelCount channels: PNG accepts 1 to 4';
 		if (pixels.length < width * height * channelCount)
-			throw 'A PNG of $width x $height x $channelCount needs ${width * height * channelCount} bytes, given ${pixels.length}';
+			throw 'A PNG of $width x $height x $channelCount needs ${width * height * channelCount} bytes, provided ${pixels.length}';
 		return StbPngWriter.write(pixels, width * channelCount, width, height, channelCount);
 	}
 }

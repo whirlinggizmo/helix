@@ -112,7 +112,7 @@ class ColorTests {
 		check(linear.x == 1 && Math.abs(linear.y - 0.21586050011389926) < 1e-15 && linear.z == 0 && near(linear.w, 64 / 255),
 			"toLinear: red, green and blue as linear light, the alpha as stored");
 		var into = new helix.math.Vector4(9, 9, 9, 9);
-		check(Color.toLinear(0x40ff8000, into) == into && into.equals(linear), "toLinear, into the vector given");
+		check(Color.toLinear(0x40ff8000, into) == into && into.equals(linear), "toLinear, into the vector provided");
 		check(Color.fromLinear(.5, .2, .01) == 0xffbc7c19, "fromLinear: pinned, opaque unless told");
 		check(Color.fromLinear(linear.x, linear.y, linear.z, linear.w) == 0x40ff8000, "fromLinear makes toLinear's color again");
 		check(Color.fromLinear(2, -1, 1, 3) == 0xffff00ff

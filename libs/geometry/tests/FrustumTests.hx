@@ -85,7 +85,7 @@ class FrustumTests {
 		check([for (i in 0...24) near(orthographic.planes[i], flat[i], 1e-9)].indexOf(false) < 0, "an orthographic view's planes: pinned");
 		var given = new Frustum();
 		check(Frustum.fromMatrix(viewProjection(false), given) == given
-			&& given.planes.join(",") == perspective.planes.join(","), "into the one given");
+			&& given.planes.join(",") == perspective.planes.join(","), "into the one provided");
 		var copied = new Frustum();
 		check(copied.copyFrom(orthographic) == copied
 			&& copied.planes.join(",") == orthographic.planes.join(",")
@@ -135,7 +135,7 @@ class FrustumTests {
 		}
 		var givenPlane = new Plane();
 		check(f.getPlane(4, givenPlane) == givenPlane && near(givenPlane.getDistanceTo(2, 3, 8), -.1, 1e-9),
-			"the near plane into the plane given: the camera .1 behind it");
+			"the near plane into the plane provided: the camera .1 behind it");
 		check(near(f.getPlane(0).getDistanceTo(-200, 1, 0), leftDistance), "a point's distance to the left plane");
 		var refused = "";
 		try {

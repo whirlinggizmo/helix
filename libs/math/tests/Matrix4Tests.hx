@@ -53,12 +53,12 @@ class Matrix4Tests {
 		var m = new Matrix4(), p = new Vector3();
 		check(same(m, new Matrix4().makeIdentity()) && m.m0 == 1 && m.m5 == 1 && m.m15 == 1 && m.m1 == 0, "made as the identity");
 		check(at(m.transformPoint(1, 2, 3, p), 1, 2, 3)
-			&& m.transformPoint(1, 2, 3, p) == p, "the identity leaves a point, into the one given");
+			&& m.transformPoint(1, 2, 3, p) == p, "the identity leaves a point, into the one provided");
 		check(at(Matrix4.fromTranslation(1, 2, 3, m).transformPoint(0, 0, 0), 1, 2, 3) && m.m12 == 1 && m.m14 == 3,
 			"a translation moves a point; it sits at 12 to 14");
 		check(at(m.transformDirection(1, 0, 0, p), 1, 0, 0), "a direction isn't moved");
 		check(at(Matrix4.fromScale(2, 3, 4, m).transformPoint(1, 1, 1, p), 2, 3, 4), "a scale");
-		check(at(Matrix4.fromRotation(0, 1, 0, Math.PI / 2, m).transformPoint(1, 0, 0, p), 0, 0, -1), "a quarter turn about y takes x to -z");
+		check(at(Matrix4.fromRotation(0, 1, 0, Math.PI / 2, m).transformPoint(1, 0, 0, p), 0, 0, -1), "a quarter turn about y moves x to -z");
 		check(at(Matrix4.fromRotation(0, 0, 2, Math.PI / 2, m).transformPoint(1, 0, 0, p), 0, 1, 0), "an axis of any length: about z, x to y");
 		var s = Math.sqrt(.5);
 		check(same(Matrix4.fromQuaternion(0, 0, s, s, m), Matrix4.fromRotation(0, 0, 1, Math.PI / 2)), "a quaternion's rotation");
@@ -67,7 +67,7 @@ class Matrix4Tests {
 		check(same(Matrix4.fromEuler(.4, -1.1, 2.3), Matrix4.fromQuaternion(turns.x, turns.y, turns.z, turns.w)), "three turns, as the quaternion's");
 		check(at(Matrix4.fromEuler(Math.PI / 2, 0, Math.PI / 2).transformPoint(0, 1, 0, p), 0, 0, 1), "about x first: y to z, which z leaves");
 		check(Matrix4.fromEuler(.4, -1.1, 2.3, ZYX, m) == m
-			&& same(m, Matrix4.fromEuler(.4, -1.1, 2.3)), "three turns into the one given");
+			&& same(m, Matrix4.fromEuler(.4, -1.1, 2.3)), "three turns into the one provided");
 
 		Matrix4.fromScale(2, 2, 2, m).appendRotation(0, 1, 0, Math.PI / 2, m).appendTranslation(1, 0, -3, m);
 		check(at(m.transformPoint(1, 0, 0, p), 1, 0, -5), "appended in order: scaled, then turned, then moved");
@@ -81,7 +81,7 @@ class Matrix4Tests {
 		check(Matrix4.compose(twice, twice, twice) == twice
 			&& at(twice.transformPoint(0, 0, 0, p), 2, 0, 0), "compose with itself on both sides, into itself");
 		var into = new Matrix4();
-		check(Matrix4.fromScale(1, 2, 3, into) == into && into.m5 == 2, "a builder fills the matrix given and returns it");
+		check(Matrix4.fromScale(1, 2, 3, into) == into && into.m5 == 2, "a builder fills the matrix provided and returns it");
 
 		var inverse = m.invert();
 		check(inverse != null
@@ -157,16 +157,16 @@ class Matrix4Tests {
 		check(placed.getTranslation(part) == part
 			&& at(part, translation.x, translation.y, translation.z)
 			&& at(placed.getTranslation(), 1, 2, 3),
-			"getTranslation: decompose's translation, into the one given or a new one");
+			"getTranslation: decompose's translation, into the one provided or a new one");
 		check(placed.getRotation(turn) == turn
 			&& turn.x == rotation.x
 			&& turn.y == rotation.y
 			&& turn.z == rotation.z
 			&& turn.w == rotation.w
 			&& near(Math.abs(placed.getRotation().y), Math.sqrt(.5)),
-			"getRotation: decompose's rotation, into the one given or a new one");
+			"getRotation: decompose's rotation, into the one provided or a new one");
 		check(placed.getScale(part) == part && at(part, scale.x, scale.y, scale.z) && at(placed.getScale(), 2, 3, 4),
-			"getScale: decompose's scale, into the one given or a new one");
+			"getScale: decompose's scale, into the one provided or a new one");
 		Matrix4.fromScale(-2, 3, 4).decompose(translation, rotation, scale);
 		check(at(scale, -2, 3, 4) && near(Math.abs(rotation.w), 1), "a mirror: an x scale less than 0, the rotation none");
 		check(at(Matrix4.fromScale(-2, 3, 4).getScale(), -2, 3, 4) && near(Math.abs(Matrix4.fromScale(-2, 3, 4).getRotation().w), 1),
@@ -268,9 +268,9 @@ class Matrix4Tests {
 			var q = Quaternion.fromEuler(.3, -.7, 1.1, order);
 			check(same(Matrix4.fromEuler(.3, -.7, 1.1, order), Matrix4.fromQuaternion(q.x, q.y, q.z, q.w)), 'and as the quaternion\'s in the order $name');
 		}
-		check(identical(Matrix4.fromEuler(.3, -.7, 1.1), Matrix4.fromEuler(.3, -.7, 1.1, ZYX)), "no order given: x, then y, then z");
+		check(identical(Matrix4.fromEuler(.3, -.7, 1.1), Matrix4.fromEuler(.3, -.7, 1.1, ZYX)), "no order provided: x, then y, then z");
 		check(Matrix4.fromEuler(.3, -.7, 1.1, XYZ, m) == m
-			&& identical(m, Matrix4.fromEuler(.3, -.7, 1.1, XYZ)), "an order, into the one given");
+			&& identical(m, Matrix4.fromEuler(.3, -.7, 1.1, XYZ)), "an order, into the one provided");
 		check(at(Matrix4.fromEuler(Math.PI / 2, 0, Math.PI / 2, XYZ).transformPoint(0, 1, 0, p), -1, 0, 0), "about z first: y to -x, which x leaves");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

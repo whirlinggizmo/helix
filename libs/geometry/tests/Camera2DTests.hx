@@ -43,7 +43,7 @@ class Camera2DTests {
 		var result = op(camera, null), given = new Vector2();
 		check(result != camera.offset && result != camera.transform.position && camera.offset.x == 400 && camera.transform.position.x == 120.5,
 			'$message: into a new vector, the camera unchanged');
-		check(op(sample(), given) == given && given.equals(result), '$message: into the one given');
+		check(op(sample(), given) == given && given.equals(result), '$message: into the one provided');
 		var own = sample();
 		check(op(own, own.offset) == own.offset && own.offset.equals(result), '$message: into its own offset');
 		own = sample();
@@ -76,7 +76,7 @@ class Camera2DTests {
 		];
 		check(is(sample().computeViewMatrix(), view), "the view matrix: pinned, and raylib's");
 		var m = new Matrix3();
-		check(sample().computeViewMatrix(m) == m && is(m, view), "the view matrix, into the one given");
+		check(sample().computeViewMatrix(m) == m && is(m, view), "the view matrix, into the one provided");
 		check(at(sample().worldToView(120.5, -33.25), 400, 225), "its position shows at its offset");
 		check(at(fourWays((c, out) -> c.worldToView(100, 50, out), "worldToView"), 271.74793156436425, 396.73812933353213), "worldToView: pinned");
 		check(at(fourWays((c, out) -> c.viewToWorld(13, 517, out), "viewToWorld"), 23.40382051000376, 134.61188348891605), "viewToWorld: pinned");
@@ -123,7 +123,7 @@ class Camera2DTests {
 		var given = new Aabb2D();
 		check(sample().computeBounds(800, 450, given) == given
 			&& given.minX == bounds.minX
-			&& given.maxY == bounds.maxY, "the bounds, into the box given");
+			&& given.maxY == bounds.maxY, "the bounds, into the box provided");
 		var plain = new Camera2D();
 		plain.transform.position.set(10, 20);
 		plain.zoom = 2;

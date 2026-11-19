@@ -90,14 +90,14 @@ class CurveTests {
 			"A closed one comes back, bulging a little outside the square");
 		// Points on top of each other don't break it.
 		var doubled = Curve.through([0, 0, 0, 0, 5, 5, 5, 5]);
-		check(near(doubled.getX(1), 5) && Math.isFinite(doubled.getX(.5)), "Repeated points are taken");
+		check(near(doubled.getX(1), 5) && Math.isFinite(doubled.getX(.5)), "Repeated points are accepted");
 
 		// 3D.
 		var rise = Curve.polyline([0, 0, 0, 0, 0, 10], 3);
 		check(rise.dimensionCount == 3 && near(rise.getZ(.5), 5) && near(rise.length, 10) && rise.computeTangent(.5)[2] == 1, "A 3D curve has z");
 		var given = [], out = rise.computePosition(.3, given);
 		check(out == given && out.length == 3 && near(out[2], 3) && rise.computePosition(.3).length == 3,
-			"a position fills every axis, into the array given or a new one");
+			"a position fills every axis, into the array provided or a new one");
 		check(rise.getPoint(1, 2) == 10 && rise.getPoint(5, 0) == 0, "Points read back");
 
 		// Refusals.

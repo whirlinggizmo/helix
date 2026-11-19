@@ -44,9 +44,9 @@ class StandardTrigTests {
 			check(same(Trig.atan2(p[0], p[1]), Math.atan2(p[0], p[1])), 'atan2(${p[0]}, ${p[1]}) is Math\'s');
 		// The rotations, whose cosines and sines are Math's as well.
 		var turned = new Vector2(1, 0).rotate(.6);
-		check(turned.x == Math.cos(.6) && turned.y == Math.sin(.6), "Vector2.rotate takes Math's cosine and sine");
+		check(turned.x == Math.cos(.6) && turned.y == Math.sin(.6), "Vector2.rotate uses Math's cosine and sine");
 		var m = Matrix4.fromEuler(0, 0, .6);
-		check(m.m0 == Math.cos(.6) && m.m1 == Math.sin(.6), "Matrix4.fromEuler takes Math's cosine and sine");
+		check(m.m0 == Math.cos(.6) && m.m1 == Math.sin(.6), "Matrix4.fromEuler uses Math's cosine and sine");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

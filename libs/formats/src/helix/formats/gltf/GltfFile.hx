@@ -98,7 +98,7 @@ class GltfFile {
 			throw 'No buffer $bufferIndex';
 		var length:Null<Int> = field(all[bufferIndex], "byteLength");
 		if (length != null && bytes.length < length)
-			throw 'Buffer $bufferIndex is $length bytes, but ${bytes.length} were given';
+			throw 'Buffer $bufferIndex is $length bytes, but ${bytes.length} were provided';
 		buffers[bufferIndex] = bytes;
 		readMeshes = null;
 		readImages = null;

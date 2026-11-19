@@ -52,7 +52,7 @@ class BmFontTests {
 			"what a file omits reads as empty or 0");
 		check(bare.chars[0].id == 32 && bare.chars[0].xAdvance == 0, "a key a line omits reads as 0");
 		check(BmFontFile.read("common lineHeight=1\npage id=0 file=\"a.png\"", "a.fnt").pages[0].path == "a.png",
-			"a .fnt with no directory leaves its pages' paths as given");
+			"a .fnt with no directory leaves its pages' paths as written");
 		check(thrown(() -> BmFontFile.read("info face=x\n", "x.fnt")) != null, "no common line throws");
 		check(thrown(() -> BmFontFile.read("BMF\x03", "x.fnt")) != null, "the binary format throws");
 		check(thrown(() -> BmFontFile.read('<?xml version="1.0"?><font></font>', "x.fnt")) != null, "the XML format throws");

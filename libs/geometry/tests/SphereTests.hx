@@ -39,7 +39,7 @@ class SphereTests {
 		check(is(Sphere.fromBounds(new Aabb3D().set(-1, -2, -3, 1, 2, 3)), 0, 0, 0, Math.sqrt(14)), "around a box: its center, half its diagonal");
 		check(is(Sphere.fromBounds(new Aabb3D().set(2, 2, 2, 4, 2, 2)), 3, 2, 2, 1), "around a box of no height or depth");
 		var into = new Sphere();
-		check(Sphere.fromBounds(new Aabb3D(), into) == into && into.isEmpty, "around an empty box: empty, into the sphere given");
+		check(Sphere.fromBounds(new Aabb3D(), into) == into && into.isEmpty, "around an empty box: empty, into the sphere provided");
 		var points = [0., 0, 0, 2, 0, 0, 1, 1, 0];
 		check(is(Sphere.fromPoints(points, 3), 1, .5, 0, Math.sqrt(1.25)), "around points: the middle of their bounds, the farthest point's distance");
 		check(is(Sphere.fromPoints(points, 1), 0, 0, 0, 0) && is(Sphere.fromPoints(points, 2), 1, 0, 0, 1), "around one point, and two");
@@ -47,7 +47,7 @@ class SphereTests {
 		check(is(Sphere.fromPoints(spaced, 3, 2, 5), 2, 3, 0, Math.sqrt(13)), "around points at an offset and a stride");
 		check(Sphere.fromPoints(points, 0, 0, 3, into) == into && into.isEmpty, "around no points: empty");
 		check(Sphere.fromPoints(points, 3, 0, 3, into) == into
-			&& is(into, 1, .5, 0, Math.sqrt(1.25)), "around points, into the sphere given");
+			&& is(into, 1, .5, 0, Math.sqrt(1.25)), "around points, into the sphere provided");
 		var holds = true;
 		for (index in 0...3)
 			holds = holds && into.contains(points[index * 3], points[index * 3 + 1], points[index * 3 + 2]);
@@ -89,7 +89,7 @@ class SphereTests {
 			&& at(reach.getClosestPoint(1, 0, 0), 1, 0, 0), "to a point inside: the point");
 		check(at(new Sphere(4, 5, 6, -1).getClosestPoint(9, 9, 9), 4, 5, 6), "of an empty sphere: its center");
 		var point = new Vector3();
-		check(reach.getClosestPoint(1, -9, 0, point) == point && at(point, 1, -2, 0), "the nearest point, into the vector given");
+		check(reach.getClosestPoint(1, -9, 0, point) == point && at(point, 1, -2, 0), "the nearest point, into the vector provided");
 
 		// Grown to hold a point.
 		var grown = new Sphere(0, 0, 0, 1);
@@ -137,13 +137,13 @@ class SphereTests {
 		check(moving.transform(Matrix4.fromScale(3, 3, 3), moving) == moving && is(moving, 3, 0, 0, 6), "into the sphere itself");
 		check(reach.transform(Matrix4.fromTranslation(1, 0, 0), into) == into
 			&& is(into, 2, 0, 0, 2)
-			&& is(reach, 1, 0, 0, 2), "into the sphere given");
+			&& is(reach, 1, 0, 0, 2), "into the sphere provided");
 
 		// The box around.
 		var bounds = reach.getBounds();
 		check(bounds.minX == -1 && bounds.maxX == 3 && bounds.minY == -2 && bounds.maxY == 2 && bounds.minZ == -2 && bounds.maxZ == 2, "the box around");
 		var box = new Aabb3D().set(0, 0, 0, 1, 1, 1);
-		check(new Sphere(0, 0, 0, -1).getBounds(box) == box && box.isEmpty, "of an empty sphere: an empty box, into the box given");
+		check(new Sphere(0, 0, 0, -1).getBounds(box) == box && box.isEmpty, "of an empty sphere: an empty box, into the box provided");
 		check(is(Sphere.fromBounds(new Sphere(3, 4, 5, 0).getBounds()), 3, 4, 5, 0), "of a sphere of radius 0: its center");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});

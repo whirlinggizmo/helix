@@ -103,7 +103,7 @@ class Ray3DTests {
 		var normalX = 0.;
 		for (c in 0...3)
 			normalX += p[i[hitTriangle * 3 + c] * 3];
-		check(hitTriangle >= 0 && normalX == -3, "its triangle, counted as the indices give them: one of the -x face's");
+		check(hitTriangle >= 0 && normalX == -3, "its triangle, counted as the indices list them: one of the -x face's");
 		check(new Ray3D().set(5, .5, .25, 1, 0, 0).intersectMesh(cube) == null, "behind it: none");
 		var inside = new Ray3D().set(0, .5, .25, 1, 0, 0).intersectMesh(cube);
 		check(inside != null && near(inside.distance, 1) && at(inside.normal, 1, 0, 0), "from inside a closed mesh: where it comes out");
@@ -113,11 +113,12 @@ class Ray3DTests {
 
 		// Into the hit provided; a miss leaves it.
 		var given = new RayHit3D();
-		check(toSphere.intersectSphere(new Sphere(0, 0, 0, 2), given) == given && near(given.distance, 8), "a hit into the one given");
+		check(toSphere.intersectSphere(new Sphere(0, 0, 0, 2), given) == given && near(given.distance, 8), "a hit into the one provided");
 		check(toSphere.intersectSphere(new Sphere(50, 0, 0, 2), given) == null
 			&& near(given.distance, 8)
 			&& at(given.point, 0, 0, 2), "a miss: it unchanged");
-		check(along.intersectMesh(cube, placed, given) == given && given.triangleIndex == hitTriangle, "a mesh's hit into the one given");
+		check(along.intersectMesh(cube, placed, given) == given
+			&& given.triangleIndex == hitTriangle, "a mesh's hit into the one provided");
 		check(toSphere.intersectPlane(Plane.fromPointNormal(0, 0, 0, 0, 0, 1), given) == given
 			&& given.triangleIndex == -1, "another test's: no triangle");
 		var copy = new RayHit3D().copyFrom(given);

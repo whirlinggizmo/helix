@@ -41,7 +41,7 @@ class LogTests {
 		Log.error("silenced", "ui");
 		Log.setTagLevel("ui", null);
 		Log.error("back", "ui");
-		check(written.length == 5 && StringTools.endsWith(written[4], "[ui] back"), "Off silences a tag; null gives it Log.level again");
+		check(written.length == 5 && StringTools.endsWith(written[4], "[ui] back"), "Off silences a tag; null sets it back to Log.level");
 		check(!Log.isWritten(Info) && Log.isWritten(Error) && !Log.isWritten(Warning, "audio") && !Log.isWritten(Off), "isWritten says so ahead");
 		var heard = [];
 		var listener = (level:LogLevel, line:String) -> heard.push(level);

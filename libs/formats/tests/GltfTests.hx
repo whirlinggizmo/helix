@@ -140,7 +140,7 @@ class GltfTests {
 			&& material.alphaCutoff == 0.5
 			&& model.materials[1].alphaMode == "MASK"
 			&& model.materials[1].alphaCutoff == 0.25,
-			"GLB: alphaMode and alphaCutoff read, OPAQUE and 0.5 when the file gives none");
+			"GLB: alphaMode and alphaCutoff read, OPAQUE and 0.5 when the file sets none");
 		check(material.baseColorImageIndex == 0 && material.metallic == 0 && material.roughness == 1, "GLB: its texture's image, its factors");
 		check(material.normalImageIndex == -1 && material.emissiveImageIndex == -1 && same(material.emissiveFactor, [0, 0, 0]),
 			"GLB: no normal or emissive image, black emission");
@@ -219,9 +219,9 @@ class GltfTests {
 			&& near(r.w, 0.7071067811865476)
 			&& model.nodes[0].local.position.x == 0
 			&& model.nodes[0].local.scale.y == 1,
-			".gltf: a node's parts as it gives them, the rest their defaults");
+			".gltf: a node's parts as the file sets them, the rest their defaults");
 		var knee = model.nodes[3].local;
-		check(near(knee.scale.x, 2) && near(knee.position.y, 1) && near(knee.rotation.w, 1), ".gltf: a node's matrix taken apart");
+		check(near(knee.scale.x, 2) && near(knee.position.y, 1) && near(knee.rotation.w, 1), ".gltf: a node's matrix decomposed");
 		check(model.nodes[1].skinIndex == 0 && model.nodes[0].skinIndex == -1, ".gltf: a node's skin, or none");
 		var skin = model.skins[0];
 		check(model.skins.length == 2 && skin.name == "legs" && skin.jointIndices.join(",") == "2,3" && skin.skeletonIndex == 2,
@@ -229,7 +229,7 @@ class GltfTests {
 		check(near(skin.inverseBindMatrices[1].m13, -2) && near(skin.inverseBindMatrices[0].m0, 1), ".gltf: its inverse binds");
 		check(model.skins[1].inverseBindMatrices[0].toArray()
 		.join(",") == new helix.math.Matrix4().toArray().join(",") && model.skins[1].skeletonIndex == -1 && model.skins[1].name == "",
-			".gltf: none given, identities; no skeleton, no name");
+			".gltf: none set, identities; no skeleton, no name");
 		var walk = model.animations[0];
 		check(model.animations.length == 2 && walk.name == "Walk" && walk.channels.length == 2 && walk.channels[0].nodeIndex == 3
 			&& walk.channels[0].path == "rotation" && walk.channels[1].samplerIndex == 1,

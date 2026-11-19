@@ -66,17 +66,17 @@ class PlaneTests {
 		check(is(Plane.fromPointNormal(1, 1, 1, 3, 0, 4), .6, 0, .8, -1.4), "a tilted direction, made of length 1");
 		check(is(Plane.fromPointNormal(4, 2, 9, 0, 0, 0), 0, 1, 0, -2), "a direction of length 0: facing up, through the point");
 		var into = new Plane();
-		check(Plane.fromPointNormal(0, 0, 5, 0, 0, -1, into) == into && is(into, 0, 0, -1, 5), "into the plane given");
+		check(Plane.fromPointNormal(0, 0, 5, 0, 0, -1, into) == into && is(into, 0, 0, -1, 5), "into the plane provided");
 		check(is(Plane.fromPoints(0, 1, 0, 1, 1, 0, 0, 1, -1), 0, 1, 0, -1), "three points counterclockwise from above: facing up");
 		check(is(Plane.fromPoints(0, 1, 0, 0, 1, -1, 1, 1, 0), 0, -1, 0, 1), "the same points the other way round: facing down");
 		check(is(Plane.fromPoints(1, 3, 1, 2, 3, 1, 3, 3, 1), 0, 1, 0, -3), "three points in a line: facing up, through the first");
-		check(Plane.fromPoints(0, 0, 0, 0, 0, 1, 0, 1, 0, into) == into && is(into, -1, 0, 0, 0), "three points into the plane given");
+		check(Plane.fromPoints(0, 0, 0, 0, 0, 1, 0, 1, 0, into) == into && is(into, -1, 0, 0, 0), "three points into the plane provided");
 
 		// The nearest point.
 		var tilted = Plane.fromPointNormal(0, 0, 0, 1, 1, 0);
 		check(at(tilted.getClosestPoint(2, 0, 5), 1, -1, 5), "the nearest point on a tilted plane");
 		var point = new Vector3();
-		check(floor.getClosestPoint(3, -8, 4, point) == point && at(point, 3, 2, 4), "the nearest point, into the vector given");
+		check(floor.getClosestPoint(3, -8, 4, point) == point && at(point, 3, 2, 4), "the nearest point, into the vector provided");
 
 		// A segment.
 		check(at(floor.intersectSegment(0, 0, 0, 0, 8, 0), 0, 2, 0), "a segment crossing, and where");
@@ -89,7 +89,7 @@ class PlaneTests {
 			&& floor.intersectSegment(0, 1, 0, 5, -8, 0, point) == null
 			&& at(point, 9, 9, 9),
 			"both ends on one side: none, the vector unchanged");
-		check(floor.intersectSegment(0, 0, 0, 0, 4, 0, point) == point && at(point, 0, 2, 0), "a crossing into the vector given");
+		check(floor.intersectSegment(0, 0, 0, 0, 4, 0, point) == point && at(point, 0, 2, 0), "a crossing into the vector provided");
 
 		// Three planes.
 		var atX = Plane.fromPointNormal(1, 0, 0, 1, 0, 0),
@@ -103,7 +103,7 @@ class PlaneTests {
 		check(Plane.intersectPlanes(atX, Plane.fromPointNormal(5, 0, 0, 1, 0, 0), atZ, point) == null && at(point, 9, 9, 9),
 			"two of them parallel: none, the vector unchanged");
 		check(Plane.intersectPlanes(atX, atY, Plane.fromPointNormal(0, 0, 0, 1, 1, 0)) == null, "all three along one line: none");
-		check(Plane.intersectPlanes(atX, atY, atZ, point) == point && at(point, 1, 2, 3), "the point into the vector given");
+		check(Plane.intersectPlanes(atX, atY, atZ, point) == point && at(point, 1, 2, 3), "the point into the vector provided");
 
 		// Spheres and boxes.
 		check(floor.intersectsSphere(new Sphere(0, 2.5, 0, 1))
@@ -152,7 +152,7 @@ class PlaneTests {
 		var moving = new Plane().copyFrom(floor);
 		check(moving.transform(Matrix4.fromTranslation(0, 1, 0), moving) == moving && is(moving, 0, 1, 0, -3) && is(floor, 0, 1, 0, -2),
 			"moved into the plane itself");
-		check(floor.transform(Matrix4.fromTranslation(0, 1, 0), into) == into && is(into, 0, 1, 0, -3), "moved into the plane given");
+		check(floor.transform(Matrix4.fromTranslation(0, 1, 0), into) == into && is(into, 0, 1, 0, -3), "moved into the plane provided");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

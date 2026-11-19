@@ -50,7 +50,7 @@ class Camera3DTests {
 		var camera = sample(orthographic);
 		var result = op(camera, null), given = new Vector3();
 		check(result != camera.transform.position && at(camera.transform.position, 2, 3, 8), '$message: into a new vector, the camera unchanged');
-		check(op(sample(orthographic), given) == given && given.equals(result), '$message: into the one given');
+		check(op(sample(orthographic), given) == given && given.equals(result), '$message: into the one provided');
 		var own = sample(orthographic);
 		check(op(own, own.transform.position) == own.transform.position
 			&& own.transform.position.equals(result), '$message: into its own position');
@@ -119,7 +119,7 @@ class Camera3DTests {
 			1
 		], 2e-6), "and raylib's MatrixLookAt");
 		var given = new Matrix4();
-		check(sample().computeViewMatrix(given) == given && matrixIs(given, view), "its view matrix, into the one given");
+		check(sample().computeViewMatrix(given) == given && matrixIs(given, view), "its view matrix, into the one provided");
 		var scaled = sample();
 		scaled.transform.scale.set(3, -2, .5);
 		scaled.transform.rotation.set(scaled.transform.rotation.x * 4, scaled.transform.rotation.y * 4, scaled.transform.rotation.z * 4,
@@ -200,7 +200,7 @@ class Camera3DTests {
 			1
 		], 1e-6), "and raylib's MatrixOrtho");
 		check(sample().computeProjectionMatrix(aspect, given) == given
-			&& matrixIs(given, perspective), "its projection, into the one given");
+			&& matrixIs(given, perspective), "its projection, into the one provided");
 
 		// A point projected, and the ray through a point in the view, each way.
 		check(at(threeWays(false, (c, out) -> c.project(1.5, -.5, -2, aspect, out), "project"), 0.21785874043428863, -0.2168102563951898, 0.9809133609400974),
@@ -220,7 +220,7 @@ class Camera3DTests {
 		check(sample().computeRay(.25, -.6, aspect, given) == given
 			&& at(given.direction, ray.direction.x, ray.direction.y, ray.direction.z)
 			&& at(given.origin, 2, 3, 8),
-			"the ray, into the one given");
+			"the ray, into the one provided");
 		var flat = sample(true).computeRay(.25, -.6, aspect);
 		check(at(flat.direction, -0.23570226039551584, -0.23570226039551578, -0.9428090415820634), "orthographic: the way it faces, pinned");
 		check(at(flat.origin, 4.769274743185662, -0.5221413629467406, 8.082150637762197), "orthographic: its start on the near plane, pinned");
@@ -242,7 +242,7 @@ class Camera3DTests {
 			"its frustum holds what it looks at, not what is behind or beside");
 		var vp = Matrix4.compose(sample().computeViewMatrix(), sample().computeProjectionMatrix(aspect));
 		check(sample().computeFrustum(aspect, into) == into && into.planes.join(",") == Frustum.fromMatrix(vp).planes.join(","),
-			"its frustum, into the one given: its view-projection's");
+			"its frustum, into the one provided: its view-projection's");
 		// 1 ahead and 5 to the right: outside the perspective view, 0.86 wide each way there, inside the orthographic one, 10.67.
 		var wide = sample(true).computeFrustum(aspect), t = sample().transform;
 		var aside = t.position.addScaled(t.computeForward(), 1).addScaled(t.computeRight(), 5);

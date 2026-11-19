@@ -52,7 +52,7 @@ class Transform3DTests {
 		var t = sample();
 		var result = op(t, null), given = new Vector3();
 		check(result != t.position && t.position.equals(sample().position), '$message: into a new vector, the transform unchanged');
-		check(op(sample(), given) == given && given.equals(result), '$message: into the one given');
+		check(op(sample(), given) == given && given.equals(result), '$message: into the one provided');
 		var own = sample();
 		check(op(own, own.position) == own.position && own.position.equals(result), '$message: into its own position');
 		return result;
@@ -79,7 +79,7 @@ class Transform3DTests {
 		];
 		check(matrixIs(sample().toMatrix(), matrix), "its matrix scales, turns and moves: pinned");
 		var m = new Matrix4();
-		check(sample().toMatrix(m) == m && matrixIs(m, matrix), "its matrix, into the one given");
+		check(sample().toMatrix(m) == m && matrixIs(m, matrix), "its matrix, into the one provided");
 		var point = threeWays((t, out) -> t.transformPoint(1.5, 2, -.5, out), "transformPoint");
 		check(at(point, 3.959185008805524, -2.134837102889302, 4.482666205135998), "a point carried: pinned");
 		check(point.equals(sample().toMatrix().transformPoint(1.5, 2, -.5), 1e-14), "a point carried as its matrix carries it");
@@ -175,7 +175,7 @@ class Transform3DTests {
 		check(s.lookAt(3, -4, 2) == s && s.rotation.x == before.x && s.rotation.w == before.w, "a point at its position leaves it as it is");
 		s.lookAt(3, -10, 2, 0, 0, -1);
 		check(s.computeForward().equals(new Vector3(0, -1, 0), 1e-15)
-			&& s.computeUp().equals(new Vector3(0, 0, -1), 1e-15), "an up given");
+			&& s.computeUp().equals(new Vector3(0, 0, -1), 1e-15), "an up provided");
 
 		// Swung around a point.
 		s = sample();
@@ -238,7 +238,7 @@ class Transform3DTests {
 			&& at(t.position, 3, -4, 2)
 			&& turnsAs(t.rotation, [sampled.x, sampled.y, sampled.z, sampled.w])
 			&& at(t.scale, 2, .5, 1.5),
-			"back from its matrix into the one given: what made it");
+			"back from its matrix into the one provided: what made it");
 		var mirrored = Transform3D.fromMatrix(Matrix4.fromScale(1, 1, -1));
 		check(at(mirrored.scale, -1, 1, 1) && near(Math.abs(mirrored.rotation.y), 1) && at(mirrored.computeForward(), 0, 0, 1),
 			"a matrix that mirrors z: x's scale less than 0, its rotation a half turn, facing the way the matrix does");
@@ -270,7 +270,7 @@ class Transform3DTests {
 				-0.08645041320117793,
 				0.9784757884486139
 			]) && at(nearest.scale, 1.971405786818069, 1.5742197977634664, 0.8589104391495211) && at(nearest.position, 1, 2, 3),
-			"a matrix that shears: the nearest rotation, as the SVD gives it, and the scale along its axes, pinned");
+			"a matrix that shears: the nearest rotation, as the SVD produces it, and the scale along its axes, pinned");
 		var empty = Transform3D.fromMatrix(Matrix4.fromScale(0, 0, 0));
 		check(turnsAs(empty.rotation, [0, 0, 0, 1]) && at(empty.scale, 0, 0, 0), "a matrix that flattens everything: unturned, scale 0");
 
@@ -307,7 +307,7 @@ class Transform3DTests {
 		check(turret.rotation.x == aim.rotation.x
 			&& turret.rotation.w == aim.rotation.w
 			&& turret.computeUp().equals(new Vector3(1, 0, 0), 1e-15),
-			"an up given");
+			"an up provided");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);
