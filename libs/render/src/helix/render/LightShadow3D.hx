@@ -53,7 +53,7 @@ class LightShadow3D {
 		more, a wider disc of lookups. Clamped to 0 to 8. */
 	public var radius(default, set):Float = 1;
 
-	/** Gets or sets how much of the light a shadow takes away: 1 until set. Clamped to 0 to 1. */
+	/** Gets or sets how much of the light a shadow removes: 1 until set. Clamped to 0 to 1. */
 	public var strength(default, set):Float = 1;
 
 	/** Gets or sets what a shadow leaves of the surface's own color, 0xAARRGGBB, its alpha ignored: black until set, so nothing. A cold

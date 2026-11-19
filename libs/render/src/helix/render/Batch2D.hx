@@ -26,7 +26,7 @@ import helix.render.RenderPass.RenderCommand;
 	Colors and texels are sRGB values. Into an RGBA8 target or the screen they are drawn as they are stored: a tint multiplies them, and
 	blending mixes them, as sRGB values, which is what 2D art is drawn expecting. Into an RGBA16F target, which holds linear light, they
 	are decoded to linear as they are drawn, so they blend with the 3D drawn there and show as they would on the screen once the target
-	is encoded. Nothing is tone mapped. A program's own shader (`shaderValues`) is given them as stored either way.
+	is encoded. Nothing is tone mapped. A program's own shader (`shaderValues`) receives them as stored either way.
 
 	**Draw state.** `transform`, `blend`, `shaderValues` and `customData` are read as each draw is made, and kept across `begin`s and
 	frames, as raylib's rlgl state is: a value set holds until the program sets another, and `resetState` puts all four back.
@@ -69,9 +69,9 @@ import helix.render.RenderPass.RenderCommand;
 
 	With them the view's names (`View3D`: `viewProjection`, `linearTarget` and the rest), shared through `#include
 	<helix/render/shaders/view.glsl>` or written per draw when declared alone. A name the program writes on its values is overwritten by the
-	batch's. A name `Shader.withNames` gives is filled exactly as the same name declared in the GLSL, and the batch shares the `View`
-	block with each draw itself, so the program sets no `ShaderValues.scene` (`Batch3D` says how). Colors are given as stored and
-	nothing the shader writes is encoded after it, so it works in the space it chooses; `#include <helix/render/shaders/color.glsl>` gives the
+	batch's. A name `Shader.withNames` maps is filled exactly as the same name declared in the GLSL, and the batch shares the `View`
+	block with each draw itself, so the program sets no `ShaderValues.scene` (`Batch3D` says how). Colors are passed as stored and
+	nothing the shader writes is encoded after it, so it works in the space it chooses; `#include <helix/render/shaders/color.glsl>` provides the
 	conversions (`View3D` lists them). The batch's vertex stage passes `texCoord` (vec2), `color` (vec4), `customData` (vec4), `normal`
 	(vec3) and `worldPosition` (vec3), read by name in a fragment stage, as `Batch3D`'s does.
 
@@ -123,7 +123,7 @@ class Batch2D {
 	public final transform = new Matrix3();
 
 	/** Gets or sets how the following draws are combined with what is under them: `Blend.ALPHA` until set; any factors and
-		operations the platform's `Blend` takes (multiply, screen, premultiplied alpha). */
+		operations the platform's `Blend` accepts (multiply, screen, premultiplied alpha). */
 	public var blend(default, set):Blend = Blend.ALPHA;
 
 	/** Gets or sets the program's own shader the following draws are drawn with, as values over it carrying its own uniforms and
@@ -253,7 +253,7 @@ class Batch2D {
 
 	/** Opens the batch for drawing in the renderer's current pass, in a camera's world units.
 
-		The camera is read now: changing it after takes effect at the next `begin` or `beginCamera`. The draw state is kept as the program
+		The camera is read now: changing it after applies at the next `begin` or `beginCamera`. The draw state is kept as the program
 		left it.
 		@param camera  The camera, whose view units are the viewport's pixels.
 		@throws String  No frame being recorded, or a batch (this or another) already open. */
@@ -301,7 +301,7 @@ class Batch2D {
 	/** Draws a rectangle of a texture into a rectangle, turned about an origin, as raylib's `DrawTexturePro` draws it: no region is
 		made for it.
 
-		A negative width or height of the part taken mirrors it that way.
+		A negative width or height of the part drawn mirrors it that way.
 		@param texture  The texture.
 		@param regionX  The part's left edge, in texels from the texture's left.
 		@param regionY  The part's top edge, in texels from the texture's top.
@@ -488,7 +488,7 @@ class Batch2D {
 		plane.polyline(points, thickness, color, true);
 	}
 
-	/** Draws triangles as given: textured, colored by vertex, or both, for what the shapes here don't make.
+	/** Draws triangles as provided: textured, colored by vertex, or both, for what the shapes here don't make.
 
 		The arrays are read during the call, so they may be reused for the next.
 		@param texture  The texture, or null for white.
@@ -503,8 +503,8 @@ class Batch2D {
 
 	/** Draws text in a font, line by line at each line break, left-aligned, its first line's top at a point.
 
-		A distance-field font stays sharp at any size; another is scaled from its atlas. Pairs of characters are kerned as the font gives
-		them, unless `kerned` is false.
+		A distance-field font stays sharp at any size; another is scaled from its atlas. Pairs of characters are kerned as the font
+		specifies them, unless `kerned` is false.
 		@param font  The font.
 		@param text  The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
 		@param x  The left edge.
@@ -512,8 +512,8 @@ class Batch2D {
 		@param color  Optional. The color; defaults to white.
 		@param size  Optional. The size, in the batch's units, as the font's size is measured; the font's own when omitted.
 		@param letterSpacing  Optional. Space added after each character, in the batch's units, as raylib's `spacing`; defaults to 0.
-		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them; defaults to true. raylib's `DrawTextEx`
-			doesn't kern. */
+		@param kerned  Optional. Whether pairs of characters are kerned as the font specifies them; defaults to true. raylib's
+			`DrawTextEx` doesn't kern. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true):Void {
 		plane.text(font, text, x, y, color, size, letterSpacing, kerned);
 	}
@@ -990,11 +990,11 @@ class Batch2D {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
-		`#version 450` (Vulkan's), the batch's vertex stage given in the same form; GLSL ES 100 (raylib's) is not taken, and a layer
+		The fragment stage is GLSL as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440 (GL's form), or
+		`#version 450` (Vulkan's), the batch's vertex stage provided in the same form; GLSL ES 100 (raylib's) is not accepted, and a layer
 		adapts it first. The vertex stage passes `texCoord` (vec2), `color` (vec4) and `customData` (vec4), read by name.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
-		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` takes them.
+		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` accepts them.
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShader(fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
@@ -1007,7 +1007,7 @@ class Batch2D {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
+		Both stages are GLSL in one form, as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The batch makes its lines and shapes as triangles itself, so the vertex stage need only place each vertex and
 		write what its fragment stage reads; `#include <helix/render/shaders/batch.glsl>` declares the names and outputs `Batch3D` lists, and its
 		`placeBatchVertex(vertexPosition, vertexLineEnd)` does both, as for `Batch3D`.

@@ -10,8 +10,8 @@ import helix.math.Vector3;
 	A program records into it with `Batch3D`'s calls for meshes, models and the batch draws (lines, debug shapes, billboards, points,
 	triangles, shapes, sprites and text), named alike, in the list's own units; `makeEmpty` empties it to record again. A replay draws the calls in the order recorded, batched as
 	`Batch3D` batches them, with the batch's draw state, views, lights, environment and fog at the replay; the list holds no state of its own.
-	It holds references to the meshes, models, materials, textures, regions, fonts and layouts it is given and owns none: one disposed after it was
-	recorded makes a replay throw, and a material is drawn as it is at each replay. Arrays, boxes and matrices given are copied. It may be
+	It holds references to the meshes, models, materials, textures, regions, fonts and layouts recorded in it and owns none: one disposed after it was
+	recorded makes a replay throw, and a material is drawn as it is at each replay. Arrays, boxes and matrices passed to it are copied. It may be
 	recorded at any time, outside a frame too.
 
 	```haxe
@@ -23,7 +23,7 @@ import helix.math.Vector3;
 	``` */
 class DrawList3D {
 	/** Gets the box around what it holds, in its own units: empty when it holds nothing. A model counts by its box at rest, posed by the
-		bones given; a billboard by the sphere it can turn in; text as it is measured when recorded. */
+		bones passed; a billboard by the sphere it can turn in; text as it is measured when recorded. */
 	public final bounds = new Aabb3D();
 
 	/** Gets the number of calls recorded. */
@@ -51,7 +51,7 @@ class DrawList3D {
 			unskinned when omitted.
 		@param morphWeights  Optional. How much of each of its morph targets is added, copied, by target; none when omitted.
 		@param tint  Optional. A color, 0xAARRGGBB, multiplying the material's `baseColor` for this draw alone; white when omitted.
-		@param state  Optional. State this draw takes in place of the material's (`MeshState3D`), copied; the material's when
+		@param state  Optional. State this draw uses in place of the material's (`MeshState3D`), copied; the material's when
 			omitted. */
 	public function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, ?skinning:Array<Matrix4>, ?morphWeights:Array<Float>, ?tint:Int,
 			?state:MeshState3D):Void {
@@ -98,7 +98,7 @@ class DrawList3D {
 		@param boneMatrices  Optional. Each of its skeleton's bones' place in the model (`Skeleton3D.computeWorld`), copied; the rest
 			pose when omitted. Ignored for a model without a skeleton.
 		@param tint  Optional. A color, 0xAARRGGBB, multiplying each material's `baseColor` for this draw alone; white when omitted.
-		@param state  Optional. State every mesh of this draw takes in place of its material's (`MeshState3D`), copied; each
+		@param state  Optional. State every mesh of this draw uses in place of its material's (`MeshState3D`), copied; each
 			material's when omitted. */
 	public function drawModel(model:GpuModel3D, transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?tint:Int, ?state:MeshState3D):Void {
 		var t = copy(transform),
@@ -215,7 +215,7 @@ class DrawList3D {
 		pointsBox(p, t);
 	}
 
-	/** Records triangles as given, in the list's units: textured, colored by vertex, or both, unlit, for what has no mesh.
+	/** Records triangles as provided, in the list's units: textured, colored by vertex, or both, unlit, for what has no mesh.
 
 		The arrays are copied, so they may be reused.
 		@param texture  The texture, or null for white.
@@ -462,7 +462,7 @@ class DrawList3D {
 		@param color  Optional. The color; defaults to white.
 		@param size  Optional. The size, as the font's size is measured; the font's own when omitted.
 		@param letterSpacing  Optional. Space added after each character; defaults to 0.
-		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them; defaults to true.
+		@param kerned  Optional. Whether pairs of characters are kerned as the font specifies them; defaults to true.
 		@param transform  Optional. The plane it is drawn in, in the list's units, copied; identity when omitted. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true,
 			?transform:Matrix4):Void {

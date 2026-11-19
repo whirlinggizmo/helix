@@ -9,7 +9,7 @@ import helix.services.shaders.ShaderVertexLayout;
 @:noCompletion
 @:allow(helix.render)
 class RenderStream {
-	/** Gets the bytes a record takes. */
+	/** Gets the bytes a record occupies. */
 	final stride:Int;
 
 	/** Gets the layout a pipeline reads it by. */

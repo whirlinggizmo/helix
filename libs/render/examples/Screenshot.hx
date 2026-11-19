@@ -2,7 +2,7 @@ import helix.platform.IGraphics;
 import helix.platform.ISystem;
 
 /** Saves an example's last frame as a PNG when it is run natively with `--screenshot=<file>`, so tools/test_render.py checks a native
-	run's pixels against its check.json as it checks the page's. In a page the browser takes the screenshot, so it does nothing there. */
+	run's pixels against its check.json as it checks the page's. In a page the browser makes the screenshot, so it does nothing there. */
 class Screenshot {
 	/** Saves the frame `endFrame` just ended to the file the `screenshot` option names, or does nothing without the option. It is called
 		between `endFrame` and `present`.

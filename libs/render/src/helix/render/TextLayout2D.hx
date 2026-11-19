@@ -1,6 +1,6 @@
 package helix.render;
 
-/** Represents text laid out in lines: broken at line breaks and, given a width, wrapped between words, each line aligned in its box.
+/** Represents text laid out in lines: broken at line breaks and, with a width, wrapped between words, each line aligned in its box.
 
 	It is made once and kept while its text stays the same, so a paragraph is laid out once, not each frame; assigning a property lays it
 	out again the next time it is measured or drawn. `Batch2D.drawTextLayout` draws it. Lines wrap where a space is, the spaces at the end
@@ -37,8 +37,8 @@ class TextLayout2D {
 		until set. */
 	public var letterSpacing(default, set):Float = 0;
 
-	/** Gets or sets a value indicating whether pairs of characters are kerned as the font gives them, as `Batch2D.drawText`'s `kerned`:
-		true until set. raylib's `DrawTextEx` doesn't kern. */
+	/** Gets or sets a value indicating whether pairs of characters are kerned as the font specifies them, as `Batch2D.drawText`'s
+		`kerned`: true until set. raylib's `DrawTextEx` doesn't kern. */
 	public var kerned(default, set):Bool = true;
 
 	/** Gets the width of its widest line, in the units it is drawn in. */

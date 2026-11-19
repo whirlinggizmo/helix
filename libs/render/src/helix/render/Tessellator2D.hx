@@ -25,7 +25,7 @@ class Tessellator2D {
 		this.emit = emit;
 	}
 
-	/** The segments a whole circle of a radius takes, so its edge strays at most a quarter of a pixel from the curve. */
+	/** The segments a whole circle of a radius needs, so its edge strays at most a quarter of a pixel from the curve. */
 	function segments(radius:Float):Int {
 		var pixels = Math.abs(radius * scale);
 		if (pixels <= .25)

@@ -20,7 +20,7 @@ class GpuMesh3D {
 	/** Gets the box around its positions as uploaded, in the mesh's own units (a skinned mesh's in its bind pose). */
 	public final bounds = new Aabb3D();
 
-	/** Gets a value indicating whether it has joints and weights, so it is drawn skinned when given a skin's matrices. */
+	/** Gets a value indicating whether it has joints and weights, so it is drawn skinned when a skin's matrices are provided. */
 	public var hasJoints(default, null):Bool;
 
 	/** Gets the number of its morph targets: 0 for none. */
@@ -48,13 +48,13 @@ class GpuMesh3D {
 		});
 	}
 
-	/** Returns the box around the mesh as drawn: its vertices posed by a skin's matrices when given, on the CPU, then placed by a transform.
+	/** Returns the box around the mesh as drawn: its vertices posed by a skin's matrices when provided, on the CPU, then placed by a transform.
 
 		It is exact where the box culling uses may be larger, so it suits framing a camera and picking. It goes through every vertex, so it
 		is for now and then, not every mesh every frame.
 		@param transform  The mesh's place in the world.
-		@param skinning  Optional. Its skin's matrices, as `Batch3D.drawMesh` takes them; the mesh as uploaded when omitted.
-		@param morphWeights  Optional. Its morph targets' weights, as `Batch3D.drawMesh` takes them; none when omitted.
+		@param skinning  Optional. Its skin's matrices, as `Batch3D.drawMesh` accepts them; the mesh as uploaded when omitted.
+		@param morphWeights  Optional. Its morph targets' weights, as `Batch3D.drawMesh` accepts them; none when omitted.
 		@param out  Optional. Set to the box; a new one when omitted.
 		@return  The box, in world units.
 		@throws String  A disposed mesh. */
@@ -354,7 +354,7 @@ class GpuMesh3D {
 	}
 
 	// The box around the mesh as a skin poses it, by its joints' boxes, in the mesh's units before its transform. Each joint's box is
-	// moved by its center and its half sizes through the matrix's absolute values (Arvo's), which gives the box around its eight moved
+	// moved by its center and its half sizes through the matrix's absolute values (Arvo's), which produces the box around its eight moved
 	// corners exactly.
 
 	@:allow(helix.render)

@@ -11,7 +11,7 @@ import helix.math.Vector3;
 	``` */
 class DirectionalLight3D extends Light3D {
 	/** Gets the direction it shines in, in world units; it needn't be of length 1. Straight down until changed; a direction of length 0
-		is taken as straight down. */
+		is treated as straight down. */
 	public final direction = new Vector3(0, -1, 0);
 
 	/** Creates a white directional light of intensity π shining straight down: a surface facing it shows its own color. */

@@ -142,7 +142,7 @@ class RenderFill {
 		values.writeFloats(clipPlanes, f);
 	}
 
-	/** Writes the view's names a shader declares loose, which no shared block gives it. */
+	/** Writes the view's names a shader declares loose, which no shared block provides. */
 	function view(v:RenderView):Void {
 		var n = viewNames;
 		matrix(n[0], v.view);

@@ -8,7 +8,7 @@ import helix.services.models.Model3D;
 
 /** Represents a model on the GPU: its meshes uploaded, its images made textures, its materials made `Material3D`s over them.
 
-	`Renderer.createModel` makes one from helix-services' `Model3D`; `Batch3D.drawModel` draws it, skinned when given its bones. It owns its
+	`Renderer.createModel` makes one from helix-services' `Model3D`; `Batch3D.drawModel` draws it, skinned when its bones are provided. It owns its
 	meshes and textures, and `dispose` frees them; its materials may be changed, and a mesh's material swapped through
 	`meshMaterialIndices` or `materials`. Its skeleton, skins and animations are the model's (`model.skeleton`). */
 class GpuModel3D {
@@ -44,7 +44,7 @@ class GpuModel3D {
 
 		It is exact, for framing a camera and picking, and goes through every vertex.
 		@param transform  The model's place in the world.
-		@param boneMatrices  Optional. Each bone's place in the model, as `Batch3D.drawModel` takes them; the rest pose when omitted.
+		@param boneMatrices  Optional. Each bone's place in the model, as `Batch3D.drawModel` accepts them; the rest pose when omitted.
 		@param out  Optional. Set to the box; a new one when omitted.
 		@return  The box, in world units, or the box made empty for a model with no vertices. */
 	public function computeBounds(transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?out:Aabb3D):Aabb3D {
@@ -63,7 +63,7 @@ class GpuModel3D {
 
 	/** Frees its meshes and textures, after the frame being recorded when it holds a draw of them. A second call does nothing.
 
-		A texture of it a program gave another material is freed too. */
+		A texture of it a program assigned to another material is freed too. */
 	public function dispose():Void {
 		if (disposed)
 			return;
@@ -106,7 +106,7 @@ class GpuModel3D {
 		return model.skins[skinIndex].computeSkinning(bones, skinnings[skinIndex]);
 	}
 
-	// A model uploaded: its textures, meshes and materials. Each image's decoded image is taken from the model and disposed once sent: as it
+	// A model uploaded: its textures, meshes and materials. Each image's decoded image is moved out of the model and disposed once sent: as it
 	// is without mipmaps, from its pixels with them (built on the CPU).
 
 	@:allow(helix.render)

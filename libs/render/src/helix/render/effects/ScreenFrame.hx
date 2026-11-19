@@ -16,7 +16,7 @@ class ScreenFrame {
 	/** Gets the frame's height, in pixels. */
 	public final height:Int;
 
-	/** Gets the seconds `PostProcess.draw` was given. */
+	/** Gets the seconds passed to `PostProcess.draw`. */
 	public final time:Float;
 
 	/** Gets the effect's intermediate targets, in the order of its `ScreenEffect.intermediates`. */
@@ -32,7 +32,7 @@ class ScreenFrame {
 	}
 
 	/** Draws a screen shader once over a whole target, reading a texture as `sourceTexture` (its size, in texels, as `sourceSize`) and
-		`time`, filled by name over the values given.
+		`time`, filled by name over the values provided.
 
 		Into an intermediate it is a target pass of its own, cleared to transparent black; omitted, it draws the effect's result where the
 		chain draws it (only in `ScreenEffect.draw`).

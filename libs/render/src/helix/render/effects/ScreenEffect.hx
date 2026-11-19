@@ -34,7 +34,7 @@ abstract class ScreenEffect {
 		@param frame  What it draws from and into. */
 	public function drawIntermediates(frame:ScreenFrame):Void {}
 
-	/** Draws its result over the target the chain gives it, reading the frame's source and its intermediates.
+	/** Draws its result over the target the chain provides, reading the frame's source and its intermediates.
 
 		@param frame  What it draws from. */
 	public function draw(frame:ScreenFrame):Void {}
@@ -46,11 +46,11 @@ abstract class ScreenEffect {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
-		`#version 450` (Vulkan's), the screen triangle's vertex stage given in the same form; GLSL ES 100 is not taken. The vertex stage
-		passes `texCoord` (vec2), 0 to 1 across the frame, v down, read by name.
+		The fragment stage is GLSL as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440 (GL's form), or
+		`#version 450` (Vulkan's), the screen triangle's vertex stage provided in the same form; GLSL ES 100 is not accepted. The vertex
+		stage passes `texCoord` (vec2), 0 to 1 across the frame, v down, read by name.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
-		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` takes them.
+		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` accepts them.
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShader(fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
@@ -63,7 +63,7 @@ abstract class ScreenEffect {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
+		Both stages are GLSL in one form, as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The vertex stage is drawn for the three corners of one triangle covering the frame.
 		@param vertex  The vertex stage's file, relative to the file holding the call.
 		@param fragment  The fragment stage's file, relative to the file holding the call.

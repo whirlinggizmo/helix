@@ -2,7 +2,7 @@ package helix.render;
 
 import helix.math.Vector3;
 
-/** Represents a light from a point, in every direction, falling off with the square of the distance and, given a range, to nothing at
+/** Represents a light from a point, in every direction, falling off with the square of the distance and, with a range, to nothing at
 	it.
 
 	Its intensity is three.js's PointLight's with decay 2 (candela, as glTF's KHR_lights_punctual has it): the light falling on a

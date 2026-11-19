@@ -27,7 +27,7 @@ class Texture2D {
 	public var sampling(default, set):Sampling = Sampling.LINEAR;
 
 	/** Gets or sets how helix-render's own shaders read its texels: Auto until set, as the slot it fills says (sRGB in a color slot,
-		linear in a data slot). A custom shader is given its texels as they are, whatever this says. */
+		linear in a data slot). A custom shader receives its texels as they are, whatever this says. */
 	public var colorSpace:ColorSpace = Auto;
 
 	/** Gets the texture as helix-services' shared texture, for a program's own shader to read: shared on its values

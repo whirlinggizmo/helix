@@ -11,8 +11,8 @@ import helix.services.fonts.Glyph2D;
 	`Batch3D.drawText` and `TextLayout2D` use it; the program frees its atlas with `dispose`. A size is measured as the font's is, from its
 	ascent to its descent; a font drawn at another size is scaled. Each batch's default shader draws a coverage atlas's alpha as it is
 	stored, and a distance-field atlas's (helix-services' `Font2D.kind` Distance) as a sharp edge at any size; a hard-edged font's atlas
-	(Bitmap) is sampled nearest. A program's shader is given the kind as `fontKind`. Pairs of characters are kerned as the font's
-	`Font2D.kernings` give them, unless a draw's `kerned` is false.
+	(Bitmap) is sampled nearest. A program's shader receives the kind as `fontKind`. Pairs of characters are kerned as the font's
+	`Font2D.kernings` specify them, unless a draw's `kerned` is false.
 
 	A character the font lacks is drawn, and measured, as the font's `?`, or else as its .notdef (`Font2D.notdef`), and skipped when it
 	has neither, as raylib draws one; the first time each such character is met in a font, a warning is logged (helix-log, tag
@@ -45,7 +45,7 @@ class GpuFont2D {
 		@param text  The text.
 		@param size  Optional. The size it is drawn at; the font's own when omitted.
 		@param letterSpacing  Optional. Space added after each character, as `drawText` adds it; defaults to 0.
-		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them, as `drawText`'s `kerned`; defaults to true.
+		@param kerned  Optional. Whether pairs of characters are kerned as the font specifies them, as `drawText`'s `kerned`; defaults to true.
 		@param out  Optional. Set to the size; a new vector when omitted.
 		@return  The width of its widest line as x, and its lines' height as y, in the units it is drawn in. */
 	public function measureText(text:String, ?size:Float, letterSpacing = 0., kerned = true, ?out:Vector2):Vector2 {

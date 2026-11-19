@@ -15,8 +15,8 @@ import sys.io.File;
 using StringTools;
 #end
 
-/** helix-render's build-time shader work, which the compile macros of `Batch2D`, `Batch3D` and `Material3D` call: its own stages given in
-	the form of the program's, its includes added, the `View` block shared where a shader declares it, a fragment stage wrapped so the
+/** helix-render's build-time shader work, which the compile macros of `Batch2D`, `Batch3D` and `Material3D` call: its own stages written
+	in the form of the program's, its includes added, the `View` block shared where a shader declares it, a fragment stage wrapped so the
 	clip planes cut it, every shader compiled with `clipScale` and `points`, and the names helix-render fills checked for their types. */
 @:noCompletion
 class RenderShaders {
@@ -29,7 +29,7 @@ class RenderShaders {
 	}
 
 	#if macro
-	/** The includes helix-render gives, by the name an angle-bracket include takes. */
+	/** The includes helix-render provides, by the name an angle-bracket include uses. */
 	public static final INCLUDES = [
 		"view.glsl",
 		"clip.glsl",

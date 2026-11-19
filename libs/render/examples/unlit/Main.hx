@@ -75,7 +75,7 @@ class Main {
 		renderer = new Renderer(graphics);
 		batch = new Batch3D(renderer);
 		cube = renderer.createMesh(Mesh3D.fromBox(1, 1, 1));
-		// Unlit, as stored: colors arrive as given.
+		// Unlit, as stored: colors arrive as provided.
 		white.shading = Unlit;
 		white.colorSpace = Srgb;
 		white.toneMapped = false;

@@ -17,7 +17,7 @@ import helix.render.Texture2D;
 
 	An RGBA8 source is display colors already: it is decoded for the linear effects and not tone mapped. Each step but the last draws into
 	an intermediate target the chain keeps, sized to the source, as a target pass recorded before the current one, so `draw` may be called
-	in the middle of the screen's pass. It runs no loop and reads no clock: the time it is given is what effects animate by.
+	in the middle of the screen's pass. It runs no loop and reads no clock: the time passed to it is what effects animate by.
 
 	```haxe
 	var scene = renderer.createRenderTarget(width, height, Rgba16f);

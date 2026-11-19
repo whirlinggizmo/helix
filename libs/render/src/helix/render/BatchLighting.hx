@@ -14,7 +14,7 @@ import helix.services.shaders.ShaderVertexLayout;
 /** `Batch3D`'s lit work: the lit materials' shader, the `Lighting` block written at each `begin` and shared through each view's scene,
 	the lights read then, the 8 chosen for each draw, and a lit material's names written on its draw.
 
-	It is linked only by what gives light (`install`, which `Light3D` lists), so a program drawing nothing lit carries none of it. */
+	It is linked only by what emits light (`install`, which `Light3D` lists), so a program drawing nothing lit carries none of it. */
 @:noCompletion
 @:allow(helix.render)
 @:access(helix.render.Batch3D)
@@ -65,7 +65,7 @@ class BatchLighting {
 
 	var shadowsBegin:Null<Array<View3D>->Void> = null;
 
-	/** Prepares a draw: given its program's shader or null, the shader it is drawn with, the lit materials' for a material lit (a lit
+	/** Prepares a draw: from its program's shader or null, the shader it is drawn with, the lit materials' for a material lit (a lit
 		shading, or emissive light to add) or null for the unlit one; and the batch's `lightWriter` set to `write` where that shader reads
 		a lit name, the lights reaching its box in the world chosen (a batch draw's, with no box, those reaching the first view's eye), or
 		to null. */

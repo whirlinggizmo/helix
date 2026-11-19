@@ -7,7 +7,7 @@ import helix.math.Matrix4;
 /** Represents one view a `Batch3D` draws through: where the eye is and how it projects, as matrices, and the rectangle of the pass it
 	fills.
 
-	`Batch3D.begin(camera)` makes one from a camera. A program gives its own to `Batch3D.beginViews` for what a camera can't say: a
+	`Batch3D.begin(camera)` makes one from a camera. A program passes its own to `Batch3D.beginViews` for what a camera can't say: a
 	projection of its own (an off-center frustum, a view offset, a zoom, rlgl's matrix stack), 2D in pixels (`setFromScreen`), or
 	several views drawn at once, each draw drawn once in each: the two eyes of a headset (WebXR's views, raylib's stereo mode, three.js's
 	ArrayCamera), or split screens that see one scene. `isInView` tests a box against it at any time, so a scene walked before the
@@ -38,7 +38,7 @@ import helix.math.Matrix4;
 	| `exposure`, `toneMapping` | float, int | `Renderer.exposure` as a multiplier (2 to the stops), and `Renderer.toneMapping`. |
 	| `fogColor`, `fogParams` | vec4 | The fog's color as stored, and its mode, near, far and density. |
 
-	**Colors in a shader.** `#include <helix/render/shaders/color.glsl>` (either stage; it includes `view.glsl`) gives the conversions helix-render's
+	**Colors in a shader.** `#include <helix/render/shaders/color.glsl>` (either stage; it includes `view.glsl`) provides the conversions helix-render's
 	own shaders make, and declares `toneMapped` (int: the material's; for a batch draw `Batch3D.toneMapped`; 0 for `Batch2D`'s) for
 	`writeColor`:
 

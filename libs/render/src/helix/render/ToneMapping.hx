@@ -26,6 +26,6 @@ enum abstract ToneMapping(Int) {
 	/** AgX: highlights rolled toward white without shifting their hue. */
 	var AgX = 5;
 
-	/** Khronos PBR Neutral: colors as given up to near 1, highlights rolled off. */
+	/** Khronos PBR Neutral: colors unchanged up to near 1, highlights rolled off. */
 	var Neutral = 6;
 }

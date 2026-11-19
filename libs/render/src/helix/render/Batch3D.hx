@@ -35,7 +35,7 @@ import helix.services.shaders.ShaderVertexLayout;
 	holds until the program sets another. `resetState` puts the draw state back to its defaults.
 
 	**Views.** `begin(camera)` draws through one view, the camera's, filling the renderer's viewport. `beginViews` draws through several
-	at once, each with its own matrices and rectangle: every draw is drawn once in each view, in the order given, so the two eyes of a
+	at once, each with its own matrices and rectangle: every draw is drawn once in each view, in the order provided, so the two eyes of a
 	headset or two split screens see one scene drawn once by the program. Lights are chosen, shadows fitted and draws culled for all the
 	views together: a draw is skipped only when it is out of every view.
 
@@ -58,7 +58,7 @@ import helix.services.shaders.ShaderVertexLayout;
 	is written linear, neither exposed, tone mapped nor encoded, and blends linearly: `PostProcess.draw` resolves it by the same pair.
 
 	**The batch draws' colors are multiplied as stored.** A batch draw's vertex color, tint and texel are multiplied as the 0xAARRGGBB
-	values and the texture store them, with no decode, as raylib and `Batch2D` multiply them: a 0x80 tint on a 0x80 texel gives 0x40.
+	values and the texture store them, with no decode, as raylib and `Batch2D` multiply them: a 0x80 tint on a 0x80 texel produces 0x40.
 	Into an sRGB target the product is written as it is, unless fog reaches it (`fogged`) or it is tone mapped (`toneMapped`): then it is
 	decoded once, fogged, exposed and tone mapped as they say, and encoded. Into an RGBA16F target it is decoded once and written linear.
 
@@ -107,8 +107,8 @@ import helix.services.shaders.ShaderVertexLayout;
 
 	With them the view's names (`View3D`). A name the program writes on its values is overwritten by the batch's.
 
-	**Names given by `Shader.withNames`** are filled exactly as names declared in the GLSL: a shader written for raylib's names, its
-	`mvp`, `matView`, `colDiffuse` and `texture0` given as `modelViewProjection`, `viewMatrix`, `baseColor` and `baseColorTexture`, is
+	**Names mapped by `Shader.withNames`** are filled exactly as names declared in the GLSL: a shader written for raylib's names, its
+	`mvp`, `matView`, `colDiffuse` and `texture0` mapped to `modelViewProjection`, `viewMatrix`, `baseColor` and `baseColorTexture`, is
 	filled as one declaring those names, a loose `viewMatrix` written per draw as `View3D` says. The batch shares the blocks itself:
 	each draw reads the view's `View` block and the batch's `Lighting` (the `ShaderScene` written at `begin`) wherever the shader
 	declares them, so the program sets no `ShaderValues.scene` and shares no block, and a scene it sets on its values is not read for
@@ -118,17 +118,17 @@ import helix.services.shaders.ShaderVertexLayout;
 	(vec4), `normal` (vec3) and `worldPosition` (vec3, what the clip planes cut by).
 
 	**A program's own vertex stage** (`compileShaderStages`, `makeShaderExpr`) may place its vertices itself, declaring the attributes,
-	uniforms and outputs it uses, as raylib's GLSL 330 vertex stages do (`gl_Position = mvp * vec4(vertexPosition, 1.0)`). It then gives
-	up what the batch's stage makes from `vertexCorner`: wide lines are drawn as one-pixel lines and large points as one-pixel points,
+	uniforms and outputs it uses, as raylib's GLSL 330 vertex stages do (`gl_Position = mvp * vec4(vertexPosition, 1.0)`). It then loses
+	what the batch's stage makes from `vertexCorner`: wide lines are drawn as one-pixel lines and large points as one-pixel points,
 	their middles, as the build sees the stage doesn't call `placeBatchVertex`; and the planes cut it only where it writes
 	`worldPosition`. Or it includes `batch.glsl` (`#include <helix/render/shaders/batch.glsl>`), which includes `view.glsl` and declares the
-	attributes and uniforms above and the five outputs, so the stage declares none of them, and gives one function:
+	attributes and uniforms above and the five outputs, so the stage declares none of them, and provides one function:
 
 	```glsl
 	// Places a batch draw's vertex as the batch's own stage does, from a position and a wide line's other end the stage may have moved
 	// (pass vertexPosition and vertexLineEnd to change nothing): a wide line's or a large point's corner pushed out across the screen by
-	// vertexCorner, lineWidth and pointSize. Returns the clip position, and writes the five outputs: worldPosition from the position
-	// given, the others from their attributes. The stage may write any of them again after the call.
+	// vertexCorner, lineWidth and pointSize. Returns the clip position, and writes the five outputs: worldPosition from the provided
+	// position, the others from their attributes. The stage may write any of them again after the call.
 	vec4 placeBatchVertex(vec3 position, vec3 lineEnd);
 	```
 
@@ -163,7 +163,7 @@ import helix.services.shaders.ShaderVertexLayout;
 		vec3 baseColor;            // linear
 		float alpha;               // 0 to 1: what blend mixes by; the shadings ignore it
 		float metallic;            // 0 to 1
-		float roughness;           // 0 to 1, taken as at least 0.03
+		float roughness;           // 0 to 1, treated as at least 0.03
 		float occlusion;           // 1 for none: scales the ambient, baked and environment light
 		vec3 specularColor;        // linear: MetallicRoughness's specular color times its intensity, Phong's specular color
 		float ior;
@@ -175,10 +175,10 @@ import helix.services.shaders.ShaderVertexLayout;
 		float sheenRoughness;
 		float environmentIntensity;
 		vec3 bakedLight;           // linear irradiance from a light map, added as the ambient light is; 0 for none
-		vec3 emissive;             // linear light it gives off; the shadings leave it out
+		vec3 emissive;             // linear light it emits; the shadings leave it out
 	};
 	// A surface at a point with a normal and a base color: alpha 1, bakedLight and emissive 0, its other fields Material3D's defaults.
-	// The normal is taken as given: the shader turns it toward the viewer (gl_FrontFacing ? n : -n) for a face drawn from behind.
+	// The normal is used as provided: the shader turns it toward the viewer (gl_FrontFacing ? n : -n) for a face drawn from behind.
 	Surface makeSurface(vec3 position, vec3 normal, vec3 baseColor);
 	vec3 shadeMetallicRoughness(Surface surface);
 	vec3 shadePhong(Surface surface);
@@ -198,14 +198,14 @@ import helix.services.shaders.ShaderVertexLayout;
 	**Order and batching.** Draws are drawn in the order they are called; nothing is sorted, so the program draws what is opaque first
 	and what is blended after, farthest first. Each mesh is a GPU draw of its own a view, an instanced one one for all its copies. The
 	batch draws join one GPU draw while they share a texture, the draw state and the shader values with nothing written to them between,
-	and nothing else is drawn between them; a transform given to one, and `customData`, split nothing, as they are applied to the
+	and nothing else is drawn between them; a transform passed to one, and `customData`, split nothing, as they are applied to the
 	vertices as each draw is made. `Renderer.clearTarget` may be called with the batch open, and is recorded where it is called.
 
 	**Culling.** With `culling` on, a draw whose box is out of every view's frustum (`View3D.isInView`) is skipped: a mesh's bounds moved
 	by its transform, each instanced copy apart, a model mesh by mesh, a billboard by the sphere it can turn in, points, lines, shapes,
 	sprites and text by the box around them, a draw list by its box. A skinned mesh's box is its joints': each joint's box of the
 	vertices it moves, recorded at `Renderer.createMesh`, moved by the joint's skinning matrix, all joined; a morphed mesh's grows by its
-	targets' reach. That box can be larger than the posed mesh; `GpuMesh3D.computeBounds` gives the exact one. A shadow pass culls its
+	targets' reach. That box can be larger than the posed mesh; `GpuMesh3D.computeBounds` returns the exact one. A shadow pass culls its
 	casters against the light's volume, not the views'.
 
 	```haxe
@@ -224,7 +224,7 @@ import helix.services.shaders.ShaderVertexLayout;
 class Batch3D {
 	#if !macro
 	/** Gets or sets how the following batch draws are combined with what is under them: Alpha (`Blend.ALPHA`) until set; any factors
-		and operations the platform's `Blend` takes. A mesh is blended as its material says, or as its draw's `MeshState3D` says. */
+		and operations the platform's `Blend` accepts. A mesh is blended as its material says, or as its draw's `MeshState3D` says. */
 	public var blend(default, set):Blend = Blend.ALPHA;
 
 	/** Gets or sets the following batch draws' depth test: LessEqual until set; Off draws them over everything drawn before. A mesh is
@@ -257,8 +257,8 @@ class Batch3D {
 		where the projection's vertical field of view is 90°. Under an orthographic projection it is not attenuated. */
 	public var pointSize(default, set):Float = 1;
 
-	/** Gets or sets a value indicating whether the following points shrink with distance, as `pointSize` gives the formula: false until
-		set. */
+	/** Gets or sets a value indicating whether the following points shrink with distance, with the formula `pointSize` states: false
+		until set. */
 	public var pointSizeAttenuated(default, set):Bool = false;
 
 	/** Gets or sets the program's own shader the following batch draws are drawn with, as values over it carrying its own uniforms and
@@ -289,7 +289,7 @@ class Batch3D {
 	public var fogged:Bool = true;
 
 	/** Gets or sets a value indicating whether the following batch draws are exposed and tone mapped into an sRGB target by the
-		renderer's `exposure` and `toneMapping`, as lit color is: false until set, so their colors arrive as given; three.js's
+		renderer's `exposure` and `toneMapping`, as lit color is: false until set, so their colors arrive as provided; three.js's
 		`PointsMaterial.toneMapped`, true there, is set per draw by a three.js layer. Into an RGBA16F target nothing is tone mapped as it
 		is drawn (`Material3D.toneMapped`). A mesh is tone mapped as its material's `toneMapped` says. */
 	public var toneMapped(default, set):Bool = false;
@@ -425,7 +425,7 @@ class Batch3D {
 	/** Opens the batch for drawing in the renderer's current pass through a camera, filling the renderer's viewport.
 
 		The camera is read now, its aspect the viewport's, and so are `lights`, `environment`, `fog`, and the renderer's `exposure` and
-		`toneMapping`: changing them after takes effect at the next `begin`. The draw state is kept as the program left it.
+		`toneMapping`: changing them after applies at the next `begin`. The draw state is kept as the program left it.
 		@param camera  The camera.
 		@throws String  No frame being recorded, or a batch (this or another) already open. */
 	public function begin(camera:Camera3D):Void {
@@ -499,7 +499,7 @@ class Batch3D {
 
 	/** Draws a mesh with a material, placed by a transform, its faces as `polygonMode` says.
 
-		Its blend, depth test, depth write, cull and color channels are the material's, but for those `state` gives, which hold for
+		Its blend, depth test, depth write, cull and color channels are the material's, but for those `state` sets, which hold for
 		this draw alone and change nothing in the material: a layer whose state is global, as raylib's rlgl is, keeps one `MeshState3D`
 		and passes it each draw.
 
@@ -511,7 +511,7 @@ class Batch3D {
 		@param morphWeights  Optional. How much of each of its morph targets is added, read now, by target; none when omitted.
 		@param tint  Optional. A color, 0xAARRGGBB, multiplying the material's `baseColor` for this draw alone, as raylib's `DrawModel`
 			tint does; white when omitted.
-		@param state  Optional. State this draw takes in place of the material's (`MeshState3D`), read now; the material's when
+		@param state  Optional. State this draw uses in place of the material's (`MeshState3D`), read now; the material's when
 			omitted.
 		@throws String  A disposed mesh, or a texture of the material disposed. */
 	public function drawMesh(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, ?skinning:Array<Matrix4>, ?morphWeights:Array<Float>, ?tint:Int,
@@ -582,8 +582,8 @@ class Batch3D {
 
 	/** Draws a model: each of its meshes with its material, placed by a transform, each skinned mesh posed by its skin.
 
-		Each mesh's blend, depth test, depth write, cull and color channels are its material's, but for those `state` gives, as
-		`drawMesh` takes them.
+		Each mesh's blend, depth test, depth write, cull and color channels are its material's, but for those `state` sets, as
+		`drawMesh` applies them.
 
 		@param model  The model.
 		@param transform  The model's place in the world, read now.
@@ -591,7 +591,7 @@ class Batch3D {
 			pose when omitted. Ignored for a model without a skeleton.
 		@param tint  Optional. A color, 0xAARRGGBB, multiplying each material's `baseColor` for this draw alone, as raylib's `DrawModel`
 			tint does; white when omitted.
-		@param state  Optional. State every mesh of this draw takes in place of its material's (`MeshState3D`), read now; each
+		@param state  Optional. State every mesh of this draw uses in place of its material's (`MeshState3D`), read now; each
 			material's when omitted.
 		@throws String  A disposed model. */
 	public function drawModel(model:GpuModel3D, transform:Matrix4, ?boneMatrices:Array<Matrix4>, ?tint:Int, ?state:MeshState3D):Void {
@@ -738,7 +738,7 @@ class Batch3D {
 		}
 	}
 
-	/** Draws triangles as given, in world units: textured, colored by vertex, or both, unlit, for what has no mesh; as their edges or
+	/** Draws triangles as provided, in world units: textured, colored by vertex, or both, unlit, for what has no mesh; as their edges or
 		corners in another `polygonMode`.
 
 		The arrays are read during the call, so they may be reused for the next. Normals are for a program's own shader
@@ -1007,8 +1007,8 @@ class Batch3D {
 		@param color  Optional. The color; defaults to white.
 		@param size  Optional. The size, as the font's size is measured; the font's own, a unit a pixel of it, when omitted.
 		@param letterSpacing  Optional. Space added after each character; defaults to 0.
-		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them; defaults to true. raylib's `DrawTextEx`
-			doesn't kern.
+		@param kerned  Optional. Whether pairs of characters are kerned as the font specifies them; defaults to true. raylib's
+			`DrawTextEx` doesn't kern.
 		@param transform  Optional. The plane it is drawn in; identity when omitted. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true,
 			?transform:Matrix4):Void {
@@ -1097,9 +1097,9 @@ class Batch3D {
 	final pending:Array<Float> = [for (_ in 0...18) 0.];
 	var pendingCount = 0;
 
-	// The lit work, hooks a BatchLighting sets at the first begin once something giving light has installed its maker
-	// (BatchLighting.install), so a program giving no light links none of it: reading the lights and the environment at begin and
-	// sharing the Lighting block with the views; and preparing a draw, given its program's shader or none, its material and mesh, and
+	// The lit work, hooks a BatchLighting sets at the first begin once something emitting light has installed its maker
+	// (BatchLighting.install), so a program emitting no light links none of it: reading the lights and the environment at begin and
+	// sharing the Lighting block with the views; and preparing a draw, from its program's shader or none, its material and mesh, and
 	// its box and transform (a batch draw has none of these but its shader): answering the shader it is drawn with (the lit materials'
 	// for a lit one, null for the unlit one), and setting lightWriter to what writes its lights, chosen by its box in the world or by
 	// the first view's eye, with its material's lit names, on its values, or to null when its shader reads none.
@@ -1110,9 +1110,9 @@ class Batch3D {
 	var lightingPrepare:Null<(Null<Shader>, Null<Material3D>, Null<GpuMesh3D>, Null<Aabb3D>, Null<Matrix4>) -> Null<Shader>> = null;
 	var lightWriter:Null<ShaderValues->Void> = null;
 
-	// The shadow casters, hooks a BatchShadows sets once a light has cast (BatchShadows.install): a mesh drawn once, given its box in
+	// The shadow casters, hooks a BatchShadows sets once a light has cast (BatchShadows.install): a mesh drawn once, with its box in
 	// its own units and its skin's palette and first bone where the color draw has written them (0, 0 where it hasn't), and a mesh's
-	// instanced copies, each given before the view culls them, so what is out of view still casts into it.
+	// instanced copies, each passed before the view culls them, so what is out of view still casts into it.
 	var shadowMesh:Null<(GpuMesh3D, Material3D, Matrix4, Null<MeshState3D>, Aabb3D, Null<Array<Matrix4>>, Int, Int) -> Void> = null;
 	var shadowInstanced:Null<(GpuMesh3D, Material3D, Array<Matrix4>, Null<Matrix4>, Int, Int) -> Void> = null;
 
@@ -1369,7 +1369,7 @@ class Batch3D {
 		var primitive:helix.platform.Primitive = runKind == 1 ? Lines : runKind == 2 ? Points : Triangles;
 		var spec = renderer.pipelineFor(s, renderer.stateFor(primitive, false, runBlend, runDepthTest, runDepthWrite, runCull, runColorWrite),
 			layoutOf(runKind == 3));
-		// A program's shader reading the lights is given those reaching the first view's eye most.
+		// A program's shader reading the lights receives those reaching the first view's eye most.
 		if (runValues != null && lightingPrepare != null)
 			lightingPrepare(s, null, null, null, null);
 		var litWrite = runValues != null ? lightWriter : null;
@@ -1664,8 +1664,8 @@ class Batch3D {
 		return renderer.pipelineFor(s, renderer.stateFor(primitive, indexBuffer != 0, blend, depthTest, depthWrite, cull, colorWrite), mesh.layout);
 	}
 
-	// A mesh's draw, once a view: its material's names or its program's shader, its state, skinned when given matrices; instanced copies
-	// from the frame's stream when it has some; its lights chosen by its box, in the units its transform places.
+	// A mesh's draw, once a view: its material's names or its program's shader, its state, skinned when matrices are provided; instanced
+	// copies from the frame's stream when it has some; its lights chosen by its box, in the units its transform places.
 	function meshDraw(mesh:GpuMesh3D, material:Material3D, transform:Matrix4, skinning:Null<Array<Matrix4>>, tint:Null<Int>, state:Null<MeshState3D>,
 			firstInstance:Int, instanceCount:Int, instanced:Bool, bounds:Aabb3D):Void {
 		if (mesh.disposed)
@@ -1679,7 +1679,7 @@ class Batch3D {
 				unlitShader = RenderShaders.compileOwn("mesh.vert", "unlit.frag");
 			s = unlitShader;
 		}
-		// A lit material where nothing in the program gives light (BatchLighting.install) is what no light leaves it: black.
+		// A lit material where nothing in the program emits light (BatchLighting.install) is what no light leaves it: black.
 		var dark = s == unlitShader && material.shading != Unlit;
 		var litWrite = lightWriter;
 		var fill = fillFor(s);
@@ -1866,12 +1866,12 @@ class Batch3D {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
-		`#version 450` (Vulkan's), the batch's vertex stage given in the same form; GLSL ES 100 (raylib's) is not taken, and a layer
+		The fragment stage is GLSL as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440 (GL's form), or
+		`#version 450` (Vulkan's), the batch's vertex stage provided in the same form; GLSL ES 100 (raylib's) is not accepted, and a layer
 		adapts it first. The vertex stage passes `texCoord` (vec2), `color` (vec4), `customData` (vec4), `normal` (vec3) and
 		`worldPosition` (vec3), read by name; the fragment stage is cut by `clipPlanes` before its `main` runs.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
-		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` takes them.
+		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` accepts them.
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShader(fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
@@ -1884,7 +1884,7 @@ class Batch3D {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
+		Both stages are GLSL in one form, as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The vertex stage may place its vertices itself, declaring what it reads; wide lines and large points are then
 		drawn as their one-pixel middles. Placed by `placeBatchVertex(position, lineEnd)` (`#include <helix/render/shaders/batch.glsl>`), they are
 		drawn wide and large, as the class says.
@@ -1903,17 +1903,17 @@ class Batch3D {
 		`Material3D`'s, and a `Batch2D`'s draws, every one filling the same names, so one `Shader.withNames` map serves them all
 		(`mvp` to `modelViewProjection`, `colDiffuse` to `baseColor`, white where no material sets it).
 
-		The texts are GLSL in one form, as `compileShaderStages` takes them, the vertex stage placing its vertices itself or by
-		`placeBatchVertex`; the fragment stage is cut by `clipPlanes`, as there. Names the shader is given by `withNames` are filled as
+		The texts are GLSL in one form, as `compileShaderStages` accepts them, the vertex stage placing its vertices itself or by
+		`placeBatchVertex`; the fragment stage is cut by `clipPlanes`, as there. Names the shader maps by `withNames` are filled as
 		declared ones, and the batch shares `View` and `Lighting` with each draw itself (the class says so). The
-		options are `Shader.makeExpr`'s, and the shader is compiled with them as given but for what helix-render sets itself: `clipScale`
-		and `points` on, whatever the options say; helix-render's includes (`helix/render/shaders/batch.glsl`, `mesh.glsl`, `material.glsl`,
-		`lighting.glsl`, `view.glsl`, `color.glsl`) added to `includes`, where a text given under one of their names stops the build; the
-		blocks `View` and `Lighting` added to `shared` where the shader declares them; and its check of the names the classes list run
-		after the options' own `check`.
+		options are `Shader.makeExpr`'s, and the shader is compiled with them as provided but for what helix-render sets itself:
+		`clipScale` and `points` on, whatever the options say; helix-render's includes (`helix/render/shaders/batch.glsl`, `mesh.glsl`,
+		`material.glsl`, `lighting.glsl`, `view.glsl`, `color.glsl`) added to `includes`, where a text provided under one of their names
+		stops the build; the blocks `View` and `Lighting` added to `shared` where the shader declares them; and its check of the names the
+		classes list run after the options' own `check`.
 		@param vertex  The vertex stage: a name for messages and its GLSL.
 		@param fragment  The fragment stage: a name for messages and its GLSL.
-		@param options  The options, as `Shader.makeExpr` takes them.
+		@param options  The options, as `Shader.makeExpr` accepts them.
 		@param pos  Where an error is reported.
 		@return  An expression of type `Shader`. */
 	public static function makeShaderExpr(vertex:{name:String, text:String}, fragment:{name:String, text:String},

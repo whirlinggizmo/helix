@@ -35,7 +35,7 @@ import helix.services.models.Model3D;
 	A frame is recorded as it is drawn and reaches the GPU at `endFrame`: every render target's pass first, in the order they were
 	begun, then the screen's. In each pass, draws are drawn in the order they were called. A draw that reads a target (a sprite of it, a
 	material's texture, a shader's sampler, `PostProcess.draw`) reads it as it is at that point of the recording: the passes into it
-	begun before the draw, and none after. A target drawn into again after something read it is given a fresh texture for the new pass
+	begun before the draw, and none after. A target drawn into again after something read it receives a fresh texture for the new pass
 	(`beginTarget`), so the earlier draw keeps the old, as raylib's render textures behave.
 
 	**Shaders.** The renderer builds every shader its batches, materials and effects draw with on the GPU (helix-services'
@@ -65,7 +65,7 @@ class Renderer {
 	public final graphics:IGraphics;
 
 	/** Gets the width of the current pass's viewport, in pixels: the screen's framebuffer pixels or the target's texels. It is what a
-		`Batch2D` without a camera measures in, and what a `Batch3D` takes its aspect from. 0 outside a frame. */
+		`Batch2D` without a camera measures in, and what a `Batch3D` reads its aspect from. 0 outside a frame. */
 	public var viewportWidth(default, null):Int = 0;
 
 	/** Gets the height of the current pass's viewport, in pixels. 0 outside a frame. */
@@ -78,7 +78,7 @@ class Renderer {
 
 		It and `toneMapping` are the one pair every lit draw is brought to the screen by. Into an sRGB target (RGBA8, the screen),
 		`Batch3D`'s lit shaders apply them as they draw, read at each `Batch3D.begin`; into an RGBA16F target the batch writes linear
-		light and `PostProcess.draw` applies them in its resolve, read at each call. A value that isn't finite is taken as 0. */
+		light and `PostProcess.draw` applies them in its resolve, read at each call. A value that isn't finite is treated as 0. */
 	public var exposure(default, set):Float = 0;
 
 	/** Gets or sets how exposed linear light is brought into the 0 to 1 an sRGB target holds: Neutral until set. Read as `exposure` is. */
@@ -116,7 +116,7 @@ class Renderer {
 		image goes to the GPU as it is, its pixels never held here.
 
 		@param image  The decoded image. It is left to the caller, who disposes it once uploaded.
-		@return  The texture, sampled linearly and clamped until its `sampling` is set, as `createTexture` gives one.
+		@return  The texture, sampled linearly and clamped until its `sampling` is set, as `createTexture` returns one.
 		@throws String  An image larger than this GPU allows. */
 	public function createTextureFromImage(image:IDecodedImage):Texture2D {
 		return own(new Texture2D(graphics.createTextureFromImage(image), image.width, image.height));
@@ -244,22 +244,22 @@ class Renderer {
 	/** Uploads a model: each mesh, each image as a texture without mipmaps, as raylib's `LoadModel` makes them, and each material as a
 		`Material3D` over them; `createModelMipmapped` makes its textures with mipmaps.
 
-		An image that is null (one the model couldn't read) gives no texture, and a material naming it draws without it. A mesh without a
-		material in the file is given one more material, white, at the end of `materials`. Each texture's `colorSpace` is set from the
+		An image that is null (one the model couldn't read) produces no texture, and a material naming it draws without it. A mesh without
+		a material in the file receives one more material, white, at the end of `materials`. Each texture's `colorSpace` is set from the
 		slot it fills. Where
-		helix-formats' `GltfMaterial` gives them, its alpha mode, cutoff and double-sidedness become `blend`, `alphaCutoff` and `cull`,
+		helix-formats' `GltfMaterial` provides them, its alpha mode, cutoff and double-sidedness become `blend`, `alphaCutoff` and `cull`,
 		its textures' samplers their `sampling`, its texture transform `textureTransform`, and its KHR_materials_clearcoat, sheen,
 		specular, ior and emissive_strength values the material's; otherwise opaque, uncut, back faces culled, linear and repeated, and
 		none of the extensions. An OBJ file's materials are shaded `Phong` from their Ks and Ns. Meshes keep their morph targets.
 
-		Each image goes to the GPU once, taken from the model (`ModelImage3D.takeDecoded`) and disposed once sent: a second GpuModel3D of
-		the same model has no textures. One GpuModel3D is drawn as often as wanted.
+		Each image goes to the GPU once, moved out of the model (`ModelImage3D.takeDecoded`) and disposed once sent: a second GpuModel3D
+		of the same model has no textures. One GpuModel3D is drawn as often as wanted.
 		@param model  The model, as helix-services' `Models` reads it.
-		@param colorSpace  Optional. How the file's color factors and vertex colors are taken. `Auto`, the default, as the format says:
+		@param colorSpace  Optional. How the file's color factors and vertex colors are read. `Auto`, the default, as the format says:
 			glTF's are linear, its factors encoded to sRGB for the materials' 0xAARRGGBB colors and its vertex colors read as linear
-			(`Material3D.colorSpace` Linear); an OBJ file's are sRGB. `Srgb` takes them as stored, as raylib does: each factor times 255
+			(`Material3D.colorSpace` Linear); an OBJ file's are sRGB. `Srgb` reads them as stored, as raylib does: each factor times 255
 			into the color unconverted, and the materials' `colorSpace` Srgb, so base color, texture and vertex color are multiplied as
-			stored and an unlit model with `toneMapped` off shows the file's numbers in an sRGB target as raylib does. `Linear` takes
+			stored and an unlit model with `toneMapped` off shows the file's numbers in an sRGB target as raylib does. `Linear` reads
 			every file's as linear.
 		@return  The uploaded model, which owns its meshes and textures. */
 	public function createModel(model:Model3D, colorSpace:ColorSpace = Auto):GpuModel3D {
@@ -270,7 +270,7 @@ class Renderer {
 		three.js makes them.
 
 		@param model  The model, as helix-services' `Models` reads it.
-		@param colorSpace  Optional. How the file's color factors and vertex colors are taken, as `createModel` takes it; `Auto` by
+		@param colorSpace  Optional. How the file's color factors and vertex colors are read, as `createModel` accepts it; `Auto` by
 			default.
 		@return  The uploaded model, which owns its meshes and textures. */
 	public function createModelMipmapped(model:Model3D, colorSpace:ColorSpace = Auto):GpuModel3D {
@@ -372,16 +372,16 @@ class Renderer {
 
 	/** Starts a pass into a render target: the draws after it go into the target, until `endTarget`.
 
-		Given a color, the target is cleared to it (decoded to linear light in an RGBA16F target, so it shows as given once resolved
+		With a color, the target is cleared to it (decoded to linear light in an RGBA16F target, so it shows as provided once resolved
 		without tone mapping), and its depth to the farthest; omitted, the target keeps what it holds, its texels and its depth, as a
 		painting, trails or raylib's render textures do. The viewport is all of it and nothing is clipped. Drawing the target into itself
 		throws.
 
 		**A target read earlier in the frame is copied on write.** When a draw recorded before this call reads the target, the pass goes
-		into a fresh texture of the same size and format, which takes the target's place (`Texture2D.handle` and `sharedTexture` follow
-		it): holding a copy of what the target held when omitted a color, or cleared to the color given. The earlier draw reads the old
-		texture, so a screen draw shows the target as it was when the draw was recorded, as raylib's frame does. The old texture is
-		freed after the frame; a target read and redrawn each frame costs one more texture of its size, and a copy when not cleared.
+		into a fresh texture of the same size and format, which becomes the target's texture (`Texture2D.handle` and `sharedTexture`
+		follow it): holding a copy of what the target held when omitted a color, or cleared to the color provided. The earlier draw reads
+		the old texture, so a screen draw shows the target as it was when the draw was recorded, as raylib's frame does. The old texture
+		is freed after the frame; a target read and redrawn each frame costs one more texture of its size, and a copy when not cleared.
 		@param target  The render target.
 		@param clearColor  Optional. The color it is cleared to, as 0xAARRGGBB; it keeps what it holds when omitted.
 		@throws String  No frame being recorded, a target pass already open, a batch open, or a disposed target. */
@@ -458,9 +458,9 @@ class Renderer {
 
 	/** Sets the rectangle of the current pass that the following draws fill, until `resetViewport` or the pass's end.
 
-		A `Batch2D` without a camera then measures from the viewport's top left, and a `Batch3D` takes its aspect from it, so a split
-		screen or a design size fitted to the window (helix-services' `Screen.viewportX` and the rest) is drawn by setting it. It takes
-		effect at the next `begin` of a batch, and setting it while a batch is open throws.
+		A `Batch2D` without a camera then measures from the viewport's top left, and a `Batch3D` reads its aspect from it, so a split
+		screen or a design size fitted to the window (helix-services' `Screen.viewportX` and the rest) is drawn by setting it. It applies
+		at the next `begin` of a batch, and setting it while a batch is open throws.
 		@param x  The left edge, in the pass's pixels from its left.
 		@param y  The top edge, in the pass's pixels from its top.
 		@param width  The width, in pixels.

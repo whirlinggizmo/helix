@@ -16,7 +16,7 @@ import helix.services.images.Image;
 	their textures pooled, clears recorded in order, viewports and scissors; the 2D batch's joining and splitting of GPU draws, culling,
 	shapes, sprites and draw lists; text measured, wrapped and aligned, a character a font lacks drawn as its stand-in and warned of once;
 	the 3D batch's views, points, lines, polygon modes, instances,
-	meshes, materials, mesh state and skinning, a mesh's large points, a lit material drawn black where nothing gives light, the lights chosen
+	meshes, materials, mesh state and skinning, a mesh's large points, a lit material drawn black where nothing emits light, the lights chosen
 	for a draw by its box, and a light casting shadows drawn into its passes first. */
 @:access(helix.services.fonts)
 @:access(helix.render)
@@ -176,7 +176,7 @@ class RenderTests {
 			"the copy pass reads the old texture, the screen's first draw the old, its second the new");
 		check(g.log.indexOf('begin target $second clear 0 0 0 0') >= 0, "the fresh texture cleared, then the old copied into it");
 		check(g.textures.exists(first), "the old texture kept after the frame, pooled");
-		// The next frame takes the pooled one back: two textures, ping-ponged.
+		// The next frame reuses the pooled one: two textures, ping-ponged.
 		r.beginFrame(200, 100);
 		b.begin();
 		b.drawTexture(target, 0, 0);
@@ -207,7 +207,7 @@ class RenderTests {
 		check(g.draws.length == 1 && g.draws[0].count == 6 && g.log.indexOf("begin screen 200 100 clear FF00FF00") >= 0,
 			"the draws before a clear dropped, the pass cleared to its color");
 
-		// Viewport and scissor, from the top left, given to the platform from the bottom left.
+		// Viewport and scissor, from the top left, passed to the platform from the bottom left.
 		g.forget();
 		r.beginFrame(200, 100);
 		r.applyViewport(10, 20, 50, 30);

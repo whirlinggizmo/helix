@@ -1,8 +1,8 @@
 package helix.render;
 
 /** What both batches draw in a plane: textures, sprites, shapes and text, made into textured, colored vertices on the CPU, as `Batch2D`
-	draws them and `Batch3D` draws them in a plane. The batch gives where the vertices go (`vertex`), which texture they read (`use`), and
-	what is in view (`visible`), and may take a quad of one color whole (`plainQuad`). */
+	draws them and `Batch3D` draws them in a plane. The batch supplies where the vertices go (`vertex`), which texture they read (`use`),
+	and what is in view (`visible`), and may accept a quad of one color whole (`plainQuad`). */
 @:noCompletion
 @:allow(helix.render)
 class PlaneDrawing2D {
@@ -98,7 +98,7 @@ class PlaneDrawing2D {
 		return a > b ? a : b;
 
 	// A rectangle of a texture turned about a point of it and moved: from (left, top) to (right, bottom) around the origin, then turned
-	// and placed at x, y; the batch's quad when it takes one, else culled and made of vertices.
+	// and placed at x, y; the batch's quad when it accepts one, else culled and made of vertices.
 	function placedQuad(texture:Texture2D, left:Float, top:Float, right:Float, bottom:Float, x:Float, y:Float, rotation:Float, u0:Float, v0:Float, u1:Float,
 			v1:Float, tint:Int):Void {
 		var cos = 1., sin = 0.;

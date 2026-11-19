@@ -5,10 +5,10 @@ import helix.platform.ColorChannels;
 import helix.platform.CullFace;
 import helix.platform.DepthTest;
 
-/** Represents state a mesh draw takes in place of its material's: its blend, depth test, depth write, cull and color channels, each
+/** Represents state a mesh draw uses in place of its material's: its blend, depth test, depth write, cull and color channels, each
 	null for the material's own.
 
-	`Batch3D.drawMesh` and `drawModel` (and `DrawList3D`'s) take one, read as each draw is made, and change nothing in the material. A
+	`Batch3D.drawMesh` and `drawModel` (and `DrawList3D`'s) accept one, read as each draw is made, and change nothing in the material. A
 	layer whose state is global keeps one and updates it as its state changes: helix-raylib keeps one mirroring rlgl's, passed to every
 	mesh draw, while the materials stay as three.js expects them.
 
@@ -33,6 +33,6 @@ class MeshState3D {
 	/** Gets or sets the color channels the draw writes, or null for the material's `colorWrite`: null until set. */
 	public var colorWrite:Null<ColorChannels> = null;
 
-	/** Creates state that takes nothing from the material: every value null. */
+	/** Creates state that overrides nothing in the material: every value null. */
 	public function new() {}
 }

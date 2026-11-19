@@ -44,7 +44,7 @@ class PixelTests {
 	static inline final SIZE = 64;
 	// The skinned crowd's target size, in texels: 20 cells of 16 a side.
 	static inline final CROWD_SIZE = 320;
-	// How many frames a read back may take before the case fails.
+	// How many frames a read back may last before the case fails.
 	static inline final READ_FRAMES = 60;
 
 	static var window:IWindow;
@@ -786,7 +786,7 @@ class PixelTests {
 		return v;
 	}
 
-	// The light a point or spot light gives a pixel of the plane z 0 facing +z, over π: its intensity over the distance squared, times the
+	// The light a point or spot light casts on a pixel of the plane z 0 facing +z, over π: its intensity over the distance squared, times the
 	// cosine at the surface.
 	static function diffuseFrom(x:Int, y:Int, lx:Float, ly:Float, lz:Float, intensity:Float):Float {
 		var dx = lx - (x + .5),

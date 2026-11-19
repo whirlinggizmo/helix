@@ -10,7 +10,7 @@ import helix.platform.DepthTest;
 import helix.services.shaders.ShaderValues;
 #end
 
-/** Represents how a mesh's surface is drawn: its shading and the colors, textures and values it takes, how it is blended, culled and
+/** Represents how a mesh's surface is drawn: its shading and the colors, textures and values it uses, how it is blended, culled and
 	depth-tested, and the program's own shader when it has one.
 
 	A program makes one, or `Renderer.createModel` makes them from a model's materials. A material names its textures and environment map
@@ -27,7 +27,7 @@ import helix.services.shaders.ShaderValues;
 	first two, reads the vertex color as linear, and multiplies in linear light, as glTF and three.js do; Srgb multiplies the three as
 	stored and decodes the product once, as raylib does. Light, ambient light and the environment are linear. The result is encoded as
 	the target needs (`Batch3D`), so an `Unlit` material with `colorSpace` Srgb, `toneMapped` off and no fog shows its product in an sRGB
-	target as stored: a 0x80 base color over a 0x80 texel gives 0x40, as raylib's does.
+	target as stored: a 0x80 base color over a 0x80 texel produces 0x40, as raylib's does.
 
 	**A program's shader** (`shaderValues`) is compiled by `compileShader` (a fragment stage over helix-render's mesh vertex stage) or
 	`compileShaderStages`. One shader draws every kind of mesh: `instanceModel` and `instanceColor` read identity and white where no
@@ -75,7 +75,7 @@ import helix.services.shaders.ShaderValues;
 	turned toward the viewer), `tangent` (vec4, world space, w the bitangent's sign), `texCoord` and `texCoord2` (vec2, moved by
 	`textureTransform`) and `color` (vec4, the vertex color as the mesh holds it: as stored when `colorSpace` is Srgb, linear otherwise).
 	A program's own vertex stage (`compileShaderStages`) gets the same by `#include <helix/render/shaders/mesh.glsl>`, which includes `view.glsl`
-	and declares the attributes and the per-draw uniforms below and those six outputs, so the stage declares none of them, and gives
+	and declares the attributes and the per-draw uniforms below and those six outputs, so the stage declares none of them, and provides
 	`vec4 placeVertex()`: the vertex skinned, morphed and instanced as `skinned`, `morphTargetCount` and the instance attributes say,
 	its clip position returned and the six outputs written. The stage may write any of them again after the call.
 
@@ -112,7 +112,7 @@ import helix.services.shaders.ShaderValues;
 	| `boneTexture`, `morphTexture` | sampler2D | The frame's skins' matrices, every skinned draw's after the last's; the targets' deltas. |
 
 	The lights and `receiveShadows` are declared by `lighting.glsl`, not by the shader. With them the view's names (`View3D`) and the
-	lighting block's (`Batch3D`). A shader is given colors as stored but light, which is linear; nothing it writes is encoded after it:
+	lighting block's (`Batch3D`). A shader receives colors as stored but light, which is linear; nothing it writes is encoded after it:
 	`writeMaterialColor`, or `color.glsl`'s `writeColor`, exposes and tone maps where `toneMapped` says and encodes for the target
 	(`View3D` lists its functions).
 
@@ -213,7 +213,7 @@ class Material3D {
 	/** Gets or sets how strongly the light map lights: 1 until set. Below 0 is clamped to 0. */
 	public var lightIntensity(default, set):Float = 1;
 
-	/** Gets or sets the light it gives off, lit or not: black until set. */
+	/** Gets or sets the light it emits, lit or not: black until set. */
 	public var emissiveColor(default, set):Int = 0xff000000;
 
 	/** Gets or sets how bright its emissive light is, multiplying `emissiveColor`: 1 until set. Below 0 is clamped to 0. */
@@ -229,7 +229,7 @@ class Material3D {
 	public var environmentIntensity(default, set):Float = 1;
 
 	/** Gets the matrix its texture coordinates are moved by, before every texture is read: identity until changed, as glTF's
-		KHR_texture_transform and a three.js texture's offset, repeat and rotation give it.
+		KHR_texture_transform and a three.js texture's offset, repeat and rotation set it.
 
 		It is read at each draw, so changing it each frame scrolls, turns or tiles the material's textures with no shader of the
 		program's (`material.textureTransform.makeIdentity().appendTranslation(time * .1, 0, material.textureTransform)`). */
@@ -240,8 +240,8 @@ class Material3D {
 	public var alphaCutoff(default, set):Float = 0;
 
 	/** Gets or sets how it is combined with what is behind it: `Blend.OPAQUE` until set; any factors and operations the platform's
-		`Blend` takes, three.js's custom blending among them. A blended surface is drawn where it is in the order, so the program draws it
-		after what is behind it, farthest first. */
+		`Blend` accepts, three.js's custom blending among them. A blended surface is drawn where it is in the order, so the program draws
+		it after what is behind it, farthest first. */
 	public var blend:Blend = Blend.OPAQUE;
 
 	/** Gets or sets the color channels it writes: all four until set; none for a depth-only draw, as three.js's `colorWrite` false. */
@@ -278,7 +278,7 @@ class Material3D {
 		for the batch's default for its `shading`: null until set.
 
 		Its shader is compiled by `compileShader` or `compileShaderStages`, and reads the names the class lists, this material's colors,
-		values and textures among them. Names given by `Shader.withNames` are filled exactly as names declared in the GLSL, and the batch
+		values and textures among them. Names mapped by `Shader.withNames` are filled exactly as names declared in the GLSL, and the batch
 		shares `View` and `Lighting` with each draw itself, so the program sets no `ShaderValues.scene` and shares no block. Several
 		materials may share one values, or each have values of its own over a shared base (`ShaderValues.base`). */
 	public var shaderValues:Null<ShaderValues> = null;
@@ -369,12 +369,12 @@ class Material3D {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		The fragment stage is GLSL as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440 (GL's form), or
-		`#version 450` (Vulkan's), the mesh vertex stage given in the same form; GLSL ES 100 (raylib's) is not taken, and a layer adapts
-		it first. The vertex stage passes `worldPosition`, `normal`, `tangent`, `texCoord`, `texCoord2` and `color`, as the class says,
-		read by name; `#include <helix/render/shaders/material.glsl>` declares them, with the material's names.
+		The fragment stage is GLSL as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440 (GL's form), or
+		`#version 450` (Vulkan's), the mesh vertex stage provided in the same form; GLSL ES 100 (raylib's) is not accepted, and a layer
+		adapts it first. The vertex stage passes `worldPosition`, `normal`, `tangent`, `texCoord`, `texCoord2` and `color`, as the class
+		says, read by name; `#include <helix/render/shaders/material.glsl>` declares them, with the material's names.
 		@param fragment  The fragment stage's file, relative to the file holding the call.
-		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` takes them.
+		@param options  Optional. Defines, includes and a file to watch, as `Shader.compile` accepts them.
 		@return  The shader, for a `ShaderValues` over it. */
 	public static macro function compileShader(fragment:String,
 			?options:haxe.macro.Expr.ExprOf<helix.services.shaders.ShaderOptions>):haxe.macro.Expr.ExprOf<helix.services.shaders.Shader> {
@@ -387,7 +387,7 @@ class Material3D {
 		vertex stage drawn the right way up into a render target whatever it writes (`ShaderOptions.clipScale`) and able to draw
 		one-pixel points (`ShaderOptions.points`), helix-render's includes found (`#include <helix/render/shaders/color.glsl>`). A name the class
 		lists declared with another type stops the build at the call.
-		Both stages are GLSL in one form, as helix-services' `Shader.compile` takes it: `#version 300 es` or 330 to 440, or
+		Both stages are GLSL in one form, as helix-services' `Shader.compile` accepts it: `#version 300 es` or 330 to 440, or
 		`#version 450`. The vertex stage may place its vertices itself, declaring what it reads, as raylib's GLSL 330 vertex stages do;
 		it then skins, morphs and instances only as it does so itself, and is cut by the clip planes only where it writes
 		`worldPosition`. Placed by `placeVertex()` (`#include <helix/render/shaders/mesh.glsl>`), skinning, morphing and instancing are done and

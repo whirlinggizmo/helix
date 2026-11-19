@@ -11,11 +11,11 @@ import helix.platform.TextureFormat;
 	maps and encodes it. It is sampled the right way up, as an image is: v 0 at the top of what was drawn into it, on every backend.
 
 	A pass into it starts cleared, or keeps what it holds (`Renderer.beginTarget`). Its multisampling is its own (`msaaSampleCount`,
-	the screen's unless `Renderer.createRenderTarget` is given another), whatever its depth, and is resolved at the end of each pass;
+	the screen's unless another is passed to `Renderer.createRenderTarget`), whatever its depth, and is resolved at the end of each pass;
 	with `TargetDepth.Texture` its depth can be sampled after it.
 
 	**Read, then drawn into again.** A draw reads the target as it is at that point of the frame's recording. A pass begun into it after
-	something read it goes into a fresh copy that takes its place (copy on write, `Renderer.beginTarget`), so a screen draw recorded
+	something read it goes into a fresh copy that replaces it (copy on write, `Renderer.beginTarget`), so a screen draw recorded
 	before shows it as it was, as raylib's frame does. Its `handle` changes then; `sharedTexture` follows.
 
 	```haxe
@@ -36,7 +36,7 @@ class RenderTarget2D extends Texture2D {
 	/** Gets the depth it has. */
 	public final depth:TargetDepth;
 
-	/** Gets the number of multisampling samples per pixel it is drawn with, 1 for none: what `Renderer.createRenderTarget` was given,
+	/** Gets the number of multisampling samples per pixel it is drawn with, 1 for none: what was passed to `Renderer.createRenderTarget`,
 		or the screen's, as this GPU allows it. It is kept through a copy and a resize. */
 	public final msaaSampleCount:Int;
 

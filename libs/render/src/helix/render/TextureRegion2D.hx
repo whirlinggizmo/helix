@@ -4,9 +4,9 @@ package helix.render;
 	point it is placed and turned by.
 
 	It is a plain value, made once and drawn often (`Batch2D.drawSprite`, `Batch3D.drawBillboard`); it holds the texture without owning
-	it. Its origin is the point `drawSprite` places at the position given and turns about when the call gives none: its top left until
-	given, as a texture is placed by `drawTexture`, so a sheet's frames of one character, which share their feet's place, are given it
-	once.
+	it. Its origin is the point `drawSprite` places at the provided position and turns about when the call provides none: its top left
+	when omitted, as a texture is placed by `drawTexture`, so a sheet's frames of one character, which share their feet's place, receive
+	it once.
 
 	```haxe
 	var walk = TextureRegion2D.split(sheet, 32, 48, 0, 0, 6, 16, 46); // six frames, placed by their feet
@@ -30,10 +30,10 @@ class TextureRegion2D {
 	/** Gets the region's height, in texels. */
 	public final regionHeight:Float;
 
-	/** Gets the point it is placed and turned by when a draw gives none, across, in texels from the region's left: 0 until given. */
+	/** Gets the point it is placed and turned by when a draw provides none, across, in texels from the region's left: 0 when omitted. */
 	public final originX:Float;
 
-	/** Gets the point it is placed and turned by when a draw gives none, down, in texels from the region's top: 0 until given. */
+	/** Gets the point it is placed and turned by when a draw provides none, down, in texels from the region's top: 0 when omitted. */
 	public final originY:Float;
 
 	/** Returns the frames of a sprite sheet laid out in a grid: row by row, left to right, top to bottom.

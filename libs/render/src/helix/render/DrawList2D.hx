@@ -7,7 +7,7 @@ import helix.geometry.Aabb2D;
 
 	A program records into it with the calls `Batch2D` draws with, named alike, in the list's own units; `makeEmpty` empties it to
 	record again. A replay draws the calls in the order recorded, batched as `Batch2D` batches them, with the batch's `blend`, `shaderValues` and
-	`customData` at the replay; the list holds no state of its own. It holds references to the textures, regions, fonts and layouts it is given and owns
+	`customData` at the replay; the list holds no state of its own. It holds references to the textures, regions, fonts and layouts recorded in it and owns
 	none: a texture disposed after it was recorded makes a replay throw, and a layout is drawn as it is at each replay. Point and vertex
 	arrays are copied. It may be recorded at any time, outside a frame too, as it draws nothing itself.
 
@@ -265,7 +265,7 @@ class DrawList2D {
 		pointsBox(copy, thickness * 2);
 	}
 
-	/** Records triangles as given: textured, colored by vertex, or both, for what the shapes here don't make.
+	/** Records triangles as provided: textured, colored by vertex, or both, for what the shapes here don't make.
 
 		The arrays are copied, so they may be reused.
 		@param texture  The texture, or null for white.
@@ -284,8 +284,8 @@ class DrawList2D {
 
 	/** Records text in a font, line by line at each line break, left-aligned, its first line's top at a point.
 
-		A distance-field font stays sharp at any size; another is scaled from its atlas. Pairs of characters are kerned as the font gives
-		them, unless `kerned` is false.
+		A distance-field font stays sharp at any size; another is scaled from its atlas. Pairs of characters are kerned as the font
+		specifies them, unless `kerned` is false.
 		@param font  The font.
 		@param text  The text; a character the font lacks is drawn as the font's stand-in, as `GpuFont2D` says.
 		@param x  The left edge.
@@ -293,8 +293,8 @@ class DrawList2D {
 		@param color  Optional. The color; defaults to white.
 		@param size  Optional. The size, in the list's units, as the font's size is measured; the font's own when omitted.
 		@param letterSpacing  Optional. Space added after each character, in the list's units; defaults to 0.
-		@param kerned  Optional. Whether pairs of characters are kerned as the font gives them; defaults to true. raylib's `DrawTextEx`
-			doesn't kern. */
+		@param kerned  Optional. Whether pairs of characters are kerned as the font specifies them; defaults to true. raylib's
+			`DrawTextEx` doesn't kern. */
 	public function drawText(font:GpuFont2D, text:String, x:Float, y:Float, color:Int = 0xffffffff, ?size:Float, letterSpacing = 0., kerned = true):Void {
 		add(b -> b.drawText(font, text, x, y, color, size, letterSpacing, kerned));
 		var size = font.measureText(text, size, letterSpacing, kerned);
