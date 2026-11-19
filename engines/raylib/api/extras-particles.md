@@ -51,7 +51,7 @@ static function PrewarmEmitter2D(emitter:Emitter2D, seconds:Float):Void
 static function ClearEmitter2D(emitter:Emitter2D):Void
 ```
 
-- `LoadEmitter3D`: Returns a 3D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the most alive takes the oldest one's place.
+- `LoadEmitter3D`: Returns a 3D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the most alive replaces the oldest one.
   - `maxParticles`: The most alive at once, 1 or more.
   - returns: The emitter, the program's until `UnloadEmitter3D`.
 
@@ -60,34 +60,34 @@ static function ClearEmitter2D(emitter:Emitter2D):Void
   - `emitter`: The emitter.
 - `UpdateEmitter3D`: Advances a 3D emitter by the frame's time. The particles its rate owes are born along the way from where it was to its `position`, so a fast emitter leaves an even trail. Call it once a frame, before `DrawEmitter3D`. An emitter not updated holds still.
   - `emitter`: The emitter.
-  - `deltaTime`: The seconds since its last update, as `GetFrameTime` gives them.
+  - `deltaTime`: The seconds since its last update, as `GetFrameTime` returns them.
 - `DrawEmitter3D`: Draws a 3D emitter's particles through the current camera, as `DrawCube` draws: inside `BeginMode3D`, in world units facing the camera, hidden by what's drawn before them but not hiding what's drawn after. Outside it, through the screen's, a unit a pixel.
   - `emitter`: The emitter.
-- `EmitParticles3D`: Gives off particles at once at a 3D emitter's position, whatever its rate: a burst.
+- `EmitParticles3D`: Emits particles at once at a 3D emitter's position, whatever its rate: a burst.
   - `emitter`: The emitter.
   - `count`: How many.
 - `PrewarmEmitter3D`: Runs a 3D emitter ahead in time without drawing, so a fire is already going when first seen.
   - `emitter`: The emitter.
   - `seconds`: How far ahead.
-- `ClearEmitter3D`: Takes away every particle alive, and starts the emitter's random numbers again from its `seed`.
+- `ClearEmitter3D`: Removes every particle alive, and starts the emitter's random numbers again from its `seed`.
   - `emitter`: The emitter.
-- `LoadEmitter2D`: Returns a 2D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the most alive takes the oldest one's place.
+- `LoadEmitter2D`: Returns a 2D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the most alive replaces the oldest one.
   - `maxParticles`: The most alive at once, 1 or more.
   - returns: The emitter, the program's until `UnloadEmitter2D`.
 - `UnloadEmitter2D`: Frees a 2D emitter and its particles.
   - `emitter`: The emitter.
 - `UpdateEmitter2D`: Advances a 2D emitter by the frame's time, moving each particle. The particles its rate owes are born along the way from where it was to its `position`. Call it once a frame, before `DrawEmitter2D`. An emitter not updated holds still.
   - `emitter`: The emitter.
-  - `deltaTime`: The seconds since its last update, as `GetFrameTime` gives them.
+  - `deltaTime`: The seconds since its last update, as `GetFrameTime` returns them.
 - `DrawEmitter2D`: Draws a 2D emitter's particles into the batch through the current camera, as `DrawTexture` draws: in screen pixels, or through `BeginMode2D`'s camera. Inside `BeginMode3D`, flat in the world's XY plane, a pixel a unit.
   - `emitter`: The emitter.
-- `EmitParticles2D`: Gives off particles at once at a 2D emitter's position, whatever its rate: a burst.
+- `EmitParticles2D`: Emits particles at once at a 2D emitter's position, whatever its rate: a burst.
   - `emitter`: The emitter.
   - `count`: How many.
 - `PrewarmEmitter2D`: Runs a 2D emitter ahead in time without drawing.
   - `emitter`: The emitter.
   - `seconds`: How far ahead.
-- `ClearEmitter2D`: Takes away every particle alive, and starts the emitter's random numbers again from its `seed`.
+- `ClearEmitter2D`: Removes every particle alive, and starts the emitter's random numbers again from its `seed`.
   - `emitter`: The emitter.
 
 ## Emitter2D

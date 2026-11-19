@@ -34,7 +34,7 @@ static function LoadModelFromModels(models:Array<Model>, ?skeleton:Model):Null<M
 
 - `LoadModelFromModels`: Returns a new model with the provided models' meshes merged where possible. The provided models are unchanged. For example, a character's head, body, legs and feet models, whose materials differ only in color, are merged into one character model with one mesh.
   - `models`: The models.
-  - `skeleton`: Optional. The model whose bones, bind pose and transform the new model takes. Usually one of the provided models.
+  - `skeleton`: Optional. The model whose bones, bind pose and transform the new model uses. Usually one of the provided models.
   - returns: The new model, or null when refused.
 
   Meshes whose materials differ only in diffuse color are merged into one mesh. Each material's diffuse color is multiplied into the vertex colors, and the merged mesh has one material, the same material with a white diffuse color. Meshes whose materials differ in anything else (the shader, a texture, another map's color or value, or the Materials extra's values) stay separate meshes.
@@ -56,7 +56,7 @@ static function UpdateModelAnimationMasked(model:Model, animA:ModelAnimation, fr
 static function GetModelBoneMask(model:Model, maskRootBoneName:String, ?out:Array<Float>):Array<Float>
 ```
 
-- `UpdateModelAnimationMasked`: Poses a model by two animations, each bone taking the second by its weight in a mask: a bone weighted 1 takes the second by `blend`, one weighted 0 the first alone. An attack in the second over a run in the first, with a mask of the upper body (`GetModelBoneMask`), poses the upper body by the attack and the legs by the run.
+- `UpdateModelAnimationMasked`: Poses a model by two animations, each bone mixing in the second by its weight in a mask: a bone weighted 1 mixes in the second by `blend`, one weighted 0 the first alone. An attack in the second over a run in the first, with a mask of the upper body (`GetModelBoneMask`), poses the upper body by the attack and the legs by the run.
   - `model`: The model.
   - `animA`: The first animation, posing the unmasked bones.
   - `frameA`: The first animation's frame, fractional.
@@ -68,10 +68,10 @@ static function GetModelBoneMask(model:Model, maskRootBoneName:String, ?out:Arra
 
   By default (`BLEND_ROTATION_LOCAL`), the masked bones turn with the mask root's parent as the first animation poses it. With `BLEND_ROTATION_MODEL`, the masked bones keep the second animation's facing, and the mask root twists from its parent as much as the two animations' facings differ.
 
-  Wraps a frame to its animation's frames before taking its fraction, as `UpdateModelAnimationEx` does.
+  Wraps a frame to its animation's frames before using its fraction, as `UpdateModelAnimationEx` does.
 
   Refused for a mask or an animation that doesn't match the bones of the blended model.
-- `GetModelBoneMask`: Returns a mask of a named bone and every bone below it, each weighted 1, and the others 0, by index in the model's bones, as `UpdateModelAnimationMasked` takes it. Every bone is 0 when the model has no bone of the name. A mask of another shape (two branches, weights between 0 and 1) is an array the program fills itself.
+- `GetModelBoneMask`: Returns a mask of a named bone and every bone below it, each weighted 1, and the others 0, by index in the model's bones, as `UpdateModelAnimationMasked` accepts it. Every bone is 0 when the model has no bone of the name. A mask of another shape (two branches, weights between 0 and 1) is an array the program fills itself.
   - `model`: The model.
   - `maskRootBoneName`: The mask's root: it and every bone below it are weighted 1.
   - `out`: The array to fill, its length made the model's count of bones, or null for a new one.

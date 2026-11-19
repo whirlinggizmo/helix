@@ -27,7 +27,7 @@ static function DrawTextureInstanced(texture:Texture2D, source:Rectangle, transf
 
   Each copy is what `DrawTexturePro` draws, in the batch's order, so the copies join the frame's sprite run and cost what the same draws would.
 
-  A copy is the part, `source.width` by `source.height` pixels with its top left at the origin, taken through its matrix as `Vector2Transform` applies one. The fields read are `m0`, `m4` and `m12` across, and `m1`, `m5` and `m13` down.
+  A copy is the part, `source.width` by `source.height` pixels with its top left at the origin, transformed by its matrix as `Vector2Transform` applies one. The fields read are `m0`, `m4` and `m12` across, and `m1`, `m5` and `m13` down.
 
   `MatrixTranslate` places a copy, `MatrixRotateZ` turns it about its top left and `MatrixScale` sizes it. Their products do all three.
 

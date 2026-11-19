@@ -68,14 +68,14 @@ class Models {
 		differs from the transform of `skeleton`, and for a `skeleton` of more than 256 bones.
 
 		@param models  The models.
-		@param skeleton  Optional. The model whose bones, bind pose and transform the new model takes. Usually one of the provided models.
+		@param skeleton  Optional. The model whose bones, bind pose and transform the new model uses. Usually one of the provided models.
 		@return  The new model, or null when refused. */
 	public static inline function LoadModelFromModels(models:Array<Model>, ?skeleton:Model):Null<Model>
 		return RModelsMerged.LoadModelFromModels(models, skeleton);
 
 	// ---- models: two animations blended bone by bone (raylib/RModelsMasked.hx) ----
 
-	/** Poses a model by two animations, each bone taking the second by its weight in a mask: a bone weighted 1 takes the second by
+	/** Poses a model by two animations, each bone mixing in the second by its weight in a mask: a bone weighted 1 mixes in the second by
 		`blend`, one weighted 0 the first alone. An attack in the second over a run in the first, with a mask of the upper body
 		(`GetModelBoneMask`), poses the upper body by the attack and the legs by the run.
 
@@ -83,7 +83,7 @@ class Models {
 		`BLEND_ROTATION_MODEL`, the masked bones keep the second animation's facing, and the mask root twists from its parent as much as
 		the two animations' facings differ.
 
-		Wraps a frame to its animation's frames before taking its fraction, as `UpdateModelAnimationEx` does.
+		Wraps a frame to its animation's frames before using its fraction, as `UpdateModelAnimationEx` does.
 
 		Refused for a mask or an animation that doesn't match the bones of the blended model.
 
@@ -100,8 +100,8 @@ class Models {
 		RModelsMasked.UpdateModelAnimationMasked(model, animA, frameA, animB, frameB, boneWeights, blend, rotationSpace);
 
 	/** Returns a mask of a named bone and every bone below it, each weighted 1, and the others 0, by index in the model's bones, as
-		`UpdateModelAnimationMasked` takes it. Every bone is 0 when the model has no bone of the name. A mask of another shape (two branches,
-		weights between 0 and 1) is an array the program fills itself.
+		`UpdateModelAnimationMasked` accepts it. Every bone is 0 when the model has no bone of the name. A mask of another shape (two
+		branches, weights between 0 and 1) is an array the program fills itself.
 
 		@param model  The model.
 		@param maskRootBoneName  The mask's root: it and every bone below it are weighted 1.

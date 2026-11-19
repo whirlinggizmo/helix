@@ -105,13 +105,13 @@ class Lighting {
 
 		Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at
 		each draw, so the light moves or changes by setting them, the Lighting extra's `intensity`, `range` and spot cone among them.
-		`UnloadLight` takes the light out of the scene.
+		`UnloadLight` removes the light from the scene.
 
 		@param type  `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, or the Lighting extra's `LIGHT_SPOT`.
 		@param position  Where it is.
 		@param target  Where it points, for a directional or spot light.
 		@param color  Its color.
-		@param shader  The shader it is made with, as rlights takes one.
+		@param shader  The shader it is made with, as rlights accepts one.
 		@return  The light. */
 	public static inline function CreateLight(type:Int, position:Vector3, target:Vector3, color:Color, shader:Shader):Light
 		return RLights.CreateLight(type, position, target, color, shader);
@@ -158,7 +158,7 @@ class Lighting {
 
 		Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`.
 		`maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, and `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`. Its
-		emission and alpha cutoff are the Materials extra's. Colors are taken as linear, as a glTF's factors are. An image's texels are
+		emission and alpha cutoff are the Materials extra's. Colors are read as linear, as a glTF's factors are. An image's texels are
 		decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
 
 		A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`).
@@ -178,7 +178,7 @@ class Lighting {
 	public static inline function LoadPbrShader():Shader
 		return RLighting.LoadPbrShader();
 
-	/** Takes a light out of the scene. It lights nothing after, and its shadows are freed.
+	/** Removes a light from the scene. It lights nothing after, and its shadows are freed.
 
 		@param light  The light, from `CreateLight`. */
 	public static inline function UnloadLight(light:Light):Void
@@ -212,10 +212,10 @@ class Lighting {
 
 		Draw the casters as the frame draws them, models and meshes posed and placed the same. Each draw runs its own shader's vertex
 		stage, so a caster swaying, skinned or instanced there casts its shadow as it is drawn, and writes depth alone. A material with
-		an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps take what was
+		an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps receive what was
 		drawn once, less the draws whose bounds fall outside a map's view.
 
-		- **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the
+		- **What a shadow keeps:** the vertex stage, with the same uniforms as the draw (bone matrices, a sway's time), and the
 		  material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow.
 		- **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage
 		  without it casts its whole shape.

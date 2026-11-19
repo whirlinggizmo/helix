@@ -226,7 +226,7 @@ static macro function EndDrawing():Void
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
 
-  The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+  The window manager may set another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
   Refused while the window is fullscreen or maximized, where the system doesn't allow it, and under 1 pixel. A refusal is logged.
 - `IsWindowFullscreen`: Returns whether the window is fullscreen, false for a borderless window (`ToggleBorderlessWindowed`).
@@ -245,7 +245,7 @@ static macro function EndDrawing():Void
   A minimized window is restored from minimized, any other from maximized. A refusal is logged.
 - `SetWindowFocused`: Asks for the window brought to the front with the keyboard, and returns at once.
   `IsWindowFocused` reports it once the window has the keyboard. A window manager may only flash it. A refusal is logged.
-- `SetWindowIcon`: Sets the window's icon. See `SetWindowIcons` for giving several sizes.
+- `SetWindowIcon`: Sets the window's icon. See `SetWindowIcons` for setting several sizes.
   - `image`: The icon.
 
   The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
@@ -260,12 +260,12 @@ static macro function EndDrawing():Void
   - `opacity`: From 0 (clear) to 1 (opaque).
 
   A desktop without a compositor refuses it. A refusal is logged.
-- `SetWindowMinSize`: Asks for the smallest size the window may take, and returns at once. See `SetWindowMaxSize` for setting the largest.
+- `SetWindowMinSize`: Asks for the smallest size the window may have, and returns at once. See `SetWindowMaxSize` for setting the largest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
 
   Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
-- `SetWindowMaxSize`: Asks for the largest size the window may take, and returns at once. See `SetWindowMinSize` for setting the smallest.
+- `SetWindowMaxSize`: Asks for the largest size the window may have, and returns at once. See `SetWindowMinSize` for setting the smallest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
 
@@ -302,7 +302,7 @@ static macro function EndDrawing():Void
   `GetCurrentMonitor` reports it once the window is there. Where the window can't be moved, a monitor other than its own is refused. A refusal is logged.
 - `GetWindowPosition`: Returns the window's place on the desktop.
   - returns: Its left and top edges, in pixels.
-- `GetWindowScaleDPI`: Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.
+- `GetWindowScaleDPI`: Returns how many of the display's pixels a pixel drawn covers, across and down, 2 on most phones and high-density displays.
   - returns: The scale.
 - `GetMonitorCount`: Returns the number of monitors.
   - returns: The count, at least 1.
@@ -351,7 +351,7 @@ static macro function EndDrawing():Void
   - `fps`: The frames a second, or 0 for no limit.
 - `GetFPS`: Returns the frames a second, averaged over the last half second or so.
   - returns: The frames a second.
-- `GetFrameTime`: Returns the seconds the last frame took.
+- `GetFrameTime`: Returns the seconds the last frame lasted.
   - returns: The seconds.
 - `GetTime`: Returns the seconds since `InitWindow`.
   - returns: The seconds.
@@ -384,13 +384,13 @@ static macro function EndDrawing():Void
   - `max`: The most.
   - returns: The number.
 
-  The generator is xoshiro128** (helix-math's `Random`), so a seed gives the numbers raylib's gives.
+  The generator is xoshiro128** (helix-math's `Random`), so a seed produces the numbers raylib's produces.
 
   min and max are swapped when min is more.
 - `SetRandomSeed`: Seeds `GetRandomValue` and `LoadRandomSequence`.
   - `seed`: The seed, read as unsigned.
 
-  The numbers repeat from the same seed, and are the ones raylib's give.
+  The numbers repeat from the same seed, and are the ones raylib's produces.
 
   Until called, `InitWindow` seeds from the time.
 - `LoadRandomSequence`: Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator.
@@ -399,10 +399,10 @@ static macro function EndDrawing():Void
   - `max`: The most.
   - returns: The numbers, or null when there are fewer than count in the range.
 
-  A seed gives the numbers raylib's gives.
+  A seed produces the numbers raylib's produces.
 
   min and max aren't swapped. When min is more, the numbers run from min up by the range's size.
-- `UnloadRandomSequence`: Frees numbers `LoadRandomSequence` gave.
+- `UnloadRandomSequence`: Frees numbers `LoadRandomSequence` returned.
   - `sequence`: The numbers.
 
   Has nothing to free.
@@ -465,7 +465,7 @@ static macro function EndDrawing():Void
 
   `GetMouseDelta` this frame includes the move.
 
-  Where the system refuses, as Wayland does, the cursor stays. The position reads the place given until the mouse moves, and a warning says why, once a run for each reason.
+  Where the system refuses, as Wayland does, the cursor stays. The position reads the place provided until the mouse moves, and a warning says why, once a run for each reason.
 - `SetMouseOffset`: Sets what `GetMousePosition` adds to the mouse's position, before its scale.
   - `offsetX`: Added across.
   - `offsetY`: Added down.
@@ -582,11 +582,11 @@ static macro function EndDrawing():Void
   A stick runs from -1 to 1, down and right positive.
 
   A trigger runs from -1 released to 1 pulled.
-- `UnloadFileText`: Frees text `LoadFileText` or `LoadFileTextAsync` gave.
+- `UnloadFileText`: Frees text `LoadFileText` or `LoadFileTextAsync` returned.
   - `text`: The text.
 
   Has nothing to free.
-- `UnloadFileData`: Frees bytes `LoadFileData` or `LoadFileDataAsync` gave.
+- `UnloadFileData`: Frees bytes `LoadFileData` or `LoadFileDataAsync` returned.
   - `data`: The bytes.
 
   Has nothing to free.
@@ -599,7 +599,7 @@ static macro function EndDrawing():Void
 - `GetApplicationDirectory`: Returns the directory the program's files are read from.
   - returns: The directory, with a slash at its end.
 
-  A load given a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
+  A load of a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads "resources/a.png".
 - `ChangeDirectory`: Changes the working directory.
   - `dir`: The directory.
   - returns: True when the working directory is it now.
@@ -617,7 +617,7 @@ static macro function EndDrawing():Void
   Up to 15 characters of the file's extension are compared, and the list's first 32 extensions.
 
   An extension in the list without its dot matches as well ("png" as ".png").
-- `GetFileExtension`: Returns a file name's extension, from its last dot: "file.tar.gz" gives ".gz".
+- `GetFileExtension`: Returns a file name's extension, from its last dot: "file.tar.gz" returns ".gz".
   - `fileName`: The file name, or a path.
   - returns: The extension with its dot, or null when there is no dot or the name starts with its only one.
 - `GetFileName`: Returns a path's file name, what follows its last `/` or `\`.
@@ -630,14 +630,14 @@ static macro function EndDrawing():Void
   - `filePath`: The path.
   - returns: The directory, without a slash at its end.
 
-  A relative path's directory starts "./": "dir/file.png" gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
+  A relative path's directory starts "./": "dir/file.png" returns "./dir", "file.png" returns "./", and "/file.png" returns "/".
 - `GetPrevDirectoryPath`: Returns the directory a path is in, up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
   - `dirPath`: The path.
   - returns: The directory above it, or "" when there is none.
 
-  "/a/b/" gives "/a", "/a" gives "/" and "abc" gives "".
+  "/a/b/" returns "/a", "/a" returns "/" and "abc" returns "".
 
-  Every path is taken as a directory's, so a path naming a file gives the file's directory.
+  Every path is read as a directory's, so a path naming a file returns the file's directory.
 - `IsFileNameValid`: Returns whether a file name could name a file on any system: none of `< > : " / \ | ? *` or a control character, and not only dots.
   - `fileName`: The file name, without a directory.
   - returns: True when it could, and true for null or "".
@@ -646,7 +646,7 @@ static macro function EndDrawing():Void
   - returns: 0 for success, 1 for null or "", and -1 for a path that can't name a directory.
 
   Nothing is made, as a directory is there once a file is written under it.
-- `UnloadDirectoryFiles`: Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave.
+- `UnloadDirectoryFiles`: Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` returned.
   - `files`: The listing.
 
   Has nothing to free, and the list is unchanged.
@@ -667,7 +667,7 @@ static macro function EndDrawing():Void
 
   A directory dropped isn't listed.
 - `UnloadDroppedFiles`: Lets go of the list of files last dropped, so `IsFileDropped` is false until the next drop.
-  - `files`: The list `LoadDroppedFiles` gave. A list of no files changes nothing.
+  - `files`: The list `LoadDroppedFiles` returned. A list of no files changes nothing.
 
   The files stay. A load of one of their paths, started before or after, reads the file until the next drop's files replace them.
 - `CompressData`: Compresses bytes as raylib's `CompressData` does, byte for byte, raw DEFLATE with no zlib header at sdefl's level 8. See `DecompressData` for reading them back.
@@ -678,12 +678,12 @@ static macro function EndDrawing():Void
 - `DecompressData`: Returns DEFLATE data decompressed, a raw stream with no zlib header as `CompressData` makes.
   - `compData`: The compressed bytes.
   - `compDataSize`: How many of them.
-  - `dataSize`: Its first element is set to how many bytes it gives.
+  - `dataSize`: Its first element is set to how many bytes it returns.
   - returns: The bytes.
 
-  Gives at most 64 MB.
+  Returns at most 64 MB.
 
-  Data that isn't DEFLATE, or stops short, gives the bytes read before it, perhaps none, and logs a warning.
+  Data that isn't DEFLATE, or stops short, produces the bytes read before it, perhaps none, and logs a warning.
 - `EncodeDataBase64`: Returns some bytes as Base64 text, padded with `=` to a multiple of 4 characters. See `DecodeDataBase64` for reading them back.
   - `data`: The bytes.
   - `dataSize`: How many of them.
@@ -691,7 +691,7 @@ static macro function EndDrawing():Void
   - returns: The text.
 - `DecodeDataBase64`: Returns the bytes of Base64 text.
   - `data`: The text's bytes.
-  - `outputSize`: Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the end.
+  - `outputSize`: Its first element is set to how many bytes it returns: 3 for every 4 characters, less one for each `=` at the end.
   - returns: The bytes.
 
   The text runs to a zero byte or the end, read 4 characters at a time.
@@ -706,7 +706,7 @@ static macro function EndDrawing():Void
 - `ComputeMD5`: Returns the MD5 hash of some bytes.
   - `data`: The bytes.
   - `dataSize`: How many of them.
-  - returns: Its 4 words, as raylib gives them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff is negative.
+  - returns: Its 4 words, as raylib returns them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff is negative.
 - `ComputeSHA1`: Returns the standard SHA-1 hash of some bytes.
   - `data`: The bytes.
   - `dataSize`: How many of them.
@@ -716,7 +716,7 @@ static macro function EndDrawing():Void
 
   Every load raylib makes of a file (textures, models, sounds, music, data) asks the callback first. A null answer reads the file as it would be read without the callback.
 
-  A texture's or model's images decode asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones the callback gives.
+  A texture's or model's images decode asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones the callback returns.
 - `SetSaveFileDataCallback`: Writes files through the program from now on (`SaveFileDataAsync`).
   - `callback`: Writes a file's bytes, returning whether it did, or is null for none.
 - `SetLoadFileTextCallback`: Reads text files through the program from now on (`LoadFileTextAsync`).
@@ -875,7 +875,7 @@ static macro function EndDrawing():Void
 
   The shader is freed when no material holds it too, else when the last material holding it lets go.
 
-  Given a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
+  For a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
 
   The default shader stays.
 - `GetShaderLocation`: Returns the location of a shader's uniform or texture, by its name. See `GetShaderLocationAttrib` for finding an attribute.
@@ -892,9 +892,9 @@ static macro function EndDrawing():Void
   - `value`: The value: a number, an array of numbers, a `Vector2`, `Vector3`, `Vector4` or `Color`, or a `haxe.io` typed array or `haxe.io.Bytes`, read as `uniformType` says.
   - `uniformType`: Its type (`SHADER_UNIFORM_*`).
 
-  Shapes drawn before the call but not yet flushed take the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and `rlDrawRenderBatchActive` flush them.
+  Shapes drawn before the call but not yet flushed use the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and `rlDrawRenderBatchActive` flush them.
 
-  A texture's location takes the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
+  A texture's location accepts the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
 - `SetShaderValueV`: Sets elements of a shader's array uniform, for the draws after the call.
   - `shader`: The shader.
   - `locIndex`: The uniform's location.
@@ -933,7 +933,7 @@ static macro function EndDrawing():Void
   - `width`: The width.
   - `height`: The height.
 - `EndScissorMode`: Draws everywhere again.
-- `TakeScreenshot`: Takes a screenshot of the screen and saves it as a file, and returns once the file is written or downloaded. See `LoadImageFromScreen` for the screen as an `Image`.
+- `TakeScreenshot`: Captures the screen and saves it as a file, and returns once the file is written or downloaded. See `LoadImageFromScreen` for the screen as an `Image`.
   - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
 
   Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't in it, as in raylib. Called between frames, it is of the frame last shown.
@@ -1066,7 +1066,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `done`: Optional. Called once the window has a size from the request, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't resized; when omitted, it is logged.
 
-  The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+  The window manager may set another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
   Refused while the window is fullscreen or maximized, and where the system doesn't allow it.
 
@@ -1110,7 +1110,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   - `failed`: Optional. Receives why it hasn't; when omitted, it is logged.
 
   A desktop without a compositor refuses it.
-- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
+- `SetWindowMinSizeAsync`: Asynchronously asks for the smallest size the window may have, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
@@ -1119,7 +1119,7 @@ static function GetClipboardImageAsync(loaded:Image -> Void, ?failed:String -> V
   Refused where the system doesn't allow it.
 
   A size under 0 pixels is refused.
-- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
+- `SetWindowMaxSizeAsync`: Asynchronously asks for the largest size the window may have, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
   - `width`: The width, in the screen's pixels.
   - `height`: The height.
   - `done`: Optional. Called once the window has the limit, or once it is refused, at a later poll.
@@ -1269,21 +1269,21 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The answer comes at a later frame, never during the call.
 
-  The size is: - for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size - for a dropped file, its own - for a file of the program's, its size
+  The size is: - for a file `SaveFileText` or `SaveFileData` wrote, or the callback `SetLoadFileDataCallback` set returns, its bytes' size - for a dropped file, its own - for a file of the program's, its size
 - `GetFileModTimeAsync`: Asynchronously answers when a file was last written, replacing raylib's `GetFileModTime`.
   - `fileName`: The file.
   - `answer`: Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
 
   The answer comes at a later frame, never during the call.
 
-  The time is: - for a file of the program's, its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - for a dropped file, the time kept for it - 0 for a file whose time isn't kept, such as one the program's load callback gives
+  The time is: - for a file of the program's, its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - for a dropped file, the time kept for it - 0 for a file whose time isn't kept, such as one the program's load callback returns
 - `LoadDirectoryFilesAsync`: Asynchronously lists a directory's files and subdirectories, replacing raylib's `LoadDirectoryFiles`. See `LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
   - `dirPath`: The directory.
   - `loaded`: Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
 
   The answer comes at a later frame, never during the call.
 
-  Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"). A subdirectory's has no slash at its end.
+  Each path is the directory's followed by `/` and the name (`dirPath` "levels" produces "levels/1.json"). A subdirectory's has no slash at its end.
 
   The paths are sorted by name.
 
@@ -1313,7 +1313,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   The header is raylib's, byte for byte: - the bytes' count, as a define - the bytes, as an array in hexadecimal, 20 a line
 
   Written through `SaveFileTextAsync`.
-- `LoadAutomationEventListAsync`: Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
+- `LoadAutomationEventListAsync`: Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` with a file. See `ExportAutomationEventListAsync` for writing one.
   - `fileName`: The file, as `ExportAutomationEventList` writes it.
   - `loaded`: Receives the list, its capacity 16384.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
@@ -1352,7 +1352,7 @@ static function LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes):S
   --macro helix.raylib.Raylib.CompileShaderFile("shaders/glow.vs", "shaders/glow.fs", "web/glow.shader")
   ```
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the load logs why and gives an empty shader (id 0). See `LoadCompiledShaderAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the load logs why and returns an empty shader (id 0). See `LoadCompiledShaderAsync` for loading it asynchronously.
 - `LoadCompiledShaderAsync`: Asynchronously loads a shader compiled ahead of time by `CompileShaderFile`, replacing raylib's `LoadShader`. See `LoadCompiledShaderFromMemory` for making one from compiled data in memory.
   - `compiledShaderFileName`: The compiled shader's file.
   - `loaded`: Receives the shader.

@@ -20,13 +20,13 @@ class RLights {
 
 		Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at
 		each draw, so the light moves or changes by setting them, the Lighting extra's `intensity`, `range` and spot cone among them.
-		`UnloadLight` takes the light out of the scene.
+		`UnloadLight` removes the light from the scene.
 
 		@param type  `LIGHT_DIRECTIONAL`, `LIGHT_POINT`, or the Lighting extra's `LIGHT_SPOT`.
 		@param position  Where it is.
 		@param target  Where it points, for a directional or spot light.
 		@param color  Its color.
-		@param shader  The shader it is made with, as rlights takes one.
+		@param shader  The shader it is made with, as rlights accepts one.
 		@return  The light. */
 	static function CreateLight(type:Int, position:Vector3, target:Vector3, color:Color, shader:Shader):Light {
 		var light = new Light();

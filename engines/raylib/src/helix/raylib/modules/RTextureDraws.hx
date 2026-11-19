@@ -108,8 +108,8 @@ class RTextureDraws {
 		}
 	}
 
-	// A patch as DrawTextureNPatchEx draws it, and only its part inside clip when given (dest's own pixels, from its top-left, unrotated):
-	// GuiSkins' fill shown up to the filled part. Its borders, layout and shrinking are DrawTextureNPatch's.
+	// A patch as DrawTextureNPatchEx draws it, and only its part inside clip when provided (dest's own pixels, from its top-left,
+	// unrotated): GuiSkins' fill shown up to the filled part. Its borders, layout and shrinking are DrawTextureNPatch's.
 	static function drawPatch(texture:Texture2D, nPatchInfo:NPatchInfo, dest:Rectangle, origin:Vector2, rotation:Float, horizontalPatchMode:Int,
 			verticalPatchMode:Int, tint:Color, clip:Null<Rectangle>):Void {
 		if (texture.id <= 0 || texture.width == 0 || texture.height == 0)

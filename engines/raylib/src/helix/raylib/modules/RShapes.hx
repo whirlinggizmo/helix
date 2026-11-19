@@ -392,7 +392,7 @@ class RShapes {
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+		@param outerRadius  The radius of its edge; the larger of the two is used as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
 		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
@@ -442,7 +442,7 @@ class RShapes {
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+		@param outerRadius  The radius of its edge; the larger of the two is used as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
 		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
@@ -1541,7 +1541,7 @@ class RShapes {
 
 	// ---- What the shapes share ----
 	// The texture the filled shapes draw with and the part of it, as raylib's texShapes and texShapesRec: null for the frame's white
-	// pixel, raylib's default texture, which `GetShapesTexture` gives when asked. The part's corners are kept as texture coordinates.
+	// pixel, raylib's default texture, which `GetShapesTexture` returns when asked. The part's corners are kept as texture coordinates.
 	static var texShapes:Null<Texture2D> = null;
 	static var texShapesRec = new Rectangle(0, 0, 1, 1);
 	static var shapeU0 = 0.;
@@ -1573,7 +1573,7 @@ class RShapes {
 		return Math.acos(2 * Math.pow(1 - SMOOTH_CIRCLE_ERROR_RATE / radius, 2) - 1);
 	}
 
-	// How many segments raylib gives an arc: those asked for, unless that is fewer than one for each 90 degrees, when it picks enough
+	// How many segments raylib draws an arc with: those asked for, unless that is fewer than one for each 90 degrees, when it picks enough
 	// to keep within its error rate, rounded up.
 	static function arcSegments(radius:Float, startAngle:Float, endAngle:Float, segments:Int):Int {
 		var minSegments = Std.int(Math.fceil((endAngle - startAngle) / 90));

@@ -34,7 +34,7 @@ class RGui {
 			guiState = STATE_NORMAL;
 	}
 
-	/** Disables the controls, so they draw disabled and take no input. See `GuiLock` for stopping the controls' input while they keep
+	/** Disables the controls, so they draw disabled and accept no input. See `GuiLock` for stopping the controls' input while they keep
 		their look.
 
 		A state other than normal, set with `GuiSetState`, is unchanged. */
@@ -43,7 +43,7 @@ class RGui {
 			guiState = STATE_DISABLED;
 	}
 
-	/** Locks the controls until `GuiUnlock`, so they draw as they are and take no input. See `GuiDisable` for drawing the controls
+	/** Locks the controls until `GuiUnlock`, so they draw as they are and accept no input. See `GuiDisable` for drawing the controls
 		disabled. */
 	static function GuiLock():Void {
 		guiLocked = true;
@@ -407,7 +407,7 @@ class RGui {
 
 	// Draws a part of a control from its skin, returning whether it drew: false, drawing nothing, until helix.raylib.extras.GuiSkins
 	// replaces it at the first skin, fill mode or fill edge set, so a program setting none links none of the skins. A fill (part 1) up to
-	// its value is given its whole track and its color, drawn in its fill mode with its fill edge.
+	// its value receives its whole track and its color, drawn in its fill mode with its fill edge.
 	static dynamic function drawSkin(control:Int, part:Int, state:Int, rec:Rectangle, whole:Null<Rectangle>, color:Color):Bool
 		return false;
 
@@ -430,7 +430,7 @@ class RGui {
 	static function drawPixelIcon(iconId:Int, x:Int, bounds:Rectangle, tint:Color):Void
 		GuiDrawIcon(iconId, x, Std.int(bounds.y + bounds.height / 2 - idiv(ICON_SIZE * guiIconScale, 2) + Std.int(bounds.height) % 2), guiIconScale, tint);
 
-	// A part of a control: from its skin, or as raygui draws it (drawRectangle). A fill up to its value is given its whole track.
+	// A part of a control: from its skin, or as raygui draws it (drawRectangle). A fill up to its value receives its whole track.
 	static function box(control:Int, part:Int, state:Int, rec:Rectangle, borderWidth:Int, borderColor:Color, color:Color, ?whole:Rectangle):Void {
 		if (!drawSkin(control, part, state, rec, whole, color))
 			drawRectangle(rec, borderWidth, borderColor, color);
@@ -732,7 +732,7 @@ class RGui {
 		}
 	}
 
-	// A control's text split at each delimiter and '\n', as raygui's GuiTextSplit: at most 1024 bytes and 128 items; rows, when given,
+	// A control's text split at each delimiter and '\n', as raygui's GuiTextSplit: at most 1024 bytes and 128 items; rows, when provided,
 	// receives each item's row, counted by the '\n's before it.
 	static function textSplit(text:Null<String>, delimiter:Int, rows:Null<Array<Int>>):Array<String> {
 		var b = bytes(text), items = [], start = 0;

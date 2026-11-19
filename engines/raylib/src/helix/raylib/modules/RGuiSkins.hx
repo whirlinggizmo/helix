@@ -21,9 +21,9 @@ class RGuiSkins {
 	#if !macro
 	// Each control's skin for each part, by control * 4 + part, made at the first skin set.
 	static var skins:Null<Map<Int, GuiSkin>>;
-	// The skins GuiSetSkinOnce set, by control * 4 + part, a null skin drawing the part flat; taken by the next call of the control.
+	// The skins GuiSetSkinOnce set, by control * 4 + part, a null skin drawing the part flat; used by the next call of the control.
 	static var onceSkins:Null<Map<Int, Null<GuiSkin>>>;
-	// The once skins a call of their control has taken, removed when its next call starts.
+	// The once skins a call of their control has used, removed when its next call starts.
 	static var onceTaken:Null<Map<Int, Bool>>;
 	// The icons drawn from textures, by icon, with each one's source rectangle.
 	static var iconTextures:Null<Map<Int, Texture2D>>;
@@ -112,7 +112,7 @@ class RGuiSkins {
 	}
 
 	/** Sets the skin the next control call of a kind draws a part with, in place of the one `GuiSetSkin` set: one button in a
-		different skin from the rest. The next call of that control takes it, drawn or disabled alike, and the call after it draws with
+		different skin from the rest. The next call of that control uses it, drawn or disabled alike, and the call after it draws with
 		`GuiSetSkin`'s again.
 
 		@param control  The control: `BUTTON`, `SLIDER` and the rest of raygui's.
@@ -172,7 +172,7 @@ class RGuiSkins {
 	/** Sets the texture drawn for one of raygui's icons in place of its pixels. Every control drawing that icon in its text
 		(`GuiIconText(iconId, text)`) draws the texture there, laid out as raygui's icon is: the texture and the text after it aligned
 		together as the control aligns its text, the text moved along by the texture's width. Draws raygui's
-		own icon again when given null. See `GuiDrawIcon` for an icon on its own.
+		own icon again when provided null. See `GuiDrawIcon` for an icon on its own.
 
 		The texture is drawn at the source's size times `GuiSetIconScale`'s scale, centered on the text's line, in its own colors.
 		It fades with the control: by `GuiSetAlpha`'s alpha, and to half in `STATE_DISABLED`.
@@ -233,7 +233,7 @@ class RGuiSkins {
 	}
 
 	// The skin a part of a control draws with in this call: its one-call skin when one is set, else GuiSetSkin's. A call starts when the
-	// control draws its base: the one-call skins its last call took are dropped, and those set since are taken.
+	// control draws its base: the one-call skins its last call used are dropped, and those set since are applied.
 	static function skinFor(control:Int, part:Int):Null<GuiSkin> {
 		if (part == 0)
 			for (p in 0...4) {
@@ -295,7 +295,7 @@ class RGuiSkins {
 	// GuiSkins' GUI_SKIN_FILL_CLIPPED.
 	static inline final GUI_SKIN_FILL_CLIPPED = 1;
 
-	// A part of a control drawn from its skin, faded by the gui's alpha, a fill given its whole track drawn as drawFill: false, drawing
+	// A part of a control drawn from its skin, faded by the gui's alpha, a fill with its whole track drawn as drawFill: false, drawing
 	// nothing, when it has none. A base sets where the control's text moves: by its skin's text offset for the state, inside rec.
 	static function drawSkin(control:Int, part:Int, state:Int, rec:Rectangle, whole:Null<Rectangle>, color:Color):Bool {
 		if (whole != null)

@@ -1139,7 +1139,7 @@ class Raylib {
 	/** Asks for the window's size, and returns at once. See `SetWindowMinSize` and `SetWindowMaxSize` for limiting how small or large it
 		can be.
 
-		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+		The window manager may set another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
 		Refused while the window is fullscreen or maximized, where the system doesn't allow it, and under 1 pixel. A refusal is logged.
 
@@ -1197,7 +1197,7 @@ class Raylib {
 	public static inline function SetWindowFocused():Void
 		RCore.SetWindowFocused();
 
-	/** Sets the window's icon. See `SetWindowIcons` for giving several sizes.
+	/** Sets the window's icon. See `SetWindowIcons` for setting several sizes.
 
 		The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
 
@@ -1224,7 +1224,7 @@ class Raylib {
 	public static inline function SetWindowOpacity(opacity:Float):Void
 		RCore.SetWindowOpacity(opacity);
 
-	/** Asks for the smallest size the window may take, and returns at once. See `SetWindowMaxSize` for setting the largest.
+	/** Asks for the smallest size the window may have, and returns at once. See `SetWindowMaxSize` for setting the largest.
 
 		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
 
@@ -1233,7 +1233,7 @@ class Raylib {
 	public static inline function SetWindowMinSize(width:Int, height:Int):Void
 		RCore.SetWindowMinSize(width, height);
 
-	/** Asks for the largest size the window may take, and returns at once. See `SetWindowMinSize` for setting the smallest.
+	/** Asks for the largest size the window may have, and returns at once. See `SetWindowMinSize` for setting the smallest.
 
 		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
 
@@ -1311,7 +1311,7 @@ class Raylib {
 	public static inline function GetWindowPosition():Vector2
 		return RCore.GetWindowPosition();
 
-	/** Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.
+	/** Returns how many of the display's pixels a pixel drawn covers, across and down, 2 on most phones and high-density displays.
 
 		@return  The scale. */
 	public static inline function GetWindowScaleDPI():Vector2
@@ -1428,7 +1428,7 @@ class Raylib {
 	public static inline function GetFPS():Int
 		return RCore.GetFPS();
 
-	/** Returns the seconds the last frame took.
+	/** Returns the seconds the last frame lasted.
 
 		@return  The seconds. */
 	public static inline function GetFrameTime():Float
@@ -1494,7 +1494,7 @@ class Raylib {
 	/** Returns a random whole number from min to max, both included, from raylib's generator. See `LoadRandomSequence` for drawing several
 		numbers with none twice.
 
-		The generator is xoshiro128** (helix-math's `Random`), so a seed gives the numbers raylib's gives.
+		The generator is xoshiro128** (helix-math's `Random`), so a seed produces the numbers raylib's produces.
 
 		min and max are swapped when min is more.
 
@@ -1506,7 +1506,7 @@ class Raylib {
 
 	/** Seeds `GetRandomValue` and `LoadRandomSequence`.
 
-		The numbers repeat from the same seed, and are the ones raylib's give.
+		The numbers repeat from the same seed, and are the ones raylib's produces.
 
 		Until called, `InitWindow` seeds from the time.
 
@@ -1516,7 +1516,7 @@ class Raylib {
 
 	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator.
 
-		A seed gives the numbers raylib's gives.
+		A seed produces the numbers raylib's produces.
 
 		min and max aren't swapped. When min is more, the numbers run from min up by the range's size.
 
@@ -1527,7 +1527,7 @@ class Raylib {
 	public static inline function LoadRandomSequence(count:Int, min:Int, max:Int):Null<Array<Int>>
 		return RCore.LoadRandomSequence(count, min, max);
 
-	/** Frees numbers `LoadRandomSequence` gave.
+	/** Frees numbers `LoadRandomSequence` returned.
 
 		Has nothing to free.
 
@@ -1648,7 +1648,7 @@ class Raylib {
 
 		`GetMouseDelta` this frame includes the move.
 
-		Where the system refuses, as Wayland does, the cursor stays. The position reads the place given until the
+		Where the system refuses, as Wayland does, the cursor stays. The position reads the place provided until the
 		mouse moves, and a warning says why, once a run for each reason.
 
 		@param x  The place across, in the screen's pixels.
@@ -1914,7 +1914,7 @@ class Raylib {
 	public static inline function GetGamepadAxisMovement(gamepad:Int, axis:Int):Float
 		return RCore.GetGamepadAxisMovement(gamepad, axis);
 
-	/** Frees text `LoadFileText` or `LoadFileTextAsync` gave.
+	/** Frees text `LoadFileText` or `LoadFileTextAsync` returned.
 
 		Has nothing to free.
 
@@ -1922,7 +1922,7 @@ class Raylib {
 	public static inline function UnloadFileText(text:Null<String>):Void
 		RCore.UnloadFileText(text);
 
-	/** Frees bytes `LoadFileData` or `LoadFileDataAsync` gave.
+	/** Frees bytes `LoadFileData` or `LoadFileDataAsync` returned.
 
 		Has nothing to free.
 
@@ -1943,7 +1943,7 @@ class Raylib {
 
 	/** Returns the directory the program's files are read from.
 
-		A load given a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads
+		A load of a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads
 		"resources/a.png".
 
 		@return  The directory, with a slash at its end. */
@@ -1975,7 +1975,7 @@ class Raylib {
 	public static inline function IsFileExtension(fileName:String, ext:String):Bool
 		return RCore.IsFileExtension(fileName, ext);
 
-	/** Returns a file name's extension, from its last dot: "file.tar.gz" gives ".gz".
+	/** Returns a file name's extension, from its last dot: "file.tar.gz" returns ".gz".
 
 		@param fileName  The file name, or a path.
 		@return  The extension with its dot, or null when there is no dot or the name starts with its only one. */
@@ -1998,7 +1998,7 @@ class Raylib {
 
 	/** Returns the directory of a path, up to its last `/` or `\`.
 
-		A relative path's directory starts "./": "dir/file.png" gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
+		A relative path's directory starts "./": "dir/file.png" returns "./dir", "file.png" returns "./", and "/file.png" returns "/".
 
 		@param filePath  The path.
 		@return  The directory, without a slash at its end. */
@@ -2007,9 +2007,9 @@ class Raylib {
 
 	/** Returns the directory a path is in, up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
 
-		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "".
+		"/a/b/" returns "/a", "/a" returns "/" and "abc" returns "".
 
-		Every path is taken as a directory's, so a path naming a file gives the file's directory.
+		Every path is read as a directory's, so a path naming a file returns the file's directory.
 
 		@param dirPath  The path.
 		@return  The directory above it, or "" when there is none. */
@@ -2033,7 +2033,7 @@ class Raylib {
 	public static inline function MakeDirectory(dirPath:String):Int
 		return RCore.MakeDirectory(dirPath);
 
-	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave.
+	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` returned.
 
 		Has nothing to free, and the list is unchanged.
 
@@ -2070,7 +2070,7 @@ class Raylib {
 
 		The files stay. A load of one of their paths, started before or after, reads the file until the next drop's files replace them.
 
-		@param files  The list `LoadDroppedFiles` gave. A list of no files changes nothing. */
+		@param files  The list `LoadDroppedFiles` returned. A list of no files changes nothing. */
 	public static inline function UnloadDroppedFiles(files:FilePathList):Void
 		RCore.UnloadDroppedFiles(files);
 
@@ -2086,13 +2086,13 @@ class Raylib {
 
 	/** Returns DEFLATE data decompressed, a raw stream with no zlib header as `CompressData` makes.
 
-		Gives at most 64 MB.
+		Returns at most 64 MB.
 
-		Data that isn't DEFLATE, or stops short, gives the bytes read before it, perhaps none, and logs a warning.
+		Data that isn't DEFLATE, or stops short, produces the bytes read before it, perhaps none, and logs a warning.
 
 		@param compData  The compressed bytes.
 		@param compDataSize  How many of them.
-		@param dataSize  Its first element is set to how many bytes it gives.
+		@param dataSize  Its first element is set to how many bytes it returns.
 		@return  The bytes. */
 	public static inline function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes
 		return RCore.DecompressData(compData, compDataSize, dataSize);
@@ -2115,7 +2115,7 @@ class Raylib {
 		Text whose length isn't a multiple of 4 logs a warning and is read up to its last 4 characters.
 
 		@param data  The text's bytes.
-		@param outputSize  Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the
+		@param outputSize  Its first element is set to how many bytes it returns: 3 for every 4 characters, less one for each `=` at the
 			end.
 		@return  The bytes. */
 	public static inline function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes
@@ -2133,7 +2133,7 @@ class Raylib {
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  Its 4 words, as raylib gives them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff
+		@return  Its 4 words, as raylib returns them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff
 			is negative. */
 	public static inline function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int>
 		return RCore.ComputeMD5(data, dataSize);
@@ -2152,7 +2152,7 @@ class Raylib {
 		it would be read without the callback.
 
 		A texture's or model's images decode asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones
-		the callback gives.
+		the callback returns.
 
 		@param callback  Returns a file's bytes or null, or is null for none. */
 	public static inline function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void
@@ -2450,7 +2450,7 @@ class Raylib {
 
 		The shader is freed when no material holds it too, else when the last material holding it lets go.
 
-		Given a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
+		For a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
 
 		The default shader stays.
 
@@ -2477,11 +2477,11 @@ class Raylib {
 	/** Sets a shader's uniform, for the models drawn after the call and the shapes in rlgl's batch when the batch is next drawn. See
 		`SetShaderValueV` for setting an array's elements.
 
-		Shapes drawn before the call but not yet flushed take the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and
+		Shapes drawn before the call but not yet flushed use the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and
 		`rlDrawRenderBatchActive` flush them.
 
-		A texture's location takes the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as raylib's
-		skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
+		A texture's location accepts the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as
+		raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -2598,7 +2598,7 @@ class Raylib {
 
 	/** Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting how small or large it can be.
 
-		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+		The window manager may set another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
 		Refused while the window is fullscreen or maximized, and where the system doesn't allow it.
 
@@ -2679,7 +2679,7 @@ class Raylib {
 	public static inline function SetWindowOpacityAsync(opacity:Float, ?done:Void->Void, ?failed:String->Void):Void
 		RWindowAsync.SetWindowOpacityAsync(opacity, done, failed);
 
-	/** Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
+	/** Asynchronously asks for the smallest size the window may have, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
 
 		Refused where the system doesn't allow it.
 
@@ -2692,7 +2692,7 @@ class Raylib {
 	public static inline function SetWindowMinSizeAsync(width:Int, height:Int, ?done:Void->Void, ?failed:String->Void):Void
 		RWindowAsync.SetWindowMinSizeAsync(width, height, done, failed);
 
-	/** Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
+	/** Asynchronously asks for the largest size the window may have, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
 
 		Refused where the system doesn't allow it.
 
@@ -2900,7 +2900,7 @@ class Raylib {
 		The answer comes at a later frame, never during the call.
 
 		The size is:
-		- for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size
+		- for a file `SaveFileText` or `SaveFileData` wrote, or the callback `SetLoadFileDataCallback` set returns, its bytes' size
 		- for a dropped file, its own
 		- for a file of the program's, its size
 
@@ -2917,7 +2917,7 @@ class Raylib {
 		- for a file of the program's, its time on disk
 		- for a file `SaveFileText` or `SaveFileData` wrote, when it was saved
 		- for a dropped file, the time kept for it
-		- 0 for a file whose time isn't kept, such as one the program's load callback gives
+		- 0 for a file whose time isn't kept, such as one the program's load callback returns
 
 		@param fileName  The file.
 		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
@@ -2929,7 +2929,7 @@ class Raylib {
 
 		The answer comes at a later frame, never during the call.
 
-		Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"). A subdirectory's has no
+		Each path is the directory's followed by `/` and the name (`dirPath` "levels" produces "levels/1.json"). A subdirectory's has no
 		slash at its end.
 
 		The paths are sorted by name.
@@ -2980,7 +2980,7 @@ class Raylib {
 	public static inline function ExportDataAsCodeAsync(data:haxe.io.Bytes, dataSize:Int, fileName:String, ?done:Void->Void, ?failed:String->Void):Void
 		RFilesAsync.ExportDataAsCodeAsync(data, dataSize, fileName, done, failed);
 
-	/** Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
+	/** Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` with a file. See `ExportAutomationEventListAsync` for writing one.
 
 		The file is read as `LoadFileTextAsync` reads it.
 
@@ -3029,7 +3029,7 @@ class Raylib {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the
-		load logs why and gives an empty shader (id 0). See `LoadCompiledShaderAsync` for loading it asynchronously.
+		load logs why and returns an empty shader (id 0). See `LoadCompiledShaderAsync` for loading it asynchronously.
 
 		@param compiledShaderFileName  The compiled shader's file.
 		@return  The shader, the program's until `UnloadShader`, or an empty one (id 0) when the file isn't a compiled shader, with a
@@ -3239,7 +3239,7 @@ class Raylib {
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+		@param outerRadius  The radius of its edge; the larger of the two is used as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
 		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
@@ -3254,7 +3254,7 @@ class Raylib {
 
 		@param center  The center.
 		@param innerRadius  The radius of its hole; 0 or less draws a slice of a circle.
-		@param outerRadius  The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+		@param outerRadius  The radius of its edge; the larger of the two is used as the edge, and an edge of 0 or less draws nothing.
 		@param startAngle  The angle it starts at, in degrees from the right.
 		@param endAngle  The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
 		@param segments  How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
@@ -3716,7 +3716,7 @@ class Raylib {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
-		load logs why and gives a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it
+		load logs why and returns a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -3726,12 +3726,12 @@ class Raylib {
 
 	/** Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
 
-		The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map given it, keeps it
+		The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map set to it, keeps it
 		until that lets go.
 
-		Given a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds
+		For a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds
 		it, and lets go in turn when its material is freed. So `UnloadTexture(model.materials[0].maps[0].texture)` frees a texture a program
-		gave a map without keeping it.
+		set on a map without keeping it.
 
 		@param texture  The texture. */
 	public static inline function UnloadTexture(texture:Texture2D):Void
@@ -3905,13 +3905,13 @@ class Raylib {
 	public static inline function GetColor(hexValue:Int):Color
 		return RTextures.GetColor(hexValue);
 
-	/** Returns how many bytes an image's pixels take in a format.
+	/** Returns how many bytes an image's pixels occupy in a format.
 
 		@param width  The width, in pixels.
 		@param height  The height.
 		@param format  The format (`PIXELFORMAT_*`).
-		@return  The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes. An unknown format, a width
-			or height of 0 or less, and a size of 2 GB or more (with a warning) give 0. */
+		@return  The bytes; a compressed format smaller than 4 by 4 pixels occupies a whole block, 8 or 16 bytes. An unknown format, a width
+			or height of 0 or less, and a size of 2 GB or more (with a warning) return 0. */
 	public static inline function GetPixelDataSize(width:Int, height:Int, format:Int):Int
 		return RTextures.GetPixelDataSize(width, height, format);
 
@@ -3992,7 +3992,7 @@ class Raylib {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
-		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it
+		load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -4000,12 +4000,12 @@ class Raylib {
 	public static inline function LoadImage(fileName:String):Image
 		return RTextures.LoadImage(fileName);
 
-	/** Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need gives an empty image, and one too small for
+	/** Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need produces an empty image, and one too small for
 		the header and the pixels is read from its first byte.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the
-		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it
+		load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -4022,7 +4022,7 @@ class Raylib {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
-		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it
+		load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -4101,7 +4101,7 @@ class Raylib {
 
 	/** Returns a checkerboard of two colors, RGBA.
 
-		A square size under 1 is taken as 1.
+		A square size under 1 is treated as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -4139,7 +4139,7 @@ class Raylib {
 
 		The points are drawn from `GetRandomValue`, so `SetRandomSeed` repeats the image.
 
-		A tile size under 1 is taken as 1.
+		A tile size under 1 is treated as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -4152,7 +4152,7 @@ class Raylib {
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
-		@param text  The text; null gives a black image.
+		@param text  The text; null produces a black image.
 		@return  The image. */
 	public static inline function GenImageText(width:Int, height:Int, text:String):Image
 		return RTextures.GenImageText(width, height, text);
@@ -4166,7 +4166,7 @@ class Raylib {
 
 	/** Returns a rectangle of an image, in its format.
 
-		A rectangle not wholly inside the image, of no size, or of a compressed image gives an empty image, with a warning.
+		A rectangle not wholly inside the image, of no size, or of a compressed image produces an empty image, with a warning.
 
 		@param image  The image.
 		@param rec  The rectangle, in pixels, cut to whole pixels.
@@ -4176,7 +4176,7 @@ class Raylib {
 
 	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha.
 
-		A channel the format lacks is taken from another, with a warning:
+		A channel the format lacks is read from another, with a warning:
 
 		- a one-channel format: its only channel
 		- gray and alpha: its alpha
@@ -4210,7 +4210,7 @@ class Raylib {
 		`SetTextLineSpacing`'s spacing.
 
 		@param font  The font, its glyphs' images drawn.
-		@param text  The text; null gives an empty image.
+		@param text  The text; null produces an empty image.
 		@param fontSize  The height of a line, in pixels.
 		@param spacing  The space between letters, at the font's size.
 		@param tint  The color the glyphs are multiplied by.
@@ -4291,7 +4291,7 @@ class Raylib {
 
 	/** Blurs an image with an approximate Gaussian, four passes of a box blur across and down.
 
-		The blur runs over premultiplied alpha, and each channel taken back from it is no higher than 255.
+		The blur runs over premultiplied alpha, and each channel converted back from it is no higher than 255.
 
 		A box reaching past the image's last pixel reads 0 there.
 
@@ -4302,9 +4302,9 @@ class Raylib {
 
 	/** Applies a square kernel to an image, each channel, alpha too, the sum of the pixels around it times the weights.
 
-		The pixels are taken as fractions, and each sum is clamped to 0 to 1.
+		The pixels are read as fractions, and each sum is clamped to 0 to 1.
 
-		A pixel past an edge is taken from the edge.
+		A pixel past an edge is read from the edge.
 
 		A count that isn't square changes nothing, with a warning.
 
@@ -4361,8 +4361,8 @@ class Raylib {
 
 	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg).
 
-		The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits give format 0 with the bits packed in 16,
-		and a warning.
+		The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits produce format 0 with the bits packed
+		in 16, and a warning.
 
 		More than 16 bits changes nothing, with a warning.
 
@@ -4439,7 +4439,7 @@ class Raylib {
 
 	/** Changes an image's brightness by adding to red, green and blue, in its format.
 
-		A channel taken below 0 becomes 1.
+		A channel pushed below 0 becomes 1.
 
 		@param image  The image.
 		@param brightness  -255 to 255. */
@@ -4474,7 +4474,7 @@ class Raylib {
 	public static inline function LoadImagePalette(image:Image, maxPaletteSize:Int, colorCount:Array<Int>):Array<Color>
 		return RTextures.LoadImagePalette(image, maxPaletteSize, colorCount);
 
-	/** Frees colors `LoadImageColors` gave.
+	/** Frees colors `LoadImageColors` returned.
 
 		Does nothing, as the colors need no freeing.
 
@@ -4482,7 +4482,7 @@ class Raylib {
 	public static inline function UnloadImageColors(colors:Array<Color>):Void
 		RTextures.UnloadImageColors(colors);
 
-	/** Frees colors `LoadImagePalette` gave.
+	/** Frees colors `LoadImagePalette` returned.
 
 		Does nothing, as the colors need no freeing.
 
@@ -4660,7 +4660,7 @@ class Raylib {
 
 	/** Fills a triangle, each corner its own color, blended across it.
 
-		Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not give that color exactly.
+		Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not produce that color exactly.
 
 		@param dst  The image.
 		@param v1  The first corner.
@@ -4749,7 +4749,7 @@ class Raylib {
 
 		The texture's format is the image's, so a grayscale image's texture has `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`.
 
-		A compressed format gives no texture, with a warning.
+		A compressed format produces no texture, with a warning.
 
 		@param image  The image.
 		@return  The texture. */
@@ -4766,9 +4766,9 @@ class Raylib {
 		  of it. A face is the image's width over 3.
 		- `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: 4 faces wide, 3 high, +Y at the top of the second column, then -X, +Z, +X, -Z across, then
 		  -Y below +Z. A face is the image's width over 4.
-		- `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout the image's shape gives. A shape it doesn't know gives no cubemap, with a warning.
+		- `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout matching the image's shape. A shape it doesn't know produces no cubemap, with a warning.
 
-		Each face's rows run top first, as GL's cube faces take them.
+		Each face's rows run top first, as GL's cube faces accept them.
 
 		A column is read as it is, the face size squared times 6 pixels from the image's first, row after row. An image not 1 face by 6 is
 		read across its rows.
@@ -4778,8 +4778,8 @@ class Raylib {
 
 		The cubemap's format is the image's. Its pixels are RGBA on the GPU, sampled linearly.
 
-		An image with mipmaps gives a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as its first
-		is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
+		An image with mipmaps produces a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as
+		its first is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
 
 		No cubemap comes back, with a warning, for a face size of 0 (an image too small for its layout, or a layout raylib doesn't have), a
 		compressed format, or an image too small for the column it is read as.
@@ -4849,7 +4849,7 @@ class Raylib {
 
 		16-bit channels are widened by integers, and floats are multiplied by 255.
 
-		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
+		Accepts the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param srcPtr  The pixels.
 		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
@@ -4862,7 +4862,7 @@ class Raylib {
 
 		Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
 
-		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
+		Accepts the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param dstPtr  The pixels.
 		@param color  The color.
@@ -5053,7 +5053,7 @@ class Raylib {
 
 	/** Returns the index of a character's glyph in a font.
 
-		A character the font lacks gives the index of the font's "?", or 0 when the font lacks that too.
+		A character the font lacks produces the index of the font's "?", or 0 when the font lacks that too.
 
 		@param font  The font.
 		@param codepoint  The character.
@@ -5138,13 +5138,13 @@ class Raylib {
 
 	/** Returns a font read from an image of glyphs in rows on a key color, as raylib reads it.
 
-		The key's border before the first glyph gives the space between glyphs and between rows.
+		The key's border before the first glyph sets the space between glyphs and between rows.
 
 		Each glyph is a run of pixels that aren't the key, numbered from `firstChar`.
 
 		The key becomes clear on the font's texture.
 
-		An image with no such border gives the default font.
+		An image with no such border produces the default font.
 
 		A glyph's height stops at the image's bottom and its width at the image's right edge.
 
@@ -5161,7 +5161,7 @@ class Raylib {
 		image of glyphs (PNG, BMP, TGA, JPEG or GIF) as raylib reads one.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
-		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and returns raylib's default font, as
 		raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
 
 		@param fileName  The file.
@@ -5172,7 +5172,7 @@ class Raylib {
 	/** Loads a TrueType or OpenType font at a size, with the characters asked for.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
-		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and returns raylib's default font, as
 		raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 
 		@param fileName  The file.
@@ -5194,11 +5194,11 @@ class Raylib {
 
 	/** Returns text formatted as C's `printf` formats it.
 
-		Takes `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
+		Accepts `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
 
-		Takes C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
+		Accepts C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
 
-		`%f` writes 6 places unless a precision is given, as in `%.2f`.
+		`%f` writes 6 places unless a precision is provided, as in `%.2f`.
 
 		Reads and ignores C's length modifiers (`l`, `ll`, `h`, `z`).
 
@@ -5233,7 +5233,7 @@ class Raylib {
 
 		The piece stops at the text's end and is at most 1023 bytes.
 
-		A character the piece cuts through becomes a "?" for each of its bytes taken.
+		A character the piece cuts through becomes a "?" for each of its bytes in the piece.
 
 		@param text  The text.
 		@param position  Where the piece starts, in bytes from the start.
@@ -5268,7 +5268,7 @@ class Raylib {
 
 		The result is at most 1023 UTF-8 bytes.
 
-		A text that would take the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
+		A text that would bring the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
 
 		@param textList  The texts; a null one is empty.
 		@param count  How many of them.
@@ -5294,7 +5294,7 @@ class Raylib {
 	public static inline function TextSplit(text:String, delimiter:Int, count:Array<Int>):Array<String>
 		return RText.TextSplit(text, delimiter, count);
 
-	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
+	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` accepts it.
 
 		@param text  The text searched.
 		@param find  The text found; empty text is found at 0.
@@ -5438,7 +5438,7 @@ class Raylib {
 
 	/** Returns the code of text's last character.
 
-		`GetCodepointPrevious(TextSubtext(text, 0, position), size)` gives the character before a position.
+		`GetCodepointPrevious(TextSubtext(text, 0, position), size)` returns the character before a position.
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null
@@ -5507,7 +5507,7 @@ class Raylib {
 		@param codepoints  The characters, or null for those from the space on.
 		@param codepointCount  How many characters; 0 for 95.
 		@param type  `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances. Any
-			other is taken as `FONT_DEFAULT`.
+			other is treated as `FONT_DEFAULT`.
 		@param loaded  Receives the glyphs once they are ready.
 		@param failed  Optional. Receives why the font couldn't be read; when omitted, it is logged. */
 	public static inline function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,
@@ -5780,7 +5780,7 @@ class Raylib {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before and still loaded, loads at once. Natively any
 		other file is read, with its images, during the call. In a page it can't be, as the browser decodes images only asynchronously:
-		the load logs why and gives a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it
+		the load logs why and returns a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -5791,7 +5791,7 @@ class Raylib {
 	/** Loads an .mtl file's materials with the textures they name, as `LoadMaterialsAsync` reads them.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read, with its
-		textures, during the call. In a page it can't be: the load logs why and gives no materials, as raylib's load of a missing file
+		textures, during the call. In a page it can't be: the load logs why and returns no materials, as raylib's load of a missing file
 		does. See `LoadMaterialsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
@@ -5802,7 +5802,7 @@ class Raylib {
 
 	/** Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
 
-		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
+		The model holds the mesh in the program's place. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
 		The model has no bones. Once the program sets its `bones`, `bindPose` and `boneCount`, and the mesh's `boneIds` and `boneWeights`,
 		`UpdateModelAnimation` and the other animation calls pose it as they pose a loaded model.
@@ -5924,7 +5924,7 @@ class Raylib {
 
 	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
 
-		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
+		The material's shader receives each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
 		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
 
 		A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
@@ -5939,7 +5939,7 @@ class Raylib {
 		@param mesh  The mesh.
 		@param material  Its material: the shader, the diffuse color and the textures.
 		@param transforms  The instances' transforms.
-		@param instances  How many instances, at most the transforms given. */
+		@param instances  How many instances, at most the transforms provided. */
 	public static inline function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void
 		RModels.DrawMeshInstanced(mesh, material, transforms, instances);
 
@@ -5977,7 +5977,7 @@ class Raylib {
 
 	/** Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it.
 
-		Does nothing for a mesh given to `LoadModelFromMesh`, which its model frees, or for one already freed.
+		Does nothing for a mesh provided to `LoadModelFromMesh`, which its model frees, or for one already freed.
 
 		@param mesh  The mesh. */
 	public static inline function UnloadMesh(mesh:Mesh):Void
@@ -6082,7 +6082,7 @@ class Raylib {
 
 	/** Returns a terrain mesh from an image, a vertex a pixel from the origin along +x and +z, each the height of its pixel's gray.
 
-		Takes a pixel's gray as its red, green and blue averaged.
+		Reads a pixel's gray as its red, green and blue averaged.
 
 		Makes two triangles a cell, each with a flat normal, and three vertices a triangle, with no indices.
 
@@ -6118,7 +6118,7 @@ class Raylib {
 		Sums each triangle's direction of u at each of its vertices, by its indices when the mesh has them. Then makes each sum square to
 		the vertex's normal and of length 1, with w the side the summed direction of v is on.
 
-		Gives a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is
+		Assigns a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is
 		mostly z, else (-y, x, 0) of the normal, with w 1.
 
 		@param mesh  The mesh. One without positions, texture coordinates or normals is unchanged. */
@@ -6128,7 +6128,7 @@ class Raylib {
 	/** Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` reads them.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call.
-		In a page it can't be: the load logs why and gives no animations, as raylib's load of a missing file does. See
+		In a page it can't be: the load logs why and returns no animations, as raylib's load of a missing file does. See
 		`LoadModelAnimationsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
@@ -6277,7 +6277,7 @@ class Raylib {
 	/** Returns a model's bounds, its meshes' boxes together with the least and most corners moved by its transform, as raylib's
 		does.
 
-		A turned model's box is not its bounds. Transforming its eight corners gives those.
+		A turned model's box is not its bounds. Transforming its eight corners produces those.
 
 		@param model  The model.
 		@return  The box. */
@@ -6347,7 +6347,7 @@ class Raylib {
 	public static inline function GetRayCollisionMesh(ray:Ray, mesh:Mesh, transform:Matrix):RayCollision
 		return RModels.GetRayCollisionMesh(ray, mesh, transform);
 
-	/** Returns where a ray meets a triangle from either side, its normal that of the corners taken counterclockwise.
+	/** Returns where a ray meets a triangle from either side, its normal that of the corners read counterclockwise.
 
 		Uses Möller and Trumbore's test, as raylib's does.
 
@@ -6374,7 +6374,7 @@ class Raylib {
 
 	/** Asynchronously loads a glTF or GLB file's animations, replacing raylib's `LoadModelAnimations`.
 
-		A file without skins gives none. Only the file's first skin is read.
+		A file without skins produces none. Only the file's first skin is read.
 
 		IQM and M3D animations are refused, as is any file but glTF and GLB.
 
@@ -6403,7 +6403,7 @@ class Raylib {
 		- MTL's `Ke`, the emission color.
 		- `disp`, the height map's texture.
 
-		A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular
+		A field a material doesn't set defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular
 		exponent is 1.
 
 		A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
@@ -6484,7 +6484,7 @@ class Raylib {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, a copy of the wave its ensure decoded. Natively any
 		other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs
-		why and gives an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
+		why and returns an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
 
 		@param fileName  The file.
 		@return  The wave, the program's until `UnloadWave`. */
@@ -6533,7 +6533,7 @@ class Raylib {
 
 		@param wave  The wave, changed in place.
 		@param sampleRate  The frames a second.
-		@param sampleSize  The bits a sample takes: 8, 16 or 32.
+		@param sampleSize  The bits in a sample: 8, 16 or 32.
 		@param channels  The number of channels. */
 	public static inline function WaveFormat(wave:Wave, sampleRate:Int, sampleSize:Int, channels:Int):Void
 		RAudio.WaveFormat(wave, sampleRate, sampleSize, channels);
@@ -6563,7 +6563,7 @@ class Raylib {
 	/** Loads and decodes a sound file, ready to play: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before, loads at once. Natively any other file is read
-		and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a
+		and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and returns a
 		sound that doesn't play, as raylib's load of a missing file does. See `LoadSoundAsync` for loading it asynchronously.
 
 		@param fileName  The file.
@@ -6584,7 +6584,7 @@ class Raylib {
 
 	/** Returns an alias that plays another sound's samples with its own volume, pitch, pan and voice, as raylib's does.
 
-		Takes no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded;
+		Uses no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded;
 		they're freed when the last held reference, a load or an alias, is released.
 
 		@param source  The sound whose samples it plays.
@@ -6694,10 +6694,10 @@ class Raylib {
 
 	/** Opens a music file to play as it is read: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
 
-		Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its
-		music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once it has. A file
-		not ensured logs why and gives music that doesn't play, as raylib's load of a missing file does. See `LoadMusicStreamAsync` for
-		opening it asynchronously.
+		Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`)
+		produces its music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once
+		it has. A file not ensured logs why and produces music that doesn't play, as raylib's load of a missing file does. See
+		`LoadMusicStreamAsync` for opening it asynchronously.
 
 		@param fileName  The file.
 		@return  The music, the program's until `UnloadMusicStream`. */
@@ -6823,14 +6823,14 @@ class Raylib {
 	public static inline function GetMusicTimePlayed(music:Music):Float
 		return RAudio.GetMusicTimePlayed(music);
 
-	/** Returns a stream that plays samples the program makes as it goes, each buffer as `UpdateAudioStream` gives it.
+	/** Returns a stream that plays samples the program makes as it goes, each buffer as `UpdateAudioStream` provides it.
 
 		`InitAudioDevice` must come first.
 
 		Played through helix-services' `SampleQueue`, which the platform resamples.
 
 		@param sampleRate  The frames a second, 8000 to 96000.
-		@param sampleSize  The bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
+		@param sampleSize  The bits in a sample: 8 (unsigned), 16 (signed) or 32 (float).
 		@param channels  The number of channels, 1 or 2.
 		@return  The stream, or one that isn't valid (`IsAudioStreamValid`) when it can't be made. */
 	public static inline function LoadAudioStream(sampleRate:Int, sampleSize:Int, channels:Int):AudioStream
@@ -6849,9 +6849,9 @@ class Raylib {
 	public static inline function UnloadAudioStream(stream:AudioStream):Void
 		RAudio.UnloadAudioStream(stream);
 
-	/** Gives a stream its next buffer of samples, as raylib's does, filling the rest of the buffer with silence.
+	/** Feeds a stream its next buffer of samples, as raylib's does, filling the rest of the buffer with silence.
 
-		Taken only once a buffer has been heard (`IsAudioStreamProcessed`), and only up to a buffer's frames (`SetAudioStreamBufferSizeDefault`). Otherwise nothing is taken, and a warning is logged.
+		Accepted only once a buffer has been heard (`IsAudioStreamProcessed`), and only up to a buffer's frames (`SetAudioStreamBufferSizeDefault`). Otherwise the samples are dropped, and a warning is logged.
 
 		@param stream  The stream.
 		@param data  The samples in the stream's sample size and channels, interleaved.
@@ -6862,11 +6862,11 @@ class Raylib {
 	/** Returns whether a stream has room for another buffer, as raylib's double buffer has one free.
 
 		@param stream  The stream.
-		@return  True while it holds no more than one buffer not yet heard, when `UpdateAudioStream` would take samples. */
+		@return  True while it holds no more than one buffer not yet heard, when `UpdateAudioStream` would accept samples. */
 	public static inline function IsAudioStreamProcessed(stream:AudioStream):Bool
 		return RAudio.IsAudioStreamProcessed(stream);
 
-	/** Plays a stream: what it holds, and what it is given after.
+	/** Plays a stream: what it holds, and what it receives after.
 
 		A stream with a callback (`SetAudioStreamCallback`) is filled by it at once.
 
@@ -6911,7 +6911,7 @@ class Raylib {
 		Clamped to 0.25 to 4.
 
 		@param stream  The stream.
-		@param pitch  1 for as given. */
+		@param pitch  1 for unchanged. */
 	public static inline function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void
 		RAudio.SetAudioStreamPitch(stream, pitch);
 
@@ -7014,7 +7014,7 @@ class Raylib {
 
 	// ---- raylib.h's functions that wait for a file or an answer: each a macro, its wait in the function calling it ----
 
-	/** Takes a screenshot of the screen and saves it as a file, and returns once the file is written or downloaded. See
+	/** Captures the screen and saves it as a file, and returns once the file is written or downloaded. See
 		`LoadImageFromScreen` for the screen as an `Image`.
 
 		Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it. The draws since

@@ -89,7 +89,7 @@ class Debug {
 		```
 
 		@param position  The text's top left, in pixels (its background's, padding around the text).
-		@param style  What to show and how; each field left out takes its default. */
+		@param style  What to show and how; each field omitted uses its default. */
 	public static inline function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void
 		RDebug.DrawFrameStatsEx(position, style);
 

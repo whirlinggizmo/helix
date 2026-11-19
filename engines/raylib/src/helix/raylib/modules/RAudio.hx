@@ -116,7 +116,7 @@ class RAudio {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, a copy of the wave its ensure decoded. Natively any
 		other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs
-		why and gives an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
+		why and returns an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
 
 		@param fileName  The file.
 		@return  The wave, the program's until `UnloadWave`. */
@@ -277,7 +277,7 @@ class RAudio {
 
 		@param wave  The wave, changed in place.
 		@param sampleRate  The frames a second.
-		@param sampleSize  The bits a sample takes: 8, 16 or 32.
+		@param sampleSize  The bits in a sample: 8, 16 or 32.
 		@param channels  The number of channels. */
 	static function WaveFormat(wave:Wave, sampleRate:Int, sampleSize:Int, channels:Int):Void {
 		var frameCountIn = wave.frameCount;
@@ -359,7 +359,7 @@ class RAudio {
 	/** Loads and decodes a sound file, ready to play: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before, loads at once. Natively any other file is read
-		and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a
+		and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and returns a
 		sound that doesn't play, as raylib's load of a missing file does. See `LoadSoundAsync` for loading it asynchronously.
 
 		@param fileName  The file.
@@ -413,7 +413,7 @@ class RAudio {
 
 	/** Returns an alias that plays another sound's samples with its own volume, pitch, pan and voice, as raylib's does.
 
-		Takes no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded;
+		Uses no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded;
 		they're freed when the last held reference, a load or an alias, is released.
 
 		@param source  The sound whose samples it plays.
@@ -570,7 +570,7 @@ class RAudio {
 		sound.waiting = 0;
 	}
 
-	// A sound given its own samples, made into the service's sound: it then holds them, for UpdateSound.
+	// A sound with its own samples, made into the service's sound: it then holds them, for UpdateSound.
 	static function made(sound:Sound, samples:haxe.io.Bytes, channels:Int):Void {
 		sound.sound = Runtime.audio.createSound(samples, channels);
 		sound.samples = samples;
@@ -715,10 +715,10 @@ class RAudio {
 
 	/** Opens a music file to play as it is read: WAV, Ogg Vorbis, MP3 or QOA. `InitAudioDevice` must come first.
 
-		Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its
-		music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once it has. A file
-		not ensured logs why and gives music that doesn't play, as raylib's load of a missing file does. See `LoadMusicStreamAsync` for
-		opening it asynchronously.
+		Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`)
+		produces its music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once
+		it has. A file not ensured logs why and produces music that doesn't play, as raylib's load of a missing file does. See
+		`LoadMusicStreamAsync` for opening it asynchronously.
 
 		@param fileName  The file.
 		@return  The music, the program's until `UnloadMusicStream`. */
@@ -765,7 +765,7 @@ class RAudio {
 		return music;
 	}
 
-	// Opens music's stream by its path, answering opened or failed when given, or logging the failure under name; a play asked for
+	// Opens music's stream by its path, answering opened or failed when provided, or logging the failure under name; a play asked for
 	// meanwhile starts once it opens.
 	static function open(music:Music, path:String, name:String, ?opened:Void->Void, ?failed:String->Void):Void {
 		music.cancel = Runtime.audio.stream(path, sound -> {
@@ -942,14 +942,14 @@ class RAudio {
 
 	// ---- Audio streams ----
 
-	/** Returns a stream that plays samples the program makes as it goes, each buffer as `UpdateAudioStream` gives it.
+	/** Returns a stream that plays samples the program makes as it goes, each buffer as `UpdateAudioStream` provides it.
 
 		`InitAudioDevice` must come first.
 
 		Played through helix-services' `SampleQueue`, which the platform resamples.
 
 		@param sampleRate  The frames a second, 8000 to 96000.
-		@param sampleSize  The bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
+		@param sampleSize  The bits in a sample: 8 (unsigned), 16 (signed) or 32 (float).
 		@param channels  The number of channels, 1 or 2.
 		@return  The stream, or one that isn't valid (`IsAudioStreamValid`) when it can't be made. */
 	static function LoadAudioStream(sampleRate:Int, sampleSize:Int, channels:Int):AudioStream {
@@ -985,9 +985,9 @@ class RAudio {
 		Runtime.log(LOG_INFO, "STREAM: Unloaded audio stream data from RAM");
 	}
 
-	/** Gives a stream its next buffer of samples, as raylib's does, filling the rest of the buffer with silence.
+	/** Feeds a stream its next buffer of samples, as raylib's does, filling the rest of the buffer with silence.
 
-		Taken only once a buffer has been heard (`IsAudioStreamProcessed`), and only up to a buffer's frames (`SetAudioStreamBufferSizeDefault`). Otherwise nothing is taken, and a warning is logged.
+		Accepted only once a buffer has been heard (`IsAudioStreamProcessed`), and only up to a buffer's frames (`SetAudioStreamBufferSizeDefault`). Otherwise the samples are dropped, and a warning is logged.
 
 		@param stream  The stream.
 		@param data  The samples in the stream's sample size and channels, interleaved.
@@ -1009,12 +1009,12 @@ class RAudio {
 	/** Returns whether a stream has room for another buffer, as raylib's double buffer has one free.
 
 		@param stream  The stream.
-		@return  True while it holds no more than one buffer not yet heard, when `UpdateAudioStream` would take samples. */
+		@return  True while it holds no more than one buffer not yet heard, when `UpdateAudioStream` would accept samples. */
 	static function IsAudioStreamProcessed(stream:AudioStream):Bool {
 		return stream.queue != null && stream.queue.queuedFrameCount <= stream.bufferFrames;
 	}
 
-	/** Plays a stream: what it holds, and what it is given after.
+	/** Plays a stream: what it holds, and what it receives after.
 
 		A stream with a callback (`SetAudioStreamCallback`) is filled by it at once.
 
@@ -1077,7 +1077,7 @@ class RAudio {
 		Clamped to 0.25 to 4.
 
 		@param stream  The stream.
-		@param pitch  1 for as given. */
+		@param pitch  1 for unchanged. */
 	static function SetAudioStreamPitch(stream:AudioStream, pitch:Float):Void {
 		stream.pitch = pitch;
 		if (stream.voice != null)
@@ -1196,7 +1196,7 @@ class RAudio {
 		stream.queue.queueSamples(floats);
 	}
 
-	// The bytes a sample of a size takes, as miniaudio's formats have them: u8, s16, or f32 for any other.
+	// The bytes in a sample of a size, as miniaudio's formats have them: u8, s16, or f32 for any other.
 	static function bytesPerSample(sampleSize:Int):Int {
 		return sampleSize == 8 ? 1 : sampleSize == 16 ? 2 : 4;
 	}
@@ -1204,9 +1204,9 @@ class RAudio {
 	// The streams' default buffer frames (SetAudioStreamBufferSizeDefault), 0 for raylib's own.
 	static var bufferSizeDefault = 0;
 
-	// The streams with callbacks, made and polled with the first (SetAudioStreamCallback), so a program giving none never links their
+	// The streams with callbacks, made and polled with the first (SetAudioStreamCallback), so a program setting none never links their
 	// topping up; null until then and after CloseAudioDevice. A stream fed by UpdateAudioStream needs no poll: its samples are queued as
-	// they are given.
+	// they arrive.
 	static var streams:Null<AudioStreams> = null;
 	#end
 }

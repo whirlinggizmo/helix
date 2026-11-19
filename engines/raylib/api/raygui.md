@@ -854,9 +854,9 @@ static function GuiDrawIcon(iconId:Int, posX:Int, posY:Int, pixelSize:Int, color
 
 - `GuiEnable`: Enables the controls again after `GuiDisable`.
   A state other than disabled, set with `GuiSetState`, is unchanged.
-- `GuiDisable`: Disables the controls, so they draw disabled and take no input. See `GuiLock` for stopping the controls' input while they keep their look.
+- `GuiDisable`: Disables the controls, so they draw disabled and accept no input. See `GuiLock` for stopping the controls' input while they keep their look.
   A state other than normal, set with `GuiSetState`, is unchanged.
-- `GuiLock`: Locks the controls until `GuiUnlock`, so they draw as they are and take no input. See `GuiDisable` for drawing the controls disabled.
+- `GuiLock`: Locks the controls until `GuiUnlock`, so they draw as they are and accept no input. See `GuiDisable` for drawing the controls disabled.
 - `GuiUnlock`: Unlocks the controls after `GuiLock`.
 - `GuiIsLocked`: Returns whether the controls are locked.
   - returns: True between `GuiLock` and `GuiUnlock`.
@@ -1043,7 +1043,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - returns: 0.
 
   The bars and the mouse wheel scroll the content, across while Shift or Control is held.
-- `GuiLabel`: Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that takes clicks.
+- `GuiLabel`: Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that accepts clicks.
   - `bounds`: The label.
   - `text`: The text, or null.
   - returns: 0.
@@ -1106,10 +1106,10 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   Lists the items above the box with `DROPDOWN_ROLL_UP`.
 
   Focuses the item under the mouse.
-- `GuiTextBox`: Draws a text box that takes typed text in edit mode.
+- `GuiTextBox`: Draws a text box that accepts typed text in edit mode.
   - `bounds`: The box.
   - `text`: The text, in `text[0]`, edited in place.
-  - `textSize`: The most bytes the text may take, its UTF-8 bytes and one more, as raygui's buffer holds them.
+  - `textSize`: The most bytes the text may use, its UTF-8 bytes and one more, as raygui's buffer holds them.
   - `editMode`: Whether it is being edited.
   - returns: 1 when its edit mode should flip: while editing, Enter (a single-line box) or a click outside it; otherwise a click on it. Else 0.
 
@@ -1130,7 +1130,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - `editMode`: Whether its value box is being edited.
   - returns: The value box's result: 1 when its edit mode should flip, as `GuiTextBox`'s; else 0.
 
-  In edit mode, the value box takes typed digits.
+  In edit mode, the value box accepts typed digits.
 
   Out of edit mode, the value is clamped to the range.
 - `GuiValueBox`: Draws a value box, a whole number centered. See `GuiValueBoxFloat` for editing a number with a fraction.
@@ -1144,7 +1144,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
 
   The program turns edit mode on and off with the result.
 
-  In edit mode, the box takes typed digits and Backspace.
+  In edit mode, the box accepts typed digits and Backspace.
 
   Enter or a click outside ends editing and clamps the value to the range.
 - `GuiValueBoxFloat`: Draws a value box for a number with a fraction, showing and editing the number's text and reading the value from it. See `GuiValueBox` for editing a whole number.
@@ -1157,7 +1157,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
 
   The program keeps the text.
 
-  In edit mode, the box takes digits, '.', and a sign first.
+  In edit mode, the box accepts digits, '.', and a sign first.
 - `GuiSlider`: Draws a slider, a handle along a bar dragged with the left button, and returns 1 when the value changes. See `GuiSliderBar` for drawing a bar filled to the value.
   - `bounds`: The slider.
   - `textLeft`: The text left of it, or null.
@@ -1235,7 +1235,7 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - `message`: The message above the text box, or null.
   - `buttons`: The buttons' texts, split at ';' ("Ok;Cancel").
   - `text`: The text, in `text[0]`, edited in place.
-  - `textMaxSize`: The most bytes the text may take, as `GuiTextBox`'s textSize.
+  - `textMaxSize`: The most bytes the text may use, as `GuiTextBox`'s textSize.
   - `secretViewActive`: Whether the text shows, in `secretViewActive[0]`, or null for a box that always shows it.
   - returns: The button clicked, from 1, 0 for the close button, else -1.
 
@@ -1247,14 +1247,14 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
 - `GuiColorPicker`: Draws a color picker, a saturation and value panel with a hue bar beside it, both dragged with the left button. See `GuiColorPickerHSV` for keeping the hue steady.
   - `bounds`: The panel; the hue bar is beside it.
   - `text`: Not drawn.
-  - `color`: The color in a one-element array, as raygui takes a pointer, changed there; or null. Its alpha is kept.
+  - `color`: The color in a one-element array, as raygui accepts a pointer, changed there; or null. Its alpha is kept.
   - returns: 0.
 
   Converts the color through HSV each call, so its hue may shift where red, green and blue are close.
 - `GuiColorPanel`: Draws a color panel, saturation across and value down at the color's hue, dragged with the left button. See `GuiColorPanelHSV` for editing an HSV color.
   - `bounds`: The panel.
   - `text`: Not drawn.
-  - `color`: The color in a one-element array, as raygui takes a pointer, changed there when the panel changes it. Its alpha is kept.
+  - `color`: The color in a one-element array, as raygui accepts a pointer, changed there when the panel changes it. Its alpha is kept.
   - returns: 0.
 - `GuiColorBarAlpha`: Draws an alpha bar, clear to opaque across over a checked background, its selector dragged with the left button.
   - `bounds`: The bar.

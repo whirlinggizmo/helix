@@ -169,7 +169,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 - `DrawRing`: Draws a filled ring, or a slice of one, clockwise from one angle to another.
   - `center`: The center.
   - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle.
-  - `outerRadius`: The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+  - `outerRadius`: The radius of its edge; the larger of the two is used as the edge, and an edge of 0 or less draws nothing.
   - `startAngle`: The angle it starts at, in degrees from the right.
   - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.
@@ -177,7 +177,7 @@ static function GetCollisionRec(rec1:Rectangle, rec2:Rectangle):Rectangle
 - `DrawRingLines`: Draws a ring's outline, or a slice of one, one pixel wide, with lines across its ends.
   - `center`: The center.
   - `innerRadius`: The radius of its hole; 0 or less draws a slice of a circle.
-  - `outerRadius`: The radius of its edge; the larger of the two is taken as the edge, and an edge of 0 or less draws nothing.
+  - `outerRadius`: The radius of its edge; the larger of the two is used as the edge, and an edge of 0 or less draws nothing.
   - `startAngle`: The angle it starts at, in degrees from the right.
   - `endAngle`: The angle it ends at; the same as the start draws nothing, and more than a turn past it draws one turn.
   - `segments`: How many straight edges make its curve; fewer than one for each 90 degrees picks enough for a smooth curve.

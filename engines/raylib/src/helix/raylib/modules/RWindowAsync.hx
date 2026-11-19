@@ -88,7 +88,7 @@ class RWindowAsync {
 
 	/** Asynchronously asks for the window's size, replacing raylib's `SetWindowSize`. See `SetWindowMinSizeAsync` and `SetWindowMaxSizeAsync` for limiting how small or large it can be.
 
-		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+		The window manager may set another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
 		Refused while the window is fullscreen or maximized, and where the system doesn't allow it.
 
@@ -182,7 +182,7 @@ class RWindowAsync {
 		ask("SetWindowOpacityAsync", (granted, refused) -> Runtime.window.requestOpacity(opacity, granted, refused), "", done, failed);
 	}
 
-	/** Asynchronously asks for the smallest size the window may take, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
+	/** Asynchronously asks for the smallest size the window may have, replacing raylib's `SetWindowMinSize`. See `SetWindowMaxSizeAsync` for setting the largest.
 
 		Refused where the system doesn't allow it.
 
@@ -197,7 +197,7 @@ class RWindowAsync {
 			'$width x $height is under 0 pixels', done, failed);
 	}
 
-	/** Asynchronously asks for the largest size the window may take, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
+	/** Asynchronously asks for the largest size the window may have, replacing raylib's `SetWindowMaxSize`. See `SetWindowMinSizeAsync` for setting the smallest.
 
 		Refused where the system doesn't allow it.
 
@@ -281,7 +281,7 @@ class RWindowAsync {
 			.requestImage(png -> decoded("GetClipboardImageAsync", ".png", png, loaded, failed), error -> refuse("GetClipboardImageAsync", error, failed));
 	}
 
-	// Takes a screenshot for TakeScreenshot, calling done once it is written or refused, at a later poll. With a frame to read
+	// Captures the screen for TakeScreenshot, calling done once it is written or refused, at a later poll. With a frame to read
 	// (FrameReads.hasScreen), the screen as drawn so far, or between frames the frame last shown. With none yet, the next frame as it is
 	// shown: done is called at once, and the screenshot is among Runtime.screenshotsAsked until it is written or refused, so the next
 	// EndDrawing waits for it. Once CloseWindow refused it, nothing more is written or logged.

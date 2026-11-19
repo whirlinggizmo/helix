@@ -4,7 +4,7 @@ package helix.raylib.modules;
 import helix.raylib.*;
 #end
 
-/** Holds what a material gives off, where it is cut out, and whether light and shadows fall on it, read by every draw with it. Each is
+/** Holds what a material emits, where it is cut out, and whether light and shadows fall on it, read by every draw with it. Each is
 	written here, and `helix.raylib.extras.Materials` forwards to each (`tools/gen_raylib.py`).
 
 	A program naming any of them links this class, and its start sets the draws' hook (`RModels.surfacing`) to `draw`, so every draw
@@ -24,7 +24,7 @@ class RMaterials {
 	static var variant:Null<Shader>;
 	static var variantFrame:Null<helix.raylib.internal.Frame>;
 
-	// The hook: a material drawn with the default shader that is cut out or gives off light is drawn through the default shader's
+	// The hook: a material drawn with the default shader that is cut out or emits light is drawn through the default shader's
 	// variant; then its values are written for the draw (Surfaces).
 	static function draw(shader:Shader, material:Material, modelEmissive:Null<Array<Float>>):Shader {
 		var frame = helix.raylib.internal.Runtime.frame;
@@ -48,7 +48,7 @@ class RMaterials {
 
 	/** Sets a material's alpha cutoff: where its albedo's alpha, the albedo map's times its color's, is below the cutoff, the material
 		draws nothing, as a leaf cut from a square does. 0 turns the cutoff off. A glTF material whose `alphaMode` is glTF's `MASK` loads
-		with its `alphaCutoff`, 0.5 when the file gives none.
+		with its `alphaCutoff`, 0.5 when the file sets none.
 
 		Read at each draw by helix-raylib's default shader, which draws exactly as raylib's while the cutoff is 0, and by `LoadPbrShader`'s
 		and `LoadLightingShader`'s draws.
@@ -59,7 +59,7 @@ class RMaterials {
 		material.alphaCutoff = cutoff < 0 ? 0 : cutoff > 1 ? 1 : cutoff;
 	}
 
-	/** Returns a material's alpha cutoff, as `SetMaterialAlphaCutoff` set it or its glTF file gave it: 0 for none.
+	/** Returns a material's alpha cutoff, as `SetMaterialAlphaCutoff` set it or its glTF file set it: 0 for none.
 
 		@param material  The material.
 		@return  The cutoff, 0 to 1. */
@@ -67,12 +67,12 @@ class RMaterials {
 		return material.alphaCutoff;
 	}
 
-	/** Sets the light a material gives off whatever lights it: its color times the intensity, added to the lit color, as a glowing
+	/** Sets the light a material emits whatever lights it: its color times the intensity, added to the lit color, as a glowing
 		lamp. A glTF material loads with its `emissiveFactor`, and the emission map stays in `maps[MATERIAL_MAP_EMISSION]`. Black or an
-		intensity of 0 gives off nothing, the default. See `SetModelEmissive` for every material of a model at once.
+		intensity of 0, the default, emits no light. See `SetModelEmissive` for every material of a model at once.
 
 		Read at each draw by `LoadPbrShader`'s and `LoadLightingShader`'s draws, and by helix-raylib's default shader, which draws
-		exactly as raylib's while it gives off nothing.
+		exactly as raylib's while the material emits no light.
 
 		@param material  The material.
 		@param color  The color.
@@ -84,7 +84,7 @@ class RMaterials {
 		material.emissiveBlue = color.b * strength;
 	}
 
-	/** Returns the light a material gives off, as `SetMaterialEmissive` set it or its glTF file gave it: its color times its intensity,
+	/** Returns the light a material emits, as `SetMaterialEmissive` set it or its glTF file set it: its color times its intensity,
 		red, green and blue, 0 for none.
 
 		@param material  The material.
@@ -111,7 +111,7 @@ class RMaterials {
 		material.unlit = unlit;
 	}
 
-	/** Returns whether a material is unlit, as `SetMaterialUnlit` set it or its glTF file gave it.
+	/** Returns whether a material is unlit, as `SetMaterialUnlit` set it or its glTF file set it.
 
 		@param material  The material.
 		@return  Whether it is unlit. */
@@ -138,8 +138,8 @@ class RMaterials {
 		return material.shadowed;
 	}
 
-	/** Sets light a whole model gives off, added to each of its materials' own: a hit flash, or a model glowing whole. Its materials'
-		emission, as `SetMaterialEmissive` set it or the glTF file gave it, is kept, so an intensity of 0 leaves the model as authored.
+	/** Sets light a whole model emits, added to each of its materials' own: a hit flash, or a model glowing whole. Its materials'
+		emission, as `SetMaterialEmissive` set it or the glTF file set it, is kept, so an intensity of 0 leaves the model as authored.
 		Read at each draw of the model (`DrawModel`, `DrawModelEx`), not by a draw of one of its meshes alone.
 
 		```haxe

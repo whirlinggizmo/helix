@@ -697,7 +697,7 @@ class Rlgl {
 
 	/** Applies a matrix before the current one.
 
-		@param matf  The matrix's 16 numbers, by columns, as `MatrixToFloatV` gives them. */
+		@param matf  The matrix's 16 numbers, by columns, as `MatrixToFloatV` returns them. */
 	public static inline function rlMultMatrixf(matf:Array<Float>):Void
 		RRlgl.rlMultMatrixf(matf);
 
@@ -767,7 +767,7 @@ class Rlgl {
 
 	/** Starts adding vertices until `rlEnd`, each 2 a line, 3 a triangle or 4 a quad.
 
-		A mode other than the last one's starts a new draw call, which takes the texture `rlSetTexture` last set and sets the white
+		A mode other than the last one's starts a new draw call, which uses the texture `rlSetTexture` last set and sets the white
 		texture for the next. A second change of mode without another `rlSetTexture` then draws untextured.
 
 		The same mode again keeps the draw call and its texture.
@@ -864,9 +864,9 @@ class Rlgl {
 		RRlgl.rlSetBlendMode(mode);
 
 	/** Sets the GL factors and equation `RL_BLEND_CUSTOM` blends by, red, green, blue and alpha alike, as `glBlendFunc` and
-		`glBlendEquation` take them. See `rlSetBlendFactorsSeparate` for blending color apart from alpha.
+		`glBlendEquation` accept them. See `rlSetBlendFactorsSeparate` for blending color apart from alpha.
 
-		The factors take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM)`, even in that mode already.
+		The factors apply at the next `rlSetBlendMode(RL_BLEND_CUSTOM)`, even in that mode already.
 
 		A value GL doesn't have leaves the factors, or the equation, unchanged.
 
@@ -879,9 +879,9 @@ class Rlgl {
 		RRlgl.rlSetBlendFactors(glSrcFactor, glDstFactor, glEquation);
 
 	/** Sets the GL factors and equations `RL_BLEND_CUSTOM_SEPARATE` blends by, for red, green and blue apart from alpha, as
-		`glBlendFuncSeparate` and `glBlendEquationSeparate` take them. See `rlSetBlendFactors` for blending every channel alike.
+		`glBlendFuncSeparate` and `glBlendEquationSeparate` accept them. See `rlSetBlendFactors` for blending every channel alike.
 
-		The factors take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM_SEPARATE)`, even in that mode already.
+		The factors apply at the next `rlSetBlendMode(RL_BLEND_CUSTOM_SEPARATE)`, even in that mode already.
 
 		@param glSrcRGB  The source color's factor.
 		@param glDstRGB  The destination color's factor.
@@ -1043,7 +1043,7 @@ class Rlgl {
 		RRlgl.rlDisableScissorTest();
 
 	/** Sets the rectangle that clips the next draws while the scissor test is on, in the framebuffer's pixels from its bottom left, as
-		GL takes it. See `BeginScissorMode` for setting one from the top left in the screen's pixels.
+		GL accepts it. See `BeginScissorMode` for setting one from the top left in the screen's pixels.
 
 		@param x  Its left edge.
 		@param y  Its bottom edge, from the bottom.
@@ -1052,7 +1052,7 @@ class Rlgl {
 	public static inline function rlScissor(x:Int, y:Int, width:Int, height:Int):Void
 		RRlgl.rlScissor(x, y, width, height);
 
-	/** Sets the rectangle the next draws fill, as GL takes it, until the next pass begins.
+	/** Sets the rectangle the next draws fill, as GL accepts it, until the next pass begins.
 
 		The next pass (`BeginDrawing`, `BeginTextureMode`, `EndTextureMode`) fills the whole framebuffer again.
 
@@ -1082,7 +1082,7 @@ class Rlgl {
 		RRlgl.rlClearColor(r, g, b, a);
 
 	/** Clears the color and depth of what is drawn into, the color to `rlClearColor`'s, black until set. See `ClearBackground` for
-		clearing to a given color. */
+		clearing to a provided color. */
 	public static inline function rlClearScreenBuffers():Void
 		RRlgl.rlClearScreenBuffers();
 
@@ -1192,7 +1192,7 @@ class Rlgl {
 
 	/** Sets each eye's projection in stereo rendering, used in place of the projection from the batch's next flush.
 
-		A mesh's mvp takes the eye's projection, while its `matProjection` stays the projection.
+		A mesh's mvp uses the eye's projection, while its `matProjection` stays the projection.
 
 		@param right  Eye 0's projection, drawn in the left half (raylib names it the right).
 		@param left  Eye 1's, drawn in the right half. */

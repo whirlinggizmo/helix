@@ -63,7 +63,7 @@ class RDebug {
 	// The frame whose drawing records each frame's time, once a program draws or reads the stats (a frame made again is hooked again).
 	static var hooked:Null<Frame> = null;
 
-	// The system's time at the last frame's drawing, from which the next frame's time is taken; negative before the first.
+	// The system's time at the last frame's drawing, from which the next frame's time is measured; negative before the first.
 	static var last = -1.;
 
 	// A recording's frames, its latest RECORDED at most, in a ring made at the first StartFrameStatsRecording: each frame's time, draws,
@@ -193,7 +193,7 @@ class RDebug {
 		```
 
 		@param position  The text's top left, in pixels (its background's, padding around the text).
-		@param style  What to show and how; each field left out takes its default. */
+		@param style  What to show and how; each field omitted uses its default. */
 	static function DrawFrameStatsEx(position:Vector2, style:FrameStatsStyle):Void {
 		hook();
 		var size = fontSizeOf(style);
@@ -531,7 +531,7 @@ class RDebug {
 	static inline function number(t:String, template:String):Part
 		return {text: t, template: template};
 
-	// The lines of the stats shown, each as parts: fixed text and numbers, whose templates give their slots (d for a digit). The frames a
+	// The lines of the stats shown, each as parts: fixed text and numbers, whose templates mark their slots (d for a digit). The frames a
 	// second are GetFPS's: helix-raylib's own average over the last half second.
 	static function linesOf(style:FrameStatsStyle):Array<Array<Part>> {
 		var lines = [];

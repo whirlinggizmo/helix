@@ -159,7 +159,7 @@ static function GetRenderTextureFitRectangle(target:RenderTexture2D, integerScal
   - `tint`: The tint.
 - `SetMouseRenderTextureFit`: Sets the mouse's offset and scale (raylib's `SetMouseOffset` and `SetMouseScale`) to a render texture drawn by `DrawRenderTextureFit`. `GetMousePosition` and raygui's controls then read the mouse in the render texture's pixels. Set again when the window's size changes, or each frame.
   - `target`: The render texture.
-  - `integerScale`: Whether its size is a whole multiple of the render texture's, as given `DrawRenderTextureFit`.
+  - `integerScale`: Whether its size is a whole multiple of the render texture's, as provided to `DrawRenderTextureFit`.
 - `GetRenderTextureFitRectangle`: Returns where `DrawRenderTextureFit` draws a render texture on the screen.
   - `target`: The render texture.
   - `integerScale`: Whether its size is a whole multiple of the render texture's.

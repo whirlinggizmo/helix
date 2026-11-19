@@ -1106,14 +1106,14 @@ class Raygui {
 	public static inline function GuiEnable():Void
 		RGui.GuiEnable();
 
-	/** Disables the controls, so they draw disabled and take no input. See `GuiLock` for stopping the controls' input while they keep
+	/** Disables the controls, so they draw disabled and accept no input. See `GuiLock` for stopping the controls' input while they keep
 		their look.
 
 		A state other than normal, set with `GuiSetState`, is unchanged. */
 	public static inline function GuiDisable():Void
 		RGui.GuiDisable();
 
-	/** Locks the controls until `GuiUnlock`, so they draw as they are and take no input. See `GuiDisable` for drawing the controls
+	/** Locks the controls until `GuiUnlock`, so they draw as they are and accept no input. See `GuiDisable` for drawing the controls
 		disabled. */
 	public static inline function GuiLock():Void
 		RGui.GuiLock();
@@ -1366,7 +1366,7 @@ class Raygui {
 	public static inline function GuiScrollPanel(bounds:Rectangle, text:String, content:Rectangle, scroll:Vector2, view:Rectangle):Int
 		return RGuiControls.GuiScrollPanel(bounds, text, content, scroll, view);
 
-	/** Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that takes clicks.
+	/** Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that accepts clicks.
 
 		@param bounds  The label.
 		@param text  The text, or null.
@@ -1470,7 +1470,7 @@ class Raygui {
 	public static inline function GuiDropdownBox(bounds:Rectangle, text:String, active:Array<Int>, editMode:Bool):Int
 		return RGuiControls.GuiDropdownBox(bounds, text, active, editMode);
 
-	/** Draws a text box that takes typed text in edit mode.
+	/** Draws a text box that accepts typed text in edit mode.
 
 		The program turns edit mode on and off with the result.
 
@@ -1483,7 +1483,7 @@ class Raygui {
 
 		@param bounds  The box.
 		@param text  The text, in `text[0]`, edited in place.
-		@param textSize  The most bytes the text may take, its UTF-8 bytes and one more, as raygui's buffer holds them.
+		@param textSize  The most bytes the text may use, its UTF-8 bytes and one more, as raygui's buffer holds them.
 		@param editMode  Whether it is being edited.
 		@return  1 when its edit mode should flip: while editing, Enter (a single-line box) or a click outside it; otherwise a click on it. Else 0. */
 	public static inline function GuiTextBox(bounds:Rectangle, text:Array<String>, textSize:Int, editMode:Bool):Int
@@ -1492,7 +1492,7 @@ class Raygui {
 	/** Draws a spinner, a value box between buttons that step its value down and up. See `GuiValueBox` for drawing the value box
 		alone.
 
-		In edit mode, the value box takes typed digits.
+		In edit mode, the value box accepts typed digits.
 
 		Out of edit mode, the value is clamped to the range.
 
@@ -1510,7 +1510,7 @@ class Raygui {
 
 		The program turns edit mode on and off with the result.
 
-		In edit mode, the box takes typed digits and Backspace.
+		In edit mode, the box accepts typed digits and Backspace.
 
 		Enter or a click outside ends editing and clamps the value to the range.
 
@@ -1529,7 +1529,7 @@ class Raygui {
 
 		The program keeps the text.
 
-		In edit mode, the box takes digits, '.', and a sign first.
+		In edit mode, the box accepts digits, '.', and a sign first.
 
 		@param bounds  The box.
 		@param text  Its label, beside it, or null.
@@ -1668,7 +1668,7 @@ class Raygui {
 		@param message  The message above the text box, or null.
 		@param buttons  The buttons' texts, split at ';' ("Ok;Cancel").
 		@param text  The text, in `text[0]`, edited in place.
-		@param textMaxSize  The most bytes the text may take, as `GuiTextBox`'s textSize.
+		@param textMaxSize  The most bytes the text may use, as `GuiTextBox`'s textSize.
 		@param secretViewActive  Whether the text shows, in `secretViewActive[0]`, or null for a box that always shows it.
 		@return  The button clicked, from 1, 0 for the close button, else -1. */
 	public static inline function GuiTextInputBox(bounds:Rectangle, title:String, message:String, buttons:String, text:Array<String>, textMaxSize:Int,
@@ -1682,7 +1682,7 @@ class Raygui {
 
 		@param bounds  The panel; the hue bar is beside it.
 		@param text  Not drawn.
-		@param color  The color in a one-element array, as raygui takes a pointer, changed there; or null. Its alpha is kept.
+		@param color  The color in a one-element array, as raygui accepts a pointer, changed there; or null. Its alpha is kept.
 		@return  0. */
 	public static inline function GuiColorPicker(bounds:Rectangle, text:String, color:Null<Array<Color>>):Int
 		return RGuiControls.GuiColorPicker(bounds, text, color);
@@ -1692,7 +1692,7 @@ class Raygui {
 
 		@param bounds  The panel.
 		@param text  Not drawn.
-		@param color  The color in a one-element array, as raygui takes a pointer, changed there when the panel changes it. Its alpha is
+		@param color  The color in a one-element array, as raygui accepts a pointer, changed there when the panel changes it. Its alpha is
 			kept.
 		@return  0. */
 	public static inline function GuiColorPanel(bounds:Rectangle, text:String, color:Array<Color>):Int

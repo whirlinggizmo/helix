@@ -42,7 +42,7 @@ class Shadowmaps {
 		the depth drawn into it, 0 nearest to 1 farthest, read from a shader's `.r`, stored bottom row first as raylib's render textures
 		are. Its `texture` is empty: what a draw colors is dropped.
 
-		Bind `depth` to a shader with `SetShaderValueTexture`, which takes the place of the example's `rlEnableTexture` and
+		Bind `depth` to a shader with `SetShaderValueTexture`, which replaces the example's `rlEnableTexture` and
 		`rlSetUniform`: it binds `depth` to the sampler the location names, a texture unit of its own, so the example's unit 10 isn't
 		needed. It stays bound to the shader for every draw after, frame after frame, until `SetShaderValueTexture` sets another. A draw
 		into this render texture reads the white texture in place of its `depth` set so, as a pass can't read the depth it draws.

@@ -130,13 +130,13 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `fileName`: The file.
   - returns: The texture, the program's until `UnloadTexture`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and returns a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it asynchronously.
 - `UnloadTexture`: Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
   - `texture`: The texture.
 
-  The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map given it, keeps it until that lets go.
+  The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map set to it, keeps it until that lets go.
 
-  Given a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds it, and lets go in turn when its material is freed. So `UnloadTexture(model.materials[0].maps[0].texture)` frees a texture a program gave a map without keeping it.
+  For a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds it, and lets go in turn when its material is freed. So `UnloadTexture(model.materials[0].maps[0].texture)` frees a texture a program set on a map without keeping it.
 - `IsTextureValid`: Returns whether a texture was loaded.
   - `texture`: The texture.
   - returns: True when it holds an image.
@@ -225,11 +225,11 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 - `GetColor`: Returns the color of one number, 0xRRGGBBAA.
   - `hexValue`: Red in the top byte, alpha in the bottom.
   - returns: The color.
-- `GetPixelDataSize`: Returns how many bytes an image's pixels take in a format.
+- `GetPixelDataSize`: Returns how many bytes an image's pixels occupy in a format.
   - `width`: The width, in pixels.
   - `height`: The height.
   - `format`: The format (`PIXELFORMAT_*`).
-  - returns: The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes. An unknown format, a width or height of 0 or less, and a size of 2 GB or more (with a warning) give 0.
+  - returns: The bytes; a compressed format smaller than 4 by 4 pixels occupies a whole block, 8 or 16 bytes. An unknown format, a width or height of 0 or less, and a size of 2 GB or more (with a warning) return 0.
 - `LoadRenderTexture`: Makes a texture to draw into, with depth, 8-bit RGBA. See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making one whose depth a shader samples.
   - `width`: Its width, in pixels.
   - `height`: Its height.
@@ -276,8 +276,8 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `fileName`: The file.
   - returns: The image.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it asynchronously.
-- `LoadImageRaw`: Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need gives an empty image, and one too small for the header and the pixels is read from its first byte.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it asynchronously.
+- `LoadImageRaw`: Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need produces an empty image, and one too small for the header and the pixels is read from its first byte.
   - `fileName`: The file.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
@@ -285,13 +285,13 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `headerSize`: The bytes before the pixels, skipped when the file holds them and the pixels.
   - returns: The image.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it asynchronously.
 - `LoadImageAnim`: Loads an animated image's frames from a file: a GIF's every frame, one under the next, their count in `frames[0]`; any other image one frame.
   - `fileName`: The file.
   - `frames`: Receives the frames' count, in its first element.
   - returns: The image, the frames one under the next.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it asynchronously.
 - `IsImageValid`: Returns whether an image holds pixels: data, a size, a format and a mipmap level.
   - `image`: The image.
   - returns: True when it does.
@@ -341,7 +341,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `col2`: The color of the squares beside it.
   - returns: The image.
 
-  A square size under 1 is taken as 1.
+  A square size under 1 is treated as 1.
 - `GenImageWhiteNoise`: Returns white noise, RGBA, each pixel white or black.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
@@ -364,11 +364,11 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   The points are drawn from `GetRandomValue`, so `SetRandomSeed` repeats the image.
 
-  A tile size under 1 is taken as 1.
+  A tile size under 1 is treated as 1.
 - `GenImageText`: Returns an image of text's bytes, grayscale: its UTF-8, a byte a pixel, rows top first, the rest black.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
-  - `text`: The text; null gives a black image.
+  - `text`: The text; null produces a black image.
   - returns: The image.
 - `ImageCopy`: Returns a copy of an image, its mipmaps too.
   - `image`: The image.
@@ -378,13 +378,13 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `rec`: The rectangle, in pixels, cut to whole pixels.
   - returns: The image.
 
-  A rectangle not wholly inside the image, of no size, or of a compressed image gives an empty image, with a warning.
+  A rectangle not wholly inside the image, of no size, or of a compressed image produces an empty image, with a warning.
 - `ImageFromChannel`: Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha.
   - `image`: The image.
   - `selectedChannel`: The channel.
   - returns: The image.
 
-  A channel the format lacks is taken from another, with a warning:
+  A channel the format lacks is read from another, with a warning:
 
   - a one-channel format: its only channel
   - gray and alpha: its alpha
@@ -400,7 +400,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   The letters are a tenth of the size apart.
 - `ImageTextEx`: Returns text in a font as an RGBA image.
   - `font`: The font, its glyphs' images drawn.
-  - `text`: The text; null gives an empty image.
+  - `text`: The text; null produces an empty image.
   - `fontSize`: The height of a line, in pixels.
   - `spacing`: The space between letters, at the font's size.
   - `tint`: The color the glyphs are multiplied by.
@@ -455,7 +455,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `image`: The image.
   - `blurSize`: How far each box reaches either side of a pixel, in pixels.
 
-  The blur runs over premultiplied alpha, and each channel taken back from it is no higher than 255.
+  The blur runs over premultiplied alpha, and each channel converted back from it is no higher than 255.
 
   A box reaching past the image's last pixel reads 0 there.
 - `ImageKernelConvolution`: Applies a square kernel to an image, each channel, alpha too, the sum of the pixels around it times the weights.
@@ -463,9 +463,9 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `kernel`: The weights, rows top first.
   - `kernelSize`: How many: 9 for 3 by 3, 25 for 5 by 5.
 
-  The pixels are taken as fractions, and each sum is clamped to 0 to 1.
+  The pixels are read as fractions, and each sum is clamped to 0 to 1.
 
-  A pixel past an edge is taken from the edge.
+  A pixel past an edge is read from the edge.
 
   A count that isn't square changes nothing, with a warning.
 - `ImageResize`: Resizes an image with helix-services' `Bicubic` (Catmull-Rom, alpha-weighted).
@@ -504,7 +504,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `bBpp`: Blue's bits.
   - `aBpp`: Alpha's bits.
 
-  The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits give format 0 with the bits packed in 16, and a warning.
+  The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits produce format 0 with the bits packed in 16, and a warning.
 
   More than 16 bits changes nothing, with a warning.
 - `ImageFlipVertical`: Turns an image upside down, in its format.
@@ -538,7 +538,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `image`: The image.
   - `brightness`: -255 to 255.
 
-  A channel taken below 0 becomes 1.
+  A channel pushed below 0 becomes 1.
 - `ImageColorReplace`: Changes every pixel of one color to another, in the image's format.
   - `image`: The image.
   - `color`: The color changed, alpha too.
@@ -555,11 +555,11 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - returns: `maxPaletteSize` colors, those found first, the rest `BLANK`; null for an image 0 wide or high.
 
   Clear pixels are skipped.
-- `UnloadImageColors`: Frees colors `LoadImageColors` gave.
+- `UnloadImageColors`: Frees colors `LoadImageColors` returned.
   - `colors`: The colors.
 
   Does nothing, as the colors need no freeing.
-- `UnloadImagePalette`: Frees colors `LoadImagePalette` gave.
+- `UnloadImagePalette`: Frees colors `LoadImagePalette` returned.
   - `colors`: The colors.
 
   Does nothing, as the colors need no freeing.
@@ -672,7 +672,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `c2`: The second corner's color.
   - `c3`: The third corner's color.
 
-  Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not give that color exactly.
+  Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not produce that color exactly.
 - `ImageDrawTriangleLines`: Outlines a triangle with three `ImageDrawLine`s, its corners cut to whole pixels.
   - `dst`: The image.
   - `v1`: The first corner.
@@ -726,7 +726,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   The texture's format is the image's, so a grayscale image's texture has `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`.
 
-  A compressed format gives no texture, with a warning.
+  A compressed format produces no texture, with a warning.
 - `LoadTextureCubemap`: Makes a cubemap of an image, its six faces laid out by a layout.
   - `image`: The image.
   - `layout`: The layout (`CUBEMAP_LAYOUT_*`).
@@ -738,9 +738,9 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `CUBEMAP_LAYOUT_LINE_HORIZONTAL`: a row, in that order from the left. A face is the image's width over 6.
   - `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: 3 faces wide, 4 high, +Y, +X, -Y and -X down the middle column, +Z left of +X and -Z right of it. A face is the image's width over 3.
   - `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: 4 faces wide, 3 high, +Y at the top of the second column, then -X, +Z, +X, -Z across, then -Y below +Z. A face is the image's width over 4.
-  - `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout the image's shape gives. A shape it doesn't know gives no cubemap, with a warning.
+  - `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout matching the image's shape. A shape it doesn't know produces no cubemap, with a warning.
 
-  Each face's rows run top first, as GL's cube faces take them.
+  Each face's rows run top first, as GL's cube faces accept them.
 
   A column is read as it is, the face size squared times 6 pixels from the image's first, row after row. An image not 1 face by 6 is read across its rows.
 
@@ -748,7 +748,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   The cubemap's format is the image's. Its pixels are RGBA on the GPU, sampled linearly.
 
-  An image with mipmaps gives a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as its first is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
+  An image with mipmaps produces a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as its first is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
 
   No cubemap comes back, with a warning, for a face size of 0 (an image too small for its layout, or a layout raylib doesn't have), a compressed format, or an image too small for the column it is read as.
 
@@ -794,7 +794,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   16-bit channels are widened by integers, and floats are multiplied by 255.
 
-  Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
+  Accepts the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 - `SetPixelColor`: Writes one pixel's color into pixels in a format.
   - `dstPtr`: The pixels.
   - `color`: The color.
@@ -803,7 +803,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
 
   Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
 
-  Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
+  Accepts the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 - `LoadImageFromTexture`: Reads a texture's pixels into an image, and returns once they are read. See `LoadImageFromScreen` for reading the screen.
   - `texture`: The texture.
   - returns: The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read. Why it couldn't is logged.

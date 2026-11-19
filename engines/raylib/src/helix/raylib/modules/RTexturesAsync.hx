@@ -217,7 +217,7 @@ class RTexturesAsync {
 		}, error -> refuse("LoadImageAnimFromMemoryAsync", error, failed));
 	}
 
-	// A GIF file's frames, as raylib 5.5's LoadImageAnim gives them (gifFrames), and their count.
+	// A GIF file's frames, as raylib 5.5's LoadImageAnim returns them (gifFrames), and their count.
 	static function gifAnim(name:String, what:String, data:haxe.io.Bytes, frames:Array<Int>, loaded:Image->Void, failed:Null<String->Void>):Void {
 		var all = gifFrames(name, what, data, true, failed);
 		if (all == null)
@@ -245,8 +245,9 @@ class RTexturesAsync {
 	// first frame loads it. helix-formats reads the file; the frames are drawn here by stb's rules. The screen starts transparent. Before each frame, a last frame disposed of to the background or the
 	// previous frame has its rectangle put back as it was before it was drawn (stb restores both so, and for Previous from the third
 	// frame on reads before its own buffer: docs/DECISIONS.md 24). After the first frame, when the background index isn't 0, the
-	// pixels outside its rectangle take the global table's color there, opaque, its bytes in stb's palette order (blue, green, red), or
-	// opaque black where the table has none. A file that can't be read, or has no frames, is refused for the load named, giving null.
+	// pixels outside its rectangle are set to the global table's color there, opaque, its bytes in stb's palette order (blue, green,
+	// red), or opaque black where the table has none. A file that can't be read, or has no frames, is refused for the load named,
+	// returning null.
 	static function gifFrames(name:String, what:String, data:haxe.io.Bytes, all:Bool, failed:Null<String->Void>):Null<Image> {
 		var gif = try helix.formats.gif.GifFile.read(data, all ? null : 1) catch (e:String) {
 			var before = all ? gifBefore(data) : null;

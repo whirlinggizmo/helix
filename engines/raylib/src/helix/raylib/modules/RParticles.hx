@@ -16,7 +16,7 @@ import helix.raylib.internal.Emitters;
 class RParticles {
 	#if !macro
 	/** Returns a 3D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the
-		most alive takes the oldest one's place.
+		most alive replaces the oldest one.
 
 		A `maxParticles` over 524288 is held to 524288.
 
@@ -40,7 +40,7 @@ class RParticles {
 		so a fast emitter leaves an even trail. Call it once a frame, before `DrawEmitter3D`. An emitter not updated holds still.
 
 		@param emitter  The emitter.
-		@param deltaTime  The seconds since its last update, as `GetFrameTime` gives them. */
+		@param deltaTime  The seconds since its last update, as `GetFrameTime` returns them. */
 	static function UpdateEmitter3D(emitter:Emitter3D, deltaTime:Float):Void {
 		var p = emitter.position;
 		Emitters.update(emitter, deltaTime, p.x, p.y, p.z, false);
@@ -54,7 +54,7 @@ class RParticles {
 		EmitterDraws.draw(emitter);
 	}
 
-	/** Gives off particles at once at a 3D emitter's position, whatever its rate: a burst.
+	/** Emits particles at once at a 3D emitter's position, whatever its rate: a burst.
 
 		@param emitter  The emitter.
 		@param count  How many. */
@@ -72,7 +72,7 @@ class RParticles {
 		Emitters.prewarm(emitter, seconds, p.x, p.y, p.z, false);
 	}
 
-	/** Takes away every particle alive, and starts the emitter's random numbers again from its `seed`.
+	/** Removes every particle alive, and starts the emitter's random numbers again from its `seed`.
 
 		@param emitter  The emitter. */
 	static function ClearEmitter3D(emitter:Emitter3D):Void {
@@ -80,7 +80,7 @@ class RParticles {
 	}
 
 	/** Returns a 2D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the
-		most alive takes the oldest one's place.
+		most alive replaces the oldest one.
 
 		@param maxParticles  The most alive at once, 1 or more.
 		@return  The emitter, the program's until `UnloadEmitter2D`. */
@@ -102,7 +102,7 @@ class RParticles {
 		was to its `position`. Call it once a frame, before `DrawEmitter2D`. An emitter not updated holds still.
 
 		@param emitter  The emitter.
-		@param deltaTime  The seconds since its last update, as `GetFrameTime` gives them. */
+		@param deltaTime  The seconds since its last update, as `GetFrameTime` returns them. */
 	static function UpdateEmitter2D(emitter:Emitter2D, deltaTime:Float):Void {
 		var p = emitter.position;
 		Emitters.update(emitter, deltaTime, p.x, p.y, 0, true);
@@ -116,7 +116,7 @@ class RParticles {
 		Emitters.draw2D(emitter);
 	}
 
-	/** Gives off particles at once at a 2D emitter's position, whatever its rate: a burst.
+	/** Emits particles at once at a 2D emitter's position, whatever its rate: a burst.
 
 		@param emitter  The emitter.
 		@param count  How many. */
@@ -134,7 +134,7 @@ class RParticles {
 		Emitters.prewarm(emitter, seconds, p.x, p.y, 0, true);
 	}
 
-	/** Takes away every particle alive, and starts the emitter's random numbers again from its `seed`.
+	/** Removes every particle alive, and starts the emitter's random numbers again from its `seed`.
 
 		@param emitter  The emitter. */
 	static function ClearEmitter2D(emitter:Emitter2D):Void {

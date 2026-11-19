@@ -38,10 +38,10 @@ static function ReleaseAsset(fileName:String):Void
 static function ReleaseAssets(fileNames:Array<String>):Void
 ```
 
-- `SetAssetHost`: Sets where the program's assets come from, unless the option `asset_host` gives a host. Assets ensured before the call stay ensured.
+- `SetAssetHost`: Sets where the program's assets come from, unless the option `asset_host` names a host. Assets ensured before the call stay ensured.
   - `host`: A URL (`https://...`, `http://...`), or a directory, relative to the program's directory when relative.
 
-  The host is the first given of: the option `asset_host` (`--asset_host=https://example.com/game/` on the command line, the environment variable HELIX_ASSET_HOST, `?asset_host=...` in a page's query), this call, the build's define (`-D helix-raylib-asset-host=...`), and the default: natively `../web` beside the program's directory, in a page the page's own.
+  The host is the first of these that is set: the option `asset_host` (`--asset_host=https://example.com/game/` on the command line, the environment variable HELIX_ASSET_HOST, `?asset_host=...` in a page's query), this call, the build's define (`-D helix-raylib-asset-host=...`), and the default: natively `../web` beside the program's directory, in a page the page's own.
 
   A URL's assets are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.
 

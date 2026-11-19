@@ -215,9 +215,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - returns: The sum.
 - `Vector2Subtract`: Returns one vector less another.
   - `v1`: The first.
-  - `v2`: The one taken from it.
+  - `v2`: The one subtracted from it.
   - returns: The difference.
-- `Vector2SubtractValue`: Returns a vector with a value taken from each component.
+- `Vector2SubtractValue`: Returns a vector with a value subtracted from each component.
   - `v`: The vector.
   - `sub`: The value.
   - returns: The difference.
@@ -300,7 +300,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `maxDistance`: The most it moves.
   - returns: The moved point.
 
-  Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
+  Returns the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 - `Vector2Invert`: Returns 1 divided by each of a vector's components.
   - `v`: The vector.
   - returns: The inverted vector.
@@ -337,9 +337,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - returns: The sum.
 - `Vector3Subtract`: Returns one vector less another.
   - `v1`: The first.
-  - `v2`: The one taken from it.
+  - `v2`: The one subtracted from it.
   - returns: The difference.
-- `Vector3SubtractValue`: Returns a vector with a value taken from each component.
+- `Vector3SubtractValue`: Returns a vector with a value subtracted from each component.
   - `v`: The vector.
   - `sub`: The value.
   - returns: The difference.
@@ -396,7 +396,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - returns: The projection.
 - `Vector3Reject`: Returns the part of one vector across another: the vector less its projection.
   - `v1`: The vector.
-  - `v2`: The direction taken out of it.
+  - `v2`: The direction removed from it.
   - returns: The rejection.
 - `Vector3OrthoNormalize`: Makes two vectors of length 1 and at right angles to each other, the first keeping its direction (Gram-Schmidt).
   - `v1`: The first, set to its direction.
@@ -420,7 +420,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `maxDistance`: The most it moves.
   - returns: The moved point.
 
-  Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
+  Returns the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 - `Vector3Lerp`: Returns a point part of the way from one to another.
   - `v1`: The start.
   - `v2`: The end.
@@ -451,13 +451,13 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `b`: The second.
   - `c`: The third.
   - returns: How much of a (x), b (y) and c (z).
-- `Vector3Unproject`: Returns a point in normalized device coordinates (each from -1 to 1) taken back into the world, through a view and a projection.
+- `Vector3Unproject`: Returns a point in normalized device coordinates (each from -1 to 1) mapped back into the world, through a view and a projection.
   - `source`: The point.
   - `projection`: The projection.
   - `view`: The view.
   - returns: The point in the world.
 
-  A view and a projection without an inverse give a point of NaN.
+  A view and a projection without an inverse produce a point of NaN.
 - `Vector3ToFloatV`: Returns a vector's components as an array: x, y, z.
   - `v`: The vector.
   - returns: The array.
@@ -500,9 +500,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - returns: The sum.
 - `Vector4Subtract`: Returns one vector less another.
   - `v1`: The first.
-  - `v2`: The one taken from it.
+  - `v2`: The one subtracted from it.
   - returns: The difference.
-- `Vector4SubtractValue`: Returns a vector with a value taken from each component.
+- `Vector4SubtractValue`: Returns a vector with a value subtracted from each component.
   - `v`: The vector.
   - `add`: The value.
   - returns: The difference.
@@ -561,7 +561,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `maxDistance`: The most it moves.
   - returns: The moved point.
 
-  Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
+  Returns the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 - `Vector4Invert`: Returns 1 divided by each of a vector's components.
   - `v`: The vector.
   - returns: The inverted vector.
@@ -582,7 +582,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `mat`: The matrix.
   - returns: Its inverse.
 
-  A matrix without an inverse gives a matrix of NaN.
+  A matrix without an inverse produces a matrix of NaN.
 - `MatrixIdentity`: Returns the identity matrix.
   - returns: The matrix.
 - `MatrixAdd`: Returns the sum of two matrices.
@@ -591,7 +591,7 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - returns: The sum.
 - `MatrixSubtract`: Returns one matrix less another.
   - `left`: The first.
-  - `right`: The one taken from it.
+  - `right`: The one subtracted from it.
   - returns: The difference.
 - `MatrixMultiply`: Returns two matrices multiplied: left, then right.
   - `left`: The first.
@@ -653,10 +653,10 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `target`: What at.
   - `up`: Up.
   - returns: The matrix.
-- `MatrixToFloatV`: Returns a matrix's values as an array, by columns: m0 to m15, as a shader takes them.
+- `MatrixToFloatV`: Returns a matrix's values as an array, by columns: m0 to m15, as a shader accepts them.
   - `mat`: The matrix.
   - returns: The array.
-- `MatrixToFloat`: Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` take them. raymath's macro for `MatrixToFloatV`'s array, the same here.
+- `MatrixToFloat`: Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` accept them. raymath's macro for `MatrixToFloatV`'s array, the same here.
   - `mat`: The matrix.
   - returns: The array.
 - `QuaternionAdd`: Returns the sum of two quaternions.
@@ -669,9 +669,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - returns: The sum.
 - `QuaternionSubtract`: Returns one quaternion less another.
   - `q1`: The first.
-  - `q2`: The one taken from it.
+  - `q2`: The one subtracted from it.
   - returns: The difference.
-- `QuaternionSubtractValue`: Returns a quaternion with a value taken from each component.
+- `QuaternionSubtractValue`: Returns a quaternion with a value subtracted from each component.
   - `q`: The quaternion.
   - `sub`: The value.
   - returns: The difference.
@@ -725,9 +725,9 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `to`: The direction turned to.
   - returns: The quaternion, of length 1; the identity when either direction is all 0.
 
-  Takes directions of any length.
+  Accepts directions of any length.
 
-  Opposite directions give half a turn about a direction square to the first.
+  Opposite directions produce half a turn about a direction square to the first.
 - `QuaternionFromMatrix`: Returns a rotation matrix's rotation as a quaternion.
   - `mat`: The matrix.
   - returns: The quaternion.
@@ -739,19 +739,19 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `angle`: The angle, in radians.
   - returns: The quaternion.
 
-  Gives the identity for an axis of length 0.
+  Returns the identity for an axis of length 0.
 - `QuaternionToAxisAngle`: Finds a quaternion's rotation as an axis and an angle about it.
   - `q`: The quaternion, of length 1.
   - `outAxis`: Its first element is set to the axis, of length 1.
   - `outAngle`: Its first element is set to the angle, in radians, 0 to pi.
 
-  Gives x as the axis when the angle is 0.
+  Returns x as the axis when the angle is 0.
 - `QuaternionFromEuler`: Returns a rotation by Euler angles as a quaternion.
   - `pitch`: About x, in radians.
   - `yaw`: About y.
   - `roll`: About z.
   - returns: The quaternion.
-- `QuaternionToEuler`: Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` takes them.
+- `QuaternionToEuler`: Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` accepts them.
   - `q`: The quaternion, of length 1.
   - returns: The angles, in radians.
 
@@ -770,4 +770,4 @@ static function MatrixDecompose(mat:Matrix, translation:Vector3, rotation:Quater
   - `rotation`: Set to its rotation.
   - `scale`: Set to its scale.
 
-  A matrix that shears gives the nearest rotation and the scale along that rotation's axes, the shear lost. One that mirrors gives a scale less than 0 along each axis.
+  A matrix that shears produces the nearest rotation and the scale along that rotation's axes, the shear lost. One that mirrors produces a scale less than 0 along each axis.

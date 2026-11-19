@@ -298,7 +298,7 @@ class RGuiControls {
 
 	// ---- Basic controls ----
 
-	/** Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that takes clicks.
+	/** Draws a label, text in its bounds aligned as the label style sets. See `GuiLabelButton` for drawing a label that accepts clicks.
 
 		@param bounds  The label.
 		@param text  The text, or null.
@@ -664,7 +664,7 @@ class RGuiControls {
 		return result;
 	}
 
-	/** Draws a text box that takes typed text in edit mode.
+	/** Draws a text box that accepts typed text in edit mode.
 
 		The program turns edit mode on and off with the result.
 
@@ -677,7 +677,7 @@ class RGuiControls {
 
 		@param bounds  The box.
 		@param text  The text, in `text[0]`, edited in place.
-		@param textSize  The most bytes the text may take, its UTF-8 bytes and one more, as raygui's buffer holds them.
+		@param textSize  The most bytes the text may use, its UTF-8 bytes and one more, as raygui's buffer holds them.
 		@param editMode  Whether it is being edited.
 		@return  1 when its edit mode should flip: while editing, Enter (a single-line box) or a click outside it; otherwise a click on it. Else 0. */
 	static function GuiTextBox(bounds:Rectangle, text:Array<String>, textSize:Int, editMode:Bool):Int {
@@ -876,7 +876,7 @@ class RGuiControls {
 	/** Draws a spinner, a value box between buttons that step its value down and up. See `GuiValueBox` for drawing the value box
 		alone.
 
-		In edit mode, the value box takes typed digits.
+		In edit mode, the value box accepts typed digits.
 
 		Out of edit mode, the value is clamped to the range.
 
@@ -921,7 +921,7 @@ class RGuiControls {
 
 		The program turns edit mode on and off with the result.
 
-		In edit mode, the box takes typed digits and Backspace.
+		In edit mode, the box accepts typed digits and Backspace.
 
 		Enter or a click outside ends editing and clamps the value to the range.
 
@@ -984,7 +984,7 @@ class RGuiControls {
 
 		The program keeps the text.
 
-		In edit mode, the box takes digits, '.', and a sign first.
+		In edit mode, the box accepts digits, '.', and a sign first.
 
 		@param bounds  The box.
 		@param text  Its label, beside it, or null.
@@ -1361,7 +1361,7 @@ class RGuiControls {
 		@param message  The message above the text box, or null.
 		@param buttons  The buttons' texts, split at ';' ("Ok;Cancel").
 		@param text  The text, in `text[0]`, edited in place.
-		@param textMaxSize  The most bytes the text may take, as `GuiTextBox`'s textSize.
+		@param textMaxSize  The most bytes the text may use, as `GuiTextBox`'s textSize.
 		@param secretViewActive  Whether the text shows, in `secretViewActive[0]`, or null for a box that always shows it.
 		@return  The button clicked, from 1, 0 for the close button, else -1. */
 	static function GuiTextInputBox(bounds:Rectangle, title:String, message:String, buttons:String, text:Array<String>, textMaxSize:Int,
@@ -1433,7 +1433,7 @@ class RGuiControls {
 
 		@param bounds  The panel; the hue bar is beside it.
 		@param text  Not drawn.
-		@param color  The color in a one-element array, as raygui takes a pointer, changed there; or null. Its alpha is kept.
+		@param color  The color in a one-element array, as raygui accepts a pointer, changed there; or null. Its alpha is kept.
 		@return  0. */
 	static function GuiColorPicker(bounds:Rectangle, text:String, color:Null<Array<Color>>):Int {
 		if (color == null)
@@ -1456,7 +1456,7 @@ class RGuiControls {
 
 		@param bounds  The panel.
 		@param text  Not drawn.
-		@param color  The color in a one-element array, as raygui takes a pointer, changed there when the panel changes it. Its alpha is
+		@param color  The color in a one-element array, as raygui accepts a pointer, changed there when the panel changes it. Its alpha is
 			kept.
 		@return  0. */
 	static function GuiColorPanel(bounds:Rectangle, text:String, color:Array<Color>):Int {

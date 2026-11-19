@@ -65,7 +65,7 @@ static function StopFrameStatsRecording():FrameStats
   The same as `DrawFrameStatsEx(new Vector2(posX, posY), {fontSize: fontSize})`, every other field the style's default.
 - `DrawFrameStatsEx`: Draws the frame's cost at a point on the screen in a style's stats, font, size, spacing, colors and background. See `DrawFrameStats` for drawing the default look at a size.
   - `position`: The text's top left, in pixels (its background's, padding around the text).
-  - `style`: What to show and how; each field left out takes its default.
+  - `style`: What to show and how; each field omitted uses its default.
 
   Each stat is a line, so the text's height follows the stats shown. `MeasureFrameStats` returns the size.
 

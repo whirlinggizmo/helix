@@ -125,12 +125,12 @@ class Raymath {
 	/** Returns one vector less another.
 
 		@param v1  The first.
-		@param v2  The one taken from it.
+		@param v2  The one subtracted from it.
 		@return  The difference. */
 	public static inline function Vector2Subtract(v1:Vector2, v2:Vector2):Vector2
 		return RMath.Vector2Subtract(v1, v2);
 
-	/** Returns a vector with a value taken from each component.
+	/** Returns a vector with a value subtracted from each component.
 
 		@param v  The vector.
 		@param sub  The value.
@@ -285,7 +285,7 @@ class Raymath {
 
 	/** Returns a point moved toward a target by at most a distance.
 
-		Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
+		Returns the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 
 		@param v  The point.
 		@param target  The target.
@@ -367,12 +367,12 @@ class Raymath {
 	/** Returns one vector less another.
 
 		@param v1  The first.
-		@param v2  The one taken from it.
+		@param v2  The one subtracted from it.
 		@return  The difference. */
 	public static inline function Vector3Subtract(v1:Vector3, v2:Vector3):Vector3
 		return RMath.Vector3Subtract(v1, v2);
 
-	/** Returns a vector with a value taken from each component.
+	/** Returns a vector with a value subtracted from each component.
 
 		@param v  The vector.
 		@param sub  The value.
@@ -490,7 +490,7 @@ class Raymath {
 	/** Returns the part of one vector across another: the vector less its projection.
 
 		@param v1  The vector.
-		@param v2  The direction taken out of it.
+		@param v2  The direction removed from it.
 		@return  The rejection. */
 	public static inline function Vector3Reject(v1:Vector3, v2:Vector3):Vector3
 		return RMath.Vector3Reject(v1, v2);
@@ -529,7 +529,7 @@ class Raymath {
 
 	/** Returns a point moved toward a target by at most a distance.
 
-		Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
+		Returns the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 
 		@param v  The point.
 		@param target  The target.
@@ -592,9 +592,9 @@ class Raymath {
 	public static inline function Vector3Barycenter(p:Vector3, a:Vector3, b:Vector3, c:Vector3):Vector3
 		return RMath.Vector3Barycenter(p, a, b, c);
 
-	/** Returns a point in normalized device coordinates (each from -1 to 1) taken back into the world, through a view and a projection.
+	/** Returns a point in normalized device coordinates (each from -1 to 1) mapped back into the world, through a view and a projection.
 
-		A view and a projection without an inverse give a point of NaN.
+		A view and a projection without an inverse produce a point of NaN.
 
 		@param source  The point.
 		@param projection  The projection.
@@ -690,12 +690,12 @@ class Raymath {
 	/** Returns one vector less another.
 
 		@param v1  The first.
-		@param v2  The one taken from it.
+		@param v2  The one subtracted from it.
 		@return  The difference. */
 	public static inline function Vector4Subtract(v1:Vector4, v2:Vector4):Vector4
 		return RMath.Vector4Subtract(v1, v2);
 
-	/** Returns a vector with a value taken from each component.
+	/** Returns a vector with a value subtracted from each component.
 
 		@param v  The vector.
 		@param add  The value.
@@ -806,7 +806,7 @@ class Raymath {
 
 	/** Returns a point moved toward a target by at most a distance.
 
-		Gives the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
+		Returns the target itself when the target is within that distance. A distance of 0 or less leaves the point where it is.
 
 		@param v  The point.
 		@param target  The target.
@@ -853,7 +853,7 @@ class Raymath {
 
 	/** Returns a matrix's inverse.
 
-		A matrix without an inverse gives a matrix of NaN.
+		A matrix without an inverse produces a matrix of NaN.
 
 		@param mat  The matrix.
 		@return  Its inverse. */
@@ -877,7 +877,7 @@ class Raymath {
 	/** Returns one matrix less another.
 
 		@param left  The first.
-		@param right  The one taken from it.
+		@param right  The one subtracted from it.
 		@return  The difference. */
 	public static inline function MatrixSubtract(left:Matrix, right:Matrix):Matrix
 		return RMath.MatrixSubtract(left, right);
@@ -995,14 +995,14 @@ class Raymath {
 	public static inline function MatrixLookAt(eye:Vector3, target:Vector3, up:Vector3):Matrix
 		return RMath.MatrixLookAt(eye, target, up);
 
-	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader takes them.
+	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader accepts them.
 
 		@param mat  The matrix.
 		@return  The array. */
 	public static inline function MatrixToFloatV(mat:Matrix):Array<Float>
 		return RMath.MatrixToFloatV(mat);
 
-	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` take them. raymath's macro for
+	/** Returns a matrix's values as an array, by columns: m0 to m15, as a shader and `rlMultMatrixf` accept them. raymath's macro for
 		`MatrixToFloatV`'s array, the same here.
 
 		@param mat  The matrix.
@@ -1029,12 +1029,12 @@ class Raymath {
 	/** Returns one quaternion less another.
 
 		@param q1  The first.
-		@param q2  The one taken from it.
+		@param q2  The one subtracted from it.
 		@return  The difference. */
 	public static inline function QuaternionSubtract(q1:Quaternion, q2:Quaternion):Quaternion
 		return RMath.QuaternionSubtract(q1, q2);
 
-	/** Returns a quaternion with a value taken from each component.
+	/** Returns a quaternion with a value subtracted from each component.
 
 		@param q  The quaternion.
 		@param sub  The value.
@@ -1134,9 +1134,9 @@ class Raymath {
 
 	/** Returns the rotation turning one direction to another.
 
-		Takes directions of any length.
+		Accepts directions of any length.
 
-		Opposite directions give half a turn about a direction square to the first.
+		Opposite directions produce half a turn about a direction square to the first.
 
 		@param from  The direction turned from.
 		@param to  The direction turned to.
@@ -1160,7 +1160,7 @@ class Raymath {
 
 	/** Returns the rotation about an axis as a quaternion, normalized.
 
-		Gives the identity for an axis of length 0.
+		Returns the identity for an axis of length 0.
 
 		@param axis  The axis.
 		@param angle  The angle, in radians.
@@ -1170,7 +1170,7 @@ class Raymath {
 
 	/** Finds a quaternion's rotation as an axis and an angle about it.
 
-		Gives x as the axis when the angle is 0.
+		Returns x as the axis when the angle is 0.
 
 		@param q  The quaternion, of length 1.
 		@param outAxis  Its first element is set to the axis, of length 1.
@@ -1187,7 +1187,7 @@ class Raymath {
 	public static inline function QuaternionFromEuler(pitch:Float, yaw:Float, roll:Float):Quaternion
 		return RMath.QuaternionFromEuler(pitch, yaw, roll);
 
-	/** Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` takes them.
+	/** Returns a quaternion's rotation as Euler angles: about x (pitch), y (yaw) and z (roll), as `QuaternionFromEuler` accepts them.
 
 		At a yaw of a quarter turn either way, where pitch and roll turn about one axis, the roll is 0 and the pitch carries the whole
 		turn.
@@ -1216,8 +1216,8 @@ class Raymath {
 
 	/** Splits a transform matrix into its translation, rotation and scale.
 
-		A matrix that shears gives the nearest rotation and the scale along that rotation's axes, the shear lost. One that mirrors gives
-		a scale less than 0 along each axis.
+		A matrix that shears produces the nearest rotation and the scale along that rotation's axes, the shear lost. One that mirrors
+		produces a scale less than 0 along each axis.
 
 		@param mat  The matrix.
 		@param translation  Set to its translation.

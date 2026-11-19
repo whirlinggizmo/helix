@@ -687,7 +687,7 @@ class RModels {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before and still loaded, loads at once. Natively any
 		other file is read, with its images, during the call. In a page it can't be, as the browser decodes images only asynchronously:
-		the load logs why and gives a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it
+		the load logs why and returns a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -706,7 +706,7 @@ class RModels {
 	/** Loads an .mtl file's materials with the textures they name, as `LoadMaterialsAsync` reads them.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read, with its
-		textures, during the call. In a page it can't be: the load logs why and gives no materials, as raylib's load of a missing file
+		textures, during the call. In a page it can't be: the load logs why and returns no materials, as raylib's load of a missing file
 		does. See `LoadMaterialsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
@@ -738,7 +738,7 @@ class RModels {
 
 	/** Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
 
-		The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
+		The model holds the mesh in the program's place. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
 		The model has no bones. Once the program sets its `bones`, `bindPose` and `boneCount`, and the mesh's `boneIds` and `boneWeights`,
 		`UpdateModelAnimation` and the other animation calls pose it as they pose a loaded model.
@@ -911,7 +911,7 @@ class RModels {
 
 	/** Draws a mesh many times in one draw, each instance placed by its own transform, as raylib 5.5's does. See `LoadModelFromModels` for merging models' meshes into one model.
 
-		The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
+		The material's shader receives each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself.
 		raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
 
 		A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
@@ -926,7 +926,7 @@ class RModels {
 		@param mesh  The mesh.
 		@param material  Its material: the shader, the diffuse color and the textures.
 		@param transforms  The instances' transforms.
-		@param instances  How many instances, at most the transforms given. */
+		@param instances  How many instances, at most the transforms provided. */
 	static function DrawMeshInstanced(mesh:Mesh, material:Material, transforms:Array<Matrix>, instances:Int):Void {
 		var count = transforms == null ? 0 : instances < transforms.length ? instances : transforms.length;
 		if (count <= 0)
@@ -1003,7 +1003,7 @@ class RModels {
 
 	/** Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it.
 
-		Does nothing for a mesh given to `LoadModelFromMesh`, which its model frees, or for one already freed.
+		Does nothing for a mesh provided to `LoadModelFromMesh`, which its model frees, or for one already freed.
 
 		@param mesh  The mesh. */
 	static function UnloadMesh(mesh:Mesh):Void {
@@ -1290,7 +1290,7 @@ class RModels {
 
 	/** Returns a terrain mesh from an image, a vertex a pixel from the origin along +x and +z, each the height of its pixel's gray.
 
-		Takes a pixel's gray as its red, green and blue averaged.
+		Reads a pixel's gray as its red, green and blue averaged.
 
 		Makes two triangles a cell, each with a flat normal, and three vertices a triangle, with no indices.
 
@@ -1439,7 +1439,7 @@ class RModels {
 		Sums each triangle's direction of u at each of its vertices, by its indices when the mesh has them. Then makes each sum square to
 		the vertex's normal and of length 1, with w the side the summed direction of v is on.
 
-		Gives a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is
+		Assigns a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is
 		mostly z, else (-y, x, 0) of the normal, with w 1.
 
 		@param mesh  The mesh. One without positions, texture coordinates or normals is unchanged. */
@@ -1615,12 +1615,12 @@ class RModels {
 
 	// ---- Model animations ----
 	// As raylib 6.2 has them (raylib.h's 5.5 names and signatures, its frame a float as 6.2's): its glTF animations read, its frames mixed,
-	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader is given them as it draws.
+	// its CPU skinning; the bone matrices in each mesh's boneMatrices, raylib 5.5's place, so a skinning shader receives them as it draws.
 
 	/** Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` reads them.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call.
-		In a page it can't be: the load logs why and gives no animations, as raylib's load of a missing file does. See
+		In a page it can't be: the load logs why and returns no animations, as raylib's load of a missing file does. See
 		`LoadModelAnimationsAsync` for loading them asynchronously.
 
 		@param fileName  The file.
@@ -1820,7 +1820,7 @@ class RModels {
 	/** Returns a model's bounds, its meshes' boxes together with the least and most corners moved by its transform, as raylib's
 		does.
 
-		A turned model's box is not its bounds. Transforming its eight corners gives those.
+		A turned model's box is not its bounds. Transforming its eight corners produces those.
 
 		@param model  The model.
 		@return  The box. */
@@ -1841,7 +1841,7 @@ class RModels {
 		return bounds;
 	}
 
-	// A par_shapes mesh as raylib takes it: three vertices a triangle, each with its point's position, normal and texture coordinates.
+	// A par_shapes mesh as raylib converts it: three vertices a triangle, each with its point's position, normal and texture coordinates.
 	static function fromParMesh(m:ParMesh):Mesh {
 		var mesh = new Mesh();
 		mesh.vertexCount = m.ntriangles * 3;
@@ -2024,7 +2024,7 @@ class RModels {
 		return collision;
 	}
 
-	/** Returns where a ray meets a triangle from either side, its normal that of the corners taken counterclockwise.
+	/** Returns where a ray meets a triangle from either side, its normal that of the corners read counterclockwise.
 
 		Uses Möller and Trumbore's test, as raylib's does.
 
@@ -2140,9 +2140,9 @@ class RModels {
 	}
 
 	// The numbers of a shader value as a program writes them.
-	// A value's numbers: a Color given for a vec4 (an Int, as a Color is) its channels, 0 to 1. A haxe.io typed array's or Bytes' memory
+	// A value's numbers: a Color provided for a vec4 (an Int, as a Color is) its channels, 0 to 1. A haxe.io typed array's or Bytes' memory
 	// is read as the uniform's type, as raylib reads it: 32-bit ints for an int, an ivec or a sampler, 32-bit floats otherwise. Any other
-	// value is logged, and gives none.
+	// value is logged, and produces none.
 	static function numbers(value:Dynamic, ?uniformType:Int):Array<Float> {
 		if (uniformType == SHADER_UNIFORM_VEC4 && Std.isOfType(value, Int)) {
 			var c:Color = cast value;
@@ -2192,16 +2192,16 @@ class RModels {
 	// a program without one links none of it.
 	static var boneWriter:Null<(mesh:Mesh, shader:Shader) -> Void>;
 
-	// Writes a material's values (the Materials extra's) for its draw, and gives the shader it is drawn with: set by the first lit or
+	// Writes a material's values (the Materials extra's) for its draw, and returns the shader it is drawn with: set by the first lit or
 	// PBR shader, a compiled shader declaring them, or the Materials extra, which also draws through a variant of the default shader a
-	// material giving off light or cut out (Surfaces). Null in a program using none, whose draws are raylib's.
+	// material emitting light or cut out (Surfaces). Null in a program using none, whose draws are raylib's.
 	static var surfacing:Null<(shader:Shader, material:Material, modelEmissive:Null<Array<Float>>) -> Shader>;
 
 	// Writes the scene's lights reaching a draw into its program's lights (SceneLights): set by the first CreateLight, null in a program
 	// making no light. Receives the program, the mesh, its transform, and the instances' transforms and count for DrawMeshInstanced.
 	static var lighting:Null<(p:helix.raylib.internal.Program, mesh:Mesh, model:Matrix4, transforms:Null<Array<Matrix>>, count:Int) -> Void>;
 
-	// The light the model being drawn gives off (SetModelEmissive), for its meshes' draws; null outside DrawModel.
+	// The light the model being drawn emits (SetModelEmissive), for its meshes' draws; null outside DrawModel.
 	static var modelEmissive:Null<Array<Float>>;
 
 	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix4, tint:Color, instances:Int = 0, instanceCount:Int = 1,

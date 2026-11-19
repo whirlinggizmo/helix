@@ -116,7 +116,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `codepoint`: The character.
   - returns: The index; 0 for a font that isn't valid (`IsFontValid`).
 
-  A character the font lacks gives the index of the font's "?", or 0 when the font lacks that too.
+  A character the font lacks produces the index of the font's "?", or 0 when the font lacks that too.
 - `GetGlyphInfo`: Returns a character's glyph in a font, as `GetGlyphIndex` finds it.
   - `font`: The font.
   - `codepoint`: The character.
@@ -167,13 +167,13 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `firstChar`: The first glyph's character.
   - returns: The font.
 
-  The key's border before the first glyph gives the space between glyphs and between rows.
+  The key's border before the first glyph sets the space between glyphs and between rows.
 
   Each glyph is a run of pixels that aren't the key, numbered from `firstChar`.
 
   The key becomes clear on the font's texture.
 
-  An image with no such border gives the default font.
+  An image with no such border produces the default font.
 
   A glyph's height stops at the image's bottom and its width at the image's right edge.
 
@@ -182,7 +182,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `fileName`: The file.
   - returns: The font, the program's until `UnloadFont`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other file is read and its glyphs made during the call. In a page it can't be: the load logs why and returns raylib's default font, as raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
 - `LoadFontEx`: Loads a TrueType or OpenType font at a size, with the characters asked for.
   - `fileName`: The file.
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
@@ -190,7 +190,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `codepointCount`: How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
   - returns: The font, the program's until `UnloadFont`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other file is read and its glyphs made during the call. In a page it can't be: the load logs why and returns raylib's default font, as raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 - `DrawFPS`: Draws the frames a second as "60 FPS", 20 pixels high in the default font.
   - `posX`: The left edge.
   - `posY`: The top edge.
@@ -201,11 +201,11 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `args`: The values, one for each conversion.
   - returns: The text; empty for a null format.
 
-  Takes `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
+  Accepts `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
 
-  Takes C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
+  Accepts C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
 
-  `%f` writes 6 places unless a precision is given, as in `%.2f`.
+  `%f` writes 6 places unless a precision is provided, as in `%.2f`.
 
   Reads and ignores C's length modifiers (`l`, `ll`, `h`, `z`).
 
@@ -229,7 +229,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 
   The piece stops at the text's end and is at most 1023 bytes.
 
-  A character the piece cuts through becomes a "?" for each of its bytes taken.
+  A character the piece cuts through becomes a "?" for each of its bytes in the piece.
 - `TextReplace`: Returns text with every piece of it that matches replaced, from the start, each match after the one before.
   - `text`: The text.
   - `replace`: The text replaced.
@@ -252,7 +252,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
 
   The result is at most 1023 UTF-8 bytes.
 
-  A text that would take the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
+  A text that would bring the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
 - `TextSplit`: Returns the pieces of text between a delimiter: one more than the delimiters the text holds, an empty one between two together.
   - `text`: The text.
   - `delimiter`: The byte between pieces, such as `",".code`.
@@ -266,7 +266,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   There are at most 128 pieces, the last of them empty when the text holds more.
 
   A character a piece cuts through becomes a "?" for each of its bytes.
-- `TextFindIndex`: Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
+- `TextFindIndex`: Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` accepts it.
   - `text`: The text searched.
   - `find`: The text found; empty text is found at 0.
   - returns: The position, in bytes; -1 when it isn't there or either is null.
@@ -349,7 +349,7 @@ static macro function LoadFontAsync(fileName:String, loaded:Font -> Void, ?faile
   - `codepointSize`: Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null text.
   - returns: The code; '?' (0x3F) for empty or null text.
 
-  `GetCodepointPrevious(TextSubtext(text, 0, position), size)` gives the character before a position.
+  `GetCodepointPrevious(TextSubtext(text, 0, position), size)` returns the character before a position.
 - `CodepointToUTF8`: Returns a character as text.
   - `codepoint`: The character's code.
   - `utf8Size`: Receives its length in UTF-8 bytes, at its index 0; 0 for a code past 0x10FFFF.
@@ -405,7 +405,7 @@ static function ExportFontAsCodeAsync(font:Font, fileName:String, ?done:() -> Vo
   - `fontSize`: The glyphs' size: the height of a line, in pixels.
   - `codepoints`: The characters, or null for those from the space on.
   - `codepointCount`: How many characters; 0 for 95.
-  - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances. Any other is taken as `FONT_DEFAULT`.
+  - `type`: `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances. Any other is treated as `FONT_DEFAULT`.
   - `loaded`: Receives the glyphs once they are ready.
   - `failed`: Optional. Receives why the font couldn't be read; when omitted, it is logged.
 

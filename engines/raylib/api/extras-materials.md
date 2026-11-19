@@ -26,21 +26,21 @@ static function IsMaterialShadowed(material:Material):Bool
 static function SetModelEmissive(model:Model, color:Color, intensity:Float):Void
 ```
 
-- `SetMaterialAlphaCutoff`: Sets a material's alpha cutoff: where its albedo's alpha, the albedo map's times its color's, is below the cutoff, the material draws nothing, as a leaf cut from a square does. 0 turns the cutoff off. A glTF material whose `alphaMode` is glTF's `MASK` loads with its `alphaCutoff`, 0.5 when the file gives none.
+- `SetMaterialAlphaCutoff`: Sets a material's alpha cutoff: where its albedo's alpha, the albedo map's times its color's, is below the cutoff, the material draws nothing, as a leaf cut from a square does. 0 turns the cutoff off. A glTF material whose `alphaMode` is glTF's `MASK` loads with its `alphaCutoff`, 0.5 when the file sets none.
   - `material`: The material.
   - `cutoff`: The cutoff, 0 to 1.
 
   Read at each draw by helix-raylib's default shader, which draws exactly as raylib's while the cutoff is 0, and by `LoadPbrShader`'s and `LoadLightingShader`'s draws.
-- `GetMaterialAlphaCutoff`: Returns a material's alpha cutoff, as `SetMaterialAlphaCutoff` set it or its glTF file gave it: 0 for none.
+- `GetMaterialAlphaCutoff`: Returns a material's alpha cutoff, as `SetMaterialAlphaCutoff` set it or its glTF file set it: 0 for none.
   - `material`: The material.
   - returns: The cutoff, 0 to 1.
-- `SetMaterialEmissive`: Sets the light a material gives off whatever lights it: its color times the intensity, added to the lit color, as a glowing lamp. A glTF material loads with its `emissiveFactor`, and the emission map stays in `maps[MATERIAL_MAP_EMISSION]`. Black or an intensity of 0 gives off nothing, the default. See `SetModelEmissive` for every material of a model at once.
+- `SetMaterialEmissive`: Sets the light a material emits whatever lights it: its color times the intensity, added to the lit color, as a glowing lamp. A glTF material loads with its `emissiveFactor`, and the emission map stays in `maps[MATERIAL_MAP_EMISSION]`. Black or an intensity of 0, the default, emits no light. See `SetModelEmissive` for every material of a model at once.
   - `material`: The material.
   - `color`: The color.
   - `intensity`: How strong, 0 or more; 1 adds the color itself.
 
-  Read at each draw by `LoadPbrShader`'s and `LoadLightingShader`'s draws, and by helix-raylib's default shader, which draws exactly as raylib's while it gives off nothing.
-- `GetMaterialEmissive`: Returns the light a material gives off, as `SetMaterialEmissive` set it or its glTF file gave it: its color times its intensity, red, green and blue, 0 for none.
+  Read at each draw by `LoadPbrShader`'s and `LoadLightingShader`'s draws, and by helix-raylib's default shader, which draws exactly as raylib's while the material emits no light.
+- `GetMaterialEmissive`: Returns the light a material emits, as `SetMaterialEmissive` set it or its glTF file set it: its color times its intensity, red, green and blue, 0 for none.
   - `material`: The material.
   - `out`: Optional. The vector filled; a new one when omitted.
   - returns: out, or the new vector.
@@ -49,7 +49,7 @@ static function SetModelEmissive(model:Model, color:Color, intensity:Float):Void
   - `unlit`: Whether it is unlit.
 
   Read at each draw by `LoadPbrShader`'s and `LoadLightingShader`'s draws. Its emission is still added.
-- `IsMaterialUnlit`: Returns whether a material is unlit, as `SetMaterialUnlit` set it or its glTF file gave it.
+- `IsMaterialUnlit`: Returns whether a material is unlit, as `SetMaterialUnlit` set it or its glTF file set it.
   - `material`: The material.
   - returns: Whether it is unlit.
 - `SetMaterialShadowed`: Sets whether shadows fall on a material: when not, it is lit as if nothing stood between it and each light, as water, a hologram or a decal often is. Shadows fall on every material until set.
@@ -60,7 +60,7 @@ static function SetModelEmissive(model:Model, color:Color, intensity:Float):Void
 - `IsMaterialShadowed`: Returns whether shadows fall on a material, as `SetMaterialShadowed` set it: true until set.
   - `material`: The material.
   - returns: Whether shadows fall on it.
-- `SetModelEmissive`: Sets light a whole model gives off, added to each of its materials' own: a hit flash, or a model glowing whole. Its materials' emission, as `SetMaterialEmissive` set it or the glTF file gave it, is kept, so an intensity of 0 leaves the model as authored. Read at each draw of the model (`DrawModel`, `DrawModelEx`), not by a draw of one of its meshes alone.
+- `SetModelEmissive`: Sets light a whole model emits, added to each of its materials' own: a hit flash, or a model glowing whole. Its materials' emission, as `SetMaterialEmissive` set it or the glTF file set it, is kept, so an intensity of 0 leaves the model as authored. Read at each draw of the model (`DrawModel`, `DrawModelEx`), not by a draw of one of its meshes alone.
   - `model`: The model.
   - `color`: The color.
   - `intensity`: How strong, 0 or more; 1 adds the color itself.

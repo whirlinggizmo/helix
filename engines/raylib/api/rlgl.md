@@ -585,7 +585,7 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `y`: The y scale.
   - `z`: The z scale.
 - `rlMultMatrixf`: Applies a matrix before the current one.
-  - `matf`: The matrix's 16 numbers, by columns, as `MatrixToFloatV` gives them.
+  - `matf`: The matrix's 16 numbers, by columns, as `MatrixToFloatV` returns them.
 - `rlOrtho`: Applies an orthographic projection before the current matrix.
   - `left`: The left plane.
   - `right`: The right plane.
@@ -617,7 +617,7 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
 - `rlBegin`: Starts adding vertices until `rlEnd`, each 2 a line, 3 a triangle or 4 a quad.
   - `mode`: `RL_LINES`, `RL_TRIANGLES` or `RL_QUADS`.
 
-  A mode other than the last one's starts a new draw call, which takes the texture `rlSetTexture` last set and sets the white texture for the next. A second change of mode without another `rlSetTexture` then draws untextured.
+  A mode other than the last one's starts a new draw call, which uses the texture `rlSetTexture` last set and sets the white texture for the next. A second change of mode without another `rlSetTexture` then draws untextured.
 
   The same mode again keeps the draw call and its texture.
 - `rlEnd`: Ends the vertices `rlBegin` started.
@@ -663,17 +663,17 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   0 keeps the texture the next vertices have, and the next change of mode starts with the white texture.
 - `rlSetBlendMode`: Sets how the next draws blend, as `BeginBlendMode` does.
   - `mode`: The mode (`RL_BLEND_*`, the same as `BLEND_*`).
-- `rlSetBlendFactors`: Sets the GL factors and equation `RL_BLEND_CUSTOM` blends by, red, green, blue and alpha alike, as `glBlendFunc` and `glBlendEquation` take them. See `rlSetBlendFactorsSeparate` for blending color apart from alpha.
+- `rlSetBlendFactors`: Sets the GL factors and equation `RL_BLEND_CUSTOM` blends by, red, green, blue and alpha alike, as `glBlendFunc` and `glBlendEquation` accept them. See `rlSetBlendFactorsSeparate` for blending color apart from alpha.
   - `glSrcFactor`: The source's factor (`RL_ZERO`, `RL_ONE`, `RL_SRC_COLOR`, ...).
   - `glDstFactor`: The destination's factor.
   - `glEquation`: How they combine (`RL_FUNC_ADD`, `RL_FUNC_SUBTRACT`, `RL_FUNC_REVERSE_SUBTRACT`, `RL_MIN`, `RL_MAX`).
 
-  The factors take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM)`, even in that mode already.
+  The factors apply at the next `rlSetBlendMode(RL_BLEND_CUSTOM)`, even in that mode already.
 
   A value GL doesn't have leaves the factors, or the equation, unchanged.
 
   raylib sets no blend color, so `RL_CONSTANT_COLOR` and `RL_CONSTANT_ALPHA` are 0 and their `RL_ONE_MINUS_` forms 1.
-- `rlSetBlendFactorsSeparate`: Sets the GL factors and equations `RL_BLEND_CUSTOM_SEPARATE` blends by, for red, green and blue apart from alpha, as `glBlendFuncSeparate` and `glBlendEquationSeparate` take them. See `rlSetBlendFactors` for blending every channel alike.
+- `rlSetBlendFactorsSeparate`: Sets the GL factors and equations `RL_BLEND_CUSTOM_SEPARATE` blends by, for red, green and blue apart from alpha, as `glBlendFuncSeparate` and `glBlendEquationSeparate` accept them. See `rlSetBlendFactors` for blending every channel alike.
   - `glSrcRGB`: The source color's factor.
   - `glDstRGB`: The destination color's factor.
   - `glSrcAlpha`: The source alpha's factor.
@@ -681,7 +681,7 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `glEqRGB`: How the colors combine.
   - `glEqAlpha`: How the alphas combine.
 
-  The factors take effect at the next `rlSetBlendMode(RL_BLEND_CUSTOM_SEPARATE)`, even in that mode already.
+  The factors apply at the next `rlSetBlendMode(RL_BLEND_CUSTOM_SEPARATE)`, even in that mode already.
 - `rlColorMask`: Sets which color channels the next draws write, as `glColorMask` does.
   - `r`: Whether red is written.
   - `g`: Whether green is written.
@@ -762,12 +762,12 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   The batch isn't drawn first, so the vertices waiting in it change too. See `rlDrawRenderBatchActive` for drawing them first.
 - `rlEnableScissorTest`: Clips the next draws to the rectangle `rlScissor` last set, or to the whole pass until one is set.
 - `rlDisableScissorTest`: Stops clipping the next draws, as `EndScissorMode` does.
-- `rlScissor`: Sets the rectangle that clips the next draws while the scissor test is on, in the framebuffer's pixels from its bottom left, as GL takes it. See `BeginScissorMode` for setting one from the top left in the screen's pixels.
+- `rlScissor`: Sets the rectangle that clips the next draws while the scissor test is on, in the framebuffer's pixels from its bottom left, as GL accepts it. See `BeginScissorMode` for setting one from the top left in the screen's pixels.
   - `x`: Its left edge.
   - `y`: Its bottom edge, from the bottom.
   - `width`: Its width.
   - `height`: Its height.
-- `rlViewport`: Sets the rectangle the next draws fill, as GL takes it, until the next pass begins.
+- `rlViewport`: Sets the rectangle the next draws fill, as GL accepts it, until the next pass begins.
   - `x`: Its left edge, in framebuffer pixels.
   - `y`: Its bottom edge, from the bottom.
   - `width`: Its width.
@@ -784,7 +784,7 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `g`: Green.
   - `b`: Blue.
   - `a`: Alpha.
-- `rlClearScreenBuffers`: Clears the color and depth of what is drawn into, the color to `rlClearColor`'s, black until set. See `ClearBackground` for clearing to a given color.
+- `rlClearScreenBuffers`: Clears the color and depth of what is drawn into, the color to `rlClearColor`'s, black until set. See `ClearBackground` for clearing to a provided color.
 - `rlSetLineWidth`: Sets the line width, which only `rlGetLineWidth` reads.
   - `width`: The width, in pixels.
 
@@ -836,7 +836,7 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   - `right`: Eye 0's projection, drawn in the left half (raylib names it the right).
   - `left`: Eye 1's, drawn in the right half.
 
-  A mesh's mvp takes the eye's projection, while its `matProjection` stays the projection.
+  A mesh's mvp uses the eye's projection, while its `matProjection` stays the projection.
 - `rlSetMatrixViewOffsetStereo`: Sets each eye's view offset in stereo rendering, applied after the view from the batch's next flush and in a mesh's mvp.
   - `right`: Eye 0's offset, drawn in the left half (raylib names it the right).
   - `left`: Eye 1's, drawn in the right half.

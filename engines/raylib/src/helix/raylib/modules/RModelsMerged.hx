@@ -41,7 +41,7 @@ class RModelsMerged {
 		differs from the transform of `skeleton`, and for a `skeleton` of more than 256 bones.
 
 		@param models  The models.
-		@param skeleton  Optional. The model whose bones, bind pose and transform the new model takes. Usually one of the provided models.
+		@param skeleton  Optional. The model whose bones, bind pose and transform the new model uses. Usually one of the provided models.
 		@return  The new model, or null when refused. */
 	static function LoadModelFromModels(models:Array<Model>, ?skeleton:Model):Null<Model> {
 		if (models.length == 0)
@@ -185,7 +185,7 @@ class RModelsMerged {
 		return part;
 	}
 
-	// The group merged, a mesh without normals given raylib's default of (0, 0, 1) where another mesh has normals.
+	// The group merged, a mesh without normals assigned raylib's default of (0, 0, 1) where another mesh has normals.
 	static function mergedWithNormals(group:Array<Mesh3D>):Mesh3D {
 		var anyNormals = false;
 		for (part in group)

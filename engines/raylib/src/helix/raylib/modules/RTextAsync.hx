@@ -153,7 +153,7 @@ class RTextAsync {
 		@param codepoints  The characters, or null for those from the space on.
 		@param codepointCount  How many characters; 0 for 95.
 		@param type  `FONT_DEFAULT` for antialiased glyphs, `FONT_BITMAP` for glyphs with no gray, `FONT_SDF` for signed distances. Any
-			other is taken as `FONT_DEFAULT`.
+			other is treated as `FONT_DEFAULT`.
 		@param loaded  Receives the glyphs once they are ready.
 		@param failed  Optional. Receives why the font couldn't be read; when omitted, it is logged. */
 	static function LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int,

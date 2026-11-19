@@ -219,7 +219,7 @@ class Textures {
 		when the window's size changes, or each frame.
 
 		@param target  The render texture.
-		@param integerScale  Whether its size is a whole multiple of the render texture's, as given `DrawRenderTextureFit`. */
+		@param integerScale  Whether its size is a whole multiple of the render texture's, as provided to `DrawRenderTextureFit`. */
 	public static inline function SetMouseRenderTextureFit(target:RenderTexture2D, integerScale:Bool):Void
 		RRenderTextureFit.SetMouseRenderTextureFit(target, integerScale);
 

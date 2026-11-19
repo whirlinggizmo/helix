@@ -12,7 +12,7 @@ import helix.raylib.internal.Answers.*;
 import helix.raylib.modules.RGui.*;
 #end
 
-/** Provides the async versions of raygui's style and icon loads. They take the place of raygui's calls that wait for a file.
+/** Provides the async versions of raygui's style and icon loads. They replace raygui's calls that wait for a file.
 
 	`helix.raylib.Raygui` forwards to each (`tools/gen_raylib.py`). */
 @:noCompletion

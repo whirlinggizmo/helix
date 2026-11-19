@@ -87,7 +87,7 @@ static function GuiClearSkins():Void
   The skin is read as each control draws. See `GuiSetSkinOnce` for a skin for one call.
 
   `GuiPanel`, `GuiWindowBox` and `GuiScrollPanel` draw their body with `DEFAULT`'s own `GUI_SKIN_BASE`.
-- `GuiSetSkinOnce`: Sets the skin the next control call of a kind draws a part with, in place of the one `GuiSetSkin` set: one button in a different skin from the rest. The next call of that control takes it, drawn or disabled alike, and the call after it draws with `GuiSetSkin`'s again.
+- `GuiSetSkinOnce`: Sets the skin the next control call of a kind draws a part with, in place of the one `GuiSetSkin` set: one button in a different skin from the rest. The next call of that control uses it, drawn or disabled alike, and the call after it draws with `GuiSetSkin`'s again.
   - `control`: The control: `BUTTON`, `SLIDER` and the rest of raygui's.
   - `part`: `GUI_SKIN_BASE`, `GUI_SKIN_FILL`, `GUI_SKIN_HANDLE` or `GUI_SKIN_ITEM`.
   - `skin`: The skin, drawn in full for that call (its patches, text offsets, fill mode and fill edge), or null to draw the part flat.
@@ -103,7 +103,7 @@ static function GuiClearSkins():Void
   - `disabled`: Optional. The texture drawn in `STATE_DISABLED`; `normal` when omitted.
   - `clickMask`: Optional. An image whose clear texels (alpha 0) don't answer the pointer, stretched to `bounds` as the textures are: often the normal texture's image, so a round button's corners ignore it. The whole rectangle answers when omitted.
   - returns: 1 when it's clicked, else 0, as `GuiButton`: always 0 in `STATE_DISABLED`.
-- `GuiSetIconTexture`: Sets the texture drawn for one of raygui's icons in place of its pixels. Every control drawing that icon in its text (`GuiIconText(iconId, text)`) draws the texture there, laid out as raygui's icon is: the texture and the text after it aligned together as the control aligns its text, the text moved along by the texture's width. Draws raygui's own icon again when given null. See `GuiDrawIcon` for an icon on its own.
+- `GuiSetIconTexture`: Sets the texture drawn for one of raygui's icons in place of its pixels. Every control drawing that icon in its text (`GuiIconText(iconId, text)`) draws the texture there, laid out as raygui's icon is: the texture and the text after it aligned together as the control aligns its text, the text moved along by the texture's width. Draws raygui's own icon again when provided null. See `GuiDrawIcon` for an icon on its own.
   - `iconId`: The icon (`ICON_*`). `ICON_229` to `ICON_255` are raygui's spare icons, blank.
   - `texture`: The texture, or null for raygui's icon.
   - `source`: Optional. The part of the texture drawn, in texels; the whole texture when omitted.

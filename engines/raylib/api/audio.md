@@ -87,7 +87,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `fileName`: The file.
   - returns: The wave, the program's until `UnloadWave`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, a copy of the wave its ensure decoded. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, a copy of the wave its ensure decoded. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and returns an empty wave, as raylib's load of a missing file does. See `LoadWaveAsync` for loading it asynchronously.
 - `IsWaveValid`: Returns whether a wave holds samples.
   - `wave`: The wave.
   - returns: True when it has data, frames, a rate, a sample size and channels.
@@ -105,7 +105,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
 - `WaveFormat`: Converts a wave's samples to another rate, sample size and channel count, as raylib's does through miniaudio.
   - `wave`: The wave, changed in place.
   - `sampleRate`: The frames a second.
-  - `sampleSize`: The bits a sample takes: 8, 16 or 32.
+  - `sampleSize`: The bits in a sample: 8, 16 or 32.
   - `channels`: The number of channels.
 
   The conversion:
@@ -133,7 +133,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `fileName`: The file.
   - returns: The sound, the program's until `UnloadSound`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and gives a sound that doesn't play, as raylib's load of a missing file does. See `LoadSoundAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before, loads at once. Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the load logs why and returns a sound that doesn't play, as raylib's load of a missing file does. See `LoadSoundAsync` for loading it asynchronously.
 - `LoadSoundFromWave`: Returns a sound made from a wave, ready to play at once.
   - `wave`: The wave. It is unchanged, and may be unloaded after.
   - returns: The sound, or one that isn't valid (`IsSoundValid`) when the wave has no samples or can't be converted.
@@ -145,7 +145,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `source`: The sound whose samples it plays.
   - returns: The alias, or one that isn't valid when the source isn't loaded.
 
-  Takes no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded; they're freed when the last held reference, a load or an alias, is released.
+  Uses no memory for samples of its own. Holds a reference to its source's samples, so it plays on after the source is unloaded; they're freed when the last held reference, a load or an alias, is released.
 - `UnloadSound`: Frees a sound, stopping it.
   - `sound`: The sound.
 
@@ -201,7 +201,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `fileName`: The file.
   - returns: The music, the program's until `UnloadMusicStream`.
 
-  Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) gives its music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once it has. A file not ensured logs why and gives music that doesn't play, as raylib's load of a missing file does. See `LoadMusicStreamAsync` for opening it asynchronously.
+  Natively the file is opened during the call. In a page, a file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) produces its music at once, ready to play as soon as its stream has opened, within a frame or two: `IsMusicValid` is true once it has. A file not ensured logs why and produces music that doesn't play, as raylib's load of a missing file does. See `LoadMusicStreamAsync` for opening it asynchronously.
 - `LoadMusicStreamFromMemory`: Returns music opened from a file's bytes, to be played as it is read.
   - `fileType`: The file's extension, such as ".ogg": Ogg Vorbis, MP3 or WAV.
   - `data`: The file's bytes; they are kept until the music is unloaded.
@@ -261,9 +261,9 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - returns: The position, in seconds from its start.
 
   Holds while paused. Is 0 once stopped, or once played to its end without looping, and starts from 0 when played again.
-- `LoadAudioStream`: Returns a stream that plays samples the program makes as it goes, each buffer as `UpdateAudioStream` gives it.
+- `LoadAudioStream`: Returns a stream that plays samples the program makes as it goes, each buffer as `UpdateAudioStream` provides it.
   - `sampleRate`: The frames a second, 8000 to 96000.
-  - `sampleSize`: The bits a sample takes: 8 (unsigned), 16 (signed) or 32 (float).
+  - `sampleSize`: The bits in a sample: 8 (unsigned), 16 (signed) or 32 (float).
   - `channels`: The number of channels, 1 or 2.
   - returns: The stream, or one that isn't valid (`IsAudioStreamValid`) when it can't be made.
 
@@ -275,16 +275,16 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - returns: True when it has its queue, a rate, a sample size and channels.
 - `UnloadAudioStream`: Closes a stream, stopping it.
   - `stream`: The stream.
-- `UpdateAudioStream`: Gives a stream its next buffer of samples, as raylib's does, filling the rest of the buffer with silence.
+- `UpdateAudioStream`: Feeds a stream its next buffer of samples, as raylib's does, filling the rest of the buffer with silence.
   - `stream`: The stream.
   - `data`: The samples in the stream's sample size and channels, interleaved.
   - `frameCount`: How many frames.
 
-  Taken only once a buffer has been heard (`IsAudioStreamProcessed`), and only up to a buffer's frames (`SetAudioStreamBufferSizeDefault`). Otherwise nothing is taken, and a warning is logged.
+  Accepted only once a buffer has been heard (`IsAudioStreamProcessed`), and only up to a buffer's frames (`SetAudioStreamBufferSizeDefault`). Otherwise the samples are dropped, and a warning is logged.
 - `IsAudioStreamProcessed`: Returns whether a stream has room for another buffer, as raylib's double buffer has one free.
   - `stream`: The stream.
-  - returns: True while it holds no more than one buffer not yet heard, when `UpdateAudioStream` would take samples.
-- `PlayAudioStream`: Plays a stream: what it holds, and what it is given after.
+  - returns: True while it holds no more than one buffer not yet heard, when `UpdateAudioStream` would accept samples.
+- `PlayAudioStream`: Plays a stream: what it holds, and what it receives after.
   - `stream`: The stream.
 
   A stream with a callback (`SetAudioStreamCallback`) is filled by it at once.
@@ -302,7 +302,7 @@ static macro function LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.
   - `volume`: 0 (silent) to 1.
 - `SetAudioStreamPitch`: Sets a stream's pitch, absolute whatever was set before, as `SetSoundPitch` sets a sound's.
   - `stream`: The stream.
-  - `pitch`: 1 for as given.
+  - `pitch`: 1 for unchanged.
 
   Clamped to 0.25 to 4.
 - `SetAudioStreamPan`: Sets where a stream is heard, in `SetSoundPan`'s range, with 1 the right.

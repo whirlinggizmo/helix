@@ -26,7 +26,7 @@ import helix.raylib.modules.RMath.*;
 @:noCompletion
 @:allow(helix.raylib)
 class RTextures {
-	// The quads added here draw as sprites: the frame given its sprite shader as the module starts.
+	// The quads added here draw as sprites: the frame's sprite shader set as the module starts.
 	static function __init__():Void {
 		helix.raylib.internal.Sprites.register();
 	}
@@ -35,7 +35,7 @@ class RTextures {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
-		load logs why and gives a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it
+		load logs why and returns a texture of id 0, as raylib's load of a missing file does. See `LoadTextureAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -78,12 +78,12 @@ class RTextures {
 
 	/** Lets go of the program's hold on a texture from its load, and sets the texture's id to 0.
 
-		The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map given it, keeps it
+		The texture and its GPU copy are freed once nothing else holds them. Another load of its file, or a material map set to it, keeps it
 		until that lets go.
 
-		Given a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds
+		For a map's texture (`map.texture`), lets go of one hold and leaves the map's id. The map draws the texture while anything holds
 		it, and lets go in turn when its material is freed. So `UnloadTexture(model.materials[0].maps[0].texture)` frees a texture a program
-		gave a map without keeping it.
+		set on a map without keeping it.
 
 		@param texture  The texture. */
 	static function UnloadTexture(texture:Texture2D):Void {
@@ -405,13 +405,13 @@ class RTextures {
 		return new Color((hexValue >>> 24) & 255, (hexValue >> 16) & 255, (hexValue >> 8) & 255, hexValue & 255);
 	}
 
-	/** Returns how many bytes an image's pixels take in a format.
+	/** Returns how many bytes an image's pixels occupy in a format.
 
 		@param width  The width, in pixels.
 		@param height  The height.
 		@param format  The format (`PIXELFORMAT_*`).
-		@return  The bytes; a compressed format smaller than 4 by 4 pixels takes a whole block, 8 or 16 bytes. An unknown format, a width
-			or height of 0 or less, and a size of 2 GB or more (with a warning) give 0. */
+		@return  The bytes; a compressed format smaller than 4 by 4 pixels occupies a whole block, 8 or 16 bytes. An unknown format, a width
+			or height of 0 or less, and a size of 2 GB or more (with a warning) return 0. */
 	static function GetPixelDataSize(width:Int, height:Int, format:Int):Int {
 		if (width <= 0 || height <= 0)
 			return 0;
@@ -587,7 +587,7 @@ class RTextures {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
-		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it
+		load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -610,12 +610,12 @@ class RTextures {
 
 	// ---- Images: loading and exporting ----
 
-	/** Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need gives an empty image, and one too small for
+	/** Loads an image's raw pixels from a file. A file with fewer bytes than the pixels need produces an empty image, and one too small for
 		the header and the pixels is read from its first byte.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the
-		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it
+		load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageRawAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -655,7 +655,7 @@ class RTextures {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read and decoded during the call. In a page it can't be, as the browser decodes only asynchronously: the
-		load logs why and gives an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it
+		load logs why and returns an empty image, as raylib's load of a missing file does. See `LoadImageAnimAsync` for loading it
 		asynchronously.
 
 		@param fileName  The file.
@@ -926,7 +926,7 @@ class RTextures {
 
 	/** Returns a checkerboard of two colors, RGBA.
 
-		A square size under 1 is taken as 1.
+		A square size under 1 is treated as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -968,7 +968,7 @@ class RTextures {
 
 		The points are drawn from `GetRandomValue`, so `SetRandomSeed` repeats the image.
 
-		A tile size under 1 is taken as 1.
+		A tile size under 1 is treated as 1.
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
@@ -982,7 +982,7 @@ class RTextures {
 
 		@param width  The width, in pixels.
 		@param height  The height, in pixels.
-		@param text  The text; null gives a black image.
+		@param text  The text; null produces a black image.
 		@return  The image. */
 	static function GenImageText(width:Int, height:Int, text:String):Image {
 		var size = width * height, data = haxe.io.Bytes.alloc(size);
@@ -1024,7 +1024,7 @@ class RTextures {
 
 	/** Returns a rectangle of an image, in its format.
 
-		A rectangle not wholly inside the image, of no size, or of a compressed image gives an empty image, with a warning.
+		A rectangle not wholly inside the image, of no size, or of a compressed image produces an empty image, with a warning.
 
 		@param image  The image.
 		@param rec  The rectangle, in pixels, cut to whole pixels.
@@ -1059,7 +1059,7 @@ class RTextures {
 
 	/** Returns one channel of an image as grayscale: 0 red, 1 green, 2 blue, 3 alpha.
 
-		A channel the format lacks is taken from another, with a warning:
+		A channel the format lacks is read from another, with a warning:
 
 		- a one-channel format: its only channel
 		- gray and alpha: its alpha
@@ -1168,7 +1168,7 @@ class RTextures {
 		`SetTextLineSpacing`'s spacing.
 
 		@param font  The font, its glyphs' images drawn.
-		@param text  The text; null gives an empty image.
+		@param text  The text; null produces an empty image.
 		@param fontSize  The height of a line, in pixels.
 		@param spacing  The space between letters, at the font's size.
 		@param tint  The color the glyphs are multiplied by.
@@ -1439,7 +1439,7 @@ class RTextures {
 
 	/** Blurs an image with an approximate Gaussian, four passes of a box blur across and down.
 
-		The blur runs over premultiplied alpha, and each channel taken back from it is no higher than 255.
+		The blur runs over premultiplied alpha, and each channel converted back from it is no higher than 255.
 
 		A box reaching past the image's last pixel reads 0 there.
 
@@ -1523,9 +1523,9 @@ class RTextures {
 
 	/** Applies a square kernel to an image, each channel, alpha too, the sum of the pixels around it times the weights.
 
-		The pixels are taken as fractions, and each sum is clamped to 0 to 1.
+		The pixels are read as fractions, and each sum is clamped to 0 to 1.
 
-		A pixel past an edge is taken from the edge.
+		A pixel past an edge is read from the edge.
 
 		A count that isn't square changes nothing, with a warning.
 
@@ -1611,7 +1611,7 @@ class RTextures {
 			ImageFormat(image, format);
 			return;
 		}
-		// An 8-bit format's channels as RGBA, resized, and taken back.
+		// An 8-bit format's channels as RGBA, resized, and converted back.
 		var rgba = haxe.io.Bytes.alloc(count * 4);
 		for (i in 0...count)
 			rgba.setInt32(i * 4, switch channels {
@@ -1767,8 +1767,8 @@ class RTextures {
 
 	/** Dithers an image to 16 bits a pixel or fewer (Floyd-Steinberg).
 
-		The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits give format 0 with the bits packed in 16,
-		and a warning.
+		The image becomes R5G6B5, R5G5B5A1 or R4G4B4A4 when the bits are one of those. Other bits produce format 0 with the bits packed
+		in 16, and a warning.
 
 		More than 16 bits changes nothing, with a warning.
 
@@ -1991,7 +1991,7 @@ class RTextures {
 
 	/** Changes an image's brightness by adding to red, green and blue, in its format.
 
-		A channel taken below 0 becomes 1.
+		A channel pushed below 0 becomes 1.
 
 		@param image  The image.
 		@param brightness  -255 to 255. */
@@ -2047,14 +2047,14 @@ class RTextures {
 		return palette;
 	}
 
-	/** Frees colors `LoadImageColors` gave.
+	/** Frees colors `LoadImageColors` returned.
 
 		Does nothing, as the colors need no freeing.
 
 		@param colors  The colors. */
 	static function UnloadImageColors(colors:Array<Color>):Void {}
 
-	/** Frees colors `LoadImagePalette` gave.
+	/** Frees colors `LoadImagePalette` returned.
 
 		Does nothing, as the colors need no freeing.
 
@@ -2314,7 +2314,7 @@ class RTextures {
 
 	/** Fills a triangle, each corner its own color, blended across it.
 
-		Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not give that color exactly.
+		Each channel is weighted by the pixel's weights and rounded down, so three corners of one color may not produce that color exactly.
 
 		@param dst  The image.
 		@param v1  The first corner.
@@ -2643,7 +2643,7 @@ class RTextures {
 
 		The texture's format is the image's, so a grayscale image's texture has `PIXELFORMAT_UNCOMPRESSED_GRAYSCALE`.
 
-		A compressed format gives no texture, with a warning.
+		A compressed format produces no texture, with a warning.
 
 		@param image  The image.
 		@return  The texture. */
@@ -2685,9 +2685,9 @@ class RTextures {
 		  of it. A face is the image's width over 3.
 		- `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: 4 faces wide, 3 high, +Y at the top of the second column, then -X, +Z, +X, -Z across, then
 		  -Y below +Z. A face is the image's width over 4.
-		- `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout the image's shape gives. A shape it doesn't know gives no cubemap, with a warning.
+		- `CUBEMAP_LAYOUT_AUTO_DETECT`: the layout matching the image's shape. A shape it doesn't know produces no cubemap, with a warning.
 
-		Each face's rows run top first, as GL's cube faces take them.
+		Each face's rows run top first, as GL's cube faces accept them.
 
 		A column is read as it is, the face size squared times 6 pixels from the image's first, row after row. An image not 1 face by 6 is
 		read across its rows.
@@ -2697,8 +2697,8 @@ class RTextures {
 
 		The cubemap's format is the image's. Its pixels are RGBA on the GPU, sampled linearly.
 
-		An image with mipmaps gives a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as its first
-		is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
+		An image with mipmaps produces a cubemap with mipmaps, sampled through them. A column's come from the image's levels, read as
+		its first is. The other layouts' are made from each face, as GL's `glGenerateMipmap` makes them.
 
 		No cubemap comes back, with a warning, for a face size of 0 (an image too small for its layout, or a layout raylib doesn't have), a
 		compressed format, or an image too small for the column it is read as.
@@ -2993,7 +2993,7 @@ class RTextures {
 
 		16-bit channels are widened by integers, and floats are multiplied by 255.
 
-		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
+		Accepts the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param srcPtr  The pixels.
 		@param format  Their format (`PIXELFORMAT_UNCOMPRESSED_*`).
@@ -3007,7 +3007,7 @@ class RTextures {
 
 		Grayscale is by luminance, and 16-bit channels are rounded. A float format is left unchanged.
 
-		Takes the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
+		Accepts the pixels and the pixel's first byte in place of raylib's pointer to the pixel.
 
 		@param dstPtr  The pixels.
 		@param color  The color.

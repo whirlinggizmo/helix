@@ -25,7 +25,7 @@ class Materials {
 
 	/** Sets a material's alpha cutoff: where its albedo's alpha, the albedo map's times its color's, is below the cutoff, the material
 		draws nothing, as a leaf cut from a square does. 0 turns the cutoff off. A glTF material whose `alphaMode` is glTF's `MASK` loads
-		with its `alphaCutoff`, 0.5 when the file gives none.
+		with its `alphaCutoff`, 0.5 when the file sets none.
 
 		Read at each draw by helix-raylib's default shader, which draws exactly as raylib's while the cutoff is 0, and by `LoadPbrShader`'s
 		and `LoadLightingShader`'s draws.
@@ -35,19 +35,19 @@ class Materials {
 	public static inline function SetMaterialAlphaCutoff(material:Material, cutoff:Float):Void
 		RMaterials.SetMaterialAlphaCutoff(material, cutoff);
 
-	/** Returns a material's alpha cutoff, as `SetMaterialAlphaCutoff` set it or its glTF file gave it: 0 for none.
+	/** Returns a material's alpha cutoff, as `SetMaterialAlphaCutoff` set it or its glTF file set it: 0 for none.
 
 		@param material  The material.
 		@return  The cutoff, 0 to 1. */
 	public static inline function GetMaterialAlphaCutoff(material:Material):Float
 		return RMaterials.GetMaterialAlphaCutoff(material);
 
-	/** Sets the light a material gives off whatever lights it: its color times the intensity, added to the lit color, as a glowing
+	/** Sets the light a material emits whatever lights it: its color times the intensity, added to the lit color, as a glowing
 		lamp. A glTF material loads with its `emissiveFactor`, and the emission map stays in `maps[MATERIAL_MAP_EMISSION]`. Black or an
-		intensity of 0 gives off nothing, the default. See `SetModelEmissive` for every material of a model at once.
+		intensity of 0, the default, emits no light. See `SetModelEmissive` for every material of a model at once.
 
 		Read at each draw by `LoadPbrShader`'s and `LoadLightingShader`'s draws, and by helix-raylib's default shader, which draws
-		exactly as raylib's while it gives off nothing.
+		exactly as raylib's while the material emits no light.
 
 		@param material  The material.
 		@param color  The color.
@@ -55,7 +55,7 @@ class Materials {
 	public static inline function SetMaterialEmissive(material:Material, color:Color, intensity:Float):Void
 		RMaterials.SetMaterialEmissive(material, color, intensity);
 
-	/** Returns the light a material gives off, as `SetMaterialEmissive` set it or its glTF file gave it: its color times its intensity,
+	/** Returns the light a material emits, as `SetMaterialEmissive` set it or its glTF file set it: its color times its intensity,
 		red, green and blue, 0 for none.
 
 		@param material  The material.
@@ -75,7 +75,7 @@ class Materials {
 	public static inline function SetMaterialUnlit(material:Material, unlit:Bool):Void
 		RMaterials.SetMaterialUnlit(material, unlit);
 
-	/** Returns whether a material is unlit, as `SetMaterialUnlit` set it or its glTF file gave it.
+	/** Returns whether a material is unlit, as `SetMaterialUnlit` set it or its glTF file set it.
 
 		@param material  The material.
 		@return  Whether it is unlit. */
@@ -99,8 +99,8 @@ class Materials {
 	public static inline function IsMaterialShadowed(material:Material):Bool
 		return RMaterials.IsMaterialShadowed(material);
 
-	/** Sets light a whole model gives off, added to each of its materials' own: a hit flash, or a model glowing whole. Its materials'
-		emission, as `SetMaterialEmissive` set it or the glTF file gave it, is kept, so an intensity of 0 leaves the model as authored.
+	/** Sets light a whole model emits, added to each of its materials' own: a hit flash, or a model glowing whole. Its materials'
+		emission, as `SetMaterialEmissive` set it or the glTF file set it, is kept, so an intensity of 0 leaves the model as authored.
 		Read at each draw of the model (`DrawModel`, `DrawModelEx`), not by a draw of one of its meshes alone.
 
 		```haxe

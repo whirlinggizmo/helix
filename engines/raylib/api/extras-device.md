@@ -88,7 +88,7 @@ static function CalibrateTilt():Void
 
   On a device with touch, a touch and the left mouse button both work as fingers.
 
-  Touch emulation takes effect at the next press of the left mouse button, before or after `EnableVirtualGamepad`.
+  Touch emulation applies at the next press of the left mouse button, before or after `EnableVirtualGamepad`.
 
   `IsTouchAvailable` is unchanged.
 - `DisableTouchEmulation`: Disables touch emulation (`EnableTouchEmulation`): the left mouse button works as the mouse alone. A finger down from the left mouse button lifts.
@@ -130,13 +130,13 @@ static function CalibrateTilt():Void
 
   A full tilt of 1 is `SetTiltRange`'s angle.
 
-  The tilt is 0 until readings arrive, and while level is being taken (`IsTiltCalibrating`).
+  The tilt is 0 until readings arrive, and while level is being measured (`IsTiltCalibrating`).
 - `SetTiltRange`: Sets the angle, in degrees, that reads as a full tilt of 1. It defaults to 30.
   - `degrees`: The angle.
 - `GetTiltStatus`: Returns the tilt's status: `TILT_STATUS_OFF`, `TILT_STATUS_WAITING_FOR_TAP`, `TILT_STATUS_STARTING`, `TILT_STATUS_ON`, `TILT_STATUS_REFUSED`, `TILT_STATUS_UNAVAILABLE` or `TILT_STATUS_NEEDS_HTTPS`. A game shows "tap to allow tilt" while the tilt waits for a tap.
   - returns: The status.
-- `IsTiltCalibrating`: Returns whether level is being taken: the tilt is on, and reads 0 until the device is held steady for half a second. Level is taken when the readings start, after the screen turns, and after `CalibrateTilt`. A game shows "hold steady" meanwhile.
-  - returns: True while level is being taken.
-- `IsTiltReady`: Returns whether the tilt steers: the tilt is on (`TILT_STATUS_ON`) and level is taken (`IsTiltCalibrating` is false). A game starts a race, or resumes one, while this is true.
+- `IsTiltCalibrating`: Returns whether level is being measured: the tilt is on, and reads 0 until the device is held steady for half a second. Level is measured when the readings start, after the screen turns, and after `CalibrateTilt`. A game shows "hold steady" meanwhile.
+  - returns: True while level is being measured.
+- `IsTiltReady`: Returns whether the tilt steers: the tilt is on (`TILT_STATUS_ON`) and level is measured (`IsTiltCalibrating` is false). A game starts a race, or resumes one, while this is true.
   - returns: True while the tilt steers.
-- `CalibrateTilt`: Takes level again: the tilt reads 0 until the device is held steady for half a second, and how the device is held then becomes level (`IsTiltCalibrating`). A game's "Level" button is this call. See `GetTilt` for reading the tilt from level.
+- `CalibrateTilt`: Measures level again: the tilt reads 0 until the device is held steady for half a second, and how the device is held then becomes level (`IsTiltCalibrating`). A game's "Level" button is this call. See `GetTilt` for reading the tilt from level.

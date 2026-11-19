@@ -90,7 +90,7 @@ class RCore {
 	/** Asks for the window's size, and returns at once. See `SetWindowMinSize` and `SetWindowMaxSize` for limiting how small or large it
 		can be.
 
-		The window manager may give another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
+		The window manager may set another size. `GetScreenWidth` and `GetScreenHeight` report it once it has.
 
 		Refused while the window is fullscreen or maximized, where the system doesn't allow it, and under 1 pixel. A refusal is logged.
 
@@ -161,7 +161,7 @@ class RCore {
 		Answers.ask("SetWindowFocused", (granted, refused) -> Runtime.window.requestFocus(granted, refused), "", null, null);
 	}
 
-	/** Sets the window's icon. See `SetWindowIcons` for giving several sizes.
+	/** Sets the window's icon. See `SetWindowIcons` for setting several sizes.
 
 		The image must be `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`. Another format logs a warning and changes nothing.
 
@@ -208,7 +208,7 @@ class RCore {
 		Answers.ask("SetWindowOpacity", (granted, refused) -> Runtime.window.requestOpacity(opacity, granted, refused), "", null, null);
 	}
 
-	/** Asks for the smallest size the window may take, and returns at once. See `SetWindowMaxSize` for setting the largest.
+	/** Asks for the smallest size the window may have, and returns at once. See `SetWindowMaxSize` for setting the largest.
 
 		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
 
@@ -219,7 +219,7 @@ class RCore {
 			'$width x $height is under 0 pixels', null, null);
 	}
 
-	/** Asks for the largest size the window may take, and returns at once. See `SetWindowMinSize` for setting the smallest.
+	/** Asks for the largest size the window may have, and returns at once. See `SetWindowMinSize` for setting the smallest.
 
 		Refused where the system doesn't allow it, and under 0 pixels. A refusal is logged.
 
@@ -254,7 +254,7 @@ class RCore {
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to open URL: $url');
 	}
 
-	/** Takes a screenshot of the screen and saves it as a file, and returns once the file is written or downloaded. See
+	/** Captures the screen and saves it as a file, and returns once the file is written or downloaded. See
 		`LoadImageFromScreen` for the screen as an `Image`.
 
 		Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it. The draws since
@@ -397,7 +397,7 @@ class RCore {
 		return new Vector2(Runtime.window.x, Runtime.window.y);
 	}
 
-	/** Returns how many of the display's pixels a pixel drawn takes, across and down, 2 on most phones and high-density displays.
+	/** Returns how many of the display's pixels a pixel drawn covers, across and down, 2 on most phones and high-density displays.
 
 		@return  The scale. */
 	static function GetWindowScaleDPI():Vector2 {
@@ -536,7 +536,7 @@ class RCore {
 		return Runtime.time == null ? 0 : Math.round(Runtime.time.fps);
 	}
 
-	/** Returns the seconds the last frame took.
+	/** Returns the seconds the last frame lasted.
 
 		@return  The seconds. */
 	static function GetFrameTime():Float {
@@ -638,7 +638,7 @@ class RCore {
 	/** Returns a random whole number from min to max, both included, from raylib's generator. See `LoadRandomSequence` for drawing several
 		numbers with none twice.
 
-		The generator is xoshiro128** (helix-math's `Random`), so a seed gives the numbers raylib's gives.
+		The generator is xoshiro128** (helix-math's `Random`), so a seed produces the numbers raylib's produces.
 
 		min and max are swapped when min is more.
 
@@ -656,7 +656,7 @@ class RCore {
 
 	/** Seeds `GetRandomValue` and `LoadRandomSequence`.
 
-		The numbers repeat from the same seed, and are the ones raylib's give.
+		The numbers repeat from the same seed, and are the ones raylib's produces.
 
 		Until called, `InitWindow` seeds from the time.
 
@@ -674,7 +674,7 @@ class RCore {
 
 	/** Returns numbers from min to max, both included, none twice, from `GetRandomValue`'s generator.
 
-		A seed gives the numbers raylib's gives.
+		A seed produces the numbers raylib's produces.
 
 		min and max aren't swapped. When min is more, the numbers run from min up by the range's size.
 
@@ -695,7 +695,7 @@ class RCore {
 		return sequence;
 	}
 
-	/** Frees numbers `LoadRandomSequence` gave.
+	/** Frees numbers `LoadRandomSequence` returned.
 
 		Has nothing to free.
 
@@ -939,7 +939,7 @@ class RCore {
 
 		`GetMouseDelta` this frame includes the move.
 
-		Where the system refuses, as Wayland does, the cursor stays. The position reads the place given until the
+		Where the system refuses, as Wayland does, the cursor stays. The position reads the place provided until the
 		mouse moves, and a warning says why, once a run for each reason.
 
 		@param x  The place across, in the screen's pixels.
@@ -1429,7 +1429,7 @@ class RCore {
 		RFilesAsync.LoadFileTextAsync(fileName, answer, Answers.failing("LoadFileText", answer, null));
 	}
 
-	/** Frees text `LoadFileText` or `LoadFileTextAsync` gave.
+	/** Frees text `LoadFileText` or `LoadFileTextAsync` returned.
 
 		Has nothing to free.
 
@@ -1500,7 +1500,7 @@ class RCore {
 		RFilesAsync.LoadFileDataAsync(fileName, answer, Answers.failing("LoadFileData", answer, null));
 	}
 
-	/** Frees bytes `LoadFileData` or `LoadFileDataAsync` gave.
+	/** Frees bytes `LoadFileData` or `LoadFileDataAsync` returned.
 
 		Has nothing to free.
 
@@ -1582,7 +1582,7 @@ class RCore {
 
 	/** Returns the directory the program's files are read from.
 
-		A load given a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads
+		A load of a path in it reads the file the path names, so `GetApplicationDirectory() + "resources/a.png"` loads
 		"resources/a.png".
 
 		@return  The directory, with a slash at its end. */
@@ -1647,7 +1647,7 @@ class RCore {
 		if (extList.length > 32)
 			extList = extList.slice(0, 32);
 		for (check in extList) {
-			// An extension given without its dot is compared with the file's without its own.
+			// An extension provided without its dot is compared with the file's without its own.
 			var own = check.charAt(0) != "." ? fileExtLower.substr(1) : fileExtLower;
 			if (own == check)
 				return true;
@@ -1655,7 +1655,7 @@ class RCore {
 		return false;
 	}
 
-	/** Returns a file name's extension, from its last dot: "file.tar.gz" gives ".gz".
+	/** Returns a file name's extension, from its last dot: "file.tar.gz" returns ".gz".
 
 		@param fileName  The file name, or a path.
 		@return  The extension with its dot, or null when there is no dot or the name starts with its only one. */
@@ -1688,7 +1688,7 @@ class RCore {
 
 	/** Returns the directory of a path, up to its last `/` or `\`.
 
-		A relative path's directory starts "./": "dir/file.png" gives "./dir", "file.png" gives "./", and "/file.png" gives "/".
+		A relative path's directory starts "./": "dir/file.png" returns "./dir", "file.png" returns "./", and "/file.png" returns "/".
 
 		@param filePath  The path.
 		@return  The directory, without a slash at its end. */
@@ -1706,9 +1706,9 @@ class RCore {
 
 	/** Returns the directory a path is in, up to its last `/` or `\` but one at its end, keeping a root's ("/", "C:\").
 
-		"/a/b/" gives "/a", "/a" gives "/" and "abc" gives "".
+		"/a/b/" returns "/a", "/a" returns "/" and "abc" returns "".
 
-		Every path is taken as a directory's, so a path naming a file gives the file's directory.
+		Every path is read as a directory's, so a path naming a file returns the file's directory.
 
 		@param dirPath  The path.
 		@return  The directory above it, or "" when there is none. */
@@ -1839,7 +1839,7 @@ class RCore {
 		RFilesAsync.LoadDirectoryFilesExAsync(basePath, filter, scanSubdirs, answer);
 	}
 
-	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` gave.
+	/** Frees a listing `LoadDirectoryFilesAsync` or `LoadDirectoryFilesExAsync` returned.
 
 		Has nothing to free, and the list is unchanged.
 
@@ -1880,7 +1880,7 @@ class RCore {
 
 		The files stay. A load of one of their paths, started before or after, reads the file until the next drop's files replace them.
 
-		@param files  The list `LoadDroppedFiles` gave. A list of no files changes nothing. */
+		@param files  The list `LoadDroppedFiles` returned. A list of no files changes nothing. */
 	static function UnloadDroppedFiles(files:FilePathList):Void {
 		if (files == null || files.count <= 0)
 			return;
@@ -1915,13 +1915,13 @@ class RCore {
 
 	/** Returns DEFLATE data decompressed, a raw stream with no zlib header as `CompressData` makes.
 
-		Gives at most 64 MB.
+		Returns at most 64 MB.
 
-		Data that isn't DEFLATE, or stops short, gives the bytes read before it, perhaps none, and logs a warning.
+		Data that isn't DEFLATE, or stops short, produces the bytes read before it, perhaps none, and logs a warning.
 
 		@param compData  The compressed bytes.
 		@param compDataSize  How many of them.
-		@param dataSize  Its first element is set to how many bytes it gives.
+		@param dataSize  Its first element is set to how many bytes it returns.
 		@return  The bytes. */
 	static function DecompressData(compData:haxe.io.Bytes, compDataSize:Int, dataSize:Array<Int>):haxe.io.Bytes {
 		var limit = 64 * 1024 * 1024;
@@ -1980,7 +1980,7 @@ class RCore {
 		Text whose length isn't a multiple of 4 logs a warning and is read up to its last 4 characters.
 
 		@param data  The text's bytes.
-		@param outputSize  Its first element is set to how many bytes it gives: 3 for every 4 characters, less one for each `=` at the
+		@param outputSize  Its first element is set to how many bytes it returns: 3 for every 4 characters, less one for each `=` at the
 			end.
 		@return  The bytes. */
 	static function DecodeDataBase64(data:haxe.io.Bytes, outputSize:Array<Int>):haxe.io.Bytes {
@@ -2002,7 +2002,7 @@ class RCore {
 		decoded.fill(0, maxOutputSize, 0);
 		var outputCount = 0, i = 0;
 		while (i < dataSize) {
-			// Every 4 characters give 3 bytes.
+			// Every 4 characters produce 3 bytes.
 			if (i + 2 >= dataSize) {
 				Runtime.log(LOG_WARNING, "BASE64: Decoding error: Input data size is not valid");
 				break;
@@ -2053,7 +2053,7 @@ class RCore {
 
 		@param data  The bytes.
 		@param dataSize  How many of them.
-		@return  Its 4 words, as raylib gives them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff
+		@return  Its 4 words, as raylib returns them: each read from 4 bytes of the hash, the first the lowest, and one above 0x7fffffff
 			is negative. */
 	static function ComputeMD5(data:haxe.io.Bytes, dataSize:Int):Array<Int> {
 		var hash = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476];
@@ -2168,7 +2168,7 @@ class RCore {
 		it would be read without the callback.
 
 		A texture's or model's images decode asynchronously, so `LoadTextureAsync` and `LoadModelAsync` load the ones
-		the callback gives.
+		the callback returns.
 
 		@param callback  Returns a file's bytes or null, or is null for none. */
 	static function SetLoadFileDataCallback(callback:Null<(fileName:String) -> Null<haxe.io.Bytes>>):Void {
@@ -2199,7 +2199,7 @@ class RCore {
 	// ---- Automation events ----
 	// raylib's LoadAutomationEventList(NULL): an empty list to record into, its capacity raylib's. Raylib.LoadAutomationEventList, a
 	// macro, calls it; a file is read by LoadAutomationEventListAsync.
-	// raylib's LoadAutomationEventList given a file, in answer form (Raylib.LoadAutomationEventList waits for it): a file that can't be
+	// raylib's LoadAutomationEventList with a file, in answer form (Raylib.LoadAutomationEventList waits for it): a file that can't be
 	// read is logged, and answers an empty list.
 	static function loadAutomationEventList(fileName:String, answer:AutomationEventList->Void):Void {
 		RFilesAsync.LoadAutomationEventListAsync(fileName, answer, error -> {
@@ -2385,7 +2385,7 @@ class RCore {
 	/** Unsupported. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
-		@param arg  What the function is given.
+		@param arg  What the function receives.
 		@param fps  The frames a second, or 0 for the display's.
 		@param simulateInfiniteLoop  Whether the call never returns. */
 	@:unsupported("emscripten_set_main_loop_arg: Unsupported. Use while (!WindowShouldClose()) { ... } instead.")
@@ -2519,7 +2519,7 @@ class RCore {
 	static var warnedMouseRefused = false;
 	static var warnedVibration = false;
 
-	// A file's name as the loads and saves read it: relative to the asset host's root, a leading `GetApplicationDirectory()` taken off,
+	// A file's name as the loads and saves read it: relative to the asset host's root, a leading `GetApplicationDirectory()` removed,
 	// and `/`, `.` and `..` followed as a web server follows them. A name climbing above the root keeps a leading `..`, which every file
 	// system refuses (`FilePath`), so it fails as a missing file does.
 	static function normalize(path:String):String {
@@ -3090,7 +3090,7 @@ class RCore {
 		config.rightLensCenter = [0.75 - lensShift, 0.5];
 		config.leftScreenCenter = [0.25, 0.5];
 		config.rightScreenCenter = [0.75, 0.5];
-		// The lens's radius, lensShift taken to -1 to 1.
+		// The lens's radius, lensShift mapped to -1 to 1.
 		var lensRadius = Math.abs(-1 - 4 * lensShift);
 		var lensRadiusSq = lensRadius * lensRadius;
 		var k = device.lensDistortionValues;
@@ -3159,7 +3159,7 @@ class RCore {
 
 		The shader is freed when no material holds it too, else when the last material holding it lets go.
 
-		Given a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
+		For a material's shader (`material.shader`), lets go of one hold and leaves the material drawing with it while anything holds it.
 
 		The default shader stays.
 
@@ -3189,11 +3189,11 @@ class RCore {
 	/** Sets a shader's uniform, for the models drawn after the call and the shapes in rlgl's batch when the batch is next drawn. See
 		`SetShaderValueV` for setting an array's elements.
 
-		Shapes drawn before the call but not yet flushed take the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and
+		Shapes drawn before the call but not yet flushed use the value too. `BeginShaderMode`, `EndShaderMode`, a mode changing and
 		`rlDrawRenderBatchActive` flush them.
 
-		A texture's location takes the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as raylib's
-		skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
+		A texture's location accepts the texture unit its sampler reads. `DrawMesh` binds the material's map of that index there, as
+		raylib's skybox sets its `samplerCube` to `MATERIAL_MAP_CUBEMAP`.
 
 		@param shader  The shader.
 		@param locIndex  The uniform's location.
@@ -3216,7 +3216,7 @@ class RCore {
 			return;
 		var slot = shader.program.textureSlot(locIndex);
 		if (slot >= 0) {
-			// A sampler's texture unit, as GL takes an int for it: DrawMesh binds the material's map of that index there.
+			// A sampler's texture unit, as GL accepts an int for it: DrawMesh binds the material's map of that index there.
 			var unit = numbers(value, SHADER_UNIFORM_SAMPLER2D);
 			if (unit.length > 0) {
 				Runtime.frame.cut();

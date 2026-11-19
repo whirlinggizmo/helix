@@ -67,7 +67,7 @@ class RModelsAsync {
 		}
 		Runtime.modelling();
 		Runtime.models.loadGltf(path, read -> {
-			// raylib gives a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
+			// raylib assigns a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
 			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.jointIndices == null)) {
 				Animations.read(path, file -> {
 					Models.keep(read, defaultShader(), Animations.attached(file));
@@ -158,7 +158,7 @@ class RModelsAsync {
 
 	/** Asynchronously loads a glTF or GLB file's animations, replacing raylib's `LoadModelAnimations`.
 
-		A file without skins gives none. Only the file's first skin is read.
+		A file without skins produces none. Only the file's first skin is read.
 
 		IQM and M3D animations are refused, as is any file but glTF and GLB.
 
@@ -204,7 +204,7 @@ class RModelsAsync {
 		- MTL's `Ke`, the emission color.
 		- `disp`, the height map's texture.
 
-		A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular
+		A field a material doesn't set defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular
 		exponent is 1.
 
 		A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.

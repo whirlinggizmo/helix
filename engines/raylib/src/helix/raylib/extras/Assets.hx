@@ -35,11 +35,11 @@ class Assets {
 	#if !macro
 	// ---- assets: the asset host, and files ensured ahead of raylib's loads (raylib/RAssets.hx) ----
 
-	/** Sets where the program's assets come from, unless the option `asset_host` gives a host. Assets ensured before the call stay
+	/** Sets where the program's assets come from, unless the option `asset_host` names a host. Assets ensured before the call stay
 		ensured.
 
-		The host is the first given of: the option `asset_host` (`--asset_host=https://example.com/game/` on the command line,
-		the environment variable HELIX_ASSET_HOST, `?asset_host=...` in a page's query), this call, the build's define
+		The host is the first of these that is set: the option `asset_host` (`--asset_host=https://example.com/game/` on the command
+		line, the environment variable HELIX_ASSET_HOST, `?asset_host=...` in a page's query), this call, the build's define
 		(`-D helix-raylib-asset-host=...`), and the default: natively `../web` beside the program's directory, in a page the page's own.
 
 		A URL's assets are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.

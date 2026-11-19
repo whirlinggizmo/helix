@@ -124,7 +124,7 @@ class GuiSkins {
 		RGuiSkins.GuiSetSkin(control, part, skin);
 
 	/** Sets the skin the next control call of a kind draws a part with, in place of the one `GuiSetSkin` set: one button in a
-		different skin from the rest. The next call of that control takes it, drawn or disabled alike, and the call after it draws with
+		different skin from the rest. The next call of that control uses it, drawn or disabled alike, and the call after it draws with
 		`GuiSetSkin`'s again.
 
 		@param control  The control: `BUTTON`, `SLIDER` and the rest of raygui's.
@@ -162,7 +162,7 @@ class GuiSkins {
 	/** Sets the texture drawn for one of raygui's icons in place of its pixels. Every control drawing that icon in its text
 		(`GuiIconText(iconId, text)`) draws the texture there, laid out as raygui's icon is: the texture and the text after it aligned
 		together as the control aligns its text, the text moved along by the texture's width. Draws raygui's
-		own icon again when given null. See `GuiDrawIcon` for an icon on its own.
+		own icon again when provided null. See `GuiDrawIcon` for an icon on its own.
 
 		The texture is drawn at the source's size times `GuiSetIconScale`'s scale, centered on the text's line, in its own colors.
 		It fades with the control: by `GuiSetAlpha`'s alpha, and to half in `STATE_DISABLED`.

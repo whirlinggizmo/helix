@@ -56,7 +56,7 @@ class RLighting {
 
 		Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`.
 		`maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, and `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`. Its
-		emission and alpha cutoff are the Materials extra's. Colors are taken as linear, as a glTF's factors are. An image's texels are
+		emission and alpha cutoff are the Materials extra's. Colors are read as linear, as a glTF's factors are. An image's texels are
 		decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
 
 		A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`).
@@ -92,7 +92,7 @@ class RLighting {
 		for (map => name in samplers) {
 			var location = GetShaderLocation(shader, name);
 			shader.locs[SHADER_LOC_MAP_ALBEDO + map] = location;
-			// The sampler reads its map's unit, which its twins take over by name.
+			// The sampler reads its map's unit, which its twins inherit by name.
 			SetShaderValue(shader, location, map, SHADER_UNIFORM_INT);
 		}
 		// A material without a normal map reads a flat one, where a missing map reads white.
@@ -105,7 +105,7 @@ class RLighting {
 		return shader;
 	}
 
-	/** Takes a light out of the scene. It lights nothing after, and its shadows are freed.
+	/** Removes a light from the scene. It lights nothing after, and its shadows are freed.
 
 		@param light  The light, from `CreateLight`. */
 	static function UnloadLight(light:Light):Void {
@@ -147,10 +147,10 @@ class RLighting {
 
 		Draw the casters as the frame draws them, models and meshes posed and placed the same. Each draw runs its own shader's vertex
 		stage, so a caster swaying, skinned or instanced there casts its shadow as it is drawn, and writes depth alone. A material with
-		an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps take what was
+		an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps receive what was
 		drawn once, less the draws whose bounds fall outside a map's view.
 
-		- **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the
+		- **What a shadow keeps:** the vertex stage, with the same uniforms as the draw (bone matrices, a sway's time), and the
 		  material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow.
 		- **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage
 		  without it casts its whole shape.

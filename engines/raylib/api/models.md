@@ -223,18 +223,18 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `fileName`: The file.
   - returns: The model, the program's until `UnloadModel`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before and still loaded, loads at once. Natively any other file is read, with its images, during the call. In a page it can't be, as the browser decodes images only asynchronously: the load logs why and gives a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or loaded before and still loaded, loads at once. Natively any other file is read, with its images, during the call. In a page it can't be, as the browser decodes images only asynchronously: the load logs why and returns a model with no meshes, as raylib's load of a missing file does. See `LoadModelAsync` for loading it asynchronously.
 - `LoadMaterials`: Loads an .mtl file's materials with the textures they name, as `LoadMaterialsAsync` reads them.
   - `fileName`: The file.
   - `materialCount`: Receives how many, in its first element.
   - returns: The materials, each the program's until `UnloadMaterial`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read, with its textures, during the call. In a page it can't be: the load logs why and gives no materials, as raylib's load of a missing file does. See `LoadMaterialsAsync` for loading them asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read, with its textures, during the call. In a page it can't be: the load logs why and returns no materials, as raylib's load of a missing file does. See `LoadMaterialsAsync` for loading them asynchronously.
 - `LoadModelFromMesh`: Returns a model of one mesh with the default material. See `LoadModelFromModels` for merging models' meshes into one model.
   - `mesh`: The mesh.
   - returns: The model.
 
-  The model takes over the program's hold on the mesh. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
+  The model holds the mesh in the program's place. `UnloadModel` frees the mesh, and a later `UnloadMesh` does nothing.
 
   The model has no bones. Once the program sets its `bones`, `bindPose` and `boneCount`, and the mesh's `boneIds` and `boneWeights`, `UpdateModelAnimation` and the other animation calls pose it as they pose a loaded model.
 - `IsModelValid`: Returns whether a model has meshes.
@@ -311,9 +311,9 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `mesh`: The mesh.
   - `material`: Its material: the shader, the diffuse color and the textures.
   - `transforms`: The instances' transforms.
-  - `instances`: How many instances, at most the transforms given.
+  - `instances`: How many instances, at most the transforms provided.
 
-  The material's shader takes each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself. raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
+  The material's shader receives each transform as a `mat4` attribute at `shader.locs[SHADER_LOC_MATRIX_MODEL]` and applies it itself. raylib's instancing example sets that location with `GetShaderLocationAttrib(shader, "instanceTransform")`.
 
   A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
 
@@ -346,7 +346,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 - `UnloadMesh`: Lets go of the program's hold on a mesh, freeing its GPU buffers unless a model still holds it.
   - `mesh`: The mesh.
 
-  Does nothing for a mesh given to `LoadModelFromMesh`, which its model frees, or for one already freed.
+  Does nothing for a mesh provided to `LoadModelFromMesh`, which its model frees, or for one already freed.
 - `GenMeshPoly`: Returns a flat regular polygon mesh on the XZ plane, facing up and centered on the origin.
   - `sides`: Its sides. Fewer than 3 make an empty mesh.
   - `radius`: Its corners' distance from the center.
@@ -413,7 +413,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `size`: The terrain's size: x and z across the image, y the height of white.
   - returns: The mesh.
 
-  Takes a pixel's gray as its red, green and blue averaged.
+  Reads a pixel's gray as its red, green and blue averaged.
 
   Makes two triangles a cell, each with a flat normal, and three vertices a triangle, with no indices.
 - `GenMeshCubicmap`: Returns a maze mesh of cubes from an image, a cube a pixel, each centered on its pixel's place from the origin.
@@ -438,13 +438,13 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
 
   Sums each triangle's direction of u at each of its vertices, by its indices when the mesh has them. Then makes each sum square to the vertex's normal and of length 1, with w the side the summed direction of v is on.
 
-  Gives a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is mostly z, else (-y, x, 0) of the normal, with w 1.
+  Assigns a vertex whose tangent comes out near length 0, or along its normal, a tangent square to the normal: x when the normal is mostly z, else (-y, x, 0) of the normal, with w 1.
 - `LoadModelAnimations`: Loads a glTF or GLB file's animations, as `LoadModelAnimationsAsync` reads them.
   - `fileName`: The file.
   - `animCount`: Optional. Receives how many, in its first element: the returned array's length.
   - returns: The animations, the program's until `UnloadModelAnimations`.
 
-  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call. In a page it can't be: the load logs why and gives no animations, as raylib's load of a missing file does. See `LoadModelAnimationsAsync` for loading them asynchronously.
+  A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once. Natively any other file is read during the call. In a page it can't be: the load logs why and returns no animations, as raylib's load of a missing file does. See `LoadModelAnimationsAsync` for loading them asynchronously.
 - `UpdateModelAnimationBones`: Poses a model's bones by a frame of an animation, as raylib 6.2's does, leaving its vertices where they are. See `UpdateModelAnimation` for posing the meshes under any shader.
   - `model`: The model.
   - `anim`: The animation, of the model's skeleton (`IsModelAnimationValid`).
@@ -535,7 +535,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `model`: The model.
   - returns: The box.
 
-  A turned model's box is not its bounds. Transforming its eight corners gives those.
+  A turned model's box is not its bounds. Transforming its eight corners produces those.
 - `CheckCollisionBoxes`: Returns whether two boxes overlap, touching included.
   - `box1`: One.
   - `box2`: The other.
@@ -575,7 +575,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `mesh`: The mesh, with its positions.
   - `transform`: The transform.
   - returns: The hit.
-- `GetRayCollisionTriangle`: Returns where a ray meets a triangle from either side, its normal that of the corners taken counterclockwise.
+- `GetRayCollisionTriangle`: Returns where a ray meets a triangle from either side, its normal that of the corners read counterclockwise.
   - `ray`: The ray.
   - `p1`: A corner.
   - `p2`: The next.
@@ -622,7 +622,7 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
   - `loaded`: Receives the animations, as many as the file has; their count is its length.
   - `failed`: Optional. Receives why they couldn't be loaded; when omitted, it is logged.
 
-  A file without skins gives none. Only the file's first skin is read.
+  A file without skins produces none. Only the file's first skin is read.
 
   IQM and M3D animations are refused, as is any file but glTF and GLB.
 
@@ -646,7 +646,7 @@ static function ExportMeshAsCodeAsync(mesh:Mesh, fileName:String, ?done:() -> Vo
   - MTL's `Ke`, the emission color.
   - `disp`, the height map's texture.
 
-  A field a material doesn't give defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular exponent is 1.
+  A field a material doesn't set defaults to tinyobj_loader_c's default, as raylib has it. Each color is black and the specular exponent is 1.
 
   A texture's path is resolved against the file's directory. A texture that can't be read is none (id 0) and is logged.
 

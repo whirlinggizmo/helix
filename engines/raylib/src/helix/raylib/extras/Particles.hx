@@ -47,7 +47,7 @@ class Particles {
 	// ---- particles: emitters in 3D, drawn on the GPU, and in 2D, drawn in the batch (raylib/RParticles.hx) ----
 
 	/** Returns a 3D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the
-		most alive takes the oldest one's place.
+		most alive replaces the oldest one.
 
 		A `maxParticles` over 524288 is held to 524288.
 
@@ -66,7 +66,7 @@ class Particles {
 		so a fast emitter leaves an even trail. Call it once a frame, before `DrawEmitter3D`. An emitter not updated holds still.
 
 		@param emitter  The emitter.
-		@param deltaTime  The seconds since its last update, as `GetFrameTime` gives them. */
+		@param deltaTime  The seconds since its last update, as `GetFrameTime` returns them. */
 	public static inline function UpdateEmitter3D(emitter:Emitter3D, deltaTime:Float):Void
 		RParticles.UpdateEmitter3D(emitter, deltaTime);
 
@@ -77,7 +77,7 @@ class Particles {
 	public static inline function DrawEmitter3D(emitter:Emitter3D):Void
 		RParticles.DrawEmitter3D(emitter);
 
-	/** Gives off particles at once at a 3D emitter's position, whatever its rate: a burst.
+	/** Emits particles at once at a 3D emitter's position, whatever its rate: a burst.
 
 		@param emitter  The emitter.
 		@param count  How many. */
@@ -91,14 +91,14 @@ class Particles {
 	public static inline function PrewarmEmitter3D(emitter:Emitter3D, seconds:Float):Void
 		RParticles.PrewarmEmitter3D(emitter, seconds);
 
-	/** Takes away every particle alive, and starts the emitter's random numbers again from its `seed`.
+	/** Removes every particle alive, and starts the emitter's random numbers again from its `seed`.
 
 		@param emitter  The emitter. */
 	public static inline function ClearEmitter3D(emitter:Emitter3D):Void
 		RParticles.ClearEmitter3D(emitter);
 
 	/** Returns a 2D emitter of at most `maxParticles` alive at once, at the origin, every field at its default. A particle born past the
-		most alive takes the oldest one's place.
+		most alive replaces the oldest one.
 
 		@param maxParticles  The most alive at once, 1 or more.
 		@return  The emitter, the program's until `UnloadEmitter2D`. */
@@ -115,7 +115,7 @@ class Particles {
 		was to its `position`. Call it once a frame, before `DrawEmitter2D`. An emitter not updated holds still.
 
 		@param emitter  The emitter.
-		@param deltaTime  The seconds since its last update, as `GetFrameTime` gives them. */
+		@param deltaTime  The seconds since its last update, as `GetFrameTime` returns them. */
 	public static inline function UpdateEmitter2D(emitter:Emitter2D, deltaTime:Float):Void
 		RParticles.UpdateEmitter2D(emitter, deltaTime);
 
@@ -126,7 +126,7 @@ class Particles {
 	public static inline function DrawEmitter2D(emitter:Emitter2D):Void
 		RParticles.DrawEmitter2D(emitter);
 
-	/** Gives off particles at once at a 2D emitter's position, whatever its rate: a burst.
+	/** Emits particles at once at a 2D emitter's position, whatever its rate: a burst.
 
 		@param emitter  The emitter.
 		@param count  How many. */
@@ -140,7 +140,7 @@ class Particles {
 	public static inline function PrewarmEmitter2D(emitter:Emitter2D, seconds:Float):Void
 		RParticles.PrewarmEmitter2D(emitter, seconds);
 
-	/** Takes away every particle alive, and starts the emitter's random numbers again from its `seed`.
+	/** Removes every particle alive, and starts the emitter's random numbers again from its `seed`.
 
 		@param emitter  The emitter. */
 	public static inline function ClearEmitter2D(emitter:Emitter2D):Void

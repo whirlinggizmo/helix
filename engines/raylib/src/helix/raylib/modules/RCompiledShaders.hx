@@ -28,7 +28,7 @@ class RCompiledShaders {
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`), or brought in by an async load this run, loads at once.
 		Natively any other file is read during the call. In a page it can't be, as the browser reads its cache only asynchronously: the
-		load logs why and gives an empty shader (id 0). See `LoadCompiledShaderAsync` for loading it asynchronously.
+		load logs why and returns an empty shader (id 0). See `LoadCompiledShaderAsync` for loading it asynchronously.
 
 		@param compiledShaderFileName  The compiled shader's file.
 		@return  The shader, the program's until `UnloadShader`, or an empty one (id 0) when the file isn't a compiled shader, with a
@@ -89,7 +89,7 @@ class RCompiledShaders {
 		return empty();
 	}
 
-	// The shader a load that fails gives: id 0, with no locations.
+	// The shader a failed load returns: id 0, with no locations.
 	static function empty():Shader {
 		return new Shader(0, [for (_ in 0...32) -1], null);
 	}

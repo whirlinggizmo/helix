@@ -168,7 +168,7 @@ class RText {
 		}
 	}
 
-	// Logs a text call given a null font, as a font is until its ...Async load's loaded callback is called: the first time only, as text
+	// Logs a text call with a null font, as a font is until its ...Async load's loaded callback is called: the first time only, as text
 	// is drawn each frame.
 	static function refuseNull(call:String):Void {
 		if (nullRefused)
@@ -230,7 +230,7 @@ class RText {
 
 	/** Returns the index of a character's glyph in a font.
 
-		A character the font lacks gives the index of the font's "?", or 0 when the font lacks that too.
+		A character the font lacks produces the index of the font's "?", or 0 when the font lacks that too.
 
 		@param font  The font.
 		@param codepoint  The character.
@@ -557,13 +557,13 @@ class RText {
 
 	/** Returns a font read from an image of glyphs in rows on a key color, as raylib reads it.
 
-		The key's border before the first glyph gives the space between glyphs and between rows.
+		The key's border before the first glyph sets the space between glyphs and between rows.
 
 		Each glyph is a run of pixels that aren't the key, numbered from `firstChar`.
 
 		The key becomes clear on the font's texture.
 
-		An image with no such border gives the default font.
+		An image with no such border produces the default font.
 
 		A glyph's height stops at the image's bottom and its width at the image's right edge.
 
@@ -644,7 +644,7 @@ class RText {
 		image of glyphs (PNG, BMP, TGA, JPEG or GIF) as raylib reads one.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
-		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and returns raylib's default font, as
 		raylib's load of a missing file does. See `LoadFontAsync` for loading it asynchronously.
 
 		@param fileName  The file.
@@ -665,7 +665,7 @@ class RText {
 	/** Loads a TrueType or OpenType font at a size, with the characters asked for.
 
 		A file ensured (`EnsureAssetAsync`, `helix.raylib.extras.Assets`) loads at once, its glyphs made during the call. Natively any other
-		file is read and its glyphs made during the call. In a page it can't be: the load logs why and gives raylib's default font, as
+		file is read and its glyphs made during the call. In a page it can't be: the load logs why and returns raylib's default font, as
 		raylib's load of a missing file does. See `LoadFontExAsync` for loading it asynchronously.
 
 		@param fileName  The file.
@@ -750,7 +750,7 @@ class RText {
 		];
 	}
 
-	// raylib 6.2's LoadFontData, as its LoadFontEx and LoadFontFromMemory take it: only the glyphs the font has, so a character it lacks
+	// raylib 6.2's LoadFontData, as its LoadFontEx and LoadFontFromMemory use it: only the glyphs the font has, so a character it lacks
 	// draws as its '?'; each Unicode space a blank image as wide as its advance (none when that isn't above 0); offsets from the line's
 	// top.
 	static function foundGlyphs(raster:Array<helix.platform.RasterGlyph>, ascent:Float, fontSize:Int):Array<GlyphInfo> {
@@ -791,7 +791,7 @@ class RText {
 		return glyphs;
 	}
 
-	// The Unicode spaces raylib 6.2 gives blank glyphs: the ASCII space, the no-break space, the Ogham space mark, U+2000 to U+200A, the
+	// The Unicode spaces raylib 6.2 assigns blank glyphs: the ASCII space, the no-break space, the Ogham space mark, U+2000 to U+200A, the
 	// narrow no-break space, the medium mathematical space and the ideographic space.
 	static final SPACES = [
 		0x20, 0xA0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000
@@ -868,7 +868,7 @@ class RText {
 	static var fontDefault:Null<Font> = null;
 
 	// raylib's MAX_TEXT_BUFFER_LENGTH, the bytes of the buffer its text functions write into, its terminating 0 among them, and
-	// MAX_TEXTSPLIT_COUNT, the most pieces TextSplit gives.
+	// MAX_TEXTSPLIT_COUNT, the most pieces TextSplit returns.
 	static inline final BUFFER = 1024;
 	static inline final SPLIT = 128;
 
@@ -888,11 +888,11 @@ class RText {
 
 	/** Returns text formatted as C's `printf` formats it.
 
-		Takes `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
+		Accepts `%d` and `%i`, `%u`, `%f` and `%F`, `%e` and `%E`, `%g` and `%G`, `%x`, `%X`, `%o`, `%c` (a character code), `%s` and `%%`.
 
-		Takes C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
+		Accepts C's flags (`-`, `0`, `+`, space, `#`), widths and precisions, as in `%5d`, `%-8s`, `%03i` and `%*d`.
 
-		`%f` writes 6 places unless a precision is given, as in `%.2f`.
+		`%f` writes 6 places unless a precision is provided, as in `%.2f`.
 
 		Reads and ignores C's length modifiers (`l`, `ll`, `h`, `z`).
 
@@ -1174,7 +1174,7 @@ class RText {
 
 		The piece stops at the text's end and is at most 1023 bytes.
 
-		A character the piece cuts through becomes a "?" for each of its bytes taken.
+		A character the piece cuts through becomes a "?" for each of its bytes in the piece.
 
 		@param text  The text.
 		@param position  Where the piece starts, in bytes from the start.
@@ -1220,7 +1220,7 @@ class RText {
 		return inserted == null || inserted.length >= BUFFER - 1 ? "" : decoded(inserted, 0, inserted.length);
 	}
 
-	// raylib's TextInsert's bytes, before its limit: null when it gives nothing.
+	// raylib's TextInsert's bytes, before its limit: null when it returns nothing.
 	static function insertedAt(text:String, insert:String, position:Int):Null<Array<Int>> {
 		if (text == null || insert == null || position < 0)
 			return null;
@@ -1234,7 +1234,7 @@ class RText {
 
 		The result is at most 1023 UTF-8 bytes.
 
-		A text that would take the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
+		A text that would bring the result past 1023 bytes, with its delimiter, is skipped, and the texts after it are still joined.
 
 		@param textList  The texts; a null one is empty.
 		@param count  How many of them.
@@ -1288,7 +1288,7 @@ class RText {
 		return pieces;
 	}
 
-	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` takes it.
+	/** Returns where text is first found in other text, in UTF-8 bytes from the start, as `TextSubtext` accepts it.
 
 		@param text  The text searched.
 		@param find  The text found; empty text is found at 0.
@@ -1542,7 +1542,7 @@ class RText {
 
 	/** Returns the code of text's last character.
 
-		`GetCodepointPrevious(TextSubtext(text, 0, position), size)` gives the character before a position.
+		`GetCodepointPrevious(TextSubtext(text, 0, position), size)` returns the character before a position.
 
 		@param text  The text.
 		@param codepointSize  Receives the character's length in UTF-8 bytes, at its index 0: what to move back by; 1 for empty or null
@@ -1608,7 +1608,7 @@ class RText {
 		}
 	}
 
-	// raylib's GetCodepointNext on bytes from i, a byte past their end read as C's terminating 0; size receives the bytes it took, 1 for
+	// raylib's GetCodepointNext on bytes from i, a byte past their end read as C's terminating 0; size receives the bytes it read, 1 for
 	// a malformed one, read as '?'.
 	static function next(bytes:Array<Int>, i:Int, size:Array<Int>):Int {
 		inline function at(k:Int)
@@ -1638,7 +1638,7 @@ class RText {
 		return b & 0x80 == 0 ? b : "?".code;
 	}
 
-	// raylib's GetCodepoint on bytes from 0, which checks each sequence as RFC 3629 has it; size receives the bytes it took.
+	// raylib's GetCodepoint on bytes from 0, which checks each sequence as RFC 3629 has it; size receives the bytes it read.
 	static function checked(bytes:Array<Int>, size:Array<Int>):Int {
 		inline function at(k:Int)
 			return k < bytes.length ? bytes[k] : 0;

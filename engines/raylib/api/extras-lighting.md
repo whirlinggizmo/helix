@@ -77,10 +77,10 @@ static function UpdateLightValues(shader:Shader, light:Light):Void
   - `position`: Where it is.
   - `target`: Where it points, for a directional or spot light.
   - `color`: Its color.
-  - `shader`: The shader it is made with, as rlights takes one.
+  - `shader`: The shader it is made with, as rlights accepts one.
   - returns: The light.
 
-  Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at each draw, so the light moves or changes by setting them, the Lighting extra's `intensity`, `range` and spot cone among them. `UnloadLight` takes the light out of the scene.
+  Each draw is lit by the lights reaching it most, as many as its shader's `lights` holds, 8 at most. The light's fields are read at each draw, so the light moves or changes by setting them, the Lighting extra's `intensity`, `range` and spot cone among them. `UnloadLight` removes the light from the scene.
 - `UpdateLightValues`: Kept as `UpdateLightValues` in raylib's lighting examples' `rlights.h`, for a program written for it. A light's fields are read at each draw, so the draws after a change show it with or without this call.
   - `shader`: The shader.
   - `light`: The light.
@@ -116,7 +116,7 @@ static function EndShadowMode():Void
 
   Each draw reads the material's maps `MATERIAL_MAP_ALBEDO`, `MATERIAL_MAP_METALNESS`, `MATERIAL_MAP_ROUGHNESS`, `MATERIAL_MAP_NORMAL`, `MATERIAL_MAP_OCCLUSION` and `MATERIAL_MAP_EMISSION`. Their samplers are `albedoMap`, `metalnessMap`, `roughnessMap`, `normalMap`, `occlusionMap` and `emissiveMap`, found at `locs[SHADER_LOC_MAP_ALBEDO]` and the five after it. A missing map reads white, and a missing normal map reads a flat normal.
 
-  Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`. `maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, and `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`. Its emission and alpha cutoff are the Materials extra's. Colors are taken as linear, as a glTF's factors are. An image's texels are decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
+  Each draw also reads the material's values. `maps[MATERIAL_MAP_ALBEDO].color` times the tint is `colDiffuse`. `maps[MATERIAL_MAP_METALNESS].value` is `metallicValue`, and `maps[MATERIAL_MAP_ROUGHNESS].value` is `roughnessValue`. Its emission and alpha cutoff are the Materials extra's. Colors are read as linear, as a glTF's factors are. An image's texels are decoded from sRGB. A material from `LoadMaterialDefault` is a smooth non-metal, both values 0, until set.
 
   A mesh without tangents under a normal map gets them with its first draw (`GenMeshTangents`).
 
@@ -130,7 +130,7 @@ static function EndShadowMode():Void
   SetShaderValue(pbr, pbr.locs[SHADER_LOC_VECTOR_VIEW], [camera.position.x, camera.position.y, camera.position.z],
   SHADER_UNIFORM_VEC3);
   ```
-- `UnloadLight`: Takes a light out of the scene. It lights nothing after, and its shadows are freed.
+- `UnloadLight`: Removes a light from the scene. It lights nothing after, and its shadows are freed.
   - `light`: The light, from `CreateLight`.
 - `EnableLightShadows`: Turns a light's shadows on. A light casts none until then. The light's `shadows` say how its shadows are made.
   - `light`: The light, from `CreateLight`.
@@ -145,9 +145,9 @@ static function EndShadowMode():Void
 - `BeginShadowMode`: Starts the frame's shadow pass, until `EndShadowMode`: what is drawn casts shadows, from every light that casts them, and is drawn nowhere else. Call it before `BeginDrawing`, or after it and before `BeginMode3D`, not within a 3D or texture mode.
   - `camera`: The camera the frame is drawn from, which a directional light's shadows follow.
 
-  Draw the casters as the frame draws them, models and meshes posed and placed the same. Each draw runs its own shader's vertex stage, so a caster swaying, skinned or instanced there casts its shadow as it is drawn, and writes depth alone. A material with an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps take what was drawn once, less the draws whose bounds fall outside a map's view.
+  Draw the casters as the frame draws them, models and meshes posed and placed the same. Each draw runs its own shader's vertex stage, so a caster swaying, skinned or instanced there casts its shadow as it is drawn, and writes depth alone. A material with an alpha cutoff (the Materials extra) casts nothing where its albedo's alpha is below the cutoff. Each light's maps receive what was drawn once, less the draws whose bounds fall outside a map's view.
 
-  - **What a shadow keeps:** the vertex stage, given the same uniforms as the draw (bone matrices, a sway's time), and the material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow.
+  - **What a shadow keeps:** the vertex stage, with the same uniforms as the draw (bone matrices, a sway's time), and the material's alpha cutoff. A fragment stage's own `discard` (a dissolve) isn't in the shadow.
   - **Cut out:** only where the vertex stage passes on `fragTexCoord`, which the cutoff samples the albedo at. A vertex stage without it casts its whole shape.
   - **Cost:** every cascade and every face of a point light draws the casters again. A point light's shadows cost about six times a directional light's single map.
 - `EndShadowMode`: Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows.

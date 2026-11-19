@@ -24,11 +24,11 @@ class Raylib6 {
 
 	/** Poses a model by two animations mixed by a blend, raylib 6.0's `UpdateModelAnimationEx`.
 
-		Takes each animation at its frame as `UpdateModelAnimation` takes one, then mixes the two by the blend.
+		Reads each animation at its frame as `UpdateModelAnimation` reads one, then mixes the two by the blend.
 
 		Moves the bones and the vertices on the GPU or the CPU as `UpdateModelAnimation` does.
 
-		Wraps a frame to its animation's frames before taking its fraction, as raylib's does, so a frame past the last holds the frame it
+		Wraps a frame to its animation's frames before using its fraction, as raylib's does, so a frame past the last holds the frame it
 		wrapped to.
 
 		Does nothing for a blend outside 0 to 1.

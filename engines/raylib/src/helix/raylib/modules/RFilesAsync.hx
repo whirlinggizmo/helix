@@ -90,7 +90,7 @@ class RFilesAsync {
 		});
 	}
 
-	// A file's text as raylib's LoadFileText gives it: its bytes up to the first NUL (a C string ends there for every text function), and
+	// A file's text as raylib's LoadFileText returns it: its bytes up to the first NUL (a C string ends there for every text function), and
 	// never refused for what they hold; bytes that aren't UTF-8, which a String can't hold, read as U+FFFD.
 	static function fileText(bytes:haxe.io.Bytes):String {
 		var end = 0;
@@ -277,7 +277,7 @@ class RFilesAsync {
 		The answer comes at a later frame, never during the call.
 
 		The size is:
-		- for a file `SaveFileText` or `SaveFileData` wrote, or the program's `SetLoadFileDataCallback` gives, its bytes' size
+		- for a file `SaveFileText` or `SaveFileData` wrote, or the callback `SetLoadFileDataCallback` set returns, its bytes' size
 		- for a dropped file, its own
 		- for a file of the program's, its size
 
@@ -317,7 +317,7 @@ class RFilesAsync {
 		- for a file of the program's, its time on disk
 		- for a file `SaveFileText` or `SaveFileData` wrote, when it was saved
 		- for a dropped file, the time kept for it
-		- 0 for a file whose time isn't kept, such as one the program's load callback gives
+		- 0 for a file whose time isn't kept, such as one the program's load callback returns
 
 		@param fileName  The file.
 		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
@@ -338,7 +338,7 @@ class RFilesAsync {
 
 		The answer comes at a later frame, never during the call.
 
-		Each path is the directory's followed by `/` and the name (`dirPath` "levels" gives "levels/1.json"). A subdirectory's has no
+		Each path is the directory's followed by `/` and the name (`dirPath` "levels" produces "levels/1.json"). A subdirectory's has no
 		slash at its end.
 
 		The paths are sorted by name.
@@ -427,7 +427,7 @@ class RFilesAsync {
 		scan(basePath, () -> loaded(list));
 	}
 
-	// A directory's path as the file systems take it: "" for the root ("", "." or "./"), without "./" before it or a slash after.
+	// A directory's path as the file systems accept it: "" for the root ("", "." or "./"), without "./" before it or a slash after.
 	static function directoryOf(dirPath:String):String {
 		var path = normalize(dirPath == null ? "" : dirPath);
 		while (StringTools.endsWith(path, "/"))
@@ -435,7 +435,7 @@ class RFilesAsync {
 		return path == "." ? "" : path;
 	}
 
-	// A name in a directory, as raylib joins them: the directory as given, a slash, the name.
+	// A name in a directory, as raylib joins them: the directory as provided, a slash, the name.
 	static function joined(dirPath:String, name:String):String {
 		var base = dirPath == null ? "" : dirPath;
 		while (base.length > 1 && StringTools.endsWith(base, "/"))
@@ -513,7 +513,7 @@ class RFilesAsync {
 		exportText("ExportDataAsCodeAsync", fileName, RCore.dataAsCode(data, dataSize, fileName), "Data as code exported successfully", done, failed);
 	}
 
-	/** Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` given a file. See `ExportAutomationEventListAsync` for writing one.
+	/** Asynchronously loads an automation events list from a text file, replacing raylib's `LoadAutomationEventList` with a file. See `ExportAutomationEventListAsync` for writing one.
 
 		The file is read as `LoadFileTextAsync` reads it.
 
