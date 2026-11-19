@@ -233,6 +233,10 @@ Code is written to be read, by people and agents, not packed.
       changes nothing.
     - **A note is in italics.** A fact the reader could miss and has to act on starts "Note that" and is set in italics,
       `_Note that ..._`, a code block it introduces after it. `tools/check_docs.py` checks it.
+    - **Provided, accepts and returns, never give or take.** Give and take read as borrowing or a transfer. An argument is
+      "provided" ("when provided", not "when given"), a member "accepts" a value (not "takes"), a call "returns" or "produces" a
+      result (not "gives"), a value is "read" or "used" from somewhere (not "taken"), and a step "lasts" or "needs" a frame (not
+      "takes"). This holds in `//` comments too. `tools/check_docs.py` checks it.
     - **One word for one thing, the API's own.** `blockedBounds` is "the blocked bounds" throughout, never also a box, a rectangle
       or an area. A side effect says what changes ("The zone follows changes to this rectangle's fields"), not a "so" clause.
 
