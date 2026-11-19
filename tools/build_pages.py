@@ -78,21 +78,28 @@ def raylib_folder(nav):
 
 
 def raylib_sections(page):
-    """Raylib's page with its sections: a contents list after its description, its constants' anchor, and each of raylib's modules
-    headed before its first function, with raylib.h's group headings before the first function under each."""
+    """Raylib's page with its sections: a contents list after its description, its constants with their groups' headings, and each of
+    raylib's modules headed before its first function, with raylib.h's group headings before the first function under each. Each
+    section links back to the contents."""
     import gen_apidoc
-    contents = ['<div class="raylib-contents"><p><a href="#constants">Constants and colors</a></p>']
+    top = '<a class="raylib-top" href="#contents">↑ Contents</a>'
+    contents = ['<div class="raylib-contents"><a name="contents"></a>']
+    for name, heading in gen_apidoc.RAYLIB_CONSTANTS:
+        page = heading_before(page, name, f'<h4 class="raylib-group">{heading}</h4>')
+    sections = [('constants and colors', 'constants', gen_apidoc.RAYLIB_CONSTANTS)]
+    sections += [(module, module, headings) for module, headings in gen_apidoc.RAYLIB_SECTIONS]
+    for title, anchor, headings in sections:
+        groups = ''.join(f'<li><a href="#{name}">{heading}</a></li>' for name, heading in headings)
+        contents.append(f'<p><a href="#{anchor}"><b>{title}</b></a></p><ul>{groups}</ul>')
     for module, headings in gen_apidoc.RAYLIB_SECTIONS:
-        page = heading_before(page, headings[0][0], f'<h2 class="raylib-module"><a name="{module}"></a>{module}</h2>')
+        page = heading_before(page, headings[0][0], f'<h2 class="raylib-module"><a name="{module}"></a>{module}{top}</h2>')
         for name, heading in headings:
             page = heading_before(page, name, f'<h4 class="raylib-group">{heading}</h4>')
-        groups = ' · '.join(f'<a href="#{name}">{heading}</a>' for name, heading in headings)
-        contents.append(f'<p><a href="#{module}"><b>{module}</b></a>: {groups}</p>')
     contents.append('</div>')
     variables = '<h3 class="section">Static variables</h3>'
     if variables not in page:
         sys.exit('pages: Raylib\'s page has no constants')
-    return page.replace(variables, ''.join(contents) + '<a name="constants"></a>' + variables, 1)
+    return page.replace(variables, ''.join(contents) + '<a name="constants"></a>' + top + variables, 1)
 
 
 def heading_before(page, name, heading):

@@ -401,44 +401,50 @@ def paged(path,members):
 # sections of gen_raylib's Raylib.hx whose functions it holds (a module's own and the calls helix-raylib writes in place of its calls that wait).
 RAYLIB_MODULES=(('core',('RCore','RWindowAsync','RFilesAsync','RCompiledShaders')),('shapes',('RShapes',)),('textures',('RTextures','RTexturesAsync')),
     ('text',('RText','RTextAsync')),('models',('RModels','RModelsAsync')),('audio',('RAudio','RAudioAsync')))
-# raylib 5.5's groups of functions, as raylib.h's comments head them: each group's first function, its heading and its module.
-RAYLIB_GROUPS=(('InitWindow','Window-related functions','core'),('ShowCursor','Cursor-related functions','core'),
-    ('ClearBackground','Drawing-related functions','core'),('LoadVrStereoConfig','VR stereo config functions for VR simulator','core'),
-    ('LoadShader','Shader management functions','core'),('GetScreenToWorldRay','Screen-space-related functions','core'),
-    ('SetTargetFPS','Timing-related functions','core'),('SwapScreenBuffer','Custom frame control functions','core'),
-    ('SetRandomSeed','Random values generation functions','core'),('TakeScreenshot','Misc. functions','core'),
-    ('LoadFileData','Files management functions','core'),('FileExists','File system functions','core'),
-    ('IsKeyPressed','Input-related functions: keyboard','core'),('IsGamepadAvailable','Input-related functions: gamepads','core'),
-    ('IsMouseButtonPressed','Input-related functions: mouse','core'),('GetTouchX','Input-related functions: touch','core'),
-    ('SetGesturesEnabled','Gestures and touch handling functions','core'),('UpdateCamera','Camera system functions','core'),
-    ('SetShapesTexture','Basic shapes drawing functions','shapes'),('DrawSplineLinear','Splines drawing functions','shapes'),
-    ('GetSplinePointLinear','Spline segment point evaluation functions','shapes'),
-    ('CheckCollisionRecs','Basic shapes collision detection functions','shapes'),('LoadImage','Image loading functions','textures'),
-    ('GenImageColor','Image generation functions','textures'),('ImageCopy','Image manipulation functions','textures'),
-    ('ImageClearBackground','Image drawing functions','textures'),('LoadTexture','Texture loading functions','textures'),
-    ('GenTextureMipmaps','Texture configuration functions','textures'),('DrawTexture','Texture drawing functions','textures'),
-    ('ColorIsEqual','Color/pixel related functions','textures'),('GetFontDefault','Font loading/unloading functions','text'),
-    ('DrawFPS','Text drawing functions','text'),('SetTextLineSpacing','Text font info functions','text'),
-    ('LoadUTF8','Text codepoints management functions','text'),('TextCopy','Text strings management functions','text'),
-    ('DrawLine3D','Basic geometric 3D shapes drawing functions','models'),('LoadModel','Model management functions','models'),
-    ('DrawModel','Model drawing functions','models'),('UploadMesh','Mesh management functions','models'),
-    ('GenMeshPoly','Mesh generation functions','models'),('LoadMaterials','Material loading/unloading functions','models'),
-    ('LoadModelAnimations','Model animations loading/unloading functions','models'),('CheckCollisionSpheres','Collision detection functions','models'),
-    ('InitAudioDevice','Audio device management functions','audio'),('LoadWave','Wave/Sound loading/unloading functions','audio'),
-    ('PlaySound','Wave/Sound management functions','audio'),('LoadMusicStream','Music management functions','audio'),
-    ('LoadAudioStream','AudioStream management functions','audio'))
+# raylib 5.5's groups of functions, as raylib.h's comments head them less 'functions' and '-related' (its misc. functions by the
+# comments within them): each group's first function, its heading and its module.
+RAYLIB_GROUPS=(('InitWindow','Window','core'),('ShowCursor','Cursor','core'),
+    ('ClearBackground','Drawing','core'),('LoadVrStereoConfig','VR stereo config for VR simulator','core'),
+    ('LoadShader','Shader management','core'),('GetScreenToWorldRay','Screen-space','core'),
+    ('SetTargetFPS','Timing','core'),('SwapScreenBuffer','Custom frame control','core'),
+    ('SetRandomSeed','Random values generation','core'),('TakeScreenshot','Screenshots, config flags and URLs','core'),
+    ('TraceLog','Logging and memory','core'),('SetTraceLogCallback','Custom callbacks','core'),
+    ('LoadFileData','Files management','core'),('FileExists','File system','core'),
+    ('IsKeyPressed','Input: keyboard','core'),('IsGamepadAvailable','Input: gamepads','core'),
+    ('IsMouseButtonPressed','Input: mouse','core'),('GetTouchX','Input: touch','core'),
+    ('SetGesturesEnabled','Gestures and touch handling','core'),('UpdateCamera','Camera system','core'),
+    ('SetShapesTexture','Basic shapes drawing','shapes'),('DrawSplineLinear','Splines drawing','shapes'),
+    ('GetSplinePointLinear','Spline segment point evaluation','shapes'),
+    ('CheckCollisionRecs','Basic shapes collision detection','shapes'),('LoadImage','Image loading','textures'),
+    ('GenImageColor','Image generation','textures'),('ImageCopy','Image manipulation','textures'),
+    ('ImageClearBackground','Image drawing','textures'),('LoadTexture','Texture loading','textures'),
+    ('GenTextureMipmaps','Texture configuration','textures'),('DrawTexture','Texture drawing','textures'),
+    ('ColorIsEqual','Color/pixel','textures'),('GetFontDefault','Font loading/unloading','text'),
+    ('DrawFPS','Text drawing','text'),('SetTextLineSpacing','Text font info','text'),
+    ('LoadUTF8','Text codepoints management','text'),('TextCopy','Text strings management','text'),
+    ('DrawLine3D','Basic geometric 3D shapes drawing','models'),('LoadModel','Model management','models'),
+    ('DrawModel','Model drawing','models'),('UploadMesh','Mesh management','models'),
+    ('GenMeshPoly','Mesh generation','models'),('LoadMaterials','Material loading/unloading','models'),
+    ('LoadModelAnimations','Model animations loading/unloading','models'),('CheckCollisionSpheres','Collision detection','models'),
+    ('InitAudioDevice','Audio device management','audio'),('LoadWave','Wave/Sound loading/unloading','audio'),
+    ('PlaySound','Wave/Sound management','audio'),('LoadMusicStream','Music management','audio'),
+    ('LoadAudioStream','AudioStream management','audio'))
 # Where a call of helix-raylib's own goes that isn't raylib's call and Async: after the call named.
 RAYLIB_AFTER={'GetMouseRay':'GetScreenToWorldRay','LoadSavedFileDataAsync':'SaveFileData','LoadSavedFileTextAsync':'SaveFileText',
     'SavedFileExistsAsync':'FileExists','LoadCompiledShader':'LoadShaderFromMemory','LoadCompiledShaderAsync':'LoadCompiledShader',
-    'LoadCompiledShaderFromMemory':'LoadCompiledShaderAsync'}
+    'LoadCompiledShaderFromMemory':'LoadCompiledShaderAsync','CompileShaderFile':'LoadCompiledShaderFromMemory'}
+# The calls helix-raylib refuses that raylib.h doesn't declare, a group at the end of a module: each group's prefix, heading and module.
+RAYLIB_OTHERS=(('emscripten_','Emscripten (emscripten.h)','core'),)
 # What for_dox wrote: Raylib's modules in order, each with its groups' headings, each by the first function under it
-# ([(module, [(function, heading)])]).
+# ([(module, [(function, heading)])]), and its constants' groups, each by the first constant under it ([(constant, heading)]).
 RAYLIB_SECTIONS=[]
+RAYLIB_CONSTANTS=[]
 
 def for_dox(source,output):
     """The description dox reads: source's, with Raylib's functions in raylib's order: by module (RAYLIB_MODULES), then raylib.h's
-    order, the ones helix-raylib refuses among them, and each call written in place of one right after it. RAYLIB_SECTIONS holds the
-    modules and their groups. As text, as merged() is."""
+    order, the ones helix-raylib refuses among them, each call written in place of one right after it, and the calls raylib.h doesn't
+    declare in groups of their own (RAYLIB_OTHERS). RAYLIB_SECTIONS holds the modules and their groups, RAYLIB_CONSTANTS the constants'
+    groups. As text, as merged() is."""
     import gen_raylib
     text=source.read_text(encoding='utf-8')
     named,_=LAYOUT['helix.raylib.Raylib']
@@ -454,14 +460,18 @@ def for_dox(source,output):
         return name[:-len('Async')] if name.endswith('Async') and name[:-len('Async')] in index else RAYLIB_AFTER.get(name)
     members={module:{} for module,_ in RAYLIB_MODULES}
     kept=raylib.group(2)
+    def other(name):
+        return next((o for o in RAYLIB_OTHERS if name.startswith(o[0])),None)
     def module(name):
         # raylib's call in its group's module, as raylib.h groups it; a call of helix-raylib's own beside the call it's written for.
+        if other(name):
+            return other(name)[2]
         while name not in index and parent(name):
             name=parent(name)
         return group(name)[2] if name in index and group(name) else None
     for member in re.finditer(r'^\t\t<(\w+)\b(?:[^>]*?/>|[^>]*>.*?</\1>)\n',raylib.group(2),re.M|re.S):
         name=member.group(1)
-        if module_of.get(titles.get(named.get(name))) is None and name not in index:
+        if module_of.get(titles.get(named.get(name))) is None and name not in index and name not in RAYLIB_AFTER and not other(name):
             continue
         where=module(name)
         if where is None:
@@ -476,7 +486,7 @@ def for_dox(source,output):
         mine=members[where]
         after={}
         for name in mine:
-            if name not in index:
+            if name not in index and not other(name):
                 after.setdefault(parent(name),[]).append(name)
         ordered=[]
         def place(name):
@@ -486,16 +496,32 @@ def for_dox(source,output):
         for name in order:
             if name in mine:
                 place(name)
+        for prefix,_,_ in RAYLIB_OTHERS:
+            ordered+=[n for n in mine if n.startswith(prefix)]
         if after:
             sys.exit(f'gen_apidoc: Raylib\'s {where} has no place for {", ".join(n for kids in after.values() for n in kids)}')
         headings,last=[],None
         for name in ordered:
-            here=group(name if name in index else next(n for n in reversed(ordered[:ordered.index(name)]) if n in index))
+            here=other(name) or group(name if name in index else next(n for n in reversed(ordered[:ordered.index(name)]) if n in index))
             if here and here!=last:
                 headings.append((name,here[1]));last=here
         RAYLIB_SECTIONS.append((where,headings))
         functions+=[mine[n] for n in ordered]
-    text=text.replace(raylib.group(0),raylib.group(0).replace(raylib.group(2),''.join(functions)+kept),1)
+    # The constants by group, in raylib.h's order: its defines, the colors, then its enums.
+    enums={gen_raylib.enum_heading(e):i for i,e in enumerate(json.loads((ROOT/'engines/raylib/vendor/raylib/raylib_api.json').read_text(encoding='utf-8'))['enums'])}
+    def rank(heading):
+        return 0 if heading=="raylib.h's defines" else 1 if heading=='Colors' else 2+enums[heading] if heading in enums else 99
+    groups={}
+    for member in re.finditer(r'^\t\t<(\w+)\b(?:[^>]*?/>|[^>]*>.*?</\1>)\n',raylib.group(2),re.M|re.S):
+        heading=named.get(member.group(1))
+        if heading and member.group(0) in kept and 'set="method"' not in member.group(0):
+            groups.setdefault(heading,[]).append(member);kept=kept.replace(member.group(0),'',1)
+    RAYLIB_CONSTANTS.clear()
+    constants=[]
+    for heading in sorted(groups,key=rank):
+        RAYLIB_CONSTANTS.append((groups[heading][0].group(1),heading))
+        constants+=[m.group(0) for m in groups[heading]]
+    text=text.replace(raylib.group(0),raylib.group(0).replace(raylib.group(2),''.join(constants+functions)+kept),1)
     output.write_text(text,encoding='utf-8')
 
 def merged(js,cpp,output):

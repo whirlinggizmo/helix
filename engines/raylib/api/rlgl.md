@@ -2,7 +2,7 @@
 
 [Back to the library](README.md)
 
-## OpenGL version (rlGlVersion)
+## OpenGL version
 
 
 ```haxe
@@ -21,7 +21,7 @@ static inline var RL_OPENGL_ES_30:Int
 - `RL_OPENGL_ES_20`: OpenGL ES 2.0 (GLSL 100).
 - `RL_OPENGL_ES_30`: OpenGL ES 3.0 (GLSL 300 es).
 
-## Trace log level (rlTraceLogLevel)
+## Trace log level
 
 
 ```haxe
@@ -44,7 +44,7 @@ static inline var RL_LOG_NONE:Int
 - `RL_LOG_FATAL`: Fatal logging, used to abort program: exit(EXIT_FAILURE).
 - `RL_LOG_NONE`: Disable logging.
 
-## Texture pixel formats (rlPixelFormat)
+## Texture pixel formats
 
 
 ```haxe
@@ -99,7 +99,7 @@ static inline var RL_PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA:Int
 - `RL_PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA`: 8 bpp.
 - `RL_PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA`: 2 bpp.
 
-## Texture parameters: filter mode (rlTextureFilter)
+## Texture parameters: filter mode
 
 
 ```haxe
@@ -118,7 +118,7 @@ static inline var RL_TEXTURE_FILTER_ANISOTROPIC_16X:Int
 - `RL_TEXTURE_FILTER_ANISOTROPIC_8X`: Anisotropic filtering 8x.
 - `RL_TEXTURE_FILTER_ANISOTROPIC_16X`: Anisotropic filtering 16x.
 
-## Color blending modes (pre-defined) (rlBlendMode)
+## Color blending modes, pre-defined
 
 
 ```haxe
@@ -141,7 +141,7 @@ static inline var RL_BLEND_CUSTOM_SEPARATE:Int
 - `RL_BLEND_CUSTOM`: Blend textures using custom src/dst factors (use rlSetBlendFactors()).
 - `RL_BLEND_CUSTOM_SEPARATE`: Blend textures using custom src/dst factors (use rlSetBlendFactorsSeparate()).
 
-## Shader location point type (rlShaderLocationIndex)
+## Shader location point type
 
 
 ```haxe
@@ -200,7 +200,7 @@ static inline var RL_SHADER_LOC_MAP_BRDF:Int
 - `RL_SHADER_LOC_MAP_PREFILTER`: Shader location: samplerCube texture: prefilter.
 - `RL_SHADER_LOC_MAP_BRDF`: Shader location: sampler2d texture: brdf.
 
-## Shader uniform data type (rlShaderUniformDataType)
+## Shader uniform data type
 
 
 ```haxe
@@ -233,7 +233,7 @@ static inline var RL_SHADER_UNIFORM_SAMPLER2D:Int
 - `RL_SHADER_UNIFORM_UIVEC4`: Shader uniform type: uivec4 (4 unsigned int).
 - `RL_SHADER_UNIFORM_SAMPLER2D`: Shader uniform type: sampler2d.
 
-## Shader attribute data types (rlShaderAttributeDataType)
+## Shader attribute data types
 
 
 ```haxe
@@ -248,7 +248,7 @@ static inline var RL_SHADER_ATTRIB_VEC4:Int
 - `RL_SHADER_ATTRIB_VEC3`: Shader attribute type: vec3 (3 float).
 - `RL_SHADER_ATTRIB_VEC4`: Shader attribute type: vec4 (4 float).
 
-## Framebuffer attachment type (rlFramebufferAttachType)
+## Framebuffer attachment type
 
 
 ```haxe
@@ -275,7 +275,7 @@ static inline var RL_ATTACHMENT_STENCIL:Int
 - `RL_ATTACHMENT_DEPTH`: Framebuffer attachment type: depth.
 - `RL_ATTACHMENT_STENCIL`: Framebuffer attachment type: stencil.
 
-## Framebuffer texture attachment type (rlFramebufferAttachTextureType)
+## Framebuffer texture attachment type
 
 
 ```haxe
@@ -298,7 +298,7 @@ static inline var RL_ATTACHMENT_RENDERBUFFER:Int
 - `RL_ATTACHMENT_TEXTURE2D`: Framebuffer texture attachment type: texture2d.
 - `RL_ATTACHMENT_RENDERBUFFER`: Framebuffer texture attachment type: renderbuffer.
 
-## Face culling mode (rlCullMode)
+## Face culling mode
 
 
 ```haxe

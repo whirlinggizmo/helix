@@ -175,6 +175,11 @@ def sentence(text):
     return text[0].upper() + text[1:] + '.' if text else ''
 
 
+def enum_heading(e):
+    """An enum's heading: raylib's description, its own parentheses a comma's clause ('Keyboard keys, US keyboard layout')."""
+    return re.sub(r' \(([^)]*)\)', r', \1', sentence(e['description']).rstrip('.'))
+
+
 def callback_types(api):
     """raylib's callbacks as Haxe's function types, null for none; raylib's va_list left out, as helix-raylib's TraceLog has none."""
     out = {}
@@ -471,7 +476,7 @@ def layout():
                     headings[f.name] = title
         for e in api.get('enums', []):
             for v in e['values']:
-                headings.setdefault(v['name'], f"{sentence(e['description']).rstrip('.')} ({e['name']})")
+                headings.setdefault(v['name'], enum_heading(e))
         for d in api.get('defines', []):
             if d['type'] == 'COLOR':
                 headings.setdefault(d['name'], 'Colors')

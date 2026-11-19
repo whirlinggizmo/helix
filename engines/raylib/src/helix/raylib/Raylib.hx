@@ -7370,12 +7370,12 @@ class Raylib {
 	public static macro function emscripten_sleep(args:Array<Expr>):ExprOf<Void>
 		return helix.platform.macros.Build.unsupported("emscripten_sleep: Unsupported. Use WaitTime(ms / 1000) instead.", macro {});
 
-	/** Unsupported: raylib's shader load from GLSL files. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`. */
+	/** Unsupported: runtime loading of GLSL shaders. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`. */
 	public static macro function LoadShader(args:Array<Expr>):ExprOf<Shader>
 		return helix.platform.macros.Build.unsupported("LoadShader: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
-	/** Unsupported: raylib's shader load from GLSL text. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory. */
+	/** Unsupported: runtime loading of GLSL shaders. See `LoadCompiledShaderFromMemory` for loading a compiled shader from memory. */
 	public static macro function LoadShaderFromMemory(args:Array<Expr>):ExprOf<Shader>
 		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));

@@ -3126,7 +3126,7 @@ class RCore {
 
 	// ---- Shaders ----
 
-	/** Unsupported: raylib's shader load from GLSL files. See `LoadCompiledShader` for loading a shader compiled ahead of time by
+	/** Unsupported: runtime loading of GLSL shaders. See `LoadCompiledShader` for loading a shader compiled ahead of time by
 		`CompileShaderFile`.
 
 		@param vsFileName  The vertex stage's file.
@@ -3137,8 +3137,7 @@ class RCore {
 		throw "LoadShader is unimplemented";
 	}
 
-	/** Unsupported: raylib's shader load from GLSL text. See `LoadCompiledShaderFromMemory` for making a shader from compiled data
-		in memory.
+	/** Unsupported: runtime loading of GLSL shaders. See `LoadCompiledShaderFromMemory` for loading a compiled shader from memory.
 
 		@param vsCode  The vertex stage's text.
 		@param fsCode  The fragment stage's text.

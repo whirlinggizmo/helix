@@ -2,7 +2,7 @@
 
 [Back to the library](README.md)
 
-## Keyboard keys (US keyboard layout) (KeyboardKey)
+## Keyboard keys, US keyboard layout
 
 
 ```haxe
@@ -229,7 +229,7 @@ static inline var KEY_VOLUME_DOWN:Int
 - `KEY_VOLUME_UP`: Key: Android volume up button.
 - `KEY_VOLUME_DOWN`: Key: Android volume down button.
 
-## Mouse buttons (MouseButton)
+## Mouse buttons
 
 
 ```haxe
@@ -250,7 +250,7 @@ static inline var MOUSE_BUTTON_BACK:Int
 - `MOUSE_BUTTON_FORWARD`: Mouse button forward (advanced mouse device).
 - `MOUSE_BUTTON_BACK`: Mouse button back (advanced mouse device).
 
-## Gamepad buttons (GamepadButton)
+## Gamepad buttons
 
 
 ```haxe
@@ -293,7 +293,7 @@ static inline var GAMEPAD_BUTTON_RIGHT_THUMB:Int
 - `GAMEPAD_BUTTON_LEFT_THUMB`: Gamepad joystick pressed button left.
 - `GAMEPAD_BUTTON_RIGHT_THUMB`: Gamepad joystick pressed button right.
 
-## Gamepad axis (GamepadAxis)
+## Gamepad axis
 
 
 ```haxe
@@ -312,7 +312,7 @@ static inline var GAMEPAD_AXIS_RIGHT_TRIGGER:Int
 - `GAMEPAD_AXIS_LEFT_TRIGGER`: Gamepad back trigger left, pressure level: [1..-1].
 - `GAMEPAD_AXIS_RIGHT_TRIGGER`: Gamepad back trigger right, pressure level: [1..-1].
 
-## System/Window config flags (ConfigFlags)
+## System/Window config flags
 
 
 ```haxe
@@ -351,7 +351,7 @@ static inline var FLAG_INTERLACED_HINT:Int
 - `FLAG_MSAA_4X_HINT`: Set to try enabling MSAA 4X.
 - `FLAG_INTERLACED_HINT`: Set to try enabling interlaced video format (for V3D).
 
-## Gesture (Gesture)
+## Gesture
 
 
 ```haxe
@@ -380,7 +380,7 @@ static inline var GESTURE_PINCH_OUT:Int
 - `GESTURE_PINCH_IN`: Pinch in gesture.
 - `GESTURE_PINCH_OUT`: Pinch out gesture.
 
-## Material map index (MaterialMapIndex)
+## Material map index
 
 
 ```haxe
@@ -409,7 +409,7 @@ static inline var MATERIAL_MAP_BRDF:Int
 - `MATERIAL_MAP_PREFILTER`: Prefilter material (NOTE: Uses GL_TEXTURE_CUBE_MAP).
 - `MATERIAL_MAP_BRDF`: Brdf material.
 
-## Shader location index (ShaderLocationIndex)
+## Shader location index
 
 
 ```haxe
@@ -474,7 +474,7 @@ static inline var SHADER_LOC_BONE_MATRICES:Int
 - `SHADER_LOC_VERTEX_BONEWEIGHTS`: Shader location: vertex attribute: boneWeights.
 - `SHADER_LOC_BONE_MATRICES`: Shader location: array of matrices uniform: boneMatrices.
 
-## Shader uniform data type (ShaderUniformDataType)
+## Shader uniform data type
 
 
 ```haxe
@@ -499,7 +499,7 @@ static inline var SHADER_UNIFORM_SAMPLER2D:Int
 - `SHADER_UNIFORM_IVEC4`: Shader uniform type: ivec4 (4 int).
 - `SHADER_UNIFORM_SAMPLER2D`: Shader uniform type: sampler2d.
 
-## Camera system modes (CameraMode)
+## Camera system modes
 
 
 ```haxe
@@ -516,7 +516,7 @@ static inline var CAMERA_THIRD_PERSON:Int
 - `CAMERA_FIRST_PERSON`: Camera first person.
 - `CAMERA_THIRD_PERSON`: Camera third person.
 
-## Camera projection (CameraProjection)
+## Camera projection
 
 
 ```haxe
@@ -527,7 +527,7 @@ static inline var CAMERA_ORTHOGRAPHIC:Int
 - `CAMERA_PERSPECTIVE`: Perspective projection.
 - `CAMERA_ORTHOGRAPHIC`: Orthographic projection.
 
-## Texture parameters: filter mode (TextureFilter)
+## Texture parameters: filter mode
 
 
 ```haxe
@@ -546,7 +546,7 @@ static inline var TEXTURE_FILTER_ANISOTROPIC_16X:Int
 - `TEXTURE_FILTER_ANISOTROPIC_8X`: Anisotropic filtering 8x.
 - `TEXTURE_FILTER_ANISOTROPIC_16X`: Anisotropic filtering 16x.
 
-## Trace log level (TraceLogLevel)
+## Trace log level
 
 
 ```haxe
@@ -682,8 +682,8 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `emscripten_run_script_string`: Unsupported. See `GetPlatformOS` for naming the system.
 - `emscripten_get_now`: Unsupported. See `GetTime` for reading the seconds since `InitWindow`.
 - `emscripten_sleep`: Unsupported. See `WaitTime` for waiting.
-- `LoadShader`: Unsupported: raylib's shader load from GLSL files. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`.
-- `LoadShaderFromMemory`: Unsupported: raylib's shader load from GLSL text. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory.
+- `LoadShader`: Unsupported: runtime loading of GLSL shaders. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`.
+- `LoadShaderFromMemory`: Unsupported: runtime loading of GLSL shaders. See `LoadCompiledShaderFromMemory` for loading a compiled shader from memory.
 - `LoadImageFromMemory`: Unsupported. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
 - `LoadImageAnimFromMemory`: Unsupported. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
 - `LoadFontFromMemory`: Unsupported. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
@@ -696,7 +696,7 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `AttachAudioMixedProcessor`: Unsupported.
 - `DetachAudioMixedProcessor`: Unsupported.
 
-## Pixel formats (PixelFormat)
+## Pixel formats
 
 
 ```haxe
@@ -770,7 +770,7 @@ static inline var RAYLIB_VERSION_PATCH:Int
 - `RAYLIB_VERSION_MINOR`: raylib.h's `RAYLIB_VERSION_MINOR`.
 - `RAYLIB_VERSION_PATCH`: raylib.h's `RAYLIB_VERSION_PATCH`.
 
-## Mouse cursor (MouseCursor)
+## Mouse cursor
 
 
 ```haxe
@@ -799,7 +799,7 @@ static inline var MOUSE_CURSOR_NOT_ALLOWED:Int
 - `MOUSE_CURSOR_RESIZE_ALL`: The omnidirectional resize/move cursor shape.
 - `MOUSE_CURSOR_NOT_ALLOWED`: The operation-not-allowed shape.
 
-## Shader attribute data types (ShaderAttributeDataType)
+## Shader attribute data types
 
 
 ```haxe
@@ -814,7 +814,7 @@ static inline var SHADER_ATTRIB_VEC4:Int
 - `SHADER_ATTRIB_VEC3`: Shader attribute type: vec3 (3 float).
 - `SHADER_ATTRIB_VEC4`: Shader attribute type: vec4 (4 float).
 
-## Texture parameters: wrap mode (TextureWrap)
+## Texture parameters: wrap mode
 
 
 ```haxe
@@ -829,7 +829,7 @@ static inline var TEXTURE_WRAP_MIRROR_CLAMP:Int
 - `TEXTURE_WRAP_MIRROR_REPEAT`: Mirrors and repeats the texture in tiled mode.
 - `TEXTURE_WRAP_MIRROR_CLAMP`: Mirrors and clamps to border the texture in tiled mode.
 
-## Cubemap layouts (CubemapLayout)
+## Cubemap layouts
 
 
 ```haxe
@@ -846,7 +846,7 @@ static inline var CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE:Int
 - `CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR`: Layout is defined by a 3x4 cross with cubemap faces.
 - `CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE`: Layout is defined by a 4x3 cross with cubemap faces.
 
-## Font type, defines generation method (FontType)
+## Font type, defines generation method
 
 
 ```haxe
@@ -859,7 +859,7 @@ static inline var FONT_SDF:Int
 - `FONT_BITMAP`: Bitmap font generation, no anti-aliasing.
 - `FONT_SDF`: SDF font generation, requires external shader.
 
-## Color blending modes (pre-defined) (BlendMode)
+## Color blending modes, pre-defined
 
 
 ```haxe
@@ -882,7 +882,7 @@ static inline var BLEND_CUSTOM_SEPARATE:Int
 - `BLEND_CUSTOM`: Blend textures using custom src/dst factors (use rlSetBlendFactors()).
 - `BLEND_CUSTOM_SEPARATE`: Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate()).
 
-## N-patch layout (NPatchLayout)
+## N-patch layout
 
 
 ```haxe

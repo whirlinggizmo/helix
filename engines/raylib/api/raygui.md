@@ -2,7 +2,7 @@
 
 [Back to the library](README.md)
 
-## Gui control state (GuiState)
+## Gui control state
 
 
 ```haxe
@@ -17,7 +17,7 @@ static inline var STATE_DISABLED:Int
 - `STATE_PRESSED`: Gui control state: `STATE_PRESSED`.
 - `STATE_DISABLED`: Gui control state: `STATE_DISABLED`.
 
-## Gui control text alignment (GuiTextAlignment)
+## Gui control text alignment
 
 
 ```haxe
@@ -30,7 +30,7 @@ static inline var TEXT_ALIGN_RIGHT:Int
 - `TEXT_ALIGN_CENTER`: Gui control text alignment: `TEXT_ALIGN_CENTER`.
 - `TEXT_ALIGN_RIGHT`: Gui control text alignment: `TEXT_ALIGN_RIGHT`.
 
-## Gui control text alignment vertical (GuiTextAlignmentVertical)
+## Gui control text alignment vertical
 
 
 ```haxe
@@ -43,7 +43,7 @@ static inline var TEXT_ALIGN_BOTTOM:Int
 - `TEXT_ALIGN_MIDDLE`: Gui control text alignment vertical: `TEXT_ALIGN_MIDDLE`.
 - `TEXT_ALIGN_BOTTOM`: Gui control text alignment vertical: `TEXT_ALIGN_BOTTOM`.
 
-## Gui control text wrap mode (GuiTextWrapMode)
+## Gui control text wrap mode
 
 
 ```haxe
@@ -56,7 +56,7 @@ static inline var TEXT_WRAP_WORD:Int
 - `TEXT_WRAP_CHAR`: Gui control text wrap mode: `TEXT_WRAP_CHAR`.
 - `TEXT_WRAP_WORD`: Gui control text wrap mode: `TEXT_WRAP_WORD`.
 
-## Gui controls (GuiControl)
+## Gui controls
 
 
 ```haxe
@@ -95,7 +95,7 @@ static inline var STATUSBAR:Int
 - `SCROLLBAR`: Gui controls: `SCROLLBAR`.
 - `STATUSBAR`: Gui controls: `STATUSBAR`.
 
-## Gui base properties for every control (GuiControlProperty)
+## Gui base properties for every control
 
 
 ```haxe
@@ -132,7 +132,7 @@ static inline var TEXT_ALIGNMENT:Int
 - `TEXT_PADDING`: Control text padding, not considering border.
 - `TEXT_ALIGNMENT`: Control text horizontal alignment inside control text bound (after border and padding).
 
-## DEFAULT extended properties (GuiDefaultProperty)
+## DEFAULT extended properties
 
 
 ```haxe
@@ -153,7 +153,7 @@ static inline var TEXT_WRAP_MODE:Int
 - `TEXT_ALIGNMENT_VERTICAL`: Text vertical alignment inside text bounds (after border and padding).
 - `TEXT_WRAP_MODE`: Text wrap-mode inside text bounds.
 
-## Toggle/ToggleGroup (GuiToggleProperty)
+## Toggle/ToggleGroup
 
 
 ```haxe
@@ -162,7 +162,7 @@ static inline var GROUP_PADDING:Int
 
 - `GROUP_PADDING`: ToggleGroup separation between toggles.
 
-## Slider/SliderBar (GuiSliderProperty)
+## Slider/SliderBar
 
 
 ```haxe
@@ -173,7 +173,7 @@ static inline var SLIDER_PADDING:Int
 - `SLIDER_WIDTH`: Slider size of internal bar.
 - `SLIDER_PADDING`: Slider/SliderBar internal bar padding.
 
-## ProgressBar (GuiProgressBarProperty)
+## ProgressBar
 
 
 ```haxe
@@ -182,7 +182,7 @@ static inline var PROGRESS_PADDING:Int
 
 - `PROGRESS_PADDING`: ProgressBar internal padding.
 
-## ScrollBar (GuiScrollBarProperty)
+## ScrollBar
 
 
 ```haxe
@@ -201,7 +201,7 @@ static inline var SCROLL_SPEED:Int
 - `SCROLL_PADDING`: ScrollBar scroll padding from arrows.
 - `SCROLL_SPEED`: ScrollBar scrolling speed.
 
-## CheckBox (GuiCheckBoxProperty)
+## CheckBox
 
 
 ```haxe
@@ -210,7 +210,7 @@ static inline var CHECK_PADDING:Int
 
 - `CHECK_PADDING`: CheckBox internal check padding.
 
-## ComboBox (GuiComboBoxProperty)
+## ComboBox
 
 
 ```haxe
@@ -221,7 +221,7 @@ static inline var COMBO_BUTTON_SPACING:Int
 - `COMBO_BUTTON_WIDTH`: ComboBox right button width.
 - `COMBO_BUTTON_SPACING`: ComboBox button separation.
 
-## DropdownBox (GuiDropdownBoxProperty)
+## DropdownBox
 
 
 ```haxe
@@ -236,7 +236,7 @@ static inline var DROPDOWN_ROLL_UP:Int
 - `DROPDOWN_ARROW_HIDDEN`: DropdownBox arrow hidden.
 - `DROPDOWN_ROLL_UP`: DropdownBox roll up flag (default rolls down).
 
-## TextBox/TextBoxMulti/ValueBox/Spinner (GuiTextBoxProperty)
+## TextBox/TextBoxMulti/ValueBox/Spinner
 
 
 ```haxe
@@ -245,7 +245,7 @@ static inline var TEXT_READONLY:Int
 
 - `TEXT_READONLY`: TextBox in read-only mode: 0-text editable, 1-text no-editable.
 
-## Spinner (GuiSpinnerProperty)
+## Spinner
 
 
 ```haxe
@@ -256,7 +256,7 @@ static inline var SPIN_BUTTON_SPACING:Int
 - `SPIN_BUTTON_WIDTH`: Spinner left/right buttons width.
 - `SPIN_BUTTON_SPACING`: Spinner buttons separation.
 
-## ListView (GuiListViewProperty)
+## ListView
 
 
 ```haxe
@@ -273,7 +273,7 @@ static inline var LIST_ITEMS_BORDER_WIDTH:Int
 - `SCROLLBAR_SIDE`: ListView scrollbar side (0-SCROLLBAR_LEFT_SIDE, 1-SCROLLBAR_RIGHT_SIDE).
 - `LIST_ITEMS_BORDER_WIDTH`: ListView items border width.
 
-## ColorPicker (GuiColorPickerProperty)
+## ColorPicker
 
 
 ```haxe
@@ -289,9 +289,6 @@ static inline var HUEBAR_SELECTOR_OVERFLOW:Int
 - `HUEBAR_PADDING`: ColorPicker right hue bar separation from panel.
 - `HUEBAR_SELECTOR_HEIGHT`: ColorPicker right hue bar selector height.
 - `HUEBAR_SELECTOR_OVERFLOW`: ColorPicker right hue bar selector overflow.
-
-##  (GuiIconName)
-
 
 ```haxe
 static inline var ICON_NONE:Int
@@ -550,6 +547,7 @@ static inline var ICON_252:Int
 static inline var ICON_253:Int
 static inline var ICON_254:Int
 static inline var ICON_255:Int
+static macro function GuiLoadIcons(...args):Array<String>
 ```
 
 - `ICON_NONE`: raygui.h's `ICON_NONE`.
@@ -808,6 +806,7 @@ static inline var ICON_255:Int
 - `ICON_253`: raygui.h's `ICON_253`.
 - `ICON_254`: raygui.h's `ICON_254`.
 - `ICON_255`: raygui.h's `ICON_255`.
+- `GuiLoadIcons`: Unsupported. See `GuiLoadIconsAsync` for loading an icon file.
 
 ## raygui.h's defines
 
@@ -1279,9 +1278,3 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
   - `text`: Not drawn.
   - `colorHsv`: The color, hue in degrees (x), saturation (y) and value (z) 0 to 1; saturation and value change in place.
   - returns: 0.
-
-```haxe
-static macro function GuiLoadIcons(...args):Array<String>
-```
-
-- `GuiLoadIcons`: Unsupported. See `GuiLoadIconsAsync` for loading an icon file.
