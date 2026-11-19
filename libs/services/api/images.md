@@ -128,7 +128,7 @@ function drawText(font:Font2D, text:String, x:Float, y:Float, size:Float, spacin
   - `factor`: The chance of white, 0 to 1, in hundredths: the rest of it is dropped.
   - `random`: The generator the pixels are drawn from, one number a pixel, rows top first.
   - returns: The image.
-- `perlinNoise`: Returns Perlin noise in gray, opaque: fractal Brownian motion over 6 octaves of stb_perlin's noise.
+- `perlinNoise`: Returns Perlin noise in gray, opaque: `Noise.fractal`'s 6 octaves.
   - `width`: The width, in pixels.
   - `height`: The height, in pixels.
   - `offsetX`: How far it is moved left, in pixels: images side by side at their widths join up.

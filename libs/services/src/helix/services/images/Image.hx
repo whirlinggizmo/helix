@@ -1,6 +1,7 @@
 package helix.services.images;
 
 import helix.math.MathTools;
+import helix.math.Noise;
 import haxe.ds.Vector;
 import haxe.io.Bytes;
 import helix.geometry.Aabb2D;
@@ -199,7 +200,7 @@ class Image {
 		return image;
 	}
 
-	/** Returns Perlin noise in gray, opaque: fractal Brownian motion over 6 octaves of stb_perlin's noise.
+	/** Returns Perlin noise in gray, opaque: `Noise.fractal`'s 6 octaves.
 
 		The same arguments produce the same image on every target. The longer side is scaled to keep the noise square.
 		@param width  The width, in pixels.
@@ -222,7 +223,7 @@ class Image {
 					nx = f32(nx * aspectRatio);
 				else
 					ny = f32(ny / aspectRatio);
-				var n = fbm(nx, ny, 1);
+				var n = Noise.fractal(nx, ny, 1);
 				n = n < -1 ? -1 : n > 1 ? 1 : n;
 				var intensity = Std.int(f32(f32(f32(n + 1) / 2) * 255));
 				put(p, (y * width + x) * 4, 0xff000000 | intensity << 16 | intensity << 8 | intensity);
@@ -1529,80 +1530,4 @@ class Image {
 			case _: (t3 - t2) / 2;
 		}
 	}
-
-	// stb_perlin's stb_perlin_fbm_noise3 as raylib calls it: lacunarity 2, gain 0.5, 6 octaves, no wrapping.
-	static function fbm(x:Float, y:Float, z:Float):Float {
-		var frequency = 1., amplitude = 1., sum = 0.;
-		for (i in 0...6) {
-			sum = f32(sum + f32(noise(f32(x * frequency), f32(y * frequency), f32(z * frequency), i) * amplitude));
-			frequency = f32(frequency * 2);
-			amplitude = f32(amplitude * 0.5);
-		}
-		return sum;
-	}
-
-	static inline function fastFloor(a:Float):Int {
-		var i = Std.int(a);
-		return a < i ? i - 1 : i;
-	}
-
-	static inline function ease(a:Float):Float
-		return f32(f32(f32(f32(f32(f32(f32(a * 6) - 15) * a) + 10) * a) * a) * a);
-
-	static inline function lerp(a:Float, b:Float, t:Float):Float
-		return f32(a + f32(f32(b - a) * t));
-
-	static inline function grad(index:Int, x:Float, y:Float, z:Float):Float {
-		var at = PERLIN_GRAD_INDEX[index & 255] * 3;
-		return f32(f32(f32(PERLIN_BASIS[at] * x) + f32(PERLIN_BASIS[at + 1] * y)) + f32(PERLIN_BASIS[at + 2] * z));
-	}
-
-	// stb_perlin_noise3_internal, its wraps 0 (every 256).
-	static function noise(x:Float, y:Float, z:Float, seed:Int):Float {
-		var px = fastFloor(x), py = fastFloor(y), pz = fastFloor(z);
-		var x0 = px & 255, x1 = (px + 1) & 255, y0 = py & 255, y1 = (py + 1) & 255, z0 = pz & 255, z1 = (pz + 1) & 255;
-		x = f32(x - px);
-		y = f32(y - py);
-		z = f32(z - pz);
-		var u = ease(x), v = ease(y), w = ease(z);
-		var r0 = PERLIN[(x0 + seed) & 255], r1 = PERLIN[(x1 + seed) & 255];
-		var r00 = PERLIN[(r0 + y0) & 255],
-			r01 = PERLIN[(r0 + y1) & 255],
-			r10 = PERLIN[(r1 + y0) & 255],
-			r11 = PERLIN[(r1 + y1) & 255];
-		var xm = f32(x - 1), ym = f32(y - 1), zm = f32(z - 1);
-		var n00 = lerp(grad(r00 + z0, x, y, z), grad(r00 + z1, x, y, zm), w);
-		var n01 = lerp(grad(r01 + z0, x, ym, z), grad(r01 + z1, x, ym, zm), w);
-		var n10 = lerp(grad(r10 + z0, xm, y, z), grad(r10 + z1, xm, y, zm), w);
-		var n11 = lerp(grad(r11 + z0, xm, ym, z), grad(r11 + z1, xm, ym, zm), w);
-		return lerp(lerp(n00, n01, v), lerp(n10, n11, v), u);
-	}
-
-	static final PERLIN_BASIS:Array<Float> = [
-		1, 1, 0, -1,  1, 0, 1, -1,  0, -1, -1,  0,
-		1, 0, 1, -1,  0, 1, 1,  0, -1, -1,  0, -1,
-		0, 1, 1,  0, -1, 1, 0,  1, -1,  0, -1, -1
-	];
-
-	// stb_perlin's permutation (its second copy dropped: an index is reduced modulo 256).
-	static final PERLIN:Array<Int> = [
-		23, 125, 161, 52, 103, 117, 70, 37, 247, 101, 203, 169, 124, 126, 44, 123, 152, 238, 145, 45, 171, 114, 253, 10, 192, 136, 4, 157, 249, 30, 35, 72,
-		175, 63, 77, 90, 181, 16, 96, 111, 133, 104, 75, 162, 93, 56, 66, 240, 8, 50, 84, 229, 49, 210, 173, 239, 141, 1, 87, 18, 2, 198, 143, 57, 225, 160,
-		58, 217, 168, 206, 245, 204, 199, 6, 73, 60, 20, 230, 211, 233, 94, 200, 88, 9, 74, 155, 33, 15, 219, 130, 226, 202, 83, 236, 42, 172, 165, 218, 55,
-		222, 46, 107, 98, 154, 109, 67, 196, 178, 127, 158, 13, 243, 65, 79, 166, 248, 25, 224, 115, 80, 68, 51, 184, 128, 232, 208, 151, 122, 26, 212, 105,
-		43, 179, 213, 235, 148, 146, 89, 14, 195, 28, 78, 112, 76, 250, 47, 24, 251, 140, 108, 186, 190, 228, 170, 183, 139, 39, 188, 244, 246, 132, 48, 119,
-		144, 180, 138, 134, 193, 82, 182, 120, 121, 86, 220, 209, 3, 91, 241, 149, 85, 205, 150, 113, 216, 31, 100, 41, 164, 177, 214, 153, 231, 38, 71, 185,
-		174, 97, 201, 29, 95, 7, 92, 54, 254, 191, 118, 34, 221, 131, 11, 163, 99, 234, 81, 227, 147, 156, 176, 17, 142, 69, 12, 110, 62, 27, 255, 0, 194, 59,
-		116, 242, 252, 19, 21, 187, 53, 207, 129, 64, 135, 61, 40, 167, 237, 102, 223, 106, 159, 197, 189, 215, 137, 36, 32, 22, 5
-	];
-
-	// stb_perlin's gradient for each permutation entry (its second copy dropped likewise).
-	static final PERLIN_GRAD_INDEX:Array<Int> = [
-		7, 9, 5, 0, 11, 1, 6, 9, 3, 9, 11, 1, 8, 10, 4, 7, 8, 6, 1, 5, 3, 10, 9, 10, 0, 8, 4, 1, 5, 2, 7, 8, 7, 11, 9, 10, 1, 0, 4, 7, 5, 0, 11, 6, 1, 4, 2,
-		8, 8, 10, 4, 9, 9, 2, 5, 7, 9, 1, 7, 2, 2, 6, 11, 5, 5, 4, 6, 9, 0, 1, 1, 0, 7, 6, 9, 8, 4, 10, 3, 1, 2, 8, 8, 9, 10, 11, 5, 11, 11, 2, 6, 10, 3, 4,
-		2, 4, 9, 10, 3, 2, 6, 3, 6, 10, 5, 3, 4, 10, 11, 2, 9, 11, 1, 11, 10, 4, 9, 4, 11, 0, 4, 11, 4, 0, 0, 0, 7, 6, 10, 4, 1, 3, 11, 5, 3, 4, 2, 9, 1, 3,
-		0, 1, 8, 0, 6, 7, 8, 7, 0, 4, 6, 10, 8, 2, 3, 11, 11, 8, 0, 2, 4, 8, 3, 0, 0, 10, 6, 1, 2, 2, 4, 5, 6, 0, 1, 3, 11, 9, 5, 5, 9, 6, 9, 8, 3, 8, 1, 8,
-		9, 6, 9, 11, 10, 7, 5, 6, 5, 9, 1, 3, 7, 0, 2, 10, 11, 2, 6, 1, 3, 11, 7, 7, 2, 1, 7, 3, 0, 8, 1, 1, 5, 0, 6, 10, 11, 11, 0, 2, 7, 0, 10, 8, 3, 5, 7,
-		1, 11, 1, 0, 7, 9, 0, 11, 5, 10, 3, 2, 3, 5, 9, 7, 9, 8, 4, 6, 5
-	];
 }
