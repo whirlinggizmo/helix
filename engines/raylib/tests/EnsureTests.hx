@@ -45,7 +45,7 @@ class EnsureTests {
 		gate.waitFor = 3;
 		var ensured = false, counted:Array<String> = [];
 		EnsureAssetsAsync(["a.txt", "./b.txt", "c.txt", "a.txt"], () -> ensured = true, error -> throw error, (done, total) -> counted.push('$done/$total'));
-		check(gate.asked.length == 3, 'every fetch asked for in the call, a name given twice once: ${gate.asked}');
+		check(gate.asked.length == 3, 'every fetch asked for in the call, a name provided twice once: ${gate.asked}');
 		check(!ensured, "ensured later, not during the call");
 		poll();
 		check(ensured && counted.join(",") == "1/3,2/3,3/3", 'ensured, its progress counted: $ensured $counted');

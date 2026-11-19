@@ -93,7 +93,7 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String)
     'SingleCalls.hx:13: characters 3-27 : Single: Unsupported. Use Float instead.'),
     'ShaderCalls':('LoadShader: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro',
     'LoadShaderFromMemory: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader,','or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes',
-    'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShader(compiledShaderFileName:String):Shader'),
+    'ShaderCalls.hx:11:','CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and returns nothing to the program. Load that file with LoadCompiledShader(compiledShaderFileName:String):Shader'),
     'GuessedCalls':('GuessedCalls.hx:9: characters 16-41 : LoadImageFromMemory: Unsupported. Use LoadImageFromMemoryAsync(','GuessedCalls.hx:10: characters 16-37 : LoadShader: Unsupported. Use LoadCompiledShader(',
     'GuessedCalls.hx:11: characters 15-40 : GetMonitorPhysicalWidth: Unsupported. Use GetMonitorWidth(','GuessedCalls.hx:12: characters 3-26 : TextCopy: Unsupported. Assign it instead'),
     'ObjectCasts':('ObjectCasts.hx:11: characters 16-71 : cast: Unsupported from an object to VirtualButtonOptions, a class. Write the object in braces where a VirtualButtonOptions is expected, without cast.',

@@ -59,7 +59,7 @@ class MemoryFiles implements IFileSystem {
 	public var root(get, never):String;
 
 	function get_root():String
-		return "the files given LoadMusicStreamFromMemory and the files dropped";
+		return "the files provided to LoadMusicStreamFromMemory and the files dropped";
 
 	public var canWrite(get, never):Bool;
 

@@ -84,7 +84,7 @@ class AudioStreamTests {
 		for (queue in output.queued.keys())
 			output.queued.set(queue, 0);
 		Runtime.pollAll();
-		check(calls == 4, "its callback taken away, the poll calls nothing");
+		check(calls == 4, "its callback removed, the poll calls nothing");
 
 		// FLAC music isn't opened, as raylib 5.5's default build leaves FLAC out.
 		check(opens("theme.flac") == "failed: theme.flac: STREAM: File format not supported" && opens("THEME.Flac") != "opened",
@@ -96,7 +96,7 @@ class AudioStreamTests {
 			"LoadMusicStreamFromMemory refuses FLAC");
 
 		CloseAudioDevice();
-		check(polled() == 0, "CloseAudioDevice takes it out of the poll");
+		check(polled() == 0, "CloseAudioDevice removes it from the poll");
 		open(output);
 		var again = LoadAudioStream(44100, 16, 1);
 		SetAudioStreamCallback(again, (data, frames) -> calls++);

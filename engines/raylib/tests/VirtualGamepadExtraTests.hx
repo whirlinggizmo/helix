@@ -143,7 +143,7 @@ class VirtualGamepadExtraTests {
 		check(!IsGamepadButtonDown(0, GAMEPAD_BUTTON_MIDDLE_RIGHT)
 			&& IsVirtualStickHeld(0, VIRTUAL_STICK_LEFT)
 			&& !IsVirtualStickHeld(0, VIRTUAL_STICK_RIGHT),
-			"Start without a position is up, and the finger takes the left stick");
+			"Start without a position is up, and the finger holds the left stick");
 		frame([TouchMove(10, 430, 300)]);
 		var base = GetVirtualStickBase(0, VIRTUAL_STICK_LEFT),
 			knob = GetVirtualStickKnob(0, VIRTUAL_STICK_LEFT);
@@ -178,9 +178,9 @@ class VirtualGamepadExtraTests {
 			knob = GetVirtualStickKnob(0, VIRTUAL_STICK_LEFT);
 		check(knob.x > base.x && knob.y == base.y, 'the tilt stick\'s knob pushed from its base by the tilt: $base, $knob');
 		CalibrateTilt();
-		check(IsTiltCalibrating(), "taking level again");
+		check(IsTiltCalibrating(), "calibrating level again");
 		DisableTilt();
-		check(!IsTiltCalibrating(), "the tilt turned off while level is being taken: not calibrating");
+		check(!IsTiltCalibrating(), "the tilt turned off while calibrating: not calibrating");
 		frame([TouchUp(11, 400, 300), TiltState(Refused)]);
 		check(GetTiltStatus() == TILT_STATUS_REFUSED && GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) == 0, "refused: reads 0");
 

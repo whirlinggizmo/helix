@@ -49,7 +49,7 @@ class ShaderValueTests {
 		bytes.setInt32(4, -1);
 		check(numbers(bytes, SHADER_UNIFORM_IVEC2) == "7,-1", 'Bytes for an ivec2, as ints: ${numbers(bytes, SHADER_UNIFORM_IVEC2)}');
 
-		check(numbers({x: 1}, SHADER_UNIFORM_FLOAT) == "", "any other value gives none");
+		check(numbers({x: 1}, SHADER_UNIFORM_FLOAT) == "", "any other value returns none");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

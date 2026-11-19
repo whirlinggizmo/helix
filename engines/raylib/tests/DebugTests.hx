@@ -329,7 +329,7 @@ class DebugTests {
 		var custom:FrameStatsStyle = {targetFps: 101, farBelowTargetColor: BLUE};
 		check(is(colors(custom), BLUE), "the style's own color");
 		SetTargetFPS(60);
-		check(is(colors({}), YELLOW), "SetTargetFPS's 60 is the target without one given");
+		check(is(colors({}), YELLOW), "SetTargetFPS's 60 is the target without one provided");
 		SetTargetFPS(200);
 		check(is(colors({}), RED), "and 200");
 		SetTargetFPS(0);

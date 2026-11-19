@@ -118,7 +118,7 @@ class AnimationMaskTests {
 
 		var reused = [9., 9., 9., 9., 9.];
 		var filled = GetModelBoneMask(model, "arm", reused);
-		check(filled == reused && filled.join(",") == "0,0,1", 'the mask fills the array given, sized to the bones: $filled');
+		check(filled == reused && filled.join(",") == "0,0,1", 'the mask fills the array provided, sized to the bones: $filled');
 		check(GetModelBoneMask(model, "tail").join(",") == "0,0,0", "a bone the model hasn't masks nothing");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});

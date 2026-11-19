@@ -137,7 +137,7 @@ class ShaderMacro {
 					at(fsName, fs, d.name, pos));
 		for (d in declarations(vertex))
 			if (d.kind == "in" && ATTRIBUTES.indexOf(d.name) < 0 && d.type != "mat4")
-				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib gives here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
+				Context.error('$vsName: the attribute "${d.name}" isn\'t one raylib provides here (${ATTRIBUTES.join(", ")}, or a mat4 of the instances\' transforms, `DrawMeshInstanced`\'s)',
 					at(vsName, vs, d.name, pos));
 		return {vertex: {name: vsName, text: vertex}, fragment: {name: fsName, text: fragment}};
 	}

@@ -2171,7 +2171,7 @@ class RModels {
 		}
 		if (memory == null) {
 			Runtime.log(LOG_WARNING,
-				"SHADER: A uniform's value isn't set: give an Array, a Vector2, Vector3 or Vector4, a Matrix, a Color, a haxe.io typed array or Bytes");
+				"SHADER: A uniform's value isn't set: provide an Array, a Vector2, Vector3 or Vector4, a Matrix, a Color, a haxe.io typed array or Bytes");
 			return [];
 		}
 		var ints = uniformType != null && uniformType >= SHADER_UNIFORM_INT && uniformType <= SHADER_UNIFORM_SAMPLER2D;

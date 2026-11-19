@@ -65,7 +65,7 @@ class CloseWindowPage {
 		check(cancelled(Browser.window, key()), "open: a key is cancelled");
 		check(cancelled(canvas, wheel()), "open: a wheel turn on the canvas is cancelled");
 		check(cancelled(canvas, menu()), "open: a right click on the canvas is cancelled");
-		check(canvas.style.touchAction == "none", "open: the canvas takes no touch gestures");
+		check(canvas.style.touchAction == "none", "open: the canvas accepts no touch gestures");
 		CloseWindow();
 		check(!IsWindowReady(), "closed: the window isn't ready");
 		check(!cancelled(Browser.window, key()), "closed: a key reaches the page uncancelled");

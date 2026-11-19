@@ -213,7 +213,7 @@ class ParticlesTests {
 		var first = alive(a);
 		check(first.length > 5 && same(first, alive(b)), "the same seed, the same particles");
 		ClearEmitter3D(a);
-		check(a.particleCount == 0 && alive(a).length == 0, "a clear takes every particle");
+		check(a.particleCount == 0 && alive(a).length == 0, "a clear removes every particle");
 		var clock = a.clock;
 		run(a, 1);
 		var again = alive(a);

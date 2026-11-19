@@ -129,7 +129,7 @@ class DeviceTests {
 		check(Math.abs(tilt.x - .25) < 1e-9 && Math.abs(tilt.y - .5) < 1e-9, 'the tilt over 60 degrees: $tilt');
 		CalibrateTilt();
 		tilt = GetTilt();
-		check(tilt.x == 0 && tilt.y == 0, "level taken again, reading 0 meanwhile");
+		check(tilt.x == 0 && tilt.y == 0, "level calibrated again, reading 0 meanwhile");
 		DisableTilt();
 		check(!devices.tiltRequested, "turned off");
 		Runtime.tiltService = new Tilt(events, new UnreadableTilt());

@@ -191,7 +191,7 @@ class ShadowsTests {
 				if (drawnInt(p, lit, "lights.enabled", i) == 1) drawnInt(p, lit, "lights.shadow", i)
 		];
 		shadows.sort((a, b) -> a - b);
-		check(shadows.join(",") == "1,2,3", "the draw's three casting lights given their shadows' indices");
+		check(shadows.join(",") == "1,2,3", "the draw's three casting lights assigned their shadows' indices");
 		check(drawnInt(p, lit, "shadowed") == 1, "shadows fall on a material until SetMaterialShadowed");
 		var m = @:privateAccess helix.raylib.internal.Shadows.matrices[0];
 		check(near(drawnFloat(p, lit, "helixShadowMatrices", 0, 0), m.m0)
@@ -266,7 +266,7 @@ class ShadowsTests {
 		DrawModel(posed, Vector3Zero(), 1, WHITE);
 		var skinnedCaster = caster.twin;
 		check(skinnedCaster != null && drawnInt(skinnedCaster, passes[8].draws[3], "boneOffset") >= 1,
-			"a posed model cast through its caster's skinned twin, given its first bone");
+			"a posed model cast through its caster's skinned twin, with its first bone");
 		EndShadowMode();
 		frame.draw(800, 450, true);
 

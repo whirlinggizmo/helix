@@ -7654,7 +7654,7 @@ class Raylib {
 		// Its result wanted as a value (passed to LoadCompiledShaderFromMemory, say) is refused here, at the program's line.
 		var expected = haxe.macro.Context.getExpectedType();
 		if (expected != null && haxe.macro.TypeTools.toString(expected) != "Void")
-			haxe.macro.Context.error("CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and gives the program nothing. Load that file with LoadCompiledShader(compiledShaderFileName:String):Shader",
+			haxe.macro.Context.error("CompileShaderFile: A macro that writes the compiled shader to compiledShaderFileName, and returns nothing to the program. Load that file with LoadCompiledShader(compiledShaderFileName:String):Shader",
 				haxe.macro.Context.currentPos());
 		helix.raylib.internal.ShaderMacro.compileFile(vsFileName, fsFileName, compiledShaderFileName);
 		return macro {};

@@ -46,7 +46,7 @@ class ObjectCasts {
 			case TAbstract(_.get() => {pack: [], name: "Null"}, [inner]):
 				return refused(TypeTools.follow(inner));
 			case TInst(_.get() => c, _) if (!c.kind.match(KTypeParameter(_))):
-				var write = c.meta.has(":structInit") ? 'Write the object in braces where a ${c.name} is expected, without cast.' : c.constructor != null ? 'Make one with new ${c.name}().' : 'Use a ${c.name} the library gives.';
+				var write = c.meta.has(":structInit") ? 'Write the object in braces where a ${c.name} is expected, without cast.' : c.constructor != null ? 'Make one with new ${c.name}().' : 'Use a ${c.name} the library returns.';
 				return {name: '${c.name}, a class', write: write};
 			case TAbstract(_.get() => a, _) if (!a.meta.has(":coreType")):
 				switch TypeTools.follow(a.type) {
@@ -56,7 +56,7 @@ class ObjectCasts {
 				}
 				var fromObject = Lambda.exists(a.from, from -> TypeTools.follow(from.t).match(TAnonymous(_)));
 				var made = a.impl != null && Lambda.exists(a.impl.get().statics.get(), f -> f.name == "_new");
-				var write = fromObject ? 'Write the object in braces where a ${a.name} is expected, without cast.' : made ? 'Make one with new ${a.name}().' : 'Use a ${a.name} the library gives.';
+				var write = fromObject ? 'Write the object in braces where a ${a.name} is expected, without cast.' : made ? 'Make one with new ${a.name}().' : 'Use a ${a.name} the library returns.';
 				return {name: a.name, write: write};
 			case _:
 				return null;

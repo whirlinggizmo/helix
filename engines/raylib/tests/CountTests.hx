@@ -202,7 +202,7 @@ class CountTests {
 		// A material unloaded before its model; a mesh LoadModelFromMesh claimed, unloaded after it.
 		mesh = cube();
 		model = LoadModelFromMesh(mesh);
-		check(mesh.refs == 1, "taken over: LoadModelFromMesh takes the program's hold");
+		check(mesh.refs == 1, "claimed: LoadModelFromMesh claims the program's hold");
 		model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture();
 		id = model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture.id;
 		material = model.materials[0];

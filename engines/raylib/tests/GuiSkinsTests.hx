@@ -120,7 +120,7 @@ class GuiSkinsTests {
 		// A one-call skin: the next call uses it, the one after draws GuiSetSkin's again.
 		GuiSetSkinOnce(BUTTON, GUI_SKIN_BASE, GuiSkinFromTexture(sheet, patch(64)));
 		GuiButton(bounds, "");
-		check(drawn() == once, "the next call takes the one-call skin");
+		check(drawn() == once, "the next call uses the one-call skin");
 		GuiButton(bounds, "");
 		check(drawn() == back, "the call after draws GuiSetSkin's again");
 		GuiSetSkinOnce(BUTTON, GUI_SKIN_BASE, null);

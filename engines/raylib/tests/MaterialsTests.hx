@@ -94,7 +94,7 @@ class MaterialsTests {
 		SetMaterialUnlit(material, false);
 		SetMaterialShadowed(material, true);
 		SetMaterialEmissive(material, WHITE, 0);
-		check(GetMaterialEmissive(material).x == 0, "an intensity of 0 gives off nothing");
+		check(GetMaterialEmissive(material).x == 0, "an intensity of 0 emits nothing");
 
 		// The default shader: raylib's while a material is neither cut out nor emits light, then its variant.
 		var defaultProgram = Runtime.frame.defaultProgram;
@@ -109,7 +109,7 @@ class MaterialsTests {
 		SetMaterialEmissive(material, new Color(0, 255, 0, 255), 0.5);
 		DrawModel(cube, Vector3Zero(), 1, WHITE);
 		check(drewThrough(variant) && drawn(variant, "emissiveColor", 1) == 0.5 && drawn(variant, "alphaCutoff") == 0,
-			"a material giving off light draws through the variant, its emission written");
+			"a material emitting light draws through the variant, its emission written");
 		SetMaterialEmissive(material, WHITE, 0);
 
 		// A model's emission: added at DrawModel, not at DrawMesh; 0 leaves the model as authored.

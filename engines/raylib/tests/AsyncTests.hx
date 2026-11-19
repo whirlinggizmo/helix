@@ -82,7 +82,7 @@ class AsyncTests {
 		check(answer((d, f) -> SetWindowSizeAsync(0, 360, d, f)) == "failed: 0 x 360 is under 1 pixel", "a size the window can't ask for is refused");
 		window.refusing.push("size");
 		check(answer((d, f) -> SetWindowSizeAsync(800, 600, d, f)) == "failed: size refused" && GetScreenWidth() == 640,
-			"the platform's refusal, its reason given");
+			"the platform's refusal, with its reason");
 		check(answer((d, f) -> SetWindowPositionAsync(10, 20, d, f)) == "done" && GetWindowPosition().x == 10, "SetWindowPositionAsync");
 		check(answer((d, f) -> MaximizeWindowAsync(d, f)) == "done" && IsWindowMaximized(), "MaximizeWindowAsync");
 		check(answer((d, f) -> RestoreWindowAsync(d, f)) == "done" && !IsWindowMaximized(), "RestoreWindowAsync from maximized");
