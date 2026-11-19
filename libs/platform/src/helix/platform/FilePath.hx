@@ -1,9 +1,9 @@
 package helix.platform;
 
-/** Provides the rule for the paths `IFileSystem` takes, which every file system adapter checks, and which helix-services' `Assets`
+/** Provides the rule for the paths `IFileSystem` accepts, which every file system adapter checks, and which helix-services' `Assets`
 	holds every source to, so a name is refused the same way on every target. */
 class FilePath {
-	/** Returns whether a path is one `IFileSystem` takes: plain names of letters, digits, `_`, `-` and `.` joined by `/`, at most 256
+	/** Returns whether a path is one `IFileSystem` accepts: plain names of letters, digits, `_`, `-` and `.` joined by `/`, at most 256
 		characters, none empty, `.` or `..`.
 
 		@param path  The path.

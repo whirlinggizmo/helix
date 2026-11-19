@@ -59,8 +59,8 @@ enum AudioEffect {
 	/** Evens out loud and quiet, lowering what is above a level.
 		@param threshold  The level in decibels where it starts, -60 to 0.
 		@param ratio  How much it lowers what is above the threshold, 1 (not at all) to 20.
-		@param attack  The seconds it takes to lower a sound that gets loud, 0 to 1.
-		@param release  The seconds it takes to let a sound back up, 0 to 1. */
+		@param attack  The seconds spent lowering a sound that gets loud, 0 to 1.
+		@param release  The seconds spent letting a sound back up, 0 to 1. */
 	Compressor(threshold:Float, ratio:Float, attack:Float, release:Float);
 
 	/** Clips what plays toward a square wave, from warmth to a broken speaker.

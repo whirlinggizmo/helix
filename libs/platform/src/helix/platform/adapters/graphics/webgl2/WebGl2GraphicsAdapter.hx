@@ -67,12 +67,12 @@ private typedef Program = {
 /** Provides `IGraphics` on a canvas's WebGL2 context.
 
 	It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. A lost context (`Event.GraphicsLost`) is
-	taken as `IGraphics` says: every call does nothing until the browser gives the context back, when the adapter remakes programs, stream
+	handled as `IGraphics` says: every call does nothing until the browser restores the context, when the adapter remakes programs, stream
 	buffers, data textures, render targets and shadow maps under their handles from what it was told, and drops textures and static
 	buffers.
 
 	A draw sets only the GL state that differs from the last draw's. A layout over static buffers is kept as a vertex array object, bound
-	again when the same mesh is drawn, and each draw's uniform blocks go into buffers of their own, taken in turn over three frames, so no
+	again when the same mesh is drawn, and each draw's uniform blocks go into buffers of their own, used in turn over three frames, so no
 	write waits on a draw still reading. */
 class WebGl2GraphicsAdapter implements IGraphics {
 	var gl:WebGL2RenderingContext;
@@ -139,16 +139,16 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var targets:Map<Int, Target> = [];
 	// The target a target pass draws into, or null.
 	var drawing:Null<Target>;
-	// Multisampling samples a pixel of the canvas, as the browser gave them.
+	// Multisampling samples a pixel of the canvas, as the browser chose them.
 	// Shadow maps, by texture handle: a framebuffer a layer, and their size.
 	var shadowMaps:Map<Int, {framebuffers:Array<Dynamic>, size:Int}> = [];
 	// The sampler shadow maps are read through: comparing, linear, clamped.
 	var comparison:Dynamic = null;
 	// A block's bytes with its flip uniform written, the caller's left as they are; grown as needed.
 	var flippedBlock = new js.lib.Uint8Array(256);
-	// The uniform buffers of each binding point (a vertex block's slot, a fragment block's 4 + its slot): poolDepth of them taken in turn, a
+	// The uniform buffers of each binding point (a vertex block's slot, a fragment block's 4 + its slot): poolDepth of them used in turn, a
 	// draw each, so a draw's blocks never go into a buffer a draw still in flight reads, which the GL driver would wait for (ANGLE's GL
-	// backend passes the write through; the robots page took twice as long over GL as over Vulkan from that alone). Each point's buffers
+	// backend passes the write through; the robots page needed twice as long over GL as over Vulkan from that alone). Each point's buffers
 	// are its largest block's size, remade when a larger one comes. The depth holds three frames of the most draws a frame has made, grown
 	// at a frame's start, and the buffers are made as their turn first comes.
 	var blockBuffers:Array<Array<Dynamic>> = [];
@@ -169,7 +169,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// (by handle, 0 for not known) and sampler, each binding point's uniform buffer, the index buffer bound, the pipeline whose fixed state
 	// (depth, cull, winding, color mask, blend) is set and whether it was set flipped, and the vertex layout fed (the pipeline, its buffers,
 	// their offsets and the first instance). Forgotten where something else changes the state: a pass opened, a texture made or updated on
-	// the unit active, a program, texture or buffer disposed, the context given back.
+	// the unit active, a program, texture or buffer disposed, the context restored.
 	var boundProgram:Dynamic = null;
 	var activeUnit = 0;
 	var unitTextures:Array<Int> = [];
@@ -268,8 +268,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		unitTextures[activeUnit] = 0;
 	}
 
-	// The context given back: nothing of the old one's objects remains. What was described is made again under its handle (programs, stream
-	// buffers, data textures, render targets, shadow maps); textures and static buffers, whose contents were given once, are dropped.
+	// The context restored: nothing of the old one's objects remains. What was described is made again under its handle (programs, stream
+	// buffers, data textures, render targets, shadow maps); textures and static buffers, whose contents were uploaded once, are dropped.
 	function restore():Void {
 		msaaSampleCount = Std.int(Math.max(1, gl.getParameter(WebGL2RenderingContext.SAMPLES)));
 		formats = [];
@@ -326,7 +326,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	function get_msaaSampleCount():Int
 		return msaaSampleCount;
 
-	// The canvas's own count when antialiased; otherwise the 4 browsers give, where the GPU has 4.
+	// The canvas's own count when antialiased; otherwise the 4 browsers use, where the GPU has 4.
 	public var maxMsaaSampleCount(get, never):Int;
 
 	function get_maxMsaaSampleCount():Int
@@ -337,7 +337,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	function get_device():GraphicsDevice {
 		var vendor:String = gl.getParameter(WebGL2RenderingContext.VENDOR),
 			renderer:String = gl.getParameter(WebGL2RenderingContext.RENDERER);
-		// Chrome and Safari mask the names ("WebKit", "WebKit WebGL") and give them through the extension; Firefox gives its own and
+		// Chrome and Safari mask the names ("WebKit", "WebKit WebGL") and report them through the extension; Firefox reports its own and
 		// warns when the extension is asked for.
 		if (StringTools.startsWith(renderer, "WebKit")) {
 			var names = gl.getExtension("WEBGL_debug_renderer_info");
@@ -530,7 +530,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	// The sampler object for sampling: linear or nearest; the mipmaps not read (their levels clamped to the top), the nearest, or the two
 	// nearest blended; each axis's wrap; and the anisotropy, where the browser has EXT_texture_filter_anisotropic, only with every filter
-	// linear, as the native adapters take it.
+	// linear, as the native adapters apply it.
 	function sampler(sampling:Sampling):Dynamic {
 		var index:Int = sampling;
 		if (samplers[index] == null) {
@@ -741,7 +741,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			throw "Invalid pipeline shader";
 		if (desc.primitive == Points && !shaders[desc.shader].points)
 			throw "Invalid pipeline: Points over a program compiled without ShaderCompileOptions.points";
-		// The rules every adapter takes, though WebGL2 may allow more, so a pipeline made here is made natively too.
+		// The rules every adapter applies, though WebGL2 may allow more, so a pipeline made here is made natively too.
 		PipelineLayout.check(desc, shaders[desc.shader].attributeTypes);
 		if (!validBlend(desc.blend) || desc.colorWrite != null && ((desc.colorWrite : Int) < 0 || (desc.colorWrite : Int) > 15))
 			throw "Invalid pipeline blend or color write";
@@ -816,7 +816,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int {
 		if (!canRender(format))
 			return 1;
-		// The most of 2, 4 and 8 that a renderbuffer of the format takes.
+		// The most of 2, 4 and 8 that a renderbuffer of the format accepts.
 		var taken:js.lib.Int32Array = gl.getInternalformatParameter(WebGL2RenderingContext.RENDERBUFFER,
 			format == Rgba16f ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8, WebGL2RenderingContext.SAMPLES);
 		var most = 1;
@@ -854,7 +854,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// A render target width x height, of half floats or bytes, with its depth, of the samples asked (0: the screen's): a depth texture
 	// (DEPTH_COMPONENT24, as the renderbuffer is) for one sampled.
 	function target(width:Int, height:Int, half:Bool, depth:RenderTargetDepth, msaaSampleCount:Int):{texture:Dynamic, target:Target} {
-		// Half floats draw only once their extension is asked for, which a context given back hasn't been yet.
+		// Half floats draw only once their extension is asked for, which a restored context hasn't been yet.
 		if (half)
 			canRender(Rgba16f);
 		var internal = half ? WebGL2RenderingContext.RGBA16F : WebGL2RenderingContext.RGBA8;
@@ -863,8 +863,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		gl.texImage2D(WebGL2RenderingContext.TEXTURE_2D, 0, internal, width, height, 0, WebGL2RenderingContext.RGBA,
 			half ? WebGL2RenderingContext.HALF_FLOAT : WebGL2RenderingContext.UNSIGNED_BYTE, null);
 		gl.texParameteri(WebGL2RenderingContext.TEXTURE_2D, WebGL2RenderingContext.TEXTURE_MAX_LEVEL, 0);
-		// The count asked (0: the screen's), rounded down to 1, 2, 4 or 8 and to one the format takes (the list's, most first); with or without
-		// depth.
+		// The count asked (0: the screen's), rounded down to 1, 2, 4 or 8 and to one the format accepts (the list's, most first); with or
+		// without depth.
 		var asked = Std.int(Math.min(msaaSampleCount == 0 ? this.msaaSampleCount : msaaSampleCount, 8)), count = 1;
 		var taken:js.lib.Int32Array = gl.getInternalformatParameter(WebGL2RenderingContext.RENDERBUFFER, internal, WebGL2RenderingContext.SAMPLES);
 		if (taken != null)

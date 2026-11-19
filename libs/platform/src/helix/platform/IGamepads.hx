@@ -34,7 +34,7 @@ interface IGamepads {
 
 		@param slot  The slot, 0 to 3.
 		@param axis  The axis.
-		@return  The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot gives
+		@return  The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot returns
 			0. */
 	function getAxis(slot:Int, axis:GamepadAxis):Float;
 

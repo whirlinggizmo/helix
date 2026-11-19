@@ -18,7 +18,7 @@ package helix.platform.adapters.shared.sdl3;
 @:include("events_sdl3.h")
 @:noCompletion
 extern class Sdl3EventsBridge {
-	/** The devices `want` takes, as events_sdl3.h numbers them. */
+	/** The devices `want` accepts, as events_sdl3.h numbers them. */
 	static inline final KEYBOARD = 1;
 
 	static inline final MOUSE = 2;

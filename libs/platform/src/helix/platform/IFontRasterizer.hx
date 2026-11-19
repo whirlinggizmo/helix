@@ -41,7 +41,7 @@ interface IFontRasterizer extends IPollable {
 		@param failed  Receives why the font can't be read. */
 	function openFont(encoded:Bytes, opened:(font:Int) -> Void, failed:String->Void):Void;
 
-	/** Returns an opened font's glyphs as 8-bit coverage, rasterized on the main thread during the call, as `rasterize` gives them.
+	/** Returns an opened font's glyphs as 8-bit coverage, rasterized on the main thread during the call, as `rasterize` returns them.
 
 		@param font  The font, from `openFont`.
 		@param size  The pixel height.
@@ -50,7 +50,7 @@ interface IFontRasterizer extends IPollable {
 	function rasterizeOpened(font:Int, size:Float, codepoints:Array<Int>):RasterFont;
 
 	/** Returns an opened font's glyphs as signed distances to their outlines, rasterized on the main thread during the call, as
-		`rasterizeDistanceField` gives them.
+		`rasterizeDistanceField` returns them.
 
 		@param font  The font, from `openFont`.
 		@param size  The pixel height.

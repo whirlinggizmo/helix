@@ -11,8 +11,8 @@ import js.html.PointerEvent;
 /** Provides `ITouch` in a browser page: fingers on the canvas, in its framebuffer pixels.
 
 	The canvas keeps a finger until it lifts, so one sliding off it still arrives. While it exists the canvas's `touch-action` is `none`,
-	so the browser doesn't take a moving finger to scroll or zoom the page, which would cancel it; one the browser takes anyway arrives as
-	its `TouchUp`. A landing finger takes the smallest id no finger down has, as natively. */
+	so the browser doesn't use a moving finger to scroll or zoom the page, which would cancel it; one the browser uses anyway arrives as
+	its `TouchUp`. A landing finger receives the smallest id no finger down has, as natively. */
 class DomTouchAdapter implements ITouch {
 	final stream:EventStream;
 	final canvas:CanvasElement;

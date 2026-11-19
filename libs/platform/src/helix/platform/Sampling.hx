@@ -85,7 +85,7 @@ abstract Sampling(Int) to Int {
 
 	/** Returns this sampling with another anisotropy.
 
-		@param anisotropy  The most texels read along a surface seen at a slant, 1 to 16, as the constructor takes it.
+		@param anisotropy  The most texels read along a surface seen at a slant, 1 to 16, as the constructor accepts it.
 		@return  The sampling, its filters and wrapping unchanged. */
 	public inline function withAnisotropy(anisotropy:Int):Sampling
 		return new Sampling(get_filter(), get_wrapU(), get_wrapV(), get_mipmapFilter(), anisotropy);

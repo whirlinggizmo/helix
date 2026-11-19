@@ -21,7 +21,7 @@ typedef Case = {
 	/** The screen's clear color. */
 	final ?clear:Int;
 
-	/** Draws in the screen's pass, given its size. */
+	/** Draws in the screen's pass, with its size. */
 	final ?screen:(width:Int, height:Int) -> Void;
 
 	/** The texture or render target read back; 0 for the screen. */
@@ -35,7 +35,7 @@ typedef Case = {
 	its pixels against what arithmetic says they are.
 
 	The cases: points a pixel each, unindexed and by index, and refused over a program without the point size; a handle of each kind
-	refused where another kind is taken; a clear, a triangle's
+	refused where another kind is expected; a clear, a triangle's
 	colors interpolated, eight vertex buffers read and a ninth refused, each vertex format read (a signed 0 as 0, fewer and more components
 	than the input, formats mixed in one record, instances from the second), layouts with a gap of slots and layouts the platform refuses, a texture sampled nearest and linear, uniform blocks in both stages, alpha and
 	additive blending, each blend factor and operation and a color write mask, a texture's rectangles replaced, and replaced
@@ -46,7 +46,7 @@ typedef Case = {
 	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, declared textures left unbound reading clear, the GPU bytes counted (`textureBytes` and
 	`bufferBytes`: a texture's mipmaps, a cubemap, a data texture, a render target's samples and depth (a depth texture too), a shadow map, a static and a
-	stream buffer, each added as made and gone as freed), and, in a page, the context lost and given back: frames taken while it is
+	stream buffer, each added as made and gone as freed), and, in a page, the context lost and restored: frames run while it is
 	lost, the bytes of what it dropped gone from the count, then a texture and a buffer made again drawn into a render target the adapter
 	remade, and that to the screen. The shaders are `shaders/*.vert` and `*.frag`,
 	compiled by the build, so it checks the shader compiler's dialects too. One case runs a frame; on a GPU that reads back later, the next
@@ -58,7 +58,7 @@ typedef Case = {
 class GraphicsTests {
 	// The render targets' size, in texels.
 	static inline final SIZE = 16;
-	// How many frames a read back may take before the case fails.
+	// How many frames a read back may need before the case fails.
 	static inline final READ_FRAMES = 60;
 
 	static var window:IWindow;
@@ -78,7 +78,7 @@ class GraphicsTests {
 	static var textures:Array<Int> = [];
 	// Of those, the ones a lost context leaves (render targets, data textures, stream buffers): the rest are gone at the restore.
 	static var surviving:Array<Int> = [];
-	// The lost context case: 0 none, 1 asked for, 2 lost, 3 given back; the frames since it was asked for; what a call threw meanwhile.
+	// The lost context case: 0 none, 1 asked for, 2 lost, 3 restored; the frames since it was asked for; what a call threw meanwhile.
 	static var losing = 0;
 	static var lostFrames = 0;
 	static var lostThrew:Null<String> = null;
@@ -130,7 +130,7 @@ class GraphicsTests {
 			}
 		var width = window.framebufferWidth, height = window.framebufferHeight;
 		if (losing == 1 || losing == 2) {
-			// Frames while the context is lost: every call taken, drawing nothing; the context asked back after 30 of them.
+			// Frames while the context is lost: every call accepted, drawing nothing; the context asked back after 30 of them.
 			if (++lostFrames > READ_FRAMES * 4) {
 				fail('the context never came back');
 				return false;
@@ -146,7 +146,7 @@ class GraphicsTests {
 			return true;
 		}
 		if (losing == 3) {
-			// Given back: the textures and static buffers made before are gone, not to be disposed.
+			// Restored: the textures and static buffers made before are gone, not to be disposed.
 			losing = 0;
 			textures = textures.filter(t -> surviving.indexOf(t) >= 0);
 			buffers = buffers.filter(b -> surviving.indexOf(b) >= 0);
@@ -205,7 +205,7 @@ class GraphicsTests {
 	static function fail(message:String):Void
 		failures.push('$current: $message');
 
-	/** Checks the GPU bytes counted: each texture and buffer adds its bytes as it is made, and takes them away as it is freed. */
+	/** Checks the GPU bytes counted: each texture and buffer adds its bytes as it is made, and removes them as it is freed. */
 	static function checkBytes():Void {
 		current = "GPU bytes";
 		var textures = graphics.textureBytes, buffers = graphics.bufferBytes;
@@ -323,7 +323,7 @@ class GraphicsTests {
 			flipOffset: 16
 		});
 		pipelines.push(shared);
-		// The colored program with its color unfed: read as a constant, or as (0, 0, 0, 1) where none is given.
+		// The colored program with its color unfed: read as a constant, or as (0, 0, 0, 1) where none is provided.
 		var constant = graphics.createPipeline({
 			shader: color,
 			buffers: [plain],
@@ -346,7 +346,7 @@ class GraphicsTests {
 		pipelines.push(constant);
 		var unfed = pipeline(color, plain, Blend.OPAQUE);
 		// Layouts with a gap of slots: a position and a color at slots 0 and 2, the tint at 1 between them read as its constant, or as
-		// (0, 0, 0, 1) where none is given.
+		// (0, 0, 0, 1) where none is provided.
 		function gapped(?constants:Array<{slot:Int, values:Array<Float>}>):Int {
 			var handle = graphics.createPipeline({
 				shader: gap,
@@ -673,7 +673,7 @@ class GraphicsTests {
 			surviving.push(t);
 		}
 		// Multisampling chosen apart from depth: depth and one sample (raylib's render textures), depth and the screen's samples, no depth
-		// and the most the format takes, and far more than any GPU takes, rounded down to that most.
+		// and the most the format supports, and far more than any GPU supports, rounded down to that most.
 		var most = graphics.getMaxRenderTargetMsaaSampleCount(Rgba8);
 		var singleDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, Buffer, 1),
 			screenDepth = graphics.createRenderTarget(SIZE, SIZE, Rgba8, Buffer),
@@ -731,7 +731,7 @@ class GraphicsTests {
 		var clip = floatBytes([1, 1, 0, 0]);
 		function fedDraw(pipeline:Int, values:Int):Void
 			graphics.draw(pipeline, [positions, values], null, 0, 0, 6, 0, 1, [], [], [clip]);
-		// The shared block's bytes, each member written at the place the reflection gives it.
+		// The shared block's bytes, each member written at the place the reflection reports for it.
 		var sharedBlock = Lambda.find(sharedSource.uniformBlocks, b -> b.glslName == "Shared");
 		var sharedBytes = Bytes.alloc(sharedBlock.size);
 		function put(path:String, element:Int, values:Array<Float>, integer:Bool):Void {
@@ -1103,7 +1103,7 @@ class GraphicsTests {
 			},
 			{
 				name: "unfed attributes read their constants",
-				// Left half: the color's constant, green; right half: none given, (0, 0, 0, 1).
+				// Left half: the color's constant, green; right half: none provided, (0, 0, 0, 1).
 				before: into(1, 0, 0, 1, () -> {
 					graphics.applyViewport(0, 0, 8, SIZE);
 					draw(constant, positions, 6);
@@ -1118,7 +1118,7 @@ class GraphicsTests {
 			},
 			{
 				name: "a layout with a gap of slots",
-				// Left half: white tinted by the constant between its fed slots, green and half blue; right half: the tint given no
+				// Left half: white tinted by the constant between its fed slots, green and half blue; right half: the tint without a
 				// constant, (0, 0, 0, 1), black. Red where nothing drew.
 				before: into(1, 0, 0, 1, () -> {
 					graphics.applyViewport(0, 0, 8, SIZE);
@@ -1745,7 +1745,7 @@ class GraphicsTests {
 			}
 		];
 		#if js
-		// Last: the context lost with WEBGL_lose_context and given back, as IGraphics says, then drawn with again. The frames while it is lost
+		// Last: the context lost with WEBGL_lose_context and restored, as IGraphics says, then drawn with again. The frames while it is lost
 		// are tick's; the case after it is the owner's part, a texture and a buffer made again, into a target the adapter remade.
 		cases.push({
 			name: "the context lost",
@@ -1854,7 +1854,7 @@ class GraphicsTests {
 		return handle;
 	}
 
-	// An RGBA8 texture from texels given as 0xRRGGBBAA.
+	// An RGBA8 texture from texels provided as 0xRRGGBBAA.
 	static function texture2D(width:Int, height:Int, texels:Array<Int>):Int {
 		var bytes = Bytes.alloc(texels.length * 4);
 		for (i => rgba in texels)
@@ -1864,7 +1864,7 @@ class GraphicsTests {
 		return handle;
 	}
 
-	// RGBA8 texels given as 0xRRGGBBAA.
+	// RGBA8 texels provided as 0xRRGGBBAA.
 	static function rgbaTexels(texels:Array<Int>):Bytes {
 		var bytes = Bytes.alloc(texels.length * 4);
 		for (i => rgba in texels)

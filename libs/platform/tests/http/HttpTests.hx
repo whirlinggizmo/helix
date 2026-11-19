@@ -6,11 +6,11 @@ import helix.platform.IHttp;
 	apart (in a page the seventh waits behind the browser's six connections to a server). A body the server closes before its
 	Content-Length (plain or gzip), and a chunked body it closes mid-chunk, each call `failed`, never `done`: `done` means the whole body
 	is here. A connection it closes with no bytes, or partway through the status line, each calls `failed` and never `head`. One it
-	closes partway through the headers calls `failed`: natively without `head`, and in a page after it, as the browser takes the cut head
-	as a whole one with an empty body. A body that stops partway, a request never answered, and a connection never taken each fail after
+	closes partway through the headers calls `failed`: natively without `head`, and in a page after it, as the browser treats the cut head
+	as a whole one with an empty body. A body that stops partway, a request never answered, and a connection never accepted each fail after
 	a second's idle timeout.
 
-	The connection never taken checks the connect's timeout on Linux, where a listening port whose queue is full drops each new connection
+	The connection never accepted checks the connect's timeout on Linux, where a listening port whose queue is full drops each new connection
 	unanswered. Windows refuses it instead, so the connect can't wait out the timeout there: on Windows, natively and in a page, it only
 	has to fail, refused or timed out.
 
@@ -19,14 +19,14 @@ import helix.platform.IHttp;
 	cut short without it calls `done` with no bytes, the gap the platform's docs describe.
 
 	Built from the hxml files beside it: in a page, over `fetch`, and natively over `sys.Http`. The server's URL is its `server` option
-	(`?server=` in a page, `HELIX_SERVER` natively), the other origin's `?other=`, a connection never taken `?unaccepted=` and
-	`HELIX_UNACCEPTED`; `tools/test_platform.py` gives them from a server it starts, and serves the page from it. It ends with
+	(`?server=` in a page, `HELIX_SERVER` natively), the other origin's `?other=`, a connection never accepted `?unaccepted=` and
+	`HELIX_UNACCEPTED`; `tools/test_platform.py` provides them from a server it starts, and serves the page from it. It ends with
 	`{passed, checks, failures, answers}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null
 	until then. */
 class HttpTests {
-	// How long every request may take to answer, in seconds.
+	// How long every request may need to answer, in seconds.
 	static inline final TIMEOUT = 10.;
-	// The idle timeout given the requests that stall or send slowly, in seconds.
+	// The idle timeout set for the requests that stall or send slowly, in seconds.
 	static inline final IDLE = 1.;
 	// The bytes a whole body has.
 	static inline final SIZE = 1000;

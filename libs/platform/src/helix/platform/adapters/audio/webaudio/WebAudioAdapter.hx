@@ -227,8 +227,8 @@ private class StreamElement {
 
 /** A stream: its URL, its media elements no voice holds, its duration (seconds, 0 while unknown) and its channels.
 
-	A voice takes an element and gives it back when it ends, so a stream keeps its elements: a phone plays a media element only in a
-	gesture until it has once played there, and `prime` plays each in the next gesture. */
+	A voice holds an element while it plays and returns the element to the stream when it ends, so a stream keeps its elements: a phone
+	plays a media element only in a gesture until it has once played there, and `prime` plays each in the next gesture. */
 @:allow(helix.platform.adapters.audio.webaudio)
 private class Stream extends Resource {
 	final url:String;
@@ -344,7 +344,7 @@ private class StreamVoice extends Voice {
 		});
 	}
 
-	// Takes voice id out of playbacks and the graph, its element given back to the stream (or let go, the stream gone).
+	// Removes voice id from playbacks and the graph, its element returned to the stream (or let go, the stream gone).
 	function leave(a:WebAudioAdapter, id:Int):Void {
 		a.playbacks.remove(id);
 		element.onended = null;
@@ -495,8 +495,8 @@ private class Queue extends Resource {
 		end = at;
 	}
 
-	// Takes the blocks off the clock, keeping what they hadn't played: the one playing keeps its place, those after it whole. With
-	// fromNow false the block playing stays scheduled and only those after it are taken off.
+	// Removes the blocks from the clock, keeping what they hadn't played: the one playing keeps its place, those after it whole. With
+	// fromNow false the block playing stays scheduled and only those after it are removed.
 	function unschedule(a:WebAudioAdapter, fromNow = true):Void {
 		prune(a);
 		var now:Float = a.context == null ? 0 : a.context.currentTime;
@@ -520,7 +520,7 @@ private class Queue extends Resource {
 	}
 }
 
-/** A queue's voice: the frames the queue had been given before it started, which its position counts from. */
+/** A queue's voice: the frames added to the queue before it started, which its position counts from. */
 @:allow(helix.platform.adapters.audio.webaudio)
 private class QueueVoice extends Voice {
 	final base:Int;
@@ -584,7 +584,7 @@ class WebAudioAdapter implements IAudio {
 	static inline var RAMP = .01;
 
 	var context:Dynamic;
-	// Every clip, stream and queue, by id; and each kind's, for the calls that take only that kind.
+	// Every clip, stream and queue, by id; and each kind's, for the calls that accept only that kind.
 	var resources:Map<Int, Resource> = [];
 	var clips:Map<Int, Clip> = [];
 	var streams:Map<Int, Stream> = [];
@@ -728,7 +728,7 @@ class WebAudioAdapter implements IAudio {
 			case Remote(url): url;
 			case Downloading(_): null;
 		};
-		// A media element plays a URL, so a remote stream is given as one (playsUrls), never as a download.
+		// A media element plays a URL, so a remote stream is provided as one (playsUrls), never as a download.
 		if (url == null) {
 			var aborted = false;
 			js.Browser.window.setTimeout(() -> if (!aborted) failed("A download isn't streamed in a browser; its URL is"), 0);

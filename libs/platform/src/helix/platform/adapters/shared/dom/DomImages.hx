@@ -10,7 +10,7 @@ class DomImages {
 	static final images = new Map<Int, ImageBitmap>();
 	static var next = 1;
 
-	/** Registers a decoded image, giving it a handle.
+	/** Registers a decoded image under a new handle.
 
 		@param image  The browser's decoded image.
 		@return  Its handle, never 0. */

@@ -29,7 +29,7 @@ class DomPage {
 	static final ratios = new haxe.ds.ObjectMap<CanvasElement, Float>();
 
 	/** Sizes the canvas's drawing buffer to the canvas's own box on the page, in framebuffer pixels: its CSS size (the viewport's where the
-		page gives it no size) times the ratio its window chose, 1 or the device's pixel ratio. A canvas laid out smaller than the viewport
+		page doesn't size it) times the ratio its window chose, 1 or the device's pixel ratio. A canvas laid out smaller than the viewport
 		(a game in a page of other things, a 800 x 450 canvas on a phone's screen) is drawn at its own size, not the screen's.
 
 		@param canvas  The canvas the program draws in.
@@ -51,7 +51,7 @@ class DomPage {
 		return r == null ? 1 : r;
 	}
 
-	/** Returns the canvas's width on the page, in logical pixels: its CSS box's, or the viewport's where the page gives it no size.
+	/** Returns the canvas's width on the page, in logical pixels: its CSS box's, or the viewport's where the page doesn't size it.
 
 		@param canvas  The canvas.
 		@return  The width. */
@@ -60,7 +60,7 @@ class DomPage {
 		return box.width > 0 ? box.width : Browser.window.innerWidth;
 	}
 
-	/** Returns the canvas's height on the page, in logical pixels: its CSS box's, or the viewport's where the page gives it no size.
+	/** Returns the canvas's height on the page, in logical pixels: its CSS box's, or the viewport's where the page doesn't size it.
 
 		@param canvas  The canvas.
 		@return  The height. */

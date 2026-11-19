@@ -56,8 +56,8 @@ interface IWindow {
 
 	/** Asks for an inner size.
 
-		The window manager may give another size; `width` and `height` reflect what it gave. A fullscreen or maximized window keeps its
-		size, and a page's canvas follows the page, so those fail.
+		The window manager may choose another size; `width` and `height` reflect the size it chose. A fullscreen or maximized window
+		keeps its size, and a page's canvas follows the page, so those fail.
 		@param width  The width, in logical pixels.
 		@param height  The height, in logical pixels.
 		@param done  Optional. Called once the window has a size from the request.
@@ -82,8 +82,8 @@ interface IWindow {
 
 	/** Asks for the window's left and top edges on the desktop.
 
-		`x` and `y` reflect what the window manager gave. Where the window can't move (`canMove`), or while it is fullscreen or maximized,
-		it fails.
+		`x` and `y` reflect where the window manager placed the window. Where the window can't move (`canMove`), or while it is
+		fullscreen or maximized, it fails.
 		@param x  The left edge, in logical pixels.
 		@param y  The top edge, in logical pixels.
 		@param done  Optional. Called once the window has moved, or was already there.
@@ -163,8 +163,8 @@ interface IWindow {
 		@return  True, because it always asks. */
 	function requestMinimized(minimized:Bool, ?done:Void->Void, ?failed:String->Void):Bool;
 
-	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas takes the
-		keyboard.
+	/** Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas receives the
+		keyboard focus.
 
 		`focused` reflects the result once the request completes.
 		@param done  Optional. Called once the window, or in a page the canvas, has the keyboard.
@@ -265,13 +265,13 @@ interface IWindow {
 	/** Reads a file dropped on the window, one the last `FilesDropped` event counted.
 
 		One of `read` or `failed` is called once, never during the call: natively at the next `IEvents.poll`, in a page once the browser
-		has read it, or for an index no drop gave or a file over `maxBytes`, at the next poll. Natively the file is read from where it is
-		on disk then, so one moved or changed since the drop reads as it is then. In a page it is the File the browser gave, kept until
-		the next drop.
+		has read it, or for an index no drop delivered or a file over `maxBytes`, at the next poll. Natively the file is read from where
+		it is on disk then, so one moved or changed since the drop reads as it is then. In a page it is the File the browser delivered,
+		kept until the next drop.
 		@param fileIndex  The file, 0 to the event's count - 1.
 		@param maxBytes  The largest file to read; a larger one fails.
 		@param read  Receives the file's name, without its directory, and its bytes.
-		@param failed  Receives why it can't be read: an index no drop gave, a file over `maxBytes`, or the platform's reason. */
+		@param failed  Receives why it can't be read: an index no drop delivered, a file over `maxBytes`, or the platform's reason. */
 	function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void;
 
 	/** Returns whether `close` removes the window.

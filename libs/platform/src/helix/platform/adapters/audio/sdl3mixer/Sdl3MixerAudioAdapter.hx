@@ -46,7 +46,7 @@ private class Opening {
 
 	Voices are SDL3_mixer's tracks; a stream is decoded on the main thread at each poll, up to a second ahead, from a file or from a download
 	as it arrives, in its file's channels. A queue is an SDL audio stream its track plays, SDL resampling it. A stream's position is counted
-	from what was decoded and what its track hasn't taken yet, and it is moved by SDL3_mixer's own decoder seek. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while
+	from what was decoded and what its track hasn't consumed yet, and it is moved by SDL3_mixer's own decoder seek. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while
 	its codec can't open it yet; it is decoded only while 16 KiB ahead of the decoder's reads, or complete, and its voice sounds once a second
 	is decoded. A download that fails plays to where it stopped, then ends. A `Remote` source fails: the caller downloads it, `playsUrls`
 	being false. */

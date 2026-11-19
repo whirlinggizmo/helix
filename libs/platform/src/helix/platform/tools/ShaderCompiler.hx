@@ -12,11 +12,11 @@ import helix.platform.tools.ShaderText.ShaderDeclaration;
 /** Provides compiling a program's GLSL into a `ShaderSource` for every graphics adapter: a vertex stage and a fragment stage, compiled
 	once to SPIR-V by glslang and translated by SPIRV-Cross (`ShaderTools`), and reflected.
 
-	**Two forms of source**, told apart by the `#version` line: `#version 450`, Vulkan-style, where attributes may give
+	**Two forms of source**, told apart by the `#version` line: `#version 450`, Vulkan-style, where attributes may declare
 	`layout(location = n)` and blocks and textures `layout(binding = n)`; and `#version 300 es`, or 330 to 440, as WebGL2 and GL write
-	it, where nothing gives a location or a binding (one written is refused, as GLSL ES 3.0 has none) and the compiler places
+	it, where nothing declares a location or a binding (one written is refused, as GLSL ES 3.0 has none) and the compiler places
 	everything. Both stages are one form. `#include` needs no extension line: the compiler enables `GL_GOOGLE_include_directive` for
-	every stage, and a stage declaring it is still taken.
+	every stage, and a stage declaring it is still accepted.
 
 	What a program's source declares is what it binds: each uniform block, at its size rounded up to whole `vec4`s, and each texture, a
 	combined sampler, whether the code reads it or not (`ShaderMember.active` and `ShaderTexture.active` say whether it does). Blocks
@@ -37,7 +37,7 @@ import helix.platform.tools.ShaderText.ShaderDeclaration;
 	preprocessed output (`-E`): each global `uniform` declaration is one statement there and is moved whole, and glslang then compiles
 	and validates the result, so a rewrite gone wrong fails the build.
 
-	**Placement**, where a source gives none: named blocks at the lowest free block bindings of their stages in the order declared (the
+	**Placement**, where a source declares none: named blocks at the lowest free block bindings of their stages in the order declared (the
 	vertex stage's first), then `helix_uniforms`, then the gathered blocks, each at the lowest binding free in both stages; textures at
 	the lowest free texture bindings in the order declared; attributes at the lowest free locations in the order declared, a matrix a
 	location a column.
@@ -56,7 +56,7 @@ class ShaderCompiler {
 	// The bindings every graphics adapter has: uniform blocks 0 to 3 in each stage, textures 0 to 11.
 	static inline final BLOCK_SLOTS = 4;
 	static inline final TEXTURE_SLOTS = 12;
-	// GL's type enums, as glslang's reflection gives them, as GLSL names.
+	// GL's type enums, as glslang's reflection reports them, as GLSL names.
 	static final GL_TYPES = [
 		0x1406 => "float",
 		0x8b50 => "vec2",
@@ -96,7 +96,7 @@ class ShaderCompiler {
 		@param fragment  The fragment stage's file, relative to the file holding the call.
 		@param options  Optional. Include directories, defines, loose uniforms, gathered blocks, the clip-scale wrap and the point size, as
 			`ShaderCompileOptions` has them; none by default.
-		@return  The program, as `IGraphics.createShader` takes it. */
+		@return  The program, as `IGraphics.createShader` accepts it. */
 	public static macro function compile(vertex:String, fragment:String, ?options:ExprOf<ShaderCompileOptions>):ExprOf<helix.platform.ShaderSource> {
 		var pos = Context.currentPos();
 		var here = Path.directory(Context.getPosInfos(pos).file);
@@ -118,7 +118,7 @@ class ShaderCompiler {
 	}
 
 	#if macro
-	// The options a call to compile gives, an object literal, with the build's dialects; include directories made relative to here.
+	// The options a call to compile passes, an object literal, with the build's dialects; include directories made relative to here.
 	static function callOptions(options:Null<Expr>, here:String):ShaderCompileOptions {
 		var js = Context.defined("js");
 		var known = [
@@ -146,7 +146,7 @@ class ShaderCompiler {
 		return {
 			glsl410: !js,
 			sdlGpu: !js,
-			// Path.join normalizes "." beside an empty directory to "", which glslang can't take.
+			// Path.join normalizes "." beside an empty directory to "", which glslang can't accept.
 			includeDirectories: directories == null ? null : [
 				for (d in directories) {
 					var full = Path.isAbsolute(d) ? d : Path.join([here, d]);
@@ -171,7 +171,7 @@ class ShaderCompiler {
 		extension is enabled for every stage. It runs where the system is reachable, in the compiler or a tool; in a program it throws.
 		@param vertex  The vertex stage: a name for messages (its file's path, when it has one) and its GLSL.
 		@param fragment  The fragment stage: a name for messages and its GLSL.
-		@param options  The dialects to make, the include directories, the defines, and whether loose uniforms are taken.
+		@param options  The dialects to make, the include directories, the defines, and whether loose uniforms are accepted.
 		@return  The program, with its reflection.
 		@throws CommandException  A stage doesn't compile (glslang's errors, named for the stage), or the program breaks a rule above. */
 	public static function compileText(vertex:{name:String, text:String}, fragment:{name:String, text:String},
@@ -401,7 +401,7 @@ class ShaderCompiler {
 	}
 
 	// GL 410 holds each block as a uniform of its struct type, a block without an instance name under a name SPIRV-Cross numbers by the
-	// stage's ids, so two stages' blocks could take one name: each such uniform named for its block (`helix_block_Name`), alike in every
+	// stage's ids, so two stages' blocks could share one name: each such uniform named for its block (`helix_block_Name`), alike in every
 	// stage, so a block both stages read is one uniform and two blocks are never one name.
 	static function namedBlocks(text:String, blocks:Array<Dynamic>):String {
 		var declared = ~/^uniform (\w+) (_\d+);$/m;
@@ -463,7 +463,7 @@ class ShaderCompiler {
 		return own.concat(includes == null ? [] : includes);
 	}
 
-	// The locations a value of a GLSL type takes: a matrix's columns, or one; an array's elements times that.
+	// The locations a value of a GLSL type occupies: a matrix's columns, or one; an array's elements times that.
 	static function columns(type:String):Int
 		return switch type {
 			case "mat2" | "dmat2": 2;
@@ -869,7 +869,7 @@ class ShaderCompiler {
 		];
 		var inputs:Array<Dynamic> = reflected.get("vertex").inputs == null ? [] : reflected.get("vertex").inputs;
 		var activeInputs = [for (e in queried.get("vertex").get("Pipeline input")) e.name];
-		// A matrix input takes a location a column, from its own: mat4's four vec4s.
+		// A matrix input occupies a location a column, from its own: mat4's four vec4s.
 		var slots = 0;
 		for (input in inputs)
 			slots += columns(input.type);

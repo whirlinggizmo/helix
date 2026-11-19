@@ -13,7 +13,7 @@ typedef ShaderMember = {
 	final glslName:String;
 
 	/** The GLSL type: `float`, `vec2`, `vec3`, `vec4`, `mat2`, `mat3`, `mat4`, `int`, `ivec2`, `ivec3`, `ivec4`, `uint`, `uvec2`,
-		`uvec3`, `uvec4`, `bool`, `bvec2`, `bvec3` or `bvec4`. A `bool` takes 4 bytes, 0 or 1, as a `uint` does. */
+		`uvec3`, `uvec4`, `bool`, `bvec2`, `bvec3` or `bvec4`. A `bool` occupies 4 bytes, 0 or 1, as a `uint` does. */
 	final type:String;
 
 	/** The byte offset of its first element in the block. */

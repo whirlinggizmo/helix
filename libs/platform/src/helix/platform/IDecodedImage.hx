@@ -2,11 +2,11 @@ package helix.platform;
 
 import haxe.io.Bytes;
 
-/** Represents an image decoded for the GPU: what `IImageDecoder.decodeForGpu` gives and `IGraphics.createTextureFromImage` uploads, so a
+/** Represents an image decoded for the GPU: what `IImageDecoder.decodeForGpu` returns and `IGraphics.createTextureFromImage` uploads, so a
 	program draws a file without ever holding its pixels.
 
 	In a page it is the browser's decoded image (`bitmapHandle` names it), uploaded as it is. Natively it is the pixels. Either can
-	give its pixels (`pixels`) when a program wants them after all, at the cost a page's readback has. */
+	return its pixels (`pixels`) when a program wants them after all, at the cost a page's readback has. */
 interface IDecodedImage {
 	/** Gets its width, in pixels. */
 	var width(get, never):Int;

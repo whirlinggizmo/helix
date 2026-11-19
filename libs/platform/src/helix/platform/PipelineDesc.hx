@@ -14,7 +14,7 @@ typedef PipelineDesc = {
 	final shader:Int;
 
 	/** The vertex buffers' layouts, by their index in a draw's buffers: at most 8, with at most 16 attributes across them, each at a slot
-		from 0 to 15, as every adapter takes them. */
+		from 0 to 15, as every adapter accepts them. */
 	final buffers:Array<VertexBuffer>;
 
 	/** The primitive the draws make. */
@@ -67,6 +67,7 @@ typedef PipelineDesc = {
 	final ?flipOffset:Int;
 
 	/** What attributes no buffer feeds read, by slot: up to four floats each, the rest 0, 0, 1 as (0, 0, 0, 1) has them, the same for
-		every vertex and instance. Optional; a slot not given reads (0, 0, 0, 1). A constant for a slot a buffer feeds is refused. */
+		every vertex and instance. Optional; a slot without a constant reads (0, 0, 0, 1). A constant for a slot a buffer feeds is
+		refused. */
 	final ?attributeConstants:Array<{slot:Int, values:Array<Float>}>;
 }

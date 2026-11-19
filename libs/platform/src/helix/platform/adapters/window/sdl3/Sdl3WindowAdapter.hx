@@ -31,7 +31,7 @@ class Sdl3WindowAdapter implements IWindow {
 	// X11 sync waits as long, for a maximize, the slowest change it allows for.
 	static inline final PATIENCE = 1.0;
 
-	// Asks SDL, answering at a later events' poll: done once one of the window's events of the kinds given has come since, or the window
+	// Asks SDL, answering at a later events' poll: done once one of the window's events of the kinds provided has come since, or the window
 	// is already as reached says; failed with SDL's reason when it refused, or saying the window manager ignored it when neither has
 	// come within PATIENCE.
 	function ask(asking:Void->Int, kinds:Array<Int>, reached:Void->Bool, ignored:String, done:Null<Void->Void>, failed:Null<String->Void>):Bool {
@@ -297,7 +297,7 @@ class Sdl3WindowAdapter implements IWindow {
 	public function getMonitorHeight(monitorIndex:Int):Int
 		return isMonitor(monitorIndex) ? WindowBridge.displayHeight(monitorIndex) : 0;
 
-	// The path is taken now, as the next drop replaces the list; the file is read at the next events' poll.
+	// The path is read now, as the next drop replaces the list; the file is read at the next events' poll.
 	public function readDroppedFile(fileIndex:Int, maxBytes:Int, read:(name:String, bytes:Bytes) -> Void, failed:String->Void):Void {
 		var path:Null<String> = fileIndex >= 0
 			&& fileIndex < Sdl3Bridge.droppedCount() ? (Sdl3Bridge.droppedPath(fileIndex) : String) : null;

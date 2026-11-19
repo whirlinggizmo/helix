@@ -15,7 +15,7 @@ import helix.platform.Sampling;
 
 	A call that cannot be done throws before doing anything.
 
-	**A lost context** (a page's `GraphicsLost`). While the context is lost, every call is taken and does nothing: a creation returns a
+	**A lost context** (a page's `GraphicsLost`). While the context is lost, every call is accepted and does nothing: a creation returns a
 	handle, a draw draws nothing, `readPixels` fails. At `GraphicsRestored` the adapter has remade, under the old handles, its programs,
 	pipelines, render targets and shadow maps (their texels cleared), data textures and stream buffers (rewritten each frame anyway).
 	Textures (`createTexture`, `createTextureFromImage`, `createCubeTexture`) and static buffers are gone, those made during the loss too,
@@ -91,7 +91,7 @@ interface IGraphics {
 	/** Gets the number of multisampling samples per pixel that the screen is drawn with, or 1 for none.
 
 		It can be fewer than the window asked for. A render target created with a sample count of 0 is drawn with the same number, where
-		its format takes it. */
+		its format supports it. */
 	var msaaSampleCount(get, never):Int;
 
 	/** Gets the largest number of multisampling samples a window could ask for here, at most 8.
@@ -103,7 +103,7 @@ interface IGraphics {
 
 	/** Gets the GPU and driver drawing, as the graphics API reports them, for a program to log or show.
 
-		A browser may mask them: the adapter asks for the unmasked names (`WEBGL_debug_renderer_info`) where the browser gives them, and
+		A browser may mask them: the adapter asks for the unmasked names (`WEBGL_debug_renderer_info`) where the browser reports them, and
 		otherwise has the browser's own, such as "WebKit WebGL". */
 	var device(get, never):GraphicsDevice;
 
@@ -125,7 +125,7 @@ interface IGraphics {
 
 		It is 1, 2, 4 or 8: 1 where this GPU cannot multisample the format, or cannot draw into it at all (`canRender`).
 		@param format  The format.
-		@return  The largest sample count `createRenderTarget` gives a target of the format. */
+		@return  The largest sample count `createRenderTarget` makes for a target of the format. */
 	public function getMaxRenderTargetMsaaSampleCount(format:TextureFormat):Int;
 
 	/** Creates a render target, which is a texture that a target pass draws into.
@@ -136,7 +136,7 @@ interface IGraphics {
 		and how many samples it is drawn with are chosen apart, except that a target whose depth is a texture has one sample. A target of more than one sample is drawn into its samples, which are
 		resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is
 		rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`.
-		A count the GPU can't give is never refused.
+		A count the GPU can't draw with is never refused.
 		What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws
 		over it in a later pass or frame. A new target holds transparent black and the farthest depth.
 		@param width  The width, in texels.

@@ -21,7 +21,7 @@ class DomMouseAdapter implements IMouse {
 	final listeners = new DomListeners();
 	// The buttons as last recorded (bit 0 left, 1 right, 2 middle), so a change is one down or up.
 	var buttons = 0;
-	// Where the mouse last was, in framebuffer pixels; while locked, where its moves have taken it.
+	// Where the mouse last was, in framebuffer pixels; while locked, where its moves have carried it.
 	var lastX = 0.;
 	var lastY = 0.;
 	// Whether the next locked move is the first since the lock was asked for, whose distance Chromium reports as a jump from the canvas's
@@ -132,7 +132,7 @@ class DomMouseAdapter implements IMouse {
 				return;
 			lockBegan = true;
 			var asked:Dynamic = (cast canvas : Dynamic).requestPointerLock();
-			// A browser whose lock is a promise refuses through it, and also fires pointerlockerror; answer takes the first.
+			// A browser whose lock is a promise refuses through it, and also fires pointerlockerror; answer uses the first.
 			if (asked != null && asked.then != null)
 				asked.then(null,
 					(error:Dynamic) -> answer(error != null

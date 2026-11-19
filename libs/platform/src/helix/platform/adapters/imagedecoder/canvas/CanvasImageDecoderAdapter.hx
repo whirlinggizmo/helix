@@ -8,7 +8,7 @@ import helix.platform.IImageDecoder;
 
 /** Provides `IImageDecoder` in a page over its own decoder (`createImageBitmap`, with no color conversion or premultiplying).
 
-	`decodeForGpu` gives the bitmap itself, which the graphics adapter uploads as it is. `decode` reads it back through an
+	`decodeForGpu` returns the bitmap itself, which the graphics adapter uploads as it is. `decode` reads it back through an
 	`OffscreenCanvas`, which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's
 	value. */
 class CanvasImageDecoderAdapter implements IImageDecoder {

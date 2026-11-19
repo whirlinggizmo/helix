@@ -5,7 +5,7 @@ import haxe.macro.Context;
 import haxe.macro.Expr;
 #end
 
-/** Gives the program's company and product, from the `helix-company` and `helix-product` defines, for the system adapters' directories
+/** Provides the program's company and product, from the `helix-company` and `helix-product` defines, for the system adapters' directories
 	and SDL's name for the program. Both are required: a build without either fails, saying what to add (`Defines` checks each is a
 	directory's name). */
 @:noCompletion

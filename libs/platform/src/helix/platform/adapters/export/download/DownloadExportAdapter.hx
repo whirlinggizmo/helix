@@ -25,7 +25,7 @@ class DownloadExportAdapter implements IExport {
 		Browser.document.body.appendChild(link);
 		link.click();
 		link.remove();
-		// The download has taken the blob's URL by the next task.
+		// The download has read the blob's URL by the next task.
 		Browser.window.setTimeout(() -> js.html.URL.revokeObjectURL(url), 0);
 		exported(name);
 	}

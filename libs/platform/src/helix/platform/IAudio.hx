@@ -76,7 +76,7 @@ interface IAudio extends IPollable {
 		@throws String  For an unknown stream. */
 	function getStreamChannelCount(stream:Int):Int;
 
-	/** Creates a queue, which plays samples given to it as it goes.
+	/** Creates a queue, which plays the samples added to it as it goes.
 
 		Samples are added with `queueSamples` and played by `playQueue`, back to back without a gap while they are added ahead of what is
 		heard. The platform resamples them to the output's rate.
@@ -182,7 +182,7 @@ interface IAudio extends IPollable {
 	/** Returns how far a voice has played.
 
 		A looping voice goes back to 0 at each loop. A queue's voice counts the frames it has played since `playQueue`. Natively a stream's
-		voice counts what the output has taken from it, a few milliseconds ahead of what is heard.
+		voice counts what the output has read from it, a few milliseconds ahead of what is heard.
 		@param voice  The voice.
 		@return  The position in seconds from the start of its clip, stream or queue; 0 for an unknown or ended voice. */
 	function getPosition(voice:Int):Float;
@@ -190,7 +190,7 @@ interface IAudio extends IPollable {
 	/** Moves a playing or paused voice to a position.
 
 		A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved. In a page, a
-		stream moves only within what its media element can seek (`HTMLMediaElement.seekable`), which a server that doesn't take range
+		stream moves only within what its media element can seek (`HTMLMediaElement.seekable`), which a server that doesn't accept range
 		requests prevents.
 		@param voice  The voice.
 		@param seconds  The position in seconds from the start, 0 or more.

@@ -35,7 +35,7 @@ enum Event {
 	/** A finger moved. */
 	TouchMove(id:Int, x:Float, y:Float);
 
-	/** A finger lifted, or the OS took the touch away. */
+	/** A finger lifted, or the OS canceled the touch. */
 	TouchUp(id:Int, x:Float, y:Float);
 
 	/** Reports the device's orientation while tilt access is held (`ITilt.requestAccess`). beta and gamma are in degrees, and screenAngle
@@ -49,7 +49,7 @@ enum Event {
 
 		In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It arrives once, before that
 		press's own event, on every target, so a game's "press any key" start flows the same everywhere (`IEvents.unlocked`). A finger counts
-		as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't take one as the player's. */
+		as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't treat one as the player's. */
 	Unlocked;
 
 	/** A gamepad was connected in a slot, 0 to 3. */
@@ -81,7 +81,7 @@ enum Event {
 
 	/** The player or the OS asked to close the window. The program decides whether to close it.
 
-		It arrives only natively. A page never receives it, because a closing tab gives no frame to decide in. A page's end is
+		It arrives only natively. A page never receives it, because a closing tab leaves no frame to decide in. A page's end is
 		`IWindow.onClose`. */
 	CloseRequested;
 
@@ -93,7 +93,7 @@ enum Event {
 	FilesDropped(count:Int);
 
 	/** The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. Until `GraphicsRestored`, the
-		graphics take every call and draw nothing. */
+		graphics accept every call and draw nothing. */
 	GraphicsLost;
 
 	/** The GPU's context is back after `GraphicsLost`, and the graphics have remade what they could under their handles (`IGraphics`):

@@ -44,12 +44,12 @@ private class Connection {
 	}
 }
 
-/** Represents a socket whose connect gives up after its timeout. hxcpp's connect ignores a socket's timeout and waits as long as the
+/** Represents a socket whose connect stops after its timeout. hxcpp's connect ignores a socket's timeout and waits as long as the
 	system does (minutes, on Linux), so this one connects without blocking and waits for the connection itself. */
 private class Connecting extends sys.net.Socket {
 	var timeout:Float;
 
-	/** Creates the socket, its connect and each read and write giving up after `timeout` seconds. */
+	/** Creates the socket, its connect and each read and write stopping after `timeout` seconds. */
 	public function new(timeout:Float) {
 		super();
 		this.timeout = timeout;
@@ -64,12 +64,12 @@ private class Connecting extends sys.net.Socket {
 	}
 }
 
-/** Represents an https socket whose connect gives up after its timeout, as `Connecting`'s does; then it sets up its handshake as
+/** Represents an https socket whose connect stops after its timeout, as `Connecting`'s does; then it sets up its handshake as
 	`sys.ssl.Socket`'s own connect does. */
 private class ConnectingSsl extends sys.ssl.Socket {
 	var timeout:Float;
 
-	/** Creates the socket, its connect, its handshake and each read and write giving up after `timeout` seconds. */
+	/** Creates the socket, its connect, its handshake and each read and write stopping after `timeout` seconds. */
 	public function new(timeout:Float) {
 		super();
 		this.timeout = timeout;
@@ -97,14 +97,14 @@ private class ConnectingSsl extends sys.ssl.Socket {
 }
 
 /** Represents a socket's input whose reads fail for the idle timeout when they end once it has passed, on every system. A read the
-	socket's timeout ends comes from hxcpp as Blocked on Linux and macOS, but as the connection closed on Windows: hxcpp's socket code takes
-	only WSAEWOULDBLOCK for blocking, and Windows ends the wait with WSAETIMEDOUT. So a read that fails, however it's reported, after waiting
+	socket's timeout ends comes from hxcpp as Blocked on Linux and macOS, but as the connection closed on Windows: hxcpp's socket code treats
+	only WSAEWOULDBLOCK as blocking, and Windows ends the wait with WSAETIMEDOUT. So a read that fails, however it's reported, after waiting
 	the timeout (less a twentieth of a second, for the system's timer) fails as silence. */
 private class Idle extends haxe.io.Input {
 	var input:haxe.io.Input;
 	var timeout:Float;
 
-	/** Creates the input, reading from `input`, a socket's input whose reads give up after `timeout` seconds. */
+	/** Creates the input, reading from `input`, a socket's input whose reads stop after `timeout` seconds. */
 	public function new(input:haxe.io.Input, timeout:Float) {
 		this.input = input;
 		this.timeout = timeout;
@@ -138,7 +138,7 @@ private class Request extends sys.Http {
 	// How long each read may wait, in seconds.
 	var timeout:Float;
 
-	/** Creates the request for `url`, each read of its response giving up after `timeout` seconds. */
+	/** Creates the request for `url`, each read of its response stopping after `timeout` seconds. */
 	public function new(url:String, timeout:Float) {
 		super(url);
 		this.timeout = timeout;
@@ -148,7 +148,7 @@ private class Request extends sys.Http {
 	static function silence(timeout:Float):String
 		return 'Nothing arrived from the server for $timeout ${timeout == 1 ? "second" : "seconds"}';
 
-	/** Returns the socket for `url`'s scheme, its connect and each read and write giving up after `timeout` seconds. */
+	/** Returns the socket for `url`'s scheme, its connect and each read and write stopping after `timeout` seconds. */
 	static function socketFor(url:String, timeout:Float):sys.net.Socket
 		return StringTools.startsWith(url, "https://") ? new ConnectingSsl(timeout) : new Connecting(timeout);
 
@@ -174,7 +174,7 @@ private class Request extends sys.Http {
 				continue;
 			var name = line.substr(0, colon).toLowerCase(),
 				value = StringTools.trim(line.substr(colon + 1));
-			// A header given more than once is one header, its values in order.
+			// A header sent more than once is one header, its values in order.
 			responseHeaders.set(name, responseHeaders.exists(name) ? responseHeaders.get(name) + ", " + value : value);
 			switch name {
 				case "content-length":
@@ -253,9 +253,9 @@ private class Transfer {
 
 	It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the
 	body, not while it connects. The idle timeout holds for each wait on the connection: its connect, each read and each write. Looking up
-	the server's name isn't timed; the system's resolver gives up on its own. */
+	the server's name isn't timed; the system's resolver times out on its own. */
 class HaxeHttpAdapter implements IHttp {
-	// How long a request may receive nothing, in seconds, when it isn't given: IHttp.get's default.
+	// How long a request may receive nothing, in seconds, when it isn't provided: IHttp.get's default.
 	static inline final IDLE_TIMEOUT = 30.;
 
 	var mailbox = new Mailbox();

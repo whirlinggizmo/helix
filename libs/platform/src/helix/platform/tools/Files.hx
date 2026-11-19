@@ -98,7 +98,7 @@ class Files {
 		return StringTools.startsWith(full, root + "/") ? full.substr(root.length + 1) : path;
 	}
 
-	/** Whether ancestor is directory or holds it (both absolute, as resolve gives them). */
+	/** Whether ancestor is directory or holds it (both absolute, as resolve returns them). */
 	public static function contains(ancestor:String, directory:String):Bool
 		return directory == ancestor || StringTools.startsWith(directory, ancestor == "/" ? "/" : ancestor + "/");
 

@@ -1,6 +1,6 @@
 package helix.platform.adapters.shared;
 
-/** Puts a resource's kind into its graphics handle, the same for every graphics adapter, so a handle of one kind given where another is
+/** Puts a resource's kind into its graphics handle, the same for every graphics adapter, so a handle of one kind provided where another is
 	expected is refused.
 
 	A handle is its kind in bits 28 to 30 and the adapter's own number below: a counter in a page, the C's slot and generation natively
@@ -27,7 +27,7 @@ class GraphicsHandle {
 	/** Returns the handle of a kind for the adapter's own number.
 
 		@param kind  The kind: `BUFFER`, `TEXTURE`, `SHADER` or `PIPELINE`.
-		@param number  The adapter's number, nonzero and below 1 << 28. 0 gives 0, no handle.
+		@param number  The adapter's number, nonzero and below 1 << 28. 0 produces 0, no handle.
 		@return  The handle. */
 	public static inline function make(kind:Int, number:Int):Int
 		return number == 0 ? 0 : (kind << KIND_SHIFT) | (number & NUMBER_MASK);

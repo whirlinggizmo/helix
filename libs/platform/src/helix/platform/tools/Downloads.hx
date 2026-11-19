@@ -44,7 +44,7 @@ class Downloads {
 	public static function say(message:String):Void
 		Sys.stderr().writeString(message + "\n");
 
-	/** The bytes at the first of urls that gives the file whose SHA-256 is sha256 (lowercase hex); refuses when none does, naming each
+	/** The bytes at the first of urls that serves the file whose SHA-256 is sha256 (lowercase hex); refuses when none does, naming each
 		failure. */
 	public static function fetch(urls:Array<String>, sha256:String, tool:String):Bytes {
 		var failures = [];
@@ -153,7 +153,7 @@ class Downloads {
 		FileSystem.rename(partial, path);
 	}
 
-	/** The zip archive's files written under directory, at their paths in it; only those keep returns true for, when given. */
+	/** The zip archive's files written under directory, at their paths in it; only those keep returns true for, when provided. */
 	public static function unzip(archive:Bytes, directory:String, ?keep:String->Bool):Void {
 		for (entry in haxe.zip.Reader.readZip(new haxe.io.BytesInput(archive))) {
 			if (StringTools.endsWith(entry.fileName, "/") || (keep != null && !keep(entry.fileName)))

@@ -11,11 +11,11 @@ import js.html.CanvasElement;
 
 /** Provides `IWindow` in a browser page: the page is the window.
 
-	Its title is the document's, its size the canvas's box on the page (the viewport's where the page gives it none), and fullscreen and
+	Its title is the document's, its size the canvas's box on the page (the viewport's where the page doesn't size it), and fullscreen and
 	visibility are the canvas's, whose drawing buffer follows that box at the ratio the options choose: the canvas's logical size until
 	`highDpi` is set, then the device's pixel ratio times it. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen.
 	Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the
-	orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later. */
+	orientation answer as the browser does. A dropped file is the File the canvas's drop delivered, read later. */
 class DomWindowAdapter implements IWindow {
 	var canvas:CanvasElement;
 	// The page's pagehide listener, added while onClose is set.
@@ -258,7 +258,7 @@ class DomWindowAdapter implements IWindow {
 		var data = context.createImageData(width, height);
 		data.data.set(new js.lib.Uint8ClampedArray(pixels.getData(), 0, width * height * 4));
 		context.putImageData(data, 0, 0);
-		// The page's own icons give way to it, as the page's newest icon is the one shown.
+		// The page's own icons yield to it, as the page's newest icon is the one shown.
 		if (iconLink == null) {
 			iconLink = Browser.document.createLinkElement();
 			iconLink.rel = "icon";

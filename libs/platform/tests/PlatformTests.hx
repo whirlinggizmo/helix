@@ -84,7 +84,7 @@ class PlatformTests {
 		check(!name("trailing ") && !name("trailing.") && !name([for (_ in 0...65) "x"].join("")),
 			"directory names: no space or . at the end, 64 characters at most");
 
-		// A page's finger ids: each landing finger takes the smallest id no finger down has.
+		// A page's finger ids: each landing finger receives the smallest id no finger down has.
 		var ids = new helix.platform.adapters.shared.FingerIds();
 		check(ids.land(901) == 0 && ids.land(902) == 1, "two fingers land: ids 0 and 1");
 		check(ids.find(902) == 1 && ids.find(903) == -1, "a finger down found by its pointer, one not down -1");
@@ -100,7 +100,7 @@ class PlatformTests {
 		check(sampling.withWrap(Clamp, Clamp).wrapV == Clamp
 			&& sampling.withWrap(Clamp, Clamp).filter == Linear, "withWrap changes the wraps alone");
 		check(Sampling.NEAREST.filter == Nearest && Sampling.LINEAR.filter == Linear && Sampling.LINEAR.wrapU == Clamp, "The two clamped samplings");
-		// The mipmap filter follows the filter unless given; anisotropy rounds down to a power of two, at most 16.
+		// The mipmap filter follows the filter unless provided; anisotropy rounds down to a power of two, at most 16.
 		check(sampling.mipmapFilter == Linear && Sampling.NEAREST.mipmapFilter == Nearest && sampling.anisotropy == 1,
 			"The mipmap filter defaults to the filter's, the anisotropy to 1");
 		var mipped = new Sampling(Nearest, Clamp, Repeat, None, 6);

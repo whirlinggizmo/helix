@@ -8,7 +8,7 @@
 
 Provides `IAudio` natively over SDL3_mixer on SDL3's default playback device.
 
-Voices are SDL3_mixer's tracks; a stream is decoded on the main thread at each poll, up to a second ahead, from a file or from a download as it arrives, in its file's channels. A queue is an SDL audio stream its track plays, SDL resampling it. A stream's position is counted from what was decoded and what its track hasn't taken yet, and it is moved by SDL3_mixer's own decoder seek. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while its codec can't open it yet; it is decoded only while 16 KiB ahead of the decoder's reads, or complete, and its voice sounds once a second is decoded. A download that fails plays to where it stopped, then ends. A `Remote` source fails: the caller downloads it, `playsUrls` being false.
+Voices are SDL3_mixer's tracks; a stream is decoded on the main thread at each poll, up to a second ahead, from a file or from a download as it arrives, in its file's channels. A queue is an SDL audio stream its track plays, SDL resampling it. A stream's position is counted from what was decoded and what its track hasn't consumed yet, and it is moved by SDL3_mixer's own decoder seek. A download opens once 16 KiB have arrived (or the whole, when smaller), tried again each time what has arrived doubles while its codec can't open it yet; it is decoded only while 16 KiB ahead of the decoder's reads, or complete, and its voice sounds once a second is decoded. A download that fails plays to where it stopped, then ends. A `Remote` source fails: the caller downloads it, `playsUrls` being false.
 
 ```haxe
 function new()
@@ -103,7 +103,7 @@ function dispose():Void
 
 *class*, for the browser (js) in [`libs/platform/src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx`](../src/helix/platform/adapters/audiodecoder/webaudio/WebAudioDecoderAdapter.hx), `import helix.platform.adapters.audiodecoder.webaudio.WebAudioDecoderAdapter;`, implements `IAudioDecoder`
 
-Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext made at the rate asked, which needs no user gesture and resamples to its rate, in the file's channels; a file of more than 2 is rendered through a stereo OfflineAudioContext, which mixes it down by Web Audio's speaker rules. A rate a context can't take fails the decode.
+Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext made at the rate asked, which needs no user gesture and resamples to its rate, in the file's channels; a file of more than 2 is rendered through a stereo OfflineAudioContext, which mixes it down by Web Audio's speaker rules. A rate a context can't accept fails the decode.
 
 ```haxe
 function new()
@@ -511,9 +511,9 @@ function dispose():Void
 
 Provides `IGraphics` on a canvas's WebGL2 context.
 
-It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. A lost context (`Event.GraphicsLost`) is taken as `IGraphics` says: every call does nothing until the browser gives the context back, when the adapter remakes programs, stream buffers, data textures, render targets and shadow maps under their handles from what it was told, and drops textures and static buffers.
+It builds programs from a `ShaderSource`'s GLSL ES 300 and pipelines from a `PipelineDesc`. A lost context (`Event.GraphicsLost`) is handled as `IGraphics` says: every call does nothing until the browser restores the context, when the adapter remakes programs, stream buffers, data textures, render targets and shadow maps under their handles from what it was told, and drops textures and static buffers.
 
-A draw sets only the GL state that differs from the last draw's. A layout over static buffers is kept as a vertex array object, bound again when the same mesh is drawn, and each draw's uniform blocks go into buffers of their own, taken in turn over three frames, so no write waits on a draw still reading.
+A draw sets only the GL state that differs from the last draw's. A layout over static buffers is kept as a vertex array object, bound again when the same mesh is drawn, and each draw's uniform blocks go into buffers of their own, used in turn over three frames, so no write waits on a draw still reading.
 
 ```haxe
 function new(options:WebGl2GraphicsAdapterOptions)
@@ -595,7 +595,7 @@ Provides `IHttp` in a page over `fetch`: the body read as it arrives, aborted th
 
 Conditional headers (`If-None-Match`, `If-Modified-Since`) to another origin would need a CORS preflight the server may refuse, so there they are left out and the browser revalidates its own copy instead (cache `no-cache`), answering 200.
 
-A body cut short of its `Content-Length` fails. Browsers fail most of those themselves, but not all: Chromium takes a connection closed partway through the head as a whole head and an empty body, and Firefox a compressed body cut short as a whole one. So a body that ends is checked against its `Content-Length`: by the bytes the browser's Resource Timing entry for the request says arrived, where the entry can be read (from the page's origin, or a server that sends `Timing-Allow-Origin`); or else by the bytes read, where the response is from the page's origin and isn't compressed. Where neither can be read, a response from another origin without `Timing-Allow-Origin`, `done` is called unchecked. A 204 or 304 answer has no body to check. A status below 100, which Chromium makes of a status line cut short, fails without `head`.
+A body cut short of its `Content-Length` fails. Browsers fail most of those themselves, but not all: Chromium treats a connection closed partway through the head as a whole head and an empty body, and Firefox a compressed body cut short as a whole one. So a body that ends is checked against its `Content-Length`: by the bytes the browser's Resource Timing entry for the request says arrived, where the entry can be read (from the page's origin, or a server that sends `Timing-Allow-Origin`); or else by the bytes read, where the response is from the page's origin and isn't compressed. Where neither can be read, a response from another origin without `Timing-Allow-Origin`, `done` is called unchecked. A 204 or 304 answer has no body to check. A status below 100, which Chromium makes of a status line cut short, fails without `head`.
 
 A browser opens at most six connections to a server over HTTP/1.1 and queues the requests past them, so a request behind six others of this adapter's to the same origin isn't timed until one of them ends; requests the page makes otherwise aren't counted.
 
@@ -617,7 +617,7 @@ function dispose():Void
 
 Provides `IHttp` natively over `sys.Http`, on a worker thread for each transfer.
 
-It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the body, not while it connects. The idle timeout holds for each wait on the connection: its connect, each read and each write. Looking up the server's name isn't timed; the system's resolver gives up on its own.
+It fetches http and https URLs only, failing others; `noCache` has no cache to bypass; an abort stops a transfer at its next part of the body, not while it connects. The idle timeout holds for each wait on the connection: its connect, each read and each write. Looking up the server's name isn't timed; the system's resolver times out on its own.
 
 ```haxe
 function new()
@@ -634,7 +634,7 @@ function dispose():Void
 
 Provides `IImageDecoder` in a page over its own decoder (`createImageBitmap`, with no color conversion or premultiplying).
 
-`decodeForGpu` gives the bitmap itself, which the graphics adapter uploads as it is. `decode` reads it back through an `OffscreenCanvas`, which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value.
+`decodeForGpu` returns the bitmap itself, which the graphics adapter uploads as it is. `decode` reads it back through an `OffscreenCanvas`, which stores pixels premultiplied, so a partly transparent pixel may come back a level or two from the file's value.
 
 ```haxe
 function new()
@@ -942,7 +942,7 @@ final events:Sdl3EventsAdapter
 
 Provides `ITouch` in a browser page: fingers on the canvas, in its framebuffer pixels.
 
-The canvas keeps a finger until it lifts, so one sliding off it still arrives. While it exists the canvas's `touch-action` is `none`, so the browser doesn't take a moving finger to scroll or zoom the page, which would cancel it; one the browser takes anyway arrives as its `TouchUp`. A landing finger takes the smallest id no finger down has, as natively.
+The canvas keeps a finger until it lifts, so one sliding off it still arrives. While it exists the canvas's `touch-action` is `none`, so the browser doesn't use a moving finger to scroll or zoom the page, which would cancel it; one the browser uses anyway arrives as its `TouchUp`. A landing finger receives the smallest id no finger down has, as natively.
 
 ```haxe
 function new(options:DomTouchAdapterOptions)
@@ -1010,7 +1010,7 @@ final events:Sdl3EventsAdapter
 
 Provides `IWindow` in a browser page: the page is the window.
 
-Its title is the document's, its size the canvas's box on the page (the viewport's where the page gives it none), and fullscreen and visibility are the canvas's, whose drawing buffer follows that box at the ratio the options choose: the canvas's logical size until `highDpi` is set, then the device's pixel ratio times it. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen. Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the orientation answer as the browser does. A dropped file is the File the canvas's drop gave, read later.
+Its title is the document's, its size the canvas's box on the page (the viewport's where the page doesn't size it), and fullscreen and visibility are the canvas's, whose drawing buffer follows that box at the ratio the options choose: the canvas's logical size until `highDpi` is set, then the device's pixel ratio times it. A page can't move, size, maximize or minimize its window, choose a monitor, or close; it sees one screen. Those requests fail at the next `DomEventsAdapter` poll, saying so, and what a page can do answers there too; fullscreen and the orientation answer as the browser does. A dropped file is the File the canvas's drop delivered, read later.
 
 ```haxe
 function new(options:DomWindowAdapterOptions)
@@ -1167,7 +1167,7 @@ final vsync:Bool = true
 ```
 
 - `graphics`: Gets the graphics adapter that draws in the window.
-- `msaaSampleCount`: Gets the number of multisampling samples a pixel asks for; 1 for none, the default. The GPU may give fewer.
+- `msaaSampleCount`: Gets the number of multisampling samples a pixel asks for; 1 for none, the default. The GPU may use fewer.
 - `vsync`: Gets whether presenting waits for the display's refresh, which paces the owner's loop: true, the default. False shows each frame as soon as it is drawn, which may tear.
 
 ## Sdl3WindowGraphics

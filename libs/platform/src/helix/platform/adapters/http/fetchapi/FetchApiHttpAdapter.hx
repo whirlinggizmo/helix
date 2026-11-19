@@ -10,7 +10,7 @@ import js.html.Response;
 	Conditional headers (`If-None-Match`, `If-Modified-Since`) to another origin would need a CORS preflight the server may refuse, so there
 	they are left out and the browser revalidates its own copy instead (cache `no-cache`), answering 200.
 
-	A body cut short of its `Content-Length` fails. Browsers fail most of those themselves, but not all: Chromium takes a connection closed
+	A body cut short of its `Content-Length` fails. Browsers fail most of those themselves, but not all: Chromium treats a connection closed
 	partway through the head as a whole head and an empty body, and Firefox a compressed body cut short as a whole one. So a body that ends
 	is checked against its `Content-Length`: by the bytes the browser's Resource Timing entry for the request says arrived, where the entry
 	can be read (from the page's origin, or a server that sends `Timing-Allow-Origin`); or else by the bytes read, where the response is from
@@ -23,7 +23,7 @@ import js.html.Response;
 
 	The page's Resource Timing buffer is raised whenever it fills, so each request's entry is kept, until `dispose`. */
 class FetchApiHttpAdapter implements IHttp {
-	// How long a request may receive nothing, in seconds, when it isn't given: IHttp.get's default.
+	// How long a request may receive nothing, in seconds, when it isn't provided: IHttp.get's default.
 	static inline final IDLE_TIMEOUT = 30.;
 
 	// The most connections a browser opens to one server at once over HTTP/1.1, queueing the requests past them.

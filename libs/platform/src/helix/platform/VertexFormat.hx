@@ -46,7 +46,7 @@ enum abstract VertexFormat(Int) to Int {
 	/** Four half floats (IEEE binary16, little-endian): 8 bytes. */
 	var Half4 = 11;
 
-	/** Gets the bytes one value takes in a record: 4, 8, 12 or 16. */
+	/** Gets the bytes one value occupies in a record: 4, 8, 12 or 16. */
 	public var bytes(get, never):Int;
 
 	/** Gets the number of components one value holds, 1 to 4. */

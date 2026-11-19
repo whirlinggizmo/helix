@@ -10,6 +10,6 @@ typedef ShaderVarying = {
 	/** Its GLSL type: `float`, `vec2`, `vec3`, `vec4`, `int`, `ivecN`, `uint`, `uvecN` or `matN`. */
 	final type:String;
 
-	/** The location it is passed at. A matrix takes a location a column, from its own. */
+	/** The location it is passed at. A matrix occupies a location a column, from its own. */
 	final location:Int;
 }

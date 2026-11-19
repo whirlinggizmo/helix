@@ -336,7 +336,7 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 	}
 
 	// The point size: written after main in every dialect, with the clip scale or without it, the result marked; HLSL in its compatibility
-	// mode, which takes it; none without the option.
+	// mode, which accepts it; none without the option.
 	static function points():Void {
 		var vertex = "#version 450\nlayout(location = 0) in vec2 p;\nvoid main() { gl_Position = vec4(p, 0.0, 1.0); gl_PointSize = 4.0; }\n",
 			fragment = "#version 450\nlayout(location = 0) out vec4 color;\nvoid main() { color = vec4(1.0); }\n";
@@ -366,7 +366,7 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 	}
 
 	// SDL_GPU's Direct3D 12 input layout names the attribute at location n TEXCOORDn: the HLSL reads each input by that name, a matrix's
-	// columns each by its own location's, as Direct3D refuses a pipeline whose shader reads a name the layout doesn't give.
+	// columns each by its own location's, as Direct3D refuses a pipeline whose shader reads a name the layout doesn't name.
 	static function semantics():Void {
 		var source = compile("#version 450\nlayout(location = 0) in vec2 p;\nlayout(location = 1) in mat4 placed;\nlayout(location = 5) in vec4 tint;\n"
 			+ "layout(location = 0) out vec4 v;\nvoid main() { gl_Position = placed * vec4(p, 0.0, 1.0); v = tint; }\n",

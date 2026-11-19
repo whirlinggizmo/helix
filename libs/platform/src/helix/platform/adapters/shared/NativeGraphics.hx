@@ -10,14 +10,14 @@ import haxe.io.Bytes;
 /** Provides `IGraphics` for the native graphics adapters, passing each call as plain data to the C that each implements (graphics.h,
 	through `GraphicsDeviceBridge`).
 
-	A subclass sets up its C, builds programs from the dialect its C takes (`createShader`) and shuts down. A call the C refuses throws. */
+	A subclass sets up its C, builds programs from the dialect its C accepts (`createShader`) and shuts down. A call the C refuses throws. */
 @:noCompletion
 abstract class NativeGraphics implements IGraphics {
 	/** Returns a program's layout as the C reads it, a line each: its attributes (`a <slot> <name>`), its uniform blocks
 		(`u <slot> <v|f|b> <size> <name>`, b for a block both stages read), each followed by its members (`m <type> <offset> <count>
 		<stride> <path>`), and its textures (`t|s|c|d <slot> <v|f> <name>`). */
 	static function layout(source:helix.platform.ShaderSource):String {
-		// A matrix's later columns have no name: the C takes them by slot.
+		// A matrix's later columns have no name: the C reads them by slot.
 		var lines = [
 			for (i in 0...source.attributes.length)
 				if (source.attributes[i] != "") 'a $i ${source.attributes[i]}'
@@ -266,7 +266,7 @@ abstract class NativeGraphics implements IGraphics {
 			throw "Invalid native render target";
 		if (depth == Texture && msaaSampleCount != 1)
 			throw "Invalid native render target: a depth texture's target has 1 sample (msaaSampleCount 1)";
-		// The count asked (0: the screen's), which the C rounds down to one the GPU takes for the format.
+		// The count asked (0: the screen's), which the C rounds down to one the GPU supports for the format.
 		return valid(GraphicsHandle.TEXTURE,
 			GraphicsDeviceBridge.target(width, height, format, depth, msaaSampleCount == 0 ? GraphicsDeviceBridge.msaaSamples() : msaaSampleCount,
 				bottomRowFirst ? 1 : 0));

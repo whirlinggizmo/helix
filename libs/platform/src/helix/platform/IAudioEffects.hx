@@ -30,7 +30,7 @@ interface IAudioEffects extends IPollable {
 
 	/** Sends a voice into a chain, from what it plays next.
 
-		@param voice  The voice, as `IAudio` gave it.
+		@param voice  The voice, as `IAudio` returned it.
 		@param chain  The chain, or `mix` to play straight into the mix.
 		@return  False, changing nothing, when the voice isn't playing (unknown, stopped or ended) or the chain is unknown. */
 	function send(voice:Int, chain:Int):Bool;

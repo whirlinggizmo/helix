@@ -5,7 +5,7 @@ import helix.platform.IAudioDecoder;
 
 /** Provides `IAudioDecoder` in a browser page: decodeAudioData on an OfflineAudioContext made at the rate asked, which needs no user
 	gesture and resamples to its rate, in the file's channels; a file of more than 2 is rendered through a stereo OfflineAudioContext,
-	which mixes it down by Web Audio's speaker rules. A rate a context can't take fails the decode. */
+	which mixes it down by Web Audio's speaker rules. A rate a context can't accept fails the decode. */
 class WebAudioDecoderAdapter implements IAudioDecoder {
 	// A decoding context for each rate asked, made at its first decode.
 	final contexts = new Map<Int, Dynamic>();
@@ -27,7 +27,7 @@ class WebAudioDecoderAdapter implements IAudioDecoder {
 			}
 			contexts.set(rate, context);
 		}
-		// decodeAudioData takes its input over: a copy, as the caller keeps its bytes.
+		// decodeAudioData detaches its input: a copy, as the caller keeps its bytes.
 		var data:js.lib.ArrayBuffer = encoded.getData().slice(0, encoded.length);
 		function fail(error:Dynamic):Null<Dynamic> {
 			if (!closed)

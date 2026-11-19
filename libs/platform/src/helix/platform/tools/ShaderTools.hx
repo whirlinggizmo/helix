@@ -143,7 +143,7 @@ $files </files>
 		Sys.setCwd(source);
 		var arch = arm64() ? "-DHXCPP_ARM64" : "-DHXCPP_M64";
 		// Its output on the standard error, as the tools' messages are: the standard output is a command's result. Through the shell (sh and
-		// cmd both take 1>&2), as a macro can't start the thread that would read two pipes at once.
+		// cmd both accept 1>&2), as a macro can't start the thread that would read two pipes at once.
 		var code = Sys.command('haxelib run hxcpp Build.xml $arch -DHXCPP_COMPILE_THREADS=4 1>&2');
 		Sys.setCwd(cwd);
 		if (code != 0)

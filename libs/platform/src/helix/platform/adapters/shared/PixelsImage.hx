@@ -3,8 +3,8 @@ package helix.platform.adapters.shared;
 import haxe.io.Bytes;
 import helix.platform.IDecodedImage;
 
-/** Provides `IDecodedImage` over pixels already decoded: what the native decoders give `decodeForGpu`, and any decoder without a GPU image
-	of its own. */
+/** Provides `IDecodedImage` over pixels already decoded: what the native decoders return from `decodeForGpu`, and any decoder without a GPU
+	image of its own. */
 @:noCompletion
 class PixelsImage implements IDecodedImage {
 	public var width(get, never):Int;

@@ -44,8 +44,8 @@ Both targets compute each effect the same way, so a game sounds alike on both. T
 - `Compressor(threshold:Float, ratio:Float, attack:Float, release:Float)`: Evens out loud and quiet, lowering what is above a level.
   - `threshold`: The level in decibels where it starts, -60 to 0.
   - `ratio`: How much it lowers what is above the threshold, 1 (not at all) to 20.
-  - `attack`: The seconds it takes to lower a sound that gets loud, 0 to 1.
-  - `release`: The seconds it takes to let a sound back up, 0 to 1.
+  - `attack`: The seconds spent lowering a sound that gets loud, 0 to 1.
+  - `release`: The seconds spent letting a sound back up, 0 to 1.
 - `Distortion(drive:Float)`: Clips what plays toward a square wave, from warmth to a broken speaker.
   - `drive`: How hard it clips, 0 (not at all) to 1.
 - `PitchShift(ratio:Float)`: Raises or lowers the pitch of what plays and keeps its speed, as a voice changer or a slowed world sounds. `IAudio.setPitch` changes a voice's pitch and speed together.
@@ -126,7 +126,7 @@ function toString():String
 
 Specifies how a blend combines its two sides, each already multiplied by its factor.
 
-The source is the color a draw writes, and the destination the color already in the target. Min and Max take the two colors as they are, and their factors are ignored.
+The source is the color a draw writes, and the destination the color already in the target. Min and Max use the two colors as they are, and their factors are ignored.
 
 - `BlendOperation.Add`: The source plus the destination.
 - `BlendOperation.Subtract`: The source minus the destination.
@@ -282,11 +282,11 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `Wheel(dx:Float, dy:Float)`: The wheel turned, in notches. Right and away from the player are positive.
 - `TouchDown(id:Int, x:Float, y:Float)`: A finger touched the screen. id is the smallest no finger down has, and stays the same for that finger until it lifts.
 - `TouchMove(id:Int, x:Float, y:Float)`: A finger moved.
-- `TouchUp(id:Int, x:Float, y:Float)`: A finger lifted, or the OS took the touch away.
+- `TouchUp(id:Int, x:Float, y:Float)`: A finger lifted, or the OS canceled the touch.
 - `Tilt(beta:Float, gamma:Float, screenAngle:Float)`: Reports the device's orientation while tilt access is held (`ITilt.requestAccess`). beta and gamma are in degrees, and screenAngle is the screen's angle.
 - `TiltState(status:TiltStatus)`: The tilt's status changed.
 - `Unlocked`: The player's first press: a key or a mouse button pressed, or a finger lifted, for the first time.
-  In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It arrives once, before that press's own event, on every target, so a game's "press any key" start flows the same everywhere (`IEvents.unlocked`). A finger counts as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't take one as the player's.
+  In a browser that press unlocks the page, which may then play sound, ask for tilt and go fullscreen. It arrives once, before that press's own event, on every target, so a game's "press any key" start flows the same everywhere (`IEvents.unlocked`). A finger counts as it lifts because a browser counts a tap then. A gamepad's press doesn't count, as a browser doesn't treat one as the player's.
 - `GamepadConnected(slot:Int)`: A gamepad was connected in a slot, 0 to 3.
 - `GamepadDisconnected(slot:Int)`: The gamepad in a slot was disconnected. Its buttons count as up.
 - `GamepadButtonDown(slot:Int, button:GamepadButton)`: A gamepad's button went down. A trigger is also a button, down when pulled past half way.
@@ -297,17 +297,17 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 - `Shown`: The player can see the window again, because it was restored or its page came to the front.
 - `Hidden`: The player can't see the window, because it is minimized or hidden, or its page is in the background.
 - `CloseRequested`: The player or the OS asked to close the window. The program decides whether to close it.
-  It arrives only natively. A page never receives it, because a closing tab gives no frame to decide in. A page's end is `IWindow.onClose`.
+  It arrives only natively. A page never receives it, because a closing tab leaves no frame to decide in. A page's end is `IWindow.onClose`.
 - `FilesDropped(count:Int)`: Files were dropped on the window, count of them. `IWindow.readDroppedFile` reads each, 0 to count - 1, until the next `FilesDropped`.
   Every file dropped since the last poll is in the one event: natively from the desktop's drag and drop, in a page dropped on the canvas. A dropped directory is no file and isn't counted.
-- `GraphicsLost`: The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. Until `GraphicsRestored`, the graphics take every call and draw nothing.
+- `GraphicsLost`: The GPU's context is gone. In a page, the WebGL context was lost to a GPU reset or an evicted tab. Until `GraphicsRestored`, the graphics accept every call and draw nothing.
 - `GraphicsRestored`: The GPU's context is back after `GraphicsLost`, and the graphics have remade what they could under their handles (`IGraphics`): textures and static buffers are gone, for their owner to make again.
 
 ## FilePath
 
 *class* in [`libs/platform/src/helix/platform/FilePath.hx`](../src/helix/platform/FilePath.hx), `import helix.platform.FilePath;`
 
-Provides the rule for the paths `IFileSystem` takes, which every file system adapter checks, and which helix-services' `Assets` holds every source to, so a name is refused the same way on every target.
+Provides the rule for the paths `IFileSystem` accepts, which every file system adapter checks, and which helix-services' `Assets` holds every source to, so a name is refused the same way on every target.
 
 ```haxe
 static function isValid(path:String):Bool
@@ -315,7 +315,7 @@ static inline var INVALID:String
 static function isDirectoryName(name:String):Bool
 ```
 
-- `isValid`: Returns whether a path is one `IFileSystem` takes: plain names of letters, digits, `_`, `-` and `.` joined by `/`, at most 256 characters, none empty, `.` or `..`.
+- `isValid`: Returns whether a path is one `IFileSystem` accepts: plain names of letters, digits, `_`, `-` and `.` joined by `/`, at most 256 characters, none empty, `.` or `..`.
   - `path`: The path.
   - returns: True when it is.
 - `INVALID`: The failure for a path `isValid` refuses.
@@ -517,7 +517,7 @@ function dispose():Void
   - `stream`: The stream.
   - returns: 1 (mono) or 2 (stereo); a file of more plays as stereo. 0 when it can't tell: in a page, where a stream's channels are read from its file's first bytes (helix-formats' `AudioHeader`), a kind it doesn't read or a fetch that failed.
   - throws `String`: For an unknown stream.
-- `createQueue`: Creates a queue, which plays samples given to it as it goes.
+- `createQueue`: Creates a queue, which plays the samples added to it as it goes.
   - `channelCount`: The channels, 1 (mono) or 2 (stereo).
   - `sampleRate`: The samples' rate in frames a second, 8000 to 96000.
   - returns: The queue's id.
@@ -591,13 +591,13 @@ function dispose():Void
   - `voice`: The voice.
   - returns: The position in seconds from the start of its clip, stream or queue; 0 for an unknown or ended voice.
 
-  A looping voice goes back to 0 at each loop. A queue's voice counts the frames it has played since `playQueue`. Natively a stream's voice counts what the output has taken from it, a few milliseconds ahead of what is heard.
+  A looping voice goes back to 0 at each loop. A queue's voice counts the frames it has played since `playQueue`. Natively a stream's voice counts what the output has read from it, a few milliseconds ahead of what is heard.
 - `setPosition`: Moves a playing or paused voice to a position.
   - `voice`: The voice.
   - `seconds`: The position in seconds from the start, 0 or more.
   - returns: False, changing nothing, when the voice isn't playing (unknown, stopped or ended), is a queue's, or can't be moved there.
 
-  A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved. In a page, a stream moves only within what its media element can seek (`HTMLMediaElement.seekable`), which a server that doesn't take range requests prevents.
+  A position past the end is clamped to the end, where a voice that doesn't loop ends. A queue's voice can't be moved. In a page, a stream moves only within what its media element can seek (`HTMLMediaElement.seekable`), which a server that doesn't accept range requests prevents.
 - `isPlaying`: Returns whether a voice is still playing or paused.
   - `voice`: The voice.
   - returns: False once the voice has ended or been stopped, and for an unknown voice.
@@ -666,7 +666,7 @@ function dispose():Void
 
   It does nothing for the mix or an unknown chain.
 - `send`: Sends a voice into a chain, from what it plays next.
-  - `voice`: The voice, as `IAudio` gave it.
+  - `voice`: The voice, as `IAudio` returned it.
   - `chain`: The chain, or `mix` to play straight into the mix.
   - returns: False, changing nothing, when the voice isn't playing (unknown, stopped or ended) or the chain is unknown.
 - `addEffect`: Adds an effect at the end of a chain.
@@ -740,7 +740,7 @@ function dispose():Void
 
   One of `done` or `failed` is called once, never during this call.
 - `requestImage`: Asks for the clipboard's image, as PNG.
-  - `read`: Receives the PNG's bytes. A page's browser may give the same picture encoded anew.
+  - `read`: Receives the PNG's bytes. A page's browser may return the same picture encoded anew.
   - `failed`: Optional. Receives why there is none: no image on the clipboard, or a page's permission refused.
   - returns: True, because it always asks.
 
@@ -757,9 +757,9 @@ function dispose():Void
 
 *interface* in [`libs/platform/src/helix/platform/IDecodedImage.hx`](../src/helix/platform/IDecodedImage.hx), `import helix.platform.IDecodedImage;`
 
-Represents an image decoded for the GPU: what `IImageDecoder.decodeForGpu` gives and `IGraphics.createTextureFromImage` uploads, so a program draws a file without ever holding its pixels.
+Represents an image decoded for the GPU: what `IImageDecoder.decodeForGpu` returns and `IGraphics.createTextureFromImage` uploads, so a program draws a file without ever holding its pixels.
 
-In a page it is the browser's decoded image (`bitmapHandle` names it), uploaded as it is. Natively it is the pixels. Either can give its pixels (`pixels`) when a program wants them after all, at the cost a page's readback has.
+In a page it is the browser's decoded image (`bitmapHandle` names it), uploaded as it is. Natively it is the pixels. Either can return its pixels (`pixels`) when a program wants them after all, at the cost a page's readback has.
 
 ```haxe
 var width(get, never):Int
@@ -959,12 +959,12 @@ function dispose():Void
   - `failed`: Receives why the font can't be read.
 
   One of `opened` or `failed` is called once, on the main thread, never during this call.
-- `rasterizeOpened`: Returns an opened font's glyphs as 8-bit coverage, rasterized on the main thread during the call, as `rasterize` gives them.
+- `rasterizeOpened`: Returns an opened font's glyphs as 8-bit coverage, rasterized on the main thread during the call, as `rasterize` returns them.
   - `font`: The font, from `openFont`.
   - `size`: The pixel height.
   - `codepoints`: The glyphs wanted.
   - returns: A glyph for each codepoint, in their order, and the font's metrics at the size.
-- `rasterizeDistanceFieldOpened`: Returns an opened font's glyphs as signed distances to their outlines, rasterized on the main thread during the call, as `rasterizeDistanceField` gives them.
+- `rasterizeDistanceFieldOpened`: Returns an opened font's glyphs as signed distances to their outlines, rasterized on the main thread during the call, as `rasterizeDistanceField` returns them.
   - `font`: The font, from `openFont`.
   - `size`: The pixel height.
   - `codepoints`: The glyphs wanted.
@@ -1009,7 +1009,7 @@ function dispose():Void
 - `getAxis`: Returns a gamepad's axis.
   - `slot`: The slot, 0 to 3.
   - `axis`: The axis.
-  - returns: The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot gives 0.
+  - returns: The axis's value. A stick runs from -1 to 1, with down and right positive. A trigger runs from 0 to 1. An empty slot returns 0.
 - `setVibration`: Shakes a gamepad: its low-frequency (heavy) and high-frequency (light) motors for a while, replacing any shaking it was doing.
   - `slot`: The slot, 0 to 3.
   - `low`: The heavy motor's strength, 0 to 1.
@@ -1033,7 +1033,7 @@ An adapter knows nothing of its caller's programs, layouts or pipelines. The cal
 
 A call that cannot be done throws before doing anything.
 
-**A lost context** (a page's `GraphicsLost`). While the context is lost, every call is taken and does nothing: a creation returns a handle, a draw draws nothing, `readPixels` fails. At `GraphicsRestored` the adapter has remade, under the old handles, its programs, pipelines, render targets and shadow maps (their texels cleared), data textures and stream buffers (rewritten each frame anyway). Textures (`createTexture`, `createTextureFromImage`, `createCubeTexture`) and static buffers are gone, those made during the loss too, and their handles disposed: their owner makes them again from what it keeps. Natively, a lost context (rare) is currently unrecoverable.
+**A lost context** (a page's `GraphicsLost`). While the context is lost, every call is accepted and does nothing: a creation returns a handle, a draw draws nothing, `readPixels` fails. At `GraphicsRestored` the adapter has remade, under the old handles, its programs, pipelines, render targets and shadow maps (their texels cleared), data textures and stream buffers (rewritten each frame anyway). Textures (`createTexture`, `createTextureFromImage`, `createCubeTexture`) and static buffers are gone, those made during the loss too, and their handles disposed: their owner makes them again from what it keeps. Natively, a lost context (rare) is currently unrecoverable.
 
 ```haxe
 function createTexture(width:Int, height:Int, levels:Array<haxe.io.Bytes>, ?format:TextureFormat = Rgba8):Int
@@ -1123,17 +1123,17 @@ function dispose():Void
 
   RGBA8 can always be sampled. The compressed formats can be sampled on GPUs that have them, and half floats where this GPU filters them.
 - `msaaSampleCount`: Gets the number of multisampling samples per pixel that the screen is drawn with, or 1 for none.
-  It can be fewer than the window asked for. A render target created with a sample count of 0 is drawn with the same number, where its format takes it.
+  It can be fewer than the window asked for. A render target created with a sample count of 0 is drawn with the same number, where its format supports it.
 - `maxMsaaSampleCount`: Gets the largest number of multisampling samples a window could ask for here, at most 8.
   A browser only switches antialiasing on or off, and chooses its own count. In a browser this is therefore the count the canvas has when antialiasing is on, which is 4 where the GPU supports 4, and 1 otherwise. A render target's limit is `getMaxRenderTargetMsaaSampleCount`.
 - `device`: Gets the GPU and driver drawing, as the graphics API reports them, for a program to log or show.
-  A browser may mask them: the adapter asks for the unmasked names (`WEBGL_debug_renderer_info`) where the browser gives them, and otherwise has the browser's own, such as "WebKit WebGL".
+  A browser may mask them: the adapter asks for the unmasked names (`WEBGL_debug_renderer_info`) where the browser reports them, and otherwise has the browser's own, such as "WebKit WebGL".
 - `textureBytes`: Gets the bytes the textures alive hold on the GPU, for a program to show: each texture's levels (a cube's six faces), a data texture's texels at 16 bytes, a render target's texels, its samples when multisampled and its depth at 4 bytes a sample, and a shadow map's layers at 4 bytes a texel. The screen's own aren't counted, nor what the GPU pads.
   Natively a data texture written more than once a frame counts each copy it keeps. In a page, a lost context's textures count until `GraphicsRestored`, and then only those remade.
 - `bufferBytes`: Gets the bytes the buffers alive hold on the GPU, for a program to show: each static buffer's bytes and each stream buffer's capacity, or natively the space the adapter writes stream buffers in (with SDL_GPU, one buffer for them all; with GL, each one's and the copies a buffer written more than once a frame keeps). What the GPU pads isn't counted. In a page, a lost context's buffers count until `GraphicsRestored`, and then only those remade.
 - `getMaxRenderTargetMsaaSampleCount`: Returns the largest number of multisampling samples a render target of a format can be drawn with here, at most 8.
   - `format`: The format.
-  - returns: The largest sample count `createRenderTarget` gives a target of the format.
+  - returns: The largest sample count `createRenderTarget` makes for a target of the format.
 
   It is 1, 2, 4 or 8: 1 where this GPU cannot multisample the format, or cannot draw into it at all (`canRender`).
 - `createRenderTarget`: Creates a render target, which is a texture that a target pass draws into.
@@ -1146,7 +1146,7 @@ function dispose():Void
   - returns: The render target's handle.
   - throws `String`: A size of 0 or less, a format this GPU cannot draw into (`canRender`), a sample count below 0, or a sample count other than 1 with `RenderTargetDepth.Texture`.
 
-  The target is sampled like any texture and stored top row first, or bottom row first when asked, as GL stores its framebuffers: what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth buffer, or with `RenderTargetDepth.Texture` a depth texture a shader samples after its passes (`getRenderTargetDepth`). Its depth and how many samples it is drawn with are chosen apart, except that a target whose depth is a texture has one sample. A target of more than one sample is drawn into its samples, which are resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`. A count the GPU can't give is never refused. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
+  The target is sampled like any texture and stored top row first, or bottom row first when asked, as GL stores its framebuffers: what a pass draws at clip space's top is then sampled at v = 1, the same on every adapter. A target with depth has its own depth buffer, or with `RenderTargetDepth.Texture` a depth texture a shader samples after its passes (`getRenderTargetDepth`). Its depth and how many samples it is drawn with are chosen apart, except that a target whose depth is a texture has one sample. A target of more than one sample is drawn into its samples, which are resolved into the texture at the end of each pass; a target of one sample is drawn into the texture itself. The count asked for is rounded down to the nearest that this GPU draws the format with: 1, 2, 4 or 8, at most `getMaxRenderTargetMsaaSampleCount(format)`. A count the GPU can't draw with is never refused. What a pass leaves in a target, its samples and depth too, lasts until a `beginTargetPass` clears it, so `resumeTargetPass` draws over it in a later pass or frame. A new target holds transparent black and the farthest depth.
 - `getRenderTargetDepth`: Returns the depth texture of a render target made with `RenderTargetDepth.Texture`, for a shader to sample after the target's pass.
   - `target`: The render target, as a `createRenderTarget` handle.
   - returns: The depth texture's handle, the same each call.
@@ -1453,7 +1453,7 @@ function openUrl(url:String):Bool
   Natively the option is the command line's `--name=value`, or a bare `--name` for an empty value. When the command line doesn't have it, it is the environment variable named HELIX_ followed by the name in capitals. In a page it is the URL's query parameter of that name.
 - `getMemoryBytes`: Returns the bytes of memory the program holds now, as far as the platform tells: natively the process's resident memory (what the OS has in RAM for it, code and data alike); in a page the script's heap where the browser reports it (Chromium), and 0 where it doesn't. A reading for a stats line, not an accounting: what it counts differs by platform, so compare readings on one.
   - returns: The bytes, or 0 when the platform can't tell.
-- `getTime`: Returns the time on a monotonic clock, for measuring how long something took, such as a frame.
+- `getTime`: Returns the time on a monotonic clock, for measuring how long something lasted, such as a frame.
   - returns: Seconds from an unspecified zero.
 
   It never goes back or jumps when the system's clock is set. A pause in the program, such as at a debugger or in a hidden page, counts as time that passed. In a page the clock is `performance.now`, and natively it is SDL's.
@@ -1547,7 +1547,7 @@ function dispose():Void
 
   The callbacks are called on the main thread, at `poll`, never during this call. `opened` is called once, when the server accepts the connection; then `text` or `bytes` for each message, in the order the server sent them; then one of `closed` or `failed`. A connection the program closes calls `closed` once the server answers the close, or `failed` if it never does. After `failed` or `closed`, nothing more is called, and the connection's id is no longer one.
 
-  A message's time is when it arrived: taken as the platform received it, on `ISystem.getTime`'s clock, not when `poll` delivered it, which waits for the frame.
+  A message's time is when it arrived: recorded as the platform received it, on `ISystem.getTime`'s clock, not when `poll` delivered it, which waits for the frame.
 
   A binary message is lent for the call: its bytes are the first `messageLength` of a buffer the platform reuses, so a program copies what it keeps, and a steady stream of messages allocates nothing natively.
 - `sendText`: Sends a text message, after the ones sent before it. Nothing for a connection not open yet, or closed.
@@ -1557,7 +1557,7 @@ function dispose():Void
   - `connectionId`: The connection.
   - `buffer`: The buffer holding the message.
   - `messageLength`: The message's length in bytes, from the buffer's start.
-- `getOutgoingByteCount`: Gets how many bytes sent on a connection haven't gone out yet, for a program sending faster than the network takes them; 0 for a connection not open, or closed.
+- `getOutgoingByteCount`: Gets how many bytes sent on a connection haven't gone out yet, for a program sending faster than the network carries them; 0 for a connection not open, or closed.
   - `connectionId`: The connection.
   - returns: The bytes not yet sent.
 - `getIncomingByteCount`: Gets how many bytes received on a connection the next `poll` delivers, for a program that polls late, or watches a server outpacing it; 0 for a connection not open, or closed.
@@ -1650,7 +1650,7 @@ var onClose(default, set):Null<() -> Void>
   - `failed`: Optional. Receives the reason the window wasn't resized.
   - returns: False, calling neither, for a size under 1.
 
-  The window manager may give another size; `width` and `height` reflect what it gave. A fullscreen or maximized window keeps its size, and a page's canvas follows the page, so those fail.
+  The window manager may choose another size; `width` and `height` reflect the size it chose. A fullscreen or maximized window keeps its size, and a page's canvas follows the page, so those fail.
 - `canMove`: Returns whether `requestPosition` and `requestMonitorIndex` can move the window.
   - returns: False in a page, and where the compositor places windows (Wayland, XWayland).
 - `x`: Gets the window's left edge on the desktop, in logical pixels.
@@ -1664,7 +1664,7 @@ var onClose(default, set):Null<() -> Void>
   - `failed`: Optional. Receives the reason it didn't move.
   - returns: True, because it always asks.
 
-  `x` and `y` reflect what the window manager gave. Where the window can't move (`canMove`), or while it is fullscreen or maximized, it fails.
+  `x` and `y` reflect where the window manager placed the window. Where the window can't move (`canMove`), or while it is fullscreen or maximized, it fails.
 - `canFullscreen`: Returns whether `requestFullscreen` can ask.
   - returns: True natively. In a page, whether the page may go fullscreen.
 - `fullscreen`: Gets a value indicating whether the window is fullscreen now. In a page it tells whether the canvas is.
@@ -1708,7 +1708,7 @@ var onClose(default, set):Null<() -> Void>
   - returns: True, because it always asks.
 
   `minimized` reflects the result once the request completes. In a page it fails.
-- `requestFocus`: Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas takes the keyboard.
+- `requestFocus`: Asks for the window brought to the front with the keyboard. A window manager may only flash it. In a page the canvas receives the keyboard focus.
   - `done`: Optional. Called once the window, or in a page the canvas, has the keyboard.
   - `failed`: Optional. Receives the reason it hasn't: natively the window manager kept it elsewhere.
   - returns: True, because it always asks.
@@ -1770,9 +1770,9 @@ var onClose(default, set):Null<() -> Void>
   - `fileIndex`: The file, 0 to the event's count - 1.
   - `maxBytes`: The largest file to read; a larger one fails.
   - `read`: Receives the file's name, without its directory, and its bytes.
-  - `failed`: Receives why it can't be read: an index no drop gave, a file over `maxBytes`, or the platform's reason.
+  - `failed`: Receives why it can't be read: an index no drop delivered, a file over `maxBytes`, or the platform's reason.
 
-  One of `read` or `failed` is called once, never during the call: natively at the next `IEvents.poll`, in a page once the browser has read it, or for an index no drop gave or a file over `maxBytes`, at the next poll. Natively the file is read from where it is on disk then, so one moved or changed since the drop reads as it is then. In a page it is the File the browser gave, kept until the next drop.
+  One of `read` or `failed` is called once, never during the call: natively at the next `IEvents.poll`, in a page once the browser has read it, or for an index no drop delivered or a file over `maxBytes`, at the next poll. Natively the file is read from where it is on disk then, so one moved or changed since the drop reads as it is then. In a page it is the File the browser delivered, kept until the next drop.
 - `canClose`: Returns whether `close` removes the window.
   - returns: True natively. False in a page, which a script can't close.
 
@@ -1887,9 +1887,9 @@ Represents everything a pipeline fixes for the draws through it.
 - `cull:CullFace`: Which faces are culled.
 - `colorWrite:Null<ColorChannels>`: The color channels the draws write; omitted, all of them. A channel left out keeps the target's value, blended or not. Depth is written as `depthWrite` specifies, and a depth-only pipeline writes no color whatever this holds.
 - `clockwise:Bool`: Whether clockwise winding is the front face.
-- `buffers:Array<VertexBuffer>`: The vertex buffers' layouts, by their index in a draw's buffers: at most 8, with at most 16 attributes across them, each at a slot from 0 to 15, as every adapter takes them.
+- `buffers:Array<VertexBuffer>`: The vertex buffers' layouts, by their index in a draw's buffers: at most 8, with at most 16 attributes across them, each at a slot from 0 to 15, as every adapter accepts them.
 - `blend:Blend`: How the colors are combined with the target's.
-- `attributeConstants:Null<Array<{values:Array<Float>, slot:Int}>>`: What attributes no buffer feeds read, by slot: up to four floats each, the rest 0, 0, 1 as (0, 0, 0, 1) has them, the same for every vertex and instance. Optional; a slot not given reads (0, 0, 0, 1). A constant for a slot a buffer feeds is refused.
+- `attributeConstants:Null<Array<{values:Array<Float>, slot:Int}>>`: What attributes no buffer feeds read, by slot: up to four floats each, the rest 0, 0, 1 as (0, 0, 0, 1) has them, the same for every vertex and instance. Optional; a slot without a constant reads (0, 0, 0, 1). A constant for a slot a buffer feeds is refused.
 
 ## Primitive
 
@@ -1911,7 +1911,7 @@ function toString():String
 
 *typedef* in [`libs/platform/src/helix/platform/RasterFont.hx`](../src/helix/platform/RasterFont.hx), `import helix.platform.RasterFont;`
 
-Represents the glyphs `IFontRasterizer.rasterizeOpened` gives, with the font's metrics at their size.
+Represents the glyphs `IFontRasterizer.rasterizeOpened` returns, with the font's metrics at their size.
 
 - `lineGap:Float`: The gap between one line's descent and the next line's ascent, in pixels.
 - `glyphs:Array<RasterGlyph>`: A glyph for each codepoint asked for, in their order.
@@ -2002,7 +2002,7 @@ static inline var COUNT:Int
   - `mipmapFilter`: How the texture's mipmaps are read.
   - returns: The sampling, its filter, wrapping and anisotropy unchanged.
 - `withAnisotropy`: Returns this sampling with another anisotropy.
-  - `anisotropy`: The most texels read along a surface seen at a slant, 1 to 16, as the constructor takes it.
+  - `anisotropy`: The most texels read along a surface seen at a slant, 1 to 16, as the constructor accepts it.
   - returns: The sampling, its filters and wrapping unchanged.
 - `COUNT`: The number of distinct values, which run 0 to COUNT - 1. It is the size of an adapter's table of samplers.
 
@@ -2022,7 +2022,7 @@ Represents a program in SDL_GPU's dialects, laid out as SDL_GPU binds them.
 
 Represents a uniform block that a program declares, and its members.
 
-A block's bytes are laid out by std140, as `members` places them, on every adapter. Blocks are numbered in each stage, 0 to 3; one both stages declare alike is one block, at the same slot in each. `IGraphics.draw` takes a block's bytes at its index in `uniforms`: its slot for the vertex stage's, 4 plus its slot for the fragment stage's, and both for a block both read.
+A block's bytes are laid out by std140, as `members` places them, on every adapter. Blocks are numbered in each stage, 0 to 3; one both stages declare alike is one block, at the same slot in each. `IGraphics.draw` accepts a block's bytes at its index in `uniforms`: its slot for the vertex stage's, 4 plus its slot for the fragment stage's, and both for a block both read.
 
 - `stage:String`: The stage that reads it: "vertex", "fragment", or "both" for a block both declare alike (the same name, slot and members).
 - `slot:Int`: The binding slot in its stage, or in each stage for a block both read: 0 to 3.
@@ -2038,7 +2038,7 @@ Represents a member of a uniform block that a program declares, as a leaf: its p
 
 The block is laid out by std140: each element of an array, and each column of a matrix, starts on a 16-byte boundary, and a `vec3` is followed by room for one float. A struct member is reflected as its fields, each with its path (`light.color`); a field of an array of structs is one member whose elements are the array's (`lights.color`, `elementCount` the array's length, `stride` the struct's size). A member of a block with an instance name (`uniform Camera { ... } camera;`) has a path starting with that name (`camera.viewProjection`), as the GLSL writes it.
 
-- `type:String`: The GLSL type: `float`, `vec2`, `vec3`, `vec4`, `mat2`, `mat3`, `mat4`, `int`, `ivec2`, `ivec3`, `ivec4`, `uint`, `uvec2`, `uvec3`, `uvec4`, `bool`, `bvec2`, `bvec3` or `bvec4`. A `bool` takes 4 bytes, 0 or 1, as a `uint` does.
+- `type:String`: The GLSL type: `float`, `vec2`, `vec3`, `vec4`, `mat2`, `mat3`, `mat4`, `int`, `ivec2`, `ivec3`, `ivec4`, `uint`, `uvec2`, `uvec3`, `uvec4`, `bool`, `bvec2`, `bvec3` or `bvec4`. A `bool` occupies 4 bytes, 0 or 1, as a `uint` does.
 - `stride:Int`: The bytes from one element to the next: 16 for a scalar or a vector, 16 a column for a matrix (64 for a `mat4`), a struct's size for a field of an array of structs.
 - `offset:Int`: The byte offset of its first element in the block.
 - `glslName:String`: The member's path in the GLSL: its name, or a struct field's `name.field`.
@@ -2060,7 +2060,7 @@ Represents a compiled program, with its stages in each dialect the adapters comp
 - `points:Null<Bool>`: Whether the vertex stage writes a point size of 1, compiled with `ShaderCompileOptions.points`, so `Primitive.Points` pipelines may draw it. Optional; false when omitted.
 - `glsl410:Null<ShaderStages>`: GLSL 410, for GL natively. Absent from a browser build.
 - `glsl300es:ShaderStages`: GLSL ES 300, for WebGL2.
-- `fragmentInputs:Array<ShaderVarying>`: The values the fragment stage takes, by location: what it declares as inputs.
+- `fragmentInputs:Array<ShaderVarying>`: The values the fragment stage receives, by location: what it declares as inputs.
 - `attributes:Array<String>`: The vertex attributes' names, by slot. A matrix's name is at its first slot, and its other columns' slots hold "".
 - `attributeTypes:Array<String>`: The vertex attributes' GLSL types (`float`, `vec2`, `vec3`, `vec4`, `mat4`, `int`, `ivec4` and the rest), by slot: a matrix's at its first slot, and its columns' (`vec4` for a `mat4`) at the rest.
 - `activeAttributes:Array<Int>`: The slots of the vertex attributes the vertex stage's code reads, as glslang finds; the others are declared and fed, and unread. A matrix's slot is its first column's.
@@ -2099,7 +2099,7 @@ Represents a value one stage of a program passes to the next: an output of the v
 It is read from the compiled program, so it is what the stage declares, built-ins (`gl_Position`, `gl_FragCoord`) left out.
 
 - `type:String`: Its GLSL type: `float`, `vec2`, `vec3`, `vec4`, `int`, `ivecN`, `uint`, `uvecN` or `matN`.
-- `location:Int`: The location it is passed at. A matrix takes a location a column, from its own.
+- `location:Int`: The location it is passed at. A matrix occupies a location a column, from its own.
 - `glslName:String`: Its GLSL name.
 
 ## StreamSource
@@ -2148,8 +2148,8 @@ Specifies the device's tilt status (`Event.TiltState`, after `ITilt.requestAcces
 - `Starting`: Asked for, and listening. The first reading turns the tilt On. After a second and a half without a reading, the status is Unavailable.
 - `On`: Read: `Tilt` events arrive.
 - `Refused`: Permission was refused.
-- `Unavailable`: The device gives no readings: there is no sensor, or none answered, or none is read on this target.
-- `NeedsHttps`: The page isn't secure (not HTTPS), so the browser gives no readings.
+- `Unavailable`: The device reports no readings: there is no sensor, or none answered, or none is read on this target.
+- `NeedsHttps`: The page isn't secure (not HTTPS), so the browser reports no readings.
 
 ## VertexAttribute
 
@@ -2200,7 +2200,7 @@ var componentCount(get, never):Int
 function toString():String
 ```
 
-- `bytes`: Gets the bytes one value takes in a record: 4, 8, 12 or 16.
+- `bytes`: Gets the bytes one value occupies in a record: 4, 8, 12 or 16.
 - `componentCount`: Gets the number of components one value holds, 1 to 4.
 - `toString`: Returns the value's name as written (Float1, Float2): what Std.string, interpolation and trace show.
 

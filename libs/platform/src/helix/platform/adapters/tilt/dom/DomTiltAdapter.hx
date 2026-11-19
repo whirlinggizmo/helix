@@ -76,8 +76,8 @@ class DomTiltAdapter implements ITilt {
 			var angle:Float = js.Syntax.code("(screen.orientation && screen.orientation.angle) || window.orientation || 0");
 			stream.record(Tilt(e.beta, e.gamma, angle));
 		});
-		// Chrome gives no readings while the page hasn't its focus, and its prompt takes it until the player's next tap: the time is
-		// counted from then.
+		// Chrome reports no readings while the page hasn't its focus, and its prompt holds the focus until the player's next tap: the
+		// time is counted from then.
 		var count = () -> haxe.Timer.delay(() -> if (!read && listening) stream.record(TiltState(Unavailable)), 1500);
 		if (Browser.document.hasFocus())
 			count();

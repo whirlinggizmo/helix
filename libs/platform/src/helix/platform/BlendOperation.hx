@@ -2,7 +2,7 @@ package helix.platform;
 
 /** Specifies how a blend combines its two sides, each already multiplied by its factor.
 
-	The source is the color a draw writes, and the destination the color already in the target. Min and Max take the two colors as they
+	The source is the color a draw writes, and the destination the color already in the target. Min and Max use the two colors as they
 	are, and their factors are ignored. */
 @:build(helix.platform.macros.EnumNames.build())
 enum abstract BlendOperation(Int) to Int {

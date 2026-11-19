@@ -1,7 +1,7 @@
 package helix.platform.tools;
 
 /** Represents how `ShaderCompiler.compileText` compiles: the dialects it makes besides GLSL ES 300 (WebGL2), which every `ShaderSource`
-	carries, where includes are looked for, the names defined, whether loose uniforms are taken, and how the vertex stage is wrapped. */
+	carries, where includes are looked for, the names defined, whether loose uniforms are accepted, and how the vertex stage is wrapped. */
 typedef ShaderCompileOptions = {
 	/** Whether to make GLSL 410, for GL natively. */
 	final glsl410:Bool;
@@ -12,7 +12,8 @@ typedef ShaderCompileOptions = {
 	/** Directories `#include` looks in, after the directory of each stage's file. Optional; none by default. */
 	final ?includeDirectories:Array<String>;
 
-	/** Names defined in both stages, each `NAME` (defined as 1) or `NAME=VALUE`, as glslang's `-D` takes them. Optional; none by default. */
+	/** Names defined in both stages, each `NAME` (defined as 1) or `NAME=VALUE`, as glslang's `-D` accepts them. Optional; none by
+		default. */
 	final ?defines:Array<String>;
 
 	/** Whether a stage may declare uniforms outside a block (`uniform vec3 diffuse;`), in either form of source. Optional; false by
@@ -25,7 +26,7 @@ typedef ShaderCompileOptions = {
 	final ?looseUniforms:Bool;
 
 	/** Loose uniforms gathered by name into blocks of their own, which both stages read, each laid out in the order its names are
-		given, placed after `helix_uniforms`. Optional; none by default. A name neither stage declares is refused. */
+		listed, placed after `helix_uniforms`. Optional; none by default. A name neither stage declares is refused. */
 	final ?gatheredBlocks:Array<{name:String, uniforms:Array<String>}>;
 
 	/** Whether to wrap the vertex stage with a clip scale it multiplies `gl_Position` by, a loose `vec4 helix_clipScale`, for
@@ -36,6 +37,6 @@ typedef ShaderCompileOptions = {
 		pipelines. Optional; false by default.
 
 		A size the program writes is replaced. The result's `ShaderSource.points` is true, and SDL_GPU's HLSL is made in SPIRV-Cross's
-		compatibility mode, which takes the size HLSL has no place for. */
+		compatibility mode, which accepts the size HLSL has no place for. */
 	final ?points:Bool;
 }

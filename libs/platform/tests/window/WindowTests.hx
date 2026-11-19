@@ -29,18 +29,18 @@ typedef Request = {
 	answer the same way, and are checked here too, as are a dropped file read (`drop`) and the safe area (`checkSafeArea`): natively each is done, the clipboard reading back what was put on it; in a page the
 	lock already as asked is done, and the clipboard answers as the browser decides.
 
-	Built from the hxml files beside it: in a page, and natively over SDL3 on the display it is given (a private one in the checks). It
+	Built from the hxml files beside it: in a page, and natively over SDL3 on the display provided to it (a private one in the checks). It
 	ends with `{passed, checks, failures, answers}` as JSON: printed natively, exiting 1 on a failure, and in a page in `window.helixResult`, null
 	until then. Run by `tools/test_platform.py`. */
 #if cpp
 @:cppFileCode("#include <SDL3/SDL.h>")
-// SDL's headers in this class's own .cpp alone (it pushes SDL's drop events), from the platform's vendored copy, as the adapters take
+// SDL's headers in this class's own .cpp alone (it pushes SDL's drop events), from the platform's vendored copy, as the adapters use
 // them: a system without SDL3's headers installed (Windows) has no other.
 @:buildXml("<set name='HELIX_PLATFORM' value='${haxelib:helix-platform}' unless='HELIX_PLATFORM'/>
 <files id='haxe'><compilerflag value='-I${HELIX_PLATFORM}/vendor/sdl3'/></files>")
 #end
 class WindowTests {
-	// How long a request may take to answer, in seconds: the native adapter fails one after a second.
+	// How long a request may need to answer, in seconds: the native adapter fails one after a second.
 	static inline final TIMEOUT = 3.;
 	// Frames after an answer in which a second one would be seen.
 	static inline final SETTLE = 10;
@@ -59,7 +59,7 @@ class WindowTests {
 	static var checks = 0;
 	static var failures:Array<String> = [];
 	static var printed:Array<String> = [];
-	// Called with a FilesDropped's count, after the poll delivering it; and what the dropped file read gave.
+	// Called with a FilesDropped's count, after the poll delivering it; and what the dropped file read returned.
 	static var onDrop:Null<Int->Void>;
 	static var droppedName:Null<String>;
 	static var droppedBytes:Null<Bytes>;

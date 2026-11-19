@@ -12,7 +12,7 @@ interface IWebSocket extends IPollable {
 		connection the program closes calls `closed` once the server answers the close, or `failed` if it never does. After `failed` or
 		`closed`, nothing more is called, and the connection's id is no longer one.
 
-		A message's time is when it arrived: taken as the platform received it, on `ISystem.getTime`'s clock, not when `poll` delivered
+		A message's time is when it arrived: recorded as the platform received it, on `ISystem.getTime`'s clock, not when `poll` delivered
 		it, which waits for the frame.
 
 		A binary message is lent for the call: its bytes are the first `messageLength` of a buffer the platform reuses, so a program copies
@@ -43,7 +43,7 @@ interface IWebSocket extends IPollable {
 		@param messageLength  The message's length in bytes, from the buffer's start. */
 	function sendBytes(connectionId:Int, buffer:Bytes, messageLength:Int):Void;
 
-	/** Gets how many bytes sent on a connection haven't gone out yet, for a program sending faster than the network takes them; 0 for
+	/** Gets how many bytes sent on a connection haven't gone out yet, for a program sending faster than the network carries them; 0 for
 		a connection not open, or closed.
 
 		@param connectionId  The connection.

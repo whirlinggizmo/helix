@@ -57,7 +57,7 @@ class BrowserFileSystemAdapter implements IFileSystem {
 		return true;
 
 	// Runs operation in a transaction of mode once the database is open, then answers with its value; failed for a failure, or an invalid
-	// path when one is given. Never answers during the call, nor after the abort it returns.
+	// path when one is provided. Never answers during the call, nor after the abort it returns.
 	function transact(path:Null<String>, mode:String, operation:Dynamic->Dynamic, answer:Dynamic->Void, failed:String->Void):Void->Void {
 		var aborted = false;
 		function fail(message:String):Void

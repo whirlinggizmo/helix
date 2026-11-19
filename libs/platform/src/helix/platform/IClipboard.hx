@@ -27,7 +27,7 @@ interface IClipboard {
 	/** Asks for the clipboard's image, as PNG.
 
 		One of `read` or `failed` is called once, never during this call.
-		@param read  Receives the PNG's bytes. A page's browser may give the same picture encoded anew.
+		@param read  Receives the PNG's bytes. A page's browser may return the same picture encoded anew.
 		@param failed  Optional. Receives why there is none: no image on the clipboard, or a page's permission refused.
 		@return  True, because it always asks. */
 	function requestImage(read:Bytes->Void, ?failed:String->Void):Bool;

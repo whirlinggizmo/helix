@@ -32,7 +32,7 @@ class Build {
 		call becomes.
 
 		@param message  The message, naming the function, why it isn't there, and what to use instead.
-		@param result  The expression the call becomes, as `unimplemented` takes it.
+		@param result  The expression the call becomes, as `unimplemented` accepts it.
 		@return  The result. */
 	public static function unsupported(message:String, result:Expr):Expr {
 		Context.reportError(message, Context.currentPos());

@@ -1,6 +1,6 @@
 package helix.platform;
 
-/** Represents the glyphs `IFontRasterizer.rasterizeOpened` gives, with the font's metrics at their size. */
+/** Represents the glyphs `IFontRasterizer.rasterizeOpened` returns, with the font's metrics at their size. */
 typedef RasterFont = {
 	/** A glyph for each codepoint asked for, in their order. */
 	final glyphs:Array<RasterGlyph>;

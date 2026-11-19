@@ -1,6 +1,6 @@
 package helix.platform.adapters.shared;
 
-/** Provides a page's finger ids from the browser's pointer ids: a landing finger takes the smallest id no finger down has, as the native
+/** Provides a page's finger ids from the browser's pointer ids: a landing finger receives the smallest id no finger down has, as the native
 	events adapter numbers SDL's fingers. */
 @:noCompletion
 class FingerIds {
@@ -10,7 +10,7 @@ class FingerIds {
 	/** Creates the ids, with no finger down. */
 	public function new() {}
 
-	/** Returns the id a landing finger takes: the smallest no finger down has.
+	/** Returns the id a landing finger receives: the smallest no finger down has.
 
 		@param pointer  The browser's pointer id.
 		@return  The finger's id. */
