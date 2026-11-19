@@ -768,6 +768,17 @@ def generate(check=False):
     for_dox(OUT/'xml/api.xml',OUT/'xml/dox.xml')
     subprocess.run(['haxelib','run','dox','-i',str(OUT/'xml/dox.xml'),'-o',str(OUT),'-in','^helix','-D','source-path',f'https://github.com/whirlinggizmo/helix/blob/{commit}/',
         '--title','HeliX API','--toplevel-package','helix','--keep-field-order','-D','website','https://github.com/whirlinggizmo/helix'],cwd=ROOT,env=env,check=True)
+    # dox links a module's path (helix/raylib/Raylib.hx), without its library's root (engines/raylib/src/): each link gets its file.
+    files={}
+    for element in ET.parse(OUT/'xml/dox.xml').getroot():
+        file=(ROOT/element.get('file','')).resolve()
+        if file.is_relative_to(ROOT) and 'src' in file.parts:
+            relative=file.relative_to(ROOT).as_posix();files[relative.split('/src/',1)[1]]=relative
+    blob=f'https://github.com/whirlinggizmo/helix/blob/{commit}/'
+    for page in OUT.rglob('*.html'):
+        text=page.read_text(encoding='utf-8')
+        linked=re.sub(re.escape(blob)+r'([^"]+)',lambda m:blob+files.get(m.group(1),m.group(1)),text)
+        if linked!=text:page.write_text(linked,encoding='utf-8')
     print('API reference:',OUT/'index.html','and each library\'s api/')
 
 if __name__=='__main__':main()
