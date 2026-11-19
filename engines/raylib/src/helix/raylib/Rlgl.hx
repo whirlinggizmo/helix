@@ -1100,13 +1100,13 @@ class Rlgl {
 	public static inline function rlGetLineWidth():Float
 		return RRlgl.rlGetLineWidth();
 
-	/** Asks for smoothed lines, which changes nothing on any target. See `FLAG_MSAA_4X_HINT` for smoothing every edge.
+	/** Asks for smoothed lines, which changes nothing. See `FLAG_MSAA_4X_HINT` for smoothing every edge.
 
 		GL 3.3's core profile and WebGL don't smooth lines. */
 	public static inline function rlEnableSmoothLines():Void
 		RRlgl.rlEnableSmoothLines();
 
-	/** Stops asking for smoothed lines, which changes nothing on any target. */
+	/** Stops asking for smoothed lines, which changes nothing. */
 	public static inline function rlDisableSmoothLines():Void
 		RRlgl.rlDisableSmoothLines();
 
@@ -1207,441 +1207,441 @@ class Rlgl {
 		RRlgl.rlSetMatrixViewOffsetStereo(right, left);
 	#end
 
-	// ---- rlgl.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
+	// ---- rlgl.h's functions helix-raylib won't have: each is unsupported, saying what to use ----
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexArray` (enabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlEnableVertexArray` (enabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlEnableVertexArray(args:Array<Expr>):ExprOf<Bool>
-		return helix.platform.macros.Build.unsupported("rlEnableVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlEnableVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro(false : Bool));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexArray` (disabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDisableVertexArray` (disabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDisableVertexArray(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDisableVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexBuffer` (enabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlEnableVertexBuffer` (enabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlEnableVertexBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlEnableVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexBuffer` (disabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDisableVertexBuffer` (disabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDisableVertexBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDisableVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexBufferElement` (enabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlEnableVertexBufferElement` (enabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlEnableVertexBufferElement(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableVertexBufferElement: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlEnableVertexBufferElement: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexBufferElement` (disabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDisableVertexBufferElement` (disabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDisableVertexBufferElement(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableVertexBufferElement: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDisableVertexBufferElement: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexAttribute` (enabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlEnableVertexAttribute` (enabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlEnableVertexAttribute(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableVertexAttribute: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlEnableVertexAttribute: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexAttribute` (disabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDisableVertexAttribute` (disabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDisableVertexAttribute(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableVertexAttribute: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDisableVertexAttribute: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableStatePointer` (enabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlEnableStatePointer` (enabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlEnableStatePointer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableStatePointer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlEnableStatePointer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableStatePointer` (disabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDisableStatePointer` (disabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDisableStatePointer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableStatePointer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDisableStatePointer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlActiveTextureSlot` (choosing a texture slot). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlActiveTextureSlot` (choosing a texture slot). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlActiveTextureSlot(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlActiveTextureSlot: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlActiveTextureSlot: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableTexture` (binding a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlEnableTexture` (binding a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlEnableTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlEnableTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableTexture` (unbinding the texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlDisableTexture` (unbinding the texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlDisableTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlDisableTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableTextureCubemap` (binding a cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlEnableTextureCubemap` (binding a cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlEnableTextureCubemap(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlEnableTextureCubemap: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableTextureCubemap` (unbinding the cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlDisableTextureCubemap` (unbinding the cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlDisableTextureCubemap(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlDisableTextureCubemap: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlTextureParameters` (setting a texture's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlTextureParameters` (setting a texture's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlTextureParameters(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlTextureParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlTextureParameters: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCubemapParameters` (setting a cubemap's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlCubemapParameters` (setting a cubemap's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlCubemapParameters(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlCubemapParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlCubemapParameters: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlEnableShader(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlEnableShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlDisableShader(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlDisableShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableFramebuffer` (binding a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlEnableFramebuffer` (binding a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlEnableFramebuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlEnableFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlEnableFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableFramebuffer` (going back to the default framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlDisableFramebuffer` (going back to the default framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlDisableFramebuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDisableFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlDisableFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetActiveFramebuffer` (getting the bound framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlGetActiveFramebuffer` (getting the bound framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlGetActiveFramebuffer(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetActiveFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlGetActiveFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlActiveDrawBuffers` (choosing several color buffers to draw into). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlActiveDrawBuffers` (choosing several color buffers to draw into). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlActiveDrawBuffers(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlActiveDrawBuffers: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlActiveDrawBuffers: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBlitFramebuffer` (copying the bound framebuffer to the main one). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlBlitFramebuffer` (copying the bound framebuffer to the main one). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlBlitFramebuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlBlitFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlBlitFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBindFramebuffer` (binding a framebuffer to a target). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlBindFramebuffer` (binding a framebuffer to a target). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlBindFramebuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlBindFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlBindFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCheckErrors` (logging OpenGL's error codes). See `InitWindow` for setting up what helix-raylib draws with. */
+	/** Unsupported: rlgl's `rlCheckErrors` (logging OpenGL's error codes). See `InitWindow` for setting up what helix-raylib draws with. */
 	public static macro function rlCheckErrors(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlCheckErrors: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+		return helix.platform.macros.Build.unsupported("rlCheckErrors: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlglInit` (setting up rlgl's buffers, shaders, textures and state). See `InitWindow` for setting up what helix-raylib draws with. */
+	/** Unsupported: rlgl's `rlglInit` (setting up rlgl's buffers, shaders, textures and state). See `InitWindow` for setting up what helix-raylib draws with. */
 	public static macro function rlglInit(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlglInit: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+		return helix.platform.macros.Build.unsupported("rlglInit: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlglClose` (closing rlgl's buffers, shaders and textures). See `InitWindow` for setting up what helix-raylib draws with. */
+	/** Unsupported: rlgl's `rlglClose` (closing rlgl's buffers, shaders and textures). See `InitWindow` for setting up what helix-raylib draws with. */
 	public static macro function rlglClose(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlglClose: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+		return helix.platform.macros.Build.unsupported("rlglClose: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadExtensions` (loading OpenGL's extensions). See `InitWindow` for setting up what helix-raylib draws with. */
+	/** Unsupported: rlgl's `rlLoadExtensions` (loading OpenGL's extensions). See `InitWindow` for setting up what helix-raylib draws with. */
 	public static macro function rlLoadExtensions(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlLoadExtensions: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+		return helix.platform.macros.Build.unsupported("rlLoadExtensions: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetVersion` (getting the OpenGL version). See `InitWindow` for setting up what helix-raylib draws with. */
+	/** Unsupported: rlgl's `rlGetVersion` (getting the OpenGL version). See `InitWindow` for setting up what helix-raylib draws with. */
 	public static macro function rlGetVersion(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetVersion: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+		return helix.platform.macros.Build.unsupported("rlGetVersion: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetTextureIdDefault` (getting the default texture's id). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlGetTextureIdDefault` (getting the default texture's id). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlGetTextureIdDefault(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetTextureIdDefault: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlGetTextureIdDefault: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetShaderIdDefault(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetShaderIdDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetShaderIdDefault: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderLocsDefault` (getting the default shader's locations). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlGetShaderLocsDefault` (getting the default shader's locations). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetShaderLocsDefault(args:Array<Expr>):ExprOf<Array<Int>>
-		return helix.platform.macros.Build.unsupported("rlGetShaderLocsDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetShaderLocsDefault: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(null : Array<Int>));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadRenderBatch` (making a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
+	/** Unsupported: rlgl's `rlLoadRenderBatch` (making a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
 	public static macro function rlLoadRenderBatch(args:Array<Expr>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unsupported("rlLoadRenderBatch: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
+		return helix.platform.macros.Build.unsupported("rlLoadRenderBatch: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro(null : Dynamic));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadRenderBatch` (unloading a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
+	/** Unsupported: rlgl's `rlUnloadRenderBatch` (unloading a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
 	public static macro function rlUnloadRenderBatch(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadRenderBatch: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
+		return helix.platform.macros.Build.unsupported("rlUnloadRenderBatch: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawRenderBatch` (drawing a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
+	/** Unsupported: rlgl's `rlDrawRenderBatch` (drawing a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
 	public static macro function rlDrawRenderBatch(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDrawRenderBatch: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
+		return helix.platform.macros.Build.unsupported("rlDrawRenderBatch: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetRenderBatchActive` (choosing the render batch rlgl adds to). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
+	/** Unsupported: rlgl's `rlSetRenderBatchActive` (choosing the render batch rlgl adds to). See `rlDrawRenderBatchActive` for drawing the frame's one batch. */
 	public static macro function rlSetRenderBatchActive(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetRenderBatchActive: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
+		return helix.platform.macros.Build.unsupported("rlSetRenderBatchActive: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadVertexArray` (making a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlLoadVertexArray` (making a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlLoadVertexArray(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlLoadVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadVertexBuffer` (making a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlLoadVertexBuffer` (making a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlLoadVertexBuffer(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlLoadVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadVertexBufferElement` (making an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlLoadVertexBufferElement` (making an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlLoadVertexBufferElement(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadVertexBufferElement: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlLoadVertexBufferElement: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateVertexBuffer` (updating a vertex buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlUpdateVertexBuffer` (updating a vertex buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlUpdateVertexBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUpdateVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlUpdateVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateVertexBufferElements` (updating an element buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlUpdateVertexBufferElements` (updating an element buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlUpdateVertexBufferElements(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUpdateVertexBufferElements: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlUpdateVertexBufferElements: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadVertexArray` (unloading a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlUnloadVertexArray` (unloading a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlUnloadVertexArray(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlUnloadVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadVertexBuffer` (unloading a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlUnloadVertexBuffer` (unloading a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlUnloadVertexBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlUnloadVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetVertexAttribute` (setting a vertex attribute's layout). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlSetVertexAttribute` (setting a vertex attribute's layout). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlSetVertexAttribute(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetVertexAttribute: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlSetVertexAttribute: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetVertexAttributeDivisor` (setting a vertex attribute's divisor). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlSetVertexAttributeDivisor` (setting a vertex attribute's divisor). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlSetVertexAttributeDivisor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetVertexAttributeDivisor: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlSetVertexAttributeDivisor: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetVertexAttributeDefault` (setting a vertex attribute's default value). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlSetVertexAttributeDefault` (setting a vertex attribute's default value). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlSetVertexAttributeDefault(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetVertexAttributeDefault: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlSetVertexAttributeDefault: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArray` (drawing the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDrawVertexArray` (drawing the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDrawVertexArray(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDrawVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDrawVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayElements` (drawing the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDrawVertexArrayElements` (drawing the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDrawVertexArrayElements(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayElements: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayElements: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayInstanced` (drawing instances of the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDrawVertexArrayInstanced` (drawing instances of the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDrawVertexArrayInstanced(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayInstanced: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayInstanced: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayElementsInstanced` (drawing instances of the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
+	/** Unsupported: rlgl's `rlDrawVertexArrayElementsInstanced` (drawing instances of the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
 	public static macro function rlDrawVertexArrayElementsInstanced(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayElementsInstanced: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
+		return helix.platform.macros.Build.unsupported("rlDrawVertexArrayElementsInstanced: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadTexture` (making a texture from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlLoadTexture` (making a texture from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlLoadTexture(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlLoadTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making a render texture whose depth a shader samples. */
+	/** Unsupported: rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making a render texture whose depth a shader samples. */
 	public static macro function rlLoadTextureDepth(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a render texture whose depth a shader samples is made with LoadShadowmapRenderTexture (import helix.raylib.extras.Shadowmaps.*;), its depth bound with SetShaderValueTexture.",
+		return helix.platform.macros.Build.unsupported("rlLoadTextureDepth: Unsupported: helix-raylib has no GL texture ids; a render texture whose depth a shader samples is made with LoadShadowmapRenderTexture (import helix.raylib.extras.Shadowmaps.*;), its depth bound with SetShaderValueTexture.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlLoadTextureCubemap(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlLoadTextureCubemap: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateTexture` (updating a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlUpdateTexture` (updating a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlUpdateTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUpdateTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlUpdateTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetGlTextureFormats` (getting a format's OpenGL formats). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlGetGlTextureFormats` (getting a format's OpenGL formats). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlGetGlTextureFormats(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlGetGlTextureFormats: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlGetGlTextureFormats: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadTexture` (unloading a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlUnloadTexture` (unloading a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlUnloadTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlUnloadTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGenTextureMipmaps` (making a texture's mipmaps). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlGenTextureMipmaps` (making a texture's mipmaps). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlGenTextureMipmaps(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlGenTextureMipmaps: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlGenTextureMipmaps: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlReadTexturePixels` (reading a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlReadTexturePixels` (reading a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlReadTexturePixels(args:Array<Expr>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unsupported("rlReadTexturePixels: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlReadTexturePixels: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro(null : Dynamic));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlReadScreenPixels` (reading the screen's pixels). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlReadScreenPixels` (reading the screen's pixels). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlReadScreenPixels(args:Array<Expr>):ExprOf<haxe.io.Bytes>
-		return helix.platform.macros.Build.unsupported("rlReadScreenPixels: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlReadScreenPixels: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro(null : haxe.io.Bytes));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadFramebuffer` (making an empty framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlLoadFramebuffer` (making an empty framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlLoadFramebuffer(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlLoadFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlFramebufferAttach` (attaching a texture or renderbuffer to a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlFramebufferAttach` (attaching a texture or renderbuffer to a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlFramebufferAttach(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlFramebufferAttach: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlFramebufferAttach: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlFramebufferComplete` (checking whether a framebuffer is complete). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlFramebufferComplete` (checking whether a framebuffer is complete). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlFramebufferComplete(args:Array<Expr>):ExprOf<Bool>
-		return helix.platform.macros.Build.unsupported("rlFramebufferComplete: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlFramebufferComplete: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro(false : Bool));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadFramebuffer` (unloading a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
+	/** Unsupported: rlgl's `rlUnloadFramebuffer` (unloading a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
 	public static macro function rlUnloadFramebuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
+		return helix.platform.macros.Build.unsupported("rlUnloadFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlLoadShaderCode(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadShaderCode: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlLoadShaderCode: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlCompileShader(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlCompileShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlCompileShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlLoadShaderProgram(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlLoadShaderProgram: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlUnloadShaderProgram(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlUnloadShaderProgram: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetLocationUniform(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetLocationUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetLocationUniform: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlGetLocationAttrib(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetLocationAttrib: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlGetLocationAttrib: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniform(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniform: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniformMatrix(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniformMatrix: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniformMatrix: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrices` (setting an array of matrix uniforms). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlSetUniformMatrices` (setting an array of matrix uniforms). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniformMatrices(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniformMatrices: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniformMatrices: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetUniformSampler(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetUniformSampler: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetUniformSampler: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
+	/** Unsupported: rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one. */
 	public static macro function rlSetShader(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlSetShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
+		return helix.platform.macros.Build.unsupported("rlSetShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadComputeShaderProgram` (making a compute shader program). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlLoadComputeShaderProgram` (making a compute shader program). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlLoadComputeShaderProgram(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadComputeShaderProgram: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlLoadComputeShaderProgram: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlComputeShaderDispatch` (running a compute shader). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlComputeShaderDispatch` (running a compute shader). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlComputeShaderDispatch(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlComputeShaderDispatch: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlComputeShaderDispatch: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderBuffer` (making a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlLoadShaderBuffer` (making a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlLoadShaderBuffer(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlLoadShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlLoadShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderBuffer` (unloading a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlUnloadShaderBuffer` (unloading a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlUnloadShaderBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUnloadShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlUnloadShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateShaderBuffer` (updating a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlUpdateShaderBuffer` (updating a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlUpdateShaderBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlUpdateShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlUpdateShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBindShaderBuffer` (binding a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlBindShaderBuffer` (binding a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlBindShaderBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlBindShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlBindShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlReadShaderBuffer` (reading a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlReadShaderBuffer` (reading a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlReadShaderBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlReadShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlReadShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCopyShaderBuffer` (copying between shader storage buffers). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlCopyShaderBuffer` (copying between shader storage buffers). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlCopyShaderBuffer(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlCopyShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlCopyShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderBufferSize` (getting a shader storage buffer's size). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
+	/** Unsupported: rlgl's `rlGetShaderBufferSize` (getting a shader storage buffer's size). No target has compute shaders or shader storage buffers, as WebGL2 has none. */
 	public static macro function rlGetShaderBufferSize(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("rlGetShaderBufferSize: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
+		return helix.platform.macros.Build.unsupported("rlGetShaderBufferSize: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.",
 			macro(0 : Int));
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBindImageTexture` (binding an image texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
+	/** Unsupported: rlgl's `rlBindImageTexture` (binding an image texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
 	public static macro function rlBindImageTexture(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlBindImageTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
+		return helix.platform.macros.Build.unsupported("rlBindImageTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadDrawCube` (drawing a cube). See `InitWindow` for setting up what helix-raylib draws with. */
+	/** Unsupported: rlgl's `rlLoadDrawCube` (drawing a cube). See `InitWindow` for setting up what helix-raylib draws with. */
 	public static macro function rlLoadDrawCube(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlLoadDrawCube: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+		return helix.platform.macros.Build.unsupported("rlLoadDrawCube: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadDrawQuad` (drawing a quad). See `InitWindow` for setting up what helix-raylib draws with. */
+	/** Unsupported: rlgl's `rlLoadDrawQuad` (drawing a quad). See `InitWindow` for setting up what helix-raylib draws with. */
 	public static macro function rlLoadDrawQuad(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("rlLoadDrawQuad: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
+		return helix.platform.macros.Build.unsupported("rlLoadDrawQuad: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.",
 			macro {});
 
 	// ---- generated by tools/gen_raylib.py: end ----

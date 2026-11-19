@@ -16,8 +16,8 @@ using haxe.macro.ExprTools;
 	function of the program's that does, becomes an async function, and each call of it is awaited. A function declared in one becomes
 	an async function too, when it is only ever called by its name. A function calling one whose body isn't typed yet has both bodies,
 	the one run chosen as the page starts (`resolve`). A call of `super`'s function, and a read or a write of `super`'s property,
-	goes through a function of the class's own (`forward`). Natively a waiting call blocks, and nothing is rewritten. On every target, a
-	waiting call in a function used as a value doesn't compile. */
+	goes through a function of the class's own (`forward`). Natively a waiting call blocks, and nothing is rewritten. A waiting call in a
+	function used as a value is unsupported. */
 @:noCompletion
 class Wait {
 	#if macro
@@ -377,14 +377,14 @@ class Wait {
 		var name = c.field.name;
 		switch c.kind {
 			case Called if (constructor):
-				refuse('$name(): Not supported in a constructor or a variable\'s initial value.', c.pos);
+				refuse('$name(): Unsupported in a constructor or a variable\'s initial value.', c.pos);
 			case Called:
 			case InLambda:
-				refuse('$name(): Not supported in a function used as a value.', c.pos);
+				refuse('$name(): Unsupported in a function used as a value.', c.pos);
 			case AsValue:
-				refuse('$name: Not supported as a value.', c.pos);
+				refuse('$name: Unsupported as a value.', c.pos);
 			case Unmatched:
-				refuse('$name(): Not supported here.', c.pos);
+				refuse('$name(): Unsupported here.', c.pos);
 		}
 	}
 
@@ -399,7 +399,7 @@ class Wait {
 			for (i in interfaces) {
 				var type = i.t.get();
 				if (Lambda.exists(type.fields.get(), f -> f.name == name))
-					refuse('$name(): Not supported in interface ${type.name}.', state.pos);
+					refuse('$name(): Unsupported in interface ${type.name}.', state.pos);
 				declared(type.interfaces);
 			}
 		}
@@ -410,7 +410,7 @@ class Wait {
 			declared(type.interfaces);
 			for (f in type.fields.get())
 				if (f.name == name && reach(Std.string(f.pos), f, []) != YES)
-					refuse('$name(): Not supported as an override of ${type.name}.$name.', state.pos);
+					refuse('$name(): Unsupported as an override of ${type.name}.$name.', state.pos);
 			above = type.superClass;
 		}
 	}
@@ -605,7 +605,7 @@ class Wait {
 					if (lambda)
 						refuse(refusal, t.pos);
 					else if (constructor)
-						refuse(refusal.split(":")[0] + ": Not supported in a constructor or a variable's initial value.", t.pos);
+						refuse(refusal.split(":")[0] + ": Unsupported in a constructor or a variable's initial value.", t.pos);
 					else {
 						direct = true;
 						if (current >= 0)
@@ -797,7 +797,7 @@ class Wait {
 			}
 		for (site in sites)
 			if (!site.used)
-				refuse('${site.name}(): Not supported here.', site.pos);
+				refuse('${site.name}(): Unsupported here.', site.pos);
 		var ret = returns.get(key);
 		var isVoid = switch ret {
 			case null: !returnsValue(e);

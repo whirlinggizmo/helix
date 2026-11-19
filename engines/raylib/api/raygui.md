@@ -1279,4 +1279,4 @@ static function GuiColorPanelHSV(bounds:Rectangle, text:String, colorHsv:Vector3
 static macro function GuiLoadIcons(...args):Array<String>
 ```
 
-- `GuiLoadIcons`: Doesn't compile. See `GuiLoadIconsAsync` for loading an icon file.
+- `GuiLoadIcons`: Unsupported. See `GuiLoadIconsAsync` for loading an icon file.

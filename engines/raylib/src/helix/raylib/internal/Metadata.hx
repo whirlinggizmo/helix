@@ -13,13 +13,13 @@ class Metadata {
 	public static function register():Void {
 		Compiler.registerCustomMetadata({
 			metadata: ":unsupported",
-			doc: "On a section's function: helix-raylib won't have it, by design. The message says why and what to use instead; tools/gen_raylib.py declares the function in the facade as a macro whose call doesn't compile, reporting it (helix.platform.macros.Build.unsupported).",
+			doc: "On a section's function: helix-raylib won't have it, by design. The message says why and what to use instead; tools/gen_raylib.py declares the function in the facade as a macro whose call is refused, reporting it (helix.platform.macros.Build.unsupported).",
 			params: ["message"],
 			targets: [ClassField]
 		}, "helix-raylib");
 		Compiler.registerCustomMetadata({
 			metadata: ":unimplemented",
-			doc: "On a section's function: helix-raylib doesn't have it yet. tools/gen_raylib.py declares it in the facade as a macro whose call doesn't compile, reporting the message (helix.platform.macros.Build.unimplemented).",
+			doc: "On a section's function: helix-raylib doesn't have it yet. tools/gen_raylib.py declares it in the facade as a macro whose call is refused, reporting the message (helix.platform.macros.Build.unimplemented).",
 			params: ["message"],
 			targets: [ClassField]
 		}, "helix-raylib");

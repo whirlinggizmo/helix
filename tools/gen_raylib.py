@@ -194,7 +194,7 @@ def wrapped(line):
     for i, c in enumerate(line):
         depth += c in '(<[' 
         depth -= c in ')]' or c == '>' and line[i - 1] != '-'  # a function type's arrow closes nothing
-        if c == ',' and depth == 1 and len(line[:i + 1].expandtabs(4)) < 160:
+        if c == ',' and depth == 1 and len(line[:i + 1].expandtabs(4)) < 159:
             commas.append(i)
     cut = commas[-1]
     return [line[:cut + 1], '\t\t\t' + line[cut + 2:]]
@@ -227,7 +227,7 @@ def body(line):
 def waiting(section, f):
     """A function a section writes with an answer parameter (`@:waits`), as a macro with raylib's parameters and result: a call waits
     for the section's answer (helix.raylib.internal.Wait.section)."""
-    message = f'{f.name}: Not supported in a function used as a value.'
+    message = f'{f.name}: Unsupported in a function used as a value.'
     params = ', '.join(f'{p[0]}:ExprOf<{p[1]}>' for p in f.params)
     line = (f'\t\treturn helix.raylib.internal.Wait.section("{message}", macro helix.raylib.modules.{section}.{f.name}, '
             f'[{", ".join(p[0] for p in f.params)}], {"true" if f.result == "Void" else "false"});')
@@ -235,10 +235,10 @@ def waiting(section, f):
 
 
 def stub(f, header, callbacks):
-    """A function of raylib's helix-raylib doesn't have, with raylib's result type: a call to it doesn't compile."""
+    """A function of raylib's helix-raylib doesn't have, with raylib's result type: a call to it is unsupported."""
     name = f['name']
-    doc = f"raylib's `{name}` ({header}): not in helix-raylib yet, so a call to it doesn't compile. {sentence(f.get('description', ''))}".strip()
-    return refusal(name, haxe_type(f['returnType'], callbacks, True), f'{name}: Not implemented', doc)
+    doc = f"Unsupported: raylib's `{name}` ({header}). {sentence(f.get('description', ''))}".strip()
+    return refusal(name, haxe_type(f['returnType'], callbacks, True), f'{name}: Unsupported.', doc, 'unsupported')
 
 
 def type_text(node, full=False):
@@ -386,7 +386,7 @@ def generated(file_sections, functions, api, header, written, by_hand=()):
         out = [BEGIN, f"\t// {header}'s constants that aren't written above, then its functions; edit a function in its section, then run",
                '\t// python3 tools/gen_raylib.py.']
     # The header's enum values: plain constants, as raylib's are, so a program's BLEND_ADDITIVE names the value even where the function
-    # taking it doesn't compile yet.
+    # taking it is unsupported.
     for e in api.get('enums', []):
         values = [v for v in e['values'] if v['name'] not in written]
         if values:
@@ -432,10 +432,10 @@ def generated(file_sections, functions, api, header, written, by_hand=()):
     if waits:
         out += [f"\t// ---- {header}'s functions that wait for a file or an answer: each a macro, its wait in the function calling it ----", ''] + waits
     if unsupported:
-        out += [f"\t// ---- {header}'s functions helix-raylib won't have: each refuses to compile, saying why and what to use ----", ''] + unsupported
+        out += [f"\t// ---- {header}'s functions helix-raylib won't have: each is unsupported, saying what to use ----", ''] + unsupported
     missing = [f for f in api['functions'] if f['name'] not in written]
     if unimplemented or missing:
-        out += [f"\t// ---- {header}'s functions helix-raylib doesn't have yet: each refuses to compile, saying so ----", ''] + unimplemented
+        out += [f"\t// ---- {header}'s functions helix-raylib doesn't have: each is unsupported ----", ''] + unimplemented
         callbacks = callback_types(api)
         for f in missing:
             out += stub(f, header, callbacks)
@@ -454,7 +454,7 @@ def generated(file_sections, functions, api, header, written, by_hand=()):
 def layout():
     """What the API reference (tools/gen_apidoc.py) groups each file's members by, from what this generator reads: {class: (headings,
     refused)}. headings names each member's heading: its section's for a function, its enum's or its header's defines' for a constant,
-    and the macros the file writes by hand under one of their own. refused holds the functions a call to which doesn't compile, by kind
+    and the macros the file writes by hand under one of their own. refused holds the functions a call to which is refused, by kind
     ('unsupported', 'unimplemented'), each a list of names in the header's order."""
     texts = {name: (RAY / name).read_text(encoding='utf-8') for name in TARGETS}
     functions, own, _, _ = described(texts)
@@ -492,7 +492,7 @@ def layout():
 def struct_type(s, header, callbacks):
     """A struct of raylib's helix-raylib has no type for, as a class with raylib's fields."""
     lines = [GENERATED_TYPE, 'package helix.raylib;', '',
-             f"/** raylib's `{s['name']}` ({header}): not in helix-raylib yet; its fields are raylib's. {sentence(s.get('description', ''))} */",
+             f"/** raylib's `{s['name']}` ({header}), with raylib's fields. {sentence(s.get('description', ''))} */",
              f"class {s['name']} {{"]
     for field in s['fields']:
         t = haxe_type(field['type'], callbacks, True)

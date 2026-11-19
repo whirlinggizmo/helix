@@ -77,7 +77,7 @@ class SysCalls {
 		"rename" => SAVE_OVER
 	];
 
-	static inline final SINGLE = "Single: Not supported. Use Float instead.";
+	static inline final SINGLE = "Single: Unsupported. Use Float instead.";
 
 	// Refuses a refused call in the program's classes; the libraries' own (package helix, Haxe's standard library) are left alone.
 	static function refuse(types:Array<ModuleType>):Void {
@@ -109,18 +109,18 @@ class SysCalls {
 		switch e.expr {
 			case TField(_, FStatic(c, field)) if (c.get().name == "Sys" && c.get().pack.length == 0 && REFUSED.exists(field.get().name)):
 				var name = field.get().name;
-				Context.reportError('Sys.$name: Not supported. ${REFUSED[name]}', e.pos);
+				Context.reportError('Sys.$name: Unsupported. ${REFUSED[name]}', e.pos);
 			case TField(_, FStatic(c, field)) if (path(c.get()) == "sys.io.File" && FILE.exists(field.get().name)):
 				Context.reportError('sys.io.File.${field.get().name}: ${FILE[field.get().name]}', e.pos);
 			case TField(_, FStatic(c, field)) if (path(c.get()) == "sys.FileSystem" && FILE_SYSTEM.exists(field.get().name)):
 				Context.reportError('sys.FileSystem.${field.get().name}: ${FILE_SYSTEM[field.get().name]}', e.pos);
 			case TNew(c, _, _) if (path(c.get()) == "sys.io.Process"):
-				Context.reportError('sys.io.Process: Not supported. ${REFUSED["command"]}', e.pos);
+				Context.reportError('sys.io.Process: Unsupported. ${REFUSED["command"]}', e.pos);
 			// For JS the rest of the sys package, which Haxe refused there before it was allowed.
 			case TField(_, FStatic(c, _)) | TNew(c, _, _) if (js && c.get().pack[0] == "sys"):
-				Context.reportError('${path(c.get())}: Not supported.', e.pos);
+				Context.reportError('${path(c.get())}: Unsupported.', e.pos);
 			case TTypeExpr(TClassDecl(c)) if (js && c.get().pack[0] == "sys"):
-				Context.reportError('${path(c.get())}: Not supported.', e.pos);
+				Context.reportError('${path(c.get())}: Unsupported.', e.pos);
 			case TVar(v, init) if (single(v.t)):
 				refuseSingle(e.pos);
 				if (init != null)

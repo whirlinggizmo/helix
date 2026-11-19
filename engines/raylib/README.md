@@ -19,21 +19,21 @@ constants and colors in unqualified, `import helix.raylib.Rlgl.*;` brings `rlgl.
 ## Differences from raylib
 
 - `EndDrawing`, `WaitTime`, a file call (`LoadFileText`, `SaveFileText`), a clipboard call, a screen read (`LoadImageFromScreen`,
-  `LoadImageFromTexture`) and `TakeScreenshot` don't compile in a function used as a value, in a constructor or in a variable's
+  `LoadImageFromTexture`) and `TakeScreenshot` are unsupported in a function used as a value, in a constructor or in a variable's
   initial value (see "Calls that wait").
-- A load from memory (`LoadImageFromMemory`, `LoadFontFromMemory`, `LoadWaveFromMemory`) doesn't compile. Each names its `...Async`
+- A load from memory (`LoadImageFromMemory`, `LoadFontFromMemory`, `LoadWaveFromMemory`) is unsupported. Each names its `...Async`
   call.
 - The first `TakeScreenshot` made with nothing drawn on the screen yet, as between frames, saves the next frame, and that frame's
   `EndDrawing` returns once the file is written. raylib's saves what the back buffer holds.
 - A window or cursor request (`ToggleFullscreen`, `SetWindowSize`, `DisableCursor`) returns at once, and the window changes at a
   later frame. `IsWindowFullscreen` and the other window reads report the window as it is. A refusal is logged.
 - With `-D helix-raylib-portable-sys`, a page has a `Sys`, and Haxe's `sys.io.File`, `sys.FileSystem` and `sys.io.Process`, and the
-  `Sys` calls that wait or leave the program, don't compile. Each names the raylib call to use.
+  `Sys` calls that wait or leave the program, are unsupported. Each names the raylib call to use.
 - Shaders are compiled ahead of time (`CompileShaderFile`) and loaded from the file (`LoadCompiledShader`, `LoadCompiledShaderAsync`) or its data
   (`LoadCompiledShaderFromMemory`).
 - Models, shapes and images follow raylib 6.2, which fixed bugs in 5.5.
 - A lost GPU context is recovered automatically. Render textures are cleared.
-- Not supported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.
+- Unsupported: IQM, VOX and M3D models, morph targets, models drawn as points, and compressed images.
 
 See the [API reference](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) for everything else.
 
@@ -43,7 +43,7 @@ In a page, each function of the program that calls `EndDrawing`, `WaitTime`, a f
 an async function, and each call of it is awaited. So is a function calling one that does, and a function declared in a function and only ever called by its
 name. The program writes nothing for this. Natively the same calls block.
 
-These can't wait, and a call there doesn't compile, on every target:
+These can't wait, and a call there is unsupported:
 
 - a function used as a value (a callback, a function kept in a variable and passed on);
 - a constructor, and a variable's initial value;

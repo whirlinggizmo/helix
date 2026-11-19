@@ -632,12 +632,12 @@ class RRlgl {
 		return lineWidth;
 	}
 
-	/** Asks for smoothed lines, which changes nothing on any target. See `FLAG_MSAA_4X_HINT` for smoothing every edge.
+	/** Asks for smoothed lines, which changes nothing. See `FLAG_MSAA_4X_HINT` for smoothing every edge.
 
 		GL 3.3's core profile and WebGL don't smooth lines. */
 	static function rlEnableSmoothLines():Void {}
 
-	/** Stops asking for smoothed lines, which changes nothing on any target. */
+	/** Stops asking for smoothed lines, which changes nothing. */
 	static function rlDisableSmoothLines():Void {}
 
 	/** Sets the width rlgl records for the framebuffer drawn into, until the next pass begins.
@@ -784,206 +784,206 @@ class RRlgl {
 
 	// ---- rlgl's GL objects and GL itself, which helix-raylib draws without: each refuses to compile, saying what to use ----
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexArray` (enabling a vertex array). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlEnableVertexArray` (enabling a vertex array). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one.
 
 		@param vaoId  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlEnableVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+		@return  Never returns. */
+	@:unsupported("rlEnableVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlEnableVertexArray(vaoId:Int):Bool {
 		throw "rlEnableVertexArray is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexArray` (disabling a vertex array). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlDisableVertexArray` (disabling a vertex array). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one. */
-	@:unsupported("rlDisableVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDisableVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDisableVertexArray():Void {
 		throw "rlDisableVertexArray is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexBuffer` (enabling a vertex buffer). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlEnableVertexBuffer` (enabling a vertex buffer). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlEnableVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlEnableVertexBuffer(id:Int):Void {
 		throw "rlEnableVertexBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexBuffer` (disabling a vertex buffer). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlDisableVertexBuffer` (disabling a vertex buffer). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one. */
-	@:unsupported("rlDisableVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDisableVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDisableVertexBuffer():Void {
 		throw "rlDisableVertexBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexBufferElement` (enabling an element buffer). See
+	/** Unsupported: rlgl's `rlEnableVertexBufferElement` (enabling an element buffer). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableVertexBufferElement: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlEnableVertexBufferElement: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlEnableVertexBufferElement(id:Int):Void {
 		throw "rlEnableVertexBufferElement is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexBufferElement` (disabling an element buffer). See
+	/** Unsupported: rlgl's `rlDisableVertexBufferElement` (disabling an element buffer). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one. */
-	@:unsupported("rlDisableVertexBufferElement: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDisableVertexBufferElement: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDisableVertexBufferElement():Void {
 		throw "rlDisableVertexBufferElement is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableVertexAttribute` (enabling a vertex attribute). See `UploadMesh`
+	/** Unsupported: rlgl's `rlEnableVertexAttribute` (enabling a vertex attribute). See `UploadMesh`
 		for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param index  As rlgl takes it. */
-	@:unsupported("rlEnableVertexAttribute: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlEnableVertexAttribute: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlEnableVertexAttribute(index:Int):Void {
 		throw "rlEnableVertexAttribute is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableVertexAttribute` (disabling a vertex attribute). See
+	/** Unsupported: rlgl's `rlDisableVertexAttribute` (disabling a vertex attribute). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param index  As rlgl takes it. */
-	@:unsupported("rlDisableVertexAttribute: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDisableVertexAttribute: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDisableVertexAttribute(index:Int):Void {
 		throw "rlDisableVertexAttribute is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableStatePointer` (enabling an attribute state pointer). See
+	/** Unsupported: rlgl's `rlEnableStatePointer` (enabling an attribute state pointer). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param vertexAttribType  As rlgl takes it.
 		@param buffer  As rlgl takes it. */
-	@:unsupported("rlEnableStatePointer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlEnableStatePointer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlEnableStatePointer(vertexAttribType:Int, buffer:Dynamic):Void {
 		throw "rlEnableStatePointer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableStatePointer` (disabling an attribute state pointer). See
+	/** Unsupported: rlgl's `rlDisableStatePointer` (disabling an attribute state pointer). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param vertexAttribType  As rlgl takes it. */
-	@:unsupported("rlDisableStatePointer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDisableStatePointer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDisableStatePointer(vertexAttribType:Int):Void {
 		throw "rlDisableStatePointer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlActiveTextureSlot` (choosing a texture slot). See
+	/** Unsupported: rlgl's `rlActiveTextureSlot` (choosing a texture slot). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param slot  As rlgl takes it. */
-	@:unsupported("rlActiveTextureSlot: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlActiveTextureSlot: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlActiveTextureSlot(slot:Int):Void {
 		throw "rlActiveTextureSlot is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableTexture` (binding a texture). See `LoadTextureFromImage` for
+	/** Unsupported: rlgl's `rlEnableTexture` (binding a texture). See `LoadTextureFromImage` for
 		making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlEnableTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlEnableTexture(id:Int):Void {
 		throw "rlEnableTexture is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableTexture` (unbinding the texture). See `LoadTextureFromImage` for
+	/** Unsupported: rlgl's `rlDisableTexture` (unbinding the texture). See `LoadTextureFromImage` for
 		making a texture and `rlSetTexture` for drawing vertices with one. */
-	@:unsupported("rlDisableTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlDisableTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlDisableTexture():Void {
 		throw "rlDisableTexture is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableTextureCubemap` (binding a cubemap). See `LoadTextureFromImage`
+	/** Unsupported: rlgl's `rlEnableTextureCubemap` (binding a cubemap). See `LoadTextureFromImage`
 		for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlEnableTextureCubemap: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlEnableTextureCubemap(id:Int):Void {
 		throw "rlEnableTextureCubemap is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableTextureCubemap` (unbinding the cubemap). See
+	/** Unsupported: rlgl's `rlDisableTextureCubemap` (unbinding the cubemap). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one. */
-	@:unsupported("rlDisableTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlDisableTextureCubemap: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlDisableTextureCubemap():Void {
 		throw "rlDisableTextureCubemap is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlTextureParameters` (setting a texture's filter or wrap). See
+	/** Unsupported: rlgl's `rlTextureParameters` (setting a texture's filter or wrap). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it.
 		@param param  As rlgl takes it.
 		@param value  As rlgl takes it. */
-	@:unsupported("rlTextureParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlTextureParameters: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlTextureParameters(id:Int, param:Int, value:Int):Void {
 		throw "rlTextureParameters is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCubemapParameters` (setting a cubemap's filter or wrap). See
+	/** Unsupported: rlgl's `rlCubemapParameters` (setting a cubemap's filter or wrap). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it.
 		@param param  As rlgl takes it.
 		@param value  As rlgl takes it. */
-	@:unsupported("rlCubemapParameters: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlCubemapParameters: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlCubemapParameters(id:Int, param:Int, value:Int):Void {
 		throw "rlCubemapParameters is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShader` for making a
+	/** Unsupported: rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShader` for making a
 		shader and `BeginShaderMode` for drawing with one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlEnableShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlEnableShader(id:Int):Void {
 		throw "rlEnableShader is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one. */
-	@:unsupported("rlDisableShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlDisableShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlDisableShader():Void {
 		throw "rlDisableShader is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlEnableFramebuffer` (binding a framebuffer). See `LoadRenderTexture` for
+	/** Unsupported: rlgl's `rlEnableFramebuffer` (binding a framebuffer). See `LoadRenderTexture` for
 		making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlEnableFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	@:unsupported("rlEnableFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlEnableFramebuffer(id:Int):Void {
 		throw "rlEnableFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDisableFramebuffer` (going back to the default framebuffer). See
+	/** Unsupported: rlgl's `rlDisableFramebuffer` (going back to the default framebuffer). See
 		`LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one. */
-	@:unsupported("rlDisableFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	@:unsupported("rlDisableFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlDisableFramebuffer():Void {
 		throw "rlDisableFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetActiveFramebuffer` (getting the bound framebuffer). See
+	/** Unsupported: rlgl's `rlGetActiveFramebuffer` (getting the bound framebuffer). See
 		`LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetActiveFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+		@return  Never returns. */
+	@:unsupported("rlGetActiveFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlGetActiveFramebuffer():Int {
 		throw "rlGetActiveFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlActiveDrawBuffers` (choosing several color buffers to draw into). See
+	/** Unsupported: rlgl's `rlActiveDrawBuffers` (choosing several color buffers to draw into). See
 		`LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param count  As rlgl takes it. */
-	@:unsupported("rlActiveDrawBuffers: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	@:unsupported("rlActiveDrawBuffers: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlActiveDrawBuffers(count:Int):Void {
 		throw "rlActiveDrawBuffers is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBlitFramebuffer` (copying the bound framebuffer to the main one). See
+	/** Unsupported: rlgl's `rlBlitFramebuffer` (copying the bound framebuffer to the main one). See
 		`LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param srcX  As rlgl takes it.
@@ -995,204 +995,204 @@ class RRlgl {
 		@param dstWidth  As rlgl takes it.
 		@param dstHeight  As rlgl takes it.
 		@param bufferMask  As rlgl takes it. */
-	@:unsupported("rlBlitFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	@:unsupported("rlBlitFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlBlitFramebuffer(srcX:Int, srcY:Int, srcWidth:Int, srcHeight:Int, dstX:Int, dstY:Int, dstWidth:Int, dstHeight:Int, bufferMask:Int):Void {
 		throw "rlBlitFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBindFramebuffer` (binding a framebuffer to a target). See
+	/** Unsupported: rlgl's `rlBindFramebuffer` (binding a framebuffer to a target). See
 		`LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param target  As rlgl takes it.
 		@param framebuffer  As rlgl takes it. */
-	@:unsupported("rlBindFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	@:unsupported("rlBindFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlBindFramebuffer(target:Int, framebuffer:Int):Void {
 		throw "rlBindFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCheckErrors` (logging OpenGL's error codes). See `InitWindow` for
+	/** Unsupported: rlgl's `rlCheckErrors` (logging OpenGL's error codes). See `InitWindow` for
 		setting up what helix-raylib draws with. */
-	@:unsupported("rlCheckErrors: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+	@:unsupported("rlCheckErrors: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
 	static function rlCheckErrors():Void {
 		throw "rlCheckErrors is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlglInit` (setting up rlgl's buffers, shaders, textures and state). See
+	/** Unsupported: rlgl's `rlglInit` (setting up rlgl's buffers, shaders, textures and state). See
 		`InitWindow` for setting up what helix-raylib draws with.
 
 		@param width  As rlgl takes it.
 		@param height  As rlgl takes it. */
-	@:unsupported("rlglInit: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+	@:unsupported("rlglInit: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
 	static function rlglInit(width:Int, height:Int):Void {
 		throw "rlglInit is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlglClose` (closing rlgl's buffers, shaders and textures). See
+	/** Unsupported: rlgl's `rlglClose` (closing rlgl's buffers, shaders and textures). See
 		`InitWindow` for setting up what helix-raylib draws with. */
-	@:unsupported("rlglClose: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+	@:unsupported("rlglClose: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
 	static function rlglClose():Void {
 		throw "rlglClose is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadExtensions` (loading OpenGL's extensions). See `InitWindow` for
+	/** Unsupported: rlgl's `rlLoadExtensions` (loading OpenGL's extensions). See `InitWindow` for
 		setting up what helix-raylib draws with.
 
 		@param loader  As rlgl takes it. */
-	@:unsupported("rlLoadExtensions: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+	@:unsupported("rlLoadExtensions: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
 	static function rlLoadExtensions(loader:Dynamic):Void {
 		throw "rlLoadExtensions is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetVersion` (getting the OpenGL version). See `InitWindow` for setting
+	/** Unsupported: rlgl's `rlGetVersion` (getting the OpenGL version). See `InitWindow` for setting
 		up what helix-raylib draws with.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetVersion: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+		@return  Never returns. */
+	@:unsupported("rlGetVersion: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
 	static function rlGetVersion():Int {
 		throw "rlGetVersion is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetTextureIdDefault` (getting the default texture's id). See
+	/** Unsupported: rlgl's `rlGetTextureIdDefault` (getting the default texture's id). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetTextureIdDefault: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+		@return  Never returns. */
+	@:unsupported("rlGetTextureIdDefault: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlGetTextureIdDefault():Int {
 		throw "rlGetTextureIdDefault is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShader`
+	/** Unsupported: rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShader`
 		for making a shader and `BeginShaderMode` for drawing with one.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetShaderIdDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+		@return  Never returns. */
+	@:unsupported("rlGetShaderIdDefault: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetShaderIdDefault():Int {
 		throw "rlGetShaderIdDefault is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderLocsDefault` (getting the default shader's locations). See
+	/** Unsupported: rlgl's `rlGetShaderLocsDefault` (getting the default shader's locations). See
 		`LoadShader` for making a shader and `BeginShaderMode` for drawing with one.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetShaderLocsDefault: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+		@return  Never returns. */
+	@:unsupported("rlGetShaderLocsDefault: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetShaderLocsDefault():Array<Int> {
 		throw "rlGetShaderLocsDefault is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadRenderBatch` (making a render batch). See `rlDrawRenderBatchActive`
+	/** Unsupported: rlgl's `rlLoadRenderBatch` (making a render batch). See `rlDrawRenderBatchActive`
 		for drawing the frame's one batch.
 
 		@param numBuffers  As rlgl takes it.
 		@param bufferElements  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadRenderBatch: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
+		@return  Never returns. */
+	@:unsupported("rlLoadRenderBatch: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlLoadRenderBatch(numBuffers:Int, bufferElements:Int):Dynamic {
 		throw "rlLoadRenderBatch is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadRenderBatch` (unloading a render batch). See
+	/** Unsupported: rlgl's `rlUnloadRenderBatch` (unloading a render batch). See
 		`rlDrawRenderBatchActive` for drawing the frame's one batch.
 
 		@param batch  As rlgl takes it. */
-	@:unsupported("rlUnloadRenderBatch: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
+	@:unsupported("rlUnloadRenderBatch: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlUnloadRenderBatch(batch:Dynamic):Void {
 		throw "rlUnloadRenderBatch is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawRenderBatch` (drawing a render batch). See
+	/** Unsupported: rlgl's `rlDrawRenderBatch` (drawing a render batch). See
 		`rlDrawRenderBatchActive` for drawing the frame's one batch.
 
 		@param batch  As rlgl takes it. */
-	@:unsupported("rlDrawRenderBatch: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
+	@:unsupported("rlDrawRenderBatch: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlDrawRenderBatch(batch:Dynamic):Void {
 		throw "rlDrawRenderBatch is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetRenderBatchActive` (choosing the render batch rlgl adds to). See
+	/** Unsupported: rlgl's `rlSetRenderBatchActive` (choosing the render batch rlgl adds to). See
 		`rlDrawRenderBatchActive` for drawing the frame's one batch.
 
 		@param batch  As rlgl takes it. */
-	@:unsupported("rlSetRenderBatchActive: Not supported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
+	@:unsupported("rlSetRenderBatchActive: Unsupported: helix-raylib has no render batches of rlgl's; its frame keeps one batch, as rlgl's default one, drawn by rlDrawRenderBatchActive.")
 	static function rlSetRenderBatchActive(batch:Dynamic):Void {
 		throw "rlSetRenderBatchActive is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadVertexArray` (making a vertex array). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlLoadVertexArray` (making a vertex array). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+		@return  Never returns. */
+	@:unsupported("rlLoadVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlLoadVertexArray():Int {
 		throw "rlLoadVertexArray is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadVertexBuffer` (making a vertex buffer). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlLoadVertexBuffer` (making a vertex buffer). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one.
 
 		@param buffer  As rlgl takes it.
 		@param size  As rlgl takes it.
 		@param isDynamic  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+		@return  Never returns. */
+	@:unsupported("rlLoadVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlLoadVertexBuffer(buffer:Dynamic, size:Int, isDynamic:Bool):Int {
 		throw "rlLoadVertexBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadVertexBufferElement` (making an element buffer). See `UploadMesh`
+	/** Unsupported: rlgl's `rlLoadVertexBufferElement` (making an element buffer). See `UploadMesh`
 		for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param buffer  As rlgl takes it.
 		@param size  As rlgl takes it.
 		@param isDynamic  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadVertexBufferElement: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+		@return  Never returns. */
+	@:unsupported("rlLoadVertexBufferElement: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlLoadVertexBufferElement(buffer:Dynamic, size:Int, isDynamic:Bool):Int {
 		throw "rlLoadVertexBufferElement is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateVertexBuffer` (updating a vertex buffer's data). See `UploadMesh`
+	/** Unsupported: rlgl's `rlUpdateVertexBuffer` (updating a vertex buffer's data). See `UploadMesh`
 		for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param bufferId  As rlgl takes it.
 		@param data  As rlgl takes it.
 		@param dataSize  As rlgl takes it.
 		@param offset  As rlgl takes it. */
-	@:unsupported("rlUpdateVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlUpdateVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlUpdateVertexBuffer(bufferId:Int, data:Dynamic, dataSize:Int, offset:Int):Void {
 		throw "rlUpdateVertexBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateVertexBufferElements` (updating an element buffer's data). See
+	/** Unsupported: rlgl's `rlUpdateVertexBufferElements` (updating an element buffer's data). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param id  As rlgl takes it.
 		@param data  As rlgl takes it.
 		@param dataSize  As rlgl takes it.
 		@param offset  As rlgl takes it. */
-	@:unsupported("rlUpdateVertexBufferElements: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlUpdateVertexBufferElements: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlUpdateVertexBufferElements(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void {
 		throw "rlUpdateVertexBufferElements is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadVertexArray` (unloading a vertex array). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlUnloadVertexArray` (unloading a vertex array). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one.
 
 		@param vaoId  As rlgl takes it. */
-	@:unsupported("rlUnloadVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlUnloadVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlUnloadVertexArray(vaoId:Int):Void {
 		throw "rlUnloadVertexArray is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadVertexBuffer` (unloading a vertex buffer). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlUnloadVertexBuffer` (unloading a vertex buffer). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one.
 
 		@param vboId  As rlgl takes it. */
-	@:unsupported("rlUnloadVertexBuffer: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlUnloadVertexBuffer: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlUnloadVertexBuffer(vboId:Int):Void {
 		throw "rlUnloadVertexBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetVertexAttribute` (setting a vertex attribute's layout). See
+	/** Unsupported: rlgl's `rlSetVertexAttribute` (setting a vertex attribute's layout). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param index  As rlgl takes it.
@@ -1201,78 +1201,78 @@ class RRlgl {
 		@param normalized  As rlgl takes it.
 		@param stride  As rlgl takes it.
 		@param offset  As rlgl takes it. */
-	@:unsupported("rlSetVertexAttribute: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlSetVertexAttribute: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlSetVertexAttribute(index:Int, compSize:Int, type:Int, normalized:Bool, stride:Int, offset:Int):Void {
 		throw "rlSetVertexAttribute is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetVertexAttributeDivisor` (setting a vertex attribute's divisor). See
+	/** Unsupported: rlgl's `rlSetVertexAttributeDivisor` (setting a vertex attribute's divisor). See
 		`UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param index  As rlgl takes it.
 		@param divisor  As rlgl takes it. */
-	@:unsupported("rlSetVertexAttributeDivisor: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlSetVertexAttributeDivisor: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlSetVertexAttributeDivisor(index:Int, divisor:Int):Void {
 		throw "rlSetVertexAttributeDivisor is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetVertexAttributeDefault` (setting a vertex attribute's default
+	/** Unsupported: rlgl's `rlSetVertexAttributeDefault` (setting a vertex attribute's default
 		value). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param locIndex  As rlgl takes it.
 		@param value  As rlgl takes it.
 		@param attribType  As rlgl takes it.
 		@param count  As rlgl takes it. */
-	@:unsupported("rlSetVertexAttributeDefault: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlSetVertexAttributeDefault: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlSetVertexAttributeDefault(locIndex:Int, value:Dynamic, attribType:Int, count:Int):Void {
 		throw "rlSetVertexAttributeDefault is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArray` (drawing the bound vertex array). See `UploadMesh` for
+	/** Unsupported: rlgl's `rlDrawVertexArray` (drawing the bound vertex array). See `UploadMesh` for
 		uploading a mesh and `DrawMesh` for drawing one.
 
 		@param offset  As rlgl takes it.
 		@param count  As rlgl takes it. */
-	@:unsupported("rlDrawVertexArray: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDrawVertexArray: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDrawVertexArray(offset:Int, count:Int):Void {
 		throw "rlDrawVertexArray is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayElements` (drawing the bound vertex array's elements).
+	/** Unsupported: rlgl's `rlDrawVertexArrayElements` (drawing the bound vertex array's elements).
 		See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param offset  As rlgl takes it.
 		@param count  As rlgl takes it.
 		@param buffer  As rlgl takes it. */
-	@:unsupported("rlDrawVertexArrayElements: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDrawVertexArrayElements: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDrawVertexArrayElements(offset:Int, count:Int, buffer:Dynamic):Void {
 		throw "rlDrawVertexArrayElements is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayInstanced` (drawing instances of the bound vertex
+	/** Unsupported: rlgl's `rlDrawVertexArrayInstanced` (drawing instances of the bound vertex
 		array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param offset  As rlgl takes it.
 		@param count  As rlgl takes it.
 		@param instances  As rlgl takes it. */
-	@:unsupported("rlDrawVertexArrayInstanced: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDrawVertexArrayInstanced: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDrawVertexArrayInstanced(offset:Int, count:Int, instances:Int):Void {
 		throw "rlDrawVertexArrayInstanced is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayElementsInstanced` (drawing instances of the bound
+	/** Unsupported: rlgl's `rlDrawVertexArrayElementsInstanced` (drawing instances of the bound
 		vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
 
 		@param offset  As rlgl takes it.
 		@param count  As rlgl takes it.
 		@param buffer  As rlgl takes it.
 		@param instances  As rlgl takes it. */
-	@:unsupported("rlDrawVertexArrayElementsInstanced: Not supported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
+	@:unsupported("rlDrawVertexArrayElementsInstanced: Unsupported: helix-raylib has no vertex arrays or buffers of GL's; a Mesh is uploaded with UploadMesh and drawn with DrawMesh.")
 	static function rlDrawVertexArrayElementsInstanced(offset:Int, count:Int, buffer:Dynamic, instances:Int):Void {
 		throw "rlDrawVertexArrayElementsInstanced is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadTexture` (making a texture from data). See `LoadTextureFromImage`
+	/** Unsupported: rlgl's `rlLoadTexture` (making a texture from data). See `LoadTextureFromImage`
 		for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param data  As rlgl takes it.
@@ -1280,38 +1280,38 @@ class RRlgl {
 		@param height  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param mipmapCount  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+		@return  Never returns. */
+	@:unsupported("rlLoadTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlLoadTexture(data:Dynamic, width:Int, height:Int, format:Int, mipmapCount:Int):Int {
 		throw "rlLoadTexture is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See
+	/** Unsupported: rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See
 		`LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making a render texture whose depth a shader samples.
 
 		@param width  As rlgl takes it.
 		@param height  As rlgl takes it.
 		@param useRenderBuffer  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadTextureDepth: Not supported: helix-raylib has no GL texture ids; a render texture whose depth a shader samples is made with LoadShadowmapRenderTexture (import helix.raylib.extras.Shadowmaps.*;), its depth bound with SetShaderValueTexture.")
+		@return  Never returns. */
+	@:unsupported("rlLoadTextureDepth: Unsupported: helix-raylib has no GL texture ids; a render texture whose depth a shader samples is made with LoadShadowmapRenderTexture (import helix.raylib.extras.Shadowmaps.*;), its depth bound with SetShaderValueTexture.")
 	static function rlLoadTextureDepth(width:Int, height:Int, useRenderBuffer:Bool):Int {
 		throw "rlLoadTextureDepth is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See
+	/** Unsupported: rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param data  As rlgl takes it.
 		@param size  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param mipmapCount  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadTextureCubemap: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+		@return  Never returns. */
+	@:unsupported("rlLoadTextureCubemap: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlLoadTextureCubemap(data:Dynamic, size:Int, format:Int, mipmapCount:Int):Int {
 		throw "rlLoadTextureCubemap is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateTexture` (updating a texture's pixels). See
+	/** Unsupported: rlgl's `rlUpdateTexture` (updating a texture's pixels). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it.
@@ -1321,33 +1321,33 @@ class RRlgl {
 		@param height  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param data  As rlgl takes it. */
-	@:unsupported("rlUpdateTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlUpdateTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlUpdateTexture(id:Int, offsetX:Int, offsetY:Int, width:Int, height:Int, format:Int, data:Dynamic):Void {
 		throw "rlUpdateTexture is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetGlTextureFormats` (getting a format's OpenGL formats). See
+	/** Unsupported: rlgl's `rlGetGlTextureFormats` (getting a format's OpenGL formats). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param format  As rlgl takes it.
 		@param glInternalFormat  As rlgl takes it.
 		@param glFormat  As rlgl takes it.
 		@param glType  As rlgl takes it. */
-	@:unsupported("rlGetGlTextureFormats: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlGetGlTextureFormats: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlGetGlTextureFormats(format:Int, glInternalFormat:Array<Int>, glFormat:Array<Int>, glType:Array<Int>):Void {
 		throw "rlGetGlTextureFormats is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadTexture` (unloading a texture). See `LoadTextureFromImage` for
+	/** Unsupported: rlgl's `rlUnloadTexture` (unloading a texture). See `LoadTextureFromImage` for
 		making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlUnloadTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlUnloadTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlUnloadTexture(id:Int):Void {
 		throw "rlUnloadTexture is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGenTextureMipmaps` (making a texture's mipmaps). See
+	/** Unsupported: rlgl's `rlGenTextureMipmaps` (making a texture's mipmaps). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it.
@@ -1355,45 +1355,45 @@ class RRlgl {
 		@param height  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param mipmaps  As rlgl takes it. */
-	@:unsupported("rlGenTextureMipmaps: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlGenTextureMipmaps: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlGenTextureMipmaps(id:Int, width:Int, height:Int, format:Int, mipmaps:Array<Int>):Void {
 		throw "rlGenTextureMipmaps is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlReadTexturePixels` (reading a texture's pixels). See
+	/** Unsupported: rlgl's `rlReadTexturePixels` (reading a texture's pixels). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it.
 		@param width  As rlgl takes it.
 		@param height  As rlgl takes it.
 		@param format  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlReadTexturePixels: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+		@return  Never returns. */
+	@:unsupported("rlReadTexturePixels: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlReadTexturePixels(id:Int, width:Int, height:Int, format:Int):Dynamic {
 		throw "rlReadTexturePixels is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlReadScreenPixels` (reading the screen's pixels). See
+	/** Unsupported: rlgl's `rlReadScreenPixels` (reading the screen's pixels). See
 		`LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param width  As rlgl takes it.
 		@param height  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlReadScreenPixels: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+		@return  Never returns. */
+	@:unsupported("rlReadScreenPixels: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlReadScreenPixels(width:Int, height:Int):haxe.io.Bytes {
 		throw "rlReadScreenPixels is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadFramebuffer` (making an empty framebuffer). See `LoadRenderTexture`
+	/** Unsupported: rlgl's `rlLoadFramebuffer` (making an empty framebuffer). See `LoadRenderTexture`
 		for making a render texture and `BeginTextureMode` for drawing into one.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+		@return  Never returns. */
+	@:unsupported("rlLoadFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlLoadFramebuffer():Int {
 		throw "rlLoadFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlFramebufferAttach` (attaching a texture or renderbuffer to a
+	/** Unsupported: rlgl's `rlFramebufferAttach` (attaching a texture or renderbuffer to a
 		framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param fboId  As rlgl takes it.
@@ -1401,194 +1401,194 @@ class RRlgl {
 		@param attachType  As rlgl takes it.
 		@param texType  As rlgl takes it.
 		@param mipLevel  As rlgl takes it. */
-	@:unsupported("rlFramebufferAttach: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	@:unsupported("rlFramebufferAttach: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlFramebufferAttach(fboId:Int, texId:Int, attachType:Int, texType:Int, mipLevel:Int):Void {
 		throw "rlFramebufferAttach is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlFramebufferComplete` (checking whether a framebuffer is complete). See
+	/** Unsupported: rlgl's `rlFramebufferComplete` (checking whether a framebuffer is complete). See
 		`LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param id  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlFramebufferComplete: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+		@return  Never returns. */
+	@:unsupported("rlFramebufferComplete: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlFramebufferComplete(id:Int):Bool {
 		throw "rlFramebufferComplete is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadFramebuffer` (unloading a framebuffer). See `LoadRenderTexture`
+	/** Unsupported: rlgl's `rlUnloadFramebuffer` (unloading a framebuffer). See `LoadRenderTexture`
 		for making a render texture and `BeginTextureMode` for drawing into one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlUnloadFramebuffer: Not supported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
+	@:unsupported("rlUnloadFramebuffer: Unsupported: helix-raylib has no GL framebuffers; a RenderTexture2D is made with LoadRenderTexture and drawn into between BeginTextureMode and EndTextureMode.")
 	static function rlUnloadFramebuffer(id:Int):Void {
 		throw "rlUnloadFramebuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param vsCode  As rlgl takes it.
 		@param fsCode  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadShaderCode: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+		@return  Never returns. */
+	@:unsupported("rlLoadShaderCode: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlLoadShaderCode(vsCode:String, fsCode:String):Int {
 		throw "rlLoadShaderCode is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param shaderCode  As rlgl takes it.
 		@param type  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlCompileShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+		@return  Never returns. */
+	@:unsupported("rlCompileShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlCompileShader(shaderCode:String, type:Int):Int {
 		throw "rlCompileShader is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param vShaderId  As rlgl takes it.
 		@param fShaderId  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+		@return  Never returns. */
+	@:unsupported("rlLoadShaderProgram: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlLoadShaderProgram(vShaderId:Int, fShaderId:Int):Int {
 		throw "rlLoadShaderProgram is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param id  As rlgl takes it. */
-	@:unsupported("rlUnloadShaderProgram: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlUnloadShaderProgram: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlUnloadShaderProgram(id:Int):Void {
 		throw "rlUnloadShaderProgram is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShader`
+	/** Unsupported: rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShader`
 		for making a shader and `BeginShaderMode` for drawing with one.
 
 		@param shaderId  As rlgl takes it.
 		@param uniformName  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetLocationUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+		@return  Never returns. */
+	@:unsupported("rlGetLocationUniform: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetLocationUniform(shaderId:Int, uniformName:String):Int {
 		throw "rlGetLocationUniform is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShader`
+	/** Unsupported: rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShader`
 		for making a shader and `BeginShaderMode` for drawing with one.
 
 		@param shaderId  As rlgl takes it.
 		@param attribName  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetLocationAttrib: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+		@return  Never returns. */
+	@:unsupported("rlGetLocationAttrib: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlGetLocationAttrib(shaderId:Int, attribName:String):Int {
 		throw "rlGetLocationAttrib is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShader` for making a
+	/** Unsupported: rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShader` for making a
 		shader and `BeginShaderMode` for drawing with one.
 
 		@param locIndex  As rlgl takes it.
 		@param value  As rlgl takes it.
 		@param uniformType  As rlgl takes it.
 		@param count  As rlgl takes it. */
-	@:unsupported("rlSetUniform: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniform: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniform(locIndex:Int, value:Dynamic, uniformType:Int, count:Int):Void {
 		throw "rlSetUniform is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param locIndex  As rlgl takes it.
 		@param mat  As rlgl takes it. */
-	@:unsupported("rlSetUniformMatrix: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniformMatrix: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniformMatrix(locIndex:Int, mat:Matrix):Void {
 		throw "rlSetUniformMatrix is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrices` (setting an array of matrix uniforms). See
+	/** Unsupported: rlgl's `rlSetUniformMatrices` (setting an array of matrix uniforms). See
 		`LoadShader` for making a shader and `BeginShaderMode` for drawing with one.
 
 		@param locIndex  As rlgl takes it.
 		@param mat  As rlgl takes it.
 		@param count  As rlgl takes it. */
-	@:unsupported("rlSetUniformMatrices: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniformMatrices: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniformMatrices(locIndex:Int, mat:Array<Matrix>, count:Int):Void {
 		throw "rlSetUniformMatrices is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param locIndex  As rlgl takes it.
 		@param textureId  As rlgl takes it. */
-	@:unsupported("rlSetUniformSampler: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetUniformSampler: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetUniformSampler(locIndex:Int, textureId:Int):Void {
 		throw "rlSetUniformSampler is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShader` for
+	/** Unsupported: rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShader` for
 		making a shader and `BeginShaderMode` for drawing with one.
 
 		@param id  As rlgl takes it.
 		@param locs  As rlgl takes it. */
-	@:unsupported("rlSetShader: Not supported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
+	@:unsupported("rlSetShader: Unsupported: helix-raylib has no GL shader ids; a Shader is compiled ahead of time and loaded by LoadCompiledShader, set with SetShaderValue, and used between BeginShaderMode and EndShaderMode.")
 	static function rlSetShader(id:Int, locs:Array<Int>):Void {
 		throw "rlSetShader is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadComputeShaderProgram` (making a compute shader program).
+	/** Unsupported: rlgl's `rlLoadComputeShaderProgram` (making a compute shader program).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
 		@param shaderId  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadComputeShaderProgram: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+		@return  Never returns. */
+	@:unsupported("rlLoadComputeShaderProgram: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlLoadComputeShaderProgram(shaderId:Int):Int {
 		throw "rlLoadComputeShaderProgram is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlComputeShaderDispatch` (running a compute shader).
+	/** Unsupported: rlgl's `rlComputeShaderDispatch` (running a compute shader).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
 		@param groupX  As rlgl takes it.
 		@param groupY  As rlgl takes it.
 		@param groupZ  As rlgl takes it. */
-	@:unsupported("rlComputeShaderDispatch: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+	@:unsupported("rlComputeShaderDispatch: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlComputeShaderDispatch(groupX:Int, groupY:Int, groupZ:Int):Void {
 		throw "rlComputeShaderDispatch is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadShaderBuffer` (making a shader storage buffer).
+	/** Unsupported: rlgl's `rlLoadShaderBuffer` (making a shader storage buffer).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
 		@param size  As rlgl takes it.
 		@param data  As rlgl takes it.
 		@param usageHint  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlLoadShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+		@return  Never returns. */
+	@:unsupported("rlLoadShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlLoadShaderBuffer(size:Int, data:Dynamic, usageHint:Int):Int {
 		throw "rlLoadShaderBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUnloadShaderBuffer` (unloading a shader storage buffer).
+	/** Unsupported: rlgl's `rlUnloadShaderBuffer` (unloading a shader storage buffer).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
 		@param ssboId  As rlgl takes it. */
-	@:unsupported("rlUnloadShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+	@:unsupported("rlUnloadShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlUnloadShaderBuffer(ssboId:Int):Void {
 		throw "rlUnloadShaderBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlUpdateShaderBuffer` (updating a shader storage buffer's data).
+	/** Unsupported: rlgl's `rlUpdateShaderBuffer` (updating a shader storage buffer's data).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
@@ -1596,23 +1596,23 @@ class RRlgl {
 		@param data  As rlgl takes it.
 		@param dataSize  As rlgl takes it.
 		@param offset  As rlgl takes it. */
-	@:unsupported("rlUpdateShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+	@:unsupported("rlUpdateShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlUpdateShaderBuffer(id:Int, data:Dynamic, dataSize:Int, offset:Int):Void {
 		throw "rlUpdateShaderBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBindShaderBuffer` (binding a shader storage buffer).
+	/** Unsupported: rlgl's `rlBindShaderBuffer` (binding a shader storage buffer).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
 		@param id  As rlgl takes it.
 		@param index  As rlgl takes it. */
-	@:unsupported("rlBindShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+	@:unsupported("rlBindShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlBindShaderBuffer(id:Int, index:Int):Void {
 		throw "rlBindShaderBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlReadShaderBuffer` (reading a shader storage buffer's data).
+	/** Unsupported: rlgl's `rlReadShaderBuffer` (reading a shader storage buffer's data).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
@@ -1620,12 +1620,12 @@ class RRlgl {
 		@param dest  As rlgl takes it.
 		@param count  As rlgl takes it.
 		@param offset  As rlgl takes it. */
-	@:unsupported("rlReadShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+	@:unsupported("rlReadShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlReadShaderBuffer(id:Int, dest:Dynamic, count:Int, offset:Int):Void {
 		throw "rlReadShaderBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlCopyShaderBuffer` (copying between shader storage buffers).
+	/** Unsupported: rlgl's `rlCopyShaderBuffer` (copying between shader storage buffers).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
@@ -1634,44 +1634,44 @@ class RRlgl {
 		@param destOffset  As rlgl takes it.
 		@param srcOffset  As rlgl takes it.
 		@param count  As rlgl takes it. */
-	@:unsupported("rlCopyShaderBuffer: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+	@:unsupported("rlCopyShaderBuffer: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlCopyShaderBuffer(destId:Int, srcId:Int, destOffset:Int, srcOffset:Int, count:Int):Void {
 		throw "rlCopyShaderBuffer is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlGetShaderBufferSize` (getting a shader storage buffer's size).
+	/** Unsupported: rlgl's `rlGetShaderBufferSize` (getting a shader storage buffer's size).
 
 		No target has compute shaders or shader storage buffers, as WebGL2 has none.
 
 		@param id  As rlgl takes it.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("rlGetShaderBufferSize: Not supported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
+		@return  Never returns. */
+	@:unsupported("rlGetShaderBufferSize: Unsupported: helix-raylib has no compute shaders or shader storage buffers, as WebGL2 has none.")
 	static function rlGetShaderBufferSize(id:Int):Int {
 		throw "rlGetShaderBufferSize is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlBindImageTexture` (binding an image texture). See
+	/** Unsupported: rlgl's `rlBindImageTexture` (binding an image texture). See
 		`LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
 
 		@param id  As rlgl takes it.
 		@param index  As rlgl takes it.
 		@param format  As rlgl takes it.
 		@param readonly  As rlgl takes it. */
-	@:unsupported("rlBindImageTexture: Not supported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
+	@:unsupported("rlBindImageTexture: Unsupported: helix-raylib has no GL texture ids; a Texture2D is made with LoadTexture or LoadTextureFromImage, set up with SetTextureFilter, and drawn with rlSetTexture or the drawing functions.")
 	static function rlBindImageTexture(id:Int, index:Int, format:Int, readonly:Bool):Void {
 		throw "rlBindImageTexture is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadDrawCube` (drawing a cube). See `InitWindow` for setting up what
+	/** Unsupported: rlgl's `rlLoadDrawCube` (drawing a cube). See `InitWindow` for setting up what
 		helix-raylib draws with. */
-	@:unsupported("rlLoadDrawCube: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+	@:unsupported("rlLoadDrawCube: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
 	static function rlLoadDrawCube():Void {
 		throw "rlLoadDrawCube is unsupported";
 	}
 
-	/** Refuses to compile on every target, replacing rlgl's `rlLoadDrawQuad` (drawing a quad). See `InitWindow` for setting up what
+	/** Unsupported: rlgl's `rlLoadDrawQuad` (drawing a quad). See `InitWindow` for setting up what
 		helix-raylib draws with. */
-	@:unsupported("rlLoadDrawQuad: Not supported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
+	@:unsupported("rlLoadDrawQuad: Unsupported: helix-raylib has no GL of its own: InitWindow and CloseWindow set up and close what it draws with.")
 	static function rlLoadDrawQuad():Void {
 		throw "rlLoadDrawQuad is unsupported";
 	}

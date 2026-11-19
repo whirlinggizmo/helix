@@ -314,28 +314,28 @@ class RCore {
 		RWindowAsync.GetClipboardImageAsync(answer, Answers.failing("GetClipboardImage", answer, new Image()));
 	}
 
-	/** Doesn't compile, since helix-raylib's window has no native handle to give.
+	/** Unsupported.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.")
+		@return  Never returns. */
+	@:unsupported("GetWindowHandle: Unsupported.")
 	static function GetWindowHandle():Dynamic {
 		throw "GetWindowHandle is unimplemented";
 	}
 
-	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels.
+	/** Unsupported. See `GetMonitorWidth` for reading the width in pixels.
 
 		@param monitor  The monitor.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-raylib's platform.")
+		@return  Never returns. */
+	@:unsupported("GetMonitorPhysicalWidth: Unsupported. Use GetMonitorWidth(monitor) for the width in pixels.")
 	static function GetMonitorPhysicalWidth(monitor:Int):Int {
 		throw "GetMonitorPhysicalWidth is unimplemented";
 	}
 
-	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels.
+	/** Unsupported. See `GetMonitorHeight` for reading the height in pixels.
 
 		@param monitor  The monitor.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-raylib's platform.")
+		@return  Never returns. */
+	@:unsupported("GetMonitorPhysicalHeight: Unsupported. Use GetMonitorHeight(monitor) for the height in pixels.")
 	static function GetMonitorPhysicalHeight(monitor:Int):Int {
 		throw "GetMonitorPhysicalHeight is unimplemented";
 	}
@@ -2315,29 +2315,29 @@ class RCore {
 
 	// ---- Memory ----
 
-	/** Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.
+	/** Unsupported. See `haxe.io.Bytes.alloc` for making bytes.
 
 		@param size  The bytes.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)")
+		@return  Never returns. */
+	@:unsupported("MemAlloc: Unsupported. Use haxe.io.Bytes.alloc(size) instead.")
 	static function MemAlloc(size:Int):Dynamic {
 		throw "MemAlloc is unimplemented";
 	}
 
-	/** Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
+	/** Unsupported. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
 
 		@param ptr  The memory.
 		@param size  The bytes.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit")
+		@return  Never returns. */
+	@:unsupported("MemRealloc: Unsupported. Use haxe.io.Bytes.alloc(size), then blit, instead.")
 	static function MemRealloc(ptr:Dynamic, size:Int):Dynamic {
 		throw "MemRealloc is unimplemented";
 	}
 
-	/** Doesn't compile, since Haxe frees memory once nothing holds it.
+	/** Unsupported.
 
 		@param ptr  The memory. */
-	@:unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.")
+	@:unsupported("MemFree: Unsupported.")
 	static function MemFree(ptr:Dynamic):Void {
 		throw "MemFree is unimplemented";
 	}
@@ -2372,73 +2372,72 @@ class RCore {
 
 	// ---- emscripten's calls, which raylib's web programs make: each refuses, saying what to write instead ----
 
-	/** Doesn't compile. See `WindowShouldClose` for writing the loop.
+	/** Unsupported. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param fps  The frames a second, or 0 for the display's.
 		@param simulateInfiniteLoop  Whether the call never returns. */
-	@:unsupported("emscripten_set_main_loop: Not needed. Use while (!WindowShouldClose()) { ... } instead.")
+	@:unsupported("emscripten_set_main_loop: Unsupported. Use while (!WindowShouldClose()) { ... } instead.")
 	static function emscripten_set_main_loop(func:Void->Void, fps:Int, simulateInfiniteLoop:Bool):Void {
 		throw "emscripten_set_main_loop is unsupported";
 	}
 
-	/** Doesn't compile. See `WindowShouldClose` for writing the loop.
+	/** Unsupported. See `WindowShouldClose` for writing the loop.
 
 		@param func  The frame's function.
 		@param arg  What the function is given.
 		@param fps  The frames a second, or 0 for the display's.
 		@param simulateInfiniteLoop  Whether the call never returns. */
-	@:unsupported("emscripten_set_main_loop_arg: Not needed. Use while (!WindowShouldClose()) { ... } instead.")
+	@:unsupported("emscripten_set_main_loop_arg: Unsupported. Use while (!WindowShouldClose()) { ... } instead.")
 	static function emscripten_set_main_loop_arg(func:Dynamic->Void, arg:Dynamic, fps:Int, simulateInfiniteLoop:Bool):Void {
 		throw "emscripten_set_main_loop_arg is unsupported";
 	}
 
-	/** Doesn't compile. See `WindowShouldClose` for writing the loop. */
-	@:unsupported("emscripten_cancel_main_loop: Not needed. Use break in while (!WindowShouldClose()) { ... } instead.")
+	/** Unsupported. See `WindowShouldClose` for writing the loop. */
+	@:unsupported("emscripten_cancel_main_loop: Unsupported. Use break in while (!WindowShouldClose()) { ... } instead.")
 	static function emscripten_cancel_main_loop():Void {
 		throw "emscripten_cancel_main_loop is unsupported";
 	}
 
-	/** Doesn't compile on any target, since a program runs no script of its own. See `GetWindowSafeArea` for the part of the window
-		nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up.
+	/** Unsupported. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding
+		the screen one way up.
 
 		@param script  The JavaScript. */
-	@:unsupported("emscripten_run_script: Not supported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
+	@:unsupported("emscripten_run_script: Unsupported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
 	static function emscripten_run_script(script:String):Void {
 		throw "emscripten_run_script is unsupported";
 	}
 
-	/** Doesn't compile on any target, since a program runs no script of its own. See `IsTouchAvailable` for whether the device has
-		touch, and `GetScreenOrientation` for how the screen is held.
+	/** Unsupported. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held.
 
 		@param script  The JavaScript.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_run_script_int: Not supported. See IsTouchAvailable() and IsFinePointerAvailable() for the device's touch and pointer, and GetScreenOrientation() for how the screen is held in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
+		@return  Never returns. */
+	@:unsupported("emscripten_run_script_int: Unsupported. See IsTouchAvailable() and IsFinePointerAvailable() for the device's touch and pointer, and GetScreenOrientation() for how the screen is held in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
 	static function emscripten_run_script_int(script:String):Int {
 		throw "emscripten_run_script_int is unsupported";
 	}
 
-	/** Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system.
+	/** Unsupported. See `GetPlatformOS` for naming the system.
 
 		@param script  The JavaScript.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_run_script_string: Not supported. See GetPlatformOS() for the system's name in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
+		@return  Never returns. */
+	@:unsupported("emscripten_run_script_string: Unsupported. See GetPlatformOS() for the system's name in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)")
 	static function emscripten_run_script_string(script:String):String {
 		throw "emscripten_run_script_string is unsupported";
 	}
 
-	/** Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
+	/** Unsupported. See `GetTime` for reading the seconds since `InitWindow`.
 
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("emscripten_get_now: Not supported. Use GetTime() * 1000 instead.")
+		@return  Never returns. */
+	@:unsupported("emscripten_get_now: Unsupported. Use GetTime() * 1000 instead.")
 	static function emscripten_get_now():Float {
 		throw "emscripten_get_now is unsupported";
 	}
 
-	/** Doesn't compile. See `WaitTime` for waiting.
+	/** Unsupported. See `WaitTime` for waiting.
 
 		@param ms  The milliseconds. */
-	@:unsupported("emscripten_sleep: Not supported. Use WaitTime(ms / 1000) instead.")
+	@:unsupported("emscripten_sleep: Unsupported. Use WaitTime(ms / 1000) instead.")
 	static function emscripten_sleep(ms:Int):Void {
 		throw "emscripten_sleep is unsupported";
 	}
@@ -3127,24 +3126,24 @@ class RCore {
 
 	// ---- Shaders ----
 
-	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader
-		compiled ahead of time by `CompileShaderFile`.
+	/** Unsupported: raylib's shader load from GLSL files. See `LoadCompiledShader` for loading a shader compiled ahead of time by
+		`CompileShaderFile`.
 
 		@param vsFileName  The vertex stage's file.
 		@param fsFileName  The fragment stage's file.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShader: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
+		@return  Never returns. */
+	@:unsupported("LoadShader: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
 	static function LoadShader(vsFileName:String, fsFileName:String):Shader {
 		throw "LoadShader is unimplemented";
 	}
 
-	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromMemory` for making a shader
-		from compiled data in memory.
+	/** Unsupported: raylib's shader load from GLSL text. See `LoadCompiledShaderFromMemory` for making a shader from compiled data
+		in memory.
 
 		@param vsCode  The vertex stage's text.
 		@param fsCode  The fragment stage's text.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
+		@return  Never returns. */
+	@:unsupported("LoadShaderFromMemory: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.")
 	static function LoadShaderFromMemory(vsCode:String, fsCode:String):Shader {
 		throw "LoadShaderFromMemory is unimplemented";
 	}

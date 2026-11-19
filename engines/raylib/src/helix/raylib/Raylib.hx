@@ -28,11 +28,7 @@ import helix.raylib.modules.RWindowAsync;
 
 /** Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them. Imported with `import helix.raylib.Raylib.*;`.
 
-	A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
-
-	`EndDrawing`, `WaitTime`, a file call (`LoadFileText`), a clipboard call, a screen read (`LoadImageFromScreen`) and `TakeScreenshot`
-	don't compile in a function used as a value, a constructor or a variable's initial value. A load from memory (`LoadImageFromMemory`)
-	doesn't compile, and names its `...Async` call. */
+	Note that a program loops as raylib's does: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`. */
 class Raylib {
 	// ---- Keys (KeyboardKey) ----
 
@@ -7043,7 +7039,7 @@ class Raylib {
 
 		@param fileName  The file's name, or its path; a name with `'` is refused, as raylib's is. */
 	public static macro function TakeScreenshot(fileName:ExprOf<String>):ExprOf<Void>
-		return helix.raylib.internal.Wait.section("TakeScreenshot: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("TakeScreenshot: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.TakeScreenshot, [fileName], true);
 
 	/** Puts text on the system's clipboard, and returns once it is there. See `GetClipboardText` for reading it.
@@ -7052,7 +7048,7 @@ class Raylib {
 
 		@param text  The text. */
 	public static macro function SetClipboardText(text:ExprOf<String>):ExprOf<Void>
-		return helix.raylib.internal.Wait.section("SetClipboardText: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("SetClipboardText: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.SetClipboardText, [text], true);
 
 	/** Reads the clipboard's text. See `GetClipboardImage` for reading an image.
@@ -7061,7 +7057,7 @@ class Raylib {
 
 		@return  The text, or "" when the clipboard holds none or can't be read. Why it couldn't is logged. */
 	public static macro function GetClipboardText():ExprOf<String>
-		return helix.raylib.internal.Wait.section("GetClipboardText: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("GetClipboardText: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.GetClipboardText, [], false);
 
 	/** Reads the clipboard's image. See `GetClipboardText` for reading text.
@@ -7071,14 +7067,14 @@ class Raylib {
 		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when the clipboard holds none or can't be read. Why it
 			couldn't is logged. */
 	public static macro function GetClipboardImage():ExprOf<Image>
-		return helix.raylib.internal.Wait.section("GetClipboardImage: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("GetClipboardImage: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.GetClipboardImage, [], false);
 
 	/** Stops the program for a time, drawing nothing and reading no input until it ends.
 
 		@param seconds  How long. */
 	public static macro function WaitTime(seconds:ExprOf<Float>):ExprOf<Void>
-		return helix.raylib.internal.Wait.section("WaitTime: Not supported in a function used as a value.", macro helix.raylib.modules.RCore.WaitTime,
+		return helix.raylib.internal.Wait.section("WaitTime: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.WaitTime,
 			[seconds], true);
 
 	/** Returns whether a file exists. See `DirectoryExists` for a directory.
@@ -7086,7 +7082,7 @@ class Raylib {
 		@param fileName  The file.
 		@return  True when it exists. */
 	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("FileExists: Not supported in a function used as a value.", macro helix.raylib.modules.RCore.FileExists,
+		return helix.raylib.internal.Wait.section("FileExists: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.FileExists,
 			[fileName], false);
 
 	/** Reads a text file, and returns its text. See `LoadFileData` for reading a file's bytes.
@@ -7094,7 +7090,7 @@ class Raylib {
 		@param fileName  The file.
 		@return  Its text, or null when it couldn't be read. Why it couldn't is logged. */
 	public static macro function LoadFileText(fileName:ExprOf<String>):ExprOf<Null<String>>
-		return helix.raylib.internal.Wait.section("LoadFileText: Not supported in a function used as a value.", macro helix.raylib.modules.RCore.LoadFileText,
+		return helix.raylib.internal.Wait.section("LoadFileText: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.LoadFileText,
 			[fileName], false);
 
 	/** Writes a text file, and returns once it is written. See `SaveFileData` for writing bytes.
@@ -7105,7 +7101,7 @@ class Raylib {
 		@param text  Its text.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function SaveFileText(fileName:ExprOf<String>, text:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("SaveFileText: Not supported in a function used as a value.", macro helix.raylib.modules.RCore.SaveFileText,
+		return helix.raylib.internal.Wait.section("SaveFileText: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.SaveFileText,
 			[fileName, text], false);
 
 	/** Reads a file's bytes, and returns them. See `LoadFileText` for reading a text file.
@@ -7113,7 +7109,7 @@ class Raylib {
 		@param fileName  The file.
 		@return  Its bytes, or null when it couldn't be read. Why it couldn't is logged. */
 	public static macro function LoadFileData(fileName:ExprOf<String>):ExprOf<Null<haxe.io.Bytes>>
-		return helix.raylib.internal.Wait.section("LoadFileData: Not supported in a function used as a value.", macro helix.raylib.modules.RCore.LoadFileData,
+		return helix.raylib.internal.Wait.section("LoadFileData: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.LoadFileData,
 			[fileName], false);
 
 	/** Writes a file's bytes, and returns once they are written. See `SaveFileText` for writing
@@ -7126,7 +7122,7 @@ class Raylib {
 		@param dataSize  How many of them.
 		@return  Whether they were written. Why they weren't is logged. */
 	public static macro function SaveFileData(fileName:ExprOf<String>, data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("SaveFileData: Not supported in a function used as a value.", macro helix.raylib.modules.RCore.SaveFileData,
+		return helix.raylib.internal.Wait.section("SaveFileData: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.SaveFileData,
 			[fileName, data, dataSize], false);
 
 	/** Writes bytes as a C header, and returns once it is written.
@@ -7136,7 +7132,7 @@ class Raylib {
 		@param fileName  The file; its name, upper case, names the define and the array.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportDataAsCode(data:ExprOf<haxe.io.Bytes>, dataSize:ExprOf<Int>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportDataAsCode: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("ExportDataAsCode: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.ExportDataAsCode, [data, dataSize, fileName], false);
 
 	/** Returns whether a directory exists. See `FileExists` for a file.
@@ -7144,7 +7140,7 @@ class Raylib {
 		@param dirPath  The directory.
 		@return  True when it exists. */
 	public static macro function DirectoryExists(dirPath:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("DirectoryExists: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("DirectoryExists: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.DirectoryExists, [dirPath], false);
 
 	/** Returns a file's size.
@@ -7152,15 +7148,15 @@ class Raylib {
 		@param fileName  The file.
 		@return  Its size in bytes; 0 when there is no file, as raylib's. */
 	public static macro function GetFileLength(fileName:ExprOf<String>):ExprOf<Int>
-		return helix.raylib.internal.Wait.section("GetFileLength: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RCore.GetFileLength, [fileName], false);
+		return helix.raylib.internal.Wait.section("GetFileLength: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.GetFileLength,
+			[fileName], false);
 
 	/** Returns whether a path is a file, not a directory. See `DirectoryExists` for a directory.
 
 		@param path  The path.
 		@return  True for a file; false for a directory or nothing there. */
 	public static macro function IsPathFile(path:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("IsPathFile: Not supported in a function used as a value.", macro helix.raylib.modules.RCore.IsPathFile,
+		return helix.raylib.internal.Wait.section("IsPathFile: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.IsPathFile,
 			[path], false);
 
 	/** Lists a directory's files and subdirectories. See `LoadDirectoryFilesEx` for a filter
@@ -7169,7 +7165,7 @@ class Raylib {
 		@param dirPath  The directory.
 		@return  The list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's. */
 	public static macro function LoadDirectoryFiles(dirPath:ExprOf<String>):ExprOf<FilePathList>
-		return helix.raylib.internal.Wait.section("LoadDirectoryFiles: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("LoadDirectoryFiles: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.LoadDirectoryFiles, [dirPath], false);
 
 	/** Lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too. See `LoadDirectoryFiles` for listing one directory's every file and subdirectory.
@@ -7179,7 +7175,7 @@ class Raylib {
 		@param scanSubdirs  Whether the subdirectories' files are listed too.
 		@return  The list, its `capacity` 8192; a directory that can't be listed adds nothing, with a warning. */
 	public static macro function LoadDirectoryFilesEx(basePath:ExprOf<String>, filter:ExprOf<String>, scanSubdirs:ExprOf<Bool>):ExprOf<FilePathList>
-		return helix.raylib.internal.Wait.section("LoadDirectoryFilesEx: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("LoadDirectoryFilesEx: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.LoadDirectoryFilesEx, [basePath, filter, scanSubdirs], false);
 
 	/** Returns when a file was last written.
@@ -7187,7 +7183,7 @@ class Raylib {
 		@param fileName  The file.
 		@return  The time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
 	public static macro function GetFileModTime(fileName:ExprOf<String>):ExprOf<Int>
-		return helix.raylib.internal.Wait.section("GetFileModTime: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("GetFileModTime: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.GetFileModTime, [fileName], false);
 
 	/** Writes a list's events as text, and returns once it is written. See
@@ -7197,7 +7193,7 @@ class Raylib {
 		@param fileName  The file.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportAutomationEventList(list:ExprOf<AutomationEventList>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportAutomationEventList: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("ExportAutomationEventList: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RCore.ExportAutomationEventList, [list, fileName], false);
 
 	/** Reads a texture's pixels into an image, and returns once they are read. See `LoadImageFromScreen` for reading the screen.
@@ -7217,7 +7213,7 @@ class Raylib {
 		@param texture  The texture.
 		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read. Why it couldn't is logged. */
 	public static macro function LoadImageFromTexture(texture:ExprOf<Texture2D>):ExprOf<Image>
-		return helix.raylib.internal.Wait.section("LoadImageFromTexture: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("LoadImageFromTexture: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RTextures.LoadImageFromTexture, [texture], false);
 
 	/** Reads the screen into an image as the frame has drawn it so far, and returns once it is read. See `TakeScreenshot` for saving the
@@ -7237,7 +7233,7 @@ class Raylib {
 		@return  The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read, as before `InitWindow`. Why it
 			couldn't is logged. */
 	public static macro function LoadImageFromScreen():ExprOf<Image>
-		return helix.raylib.internal.Wait.section("LoadImageFromScreen: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("LoadImageFromScreen: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RTextures.LoadImageFromScreen, [], false);
 
 	/** Writes an image to a PNG, QOI or raw file, and returns once it is written. See
@@ -7247,8 +7243,8 @@ class Raylib {
 		@param fileName  The file; its extension chooses the format.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportImage(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportImage: Not supported in a function used as a value.",
-			macro helix.raylib.modules.RTextures.ExportImage, [image, fileName], false);
+		return helix.raylib.internal.Wait.section("ExportImage: Unsupported in a function used as a value.", macro helix.raylib.modules.RTextures.ExportImage,
+			[image, fileName], false);
 
 	/** Writes an image as a C header, and returns once it is written. See `ExportImage` for
 		writing a PNG, QOI or raw file.
@@ -7257,7 +7253,7 @@ class Raylib {
 		@param fileName  The file; its name, upper case, names the defines and the array.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportImageAsCode(image:ExprOf<Image>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportImageAsCode: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("ExportImageAsCode: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RTextures.ExportImageAsCode, [image, fileName], false);
 
 	/** Writes a font as a C header, and returns once it is written.
@@ -7266,7 +7262,7 @@ class Raylib {
 		@param fileName  The file.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportFontAsCode(font:ExprOf<Font>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportFontAsCode: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("ExportFontAsCode: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RText.ExportFontAsCode, [font, fileName], false);
 
 	/** Writes a mesh as an OBJ file, and returns once it is written. See `ExportMeshAsCode` for writing
@@ -7276,7 +7272,7 @@ class Raylib {
 		@param fileName  The file; only ".obj" is written.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportMesh(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportMesh: Not supported in a function used as a value.", macro helix.raylib.modules.RModels.ExportMesh,
+		return helix.raylib.internal.Wait.section("ExportMesh: Unsupported in a function used as a value.", macro helix.raylib.modules.RModels.ExportMesh,
 			[mesh, fileName], false);
 
 	/** Writes a mesh as a C header, and returns once it is written. See `ExportMesh` for writing
@@ -7286,7 +7282,7 @@ class Raylib {
 		@param fileName  The file; its name, upper case, names the defines and the arrays.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportMeshAsCode(mesh:ExprOf<Mesh>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportMeshAsCode: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("ExportMeshAsCode: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RModels.ExportMeshAsCode, [mesh, fileName], false);
 
 	/** Writes a wave to a sound file, and returns once it is written. See `ExportWaveAsCode` for
@@ -7296,7 +7292,7 @@ class Raylib {
 		@param fileName  The file; its extension chooses the format.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportWave(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportWave: Not supported in a function used as a value.", macro helix.raylib.modules.RAudio.ExportWave,
+		return helix.raylib.internal.Wait.section("ExportWave: Unsupported in a function used as a value.", macro helix.raylib.modules.RAudio.ExportWave,
 			[wave, fileName], false);
 
 	/** Writes a wave as a C header, and returns once it is written. See `ExportWave` for writing
@@ -7306,136 +7302,132 @@ class Raylib {
 		@param fileName  The file; its name, upper case, names the defines and the array.
 		@return  Whether it was written. Why it wasn't is logged. */
 	public static macro function ExportWaveAsCode(wave:ExprOf<Wave>, fileName:ExprOf<String>):ExprOf<Bool>
-		return helix.raylib.internal.Wait.section("ExportWaveAsCode: Not supported in a function used as a value.",
+		return helix.raylib.internal.Wait.section("ExportWaveAsCode: Unsupported in a function used as a value.",
 			macro helix.raylib.modules.RAudio.ExportWaveAsCode, [wave, fileName], false);
 
-	// ---- raylib.h's functions helix-raylib won't have: each refuses to compile, saying why and what to use ----
+	// ---- raylib.h's functions helix-raylib won't have: each is unsupported, saying what to use ----
 
-	/** Doesn't compile, since helix-raylib's window has no native handle to give. */
+	/** Unsupported. */
 	public static macro function GetWindowHandle(args:Array<Expr>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unsupported("GetWindowHandle: The native window's handle is the platform's own and is not given out.",
-			macro(null : Dynamic));
+		return helix.platform.macros.Build.unsupported("GetWindowHandle: Unsupported.", macro(null : Dynamic));
 
-	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels. */
+	/** Unsupported. See `GetMonitorWidth` for reading the width in pixels. */
 	public static macro function GetMonitorPhysicalWidth(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalWidth: A monitor's physical size is not known to helix-raylib's platform.",
+		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalWidth: Unsupported. Use GetMonitorWidth(monitor) for the width in pixels.",
 			macro(0 : Int));
 
-	/** Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels. */
+	/** Unsupported. See `GetMonitorHeight` for reading the height in pixels. */
 	public static macro function GetMonitorPhysicalHeight(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: A monitor's physical size is not known to helix-raylib's platform.",
+		return helix.platform.macros.Build.unsupported("GetMonitorPhysicalHeight: Unsupported. Use GetMonitorHeight(monitor) for the height in pixels.",
 			macro(0 : Int));
 
-	/** Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes. */
+	/** Unsupported. See `haxe.io.Bytes.alloc` for making bytes. */
 	public static macro function MemAlloc(args:Array<Expr>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unsupported("MemAlloc: Haxe has no raw memory to allocate. Make bytes instead: haxe.io.Bytes.alloc(size)",
-			macro(null : Dynamic));
+		return helix.platform.macros.Build.unsupported("MemAlloc: Unsupported. Use haxe.io.Bytes.alloc(size) instead.", macro(null : Dynamic));
 
-	/** Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes. */
+	/** Unsupported. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes. */
 	public static macro function MemRealloc(args:Array<Expr>):ExprOf<Dynamic>
-		return helix.platform.macros.Build.unsupported("MemRealloc: Haxe has no raw memory to reallocate. Make new bytes and copy into them instead: haxe.io.Bytes.alloc(size), then blit",
-			macro(null : Dynamic));
+		return helix.platform.macros.Build.unsupported("MemRealloc: Unsupported. Use haxe.io.Bytes.alloc(size), then blit, instead.", macro(null : Dynamic));
 
-	/** Doesn't compile, since Haxe frees memory once nothing holds it. */
+	/** Unsupported. */
 	public static macro function MemFree(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("MemFree: Haxe frees memory once nothing holds it. Drop the reference instead.", macro {});
+		return helix.platform.macros.Build.unsupported("MemFree: Unsupported.", macro {});
 
-	/** Doesn't compile. See `WindowShouldClose` for writing the loop. */
+	/** Unsupported. See `WindowShouldClose` for writing the loop. */
 	public static macro function emscripten_set_main_loop(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop: Not needed. Use while (!WindowShouldClose()) { ... } instead.", macro {});
+		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop: Unsupported. Use while (!WindowShouldClose()) { ... } instead.", macro {});
 
-	/** Doesn't compile. See `WindowShouldClose` for writing the loop. */
+	/** Unsupported. See `WindowShouldClose` for writing the loop. */
 	public static macro function emscripten_set_main_loop_arg(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop_arg: Not needed. Use while (!WindowShouldClose()) { ... } instead.", macro {});
+		return helix.platform.macros.Build.unsupported("emscripten_set_main_loop_arg: Unsupported. Use while (!WindowShouldClose()) { ... } instead.",
+			macro {});
 
-	/** Doesn't compile. See `WindowShouldClose` for writing the loop. */
+	/** Unsupported. See `WindowShouldClose` for writing the loop. */
 	public static macro function emscripten_cancel_main_loop(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_cancel_main_loop: Not needed. Use break in while (!WindowShouldClose()) { ... } instead.",
+		return helix.platform.macros.Build.unsupported("emscripten_cancel_main_loop: Unsupported. Use break in while (!WindowShouldClose()) { ... } instead.",
 			macro {});
 
-	/** Doesn't compile on any target, since a program runs no script of its own. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up. */
+	/** Unsupported. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up. */
 	public static macro function emscripten_run_script(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script: Not supported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
+		return helix.platform.macros.Build.unsupported("emscripten_run_script: Unsupported. See GetWindowSafeArea() for the safe area, SetScreenOrientationAsync(orientation:Int, ?done:Void->Void, ?failed:String->Void) for the screen's orientation and EnableTiltAsync(?done:Void->Void, ?failed:String->Void) for the tilt in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
 			macro {});
 
-	/** Doesn't compile on any target, since a program runs no script of its own. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held. */
+	/** Unsupported. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held. */
 	public static macro function emscripten_run_script_int(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Not supported. See IsTouchAvailable() and IsFinePointerAvailable() for the device's touch and pointer, and GetScreenOrientation() for how the screen is held in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
+		return helix.platform.macros.Build.unsupported("emscripten_run_script_int: Unsupported. See IsTouchAvailable() and IsFinePointerAvailable() for the device's touch and pointer, and GetScreenOrientation() for how the screen is held in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
 			macro(0 : Int));
 
-	/** Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system. */
+	/** Unsupported. See `GetPlatformOS` for naming the system. */
 	public static macro function emscripten_run_script_string(args:Array<Expr>):ExprOf<String>
-		return helix.platform.macros.Build.unsupported("emscripten_run_script_string: Not supported. See GetPlatformOS() for the system's name in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
+		return helix.platform.macros.Build.unsupported("emscripten_run_script_string: Unsupported. See GetPlatformOS() for the system's name in helix.raylib.extras.Device (import helix.raylib.extras.Device.*;)",
 			macro(null : String));
 
-	/** Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`. */
+	/** Unsupported. See `GetTime` for reading the seconds since `InitWindow`. */
 	public static macro function emscripten_get_now(args:Array<Expr>):ExprOf<Float>
-		return helix.platform.macros.Build.unsupported("emscripten_get_now: Not supported. Use GetTime() * 1000 instead.", macro(0.0 : Float));
+		return helix.platform.macros.Build.unsupported("emscripten_get_now: Unsupported. Use GetTime() * 1000 instead.", macro(0.0 : Float));
 
-	/** Doesn't compile. See `WaitTime` for waiting. */
+	/** Unsupported. See `WaitTime` for waiting. */
 	public static macro function emscripten_sleep(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("emscripten_sleep: Not supported. Use WaitTime(ms / 1000) instead.", macro {});
+		return helix.platform.macros.Build.unsupported("emscripten_sleep: Unsupported. Use WaitTime(ms / 1000) instead.", macro {});
 
-	/** Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`. */
+	/** Unsupported: raylib's shader load from GLSL files. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`. */
 	public static macro function LoadShader(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShader: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
+		return helix.platform.macros.Build.unsupported("LoadShader: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader instead. It loads a shader precompiled by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
-	/** Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory. */
+	/** Unsupported: raylib's shader load from GLSL text. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory. */
 	public static macro function LoadShaderFromMemory(args:Array<Expr>):ExprOf<Shader>
-		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Not supported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
+		return helix.platform.macros.Build.unsupported("LoadShaderFromMemory: Unsupported. Use LoadCompiledShader(compiledShaderFileName:String):Shader, or LoadCompiledShaderFromMemory(compiledShaderData:haxe.io.Bytes) for its bytes, instead. Each loads a shader precompiled from files by the helix.raylib.Raylib.CompileShaderFile(vsFileName:Null<String>, fsFileName:Null<String>, compiledShaderFileName:String) macro, typically called from the build's hxml.",
 			macro(null : helix.raylib.Shader));
 
-	/** Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. */
+	/** Unsupported. See `LoadImageFromMemoryAsync` for decoding an image file's bytes. */
 	public static macro function LoadImageFromMemory(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Not supported. Use LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) instead.",
+		return helix.platform.macros.Build.unsupported("LoadImageFromMemory: Unsupported. Use LoadImageFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
 
-	/** Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. */
+	/** Unsupported. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes. */
 	public static macro function LoadImageAnimFromMemory(args:Array<Expr>):ExprOf<Image>
-		return helix.platform.macros.Build.unsupported("LoadImageAnimFromMemory: Not supported. Use LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.",
+		return helix.platform.macros.Build.unsupported("LoadImageAnimFromMemory: Unsupported. Use LoadImageAnimFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Image));
 
-	/** Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes. */
+	/** Unsupported. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes. */
 	public static macro function LoadFontFromMemory(args:Array<Expr>):ExprOf<Font>
-		return helix.platform.macros.Build.unsupported("LoadFontFromMemory: Not supported. Use LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.",
+		return helix.platform.macros.Build.unsupported("LoadFontFromMemory: Unsupported. Use LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Font));
 
-	/** Doesn't compile. See `LoadFontDataAsync` for rasterizing glyphs. */
+	/** Unsupported. See `LoadFontDataAsync` for rasterizing glyphs. */
 	public static macro function LoadFontData(args:Array<Expr>):ExprOf<Array<GlyphInfo>>
-		return helix.platform.macros.Build.unsupported("LoadFontData: Not supported. Use LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void) instead.",
+		return helix.platform.macros.Build.unsupported("LoadFontData: Unsupported. Use LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void) instead.",
 			macro(null : Array<helix.raylib.GlyphInfo>));
 
-	/** Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text. */
+	/** Unsupported. Assigning `dst = src` copies the text. */
 	public static macro function TextCopy(args:Array<Expr>):ExprOf<Int>
-		return helix.platform.macros.Build.unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src", macro(0 : Int));
+		return helix.platform.macros.Build.unsupported("TextCopy: Unsupported. Assign it instead: dst = src", macro(0 : Int));
 
-	/** Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining `text += append` appends the text. */
+	/** Unsupported. Joining `text += append` appends the text. */
 	public static macro function TextAppend(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("TextAppend: A String can't be written into. Join the text instead: text += append", macro {});
+		return helix.platform.macros.Build.unsupported("TextAppend: Unsupported. Join the text instead: text += append", macro {});
 
-	/** Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. */
+	/** Unsupported. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes. */
 	public static macro function LoadWaveFromMemory(args:Array<Expr>):ExprOf<Wave>
-		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Not supported. Use LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) instead.",
+		return helix.platform.macros.Build.unsupported("LoadWaveFromMemory: Unsupported. Use LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) instead.",
 			macro(null : helix.raylib.Wave));
 
-	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run. */
+	/** Unsupported. */
 	public static macro function AttachAudioStreamProcessor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where Haxe can't run", macro {});
+		return helix.platform.macros.Build.unsupported("AttachAudioStreamProcessor: Unsupported.", macro {});
 
-	/** Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`). */
+	/** Unsupported. */
 	public static macro function DetachAudioStreamProcessor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where Haxe can't run",
-			macro {});
+		return helix.platform.macros.Build.unsupported("DetachAudioStreamProcessor: Unsupported.", macro {});
 
-	/** Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run. */
+	/** Unsupported. */
 	public static macro function AttachAudioMixedProcessor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where Haxe can't run", macro {});
+		return helix.platform.macros.Build.unsupported("AttachAudioMixedProcessor: Unsupported.", macro {});
 
-	/** Doesn't compile on any target, as no mix processor can be attached (`AttachAudioMixedProcessor`). */
+	/** Unsupported. */
 	public static macro function DetachAudioMixedProcessor(args:Array<Expr>):ExprOf<Void>
-		return helix.platform.macros.Build.unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where Haxe can't run",
-			macro {});
+		return helix.platform.macros.Build.unsupported("DetachAudioMixedProcessor: Unsupported.", macro {});
 
 	// ---- generated by tools/gen_raylib.py: end ----
 	// ---- Image files, read by the readers the program names ----
@@ -7484,7 +7476,7 @@ class Raylib {
 		Built with `-D helix-raylib-custom-frame-control`, raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`, only ends the drawing. The program then
 		calls `SwapScreenBuffer` to show the frame, `WaitTime` to wait and `PollInputEvents` to read the input. */
 	public static macro function EndDrawing():ExprOf<Void> {
-		return helix.raylib.internal.Wait.frame("EndDrawing: Not supported in a function used as a value.");
+		return helix.raylib.internal.Wait.frame("EndDrawing: Unsupported in a function used as a value.");
 	}
 
 	/** Loads an image file as a texture, answering when it is ready: helix-raylib's own, in place of raylib's `LoadTexture`, as the
@@ -7687,7 +7679,7 @@ class Raylib {
 			case EConst(CIdent("null")) | EConst(CInt("0")):
 				helix.raylib.internal.Wait.placed(macro @:privateAccess helix.raylib.modules.RCore.newAutomationEventList());
 			case _:
-				helix.raylib.internal.Wait.section("LoadAutomationEventList: Not supported in a function used as a value.",
+				helix.raylib.internal.Wait.section("LoadAutomationEventList: Unsupported in a function used as a value.",
 					macro helix.raylib.modules.RCore.loadAutomationEventList, [fileName], false);
 		}
 	}

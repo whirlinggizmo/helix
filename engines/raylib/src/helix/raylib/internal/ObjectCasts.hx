@@ -33,7 +33,7 @@ class ObjectCasts {
 			case TCast(inner, null) if (ProgramCode.own(e.pos) && TypeTools.follow(inner.t).match(TAnonymous(_))):
 				var instead = refused(TypeTools.follow(e.t));
 				if (instead != null)
-					Context.reportError('cast: Not supported from an object to ${instead.name}. ${instead.write}', e.pos);
+					Context.reportError('cast: Unsupported from an object to ${instead.name}. ${instead.write}', e.pos);
 			case _:
 		}
 		TypedExprTools.iter(e, walk);

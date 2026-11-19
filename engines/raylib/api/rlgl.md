@@ -791,9 +791,9 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
   Lines stay 1 pixel wide on every target, the only width GL 3.3's core profile and WebGL draw.
 - `rlGetLineWidth`: Returns the width `rlSetLineWidth` last set, 1 until then.
   - returns: The width.
-- `rlEnableSmoothLines`: Asks for smoothed lines, which changes nothing on any target. See `FLAG_MSAA_4X_HINT` for smoothing every edge.
+- `rlEnableSmoothLines`: Asks for smoothed lines, which changes nothing. See `FLAG_MSAA_4X_HINT` for smoothing every edge.
   GL 3.3's core profile and WebGL don't smooth lines.
-- `rlDisableSmoothLines`: Stops asking for smoothed lines, which changes nothing on any target.
+- `rlDisableSmoothLines`: Stops asking for smoothed lines, which changes nothing.
 - `rlSetFramebufferWidth`: Sets the width rlgl records for the framebuffer drawn into, until the next pass begins.
   - `width`: The width, in pixels.
 
@@ -931,90 +931,90 @@ static macro function rlLoadDrawCube(...args):Void
 static macro function rlLoadDrawQuad(...args):Void
 ```
 
-- `rlEnableVertexArray`: Refuses to compile on every target, replacing rlgl's `rlEnableVertexArray` (enabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDisableVertexArray`: Refuses to compile on every target, replacing rlgl's `rlDisableVertexArray` (disabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlEnableVertexBuffer`: Refuses to compile on every target, replacing rlgl's `rlEnableVertexBuffer` (enabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDisableVertexBuffer`: Refuses to compile on every target, replacing rlgl's `rlDisableVertexBuffer` (disabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlEnableVertexBufferElement`: Refuses to compile on every target, replacing rlgl's `rlEnableVertexBufferElement` (enabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDisableVertexBufferElement`: Refuses to compile on every target, replacing rlgl's `rlDisableVertexBufferElement` (disabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlEnableVertexAttribute`: Refuses to compile on every target, replacing rlgl's `rlEnableVertexAttribute` (enabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDisableVertexAttribute`: Refuses to compile on every target, replacing rlgl's `rlDisableVertexAttribute` (disabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlEnableStatePointer`: Refuses to compile on every target, replacing rlgl's `rlEnableStatePointer` (enabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDisableStatePointer`: Refuses to compile on every target, replacing rlgl's `rlDisableStatePointer` (disabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlActiveTextureSlot`: Refuses to compile on every target, replacing rlgl's `rlActiveTextureSlot` (choosing a texture slot). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlEnableTexture`: Refuses to compile on every target, replacing rlgl's `rlEnableTexture` (binding a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlDisableTexture`: Refuses to compile on every target, replacing rlgl's `rlDisableTexture` (unbinding the texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlEnableTextureCubemap`: Refuses to compile on every target, replacing rlgl's `rlEnableTextureCubemap` (binding a cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlDisableTextureCubemap`: Refuses to compile on every target, replacing rlgl's `rlDisableTextureCubemap` (unbinding the cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlTextureParameters`: Refuses to compile on every target, replacing rlgl's `rlTextureParameters` (setting a texture's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlCubemapParameters`: Refuses to compile on every target, replacing rlgl's `rlCubemapParameters` (setting a cubemap's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlEnableShader`: Refuses to compile on every target, replacing rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlDisableShader`: Refuses to compile on every target, replacing rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlEnableFramebuffer`: Refuses to compile on every target, replacing rlgl's `rlEnableFramebuffer` (binding a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlDisableFramebuffer`: Refuses to compile on every target, replacing rlgl's `rlDisableFramebuffer` (going back to the default framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlGetActiveFramebuffer`: Refuses to compile on every target, replacing rlgl's `rlGetActiveFramebuffer` (getting the bound framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlActiveDrawBuffers`: Refuses to compile on every target, replacing rlgl's `rlActiveDrawBuffers` (choosing several color buffers to draw into). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlBlitFramebuffer`: Refuses to compile on every target, replacing rlgl's `rlBlitFramebuffer` (copying the bound framebuffer to the main one). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlBindFramebuffer`: Refuses to compile on every target, replacing rlgl's `rlBindFramebuffer` (binding a framebuffer to a target). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlCheckErrors`: Refuses to compile on every target, replacing rlgl's `rlCheckErrors` (logging OpenGL's error codes). See `InitWindow` for setting up what helix-raylib draws with.
-- `rlglInit`: Refuses to compile on every target, replacing rlgl's `rlglInit` (setting up rlgl's buffers, shaders, textures and state). See `InitWindow` for setting up what helix-raylib draws with.
-- `rlglClose`: Refuses to compile on every target, replacing rlgl's `rlglClose` (closing rlgl's buffers, shaders and textures). See `InitWindow` for setting up what helix-raylib draws with.
-- `rlLoadExtensions`: Refuses to compile on every target, replacing rlgl's `rlLoadExtensions` (loading OpenGL's extensions). See `InitWindow` for setting up what helix-raylib draws with.
-- `rlGetVersion`: Refuses to compile on every target, replacing rlgl's `rlGetVersion` (getting the OpenGL version). See `InitWindow` for setting up what helix-raylib draws with.
-- `rlGetTextureIdDefault`: Refuses to compile on every target, replacing rlgl's `rlGetTextureIdDefault` (getting the default texture's id). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlGetShaderIdDefault`: Refuses to compile on every target, replacing rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlGetShaderLocsDefault`: Refuses to compile on every target, replacing rlgl's `rlGetShaderLocsDefault` (getting the default shader's locations). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlLoadRenderBatch`: Refuses to compile on every target, replacing rlgl's `rlLoadRenderBatch` (making a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
-- `rlUnloadRenderBatch`: Refuses to compile on every target, replacing rlgl's `rlUnloadRenderBatch` (unloading a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
-- `rlDrawRenderBatch`: Refuses to compile on every target, replacing rlgl's `rlDrawRenderBatch` (drawing a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
-- `rlSetRenderBatchActive`: Refuses to compile on every target, replacing rlgl's `rlSetRenderBatchActive` (choosing the render batch rlgl adds to). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
-- `rlLoadVertexArray`: Refuses to compile on every target, replacing rlgl's `rlLoadVertexArray` (making a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlLoadVertexBuffer`: Refuses to compile on every target, replacing rlgl's `rlLoadVertexBuffer` (making a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlLoadVertexBufferElement`: Refuses to compile on every target, replacing rlgl's `rlLoadVertexBufferElement` (making an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlUpdateVertexBuffer`: Refuses to compile on every target, replacing rlgl's `rlUpdateVertexBuffer` (updating a vertex buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlUpdateVertexBufferElements`: Refuses to compile on every target, replacing rlgl's `rlUpdateVertexBufferElements` (updating an element buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlUnloadVertexArray`: Refuses to compile on every target, replacing rlgl's `rlUnloadVertexArray` (unloading a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlUnloadVertexBuffer`: Refuses to compile on every target, replacing rlgl's `rlUnloadVertexBuffer` (unloading a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlSetVertexAttribute`: Refuses to compile on every target, replacing rlgl's `rlSetVertexAttribute` (setting a vertex attribute's layout). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlSetVertexAttributeDivisor`: Refuses to compile on every target, replacing rlgl's `rlSetVertexAttributeDivisor` (setting a vertex attribute's divisor). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlSetVertexAttributeDefault`: Refuses to compile on every target, replacing rlgl's `rlSetVertexAttributeDefault` (setting a vertex attribute's default value). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDrawVertexArray`: Refuses to compile on every target, replacing rlgl's `rlDrawVertexArray` (drawing the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDrawVertexArrayElements`: Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayElements` (drawing the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDrawVertexArrayInstanced`: Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayInstanced` (drawing instances of the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlDrawVertexArrayElementsInstanced`: Refuses to compile on every target, replacing rlgl's `rlDrawVertexArrayElementsInstanced` (drawing instances of the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
-- `rlLoadTexture`: Refuses to compile on every target, replacing rlgl's `rlLoadTexture` (making a texture from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlLoadTextureDepth`: Refuses to compile on every target, replacing rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making a render texture whose depth a shader samples.
-- `rlLoadTextureCubemap`: Refuses to compile on every target, replacing rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlUpdateTexture`: Refuses to compile on every target, replacing rlgl's `rlUpdateTexture` (updating a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlGetGlTextureFormats`: Refuses to compile on every target, replacing rlgl's `rlGetGlTextureFormats` (getting a format's OpenGL formats). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlUnloadTexture`: Refuses to compile on every target, replacing rlgl's `rlUnloadTexture` (unloading a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlGenTextureMipmaps`: Refuses to compile on every target, replacing rlgl's `rlGenTextureMipmaps` (making a texture's mipmaps). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlReadTexturePixels`: Refuses to compile on every target, replacing rlgl's `rlReadTexturePixels` (reading a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlReadScreenPixels`: Refuses to compile on every target, replacing rlgl's `rlReadScreenPixels` (reading the screen's pixels). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlLoadFramebuffer`: Refuses to compile on every target, replacing rlgl's `rlLoadFramebuffer` (making an empty framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlFramebufferAttach`: Refuses to compile on every target, replacing rlgl's `rlFramebufferAttach` (attaching a texture or renderbuffer to a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlFramebufferComplete`: Refuses to compile on every target, replacing rlgl's `rlFramebufferComplete` (checking whether a framebuffer is complete). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlUnloadFramebuffer`: Refuses to compile on every target, replacing rlgl's `rlUnloadFramebuffer` (unloading a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
-- `rlLoadShaderCode`: Refuses to compile on every target, replacing rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlCompileShader`: Refuses to compile on every target, replacing rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlLoadShaderProgram`: Refuses to compile on every target, replacing rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlUnloadShaderProgram`: Refuses to compile on every target, replacing rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlGetLocationUniform`: Refuses to compile on every target, replacing rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlGetLocationAttrib`: Refuses to compile on every target, replacing rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlSetUniform`: Refuses to compile on every target, replacing rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlSetUniformMatrix`: Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlSetUniformMatrices`: Refuses to compile on every target, replacing rlgl's `rlSetUniformMatrices` (setting an array of matrix uniforms). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlSetUniformSampler`: Refuses to compile on every target, replacing rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlSetShader`: Refuses to compile on every target, replacing rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
-- `rlLoadComputeShaderProgram`: Refuses to compile on every target, replacing rlgl's `rlLoadComputeShaderProgram` (making a compute shader program). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlComputeShaderDispatch`: Refuses to compile on every target, replacing rlgl's `rlComputeShaderDispatch` (running a compute shader). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlLoadShaderBuffer`: Refuses to compile on every target, replacing rlgl's `rlLoadShaderBuffer` (making a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlUnloadShaderBuffer`: Refuses to compile on every target, replacing rlgl's `rlUnloadShaderBuffer` (unloading a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlUpdateShaderBuffer`: Refuses to compile on every target, replacing rlgl's `rlUpdateShaderBuffer` (updating a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlBindShaderBuffer`: Refuses to compile on every target, replacing rlgl's `rlBindShaderBuffer` (binding a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlReadShaderBuffer`: Refuses to compile on every target, replacing rlgl's `rlReadShaderBuffer` (reading a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlCopyShaderBuffer`: Refuses to compile on every target, replacing rlgl's `rlCopyShaderBuffer` (copying between shader storage buffers). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlGetShaderBufferSize`: Refuses to compile on every target, replacing rlgl's `rlGetShaderBufferSize` (getting a shader storage buffer's size). No target has compute shaders or shader storage buffers, as WebGL2 has none.
-- `rlBindImageTexture`: Refuses to compile on every target, replacing rlgl's `rlBindImageTexture` (binding an image texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
-- `rlLoadDrawCube`: Refuses to compile on every target, replacing rlgl's `rlLoadDrawCube` (drawing a cube). See `InitWindow` for setting up what helix-raylib draws with.
-- `rlLoadDrawQuad`: Refuses to compile on every target, replacing rlgl's `rlLoadDrawQuad` (drawing a quad). See `InitWindow` for setting up what helix-raylib draws with.
+- `rlEnableVertexArray`: Unsupported: rlgl's `rlEnableVertexArray` (enabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDisableVertexArray`: Unsupported: rlgl's `rlDisableVertexArray` (disabling a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlEnableVertexBuffer`: Unsupported: rlgl's `rlEnableVertexBuffer` (enabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDisableVertexBuffer`: Unsupported: rlgl's `rlDisableVertexBuffer` (disabling a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlEnableVertexBufferElement`: Unsupported: rlgl's `rlEnableVertexBufferElement` (enabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDisableVertexBufferElement`: Unsupported: rlgl's `rlDisableVertexBufferElement` (disabling an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlEnableVertexAttribute`: Unsupported: rlgl's `rlEnableVertexAttribute` (enabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDisableVertexAttribute`: Unsupported: rlgl's `rlDisableVertexAttribute` (disabling a vertex attribute). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlEnableStatePointer`: Unsupported: rlgl's `rlEnableStatePointer` (enabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDisableStatePointer`: Unsupported: rlgl's `rlDisableStatePointer` (disabling an attribute state pointer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlActiveTextureSlot`: Unsupported: rlgl's `rlActiveTextureSlot` (choosing a texture slot). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlEnableTexture`: Unsupported: rlgl's `rlEnableTexture` (binding a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlDisableTexture`: Unsupported: rlgl's `rlDisableTexture` (unbinding the texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlEnableTextureCubemap`: Unsupported: rlgl's `rlEnableTextureCubemap` (binding a cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlDisableTextureCubemap`: Unsupported: rlgl's `rlDisableTextureCubemap` (unbinding the cubemap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlTextureParameters`: Unsupported: rlgl's `rlTextureParameters` (setting a texture's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlCubemapParameters`: Unsupported: rlgl's `rlCubemapParameters` (setting a cubemap's filter or wrap). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlEnableShader`: Unsupported: rlgl's `rlEnableShader` (binding a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlDisableShader`: Unsupported: rlgl's `rlDisableShader` (unbinding the shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlEnableFramebuffer`: Unsupported: rlgl's `rlEnableFramebuffer` (binding a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlDisableFramebuffer`: Unsupported: rlgl's `rlDisableFramebuffer` (going back to the default framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlGetActiveFramebuffer`: Unsupported: rlgl's `rlGetActiveFramebuffer` (getting the bound framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlActiveDrawBuffers`: Unsupported: rlgl's `rlActiveDrawBuffers` (choosing several color buffers to draw into). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlBlitFramebuffer`: Unsupported: rlgl's `rlBlitFramebuffer` (copying the bound framebuffer to the main one). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlBindFramebuffer`: Unsupported: rlgl's `rlBindFramebuffer` (binding a framebuffer to a target). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlCheckErrors`: Unsupported: rlgl's `rlCheckErrors` (logging OpenGL's error codes). See `InitWindow` for setting up what helix-raylib draws with.
+- `rlglInit`: Unsupported: rlgl's `rlglInit` (setting up rlgl's buffers, shaders, textures and state). See `InitWindow` for setting up what helix-raylib draws with.
+- `rlglClose`: Unsupported: rlgl's `rlglClose` (closing rlgl's buffers, shaders and textures). See `InitWindow` for setting up what helix-raylib draws with.
+- `rlLoadExtensions`: Unsupported: rlgl's `rlLoadExtensions` (loading OpenGL's extensions). See `InitWindow` for setting up what helix-raylib draws with.
+- `rlGetVersion`: Unsupported: rlgl's `rlGetVersion` (getting the OpenGL version). See `InitWindow` for setting up what helix-raylib draws with.
+- `rlGetTextureIdDefault`: Unsupported: rlgl's `rlGetTextureIdDefault` (getting the default texture's id). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlGetShaderIdDefault`: Unsupported: rlgl's `rlGetShaderIdDefault` (getting the default shader's id). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlGetShaderLocsDefault`: Unsupported: rlgl's `rlGetShaderLocsDefault` (getting the default shader's locations). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlLoadRenderBatch`: Unsupported: rlgl's `rlLoadRenderBatch` (making a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
+- `rlUnloadRenderBatch`: Unsupported: rlgl's `rlUnloadRenderBatch` (unloading a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
+- `rlDrawRenderBatch`: Unsupported: rlgl's `rlDrawRenderBatch` (drawing a render batch). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
+- `rlSetRenderBatchActive`: Unsupported: rlgl's `rlSetRenderBatchActive` (choosing the render batch rlgl adds to). See `rlDrawRenderBatchActive` for drawing the frame's one batch.
+- `rlLoadVertexArray`: Unsupported: rlgl's `rlLoadVertexArray` (making a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlLoadVertexBuffer`: Unsupported: rlgl's `rlLoadVertexBuffer` (making a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlLoadVertexBufferElement`: Unsupported: rlgl's `rlLoadVertexBufferElement` (making an element buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlUpdateVertexBuffer`: Unsupported: rlgl's `rlUpdateVertexBuffer` (updating a vertex buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlUpdateVertexBufferElements`: Unsupported: rlgl's `rlUpdateVertexBufferElements` (updating an element buffer's data). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlUnloadVertexArray`: Unsupported: rlgl's `rlUnloadVertexArray` (unloading a vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlUnloadVertexBuffer`: Unsupported: rlgl's `rlUnloadVertexBuffer` (unloading a vertex buffer). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlSetVertexAttribute`: Unsupported: rlgl's `rlSetVertexAttribute` (setting a vertex attribute's layout). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlSetVertexAttributeDivisor`: Unsupported: rlgl's `rlSetVertexAttributeDivisor` (setting a vertex attribute's divisor). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlSetVertexAttributeDefault`: Unsupported: rlgl's `rlSetVertexAttributeDefault` (setting a vertex attribute's default value). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDrawVertexArray`: Unsupported: rlgl's `rlDrawVertexArray` (drawing the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDrawVertexArrayElements`: Unsupported: rlgl's `rlDrawVertexArrayElements` (drawing the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDrawVertexArrayInstanced`: Unsupported: rlgl's `rlDrawVertexArrayInstanced` (drawing instances of the bound vertex array). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlDrawVertexArrayElementsInstanced`: Unsupported: rlgl's `rlDrawVertexArrayElementsInstanced` (drawing instances of the bound vertex array's elements). See `UploadMesh` for uploading a mesh and `DrawMesh` for drawing one.
+- `rlLoadTexture`: Unsupported: rlgl's `rlLoadTexture` (making a texture from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlLoadTextureDepth`: Unsupported: rlgl's `rlLoadTextureDepth` (making a depth texture or renderbuffer). See `LoadShadowmapRenderTexture` (`helix.raylib.extras.Shadowmaps`) for making a render texture whose depth a shader samples.
+- `rlLoadTextureCubemap`: Unsupported: rlgl's `rlLoadTextureCubemap` (making a cubemap from data). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlUpdateTexture`: Unsupported: rlgl's `rlUpdateTexture` (updating a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlGetGlTextureFormats`: Unsupported: rlgl's `rlGetGlTextureFormats` (getting a format's OpenGL formats). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlUnloadTexture`: Unsupported: rlgl's `rlUnloadTexture` (unloading a texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlGenTextureMipmaps`: Unsupported: rlgl's `rlGenTextureMipmaps` (making a texture's mipmaps). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlReadTexturePixels`: Unsupported: rlgl's `rlReadTexturePixels` (reading a texture's pixels). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlReadScreenPixels`: Unsupported: rlgl's `rlReadScreenPixels` (reading the screen's pixels). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlLoadFramebuffer`: Unsupported: rlgl's `rlLoadFramebuffer` (making an empty framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlFramebufferAttach`: Unsupported: rlgl's `rlFramebufferAttach` (attaching a texture or renderbuffer to a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlFramebufferComplete`: Unsupported: rlgl's `rlFramebufferComplete` (checking whether a framebuffer is complete). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlUnloadFramebuffer`: Unsupported: rlgl's `rlUnloadFramebuffer` (unloading a framebuffer). See `LoadRenderTexture` for making a render texture and `BeginTextureMode` for drawing into one.
+- `rlLoadShaderCode`: Unsupported: rlgl's `rlLoadShaderCode` (making a shader from source). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlCompileShader`: Unsupported: rlgl's `rlCompileShader` (compiling one stage of a shader). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlLoadShaderProgram`: Unsupported: rlgl's `rlLoadShaderProgram` (linking a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlUnloadShaderProgram`: Unsupported: rlgl's `rlUnloadShaderProgram` (unloading a shader program). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlGetLocationUniform`: Unsupported: rlgl's `rlGetLocationUniform` (finding a uniform's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlGetLocationAttrib`: Unsupported: rlgl's `rlGetLocationAttrib` (finding an attribute's location). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlSetUniform`: Unsupported: rlgl's `rlSetUniform` (setting a uniform's value). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlSetUniformMatrix`: Unsupported: rlgl's `rlSetUniformMatrix` (setting a matrix uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlSetUniformMatrices`: Unsupported: rlgl's `rlSetUniformMatrices` (setting an array of matrix uniforms). See `LoadShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlSetUniformSampler`: Unsupported: rlgl's `rlSetUniformSampler` (setting a sampler uniform). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlSetShader`: Unsupported: rlgl's `rlSetShader` (choosing the shader rlgl draws with). See `LoadCompiledShader` for making a shader and `BeginShaderMode` for drawing with one.
+- `rlLoadComputeShaderProgram`: Unsupported: rlgl's `rlLoadComputeShaderProgram` (making a compute shader program). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlComputeShaderDispatch`: Unsupported: rlgl's `rlComputeShaderDispatch` (running a compute shader). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlLoadShaderBuffer`: Unsupported: rlgl's `rlLoadShaderBuffer` (making a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlUnloadShaderBuffer`: Unsupported: rlgl's `rlUnloadShaderBuffer` (unloading a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlUpdateShaderBuffer`: Unsupported: rlgl's `rlUpdateShaderBuffer` (updating a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlBindShaderBuffer`: Unsupported: rlgl's `rlBindShaderBuffer` (binding a shader storage buffer). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlReadShaderBuffer`: Unsupported: rlgl's `rlReadShaderBuffer` (reading a shader storage buffer's data). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlCopyShaderBuffer`: Unsupported: rlgl's `rlCopyShaderBuffer` (copying between shader storage buffers). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlGetShaderBufferSize`: Unsupported: rlgl's `rlGetShaderBufferSize` (getting a shader storage buffer's size). No target has compute shaders or shader storage buffers, as WebGL2 has none.
+- `rlBindImageTexture`: Unsupported: rlgl's `rlBindImageTexture` (binding an image texture). See `LoadTextureFromImage` for making a texture and `rlSetTexture` for drawing vertices with one.
+- `rlLoadDrawCube`: Unsupported: rlgl's `rlLoadDrawCube` (drawing a cube). See `InitWindow` for setting up what helix-raylib draws with.
+- `rlLoadDrawQuad`: Unsupported: rlgl's `rlLoadDrawQuad` (drawing a quad). See `InitWindow` for setting up what helix-raylib draws with.

@@ -254,7 +254,7 @@ var glyphs:Array<GlyphInfo>
 
 *class* in [`engines/raylib/src/helix/raylib/GlyphInfo.hx`](../src/helix/raylib/GlyphInfo.hx), `import helix.raylib.GlyphInfo;`
 
-raylib's `GlyphInfo` (raylib.h): not in helix-raylib yet; its fields are raylib's. GlyphInfo, font characters glyphs info.
+Represents one character of a `Font`: its code point, where it sits against the pen, how far the pen moves after it, and its image. `Font.glyphs` holds a font's, and `GetGlyphInfo` gives one.
 
 ```haxe
 function new()
@@ -265,12 +265,12 @@ var advanceX:Int
 var image:Image
 ```
 
-- `new`: Creates one, its fields zero, empty or null.
-- `value`: Character value (Unicode).
-- `offsetX`: Character offset X when drawing.
-- `offsetY`: Character offset Y when drawing.
-- `advanceX`: Character advance position X.
-- `image`: Character image data.
+- `new`: Creates a glyph, its fields zero and its image null.
+- `value`: Gets or sets the character's code point (Unicode).
+- `offsetX`: Gets or sets how far right of the pen the character's image is drawn, in pixels.
+- `offsetY`: Gets or sets how far below the line's top the character's image is drawn, in pixels.
+- `advanceX`: Gets or sets how far the pen moves right after the character, in pixels; 0 to move by its rectangle's width and `offsetX`.
+- `image`: Gets or sets the character's image.
 
 ## GuiStyleProp
 
@@ -728,9 +728,9 @@ A value a control changes is passed in a one-element array, as raygui takes a po
 
 Its members are on their own page: [raygui.md](raygui.md).
 
-### Not supported in helix-raylib
+### Unsupported in helix-raylib
 
-Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
+Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it is unsupported, its message saying what to use instead.
 
 `GuiLoadIcons`.
 
@@ -740,9 +740,7 @@ Each of these is raylib's name (or emscripten's, which raylib's web programs cal
 
 Provides raylib 5.5's functions, constants and colors, as `raylib.h` names them. Imported with `import helix.raylib.Raylib.*;`.
 
-A program's loop is the same as raylib's: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
-
-`EndDrawing`, `WaitTime`, a file call (`LoadFileText`), a clipboard call, a screen read (`LoadImageFromScreen`) and `TakeScreenshot` don't compile in a function used as a value, a constructor or a variable's initial value. A load from memory (`LoadImageFromMemory`) doesn't compile, and names its `...Async` call.
+Note that a program loops as raylib's does: `while (!WindowShouldClose()) { BeginDrawing(); ...; EndDrawing(); }`.
 
 Its members are on their own pages:
 
@@ -754,9 +752,9 @@ Its members are on their own pages:
 - [models.md](models.md): rmodels: 3D shapes, models, meshes and rays
 - [audio.md](audio.md): raudio: sound
 
-### Not supported in helix-raylib
+### Unsupported in helix-raylib
 
-Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
+Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it is unsupported, its message saying what to use instead.
 
 `GetWindowHandle`, `GetMonitorPhysicalWidth`, `GetMonitorPhysicalHeight`, `MemAlloc`, `MemRealloc`, `MemFree`, `emscripten_set_main_loop`, `emscripten_set_main_loop_arg`, `emscripten_cancel_main_loop`, `emscripten_run_script`, `emscripten_run_script_int`, `emscripten_run_script_string`, `emscripten_get_now`, `emscripten_sleep`, `LoadShader`, `LoadShaderFromMemory`, `LoadImageFromMemory`, `LoadImageAnimFromMemory`, `LoadFontFromMemory`, `LoadFontData`, `TextCopy`, `TextAppend`, `LoadWaveFromMemory`, `AttachAudioStreamProcessor`, `DetachAudioStreamProcessor`, `AttachAudioMixedProcessor`, `DetachAudioMixedProcessor`.
 
@@ -863,9 +861,9 @@ import helix.raylib.Rlgl.*;
 
 Its members are on their own page: [rlgl.md](rlgl.md).
 
-### Not supported in helix-raylib
+### Unsupported in helix-raylib
 
-Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it doesn't compile, saying why and what to use instead.
+Each of these is raylib's name (or emscripten's, which raylib's web programs call), and a call to it is unsupported, its message saying what to use instead.
 
 `rlEnableVertexArray`, `rlDisableVertexArray`, `rlEnableVertexBuffer`, `rlDisableVertexBuffer`, `rlEnableVertexBufferElement`, `rlDisableVertexBufferElement`, `rlEnableVertexAttribute`, `rlDisableVertexAttribute`, `rlEnableStatePointer`, `rlDisableStatePointer`, `rlActiveTextureSlot`, `rlEnableTexture`, `rlDisableTexture`, `rlEnableTextureCubemap`, `rlDisableTextureCubemap`, `rlTextureParameters`, `rlCubemapParameters`, `rlEnableShader`, `rlDisableShader`, `rlEnableFramebuffer`, `rlDisableFramebuffer`, `rlGetActiveFramebuffer`, `rlActiveDrawBuffers`, `rlBlitFramebuffer`, `rlBindFramebuffer`, `rlCheckErrors`, `rlglInit`, `rlglClose`, `rlLoadExtensions`, `rlGetVersion`, `rlGetTextureIdDefault`, `rlGetShaderIdDefault`, `rlGetShaderLocsDefault`, `rlLoadRenderBatch`, `rlUnloadRenderBatch`, `rlDrawRenderBatch`, `rlSetRenderBatchActive`, `rlLoadVertexArray`, `rlLoadVertexBuffer`, `rlLoadVertexBufferElement`, `rlUpdateVertexBuffer`, `rlUpdateVertexBufferElements`, `rlUnloadVertexArray`, `rlUnloadVertexBuffer`, `rlSetVertexAttribute`, `rlSetVertexAttributeDivisor`, `rlSetVertexAttributeDefault`, `rlDrawVertexArray`, `rlDrawVertexArrayElements`, `rlDrawVertexArrayInstanced`, `rlDrawVertexArrayElementsInstanced`, `rlLoadTexture`, `rlLoadTextureDepth`, `rlLoadTextureCubemap`, `rlUpdateTexture`, `rlGetGlTextureFormats`, `rlUnloadTexture`, `rlGenTextureMipmaps`, `rlReadTexturePixels`, `rlReadScreenPixels`, `rlLoadFramebuffer`, `rlFramebufferAttach`, `rlFramebufferComplete`, `rlUnloadFramebuffer`, `rlLoadShaderCode`, `rlCompileShader`, `rlLoadShaderProgram`, `rlUnloadShaderProgram`, `rlGetLocationUniform`, `rlGetLocationAttrib`, `rlSetUniform`, `rlSetUniformMatrix`, `rlSetUniformMatrices`, `rlSetUniformSampler`, `rlSetShader`, `rlLoadComputeShaderProgram`, `rlComputeShaderDispatch`, `rlLoadShaderBuffer`, `rlUnloadShaderBuffer`, `rlUpdateShaderBuffer`, `rlBindShaderBuffer`, `rlReadShaderBuffer`, `rlCopyShaderBuffer`, `rlGetShaderBufferSize`, `rlBindImageTexture`, `rlLoadDrawCube`, `rlLoadDrawQuad`.
 

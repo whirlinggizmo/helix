@@ -352,7 +352,7 @@ def sectioned(members,layout=None):
     lines=[]
     for key in order:lines+=([f'### {key}',''] if key else [])+member_block(groups[key])
     if refused['unsupported']:
-        lines+=['### Not supported in helix-raylib','','Each of these is raylib\'s name (or emscripten\'s, which raylib\'s web programs call), and a call to it doesn\'t compile, saying why and what to use instead.','',
+        lines+=['### Unsupported in helix-raylib','','Each of these is raylib\'s name (or emscripten\'s, which raylib\'s web programs call), and a call to it is unsupported, its message saying what to use instead.','',
                 ', '.join(f'`{n}`' for n in refused['unsupported'])+'.','']
     if refused['unimplemented']:
         lines+=['### Not in helix-raylib yet','','Each of these is raylib\'s name, and a call to it doesn\'t compile, saying so.','',

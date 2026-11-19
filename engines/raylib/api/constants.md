@@ -668,33 +668,33 @@ static macro function DetachAudioMixedProcessor(...args):Void
 - `SHADER_LOC_MAP_DIFFUSE`: The diffuse texture's location, the same as `SHADER_LOC_MAP_ALBEDO`.
 - `SHADER_LOC_MAP_SPECULAR`: The specular texture's location, the same as `SHADER_LOC_MAP_METALNESS`.
 - `MAX_MATERIAL_MAPS`: The number of a material's maps.
-- `GetWindowHandle`: Doesn't compile, since helix-raylib's window has no native handle to give.
-- `GetMonitorPhysicalWidth`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorWidth` for reading the width in pixels.
-- `GetMonitorPhysicalHeight`: Doesn't compile, since SDL3 doesn't tell a monitor's physical size. See `GetMonitorHeight` for reading the height in pixels.
-- `MemAlloc`: Doesn't compile, since Haxe has no raw memory to allocate. See `haxe.io.Bytes.alloc` for making bytes.
-- `MemRealloc`: Doesn't compile, since Haxe has no raw memory to reallocate. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
-- `MemFree`: Doesn't compile, since Haxe frees memory once nothing holds it.
-- `emscripten_set_main_loop`: Doesn't compile. See `WindowShouldClose` for writing the loop.
-- `emscripten_set_main_loop_arg`: Doesn't compile. See `WindowShouldClose` for writing the loop.
-- `emscripten_cancel_main_loop`: Doesn't compile. See `WindowShouldClose` for writing the loop.
-- `emscripten_run_script`: Doesn't compile on any target, since a program runs no script of its own. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up.
-- `emscripten_run_script_int`: Doesn't compile on any target, since a program runs no script of its own. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held.
-- `emscripten_run_script_string`: Doesn't compile on any target, since a program runs no script of its own. See `GetPlatformOS` for naming the system.
-- `emscripten_get_now`: Doesn't compile. See `GetTime` for reading the seconds since `InitWindow`.
-- `emscripten_sleep`: Doesn't compile. See `WaitTime` for waiting.
-- `LoadShader`: Names raylib's shader load from GLSL files, and doesn't compile on any target. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`.
-- `LoadShaderFromMemory`: Names raylib's shader load from GLSL text, and doesn't compile on any target. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory.
-- `LoadImageFromMemory`: Doesn't compile. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
-- `LoadImageAnimFromMemory`: Doesn't compile. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
-- `LoadFontFromMemory`: Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
-- `LoadFontData`: Doesn't compile. See `LoadFontDataAsync` for rasterizing glyphs.
-- `TextCopy`: Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src` copies the text.
-- `TextAppend`: Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining `text += append` appends the text.
-- `LoadWaveFromMemory`: Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
-- `AttachAudioStreamProcessor`: Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run.
-- `DetachAudioStreamProcessor`: Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`).
-- `AttachAudioMixedProcessor`: Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run.
-- `DetachAudioMixedProcessor`: Doesn't compile on any target, as no mix processor can be attached (`AttachAudioMixedProcessor`).
+- `GetWindowHandle`: Unsupported.
+- `GetMonitorPhysicalWidth`: Unsupported. See `GetMonitorWidth` for reading the width in pixels.
+- `GetMonitorPhysicalHeight`: Unsupported. See `GetMonitorHeight` for reading the height in pixels.
+- `MemAlloc`: Unsupported. See `haxe.io.Bytes.alloc` for making bytes.
+- `MemRealloc`: Unsupported. See `haxe.io.Bytes.alloc` and `blit` for copying into new bytes.
+- `MemFree`: Unsupported.
+- `emscripten_set_main_loop`: Unsupported. See `WindowShouldClose` for writing the loop.
+- `emscripten_set_main_loop_arg`: Unsupported. See `WindowShouldClose` for writing the loop.
+- `emscripten_cancel_main_loop`: Unsupported. See `WindowShouldClose` for writing the loop.
+- `emscripten_run_script`: Unsupported. See `GetWindowSafeArea` for the part of the window nothing covers, and `SetScreenOrientationAsync` for holding the screen one way up.
+- `emscripten_run_script_int`: Unsupported. See `IsTouchAvailable` for whether the device has touch, and `GetScreenOrientation` for how the screen is held.
+- `emscripten_run_script_string`: Unsupported. See `GetPlatformOS` for naming the system.
+- `emscripten_get_now`: Unsupported. See `GetTime` for reading the seconds since `InitWindow`.
+- `emscripten_sleep`: Unsupported. See `WaitTime` for waiting.
+- `LoadShader`: Unsupported: raylib's shader load from GLSL files. See `LoadCompiledShader` for loading a shader compiled ahead of time by `CompileShaderFile`.
+- `LoadShaderFromMemory`: Unsupported: raylib's shader load from GLSL text. See `LoadCompiledShaderFromMemory` for making a shader from compiled data in memory.
+- `LoadImageFromMemory`: Unsupported. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
+- `LoadImageAnimFromMemory`: Unsupported. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.
+- `LoadFontFromMemory`: Unsupported. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
+- `LoadFontData`: Unsupported. See `LoadFontDataAsync` for rasterizing glyphs.
+- `TextCopy`: Unsupported. Assigning `dst = src` copies the text.
+- `TextAppend`: Unsupported. Joining `text += append` appends the text.
+- `LoadWaveFromMemory`: Unsupported. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
+- `AttachAudioStreamProcessor`: Unsupported.
+- `DetachAudioStreamProcessor`: Unsupported.
+- `AttachAudioMixedProcessor`: Unsupported.
+- `DetachAudioMixedProcessor`: Unsupported.
 
 ## Pixel formats (PixelFormat)
 

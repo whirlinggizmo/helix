@@ -313,12 +313,12 @@ class RGui {
 		return icons();
 	}
 
-	/** Doesn't compile. See `GuiLoadIconsAsync` for loading an icon file.
+	/** Unsupported. See `GuiLoadIconsAsync` for loading an icon file.
 
 		@param fileName  The icon file (.rgi).
 		@param loadIconsName  Whether the icons' names are read.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("GuiLoadIcons: Not supported. Use GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void) instead.")
+		@return  Never returns. */
+	@:unsupported("GuiLoadIcons: Unsupported. Use GuiLoadIconsAsync(fileName:String, loadIconsName:Bool, loaded:Array<String>->Void, ?failed:String->Void) instead.")
 	static function GuiLoadIcons(fileName:String, loadIconsName:Bool):Array<String> {
 		throw "GuiLoadIcons is unimplemented";
 	}

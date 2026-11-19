@@ -1,7 +1,7 @@
 /** Haxe's `Sys` in a page: the program's options, the console and the clock, so a program that reads them natively reads them here.
 	Haxe has no `Sys` in a page. With `-D helix-raylib-portable-sys` this file is on the class path for JS (`SysCalls`), and natively
-	`Sys` is Haxe's own. The calls that can't be answered here (`sleep`, `command`, `exit` and the rest) don't compile on any target with
-	the define, each naming itself. */
+	`Sys` is Haxe's own. The calls that can't be answered here (`sleep`, `command`, `exit` and the rest) are unsupported
+	with the define, each naming itself. */
 class Sys {
 	static var line = "";
 
@@ -79,37 +79,37 @@ class Sys {
 		return js.Syntax.code("performance.now()") / 1000;
 	}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@param s  The variable's name.
 		@param v  Its value. */
 	public static function putEnv(s:String, v:Null<String>):Void {}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@param seconds  How long. */
 	public static function sleep(seconds:Float):Void {}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@return  Nothing. */
 	public static function getCwd():String {
 		return null;
 	}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@param s  The directory. */
 	public static function setCwd(s:String):Void {}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@return  Nothing. */
 	public static function systemName():String {
 		return null;
 	}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@param cmd  The command.
 		@param args  Its arguments.
@@ -118,26 +118,26 @@ class Sys {
 		return 0;
 	}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@param code  The exit code. */
 	public static function exit(code:Int):Void {}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@return  Nothing. */
 	public static function executablePath():String {
 		return null;
 	}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@return  Nothing. */
 	public static function programPath():String {
 		return null;
 	}
 
-	/** Doesn't compile, as `helix.raylib.internal.SysCalls` reports.
+	/** Unsupported.
 
 		@param echo  Whether the character is echoed.
 		@return  Nothing. */

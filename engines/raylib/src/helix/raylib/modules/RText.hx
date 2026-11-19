@@ -688,7 +688,7 @@ class RText {
 		return fontOf(foundGlyphs(raster.glyphs, raster.ascent, fontSize), fontSize);
 	}
 
-	/** Doesn't compile. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
+	/** Unsupported. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
 
 		@param fileType  The file's extension.
 		@param fileData  The file's bytes.
@@ -696,13 +696,13 @@ class RText {
 		@param fontSize  The size.
 		@param codepoints  The characters.
 		@param codepointCount  How many of them.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontFromMemory: Not supported. Use LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.")
+		@return  Never returns. */
+	@:unsupported("LoadFontFromMemory: Unsupported. Use LoadFontFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void) instead.")
 	static function LoadFontFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
 		throw "LoadFontFromMemory is unimplemented";
 	}
 
-	/** Doesn't compile. See `LoadFontDataAsync` for rasterizing glyphs.
+	/** Unsupported. See `LoadFontDataAsync` for rasterizing glyphs.
 
 		@param fileData  The font file's bytes.
 		@param dataSize  How many.
@@ -710,8 +710,8 @@ class RText {
 		@param codepoints  The characters.
 		@param codepointCount  How many of them.
 		@param type  The glyphs' kind (`FONT_*`).
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadFontData: Not supported. Use LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void) instead.")
+		@return  Never returns. */
+	@:unsupported("LoadFontData: Unsupported. Use LoadFontDataAsync(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int, loaded:Array<GlyphInfo>->Void, ?failed:String->Void) instead.")
 	static function LoadFontData(fileData:haxe.io.Bytes, dataSize:Int, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, type:Int):Array<GlyphInfo> {
 		throw "LoadFontData is unimplemented";
 	}
@@ -1123,25 +1123,23 @@ class RText {
 		return parts.length > 1 ? number + (text.indexOf("E") >= 0 ? "E" : "e") + parts[1] : number;
 	}
 
-	/** Doesn't compile on any target, since raylib's copies into a C buffer and a Haxe string can't be written. Assigning `dst = src`
-		copies the text.
+	/** Unsupported. Assigning `dst = src` copies the text.
 
 		@param dst  The text written into.
 		@param src  The text copied.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("TextCopy: A String can't be written into. Assign it instead: dst = src")
+		@return  Never returns. */
+	@:unsupported("TextCopy: Unsupported. Assign it instead: dst = src")
 	static function TextCopy(dst:String, src:String):Int {
 		throw "TextCopy is unimplemented";
 	}
 
-	/** Doesn't compile on any target, since raylib's appends into a C buffer and a Haxe string can't be written. Joining
-		`text += append` appends the text.
+	/** Unsupported. Joining `text += append` appends the text.
 
 		@param text  The text written into.
 		@param append  The text appended.
 		@param position  The cursor, in bytes.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("TextAppend: A String can't be written into. Join the text instead: text += append")
+		@return  Never returns. */
+	@:unsupported("TextAppend: Unsupported. Join the text instead: text += append")
 	static function TextAppend(text:String, append:String, position:Array<Int>):Void {
 		throw "TextAppend is unimplemented";
 	}

@@ -126,13 +126,13 @@ class RAudio {
 			(loaded, failed) -> RAudioAsync.loadWave(path, RAudioAsync.readWave, loaded, failed), () -> new Wave());
 	}
 
-	/** Doesn't compile. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
+	/** Unsupported. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
 
 		@param fileType  The file's extension.
 		@param fileData  The file's bytes.
 		@param dataSize  How many of them.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("LoadWaveFromMemory: Not supported. Use LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) instead.")
+		@return  Never returns. */
+	@:unsupported("LoadWaveFromMemory: Unsupported. Use LoadWaveFromMemoryAsync(fileType:String, fileData:haxe.io.Bytes, dataSize:Int, loaded:Wave->Void, ?failed:String->Void) instead.")
 	static function LoadWaveFromMemory(fileType:String, fileData:haxe.io.Bytes, dataSize:Int):Wave {
 		throw "LoadWaveFromMemory is unimplemented";
 	}
@@ -1130,40 +1130,40 @@ class RAudio {
 		}
 	}
 
-	/** Doesn't compile on any target, as raylib calls a stream's processor on its audio thread, where Haxe can't run.
+	/** Unsupported.
 
 		@param stream  The stream.
 		@param processor  The processor.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("AttachAudioStreamProcessor: raylib calls it on the audio thread, where Haxe can't run")
+		@return  Never returns. */
+	@:unsupported("AttachAudioStreamProcessor: Unsupported.")
 	static function AttachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "AttachAudioStreamProcessor is unimplemented";
 	}
 
-	/** Doesn't compile on any target, as no stream processor can be attached (`AttachAudioStreamProcessor`).
+	/** Unsupported.
 
 		@param stream  The stream.
 		@param processor  The processor.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("DetachAudioStreamProcessor: raylib calls processors on the audio thread, where Haxe can't run")
+		@return  Never returns. */
+	@:unsupported("DetachAudioStreamProcessor: Unsupported.")
 	static function DetachAudioStreamProcessor(stream:AudioStream, processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "DetachAudioStreamProcessor is unimplemented";
 	}
 
-	/** Doesn't compile on any target, as raylib calls the mix's processor on its audio thread, where Haxe can't run.
+	/** Unsupported.
 
 		@param processor  The processor.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("AttachAudioMixedProcessor: raylib calls it on the audio thread, where Haxe can't run")
+		@return  Never returns. */
+	@:unsupported("AttachAudioMixedProcessor: Unsupported.")
 	static function AttachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "AttachAudioMixedProcessor is unimplemented";
 	}
 
-	/** Doesn't compile on any target, as no mix processor can be attached (`AttachAudioMixedProcessor`).
+	/** Unsupported.
 
 		@param processor  The processor.
-		@return  Never returns: a call doesn't compile. */
-	@:unsupported("DetachAudioMixedProcessor: raylib calls processors on the audio thread, where Haxe can't run")
+		@return  Never returns. */
+	@:unsupported("DetachAudioMixedProcessor: Unsupported.")
 	static function DetachAudioMixedProcessor(processor:Null<(bufferData:haxe.io.Bytes, frames:Int) -> Void>):Void {
 		throw "DetachAudioMixedProcessor is unimplemented";
 	}
