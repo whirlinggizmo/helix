@@ -8,14 +8,13 @@ speed where docs/benchmarks.md records them.
 - **helix-render, set aside (DECISIONS 53)** (directory `libs/render/`, packages `helix.render` and `helix.render.effects`; DECISIONS
   35): built from its agreed API (revision 9) through stage 3 (the renderer and its recorded frame, textures and targets, `Batch2D`,
   `DrawList2D`, fonts and text, `Batch3D` unlit and lit, lights in three.js's units, shadows), and no engine draws on it: helix-raylib's
-  rebuild on it failed its size and speed gates (DECISIONS 53), and nothing else links it. It stays on main with its checks running,
-  and its stages 4 to 7 (environment maps and the background, post-processing, fog, morph targets) wait for an engine that needs it,
-  pulled out of that engine rather than built ahead of it. What was asked of the libraries below it is still wanted on its own:
-  helix-formats' `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions (`KHR_materials_unlit` done),
-  and morph targets; helix-geometry's second texture coordinates, morph targets and mesh groups; helix-math's Euler orders, an
-  object's `lookAt` and `Aabb3D` through a matrix. Effects (particles, model passes such as outlines, sprite and ground effects,
-  screen effects) start from docs/EFFECTS.md, an inventory of the earlier projects' effects, each judged by other engines and by what
-  the jam's entrants write.
+  rebuild on it failed its size and speed gates (DECISIONS 53), and nothing else links it. It stays on main with its checks running, and
+  its stages 4 to 7 (environment maps and the background, post-processing, fog, morph targets) wait for an engine that needs it, pulled
+  out of that engine rather than built ahead of it. What was asked of the libraries below it is still wanted on its own: helix-formats'
+  `GltfMaterial` alpha mode, cutoff, sides, samplers, texture transforms and extensions (`KHR_materials_unlit` done), and morph targets;
+  helix-geometry's second texture coordinates, morph targets, mesh groups and `Aabb3D` through a matrix. Effects (particles, model
+  passes such as outlines, sprite and ground effects, screen effects) start from docs/EFFECTS.md, an inventory of the earlier projects'
+  effects, each judged by other engines and by what the jam's entrants write.
 - **The jam, before Gyre's shape is decided:** agents (Sonnet, docs allowed) build the same small 3D top-down survivors-like on
   helix-raylib and on helix-legacy, two or three each, with gear worn from the modular characters' parts (CC0, Quaternius). Measured: tokens,
   time, build failures, bugs, lines written (engine-substitute against game logic), frame time, size, startup, and a change made
@@ -42,17 +41,14 @@ speed where docs/benchmarks.md records them.
   loads from memory, `LoadShader` from GLSL, rlgl's GL handles, and what a page can't do. Next: reloading and placeholders under raylib's
   own names (the assets, resources and objects below). A `Future` of our own over the callbacks, cross-target, may serve the managed
   layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
-- **Extras drafted and tried, to build:** the Lighting extra's shadows, emissive and alpha cutoff, shadowmaps for a program's own
-  shaders, and the Screen extra's fits (docs/trials/2026-11-15-lighting-shadows, -shadowmaps, -screen-fit), each record's findings
-  answered in the API before it is built. The Materials extra's draft is tried next, the same way.
 - **The services' `Screen` named `Window`,** as helix's own libraries use the accurate word; helix-raylib keeps raylib's.
 - **What an engine costs agents, against raylib C:** Wardens built from its spec costs $2.40 a run in C and $2.51 on helix-raylib
   (docs/trials/2026-11-15-wardens-baseline). A page build's ensure and the shaders compiled at build time cost nothing once a brief
   says so (docs/trials/2026-11-15-wardens-cost). Next is Lanternholm (docs/trials/templates/lanternholm), a second game, three.js's
   shape. Its port to helix-raylib wrote its own shadows (depth packed into a colour target, about 110 lines) and particles
-  (billboards moved on the CPU, about 200), so in order: the Lighting extra's shadows and the shadowmaps built (above), the
-  Particles extra built (DECISIONS 77), the port run graded as the picture before, then Lanternholm built on helix-raylib with
-  the extras.
+  (billboards moved on the CPU, about 200), which the Lighting extra's shadows, the Shadowmaps extra and the Particles extra
+  (DECISIONS 77) now provide. Next, the port run graded as the picture before, then Lanternholm built on helix-raylib with the
+  extras.
 - **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/benchmarks.md) against three.js's
   InstancedMesh at 3.84, both one instanced draw, so what is left is JavaScript a sprite, about 23 ns against 19: the record's twelve
   writes (about 2.5 ms for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)
@@ -91,7 +87,7 @@ speed where docs/benchmarks.md records them.
   icons load through `GuiLoadStyleAsync` and `GuiLoadIconsAsync` in `Raygui`. Left: rGuiLayout's `.rgl` layouts, and its code
   export through a Haxe code template for helix-raylib, if its custom templates allow one (to be checked). raygui styles only
   colors, borders, text and its icons. Skins from images are helix-raylib's own, in `extras.GuiSkins` (done, DECISIONS 42, 63). rlights is part of the Lighting extra (DECISIONS 78). raylib's other companion headers agents know,
-  easings (`reasings.h`, whose curves are `helix.math.Interpolate`'s) and physics (`physac.h`), are each an extra when wanted.
+  easings (`reasings.h`, whose curves are `helix.math.Ease`'s) and physics (`physac.h`), are each an extra when wanted.
 - **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
   `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
@@ -118,11 +114,8 @@ speed where docs/benchmarks.md records them.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
   saves written, so a program knows none of that; its spec is the `Main.hx` the services trial's three agents each wrote the same way.
   Whether it wears a known API or an engine's is GOALS' open path.
-- **Libraries apart from engines (done):** the libraries in `libs/` know no consumer, and the engines over them in `engines/` may own
-  the loop and keep statics (docs/PLAN.md); `check_layers` refuses a library that reaches an engine, and the engines' tests run on every
-  library change. helix-ray is helix-raylib: `engines/raylib/`, `-lib helix-raylib`, `import helix.raylib.Raylib.*;`, its defines
-  `helix-raylib-asset-host` and `helix-raylib-custom-frame-control`. Next, separate repositories, each engine
-  pinning a library version, once the platform has held through a second consumer and is versioned.
+- **Separate repositories:** each library and engine in a repository of its own, each engine pinning a library version, once the
+  platform has held through a second consumer and is versioned.
 - **Audio effects, low priority:** the API is agreed and committed (`IAudioEffects`, `AudioEffect`, PLATFORM.md's plan, and helix-services'
   `AudioEffects`, `Effect` and `Analyser` with their bodies unimplemented). Still to build: the two adapters (`WebAudioEffectsAdapter`,
   `Sdl3MixerAudioEffectsAdapter`) and the services' bodies, for an engine above. raylib has no effects of its own, so helix-raylib has
@@ -160,10 +153,6 @@ speed where docs/benchmarks.md records them.
   through the binding, Recast building it from a level's geometry (ahead of time, or once at load) and Detour querying it (paths,
   raycasts, the nearest point, DetourCrowd steering many agents, their positions read back in bulk), C++ behind a C file of its own,
   as Jolt; hxDaedalus (Haxe, 2D) benchmarked against it first. The test: agents cross a level the same way on both targets.
-- **Particles, before Lanternholm (built, DECISIONS 77):** the Particles extra on helix-raylib: a 3D emitter's particles worked out on
-  the GPU from their age, one instanced draw an emitter, and a 2D emitter's moved on the CPU and drawn in the sprite batch, with its
-  examples `extras/particles3d` and `extras/particles2d`. A 2D emitter's update moves into C through the binding's pattern only if
-  measuring says it pays.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
 - **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`

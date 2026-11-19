@@ -10,20 +10,20 @@ HeliX is a suite of libraries and engines for Haxe game development.  It provide
 
 | Library | Description | API | Dependencies |
 |---|---|---|---|
-| [helix-platform](libs/platform/README.md) | Provides access to hardware and OS functions via adapters and interfaces | [API](https://whirlinggizmo.github.io/helix/api/helix/platform/index.html) | helix-math, helix-formats |
 | [helix-math](libs/math/README.md) | Points, matrices, curves, interpolation, deterministic trigonometry and random numbers | [API](https://whirlinggizmo.github.io/helix/api/helix/math/index.html) |  |
 | [helix-geometry](libs/geometry/README.md) | Boxes, planes, spheres, cameras, frustums, rays, meshes in the usual shapes, and tests on segments, triangles and polygons | [API](https://whirlinggizmo.github.io/helix/api/helix/geometry/index.html) | helix-math |
 | [helix-tweens](libs/tweens/README.md) | Tweens: numbers, vectors, rotations and colors along easing curves, points along curves, sequences, repeats and callbacks | [API](https://whirlinggizmo.github.io/helix/api/helix/tweens/index.html) | helix-math |
-| [helix-formats](libs/formats/README.md) | File formats read into plain data: glTF 2.0 and GLB models, BMFont text fonts, TrueType and OpenType font tables | [API](https://whirlinggizmo.github.io/helix/api/helix/formats/index.html) | helix-math |
 | [helix-log](libs/log/README.md) | Levels and tags, to the browser's console or the process's output | [API](https://whirlinggizmo.github.io/helix/api/helix/log/index.html) |  |
-| [helix-services](libs/services/README.md) | Time, input, assets, audio, images, saves and config over the platform | [API](https://whirlinggizmo.github.io/helix/api/helix/services/index.html) | helix-platform, helix-geometry, helix-math, helix-log |
-| [helix-render](libs/render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights, shadows, environment maps and post-processing. Being built in stages | [API](https://whirlinggizmo.github.io/helix/api/helix/render/index.html) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
+| [helix-formats](libs/formats/README.md) | File formats read into plain data: glTF 2.0 and GLB models, BMFont text fonts, TrueType and OpenType font tables | [API](https://whirlinggizmo.github.io/helix/api/helix/formats/index.html) | helix-math |
+| [helix-platform](libs/platform/README.md) | Provides access to hardware and OS functions via adapters and interfaces | [API](https://whirlinggizmo.github.io/helix/api/helix/platform/index.html) | helix-formats, helix-geometry, helix-math |
+| [helix-services](libs/services/README.md) | Time, input, assets, audio, images, models, fonts, the screen, screenshots, shaders, saves and config over the platform | [API](https://whirlinggizmo.github.io/helix/api/helix/services/index.html) | helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
+| [helix-render](libs/render/README.md) | Drawing: 2D and 3D batches, draw lists, text, materials, lights and shadows. Set aside after its third stage | [API](https://whirlinggizmo.github.io/helix/api/helix/render/index.html) | helix-services, helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
 
 ### Engines
 
 | Engine | Description | API | Dependencies |
 |---|---|---|---|
-| [helix-raylib](engines/raylib/README.md) | A 2D and 3D engine mirroring raylib 5.5's API. Also includes the raymath, rlgl and raygui APIs | [API](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) | helix-services, helix-platform, helix-geometry, helix-tweens, helix-math |
+| [helix-raylib](engines/raylib/README.md) | A 2D and 3D engine mirroring raylib 5.5's API. Also includes the raymath, rlgl and raygui APIs | [API](https://whirlinggizmo.github.io/helix/api/helix/raylib/index.html) | helix-services, helix-platform, helix-formats, helix-tweens, helix-geometry, helix-math, helix-log |
 
 ## Try it
 
