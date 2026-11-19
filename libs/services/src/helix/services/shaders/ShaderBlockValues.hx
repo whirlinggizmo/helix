@@ -49,7 +49,7 @@ class ShaderBlockValues extends ShaderUniformValues {
 		this.blockName = blockName;
 		var found = source.findSharedLayout(blockName);
 		if (found == null)
-			throw 'shader values: no shared block $blockName (ShaderOptions.shared) in the source given';
+			throw 'shader values: no shared block $blockName (ShaderOptions.shared) in the source provided';
 		layout = found;
 		bytes = Bytes.alloc(layout.size);
 		ShaderValues.readShared = readFor;

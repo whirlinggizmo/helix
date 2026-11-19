@@ -740,7 +740,7 @@ class Shader implements IShaderHandles {
 			var seen = new Map<String, Bool>();
 			for (n in list) {
 				if (seen.exists(n))
-					throw 'shader: withNames gives two of its names the name $n';
+					throw 'shader: withNames assigns two of its names the name $n';
 				seen.set(n, true);
 			}
 		}

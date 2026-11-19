@@ -168,7 +168,7 @@ class ShaderValues extends ShaderUniformValues implements IShaderValues {
 			case Texture(texture, sampling):
 				writeTexture(sampler, texture, sampling);
 			case _:
-				throw 'shader values: ${sampler.name} is a sampler; it takes a ShaderValue.Texture';
+				throw 'shader values: ${sampler.name} is a sampler, which accepts a ShaderValue.Texture';
 		}
 	}
 

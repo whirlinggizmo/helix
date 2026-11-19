@@ -220,7 +220,7 @@ class ShaderTests {
 		var scene = new ShaderScene();
 		scene.shareTexture("sky", new ShaderSharedTexture(11));
 		material.scene = scene;
-		check(material.textures[1] == 11 && drawn.textures[1] == 0, "a scene's texture where nothing else gives one");
+		check(material.textures[1] == 11 && drawn.textures[1] == 0, "a scene's texture where nothing else provides one");
 		drawn.base = material;
 		check(drawn.scene == scene && drawn.textures[1] == 11, "the scene through the base");
 		material.deleteValues();
@@ -235,7 +235,7 @@ class ShaderTests {
 			rest = plain.blockNamed("helix_uniforms");
 		check(camera.shared && camera.stage == "both" && lights.shared && lights.stage == "both" && !rest.shared, "shared blocks, both stages'");
 		check([for (m in lights.members) m.glslName].join(",") == "pointLights.position,pointLights.range,pointLights.color,ambient",
-			"gathered in the order given");
+			"gathered in the order provided");
 		var values = new ShaderValues(plain);
 		throws(() -> values.uniforms, "Camera", "a shared block shared nowhere refused at the read");
 		throws(() -> values.writeMatrix(lit.getUniform("viewProjection"), new Matrix4()), "shared block", "a shared uniform written on values refused");
@@ -485,10 +485,10 @@ class ShaderTests {
 		throws(() -> new ShaderVertexLayout([{stride: 12, placements: [{name: "texCoord", offset: 8}]}]).computeBuffers(s), "runs past",
 			"one past its stride refused");
 		var short = new ShaderVertexLayout([{stride: 8, placements: [{name: "unread", offset: 0, format: Float2}]}]).computeBuffers(s);
-		check(short[0].attributes[0].format == Float2, "fewer floats than the attribute takes");
-		check(layout.computeBuffers(s)[0].attributes[1].format == Float2, "an attribute's own floats when no format is given");
+		check(short[0].attributes[0].format == Float2, "fewer floats than the attribute accepts");
+		check(layout.computeBuffers(s)[0].attributes[1].format == Float2, "an attribute's own floats when no format is provided");
 		var bytes = new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: UByte4Norm}]}]);
-		check(bytes.computeBuffers(s)[0].attributes[0].format == UByte4Norm, "more components than the attribute takes, a format passed through");
+		check(bytes.computeBuffers(s)[0].attributes[0].format == UByte4Norm, "more components than the attribute accepts, a format passed through");
 		throws(() -> new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: Short4Norm}]}]).computeBuffers(s), "runs past",
 			"a format's bytes past its stride refused");
 		var signed = new ShaderVertexLayout([{stride: 4, placements: [{name: "unread", offset: 0, format: Byte4Norm}]}]);

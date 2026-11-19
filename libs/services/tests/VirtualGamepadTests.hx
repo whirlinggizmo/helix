@@ -61,7 +61,7 @@ class VirtualGamepadTests {
 			&& gamepads.getName(0) == "Virtual gamepad",
 			"the first touch plugs it in");
 		check(virtualGamepad.left.held && virtualGamepad.left.finger == 1 && near(virtualGamepad.left.baseX, 200),
-			"the left half's finger takes the left stick");
+			"the left half's finger holds the left stick");
 		frame([TouchMove(1, 230, 300)]);
 		check(near(gamepads.getAxis(0, LeftX), (30 / 60 - .12) / .88)
 			&& gamepads.getAxis(0, LeftY) == 0, "half a radius right reads past the dead zone");
@@ -72,7 +72,7 @@ class VirtualGamepadTests {
 			&& near(gamepads.getAxis(0, LeftX), 1), "a push past the radius holds the knob at it, reading 1");
 
 		frame([TouchDown(2, 600, 400)]);
-		check(virtualGamepad.right.held && virtualGamepad.right.finger == 2, "the right half's finger takes the right stick");
+		check(virtualGamepad.right.held && virtualGamepad.right.finger == 2, "the right half's finger holds the right stick");
 		frame([TouchMove(2, 600, 340)]);
 		check(near(gamepads.getAxis(0, RightY), -1) && near(gamepads.getAxis(0, LeftX), 1), "both sticks read at once");
 
@@ -81,7 +81,7 @@ class VirtualGamepadTests {
 		frame([TouchUp(3, 750, 50)]);
 
 		frame([TouchDown(4, 100, 100)]);
-		check(virtualGamepad.left.finger == 4 && near(virtualGamepad.left.baseX, 100), "a finger landing in the zone takes the stick over");
+		check(virtualGamepad.left.finger == 4 && near(virtualGamepad.left.baseX, 100), "a finger landing in the zone holds the stick instead");
 		frame([TouchUp(4, 100, 100)]);
 		check(virtualGamepad.left.finger == 1, "its lift hands the stick to the finger still down in the zone");
 
@@ -142,7 +142,7 @@ class VirtualGamepadTests {
 		frame([TouchDown(9, 705, 505)]);
 		check(virtualGamepad.pluggedIn && gamepads.isButtonPressed(0, South) && gamepads.isButtonDown(0, South) && !virtualGamepad.right.held
 			&& virtualGamepad.capturesFinger(9),
-			"the first touch on a button plugs the virtual gamepad in and presses the button, and the stick doesn't take the finger");
+			"the first touch on a button plugs the virtual gamepad in and presses the button, and the stick doesn't hold the finger");
 		frame();
 		check(gamepads.isButtonDown(0, South) && !gamepads.isButtonPressed(0, South), "held: down, pressed once");
 		frame([TouchMove(9, 760, 505)]);
@@ -157,7 +157,7 @@ class VirtualGamepadTests {
 		frame();
 		check(!virtualGamepad.capturesFinger(9), "the lifted finger is free the frame after");
 		frame([TouchDown(10, 100, 100)]);
-		check(virtualGamepad.left.held && !gamepads.isButtonDown(0, North), "a finger on a button turned off takes the stick");
+		check(virtualGamepad.left.held && !gamepads.isButtonDown(0, North), "a finger on a button turned off holds the stick");
 		frame([TouchUp(10, 100, 100)]);
 		frame([TouchDown(11, 650, 300), TouchDown(12, 700, 500)]);
 		frame([TouchUp(11, 650, 300)]);
@@ -185,7 +185,7 @@ class VirtualGamepadTests {
 		var started = haxe.Timer.stamp();
 		while (haxe.Timer.stamp() - started < .6) {}
 		frame([Tilt(10, 5, 0)]);
-		check(!tilt.calibrating && gamepads.getAxis(0, LeftX) == 0, "level taken: the tilt stick reads 0 at level");
+		check(!tilt.calibrating && gamepads.getAxis(0, LeftX) == 0, "level read: the tilt stick reads 0 at level");
 		frame([Tilt(10, 20, 0)]);
 		check(near(gamepads.getAxis(0, LeftX), (.5 - .12) / (1 - .12)) && gamepads.getAxis(0, LeftY) == 0,
 			"15 degrees of 30 across: 0.5, past the dead zone of 0.12");
@@ -215,9 +215,9 @@ class VirtualGamepadTests {
 		check(virtualGamepad.left.finger == 16 && virtualGamepad.right.finger == 17, "tilt turned off: the sticks' zones are the halves again");
 		frame([TouchUp(16, 100, 300), TouchUp(17, 700, 300)]);
 		tilt.calibrate();
-		check(tilt.calibrating, "taking level again");
+		check(tilt.calibrating, "reading level again");
 		tilt.releaseAccess();
-		check(!tilt.calibrating, "the tilt released while level is being taken: not calibrating");
+		check(!tilt.calibrating, "the tilt released while level is being read: not calibrating");
 
 		// Touch emulation: the left mouse button works as one finger, read by a second virtual gamepad.
 		virtualGamepad.enabled = false;
@@ -233,7 +233,7 @@ class VirtualGamepadTests {
 		check(touch.isFingerPressed(Touch.EMULATED_FINGER)
 			&& near(touch.getX(Touch.EMULATED_FINGER), 200), "a left press lands the finger at the pointer");
 		check(second.pluggedIn && second.left.held && second.left.finger == Touch.EMULATED_FINGER,
-			"the press plugs it in, and the left stick takes the finger");
+			"the press plugs it in, and the left stick holds the finger");
 		frame([MouseMove(260, 300)]);
 		second.poll();
 		check(near(touch.getX(Touch.EMULATED_FINGER), 260)

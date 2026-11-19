@@ -54,10 +54,10 @@ class TweenSequenceTests {
 			c = new FloatTween(0, 1, 1),
 			d = new FloatTween(0, 3, 3);
 		var sequence = new TweenSequence();
-		check(sequence.duration == 0, "an empty sequence takes no time");
+		check(sequence.duration == 0, "an empty sequence lasts no time");
 		check(sequence.append(a) == sequence, "placing returns the sequence");
 		sequence.appendDelay(1).append(b).join(c).insert(1, d);
-		check(sequence.duration == 7, "a sequence takes what its tweens and waits add up to");
+		check(sequence.duration == 7, "a sequence lasts what its tweens and waits add up to");
 		sequence.update(1.5);
 		check(a.value == 1.5 && b.value == 10 && c.value == 0 && d.value == .5, "appended first, and inserted at a time of its own");
 		sequence.update(1);
@@ -74,7 +74,7 @@ class TweenSequenceTests {
 		a.seek(0);
 		a.update(1);
 		check(a.time == 0, "the sequence alone steps a tween placed in it");
-		check(refuses(() -> a.append(5, 1)) && refuses(() -> a.appendDelay(1)) && a.duration == 2, "a tween placed takes no more legs");
+		check(refuses(() -> a.append(5, 1)) && refuses(() -> a.appendDelay(1)) && a.duration == 2, "a tween placed accepts no more legs");
 
 		// A tween of several legs is placed as one tween.
 		var legs = new FloatTween(0, 2, 2).appendDelay(1).append(0, 1),
@@ -106,7 +106,7 @@ class TweenSequenceTests {
 		slow.repeatDelay = 1;
 		slow.timeScale = 2;
 		var timed = new TweenSequence().append(slow).append(after);
-		check(timed.duration == 4, "a placed tween takes its delay, its plays and their waits, at its timeScale");
+		check(timed.duration == 4, "a placed tween lasts its delay, its plays and their waits, at its timeScale");
 		timed.update(.25);
 		check(slow.time == 0 && slow.value == 0, "a placed tween waits its delay");
 		timed.update(.5);
@@ -133,7 +133,7 @@ class TweenSequenceTests {
 		path.update(2);
 		check(position.x == 4, "held through the wait");
 		path.update(1.5);
-		check(near(position.x, 0), "the second tween takes over");
+		check(near(position.x, 0), "the second tween drives the value");
 		path.update(1.5);
 		check(position.x == -4 && path.time == 5.5, "held at the second's end");
 		path.update(1);
@@ -256,7 +256,7 @@ class TweenSequenceTests {
 		var inner = new TweenSequence().append(a).appendCall(() -> innerCalls++).append(b);
 		inner.repeatCount = 1;
 		var outer = new TweenSequence().append(c).append(inner);
-		check(outer.duration == 6, "a sequence in a sequence takes its plays");
+		check(outer.duration == 6, "a sequence in a sequence lasts its plays");
 		outer.update(3.5);
 		check(c.value == 2 && a.value == 1 && b.value == .5 && innerCalls == 1, "the sequence within plays its tweens");
 		outer.update(1);

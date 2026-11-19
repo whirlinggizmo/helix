@@ -69,7 +69,7 @@ class FakeAudio implements IAudio implements IAudioDecoder {
 
 	public function createClip(samples:Bytes, channelCount:Int):Int {
 		if (channelCount != 1 && channelCount != 2)
-			throw 'createClip takes 1 or 2 channels, not $channelCount';
+			throw 'createClip accepts 1 or 2 channels, not $channelCount';
 		sounds.set(next, "clip");
 		return next++;
 	}

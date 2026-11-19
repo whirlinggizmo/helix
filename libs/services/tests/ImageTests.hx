@@ -109,10 +109,10 @@ class ImageTests {
 		ramp = Image.gradientLinear(4, 16, direction(90), 0xff000000, 0xffffffff);
 		check(ramp.getPixel(3, 0) & 255 < 16 && ramp.getPixel(0, 15) & 255 > 239, "90 degrees runs top to bottom");
 		check(Crc32.make(Image.whiteNoise(9, 9, 0.5, new Random(3)).pixels) == Crc32.make(Image.whiteNoise(9, 9, 0.5, new Random(3)).pixels),
-			"the same seed gives the same noise");
+			"the same seed produces the same noise");
 		check(Image.whiteNoise(4, 4, 0, new Random(3)).getPalette(10).join(",") == "" + 0xff000000, "no chance of white is all black");
 		check(Image.checked(4, 4, 2, 2, A, B).getPixel(2, 0) == B
-			&& Image.checked(4, 4, 0, 0, A, B).getPixel(1, 0) == B, "squares, a size of 0 taken as 1");
+			&& Image.checked(4, 4, 0, 0, A, B).getPixel(1, 0) == B, "squares, a size of 0 read as 1");
 
 		// Resized.
 		pin("crop", noise(64, 48).crop(-4, -2, 10, 10), 6, 8, 0x51ff72da);

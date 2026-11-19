@@ -169,7 +169,7 @@ class AudioTests {
 		check(try {
 			queue.queueSamples(Bytes.alloc(8));
 			false;
-		} catch (_:String) true, "a disposed queue takes no samples");
+		} catch (_:String) true, "a disposed queue accepts no samples");
 		check(try {
 			queue.play();
 			false;

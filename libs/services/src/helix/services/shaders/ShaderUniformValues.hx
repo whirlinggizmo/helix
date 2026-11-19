@@ -385,7 +385,7 @@ class ShaderUniformValues {
 			throw 'shader values: $method can\'t write ${uniform.name}, a ${shape.type}';
 		var size = shape == null ? values.length : shape.size;
 		if (size == 0 || values.length % size != 0)
-			throw 'shader values: $method gives ${values.length} numbers for ${uniform.name}, not a whole number of ${shape.type}s';
+			throw 'shader values: ${values.length} numbers provided to $method for ${uniform.name}, not a whole number of ${shape.type}s';
 		var count = elementCountOf(uniform),
 			elements = Std.int(values.length / size);
 		if (first < 0 || count >= 0 && first + elements > count)

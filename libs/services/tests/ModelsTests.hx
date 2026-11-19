@@ -160,7 +160,7 @@ class ModelsTests {
 		check(quad.texCoords.join(",") == "0,1,1,1,1,0.75,0,0", "texture coordinates' v turned to run down the image");
 		check(near(quad.normals[2], 1) && near(quad.normals[11], 1), "normals made length 1");
 		var roof = house.meshes[2];
-		check(roof.normals != null && near(roof.normals[2], 1), "normals computed where the file gives none");
+		check(roof.normals != null && near(roof.normals[2], 1), "normals computed where the file provides none");
 		check(house.meshes[0].texCoords == null && house.meshes[0].colors == null, "no texture coordinates or colors where there are none");
 		check(house.materials.length == 3 && house.materials[0].name == "wall" && house.materials[2].name == "nowhere", "a material each usemtl name");
 		var wall = house.materials[0];
@@ -186,7 +186,7 @@ class ModelsTests {
 			"a texture two materials name is one image; Pr, Pm, norm and Ke");
 		var nowhere = house.materials[2];
 		check(nowhere.baseColorFactor.join(",") == "1,1,1,1" && nowhere.baseColorImageIndex == -1 && nowhere.normalImageIndex == -1,
-			"a name no library gives: every default");
+			"a name no library provides: every default");
 		check(house.images.length == 4
 			&& house.images[0].path == "objs/tex/wall.png"
 			&& house.images[0].width == 2
@@ -326,15 +326,15 @@ class ModelsTests {
 			&& wood.encoded.toString() == "4x4",
 			"the image beside it, its name decoded, decoded for the GPU with its file's bytes");
 		var picture = wood.takeDecoded();
-		check(picture != null && picture.width == 4 && picture.pixels()
-			.length == 64 && picture.pixels().get(0) == 7, "its decoded image taken: the decoder's");
-		check(wood.takeDecoded() == null, "taken once");
+		check(picture != null && picture.width == 4 && picture.pixels().length == 64 && picture.pixels().get(0) == 7,
+			"its decoded image returned: the decoder's");
+		check(wood.takeDecoded() == null, "the decoded image returned once");
 		picture.dispose();
 		check(model.images[1] == null, "an image that won't decode: null");
 		var held = model.images[2];
 		check(held != null && held.path == "" && held.encoded.toString() == "2x2" && held.width == 2, "an image held in the file: no path, its bytes");
 		model.dispose();
-		check(held.takeDecoded() == null, "dispose frees what wasn't taken");
+		check(held.takeDecoded() == null, "dispose frees what wasn't returned");
 
 		// A load aborted once its held images are decoded and delivered, while the image beside it is still to come: what it decoded is
 		// disposed.

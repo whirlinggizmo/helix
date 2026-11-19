@@ -14,9 +14,9 @@ class ConfigTests {
 	static function main():Void {
 		var system = new FakeSystem();
 		var config = new Config(system);
-		check(!config.hasOption("speed") && config.getString("speed", "x") == "x", "not given: the fallback");
+		check(!config.hasOption("speed") && config.getString("speed", "x") == "x", "not provided: the fallback");
 		system.options.set("empty", "");
-		check(config.hasOption("empty") && config.getString("empty", "x") == "", "given empty: has it, as given");
+		check(config.hasOption("empty") && config.getString("empty", "x") == "", "provided empty: has it, as provided");
 
 		for (word in ["1", "true", "YES", " On "]) {
 			system.options.set("b", word);

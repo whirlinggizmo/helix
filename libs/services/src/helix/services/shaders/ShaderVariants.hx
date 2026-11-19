@@ -65,7 +65,7 @@ class ShaderVariants implements IShaderHandles {
 			throw 'shader variants: ${variantFeatures.length} combinations for ${shaders.length} shaders';
 		for (k => f in variantFeatures)
 			if (variantFeatures.indexOf(f) != k)
-				throw 'shader variants: the combination [${computeFeatureNames(f).join(", ")}] given twice';
+				throw 'shader variants: the combination [${computeFeatureNames(f).join(", ")}] provided twice';
 		this.featureNames = featureNames;
 		this.variantFeatures = variantFeatures;
 		this.shaders = shaders;
@@ -112,7 +112,7 @@ class ShaderVariants implements IShaderHandles {
 		var v = ShaderMacros.foldText(vertex),
 			f = ShaderMacros.foldText(fragment);
 		if (v == null || f == null)
-			haxe.macro.Context.error("shader: compileText takes both stages' text", pos);
+			haxe.macro.Context.error("shader: compileText accepts both stages' text", pos);
 		return ShaderMacros.variantsFrom(v, f, features, options, pos);
 	}
 

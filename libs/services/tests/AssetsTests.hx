@@ -369,7 +369,7 @@ class AssetsTests {
 		cache.files.remove('${dir(cdn)}/records/pack/a.png');
 		before = http.requests.length;
 		check(shippedLoad(unshipped, "pack/a.png") == "same" && askedSince(before).indexOf(cdn + "pack/a.png") >= 0,
-			"a shipped tree not given to the cache: downloaded, as nothing says the shipped file is the same");
+			"a shipped tree not provided to the cache: downloaded, as nothing says the shipped file is the same");
 		http.offline = true;
 		ship.files.set("pack/c.png", text("only shipped"));
 		var offline = make([
@@ -459,7 +459,7 @@ class AssetsTests {
 		check(seen.length == 0, "nothing called during notifyChanged");
 		for (_ in 0...5)
 			files.poll();
-		check(seen.join(",") == "glow v2", "a file system's file read again, the watch given its bytes");
+		check(seen.join(",") == "glow v2", "a file system's file read again, the watch passed its bytes");
 		local.notifyChanged("shaders/other.shader");
 		for (_ in 0...5)
 			files.poll();

@@ -40,7 +40,7 @@ class ShaderMacros {
 		var pos = Context.currentPos();
 		var v = foldText(vertex), f = foldText(fragment);
 		if (v == null || f == null)
-			Context.error("shader: compileText takes both stages' text; a layer supplies a stage left out through makeExpr", pos);
+			Context.error("shader: compileText accepts both stages' text. A layer supplies a stage left out through makeExpr", pos);
 		return shaderExpr(v, f, buildOptions(options, pos), pos);
 	}
 
@@ -271,7 +271,7 @@ class ShaderMacros {
 				Context.error('shader: a feature named $f; a feature is a name, not SHADER or VARIANTS', pos);
 		if (combinations == null) {
 			if (features.length > 8)
-				Context.error('shader: ${features.length} features, past the 8 every combination of which is compiled; give the combinations', pos);
+				Context.error('shader: ${features.length} features, past the 8 for which every combination is compiled. Provide the combinations', pos);
 			combinations = [
 				for (bits in 0...1 << features.length) [for (i in 0...features.length) if (bits & 1 << i != 0) features[i]]
 			];
@@ -288,7 +288,7 @@ class ShaderMacros {
 				set |= 1 << i;
 			}
 			if (bits.indexOf(set) >= 0)
-				Context.error('shader: the combination [${combination.join(", ")}] is given twice', pos);
+				Context.error('shader: the combination [${combination.join(", ")}] is provided twice', pos);
 			bits.push(set);
 			var source = compileProgram(vertex, fragment, options, combination, pos);
 			checkShared(source, declaredShared(source, shared), vertex.name, pos);

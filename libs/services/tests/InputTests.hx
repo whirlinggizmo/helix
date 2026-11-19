@@ -131,7 +131,7 @@ class InputTests {
 
 		frame([KeyDown(Right, false), KeyDown(Down, false)]);
 		var move = new Vector2();
-		check(actions.computeVector("left", "right", "up", "down", move) == move, "computeVector fills the vector given");
+		check(actions.computeVector("left", "right", "up", "down", move) == move, "computeVector fills the vector provided");
 		check(Math.abs(Math.sqrt(move.x * move.x + move.y * move.y) - 1) < 1e-9 && move.x > 0 && move.y > 0, "a diagonal capped at 1");
 		frame([KeyUp(Down)]);
 		check(actions.computeVector("left", "right", "up", "down").x == 1, "straight: 1, a new vector");
@@ -162,18 +162,18 @@ class InputTests {
 		check(actions.unbind("each", Axis(0, LeftX, Negative), Gamepad(1, South), Tilt(Y, Positive))
 			&& actions.getBindings("each").length == each.length - 3
 			&& actions.getBindings("each").indexOf(each[7]) >= 0,
-			"unbind removes only the bindings equal to those given");
+			"unbind removes only the bindings equal to those provided");
 		actions.unbindAll();
 		// Tilt: asked through the platform's tilt, level measured once held steady for half a second, then read turned with the screen.
 		check(tilt.requestAccess() && devices.tiltRequested && tilt.status == Off, "tilt asked for through the platform's tilt");
 		frame([TiltState(Starting)]);
 		check(tilt.status == Starting && tilt.getAxis(X) == 0, "starting: waiting for the first reading, reading 0");
 		frame([TiltState(On), Tilt(10, 5, 0)]);
-		check(tilt.status == On && tilt.calibrating && !tilt.ready && tilt.getAxis(X) == 0, "the first reading: level being taken, reading 0");
+		check(tilt.status == On && tilt.calibrating && !tilt.ready && tilt.getAxis(X) == 0, "the first reading: level being read, reading 0");
 		var started = haxe.Timer.stamp();
 		while (haxe.Timer.stamp() - started < .6) {}
 		frame([Tilt(11, 6, 0)]);
-		check(!tilt.calibrating && tilt.ready, "held within 3 degrees for half a second: level taken, ready");
+		check(!tilt.calibrating && tilt.ready, "held within 3 degrees for half a second: level read, ready");
 		frame([Tilt(26, 21, 0)]);
 		check(Math.abs(tilt.getAxis(Y) - .5) < 1e-9 && Math.abs(tilt.getAxis(X) - .5) < 1e-9, "15 degrees of 30 from level: 0.5 each way");
 		frame([Tilt(11, 66, 0)]);
@@ -181,7 +181,7 @@ class InputTests {
 		actions.bind("roll", Tilt(X, Positive));
 		check(actions.isDown("roll") && actions.getValue("roll") == 1, "tilt bound as an action");
 		frame([Tilt(11, 6, 90)]);
-		check(tilt.calibrating && tilt.getAxis(X) == 0, "the screen turned: level taken again");
+		check(tilt.calibrating && tilt.getAxis(X) == 0, "the screen turned: level read again");
 		frame([TiltState(Refused)]);
 		check(tilt.status == Refused && tilt.getAxis(X) == 0, "refused: reads 0");
 		tilt.range = 0;
@@ -204,7 +204,7 @@ class InputTests {
 		keysOnly.bind("jump", Gamepad(0, South));
 		frame([GamepadButtonDown(0, South)]);
 		check(gamepads.isButtonDown(0, South) && !keysOnly.isDown("jump") && keysOnly.getValue("jump") == 0,
-			"a binding to a device Actions wasn't given reads as not held");
+			"a binding to a device Actions wasn't provided reads as not held");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

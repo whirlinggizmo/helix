@@ -74,7 +74,7 @@ class ScreenTests {
 		check(window.requests.indexOf("size 700 600") >= 0, "leaving fullscreen asks for the windowed size");
 		frame();
 		check(window.logicalWidth == 690 && window.requests.lastIndexOf("size 700 600") == window.requests.indexOf("size 700 600"),
-			"what the window manager gave counts once the request has answered, and isn't asked for again");
+			"what the window manager returned counts once the request has answered, and isn't asked for again");
 		window.logicalWidth = 700;
 		frame();
 		check(window.logicalWidth == 700 && window.logicalHeight == 600 && window.left == 40 && window.top == 30,
