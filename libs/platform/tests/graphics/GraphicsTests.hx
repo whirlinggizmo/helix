@@ -871,7 +871,7 @@ class GraphicsTests {
 							call()
 						catch (e:Dynamic)
 							threw = Std.string(e);
-						check(threw == message, '$mistake: ${threw == null ? "taken" : 'threw "$threw"'}, not "$message"');
+						check(threw == message, '$mistake: ${threw == null ? "accepted" : 'threw "$threw"'}, not "$message"');
 					}
 					refusal("a buffer as a texture", "Invalid draw texture", () -> draw(sampled, uvQuad, 6, [dots], [Sampling.NEAREST]));
 					refusal("a buffer disposed as a texture", "Invalid texture", () -> graphics.disposeTexture(dots));
@@ -1141,7 +1141,7 @@ class GraphicsTests {
 					} catch (e:Dynamic)
 						true;
 					if (!refused)
-						fail("a draw sampling the target it draws into was taken");
+						fail("a draw sampling the target it draws into was accepted");
 				}),
 				target: target,
 				check: p -> p.expect(8, 8, [0, 0, 1, 1], 0)
@@ -1314,7 +1314,7 @@ class GraphicsTests {
 							call()
 						catch (_:Dynamic)
 							threw = true;
-						check(threw, '$mistake taken');
+						check(threw, '$mistake accepted');
 					}
 					graphics.beginTargetPass(depthTarget, 0, 0, 0, 1);
 					draw(deep, half, 6, null, null, [
@@ -1453,9 +1453,9 @@ class GraphicsTests {
 			},
 			slantedCase("depth and one sample: every texel one color or the other", singleDepth, false),
 			slantedCase('depth and the screen\'s samples (${graphics.msaaSampleCount})', screenDepth, Math.min(graphics.msaaSampleCount, most) > 1),
-			slantedCase('no depth and the most samples the format takes ($most)', mostFlat, most > 1),
+			slantedCase('no depth and the most samples the format accepts ($most)', mostFlat, most > 1),
 			{
-				name: "a sample count rounded down to what the GPU takes, a negative one refused",
+				name: "a sample count rounded down to what the GPU accepts, a negative one refused",
 				before: () -> {
 					graphics.beginTargetPass(clamped, 0, 0, 0, 1);
 					draw(opaque, slanted, 3);

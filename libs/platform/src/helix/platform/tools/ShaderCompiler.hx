@@ -516,7 +516,7 @@ class ShaderCompiler {
 		for (k => s in stages)
 			for (d in s.declarations) {
 				if (glForm && d.placed)
-					s.refuse(d.start, '${d.name} gives a binding or location, which a stage in GL\'s form leaves to the compiler');
+					s.refuse(d.start, '${d.name} declares a binding or location, which a stage in GL\'s form leaves to the compiler');
 				if (d.kind == "block" && d.instance != "")
 					instances.set(d.name, d.instance);
 			}

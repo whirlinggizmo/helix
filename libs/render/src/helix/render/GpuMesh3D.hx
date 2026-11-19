@@ -237,7 +237,7 @@ class GpuMesh3D {
 			throw "helix-render: a mesh without positions, x, y and z each";
 		inline function check(length:Int, per:Int, name:String)
 			if (length >= 0 && length != count * per)
-				throw 'helix-render: a mesh of $count vertices with $length $name; it takes $per a vertex';
+				throw 'helix-render: a mesh of $count vertices with $length $name. A mesh needs $per $name a vertex';
 		check(mesh.normals == null ? -1 : mesh.normals.length, 3, "normals");
 		check(mesh.texCoords == null ? -1 : mesh.texCoords.length, 2, "texture coordinates");
 		check(mesh.tangents == null ? -1 : mesh.tangents.length, 4, "tangents");

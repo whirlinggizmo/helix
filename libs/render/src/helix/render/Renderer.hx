@@ -202,7 +202,7 @@ class Renderer {
 	// Refuses faces that aren't six, square and alike.
 	static function checkFaces(faces:Array<Image>):Void {
 		if (faces.length != 6)
-			throw 'helix-render: a cube texture of ${faces.length} faces; it takes six, +X, -X, +Y, -Y, +Z, -Z';
+			throw 'helix-render: a cube texture of ${faces.length} faces. A cube texture needs six: +X, -X, +Y, -Y, +Z, -Z';
 		var size = faces[0].width;
 		for (f in faces)
 			if (f.width != size || f.height != size)
@@ -470,7 +470,7 @@ class Renderer {
 		if (!inFrame)
 			throw "helix-render: applyViewport with no frame being recorded";
 		if (openBatch != null)
-			throw "helix-render: applyViewport with a batch open; it takes effect at a batch's begin";
+			throw "helix-render: applyViewport with a batch open. A viewport applies at a batch's begin";
 		if (width <= 0 || height <= 0)
 			throw 'helix-render: a viewport of ${width} x ${height}; its size is above 0';
 		viewportX = x;

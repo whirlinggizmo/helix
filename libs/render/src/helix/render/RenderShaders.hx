@@ -166,7 +166,7 @@ class RenderShaders {
 		if (options.includes != null)
 			for (name => text in options.includes) {
 				if (INCLUDES.indexOf(name.replace("helix/render/shaders/", "")) >= 0 && name.startsWith("helix/render/shaders/"))
-					Context.error('helix-render: the include $name is helix-render\'s own; give the text under another name', pos);
+					Context.error('helix-render: the include $name is helix-render\'s own. Provide the text under another name', pos);
 				includes.set(name, text);
 			}
 		for (name in INCLUDES)

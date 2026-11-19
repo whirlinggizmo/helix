@@ -138,7 +138,7 @@ void main() { color = scene.ambient + scene.lights[1].color * scene.surface.roug
 			"#version 450\nlayout(location = 0) in vec3 v_tint;\nlayout(location = 0) out vec4 color;\nvoid main() { color = vec4(v_tint, 1.0); }\n");
 		check(instanced.attributes.join(",") == "position,placement,,,,tint"
 			&& instanced.attributeTypes.join(",") == "vec2,mat4,vec4,vec4,vec4,vec3",
-			"A mat4 input takes four locations: "
+			"A mat4 input uses four locations: "
 			+ instanced.attributes
 			+ " "
 			+ instanced.attributeTypes);
@@ -172,7 +172,7 @@ void main() { color = scene.ambient + scene.lights[1].color * scene.surface.roug
 		check(refusal("#version 450\nlayout(location = 0) in vec2 position;\nlayout(binding = 2) uniform a { vec4 x; };\n"
 			+ "void main() { gl_Position = vec4(position, 0.0, 1.0) * x; }\n",
 			"#version 450\nlayout(location = 0) out vec4 color;\nlayout(binding = 2) uniform b { vec4 y; };\nvoid main() { color = y; }\n") == "",
-			"A block at one binding in each stage is taken: blocks are numbered by stage");
+			"A block at one binding in each stage is accepted: blocks are numbered by stage");
 		message = refusal(VERTEX,
 			"#version 450\nlayout(location = 0) out vec4 color;\nlayout(binding = 4) uniform p { vec4 x; };\nvoid main() { color = x; }\n");
 		check(message.indexOf("blocks 0 to 3") >= 0, "A block past the adapters' bindings refused: " + message);
@@ -260,7 +260,7 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 			m = block(source, "Model"),
 			l = block(source, "Look");
 		check(f.stage == "both" && f.slot == 2 && m.stage == "vertex" && m.slot == 1 && l.stage == "fragment" && l.slot == 0,
-			"A shared block takes the lowest slot free in both stages: " + haxe.Json.stringify([f.slot, m.slot, l.slot]));
+			"A shared block uses the lowest slot free in both stages: " + haxe.Json.stringify([f.slot, m.slot, l.slot]));
 		check(member(f, "viewProjection").active && member(f, "time").active, "Read in either stage is read");
 		check(source.glsl410.vertex.indexOf("uniform Frame helix_block_Frame;") >= 0
 			&& source.glsl410.fragment.indexOf("uniform Frame helix_block_Frame;") >= 0
@@ -287,7 +287,7 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 		var lights = block(source, "Lights"),
 			rest = block(source, "helix_uniforms");
 		check(lights.stage == "both" && lights.slot == 1 && rest.slot == 0, "Gathered after helix_uniforms");
-		check([for (m in lights.members) m.glslName].join(",") == "lights.position,lights.color,ambient,viewPos", "In the order given");
+		check([for (m in lights.members) m.glslName].join(",") == "lights.position,lights.color,ambient,viewPos", "In the order listed");
 		check([for (m in rest.members) m.glslName].join(",") == "mvp,tint", "The rest in helix_uniforms");
 		check(source.glsl300es.vertex.indexOf("struct Light") >= 0, "A gathered struct's declaration copied into the stage lacking it");
 		var message = refusal("#version 330\nin vec3 p;\nvoid main() { gl_Position = vec4(p, 1.0); }\n",
@@ -355,7 +355,7 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 				'The point size written after main (clip scale $clipScale): ${source.glsl300es.vertex}');
 			check(source.glsl300es.vertex.lastIndexOf("gl_PointSize = 1.0") > source.glsl300es.vertex.lastIndexOf("gl_PointSize = 4.0"),
 				'The program\'s own size replaced (clip scale $clipScale)');
-			check(source.sdlGpu.hlsl.vertex.indexOf("gl_PointSize") >= 0, 'HLSL takes the size (clip scale $clipScale)');
+			check(source.sdlGpu.hlsl.vertex.indexOf("gl_PointSize") >= 0, 'HLSL keeps the size (clip scale $clipScale)');
 			check((source.glsl300es.vertex.indexOf("helix_clipScale") >= 0) == clipScale, 'The clip scale as asked (clip scale $clipScale)');
 		}
 		var plain = compile("#version 450\nlayout(location = 0) in vec2 p;\nvoid main() { gl_Position = vec4(p, 0.0, 1.0); }\n", fragment, {

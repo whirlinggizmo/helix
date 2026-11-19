@@ -268,7 +268,7 @@ class PixelTests {
 				name: "a target with depth and one sample",
 				draw: () -> edge(single),
 				check: p -> {
-					check(single.msaaSampleCount == 1, 'one sample asked, ${single.msaaSampleCount} given');
+					check(single.msaaSampleCount == 1, 'one sample asked, ${single.msaaSampleCount} returned');
 					expect(p, 10, 32, 0xffffff, "column 10 covered at its middle, wholly, with no samples between", 0);
 					expect(p, 11, 32, 0x000000, "column 11 not at all", 0);
 				}

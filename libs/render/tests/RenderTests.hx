@@ -122,7 +122,7 @@ class RenderTests {
 			&& many.msaaSampleCount == 4
 			&& odd.msaaSampleCount == 2
 			&& g.log.indexOf('target ${plain.handle} 8 8 samples 1') >= 0,
-			"a count given, passed to the platform, held to what it draws with and rounded down to a power of two");
+			"a count provided, passed to the platform, held to what it draws with and rounded down to a power of two");
 		throws(() -> r.createRenderTarget(0, 4), "above 0", "a size of 0 refused");
 		throws(() -> r.endFrame(), "no frame", "endFrame outside a frame");
 		r.beginFrame(200, 100, 0xff102030);
@@ -166,7 +166,7 @@ class RenderTests {
 		b.end();
 		r.endTarget();
 		check(target.handle != first
-			&& target.sharedTexture.texture == target.handle, "a target read then drawn into takes a fresh texture");
+			&& target.sharedTexture.texture == target.handle, "a target read then drawn into gets a fresh texture");
 		b.begin();
 		b.drawTexture(target, 0, 0);
 		b.end();
@@ -412,7 +412,7 @@ class RenderTests {
 		var base = font();
 		var f = r.createFont(new Font2D(Coverage, 10, 8, -2, 2, base.atlas, base.glyphs, [{first: 97, second: 98, amount: -2}]));
 		check(near(f.measureText("ab").x, 8) && near(f.measureText("ab", 20).x, 16) && near(f.measureText("ba").x, 10),
-			"a pair kerned as the font gives it, at the size drawn; another pair not");
+			"a pair kerned as the font declares it, at the size drawn; another pair not");
 		check(near(f.measureText("ab", null, 0, false).x, 10), "unkerned when kerned is false");
 		var layout = new TextLayout2D(f, "abab");
 		check(near(layout.width, 16), "a layout kerned");
@@ -694,7 +694,7 @@ class RenderTests {
 		b.end();
 		r.endFrame();
 		check(g.draws.length == 1 && !declaresBlock(g, g.draws[0], "Lighting") && Batch3D.makeLighting == null,
-			"a lit material where nothing gives light: drawn black, with no lighting linked");
+			"a lit material with no light: drawn black, with no lighting linked");
 		// Ten point lights a unit apart, from 1 to 10 from the box's face; one past its range; a spot turned away and one whose cone
 		// reaches the box's edge.
 		for (i in 0...10) {

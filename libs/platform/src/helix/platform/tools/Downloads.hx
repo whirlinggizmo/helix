@@ -61,7 +61,7 @@ class Downloads {
 			}
 			return data;
 		}
-		throw new CommandException('$tool: no source gave the pinned file:\n  ' + failures.join("\n  "));
+		throw new CommandException('$tool: no source provided the pinned file:\n  ' + failures.join("\n  "));
 	}
 
 	// The body at url (https), following up to 8 redirects; null, its failure added to failures, when it can't be had. HTTP/1.1 read by

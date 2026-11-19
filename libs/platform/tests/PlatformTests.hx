@@ -88,7 +88,7 @@ class PlatformTests {
 		var ids = new helix.platform.adapters.shared.FingerIds();
 		check(ids.land(901) == 0 && ids.land(902) == 1, "two fingers land: ids 0 and 1");
 		check(ids.find(902) == 1 && ids.find(903) == -1, "a finger down found by its pointer, one not down -1");
-		check(ids.lift(901) == 0 && ids.land(903) == 0 && ids.land(904) == 2, "the first lifts: the next takes 0, the one after 2");
+		check(ids.lift(901) == 0 && ids.land(903) == 0 && ids.land(904) == 2, "the first lifts: the next reuses 0, the one after gets 2");
 		check(ids.lift(905) == -1, "a pointer not down lifts nothing");
 
 		// A sampling keeps its filter and wraps in a small value, and with* change one part.
