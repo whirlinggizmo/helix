@@ -571,7 +571,7 @@ static macro function LoadModelAsync(fileName:String, loaded:Model -> Void, ?fai
   - `out`: Optional. The collision to fill, its point and normal in place; a new one when omitted.
   - returns: The hit.
 
-  From inside the box, returns the way out, its distance negative and its normal pointing in.
+  From inside the box, returns the way out, its normal pointing in.
 
   Sets the hit's point, distance and normal even on a miss.
 - `GetRayCollisionMesh`: Returns where a ray first meets a mesh moved by a transform, at the nearest of the mesh's triangles.

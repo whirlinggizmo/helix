@@ -6361,7 +6361,7 @@ class Raylib {
 
 	/** Returns where a ray meets a box, as raylib's does.
 
-		From inside the box, returns the way out, its distance negative and its normal pointing in.
+		From inside the box, returns the way out, its normal pointing in.
 
 		Sets the hit's point, distance and normal even on a miss.
 

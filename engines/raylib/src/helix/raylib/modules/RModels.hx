@@ -1979,7 +1979,7 @@ class RModels {
 
 	/** Returns where a ray meets a box, as raylib's does.
 
-		From inside the box, returns the way out, its distance negative and its normal pointing in.
+		From inside the box, returns the way out, its normal pointing in.
 
 		Sets the hit's point, distance and normal even on a miss.
 
@@ -1989,7 +1989,8 @@ class RModels {
 		@return  The hit. */
 	static function GetRayCollisionBox(ray:Ray, box:BoundingBox, ?out:RayCollision):RayCollision {
 		var position = ray.position, direction = ray.direction, min = box.min, max = box.max;
-		// From inside, the distance is negative, as if the ray were turned round, so it is turned round.
+		// From inside, the ray is turned round: its hit behind the position, at a negative distance, is the way out, and the sign is turned
+		// back.
 		var insideBox = position.x > min.x && position.x < max.x && position.y > min.y && position.y < max.y && position.z > min.z && position.z < max.z;
 		if (insideBox)
 			direction = direction.negate(hitOffset);
