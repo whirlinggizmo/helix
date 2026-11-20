@@ -954,7 +954,7 @@ static macro function EndDrawing():Void
 - `TakeScreenshot`: Captures the screen and saves it as a file, and returns once the file is written or downloaded. See `LoadImageFromScreen` for the screen as an `Image`.
   - `fileName`: The file's name, or its path; a name with `'` is refused, as raylib's is.
 
-  Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't in it, as in raylib. Called between frames, it is of the frame last shown.
+  Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it, the draws waiting in rlgl's batch in it. raylib's screenshot leaves those out. Called between frames, it is of the frame last shown.
 
   The first call, if nothing is drawn on the screen yet (between frames, or before the frame clears or draws), has no frame to save. It returns at once, and its screenshot is of the next frame, written before that frame's `EndDrawing` returns. `CloseWindow` refuses it when no `EndDrawing` is called after it.
 

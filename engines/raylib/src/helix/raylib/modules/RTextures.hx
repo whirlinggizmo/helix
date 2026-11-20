@@ -723,8 +723,8 @@ class RTextures {
 	/** Reads the screen into an image as the frame has drawn it so far, and returns once it is read. See `TakeScreenshot` for saving the
 		frame to a file.
 
-		The frame's drawing up to the call is drawn first, and the frame goes on from there: the draws after the call are drawn over what
-		the image holds. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
+		The frame's drawing up to the call is drawn first, the draws waiting in rlgl's batch with it, and the frame goes on from there: the
+		draws after the call are drawn over what the image holds. raylib's image leaves out the draws waiting in the batch.
 
 		Called between `EndDrawing` and `BeginDrawing`, the image is the frame last shown, as in raylib. Frames are kept from the first
 		call on, so a first call there may be black. So may a call there after the framebuffer's size changed.

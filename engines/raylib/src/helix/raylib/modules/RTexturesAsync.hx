@@ -400,12 +400,14 @@ class RTexturesAsync {
 				error -> refuse("LoadImageFromScreenAsync", error, failed));
 	}
 
-	// Reads the screen for LoadImageFromScreen: the frame as drawn so far (FrameReads.readScreen), answered at a later poll.
+	// Reads the screen for LoadImageFromScreen: the frame as drawn so far (FrameReads.readScreen), the batch drawn first, answered at a
+	// later poll.
 	static function readScreen(name:String, loaded:Image->Void, failed:String->Void):Void {
 		if (Runtime.frame == null) {
 			Runtime.later(() -> refuse(name, "InitWindow first", failed));
 			return;
 		}
+		Runtime.frame.cut();
 		helix.raylib.internal.Frame.FrameReads.readScreen(Runtime.frame, Runtime.window.framebufferWidth, Runtime.window.framebufferHeight,
 			(pixels, width, height) -> {
 				var image = opaque(pixels, width, height);

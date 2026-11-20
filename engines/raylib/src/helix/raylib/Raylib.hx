@@ -7054,9 +7054,8 @@ class Raylib {
 	/** Captures the screen and saves it as a file, and returns once the file is written or downloaded. See
 		`LoadImageFromScreen` for the screen as an `Image`.
 
-		Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it. The draws since
-		rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't in it, as in raylib. Called between frames, it is of the frame last
-		shown.
+		Called while drawing a frame, the screenshot is of the frame drawn so far, as `LoadImageFromScreen` reads it, the draws
+		waiting in rlgl's batch in it. raylib's screenshot leaves those out. Called between frames, it is of the frame last shown.
 
 		The first call, if nothing is drawn on the screen yet (between frames, or before the frame clears or draws), has no frame to save.
 		It returns at once, and its screenshot is of the next frame, written before that frame's `EndDrawing` returns. `CloseWindow`
@@ -7256,8 +7255,8 @@ class Raylib {
 	/** Reads the screen into an image as the frame has drawn it so far, and returns once it is read. See `TakeScreenshot` for saving the
 		frame to a file.
 
-		The frame's drawing up to the call is drawn first, and the frame goes on from there: the draws after the call are drawn over what
-		the image holds. The draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
+		The frame's drawing up to the call is drawn first, the draws waiting in rlgl's batch with it, and the frame goes on from there: the
+		draws after the call are drawn over what the image holds. raylib's image leaves out the draws waiting in the batch.
 
 		Called between `EndDrawing` and `BeginDrawing`, the image is the frame last shown, as in raylib. Frames are kept from the first
 		call on, so a first call there may be black. So may a call there after the framebuffer's size changed.

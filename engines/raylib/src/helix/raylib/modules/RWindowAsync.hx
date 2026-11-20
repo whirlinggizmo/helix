@@ -282,7 +282,7 @@ class RWindowAsync {
 	}
 
 	// Captures the screen for TakeScreenshot, calling done once it is written or refused, at a later poll. With a frame to read
-	// (FrameReads.hasScreen), the screen as drawn so far, or between frames the frame last shown. With none yet, the next frame as it is
+	// (FrameReads.hasScreen), the screen as drawn so far, the batch drawn first, or between frames the frame last shown. With none yet, the next frame as it is
 	// shown: done is called at once, and the screenshot is among Runtime.screenshotsAsked until it is written or refused, so the next
 	// EndDrawing waits for it. Once CloseWindow refused it, nothing more is written or logged.
 	static function takeScreenshot(fileName:String, done:Void->Void):Void {
@@ -333,6 +333,8 @@ class RWindowAsync {
 		}
 		var framebufferWidth = Runtime.window.framebufferWidth,
 			framebufferHeight = Runtime.window.framebufferHeight;
+		// The draws waiting in the batch are the frame's too, a frame to read where they are all it has drawn.
+		frame.cut();
 		if (helix.raylib.internal.Frame.FrameReads.hasScreen(frame)) {
 			helix.raylib.internal.Frame.FrameReads.readScreen(frame, framebufferWidth, framebufferHeight,
 				(pixels, width, height) -> Runtime.later(() -> save(pixels, width, height, done, refused)),

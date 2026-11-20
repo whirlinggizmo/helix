@@ -11,7 +11,7 @@ import helix.services.time.Time;
 /** Checks the screen reads that wait, `LoadImageFromTexture` and `LoadImageFromScreen`, on graphics that paint each target and the screen
 	in one color, counting the draws into it. A render texture drawn then read holds its clear and its draws, its frame's screen pass left
 	to the frame's end; drawn into again and read, it holds both passes' draws. The screen read part way through a frame holds the frame's
-	clear and the draws drawn so far, not those still in rlgl's batch, at the framebuffer's size; the frame goes on in the same target,
+	clear and the draws drawn so far, those still in rlgl's batch too, at the framebuffer's size; the frame goes on in the same target,
 	the later draws on top, and is copied to the screen without blending as it ends. Every frame after draws into the target and is
 	copied to the screen, its scissors at the framebuffer's scale, so a read between frames holds the frame last shown; a frame drawn
 	without a clear or a read is black. Once the framebuffer's size changes, the target is made again at it, and a read before the next
@@ -111,7 +111,7 @@ class ScreenReads {
 			'the frame\'s end draws the screen\'s pass alone, the render texture passes already drawn: ${graphics.log}');
 		ScreenReadTests.check(graphics.painted(0) == "1 2 1", 'the screen: ${graphics.painted(0)}');
 
-		// The screen read part way through a frame: what is drawn so far, the batch still waiting left out.
+		// The screen read part way through a frame: what is drawn so far, the batch still waiting drawn first.
 		BeginDrawing();
 		ClearBackground(new Color(30, 40, 0, 255));
 		DrawRectangle(0, 0, 2, 2, red);
@@ -120,11 +120,11 @@ class ScreenReads {
 		graphics.log.resize(0);
 		var shot = LoadImageFromScreen();
 		var held = graphics.targets[graphics.targets.length - 1];
-		ScreenReadTests.check(graphics.log.join(",") == 'target $held 16 x 12,clear $held,draw $held,end,read $held',
-			'the screen\'s pass drawn into a target of the framebuffer\'s size, then read: ${graphics.log}');
+		ScreenReadTests.check(graphics.log.join(",") == 'target $held 16 x 12,clear $held,draw $held,draw $held,end,read $held',
+			'the screen\'s pass drawn into a target of the framebuffer\'s size, the batch\'s draw in it, then read: ${graphics.log}');
 		ScreenReadTests.check(shot.width == 16 && shot.height == 12 && shot.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
 			'the framebuffer\'s size, RGBA: ${shot.width} x ${shot.height}, ${shot.format}');
-		ScreenReadTests.check(pixel(shot, 15, 11) == "30 40 1 255", 'the clear and the draw drawn so far, opaque: ${pixel(shot, 15, 11)}');
+		ScreenReadTests.check(pixel(shot, 15, 11) == "30 40 2 255", 'the clear and both draws, opaque: ${pixel(shot, 15, 11)}');
 
 		// The frame goes on in the target, then the target is copied to the screen.
 		DrawRectangle(4, 4, 2, 2, red);
@@ -132,7 +132,7 @@ class ScreenReads {
 		EndDrawing();
 		ScreenReadTests.check(graphics.log.join(",") == 'resume $held,draw $held,end,frame,copy $held,endFrame',
 			'the frame goes on over the target and is copied to the screen: ${graphics.log}');
-		ScreenReadTests.check(graphics.painted(0) == "30 40 2", 'the screen holds the frame, the later draws on top: ${graphics.painted(0)}');
+		ScreenReadTests.check(graphics.painted(0) == "30 40 3", 'the screen holds the frame, the later draws on top: ${graphics.painted(0)}');
 		ScreenReadTests.check(graphics.copyBlend == Blend.OPAQUE, "the copy doesn't blend");
 
 		// The next frame draws into the target too, and is copied to the screen.

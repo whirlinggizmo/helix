@@ -1,11 +1,10 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
-import helix.raylib.Rlgl.*;
 import js.Browser;
 
 /** Checks the screen reads that wait in a page on WebGL2 (tools/test_raylib_pages.py): a render texture cleared blue with its left half
 	drawn red, read by `LoadImageFromTexture`, holds both; the screen read part way through each frame, its left half drawn red over a
-	green clear, holds both at the framebuffer's size, opaque; the frame goes on, its top left quarter drawn blue on top, which the tool
+	green clear and still in rlgl's batch, holds both at the framebuffer's size, opaque; the frame goes on, its top left quarter drawn blue on top, which the tool
 	checks on the page's screenshot (ScreenReadPage.check.json) with the red and the green kept. The screen read after the last frame,
 	between frames, holds that frame: the blue over the red, and the green. Leaves {passed, checks, failures} in `window.helixResult`. */
 class ScreenReadPage {
@@ -43,7 +42,6 @@ class ScreenReadPage {
 			var width = GetScreenWidth(), height = GetScreenHeight();
 			ClearBackground(GREEN);
 			DrawRectangle(0, 0, Std.int(width / 2), height, RED);
-			rlDrawRenderBatchActive();
 			var screen = LoadImageFromScreen();
 			check(screen.width == GetRenderWidth() && screen.height == GetRenderHeight(),
 				'the framebuffer\'s size: ${screen.width} x ${screen.height}, ${GetRenderWidth()} x ${GetRenderHeight()}');

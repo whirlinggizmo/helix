@@ -8,7 +8,7 @@ import helix.services.screen.Screen;
 /** Checks `TakeScreenshot` on graphics that read back two pixels, its files handed to the test. The first call with nothing drawn on
 	the screen returns at once, and its screenshot is of the next frame, written as that frame ends. From then on the frames are kept: a
 	call between frames writes the frame last shown, and one during a frame the frame drawn so far, each before it returns, read from
-	the kept target. A screenshot that can't be saved is refused with the reason logged, and `CloseWindow` refuses a first screenshot
+	the kept target. A first call in a frame whose draws all wait in rlgl's batch draws the batch and writes that frame. A screenshot that can't be saved is refused with the reason logged, and `CloseWindow` refuses a first screenshot
 	left for a frame that never ended, writing none. Run by helix.py test on Node and natively. */
 @:access(helix.raylib.internal.Runtime)
 class ScreenshotTests {
@@ -118,16 +118,28 @@ class Screenshots {
 			'a name with \' refused, as raylib\'s is: $warnings');
 		ScreenshotTests.check(Runtime.screenshotsAsked.length == 0 && written.names.length == 3, "and not waited for");
 
+		// A new window's first, in a frame whose draws all wait in rlgl's batch: the batch is drawn, and the frame written before the call
+		// returns.
+		Runtime.frame = new Frame(graphics);
+		var drawn = graphics.drawnTextures.length;
+		BeginDrawing();
+		DrawRectangle(0, 0, 2, 2, RED);
+		TakeScreenshot("batched.png");
+		ScreenshotTests.check(written.names.join(",") == "shot.png,last.qoi,now.raw,batched.png" && Runtime.screenshotsAsked.length == 0,
+			'a frame of batched draws alone, written: ${written.names}');
+		ScreenshotTests.check(graphics.drawnTextures.length == drawn + 1, 'the batch drawn before the read: ${graphics.drawnTextures.length - drawn}');
+		EndDrawing();
+
 		// A new window's first, between frames, with no frame ended after it: CloseWindow refuses it, and the frame a page clears as it
 		// closes isn't written.
 		Runtime.frame = new Frame(graphics);
 		TakeScreenshot("late.png");
-		ScreenshotTests.check(Runtime.screenshotsAsked.length == 1 && written.names.length == 3, "left for the next frame");
+		ScreenshotTests.check(Runtime.screenshotsAsked.length == 1 && written.names.length == 4, "left for the next frame");
 		CloseWindow();
 		ScreenshotTests.check(warnings.length == 4
 			&& warnings[3] == "TakeScreenshot: late.png: Screenshot could not be saved: Screenshots are generated during EndDrawing()",
 			'CloseWindow refuses a screenshot no frame ended after: $warnings');
-		ScreenshotTests.check(written.names.length == 3 && Runtime.screenshotsAsked.length == 0, 'and writes none: ${written.names}');
+		ScreenshotTests.check(written.names.length == 4 && Runtime.screenshotsAsked.length == 0, 'and writes none: ${written.names}');
 		return ScreenshotTests.checks;
 	}
 }

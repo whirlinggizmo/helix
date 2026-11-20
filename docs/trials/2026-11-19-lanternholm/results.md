@@ -59,8 +59,9 @@ unread, as sprites were enough.
   system's by its absolute path. A path is read under the asset host, natively as in a page, so the load failed and each drew in
   raylib's default font. The port met the same. The failure read "no source has it", and now reads "file not found in any of the
   asset source paths". Run 3's notes say `FileExists` answers true for such a path. Checked natively, `FileExists` answers false.
-- **`TakeScreenshot` missed the controls, 3 of 3.** The draws since rlgl's batch was last drawn aren't in the screenshot, as in
-  raylib and as its doc comment says. Each found `rlDrawRenderBatchActive` within a round.
+- **`TakeScreenshot` missed the controls, 3 of 3.** Each called it after its last `EndDrawing` and quit, and `CloseWindow` refused
+  the screenshot. Each moved the call before `EndDrawing`, where the draws waiting in rlgl's batch weren't in the screenshot, as in
+  raylib. Each found `rlDrawRenderBatchActive` within a round. Fixed: the screen reads draw the batch first (DECISIONS 85).
 - **`LoadShaderFromMemory`'s refusal, 3 of 3.** Each moved to `CompileShaderFile` and `LoadCompiledShader` from the message alone.
 - **Compile errors otherwise** were Haxe's and GLSL's: a type in another module without its import (3 of 3, five rounds in run 2,
   where the compiler named other things), an integer literal past 32 bits (2), a private member read from another class (2), an
