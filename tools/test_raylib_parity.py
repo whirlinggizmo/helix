@@ -14,9 +14,9 @@ A value suite's Haxe harness is then built for Node (js) and hxcpp (cpp), or the
 in a headless Chromium, Playwright's own, muted, through tools/capture_page.cjs, for what only a browser has), and run, each
 printing what the reference prints, a line at a time. Each section's lines (by their first word, or as the manifest's sections say) are compared word by word: words and integers
 exactly, other numbers relative to max(1, |either|, the line's scale), within the section's bar (the manifest's bars, a target's own where it names one, else its
-tolerance). A pixel suite's helix-raylib program is built natively for each backend it names (gl, sdl_gpu), its shaders (the manifest's
+tolerance). A pixel suite's helix-raylib program is built natively for each graphics adapter it names (gl, sdl_gpu), its shaders (the manifest's
 shaders) compiled ahead of time by the same build, and run on the private display,
-and its frame compared with raylib's: how many pixels differ at all, against the backend's allowance. Each section's or backend's
+and its frame compared with raylib's: how many pixels differ at all, against the adapter's allowance. Each section's or adapter's
 worst is printed beside its bar. Exits 1 on any failure.
 
 Linux only: the C references and native programs need a private display (Xvfb, Openbox), and raylib's desktop build X11, GL and a C
@@ -349,7 +349,7 @@ def differing(a, b):
 
 
 def check_pixels(name, manifest, main, out, display, env):
-    """Builds and runs a pixel suite's program natively for each backend and compares its frame with raylib's; returns the problems."""
+    """Builds and runs a pixel suite's program natively for each graphics adapter and compares its frame with raylib's; returns the problems."""
     import native_build
     if (out / 'ref.png').exists():
         (out / 'ref.png').unlink()
@@ -358,28 +358,28 @@ def check_pixels(name, manifest, main, out, display, env):
         raise Failure('the C reference saved no ref.png')
     shutil.copy2(out / 'ref.png', out / 'raylib.png')
     problems = []
-    for backend, allowance in manifest['backends'].items():
-        directory = out / ('native' if backend == 'gl' else 'native-gpu')
-        defines = ['-D', 'sdl_gpu'] if backend == 'sdl_gpu' else []
+    for adapter, allowance in manifest['adapters'].items():
+        directory = out / ('native' if adapter == 'gl' else 'native-gpu')
+        defines = ['-D', 'sdl_gpu'] if adapter == 'sdl_gpu' else []
         haxe(['-lib', 'helix-raylib', '-cp', str(out / 'src'), '-main', main, '-D', 'helix-company=helix', '-D', f'helix-product=parity-{name}', '-dce', 'full', '-D', f'HXCPP_COMPILE_THREADS={os.cpu_count() or 4}']
              + defines + compiled_shaders(manifest) + ['-cpp', str(directory)], env, cwd=out)
         native_build.place_runtimes(directory, SDL3)
         shot = directory / 'helix.png'
         if shot.exists():
             shot.unlink()
-        run([str(directory / main)], display, directory, {'HELIX_QUIT_AFTER_FRAME': str(manifest.get('frames', 5))}, what=f'the {backend} program')
+        run([str(directory / main)], display, directory, {'HELIX_QUIT_AFTER_FRAME': str(manifest.get('frames', 5))}, what=f'the {adapter} program')
         if not shot.is_file():
-            problems.append(f'{backend}: saved no helix.png')
+            problems.append(f'{adapter}: saved no helix.png')
             continue
-        shutil.copy2(shot, out / f'{backend}.png')
-        found = differing(out / 'raylib.png', out / f'{backend}.png')
+        shutil.copy2(shot, out / f'{adapter}.png')
+        found = differing(out / 'raylib.png', out / f'{adapter}.png')
         if found is None:
-            problems.append(f'{backend}: its frame is not the size of raylib\'s')
+            problems.append(f'{adapter}: its frame is not the size of raylib\'s')
             continue
         count, total, most = found
-        print(f'  {backend}: {count} of {total} pixels differ ({100 * count / total:.2f}%), by at most {most}; allowed {allowance}')
+        print(f'  {adapter}: {count} of {total} pixels differ ({100 * count / total:.2f}%), by at most {most}; allowed {allowance}')
         if count > allowance:
-            problems.append(f'{backend}: {count} pixels differ, over the {allowance} allowed')
+            problems.append(f'{adapter}: {count} pixels differ, over the {allowance} allowed')
     return problems
 
 

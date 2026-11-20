@@ -172,9 +172,9 @@ def example(name, browser):
     return run(name, directory, 'Main', browser, native_run, page_run)
 
 
-def tests(name, directory, main, page, browser, backends=True, native_extra=None, query='', expected_errors=(), site=None):
+def tests(name, directory, main, page, browser, adapters=True, native_extra=None, query='', expected_errors=(), site=None):
     """Builds and runs a test program both ways (one that ends with {passed, checks, failures}), the page's run on page, natively on
-    each graphics backend it builds for (backends) or none, native_extra, query, expected_errors and site as run's; the problems found."""
+    each graphics adapter it builds for (adapters) or none, native_extra, query, expected_errors and site as run's; the problems found."""
 
     def outcome(where, result):
         if result is None:
@@ -190,7 +190,7 @@ def tests(name, directory, main, page, browser, backends=True, native_extra=None
         lines = [l for l in ran.stdout.splitlines() if l.startswith('{')]
         if not lines:
             return [f'exited {ran.returncode} with no result\n{ran.stdout}{ran.stderr}']
-        found = outcome(f'natively on {label}' if backends else 'natively', json.loads(lines[-1]))
+        found = outcome(f'natively on {label}' if adapters else 'natively', json.loads(lines[-1]))
         return found or ([f'exited {ran.returncode}\n{ran.stderr}'] if ran.returncode else [])
 
     return run(name, directory, main, browser, native_run, lambda printed, _: outcome(f'in the page ({page})', printed['result']),
@@ -204,12 +204,12 @@ def graphics(browser):
 
 def audio(browser):
     """Builds and runs the audio tests both ways; the problems found."""
-    return tests('audio', AUDIO, 'AudioTests', 'Web Audio', browser, backends=False)
+    return tests('audio', AUDIO, 'AudioTests', 'Web Audio', browser, adapters=False)
 
 
 def window(browser):
     """Builds and runs the window tests both ways, the page's safe area emulated as a phone's with a notch; the problems found."""
-    return tests('window', WINDOW, 'WindowTests', 'the page', browser, backends=False, query='&safeArea=47,0,34,0')
+    return tests('window', WINDOW, 'WindowTests', 'the page', browser, adapters=False, query='&safeArea=47,0,34,0')
 
 
 class ShortBodies:
@@ -320,7 +320,7 @@ def http(browser):
     import urllib.parse
     server = ShortBodies()
     try:
-        return tests('http', HTTP, 'HttpTests', 'fetch', browser, backends=False,
+        return tests('http', HTTP, 'HttpTests', 'fetch', browser, adapters=False,
                      native_extra={'HELIX_SERVER': server.url, 'HELIX_UNACCEPTED': server.unaccepted},
                      query=''.join(f'&{k}=' + urllib.parse.quote(v, safe='') for k, v in
                                    (('server', server.url), ('other', server.other), ('unaccepted', server.unaccepted))),

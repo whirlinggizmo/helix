@@ -15,7 +15,7 @@
   },
   "shaders": [["web/lighting.vs", "web/lighting.fs", "web/lighting.shader"], ["web/own.vs", "web/lighting.fs", "web/own.shader"]],
   "frames": 40,
-  "backends": {
+  "adapters": {
     "gl": 150,
     "sdl_gpu": 12000
   }

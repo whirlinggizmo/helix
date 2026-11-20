@@ -15,7 +15,7 @@
   },
   "shaders": [["web/skybox.vs", "web/skybox.fs", "web/skybox.shader"], ["web/cube.vs", "web/cube.fs", "web/cube.shader"]],
   "frames": 300,
-  "backends": {
+  "adapters": {
     "gl": 50,
     "sdl_gpu": 6000
   },

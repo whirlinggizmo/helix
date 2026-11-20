@@ -1,4 +1,4 @@
-"""SDL3 for the SDL3 backends (sdl3-gl, sdl3-gpu): the library a native build links, found or made into build/deps the first time. The headers are always
+"""SDL3 for the native adapters: the library a native build links, found or made into build/deps the first time. The headers are always
 libs/platform/vendor/sdl3's, SDL 3.4.18's (dependencies.json, sdl3), so a build never uses an API newer than the pin, whichever library it links.
 
 - Linux: the system's SDL3 when pkg-config finds one of 3.4.18 or newer (SDL keeps its ABI across 3.x); else the pinned source release,
@@ -120,8 +120,8 @@ def install_hint():
     return '\n'.join(f'  {name}: {command}' for name, command in PACKAGES.items()) + '\n  (others: SDL\'s docs/README-linux.md)'
 
 
-def backends(configure_output):
-    """SDL's configure summary's enabled backends, by kind ("Video drivers", "Audio drivers", ...): names, without "(dynamic)"."""
+def drivers(configure_output):
+    """SDL's configure summary's enabled drivers and libraries, by kind ("Video drivers", "Audio drivers", ...): names, without "(dynamic)"."""
     found = {}
     for line in configure_output.splitlines():
         line = line.removeprefix('--').strip()
@@ -131,7 +131,7 @@ def backends(configure_output):
     return found
 
 
-def check_backends(found, prefix):
+def check_drivers(found, prefix):
     """Stops when SDL found no windowing system to build for (its program could open no window); warns, naming the packages, for the
     optional parts it left out (prefix: where the build goes, deleted to build again)."""
     video, audio = found.get('Video drivers', set()), found.get('Audio drivers', set())
@@ -169,7 +169,7 @@ def built_linux(entry, version):
         print(configured.stdout, configured.stderr, sep='', flush=True)
         if configured.returncode != 0:
             raise RuntimeError('sdl3: configuring SDL failed (above)')
-        check_backends(backends(configured.stdout), prefix)
+        check_drivers(drivers(configured.stdout), prefix)
         subprocess.run(['cmake', '--build', build, '--parallel', str(os.cpu_count() or 4)], check=True)
         subprocess.run(['cmake', '--install', build], check=True)
         shutil.rmtree(build)

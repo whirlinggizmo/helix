@@ -11,7 +11,7 @@
     "src/raygui.h": "raylib:examples/shapes/raygui.h"
   },
   "frames": 10,
-  "backends": {
+  "adapters": {
     "gl": 0,
     "sdl_gpu": 4800
   },

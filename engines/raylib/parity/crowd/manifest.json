@@ -14,7 +14,7 @@
   },
   "shaders": [["web/skinning.vs", "web/skinning.fs", "web/skinning.shader"], ["web/own.vs", "web/skinning.fs", "web/own.shader"]],
   "frames": 40,
-  "backends": {
+  "adapters": {
     "gl": 150,
     "sdl_gpu": 2500
   }

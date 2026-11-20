@@ -4,20 +4,20 @@ tools/speed/contenders/<name>/: raylib's textures_bunnymark (bunnies of one text
 models_animation many at once (the robots: a grid of robot.glb, each posed at its own frame, in 1280 x 720). It makes docs/speed.json and
 docs/benchmarks.md's speed tables and charts (docs/benchmarks/*.svg). It runs when asked, never in CI: a run takes minutes to hours.
 
-    python3 tools/gen_speed.py [--native | --page] [--headless | --headed] [--backend vulkan|gl] [--all] [--runs 3] [--browser PATH]
+    python3 tools/gen_speed.py [--native | --page] [--headless | --headed] [--angle vulkan|gl] [--all] [--runs 3] [--browser PATH]
                                [--write] [--unchecked] [--no-control] [bunnymark] [robots] [CONTENDER ...]
 
 The programs are bunnymark and robots, both when none is named. The contenders are helix-raylib, raylib-c, godot, three, lime (the
 bunnymark alone) and helix-legacy. With none named, a run takes helix-raylib, raylib C as the control (not with --no-control), and each
 other contender whose rows are missing or were measured at another version than dependencies.json's speed entry pins; --all takes every
-contender, and the pages over both backends. Each is built into build/speed/<contender>/ under build/.lock, with the assets taken from raylib's own release
+contender, and the pages over Vulkan and GL. Each is built into build/speed/<contender>/ under build/.lock, with the assets taken from raylib's own release
 (the bunny's texture, the robot). A contender whose toolchain this machine lacks is skipped with one line saying so: raylib-c's page
 needs Emscripten (EMSDK, or HELIX_EMSDK, or ~/toolchains/emsdk), godot needs its binary (HELIX_GODOT, or godot on PATH, or
 ~/toolchains/godot/Godot_v<version>-stable_linux.x86_64), three needs npm (and installs three.js, esbuild and, for its desktop program,
 Electron), lime needs Lime installed in the user's haxelib at the pinned version (its own BunnyMark demo's renderer), helix-legacy needs
 helix-legacy's checkout (HELIX_LEGACY, or ../helix-legacy beside this one).
 
---page runs the pages (in Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --backend gl) and --native the
+--page runs the pages (in Chromium with its frame rate cap lifted, on ANGLE over Vulkan, or over GL with --angle gl) and --native the
 native programs (one at a time, with vsync off), three.js's in Electron; neither flag runs both. --headless, the default, runs them off
 screen (the native programs on a private display with software GL, whose times aren't representative; the pages in headless Chromium);
 --headed runs the native programs in windows on $DISPLAY, and the pages over GL in the browser's (over Vulkan a visible window loses its
@@ -201,9 +201,9 @@ def build_helix_raylib(programs, page, native):
             (home / 'web').mkdir(parents=True, exist_ok=True)
             for asset in assets[program]:
                 shutil.copy(asset, home / 'web' / asset.name)
-            for backend, defines in (('native-gl', []), ('native-sdlgpu', ['-D', 'sdl_gpu'])):
-                say(f'building helix-raylib {program} {backend}')
-                haxe(common + defines + ['-D', jobs, '-cpp', home / backend], env)
+            for where, defines in (('native-gl', []), ('native-sdlgpu', ['-D', 'sdl_gpu'])):
+                say(f'building helix-raylib {program} {where}')
+                haxe(common + defines + ['-D', jobs, '-cpp', home / where], env)
 
 
 def build_raylib_c(programs, page, native):
@@ -464,9 +464,9 @@ def natives(programs, contenders):
     godot_args = ['--audio-driver', 'Dummy']
     for program in programs:
         if 'helix-raylib' in contenders:
-            for backend in ('native-gl', 'native-sdlgpu'):
-                home = OUT / 'helix-raylib' / program / backend
-                found.append(('helix-raylib', '', program, backend, lambda mode, h=home: [str(h / 'Main'), *options(mode)], home))
+            for where in ('native-gl', 'native-sdlgpu'):
+                home = OUT / 'helix-raylib' / program / where
+                found.append(('helix-raylib', '', program, where, lambda mode, h=home: [str(h / 'Main'), *options(mode)], home))
         if 'raylib-c' in contenders:
             if program == 'bunnymark':
                 home = OUT / 'raylib-c/bunnymark/native'
@@ -508,13 +508,13 @@ def found_line(output):
         return None
 
 
-def run_page(browser, directory, query, backend, size, mode, headed):
+def run_page(browser, directory, query, angle, size, mode, headed):
     """One page run, in the browser's window on the display when headed; its result (None when none came) and what the runner reported."""
     seconds = PAGE_SECONDS['ramp' if is_ramp(mode) else 'count']
     env = dict(os.environ)
     env.pop('DBUS_SESSION_BUS_ADDRESS', None)
     try:
-        done = subprocess.run(['node', str(HERE / 'run_page.cjs'), '--headed' if headed else '--headless', browser, str(directory), query, str(seconds), backend, str(size[0]), str(size[1])],
+        done = subprocess.run(['node', str(HERE / 'run_page.cjs'), '--headed' if headed else '--headless', browser, str(directory), query, str(seconds), angle, str(size[0]), str(size[1])],
                               capture_output=True, text=True, encoding='utf-8', env=env, timeout=seconds + 120)
     except subprocess.TimeoutExpired:
         return None, {'errors': ['the page runner timed out']}
@@ -576,22 +576,22 @@ def ramped(run, mode, start_at):
     return result, other
 
 
-def measure(programs, contenders, page, native, backends, runs, headed, browser, record, ramp_start=False):
+def measure(programs, contenders, page, native, angles, runs, headed, browser, record, ramp_start=False):
     """Every run, round-robin so a drift in the machine's state spreads over every program, each recorded. Pages over Vulkan run headless
     even when headed: a visible window loses its WebGL context at startup there. With ramp_start a ramp starts near where it ended last
     (start_count)."""
     # Without ramp_start every ramp starts at one increment, as every row before start_count was measured.
     store = load_store() if ramp_start else {'rows': []}
-    for backend in backends if page else []:
+    for angle in angles if page else []:
         for run_index in range(1, runs + 1):
             for contender, variant, program, directory, query, size in pages(programs, contenders):
                 for mode in modes_of(program):
-                    go = lambda m: run_page(browser, directory, query(m), backend, size, m, headed and backend == 'gl')  # noqa: E731
+                    go = lambda m: run_page(browser, directory, query(m), angle, size, m, headed and angle == 'gl')  # noqa: E731
                     if is_ramp(mode):
-                        result, printed = ramped(go, mode, start_count(store, contender, variant, program, f'page-{backend}'))
+                        result, printed = ramped(go, mode, start_count(store, contender, variant, program, f'page-{angle}'))
                     else:
                         result, printed = go(mode)
-                    record({'where': f'page-{backend}', 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
+                    record({'where': f'page-{angle}', 'contender': contender, 'variant': variant, 'program': program, 'mode': mode, 'run': run_index,
                             'result': result, 'files': printed.get('files'), 'renderer': printed.get('renderer'), 'errors': printed.get('errors')})
     if native:
         def every(display):
@@ -821,7 +821,7 @@ def write_page_tables(store):
 # ---- docs/benchmarks/*.svg ----
 
 CHARTS = ROOT / 'docs/benchmarks'
-# The rows a chart shows, pages first: a page over Vulkan, then each native backend.
+# The rows a chart shows, pages first: a page over Vulkan, then each native graphics adapter.
 CHART_WHERES = ['page-vulkan', 'native-gl', 'native-sdlgpu', 'native-vulkan', 'native-electron']
 # Light and dark: the surface, the text, the grid, and helix-raylib's, the control's and the others' marks.
 CHART_STYLE = """
@@ -998,8 +998,8 @@ def drift(entries, store):
 def main():
     parser = cli.parser(__doc__)
     cli.runs(parser)
-    parser.add_argument('--backend', choices=['vulkan', 'gl'], default='vulkan', help="what ANGLE draws the pages over (default vulkan)")
-    parser.add_argument('--all', action='store_true', help='every contender, and the pages over both backends')
+    parser.add_argument('--angle', choices=['vulkan', 'gl'], default='vulkan', help="what ANGLE draws the pages over (default vulkan)")
+    parser.add_argument('--all', action='store_true', help='every contender, and the pages over Vulkan and GL')
     parser.add_argument('--runs', type=int, default=3, help='runs of each program and count (default 3)')
     parser.add_argument('--browser', default='', help="a Chromium to run the pages in (default Playwright's own)")
     parser.add_argument('--write', action='store_true', help="update docs/speed.json, docs/benchmarks.md's tables and its charts with the run")
@@ -1017,8 +1017,8 @@ def main():
         return 2
     programs = [n for n in PROGRAMS if n in a.names] or PROGRAMS
     native, page = cli.targets(a)
-    backends = ['vulkan', 'gl'] if a.all else [a.backend]
-    wheres = ([f'page-{b}' for b in backends] if page else []) + (['native-gl', 'native-sdlgpu', 'native-vulkan', 'native-electron'] if native else [])
+    angles = ['vulkan', 'gl'] if a.all else [a.angle]
+    wheres = ([f'page-{b}' for b in angles] if page else []) + (['native-gl', 'native-sdlgpu', 'native-vulkan', 'native-electron'] if native else [])
     named = [n for n in CONTENDERS if n in a.names]
     contenders = named or (CONTENDERS if a.all else stale(programs, wheres, load_store(), not a.no_control))
     say('contenders: ' + ', '.join(contenders))
@@ -1052,7 +1052,7 @@ def main():
 
     import screen_power
     with screen_power.kept_on(a.headed):
-        measure(programs, built, page, native, backends, a.runs, a.headed, a.browser, record, a.ramp_start)
+        measure(programs, built, page, native, angles, a.runs, a.headed, a.browser, record, a.ramp_start)
     say(f'{len(rows)} runs in {runs_file.relative_to(ROOT)}')
     entries = summarize(rows, time.strftime('%Y-%m-%d'), built)
     for e in entries:

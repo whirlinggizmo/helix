@@ -22,7 +22,7 @@ def place_runtimes(directory,sdl3=None):
         else:shutil.copy2(runtime,directory)
 
 def env(sdl3=None):
-    """The environment hxcpp's build reads: the platform's root, a shared compile cache, and for an SDL3 backend the library sdl3 names
+    """The environment hxcpp's build reads: the platform's root, a shared compile cache, and for a build linking SDL3 the library sdl3 names
     (tools/sdl3.py's find)."""
     config=ROOT/'build/hxcpp_config.xml';config.parent.mkdir(parents=True,exist_ok=True)
     config.write_text('<xml><set name="HXCPP_COMPILE_CACHE" value="'+(ROOT/'build/hxcpp-cache').as_posix()+'"/></xml>\n', encoding='utf-8')

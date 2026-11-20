@@ -119,7 +119,7 @@ Frame time in ms:
 
 ### Pages over GL
 
-ANGLE over GL is Chrome's default on Linux, and the pages run there as below (`gen_speed.py --backend gl`). A visible window is within 15%
+ANGLE over GL is Chrome's default on Linux, and the pages run there as below (`gen_speed.py --angle gl`). A visible window is within 15%
 of headless over GL. Over Vulkan a visible window loses its WebGL context at startup, every program's, so pages are measured headless.
 
 <!-- gen_speed: bunnymark-gl -->

@@ -19,7 +19,7 @@
     ]
   ],
   "frames": 40,
-  "backends": {
+  "adapters": {
     "gl": 10500,
     "sdl_gpu": 15000
   },

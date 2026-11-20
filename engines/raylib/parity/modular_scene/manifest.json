@@ -15,7 +15,7 @@
     "web/Sword.glb": "../assets/modular-women/Sword.glb"
   },
   "frames": 60,
-  "backends": {
+  "adapters": {
     "gl": 2,
     "sdl_gpu": 400
   }

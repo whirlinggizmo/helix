@@ -13,7 +13,7 @@ int main(void) {
     const int ended = voice > 0 && !helix_audio_is_playing(voice);
     const Uint64 took = SDL_GetTicks() - start;
     helix_audio_close();
-    printf("{\"passed\":%s,\"backend\":\"SDL3_mixer\",\"milliseconds\":%d,\"audio\":\"Silence only; no audible-output claim\"}\n",
+    printf("{\"passed\":%s,\"adapter\":\"SDL3_mixer\",\"milliseconds\":%d,\"audio\":\"Silence only; no audible-output claim\"}\n",
         ended ? "true" : "false", (int)took);
     return ended ? 0 : 3;
 }

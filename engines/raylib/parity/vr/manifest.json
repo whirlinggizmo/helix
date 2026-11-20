@@ -11,7 +11,7 @@
   },
   "shaders": [[null, "web/distortion330.fs", "web/distortion.shader"]],
   "frames": 40,
-  "backends": {
+  "adapters": {
     "gl": 80,
     "sdl_gpu": 1100
   },

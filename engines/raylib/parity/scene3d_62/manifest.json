@@ -5,7 +5,7 @@
   "kind": "pixels",
   "generated": true,
   "frames": 40,
-  "backends": {
+  "adapters": {
     "gl": 20,
     "sdl_gpu": 1000
   },
