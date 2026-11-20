@@ -55,41 +55,26 @@ speed where docs/benchmarks.md records them.
   still go through `Frame.quad` out of line, since inlining it everywhere cost 640 B gzip a rung. On the phone
   the robots are script-bound the same way (36 ms of 40 at 100 robots, raylib wasm 30 whole): the draw path's cost per call is the
   mobile item as well.
-- **Type bits in the graphics handles, and the resource floor's shape:** the native adapters pack a slot and a generation into a handle
-  (sokol's own ids, the SDL_GPU adapter's slot + 1 below a generation), per kind, so a buffer handle given where a texture is expected is
-  caught only when its slot and generation miss a live texture; the earlier C frameworks' handles carried the kind too. Put the kind in the handle's
-  high bits on every adapter (the WebGL2 one hands out plain increasing ints) and refuse a handle of another kind, with a graphics test
-  for each mistake. The floor of 2047 of each kind alive (docs/PLATFORM.md) is the native tables' size; a mesh takes a buffer an
-  attribute, so interleaving a mesh's attributes into one buffer (helix-geometry's meshes, helix-raylib's Models) cuts a scene's count
-  six-fold before the tables need to grow.
-- **A masked animation blend, in helix-geometry (DECISIONS 47):** a pose blended from two
-  clips bone by bone, each bone taking the second clip by a weight of its own: a set the program names (a bone and its children,
-  `Spine` up for the upper body), or the bones the clip has tracks for, so a clip authored for the legs alone moves the legs alone.
-  Godot's and Unity's animation trees blend by bone masks; raylib 6.0's `UpdateModelAnimationEx` blends the whole body by one value,
-  so an attack clip replaces the run on the legs too and the character slides (the jam's warden does), and a clip with no track for a
-  bone fills it with the rest pose at load, so partial clips dilute each other through a single blend. helix-geometry's `Animation3D`
-  holds a clip's tracks per bone and `Skeleton3D` its rest pose, so the blend and the mask from a clip's tracks are theirs, for an
-  engine above. helix-raylib has no call for it (DECISIONS 60).
+- **A mesh's attributes in one buffer:** the floor of 2047 of each kind alive (docs/PLATFORM.md) is the native tables' size. A mesh
+  takes a buffer an attribute, so interleaving a mesh's attributes into one buffer (helix-geometry's meshes, helix-raylib's Models)
+  cuts a scene's count six-fold before the tables need to grow.
+- **A masked animation blend, in helix-geometry (DECISIONS 47):** helix-raylib's Models extra blends two clips bone by bone
+  (`UpdateModelAnimationMasked`), each bone taking the second clip by a weight of its own, with a mask of a bone and its children
+  (`GetModelBoneMask`). Still wanted: the blend in helix-geometry, for an engine above, as `Animation3D` holds a clip's tracks per
+  bone and `Skeleton3D` its rest pose. And a mask of the bones a clip has tracks for, so a clip authored for the legs alone moves the
+  legs alone: a clip with no track for a bone fills it with the rest pose at load, so partial clips dilute each other through a
+  single blend. Godot's and Unity's animation trees blend by bone masks.
 - **Lit sprites (DECISIONS 47, 53):** 2D point and directional lights over a sprite run, a region with an optional normal map
   (Godot's Light2D and CanvasItem normal maps, Unity's 2D lights and lit sprite material, Phaser's Light2D), so a top-down game has a
   torch, a flash and a night. For an engine above, not helix-raylib (DECISIONS 60).
-- **The garbage collector's share of a frame, natively first:** hxcpp's collector over helix-raylib's draw path is unmeasured. Measure
-  it on the robots and bunnymark programs (hxcpp's `GC_STATS`, or perf on the collector's symbols), find what each draw allocates in
-  `Frame`, `Models` and `Skinning`, and take it out or pool it (done 2026-11-05: the robots program's allocations a frame fell from 200k
-  to 53k and the collector's share from 12.6% to 1.2% of the main thread's cycles, with the native adapter's draw allocating nothing). The
-  collector's own settings were measured and are not worth setting: generational mode (`-D HXCPP_GC_GENERATIONAL`, a build define in
-  hxcpp 4.3.2) and a 256 MB minimum working memory each take under half a point more, the floor at the cost of its memory; the robots
-  contender keeps a `gc-min=MB` run option for measuring. In a page the collector is V8's: the robots page at 200 scavenges every
-  third frame (125 in 8 s, 332 ms of main thread, none over 4 ms), from a typed-array view a block a draw and a key string a draw in
-  the WebGL2 adapter, and helix-raylib's own; the same pass trims those.
 - **raygui on helix-raylib (done, DECISIONS 41):** `helix.raylib.Raygui`, raygui 4.5-dev as raylib 5.5 ships it, every control, its
   style, icons and tooltips, held to raygui's C by the `raygui`, `raygui_input` and `raygui_values` suites. `.rgs` styles and `.rgi`
   icons load through `GuiLoadStyleAsync` and `GuiLoadIconsAsync` in `Raygui`. Left: rGuiLayout's `.rgl` layouts, and its code
   export through a Haxe code template for helix-raylib, if its custom templates allow one (to be checked). raygui styles only
   colors, borders, text and its icons. Skins from images are helix-raylib's own, in `extras.GuiSkins` (done, DECISIONS 42, 63). rlights is part of the Lighting extra (DECISIONS 78). raylib's other companion headers agents know,
   easings (`reasings.h`, whose curves are `helix.math.Ease`'s) and physics (`physac.h`), are each an extra when wanted.
-- **Platform proposals queued, for review:** depth sampled after a pass, depth bias, stencil, and the depth tests `Always`, `Less`,
-  `Equal` and `GreaterEqual` (helix-render's revision 9). A render target's own sample count, apart from its depth, is being built. Deferred from the vertex formats
+- **Platform proposals queued, for review:** stencil, and the depth tests `Equal` and `GreaterEqual` (helix-render's revision 9).
+  Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
   `ShaderCompileOptions` entry; until then they are floats, or a layer owning its shader scales them itself.
   The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
@@ -126,8 +111,9 @@ speed where docs/benchmarks.md records them.
   `ShaderSource` field it reads (an `IGraphics` member, a platform interface change for review), `CompileShaderFile` would write a file
   for each (`glow.glsl300es.shader`) and the loads would fetch the running adapter's, so a new adapter's dialect needs no table above
   the platform.
-- **Networking:** a platform contract per transport, policy in a service above, netcode above that. `IHttp` (done) makes requests. Next,
-  `IWebSocket`, a connection to a server, reliable and ordered: opened with its URL and protocols, sending text or bytes, closed with a
+- **Networking:** a platform contract per transport, policy in a service above, netcode above that. `IHttp` makes requests. Next,
+  `IWebSocket`'s adapters, its contract being in the platform (docs/PLATFORM.md). A connection to a server, reliable and ordered:
+  opened with its URL and protocols, sending text or bytes, closed with a
   code and a reason, what arrived on the platform's threads delivered at `poll`, as `IHttp` delivers, each message with the time it arrived
   (taken in the browser's event or on the native thread, so netcode reads when it came, not when the frame got to it); in a page on the
   main thread, where the browser already does the network's work off it, a Worker left to the work off the frame that physics wants (helix-
@@ -155,8 +141,8 @@ speed where docs/benchmarks.md records them.
   as Jolt; hxDaedalus (Haxe, 2D) benchmarked against it first. The test: agents cross a level the same way on both targets.
 - **SDL3 with the platform:** a native build needs only Haxe and hxcpp (goal 6), so the platform haxelib ships the pinned SDL3 per
   system, or its build fetches it, in place of naming a library with `HELIX_SDL3_LIBRARY`.
-- **Gestures:** taps, double taps, drags and flicks (the mouse and fingers alike), and two fingers' pan, pinch and twist, over `Touch`
-  and `Mouse`, as helix-legacy's `PointerGestures` and touch gesture had them.
+- **Gestures:** the services' `Gestures` detects a tap, a double tap, a hold, a drag, a swipe and a pinch, from the mouse and the
+  fingers alike. Still wanted: two fingers' pan and twist, as helix-legacy's touch gesture had them.
 - **A UI toolkit beyond raygui, HaxeUI first:** components, layouts and styles at Godot's Control and Theme's reach, through the DOM in
   a page and in Electron and drawn by helix natively, one Haxe API over both. Measured first: what haxeui-core adds to a page, and
   whether a helix backend drawing it natively keeps up with the DOM backend.
@@ -172,7 +158,6 @@ speed where docs/benchmarks.md records them.
   - A UI library: input from the events, not a kept `Input` (F12); keys held at a reset ignored alone (F13, F14); aligned slider
     tracks (F15); wrapping labels (F58); list rows beyond text (F59); a modal dialog (F60); drawn panel borders (F68); a frame that
     keeps its layout (F69).
-  - On-screen controls: a touch stick (F48, DECISIONS 13).
   - Physics: bodies with circle contacts (F18) and spheres against meshes (F44).
   - Tooling: hot reload and the runner's statics and setup (F26, F27, F29, F45); a pinned release and the starter's `init` (F30, F36);
     an autopilot feeding the events, fingers too, its failures not timeouts, a `wait` with `atMost` (F31-F33, F50, F72); dev and
