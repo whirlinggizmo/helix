@@ -1,6 +1,7 @@
 Build the program in `{DIR}/spec.md` in C with **raylib 5.5** (`#include "raylib.h"`, with `raymath.h`, `rlgl.h`, `raygui.h` and the examples' `rlights.h`).
 
 - **Docs:** raylib 5.5's headers are in `{DIR}/include/` and its C examples, with their shaders, in `{DIR}/docs/examples/`. Read them as you need. Read nothing else: no web.
+- **Assets:** the title's font is `{DIR}/assets/serif.ttf`. The program names the font by its path from this directory, as `"assets/serif.ttf"`.
 - **Reference:** `{DIR}/reference/` holds screenshots of what the spec describes, 1280 x 720: at dawn, noon, dusk and night, and close up at noon. Compare yours with them.
 - **Building:** in `{DIR}`, `cmake -B build && cmake --build build` builds the program natively as `native/wardens`: every `.c` here, against raylib 5.5's library (`lib/libraylib.a`). You may change `CMakeLists.txt`. Build as often as you like.
 - **Running:** `./native/wardens [arguments]` from `{DIR}` runs it, passing it the arguments (as `--hour=0.5 --frames=120`). It runs on a display of its own, never on the desktop, with no sound. The program must exit on its own, as your shell waits for it, so give it a way to stop (an argument naming the frames to run, say). To see it, save screenshots with raylib's call for it and look at them. Run it in the foreground: a program left running in the background keeps your session from ending.

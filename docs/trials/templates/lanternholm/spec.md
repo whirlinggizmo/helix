@@ -1,9 +1,9 @@
 # Lanternholm (3D, a floating island under a turning sky)
 
 A small 3D toy: a floating island to look at from every side, its sky turning from dawn through noon and dusk into a moonlit night,
-trees to plant and little creatures to poke. Everything is made in code: its shapes, its textures and its sound. There are no asset
-files. It names no engine and no function. `reference/` holds screenshots of it at 1280 x 720: at dawn, noon, dusk and night, and close
-up at noon.
+trees to plant and little creatures to poke. Everything is made in code: its shapes, its textures and its sound. Its one asset file
+is the title's font, `assets/serif.ttf`. It names no engine and no function. `reference/` holds screenshots of it at 1280 x 720: at
+dawn, noon, dusk and night, and close up at noon.
 
 Distances are in meters, the island about 4.3 across. Colors are RGB, 0 to 1, or hex.
 
@@ -80,10 +80,10 @@ Distances are in meters, the island about 4.3 across. Colors are RGB, 0 to 1, or
 - **The hut at night:** its windows glow warm orange, and a small warm light by the door lights the ground in front of it.
 
 ## Tools
-- **Controls:** a title "Lanternholm" at the top left, in a serif face. At the bottom middle, a toolbar of three tools, Time, Plant and
-  Poke, each with an icon and its name, the chosen one highlighted. Above it a panel for the chosen tool, and above that a hint.
-  Panels are dark and translucent, the highlight amber (#f1b768). Keys 1, 2 and 3 choose the tools. H hides and shows all the controls,
-  fading.
+- **Controls:** a title "Lanternholm" at the top left, in the serif face of `assets/serif.ttf`. At the bottom middle, a toolbar of
+  three tools, Time, Plant and Poke, each with an icon and its name, the chosen one highlighted. Above it a panel for the chosen
+  tool, and above that a hint. Panels are dark and translucent, the highlight amber (#f1b768). Keys 1, 2 and 3 choose the tools. H
+  hides and shows all the controls, fading.
 - **A tap** is a press and release moving no more than 6 pixels. A drag orbits, as above.
 - **Time:** a slider for the time of day, and beside it what it is: Night, Dawn, Sunrise, Morning, Noon, Afternoon, Sunset or Dusk.
   Hint: "Use the slider to move the sun".
