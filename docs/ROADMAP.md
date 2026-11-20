@@ -47,8 +47,9 @@ speed where docs/benchmarks.md records them.
   says so (docs/trials/2026-11-15-wardens-cost). Next is Lanternholm (docs/trials/templates/lanternholm), a second game, three.js's
   shape. Its port to helix-raylib wrote its own shadows (depth packed into a colour target, about 110 lines) and particles
   (billboards moved on the CPU, about 200), which the Lighting extra's shadows, the Shadowmaps extra and the Particles extra
-  (DECISIONS 77) now provide. Next, the port run graded as the picture before, then Lanternholm built on helix-raylib with the
-  extras.
+  (DECISIONS 77) now provide. Built from its spec with the extras it costs $3.31 to $4.74 a run and meets 28 to 31 of its 35 items
+  (docs/trials/2026-11-19-lanternholm): each run cast the Lighting extra's shadows and none used the Particles extra. Still wanted
+  from it: `gl_FragCoord.y` on the screen counting as raylib's does, and a font loaded from the system's by its absolute path.
 - **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/benchmarks.md) against three.js's
   InstancedMesh at 3.84, both one instanced draw, so what is left is JavaScript a sprite, about 23 ns against 19: the record's twelve
   writes (about 2.5 ms for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)
