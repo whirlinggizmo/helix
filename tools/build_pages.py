@@ -1,5 +1,5 @@
 """Build the repository's GitHub Pages site into build/site: the API reference from the doc comments (tools/gen_apidoc.py's HTML) at
-api/, its tree and first page grouped into libraries and engines, with tools/site/explorer.js opening it to the page shown, and an index at the root that opens it. The pages workflow (.github/workflows/pages.yml) deploys build/site.
+api/, its tree and first page grouped into libraries and engines, with tools/site/explorer.js opening it to the page shown and filtering it by library, and an index at the root that opens it. The pages workflow (.github/workflows/pages.yml) deploys build/site.
 
     python3 tools/build_pages.py
 
@@ -124,7 +124,7 @@ def members(api, items):
             if name in seen or name == 'new':
                 continue
             seen.add(name)
-            items.append(f'<li data_path="{path}.{name}"><a href="::rootPath::{relative}#{name}" title="{path}.{name}">{owner}.{name}'
+            items.append(f'<li data_path="{path}.{name}"><a class="treeLink" href="::rootPath::{relative}#{name}" title="{path}.{name}">{owner}.{name}'
                          f'<span class="pack">&nbsp;-&nbsp;{package}</span></a></li>')
     return '<li class="expando member-index"><ul class="nav nav-list">' + ''.join(items) + '</ul></li>'
 
