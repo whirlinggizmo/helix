@@ -75,11 +75,15 @@ class SceneLights {
 	public static function has(light:helix.raylib.extras.Light):Bool
 		return lights.indexOf(light) >= 0;
 
-	// A program's lights fields, found once; NONE for a program whose shader declares no lights.
+	// A program's lights fields, found once; NONE for a program whose shader declares no lights, or reads none of their fields. A shader
+	// calling helixShadow alone reads their shadow fields and no other.
 	static function fields(p:Program):Array<Null<ShaderUniform>> {
 		if (p.lightFields == null) {
-			var enabled = p.shader.findUniform(FIELDS[0]);
-			p.lightFields = enabled == null || !enabled.active ? NONE : [for (name in FIELDS) p.shader.findUniform(name)];
+			var found = [for (name in FIELDS) p.shader.findUniform(name)], read = false;
+			for (field in found)
+				if (field != null && field.active)
+					read = true;
+			p.lightFields = found[0] == null || !read ? NONE : found;
 		}
 		return p.lightFields;
 	}

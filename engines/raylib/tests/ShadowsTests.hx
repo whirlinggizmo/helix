@@ -215,6 +215,16 @@ class ShadowsTests {
 			&& near(drawnFloat(p, lastDraw(), "helixShadowMatrices", 0, 0), m.m0)
 			&& drawnInt(p, lastDraw(), "lights.shadow", 0) > 0,
 			"a frame without the pass keeps the last one's shadows");
+		// A program's own shader reading helixShadow alone, none of its lights' other fields: its lights' shadows written.
+		var shade = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("own_shadows.shader"));
+		var shaded = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+		shaded.materials[0].shader = shade;
+		DrawModel(shaded, Vector3Zero(), 1, WHITE);
+		var shadedShadows = [for (i in 0...8) drawnInt(shade.program, lastDraw(), "lights.shadow", i)];
+		shadedShadows.sort((a, b) -> a - b);
+		check(shadedShadows.slice(5).join(",") == "1,2,3"
+			&& lastDraw().textures[helix.raylib.internal.ShadowSlots.slotOf(shade.program)] == map,
+			"an own shader reading helixShadow alone: its lights' shadows written, the shadow map bound");
 		frame.draw(800, 450, true);
 
 		// A cut-out material's cutoff, and a program's own vertex stage's uniforms, in the shadow draw.
