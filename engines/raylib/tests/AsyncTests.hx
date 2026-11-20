@@ -238,6 +238,22 @@ class AsyncTests {
 		check(saved("best.txt") == "failed: no" && saved("levels/2.txt") == "failed: no" && shipped.reads == readsBefore,
 			"SavedFileExistsAsync: false for a file never saved, or one of the program's, with no read of the program's files");
 
+		// FileExistsAsync's log: the ask at LOG_DEBUG, a false answer's reason at LOG_INFO, and no load's line.
+		shipped.files.set("levels/3.txt", Bytes.ofString("level three"));
+		var lines:Array<String> = [];
+		SetTraceLogLevel(LOG_DEBUG);
+		SetTraceLogCallback((level, text) -> if (text.indexOf("levels/3.txt") >= 0 || text.indexOf("gone.txt") >= 0) lines.push('$level $text'));
+		function exists(fileName:String):String
+			return answer((d, f) -> FileExistsAsync(fileName, yes -> yes ? d() : f("no")));
+		check(exists("levels/3.txt") == "done" && lines.join(",") == '$LOG_DEBUG FILEIO: [levels/3.txt] Checking whether the file exists',
+			'FileExistsAsync: true for one of the program\'s files, the ask alone logged: $lines');
+		lines.resize(0);
+		check(exists("gone.txt") == "failed: no"
+			&& lines.join(",") == '$LOG_DEBUG FILEIO: [gone.txt] Checking whether the file exists,$LOG_INFO FILEIO: [gone.txt] File not found in any of the asset sources',
+			'FileExistsAsync: false for a file no source has, the reason logged as information: $lines');
+		SetTraceLogCallback(null);
+		SetTraceLogLevel(LOG_NONE);
+
 		// Listings: the files the program wrote, in their directories.
 		check(answer((d, f) -> SaveFileTextAsync("saves/a.txt", "a", d, f)) == "done"
 			&& answer((d, f) -> SaveFileDataAsync("saves/b.dat", Bytes.ofString("b"), 1, d, f)) == "done"

@@ -2867,6 +2867,8 @@ class Raylib {
 
 		Finding one of the program's files reads it, so a load of it after answers at once.
 
+		Why a file doesn't exist is logged at `LOG_INFO`.
+
 		@param fileName  The file.
 		@param answer  Receives true when it exists. */
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
@@ -7116,7 +7118,7 @@ class Raylib {
 	/** Returns whether a file exists. See `DirectoryExists` for a directory.
 
 		@param fileName  The file.
-		@return  True when it exists. */
+		@return  True when it exists. Why it doesn't is logged at `LOG_INFO`. */
 	public static macro function FileExists(fileName:ExprOf<String>):ExprOf<Bool>
 		return helix.raylib.internal.Wait.section("FileExists: Unsupported in a function used as a value.", macro helix.raylib.modules.RCore.FileExists,
 			[fileName], false);

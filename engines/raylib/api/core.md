@@ -983,7 +983,7 @@ static macro function EndDrawing():Void
   - `seconds`: How long.
 - `FileExists`: Returns whether a file exists. See `DirectoryExists` for a directory.
   - `fileName`: The file.
-  - returns: True when it exists.
+  - returns: True when it exists. Why it doesn't is logged at `LOG_INFO`.
 - `LoadFileText`: Reads a text file, and returns its text. See `LoadFileData` for reading a file's bytes.
   - `fileName`: The file.
   - returns: Its text, or null when it couldn't be read. Why it couldn't is logged.
@@ -1258,6 +1258,8 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
 
   Finding one of the program's files reads it, so a load of it after answers at once.
+
+  Why a file doesn't exist is logged at `LOG_INFO`.
 - `SavedFileExistsAsync`: Asynchronously answers whether a saved file exists: one `SaveFileText` or `SaveFileData` wrote. See `FileExistsAsync` for any other file.
   - `fileName`: The file.
   - `answer`: Receives true when it was saved.

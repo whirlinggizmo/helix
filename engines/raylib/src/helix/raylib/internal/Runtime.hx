@@ -341,8 +341,10 @@ class Runtime {
 		loading text or data never links an image decoder; `fetchImage` is for an image file.
 
 		@param path  The file.
-		@param done  Receives whether it was brought in, and why not when it wasn't. */
-	public static function fetch(path:String, done:Null<String>->Void):Void {
+		@param done  Receives whether it was brought in, and why not when it wasn't.
+		@param asking  Whether the call asks about the file (`FileExists`) rather than loads it. A file that isn't there is then logged as
+			information, where a load's caller warns. */
+	public static function fetch(path:String, done:Null<String>->Void, asking = false):Void {
 		loading();
 		if (files.exists(path)) {
 			later(() -> done(null));
@@ -350,12 +352,22 @@ class Runtime {
 		}
 		// Named before it's asked for, so a file that isn't there (a page's 404, which the browser reports without naming the program's call)
 		// can be told from the log.
-		log(3, 'FILEIO: [$path] Loading');
+		if (asking)
+			log(2, 'FILEIO: [$path] Checking whether the file exists');
+		else
+			log(3, 'FILEIO: [$path] Loading');
 		assets.load(path, bytes -> {
 			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
 			files.set(path, bytes);
 			done(null);
-		}, error -> done(error));
+		}, error -> {
+			if (asking) {
+				// The assets' failure starts with the path, which the line already names.
+				var reason = StringTools.startsWith(error, '$path: ') ? error.substr(path.length + 2) : error;
+				log(3, 'FILEIO: [$path] ${reason.charAt(0).toUpperCase()}${reason.substr(1)}');
+			}
+			done(error);
+		});
 	}
 
 	/** Brings an image file into memory: its bytes in `files` and, for a PNG, JPEG, BMP or TGA file, its pixels decoded for the GPU in

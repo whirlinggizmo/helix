@@ -195,6 +195,8 @@ class RFilesAsync {
 
 		Finding one of the program's files reads it, so a load of it after answers at once.
 
+		Why a file doesn't exist is logged at `LOG_INFO`.
+
 		@param fileName  The file.
 		@param answer  Receives true when it exists. */
 	static function FileExistsAsync(fileName:String, answer:Bool->Void):Void {
@@ -204,7 +206,7 @@ class RFilesAsync {
 				|| Runtime.pictures.exists(path))
 				Runtime.later(() -> answer(true));
 			else
-				Runtime.fetch(path, error -> answer(error == null));
+				Runtime.fetch(path, error -> answer(error == null), true);
 		});
 	}
 
@@ -263,7 +265,7 @@ class RFilesAsync {
 			infoOf(file, (size, _) -> {
 				#if js
 				if (size == null && !isDropped(file)) {
-					Runtime.fetch(file, error -> answer(error == null));
+					Runtime.fetch(file, error -> answer(error == null), true);
 					return;
 				}
 				#end
@@ -300,7 +302,7 @@ class RFilesAsync {
 				}
 				#if js
 				if (!isDropped(path)) {
-					Runtime.fetch(path, error -> answer(error == null ? Runtime.files.get(path).length : 0));
+					Runtime.fetch(path, error -> answer(error == null ? Runtime.files.get(path).length : 0), true);
 					return;
 				}
 				#end

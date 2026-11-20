@@ -1441,7 +1441,7 @@ class RCore {
 	/** Returns whether a file exists. See `DirectoryExists` for a directory.
 
 		@param fileName  The file.
-		@return  True when it exists. */
+		@return  True when it exists. Why it doesn't is logged at `LOG_INFO`. */
 	@:waits
 	static function FileExists(fileName:String, answer:Bool->Void):Void {
 		RFilesAsync.FileExistsAsync(fileName, answer);
