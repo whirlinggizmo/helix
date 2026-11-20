@@ -51,9 +51,10 @@ unread, as sprites were enough.
 - **`gl_FragCoord.y` counts from the top on the screen, 1 of 3.** Run 2's sky shader flips it. A probe confirmed it natively on GL:
   on the screen it counts from the top, where raylib's counts from the bottom, and in a render texture it counts as raylib's does.
   Six of raylib 5.5's example shaders read it. Open.
-- **No serif face, 3 of 3.** Each tried a font of the system's by its absolute path, which the asset host doesn't have, and drew in
-  raylib's default font. The port met the same. Run 3's notes say `FileExists` answers true for such a path, which wasn't checked.
-  Open.
+- **No serif face, 3 of 3.** The spec asks for a serif title and the program ships no font, so each asked for a font of the
+  system's by its absolute path. A path is read under the asset host, natively as in a page, so the load failed and each drew in
+  raylib's default font. The port met the same. The failure read "no source has it", and now reads "file not found in any of the
+  asset source paths". Run 3's notes say `FileExists` answers true for such a path. Checked natively, `FileExists` answers false.
 - **`TakeScreenshot` missed the controls, 3 of 3.** The draws since rlgl's batch was last drawn aren't in the screenshot, as in
   raylib and as its doc comment says. Each found `rlDrawRenderBatchActive` within a round.
 - **`LoadShaderFromMemory`'s refusal, 3 of 3.** Each moved to `CompileShaderFile` and `LoadCompiledShader` from the message alone.
