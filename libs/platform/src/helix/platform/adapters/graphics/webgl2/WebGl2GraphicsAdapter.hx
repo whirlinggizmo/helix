@@ -151,8 +151,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	// A block's bytes with its flip uniform and the fragment rows' uniform written, the caller's left as they are; grown as needed.
 	var flippedBlock = new js.lib.Uint8Array(256);
 	// The uniform buffers of each binding point (a vertex block's slot, a fragment block's 4 + its slot): poolDepth of them used in turn, a
-	// draw each, so a draw's blocks never go into a buffer a draw still in flight reads, which the GL driver would wait for (ANGLE's GL
-	// backend passes the write through; the robots page needed twice as long over GL as over Vulkan from that alone). Each point's buffers
+	// draw each, so a draw's blocks never go into a buffer a draw still in flight reads, which the GL driver would wait for (ANGLE on GL
+	// passes the write through; the robots page needed twice as long over GL as over Vulkan from that alone). Each point's buffers
 	// are its largest block's size, remade when a larger one comes. The depth holds three frames of the most draws a frame has made, grown
 	// at a frame's start, and the buffers are made as their turn first comes.
 	var blockBuffers:Array<Array<Dynamic>> = [];

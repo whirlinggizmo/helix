@@ -8,7 +8,7 @@ import helix.platform.TextureFormat;
 	`Renderer.createRenderTarget` makes one. Its format says what it holds: an RGBA8 target sRGB values, as the screen does, an RGBA16F
 	one linear light, which may run past 1 and blends linearly; the batches' own shaders write each its kind (`Batch2D`, `Batch3D`). Drawn
 	or sampled, its texels are what it holds, so an RGBA16F target reaches the screen through `PostProcess.draw`, which exposes, tone
-	maps and encodes it. It is sampled the right way up, as an image is: v 0 at the top of what was drawn into it, on every backend.
+	maps and encodes it. It is sampled the right way up, as an image is: v 0 at the top of what was drawn into it, on every graphics adapter.
 
 	A pass into it starts cleared, or keeps what it holds (`Renderer.beginTarget`). Its multisampling is its own (`msaaSampleCount`,
 	the screen's unless another is passed to `Renderer.createRenderTarget`), whatever its depth, and is resolved at the end of each pass;

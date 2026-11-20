@@ -146,7 +146,7 @@ function toString():String
 
 Specifies what a pipeline's flip uniform holds, so that an adapter can draw a render target the right way up.
 
-The uniform is the one at `PipelineDesc.flipBlockSlot` and `flipOffset`, in the vertex stage's block of that slot. An adapter whose backend stores a target the other way round from how it was made (`IGraphics.createRenderTarget`'s `bottomRowFirst`) flips its draws into it: GL into a target stored top row first, Metal and SDL_GPU into one stored bottom row first. With ClipScale every adapter writes the vec4 there, all four components: (1, -1, 1, 1) in a flipped pass and (1, 1, 1, 1) otherwise, so a shader multiplying `gl_Position` by it is right everywhere. With ViewProjection an adapter negates the y row of the column-major matrix there in a flipped pass. An adapter flips its own copy of the bytes, never the caller's, and reverses the winding with it. A shadow pass is never flipped.
+The uniform is the one at `PipelineDesc.flipBlockSlot` and `flipOffset`, in the vertex stage's block of that slot. An adapter whose graphics API stores a target the other way round from how it was made (`IGraphics.createRenderTarget`'s `bottomRowFirst`) flips its draws into it: GL into a target stored top row first, Metal and SDL_GPU into one stored bottom row first. With ClipScale every adapter writes the vec4 there, all four components: (1, -1, 1, 1) in a flipped pass and (1, 1, 1, 1) otherwise, so a shader multiplying `gl_Position` by it is right everywhere. With ViewProjection an adapter negates the y row of the column-major matrix there in a flipped pass. An adapter flips its own copy of the bytes, never the caller's, and reverses the winding with it. A shadow pass is never flipped.
 
 - `ClipFlip.None`: Nothing is touched.
 - `ClipFlip.ClipScale`: The uniform is a vec4 clip scale that the adapter writes.
@@ -1899,7 +1899,7 @@ Specifies what a pipeline's draws make.
 
 - `Primitive.Triangles`: Triangles, three vertices or indices each.
 - `Primitive.Lines`: Lines, two vertices or indices each.
-- `Primitive.Points`: Points, one vertex or index each, drawn one pixel in size on every backend; culling ignores them.
+- `Primitive.Points`: Points, one vertex or index each, drawn one pixel in size on every graphics adapter; culling ignores them.
 
 ```haxe
 function toString():String
@@ -2179,7 +2179,7 @@ A buffer with no attributes is a gap that the draw skips.
 
 Specifies how a vertex attribute's values are stored in a buffer's records.
 
-Every format is read by a float input (`float`, `vecN`, a matrix's column): floats and half floats as they are, a normalized format's integers as floats from 0 to 1 (unsigned) or -1 to 1 (signed, the lowest value reading -1 as the next one up does, 0 reading 0). These are the formats every backend has; an input of more components than its format reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them, and one of fewer reads the first ones.
+Every format is read by a float input (`float`, `vecN`, a matrix's column): floats and half floats as they are, a normalized format's integers as floats from 0 to 1 (unsigned) or -1 to 1 (signed, the lowest value reading -1 as the next one up does, 0 reading 0). These are the formats every graphics adapter has; an input of more components than its format reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them, and one of fewer reads the first ones.
 
 - `VertexFormat.Float1`: One float, 4 bytes.
 - `VertexFormat.Float2`: Two floats, 8 bytes.

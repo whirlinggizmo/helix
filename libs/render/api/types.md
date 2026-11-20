@@ -307,7 +307,7 @@ A program constructs one over its `Renderer`, and between `Renderer.beginFrame` 
 
 **The batch draws' colors are multiplied as stored.** A batch draw's vertex color, tint and texel are multiplied as the 0xAARRGGBB values and the texture store them, with no decode, as raylib and `Batch2D` multiply them: a 0x80 tint on a 0x80 texel produces 0x40. Into an sRGB target the product is written as it is, unless fog reaches it (`fogged`) or it is tone mapped (`toneMapped`): then it is decoded once, fogged, exposed and tone mapped as they say, and encoded. Into an RGBA16F target it is decoded once and written linear.
 
-**Points.** A point of `pointSize` 1, not attenuated, is the one pixel its position falls in, on every backend, shaded as its vertex; a larger one is a square facing the screen, made in the vertex stage, with its texture across it. A mesh's larger points (`polygonMode` Points) are each vertex's square, its records read one a GPU instance, so an instanced mesh's are a GPU draw for each copy; a program's own vertex stage that doesn't read `vertexCorner` draws them as one-pixel points.
+**Points.** A point of `pointSize` 1, not attenuated, is the one pixel its position falls in, on every graphics adapter, shaded as its vertex; a larger one is a square facing the screen, made in the vertex stage, with its texture across it. A mesh's larger points (`polygonMode` Points) are each vertex's square, its records read one a GPU instance, so an instanced mesh's are a GPU draw for each copy; a program's own vertex stage that doesn't read `vertexCorner` draws them as one-pixel points.
 
 **Sprites, shapes and text in a plane** (`drawSprite`, `drawTextureRegion`, the shapes from `fillTriangle` to `strokePolygon`, `drawText`, `drawTextLayout`) are what a layer drawing all its 2D through this batch needs, as raylib's rlgl does: wire and point modes and views (stereo) then reach its 2D too. Each is drawn in the plane z 0 of its transform, x across and y down the texture, as `Batch2D` draws it, so under an orthographic view whose y runs down (`View3D.setFromScreen`, raylib's 2D) it is upright in pixels; in a world whose y runs up, a transform scaled by -1 in y stands it up. They make their corners on the CPU as `Batch2D` does, and join one GPU draw with the batch draws around them that share their texture; shapes are drawn from `shapeRegion`. Lines, outlines and curves are made of triangles, as many as keep a curve's edge within a quarter of a unit of the plane (a pixel under `View3D.setFromScreen`); a thickness is in the plane's units, centered on the edge or the line. A program drawing only 2D uses `Batch2D`.
 
@@ -563,7 +563,7 @@ function drawList(list:DrawList3D, transform:Matrix4):Void
   - `strip`: Optional. Whether the positions are one line through them all, rather than a segment each two; defaults to false.
   - `transform`: Optional. What the positions are moved by, as a Line's own place; identity when omitted.
 
-  A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every backend.
+  A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every graphics adapter.
 - `strokeBox`: Draws a box's twelve edges.
   - `bounds`: The box, in world units.
   - `color`: The color.
@@ -1086,7 +1086,7 @@ function drawTextLayout(layout:TextLayout2D, x:Float, y:Float, ?color:Int = 0xff
   - `strip`: Optional. Whether the positions are one line through them all, rather than a segment each two; defaults to false.
   - `transform`: Optional. What the positions are moved by, in the list's units, copied; identity when omitted.
 
-  A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every backend.
+  A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every graphics adapter.
 - `strokeBox`: Records a box's twelve edges.
   - `bounds`: The box, in the list's units; copied.
   - `color`: The color.
@@ -1854,7 +1854,7 @@ function toString():String
 
 Represents a texture that draws go into: a pass between `Renderer.beginTarget` and `Renderer.endTarget` draws into it, and it is then drawn or sampled like any texture.
 
-`Renderer.createRenderTarget` makes one. Its format says what it holds: an RGBA8 target sRGB values, as the screen does, an RGBA16F one linear light, which may run past 1 and blends linearly; the batches' own shaders write each its kind (`Batch2D`, `Batch3D`). Drawn or sampled, its texels are what it holds, so an RGBA16F target reaches the screen through `PostProcess.draw`, which exposes, tone maps and encodes it. It is sampled the right way up, as an image is: v 0 at the top of what was drawn into it, on every backend.
+`Renderer.createRenderTarget` makes one. Its format says what it holds: an RGBA8 target sRGB values, as the screen does, an RGBA16F one linear light, which may run past 1 and blends linearly; the batches' own shaders write each its kind (`Batch2D`, `Batch3D`). Drawn or sampled, its texels are what it holds, so an RGBA16F target reaches the screen through `PostProcess.draw`, which exposes, tone maps and encodes it. It is sampled the right way up, as an image is: v 0 at the top of what was drawn into it, on every graphics adapter.
 
 A pass into it starts cleared, or keeps what it holds (`Renderer.beginTarget`). Its multisampling is its own (`msaaSampleCount`, the screen's unless another is passed to `Renderer.createRenderTarget`), whatever its depth, and is resolved at the end of each pass; with `TargetDepth.Texture` its depth can be sampled after it.
 
@@ -2198,7 +2198,7 @@ var lineCount(get, never):Int
 
 Represents an image on the GPU, drawn as a sprite, read by a material, or bound to a shader.
 
-`Renderer.createTexture` makes one from an `Image`; a `RenderTarget2D` is one that draws go into. The program frees it with `dispose`. Texture coordinates run from 0 at its left and top to 1 at its right and bottom, as its image's rows are stored; a render target's the same way, its top the top of what was drawn into it, on every backend.
+`Renderer.createTexture` makes one from an `Image`; a `RenderTarget2D` is one that draws go into. The program frees it with `dispose`. Texture coordinates run from 0 at its left and top to 1 at its right and bottom, as its image's rows are stored; a render target's the same way, its top the top of what was drawn into it, on every graphics adapter.
 
 A program's own shader reads it through `sharedTexture`:
 

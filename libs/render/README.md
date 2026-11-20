@@ -117,6 +117,6 @@ Each example in `examples/` shows one thing, and builds from the hxml files besi
   hemisphere light, a point light and a spot light, and a cube lit only by its emissive light.
 
 Its tests are in `tests/`: the CPU-side work (layout, culling, batching, copy on write) on every target (`helix.py test`), and pixel
-checks drawn on each backend (`tools/test_render.py`).
+checks drawn on each graphics adapter (`tools/test_render.py`).
 
 The API reference is [api/](api/README.md), one page per package.

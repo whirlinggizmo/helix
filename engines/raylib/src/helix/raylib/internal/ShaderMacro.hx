@@ -10,7 +10,7 @@ import sys.io.File;
 
 using StringTools;
 
-/** Compiles raylib's shaders as the program builds, through helix-services' shaders, so they run on every backend.
+/** Compiles raylib's shaders as the program builds, through helix-services' shaders, so they run on every graphics adapter.
 
 	A raylib shader is GLSL 330 (or 100, for the web) with raylib's names: the attributes `vertexPosition`, `vertexTexCoord`, `vertexNormal`,
 	`vertexColor`, `vertexTangent`, `vertexTexCoord2`, and for skinning `vertexBoneIds` (raylib 5.5's name; `vertexBoneIndices`, 6.2's)

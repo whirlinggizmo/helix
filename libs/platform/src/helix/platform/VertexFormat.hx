@@ -4,7 +4,7 @@ package helix.platform;
 
 	Every format is read by a float input (`float`, `vecN`, a matrix's column): floats and half floats as they are, a normalized format's
 	integers as floats from 0 to 1 (unsigned) or -1 to 1 (signed, the lowest value reading -1 as the next one up does, 0 reading 0). These
-	are the formats every backend has; an input of more components than its format reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them,
+	are the formats every graphics adapter has; an input of more components than its format reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them,
 	and one of fewer reads the first ones. */
 #if !macro
 @:build(helix.platform.macros.EnumNames.build())

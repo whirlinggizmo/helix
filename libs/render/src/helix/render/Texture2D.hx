@@ -8,7 +8,7 @@ import helix.services.shaders.ShaderSharedTexture;
 
 	`Renderer.createTexture` makes one from an `Image`; a `RenderTarget2D` is one that draws go into. The program frees it with `dispose`.
 	Texture coordinates run from 0 at its left and top to 1 at its right and bottom, as its image's rows are stored; a render target's
-	the same way, its top the top of what was drawn into it, on every backend.
+	the same way, its top the top of what was drawn into it, on every graphics adapter.
 
 	A program's own shader reads it through `sharedTexture`:
 

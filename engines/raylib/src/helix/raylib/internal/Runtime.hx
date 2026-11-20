@@ -554,7 +554,7 @@ class Runtime {
 		keyboard();
 		#end
 		window.title = title;
-		// The device, in rlgl's lines as it writes them when the window opens; a backend other than GL names itself.
+		// The device, in rlgl's lines as it writes them when the window opens; a graphics API other than GL names itself.
 		var device = graphics.device;
 		log(helix.raylib.Raylib.LOG_INFO, 'GL: ${device.api == "OpenGL" || device.api == "WebGL 2" ? "OpenGL" : device.api} device information:');
 		log(helix.raylib.Raylib.LOG_INFO, '    > Vendor:   ${device.vendor}');

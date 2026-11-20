@@ -62,8 +62,8 @@ import helix.services.shaders.ShaderVertexLayout;
 	Into an sRGB target the product is written as it is, unless fog reaches it (`fogged`) or it is tone mapped (`toneMapped`): then it is
 	decoded once, fogged, exposed and tone mapped as they say, and encoded. Into an RGBA16F target it is decoded once and written linear.
 
-	**Points.** A point of `pointSize` 1, not attenuated, is the one pixel its position falls in, on every backend, shaded as its vertex;
-	a larger one is a square facing the screen, made in the vertex stage, with its texture across it. A mesh's larger points
+	**Points.** A point of `pointSize` 1, not attenuated, is the one pixel its position falls in, on every graphics adapter, shaded as its
+	vertex; a larger one is a square facing the screen, made in the vertex stage, with its texture across it. A mesh's larger points
 	(`polygonMode` Points) are each vertex's square, its records read one a GPU instance, so an instanced mesh's are a GPU draw for each
 	copy; a program's own vertex stage that doesn't read `vertexCorner` draws them as one-pixel points.
 
@@ -627,7 +627,7 @@ class Batch3D {
 
 	/** Draws lines through positions, as segments two by two or as one strip, of a width in pixels.
 
-		A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every backend.
+		A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every graphics adapter.
 		@param positions  The positions, x, y and z each, read now.
 		@param color  The color of lines without colors of their own.
 		@param colors  Optional. Each position's color, 0xAARRGGBB, blended along each line; `color` everywhere when omitted.

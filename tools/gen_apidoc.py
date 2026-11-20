@@ -97,7 +97,7 @@ def leaks(file):
         for e in node.iter():
             if e.get('path') in secret:yield e.get('path')
     def signature(member):
-        """What a game meets of a member: its type, but for a method's optional arguments (left out, as a GPU or backend for tests)."""
+        """What a game meets of a member: its type, but for a method's optional arguments (left out, as a GPU or an adapter for tests)."""
         kids=[c for c in member if c.tag not in ('haxe_doc','meta')]
         if not kids:return []
         t=kids[0]

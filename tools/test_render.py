@@ -4,8 +4,8 @@ each built from its own hxml files, run natively on a private display (Linux) on
 build-native-gpu.hxml) and in Chromium (WebGL2), headless by default, as tools/test_platform.py runs the platform's. An example's page is checked
 against its check.json (points and the colors expected there, each within a tolerance per channel), and so is each native run's last
 frame, which the example saves (`--screenshot`, libs/render/examples/Screenshot.hx);
-the pixel tests draw each stage-1 area through the renderer, read their pixels back and check them themselves, on each backend. Exits 1
-on any failure.
+the pixel tests draw each stage-1 area through the renderer, read their pixels back and check them themselves, on each graphics adapter. Exits
+1 on any failure.
 
     python3 tools/test_render.py --browser BROWSER [--native | --page] [--headless | --headed] [NAME ...]
 

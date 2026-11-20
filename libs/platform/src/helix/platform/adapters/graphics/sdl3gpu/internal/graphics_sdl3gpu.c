@@ -218,7 +218,7 @@ int helix_sdl3gpu_setup(void){
  max_samples=1;
  for(int n=8;n>=2;n/=2)if(SDL_GPUTextureSupportsSampleCount(device,SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,sample_count_of(n))&&
   SDL_GPUTextureSupportsSampleCount(device,depth_format,sample_count_of(n))){max_samples=n;break;}
- /* Which backend and GPU run, as SDL may choose any (a machine may have two GPUs): said once, for logs and checks (the autopilot repeats it). */
+ /* Which graphics API and GPU run, as SDL may choose any (a machine may have two GPUs): said once, for logs and checks (the autopilot repeats it). */
  const char *gpu=SDL_GetStringProperty(SDL_GetGPUDeviceProperties(device),SDL_PROP_GPU_DEVICE_NAME_STRING,"an unnamed GPU");
  fprintf(stderr,"HeliX SDL_GPU: %s on %s\n",SDL_GetGPUDeviceDriver(device),gpu);
  const int asked=helix_surface_samples();

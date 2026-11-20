@@ -748,13 +748,13 @@ static function rlSetMatrixViewOffsetStereo(right:Matrix, left:Matrix):Void
 - `rlEnablePointMode`: Draws triangles as their corners from now on, one pixel each, as desktop GL's point mode does. See `rlEnableWireMode` for drawing their edges.
   A model drawn after the call is drawn so at once, each index of its triangles or, without indices, each vertex of its whole triangles. The triangles in rlgl's batch are drawn so when the batch is next drawn.
 
-  Drawn as points on every backend.
+  Drawn as points on every graphics adapter.
 
   Lines are still drawn as lines.
 
   Culling still leaves out the triangles GL would cull, by their facing on the screen.
 
-  A shader's own `gl_PointSize` is ignored. Every point is one pixel, the size every backend draws.
+  A shader's own `gl_PointSize` is ignored. Every point is one pixel, the size every graphics adapter draws.
 
   `rlDisableWireMode` ends point mode, and `rlEnableWireMode` replaces it.
 

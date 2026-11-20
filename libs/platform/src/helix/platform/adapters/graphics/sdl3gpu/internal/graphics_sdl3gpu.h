@@ -11,7 +11,7 @@ int helix_sdl3gpu_setup(void);
 void helix_sdl3gpu_dispose(void);
 /* The dialect programs are given in: 0 SPIR-V, 1 MSL, 2 HLSL. */
 int helix_sdl3gpu_shader_format(void);
-/* The backend SDL chose ("vulkan", "direct3d12", "metal"). */
+/* The graphics API SDL chose ("vulkan", "direct3d12", "metal"). */
 /* A program from its stages in that dialect (text NUL-terminated, its bytes without the NUL) and its layout. */
 uint32_t helix_sdl3gpu_shader(const void *vs,int vs_bytes,const void *fs,int fs_bytes,const char *layout);
 #ifdef __cplusplus

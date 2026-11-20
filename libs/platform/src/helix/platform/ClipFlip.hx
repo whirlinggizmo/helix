@@ -3,7 +3,7 @@ package helix.platform;
 /** Specifies what a pipeline's flip uniform holds, so that an adapter can draw a render target the right way up.
 
 	The uniform is the one at `PipelineDesc.flipBlockSlot` and `flipOffset`, in the vertex stage's block of that slot. An adapter whose
-	backend stores a target the other way round from how it was made (`IGraphics.createRenderTarget`'s `bottomRowFirst`) flips its draws
+	graphics API stores a target the other way round from how it was made (`IGraphics.createRenderTarget`'s `bottomRowFirst`) flips its draws
 	into it: GL into a target stored top row first, Metal and SDL_GPU into one stored bottom row first. With ClipScale every adapter
 	writes the vec4 there, all four components: (1, -1, 1, 1) in a flipped pass and (1, 1, 1, 1) otherwise, so a shader multiplying
 	`gl_Position` by it is right everywhere. With ViewProjection an adapter negates the y row of the column-major matrix there in a

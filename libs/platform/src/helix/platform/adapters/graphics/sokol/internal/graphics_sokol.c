@@ -680,7 +680,7 @@ static sg_color color_of(uint32_t color){return (sg_color){((color>>16)&255)/255
 /* A pass into target, before the screen's: cleared to red, green, blue, alpha as its texels store them and its depth, if it has one, to the
    farthest, or (clear 0) loading what it holds, cleared to transparent black the first time. Its samples and depth are stored either way
    (sokol's defaults discard a multisampled image's samples once resolved, and depth), so a later pass can load them. Drawn flipped where the
-   backend's origin is the bottom left (GL), and for a target stored bottom row first, where it is the top left (Metal). */
+   graphics API's origin is the bottom left (GL), and for a target stored bottom row first, where it is the top left (Metal). */
 static int begin_target(uint32_t target,int clear,sg_color color){
  int slot=target&0xffff;
  if(active||slot>=SLOTS||!targets[slot].color.id||sg_query_view_state((sg_view){target})!=SG_RESOURCESTATE_VALID)return 0;

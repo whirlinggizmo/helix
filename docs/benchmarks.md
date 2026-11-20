@@ -115,7 +115,7 @@ Frame time in ms:
   MultiMesh is its documented fast path. Its web export has only the Compatibility renderer. It draws at fractional positions, where
   raylib and helix-raylib truncate them to whole pixels.
 - **helix-legacy** draws a `Sprite2D` on its stage for each bunny. Its `Batch2D`, the fast path, is internal and not something a game reaches.
-- **Chromium's backend** changes the page's numbers: see below.
+- **What ANGLE draws over** changes the page's numbers: see below.
 
 ### Pages over GL
 

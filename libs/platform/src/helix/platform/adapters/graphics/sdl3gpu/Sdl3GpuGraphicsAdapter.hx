@@ -8,7 +8,7 @@ import haxe.io.Bytes;
 
 /** Provides `IGraphics` on SDL_GPU, natively: Vulkan, Direct3D 12 or Metal.
 
-	SDL picks the backend for the system; the environment variable SDL_GPU_DRIVER chooses another. Programs come from a `ShaderSource`'s
+	SDL picks the graphics API for the system; the environment variable SDL_GPU_DRIVER chooses another. Programs come from a `ShaderSource`'s
 	SDL_GPU stages (`ShaderSource.sdlGpu`). */
 class Sdl3GpuGraphicsAdapter extends NativeGraphics implements IGraphics {
 	/** Creates the GPU device and claims the window, which must already exist.

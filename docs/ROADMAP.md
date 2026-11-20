@@ -77,8 +77,8 @@ speed where docs/benchmarks.md records them.
   Deferred from the vertex formats
   (DECISIONS 33): bone IDs and three.js' skinIndex fed as normalized bytes or shorts and scaled back by the compiler, rounded, as a
   `ShaderCompileOptions` entry; until then they are floats, or a layer owning its shader scales them itself.
-  The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every backend, about 0.3 KB gzip) to be trimmed to what
-  a backend would otherwise get wrong silently, once the platform's API is settled.
+  The platform's checks of a pipeline's vertex layout (`PipelineLayout.check`, every graphics adapter, about 0.3 KB gzip) to be trimmed to
+  what an adapter would otherwise get wrong silently, once the platform's API is settled.
 - **Assets, resources and objects, as the earlier C frameworks layered them (AGENTS.md's prior art: their resource/object model),
   as plumbing a game never calls.** Each engine keeps its own names: helix-raylib's `texture.id` becomes a
   stable handle its table maps to the current resource; helix-render's `Texture2D`, `GpuModel3D` and `GpuFont2D` are the stable
@@ -145,7 +145,7 @@ speed where docs/benchmarks.md records them.
   fingers alike. Still wanted: two fingers' pan and twist, as helix-legacy's touch gesture had them.
 - **A UI toolkit beyond raygui, HaxeUI first:** components, layouts and styles at Godot's Control and Theme's reach, through the DOM in
   a page and in Electron and drawn by helix natively, one Haxe API over both. Measured first: what haxeui-core adds to a page, and
-  whether a helix backend drawing it natively keeps up with the DOM backend.
+  whether HaxeUI drawn by helix natively keeps up with HaxeUI on the DOM.
 - **From a jam game's friction log (F numbers), for the layers that own them:**
   - helix-scene: `find` by name and kind, `addChildAt`, `getChildIndex`, `removeChildAt`, `contains` (F1, F2, F4); text pivot or
     vertical align (F20); a sprite keeping its sheet and index across a reload (F56); a matrix transform, so skew (F57); a pointer

@@ -125,7 +125,7 @@ class DrawList3D {
 
 	/** Records lines through positions, as segments two by two or as one strip, of a width in pixels.
 
-		A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every backend.
+		A line wider than a pixel is a quad made in the vertex stage, facing the screen, the same on every graphics adapter.
 		@param positions  The positions, x, y and z each, copied.
 		@param color  The color of lines without colors of their own.
 		@param colors  Optional. Each position's color, 0xAARRGGBB, blended along each line; `color` everywhere when omitted.
