@@ -162,7 +162,10 @@ class Program {
 			return locations.length - 1;
 		}
 		var path = shader.findUniformPath(name);
-		if (path == null || !path.uniform.active || path.uniform.name == "helix_clipScale")
+		if (path == null
+			|| !path.uniform.active
+			|| path.uniform.name == "helix_clipScale"
+			|| path.uniform.name == "helix_fragCoordY")
 			return -1;
 		locations.push({
 			name: name,

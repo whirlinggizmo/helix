@@ -1249,3 +1249,27 @@ Why things are the way they are, numbered, in order.
     unpacks and no test can hand on; `Plane` and `Sphere` in helix-math beside the boxes, which splits the shapes between two
     libraries and leaves a reader asking which library a sphere is in; a point as a `Vector3` in the shapes' tests, where every
     test before took plain numbers; `Image.perlinNoise` forwarding to `Noise.fractal`, for the 22 pixels.
+
+84. **`gl_FragCoord.y` counts from the bottom row of the image drawn in every pass, and `dFdy` is the change toward the image's
+    top.** GLSL defines both so. The shader compiler wraps a fragment stage that reads `gl_FragCoord` or `dFdy`. The wrap adds a loose
+    `uniform vec2 helix_fragCoordY`, gathered into `helix_uniforms`. The stage reads `gl_FragCoord` through a copy whose y is
+    `y * helix_fragCoordY.x + helix_fragCoordY.y`, and its `dFdy` is multiplied by `helix_fragCoordY.x`. Each adapter writes the vec2 at
+    every draw, in its own copy of the block: (-1, the pass's height) in a pass whose graphics API counts rows from the image's top, and
+    (1, 0) in any other pass. GL and WebGL2 count from the image's top in a flipped pass, and SDL_GPU in a pass that isn't flipped. A
+    fragment stage that reads neither `gl_FragCoord` nor `dFdy` is compiled unchanged. helix-raylib's `GetShaderLocation` answers -1 for
+    `helix_fragCoordY`, as for `helix_clipScale`.
+
+    Why: a graphics API counts `gl_FragCoord.y` from the first row it stores, so the row a shader read changed with the adapter and
+    with the target. Measured on a GPU before the change, the C implementation of raylib counted from the bottom everywhere.
+    helix-raylib counted from the top in the frame of a screen read (75) on GL and in a page, and on the screen in every frame on
+    SDL_GPU. An entrant of the Lanternholm trial flipped a sky by hand (docs/trials/2026-11-19-lanternholm), and six of raylib 5.5's
+    example shaders read `gl_FragCoord`.
+
+    What it costs: a page is about 0.2 KB larger gzipped for the WebGL2 adapter's write, and a wrapped fragment stage about 270
+    bytes of text longer. A program whose fragment stage reads `gl_FragCoord` or `dFdy` has a `helix_uniforms` block whether or not
+    it declares loose uniforms, and a draw passes the block's bytes. With all four of a stage's block slots taken the program is
+    refused.
+
+    Rejected: turning the y in helix-raylib's screen read alone, which leaves SDL_GPU's screen and the other libraries' programs as
+    they were; fields on `PipelineDesc` naming the uniform, as `flip` has, when the compiler adds the uniform and the reflection
+    says where it is; wrapping `dFdyFine` and `dFdyCoarse`, which GLSL ES 300 lacks, so no program compiles with them.

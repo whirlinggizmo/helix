@@ -338,7 +338,8 @@ interface IGraphics {
 		Only whole primitives are drawn. A pipeline without buffers draws `elementCount` vertices from no data, so one triangle over the viewport is
 		three vertices. An attribute the program declares that no buffer feeds reads the pipeline's constant for its slot, or (0, 0, 0, 1)
 		(`PipelineDesc.attributeConstants`). The uniform the pipeline names is flipped as its `ClipFlip` specifies, in the adapter's own
-		copy of the block. A texture that is the open pass's own target (the render target drawn into, its depth texture, or the shadow map
+		copy of the block. A program's `helix_fragCoordY`, the uniform the shader compiler adds to a fragment stage that reads `gl_FragCoord` or
+		`dFdy`, is written in the adapter's own copy too. A texture that is the open pass's own target (the render target drawn into, its depth texture, or the shadow map
 		whose layer is drawn into) is refused, as sampling what a pass draws into is undefined.
 		@param pipeline  The pipeline.
 		@param buffers  The buffer for each of the pipeline's buffers, by index, or 0 for a gap. Each is a `createBuffer` handle as this

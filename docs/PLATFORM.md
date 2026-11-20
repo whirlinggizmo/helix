@@ -320,6 +320,14 @@ declare more than a draw binds. Adapters: `graphics/webgl2` (`WebGl2GraphicsAdap
 sokol_gfx on GL 4.1), `graphics/sdl3gpu` (`Sdl3GpuGraphicsAdapter`, SDL_GPU on Vulkan, Direct3D 12 or Metal). `libs/platform/tests/graphics`
 draws on each and checks the pixels it reads back.
 
+In a fragment stage `gl_FragCoord.y` counts from the bottom row of the image drawn, as GLSL defines it. That holds in every pass,
+whichever row the target stores first. `dFdy` is the change toward the image's top. The shader compiler wraps a fragment stage that reads
+`gl_FragCoord` or `dFdy`. The wrap adds a loose `uniform vec2 helix_fragCoordY`, which is gathered into `helix_uniforms`. The stage then
+reads `gl_FragCoord.y` as `y * helix_fragCoordY.x + helix_fragCoordY.y`, and its `dFdy` is multiplied by `helix_fragCoordY.x`. Every
+adapter writes the vec2 at each draw, the caller's bytes unchanged. The adapter writes (-1, the pass's height in pixels) in a pass whose
+graphics API counts rows from the image's top, and (1, 0) in any other pass. A draw passes `helix_uniforms`' bytes as it does any
+block's. A fragment stage that reads neither `gl_FragCoord` nor `dFdy` is compiled unchanged.
+
 A handle carries its kind (a buffer, a texture of any kind, a program or a pipeline), and a call refuses a handle of another kind as
 unknown.
 
@@ -371,7 +379,9 @@ of two types, and an initializer (which the compiler would drop), are refused. W
 renamed, a loose `uniform vec4 helix_clipScale`, and a `main` calling it and multiplying `gl_Position` by it, for `ClipFlip.ClipScale`.
 With `points` the same wrap writes `gl_PointSize = 1.0` after the program's `main`, whatever the program wrote, and the result says so
 (`ShaderSource.points`); SDL_GPU's HLSL is then made with SPIRV-Cross's `--hlsl-enable-compat`, as HLSL has no point size and refuses one
-otherwise (Direct3D 12 draws 1 pixel whatever is written).
+otherwise (Direct3D 12 draws 1 pixel whatever is written). A fragment stage that reads `gl_FragCoord` or `dFdy` is wrapped too, under
+every option: a loose `uniform vec2 helix_fragCoordY`, and a `main` that sets the `gl_FragCoord` the stage reads before calling the
+stage's own (Graphics, above).
 
 **What it refuses, saying why:** a uniform block bound past 3 or a texture past 11; two blocks at one binding of a stage, or two
 textures at one binding; a sampler array, a separate texture and sampler, an array of arrays, an array inside an array of structs, a

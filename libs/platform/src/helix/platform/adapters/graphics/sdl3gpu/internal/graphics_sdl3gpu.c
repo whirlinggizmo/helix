@@ -51,8 +51,9 @@ static struct{uint32_t generation;int live,stream,index,appended,capacity,used;S
 
 /* Programs: their shaders, their attribute slots, each block by its index in a draw's uniforms (its size, 0 for none, and whether it is the
    fragment copy of a block both stages read, pushed from the vertex copy), and where each texture slot lands in SDL_GPU's numbering (per
-   stage, from 0 by slot). A block is pushed at its slot in its stage. */
-static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int attributes,block_size[MAX_BLOCK_INDICES],block_both[MAX_BLOCK_INDICES];
+   stage, from 0 by slot). A block is pushed at its slot in its stage. rows_index and rows_offset: the block holding the fragment rows'
+   uniform (helix_fragCoordY) and its place there, -1 for none. */
+static struct{uint32_t generation;int live;SDL_GPUShader *vertex,*fragment;int attributes,block_size[MAX_BLOCK_INDICES],block_both[MAX_BLOCK_INDICES],rows_index,rows_offset;
  int texture_mask,unfiltered_mask;char texture_kind[MAX_TEXTURES];int texture_stage[MAX_TEXTURES],texture_index[MAX_TEXTURES],vertex_samplers,fragment_samplers;}programs[SLOTS];
 
 /* Pipelines: SDL's, a twin with the front faces the other way round for flipped passes (depth alone, into shadow maps), and what a draw
@@ -425,15 +426,17 @@ int helix_append(uint32_t handle,const void *data,int bytes){
 /* A program from its stages in the device's format (helix_sdl3gpu_shader_format: SPIR-V, MSL or HLSL; text ends with a NUL) and its layout,
    a line each, as NativeGraphics writes it: "a <slot> <name>" an attribute, "k <count>" the attribute slots (a matrix's columns each one),
    "u <slot> <v|f|b> <size> <name>" a uniform block at its slot in its stage, or in both (b), its "m ..." members after it (SDL_GPU takes the
-   block's bytes whole), "t|s|c|d <slot> <v|f> <name>" a texture (plain, shadow map, cube, data) and its sampler, sharing the slot. */
+   block's bytes whole), "t|s|c|d <slot> <v|f> <name>" a texture (plain, shadow map, cube, data) and its sampler, sharing the slot,
+   "y <index> <offset>" the fragment rows' uniform, in the block at index. */
 uint32_t helix_sdl3gpu_shader(const void *vs,int vs_bytes,const void *fs,int fs_bytes,const char *layout){
  int slot=-1;for(int i=0;i<SLOTS;i++)if(!programs[i].live){slot=i;break;}
  if(slot<0||!vs||!fs||vs_bytes<=0||fs_bytes<=0)return 0;
- int sizes[MAX_BLOCK_INDICES]={0},both[MAX_BLOCK_INDICES]={0},block_counts[2]={0,0},attributes=0,mask=0,unfiltered=0,texture_stages[MAX_TEXTURES]={0};char kinds[MAX_TEXTURES]={0};
+ int sizes[MAX_BLOCK_INDICES]={0},both[MAX_BLOCK_INDICES]={0},block_counts[2]={0,0},attributes=0,mask=0,unfiltered=0,texture_stages[MAX_TEXTURES]={0},rows_index=-1,rows_offset=-1;char kinds[MAX_TEXTURES]={0};
  for(const char *line=layout;line&&*line;){
   char kind,stage;int s,size,used=0;char name[128];
   if(sscanf(line," a %d %127s%n",&s,name,&used)==2){if(s<0||s>=16)return 0;if(s+1>attributes)attributes=s+1;}
   else if(sscanf(line," k %d%n",&s,&used)==1){if(s<0||s>16)return 0;if(s>attributes)attributes=s;}
+  else if(sscanf(line," y %d %d%n",&s,&size,&used)==2){if(s<0||s>=MAX_BLOCK_INDICES||size<0)return 0;rows_index=s;rows_offset=size;}
   else if(sscanf(line," u %d %c %d %127s%n",&s,&stage,&size,name,&used)==4){
    if(s<0||s>=MAX_BLOCKS||size<=0||(stage!='v'&&stage!='f'&&stage!='b'))return 0;
    /* A block both stages read: at both indices, its fragment copy pushed from the vertex one. */
@@ -473,7 +476,7 @@ uint32_t helix_sdl3gpu_shader(const void *vs,int vs_bytes,const void *fs,int fs_
 #endif
  if(!made[0]||!made[1]){for(int i=0;i<2;i++)if(made[i])SDL_ReleaseGPUShader(device,made[i]);return 0;}
  programs[slot].vertex=made[0];programs[slot].fragment=made[1];programs[slot].attributes=attributes;programs[slot].texture_mask=mask;programs[slot].unfiltered_mask=unfiltered;memcpy(programs[slot].texture_kind,kinds,sizeof kinds);
- memcpy(programs[slot].block_size,sizes,sizeof sizes);memcpy(programs[slot].block_both,both,sizeof both);
+ memcpy(programs[slot].block_size,sizes,sizeof sizes);memcpy(programs[slot].block_both,both,sizeof both);programs[slot].rows_index=rows_index;programs[slot].rows_offset=rows_offset;
  memcpy(programs[slot].texture_stage,texture_stages,sizeof texture_stages);memcpy(programs[slot].texture_index,texture_index,sizeof texture_index);
  programs[slot].vertex_samplers=counts[0];programs[slot].fragment_samplers=counts[1];
  programs[slot].live=1;programs[slot].generation++;
@@ -917,6 +920,13 @@ int helix_draw(uint32_t p,const uint32_t *buffer_handles,const int *offsets,int 
    float *place=(float*)(uniform_bytes+staged+offset);
    if(flip==1&&offset+16<=size){place[0]=1.0f;place[1]=flipped?-1.0f:1.0f;place[2]=1.0f;place[3]=1.0f;}
    else if(flip==2&&flipped&&offset+64<=size){place[1]=-place[1];place[5]=-place[5];place[9]=-place[9];place[13]=-place[13];}
+  }
+  /* The fragment rows' uniform: SDL_GPU counts gl_FragCoord.y from the first row a target stores, the image's top unless the pass is
+     flipped. */
+  const int rows=programs[program].rows_offset;
+  if(i==programs[program].rows_index&&rows+8<=size){
+   float *place=(float*)(uniform_bytes+staged+rows);
+   place[0]=flipped?1.0f:-1.0f;place[1]=flipped?0.0f:(float)pass_height;
   }
   c.uniform_at[c.uniform_count]=staged;c.uniform_size[c.uniform_count]=size;
   c.uniform_stage[c.uniform_count]=i<4?(programs[program].block_both[i+4]?2:0):1;c.uniform_index[c.uniform_count]=i&3;c.uniform_count++;

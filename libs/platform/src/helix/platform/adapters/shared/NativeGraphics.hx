@@ -15,7 +15,8 @@ import haxe.io.Bytes;
 abstract class NativeGraphics implements IGraphics {
 	/** Returns a program's layout as the C reads it, a line each: its attributes (`a <slot> <name>`), its uniform blocks
 		(`u <slot> <v|f|b> <size> <name>`, b for a block both stages read), each followed by its members (`m <type> <offset> <count>
-		<stride> <path>`), and its textures (`t|s|c|d <slot> <v|f> <name>`). */
+		<stride> <path>`), its textures (`t|s|c|d <slot> <v|f> <name>`), and where the fragment rows' uniform is, for a program with one
+		(`y <index> <offset>`, as `FragCoordUniform` finds it). */
 	static function layout(source:helix.platform.ShaderSource):String {
 		// A matrix's later columns have no name: the C reads them by slot.
 		var lines = [
@@ -29,6 +30,9 @@ abstract class NativeGraphics implements IGraphics {
 		}
 		for (t in source.textures)
 			lines.push('${t.shadow ? "s" : t.cube ? "c" : t.data ? "d" : "t"} ${t.slot} ${t.stage.charAt(0)} ${t.glslName}');
+		var rows = FragCoordUniform.index(source);
+		if (rows >= 0)
+			lines.push('y $rows ${FragCoordUniform.offset(source)}');
 		return lines.join("\n");
 	}
 

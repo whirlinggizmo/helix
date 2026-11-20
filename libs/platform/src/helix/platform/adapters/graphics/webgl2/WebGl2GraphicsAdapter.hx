@@ -15,6 +15,7 @@ import helix.platform.Sampling;
 import helix.platform.ShaderSource;
 import helix.platform.TextureFormat;
 import helix.platform.VertexFormat;
+import helix.platform.adapters.shared.FragCoordUniform;
 import helix.platform.adapters.shared.GraphicsHandle;
 import helix.platform.adapters.shared.PipelineLayout;
 import helix.platform.adapters.shared.dom.DomPage;
@@ -51,11 +52,14 @@ private typedef ProgramBlock = {
 	final bound:Bool;
 }
 
-/** A program: the linked program, its uniform blocks' points and sizes by slot, its textures' sampler locations by slot, and the source
-	it was built from, built again at a restore. */
+/** A program: the linked program, its uniform blocks' points and sizes by slot, where the fragment rows' uniform is (its block's point
+	and its offset there, -1 for none), its textures' sampler locations by slot, and the source it was built from, built again at a
+	restore. */
 private typedef Program = {
 	program:Dynamic,
 	blocks:Array<ProgramBlock>,
+	rowsPoint:Int,
+	rowsOffset:Int,
 	textures:Array<Dynamic>,
 	unfiltered:Array<Bool>,
 	kinds:Array<Int>,
@@ -144,7 +148,7 @@ class WebGl2GraphicsAdapter implements IGraphics {
 	var shadowMaps:Map<Int, {framebuffers:Array<Dynamic>, size:Int}> = [];
 	// The sampler shadow maps are read through: comparing, linear, clamped.
 	var comparison:Dynamic = null;
-	// A block's bytes with its flip uniform written, the caller's left as they are; grown as needed.
+	// A block's bytes with its flip uniform and the fragment rows' uniform written, the caller's left as they are; grown as needed.
 	var flippedBlock = new js.lib.Uint8Array(256);
 	// The uniform buffers of each binding point (a vertex block's slot, a fragment block's 4 + its slot): poolDepth of them used in turn, a
 	// draw each, so a draw's blocks never go into a buffer a draw still in flight reads, which the GL driver would wait for (ANGLE's GL
@@ -712,6 +716,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		return {
 			program: p,
 			blocks: blocks,
+			rowsPoint: FragCoordUniform.index(source),
+			rowsOffset: FragCoordUniform.offset(source),
 			textures: samplerLocations,
 			unfiltered: unfiltered,
 			kinds: kinds,
@@ -1449,7 +1455,8 @@ class WebGl2GraphicsAdapter implements IGraphics {
 		}
 
 	// Uploads the program's uniform blocks from uniforms by stage and slot, each its declared size, into their binding points' buffers; the
-	// pipeline's flip uniform written into a copy as its flip says.
+	// pipeline's flip uniform written into a copy as its flip says, and the fragment rows' uniform: GL counts gl_FragCoord.y from the
+	// framebuffer's first row, the image's top in a flipped pass.
 	function bindBlocks(shader:Program, uniforms:Array<Null<Bytes>>, p:PipelineDesc):Void {
 		// The turn goes round the pool; the pool can only have grown since the last draw, which keeps every turn's buffer its own.
 		drawTurn = drawTurn + 1 < poolDepth ? drawTurn + 1 : 0;
@@ -1464,21 +1471,28 @@ class WebGl2GraphicsAdapter implements IGraphics {
 			var bytes:js.lib.Uint8Array = @:privateAccess data.b;
 			var flipSlot = p.flipBlockSlot == null ? 0 : p.flipBlockSlot,
 				flipOffset = p.flipOffset == null ? 0 : p.flipOffset;
-			if (p.flip != None && block.point == flipSlot && (p.flip == ClipScale || flipped)) {
+			var flips = p.flip != None && block.point == flipSlot && (p.flip == ClipScale || flipped),
+				rows = block.point == shader.rowsPoint;
+			if (flips || rows) {
 				if (flippedBlock.length < block.size)
 					flippedBlock = new js.lib.Uint8Array(block.size);
 				var copy = flippedBlock.subarray(0, block.size);
 				copy.set(bytes.length == block.size ? bytes : bytes.subarray(0, block.size));
 				var floats = new js.lib.Float32Array(copy.buffer, 0, block.size >> 2),
-					at = flipOffset >> 2;
-				if (p.flip == ClipScale && at + 4 <= floats.length) {
+					at = flipOffset >> 2,
+					rowsAt = shader.rowsOffset >> 2;
+				if (flips && p.flip == ClipScale && at + 4 <= floats.length) {
 					floats[at] = 1;
 					floats[at + 1] = flipped ? -1 : 1;
 					floats[at + 2] = 1;
 					floats[at + 3] = 1;
-				} else if (p.flip == ViewProjection && at + 16 <= floats.length)
+				} else if (flips && p.flip == ViewProjection && at + 16 <= floats.length)
 					for (i in [1, 5, 9, 13])
 						floats[at + i] = -floats[at + i];
+				if (rows && rowsAt + 2 <= floats.length) {
+					floats[rowsAt] = flipped ? -1 : 1;
+					floats[rowsAt + 1] = flipped ? passHeight : 0;
+				}
 				bytes = copy;
 			}
 			var pool = blockBuffers[block.point];

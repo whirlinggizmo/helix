@@ -43,7 +43,7 @@ typedef Case = {
 	multisampling chosen apart from their depth (one sample with depth, the screen's, no depth and the most, a count rounded down
 	to the most and a negative one refused) on a window asking for 4 samples, a target's depth texture sampled after its pass (refused in
 	it, with more than one sample, disposed alone and read back), textures read
-	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, viewport and scissor in a target and on the screen, a data texture's floats read
+	back, instances placed by a mat4 vertex input, mipmaps under each mipmap filter, a render target drawn to the screen, `gl_FragCoord.y` and `dFdy` counted from the image's bottom in a target stored either way and on the screen, viewport and scissor in a target and on the screen, a data texture's floats read
 	texel by texel, a cubemap's six faces, declared textures left unbound reading clear, the GPU bytes counted (`textureBytes` and
 	`bufferBytes`: a texture's mipmaps, a cubemap, a data texture, a render target's samples and depth (a depth texture too), a shadow map, a static and a
 	stream buffer, each added as made and gone as freed), and, in a page, the context lost and restored: frames run while it is
@@ -270,6 +270,8 @@ class GraphicsTests {
 		var mixed = shader(ShaderCompiler.compile("shaders/mixed.vert", "shaders/color.frag"));
 		var integer = shader(ShaderCompiler.compile("shaders/integer.vert", "shaders/color.frag"));
 		var gap = shader(ShaderCompiler.compile("shaders/gap.vert", "shaders/color.frag"));
+		var rowsSource = ShaderCompiler.compile("shaders/color.vert", "shaders/rows.frag");
+		var rowProgram = shader(rowsSource);
 		var sharedSource = ShaderCompiler.compile("shaders/shared.vert", "shaders/shared.frag");
 		var sharing = shader(sharedSource);
 
@@ -306,6 +308,7 @@ class GraphicsTests {
 			fetched = pipeline(data, textured, Blend.OPAQUE),
 			looked = pipeline(cube, textured, Blend.OPAQUE);
 		var tinted = pipeline(tint, plain, Blend.OPAQUE);
+		var rowed = pipeline(rowProgram, colored, Blend.OPAQUE);
 		// The shared block's program, flipped through block 0's second vec4 (its first is another value, left as it is).
 		var shared = graphics.createPipeline({
 			shader: sharing,
@@ -597,6 +600,12 @@ class GraphicsTests {
 				values = values.concat([square[i * 2], square[i * 2 + 1], r, g, b, a]);
 			return buffer(values);
 		}
+		// The square with a green growing up the image, 0 at the bottom edge and 1 at the top.
+		var rising = buffer([
+			for (i in 0...6)
+				for (v in [square[i * 2], square[i * 2 + 1], 0, (square[i * 2 + 1] + 1) / 2, 0, 1])
+					v
+		]);
 		var white = quad(1, 1, 1, 1),
 			red = quad(1, 0, 0, 1),
 			halfRed = quad(1, 0, 0, .5),
@@ -758,6 +767,14 @@ class GraphicsTests {
 		put("weights", 2, [1], false);
 		put("turn", 0, [0, 0, 0, 0, 0, .75, 0, 0, 0], false);
 		var sharedVertexBlock = floatBytes([7, 7, 7, 7, 0, 0, 0, 0]);
+		// The block the compiler made for the fragment rows' uniform, its bytes the draw's own: the adapter writes the uniform in a copy.
+		var rowsBlock = Lambda.find(rowsSource.uniformBlocks, b -> b.glslName == "helix_uniforms");
+		var rowsAt = Lambda.find(rowsBlock.members, m -> m.glslName == "helix_fragCoordY").offset;
+		var rowBytes = Bytes.alloc(rowsBlock.size);
+		rowBytes.setFloat(rowsAt, 7);
+		rowBytes.setFloat(rowsAt + 4, 7);
+		// A block both stages read, at its slot in each stage's four.
+		var rowUniforms = [clip, rowBytes, null, null, null, rowBytes];
 		function draw(pipeline:Int, buffer:Int, count:Int, ?textures:Array<Int>, ?samplings:Array<Sampling>, ?uniforms:Array<Null<Bytes>>):Void
 			graphics.draw(pipeline, [buffer], null, 0, 0, count, 0, 1, textures == null ? [] : textures, samplings == null ? [] : samplings,
 				uniforms == null ? [clip] : uniforms);
@@ -1667,6 +1684,34 @@ class GraphicsTests {
 					p.expect(w >> 2, h * 3 >> 2, [1, 0, 0], 0);
 					p.expect(w * 3 >> 2, h * 3 >> 2, [1, 0, 0], 0);
 				}
+			},
+			{
+				name: "gl_FragCoord.y and dFdy from the image's bottom, in a target",
+				before: into(0, 0, 0, 1, () -> draw(rowed, rising, 6, null, null, rowUniforms)),
+				target: target,
+				check: p -> {
+					for (y in [0, 5, SIZE - 1])
+						p.expect(3, y, [(SIZE - 1 - y + .5) / 16, 1, 0, 1], 1);
+					GraphicsTests.check(rowBytes.getFloat(rowsAt) == 7 && rowBytes.getFloat(rowsAt + 4) == 7, "the draw's own bytes are left as they were");
+				}
+			},
+			{
+				name: "gl_FragCoord.y and dFdy from the image's bottom, in a target stored bottom row first",
+				before: () -> {
+					graphics.beginTargetPass(upward, 0, 0, 0, 1);
+					draw(rowed, rising, 6, null, null, rowUniforms);
+					graphics.endTargetPass();
+				},
+				target: upward,
+				check: p -> for (row in [0, 5, SIZE - 1])
+					p.expect(3, row, [(row + .5) / 16, 1, 0, 1], 1)
+			},
+			{
+				name: "gl_FragCoord.y and dFdy from the image's bottom, on the screen",
+				screen: (_, _) -> draw(rowed, rising, 6, null, null, rowUniforms),
+				target: 0,
+				check: p -> for (y in [0, 5, p.height - 1])
+					p.expect(p.width >> 1, y, [(p.height - 1 - y) % 16 / 16 + .5 / 16, 1, 0], 1)
 			},
 			{
 				name: "viewport and scissor in a target",

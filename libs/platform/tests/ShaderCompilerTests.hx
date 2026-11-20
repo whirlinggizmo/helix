@@ -10,7 +10,7 @@ import helix.platform.tools.ShaderTools;
 	their types and whether they're read, a matrix's columns too, blocks at their size with their members at std140 offsets, structs
 	and arrays of structs, floats and integers together, textures and their kinds, a texture only fetched never filtered, what's
 	declared whether read or not), GL's form and its loose uniforms gathered, a block both stages declare as one, gathered blocks, the
-	clip-scale wrap, includes without an extension line, what it refuses and how it says so, its dialects, and SDL_GPU's bindings. Run
+	clip-scale wrap, the fragment stage's wrap for `gl_FragCoord` and `dFdy`, includes without an extension line, what it refuses and how it says so, its dialects, and SDL_GPU's bindings. Run
 	by helix.py test; fetches glslang and builds SPIRV-Cross into the user's cache the first time. */
 class ShaderCompilerTests {
 	static var checks = 0;
@@ -146,6 +146,7 @@ void main() { color = scene.ambient + scene.lights[1].color * scene.surface.roug
 		bothStages();
 		gathered();
 		clipScale();
+		fragmentRows();
 		points();
 		semantics();
 		linkage();
@@ -314,6 +315,62 @@ void main() { finalColor = texture(texture0, fragTexCoord) * colDiffuse * fragCo
 			"The clip scale a loose uniform in helix_uniforms: " + haxe.Json.stringify(u));
 		check(source.glsl300es.vertex.indexOf("helix_clipScale") >= 0 && source.glsl300es.vertex.indexOf("helix_main") >= 0,
 			"The vertex stage wrapped: " + source.glsl300es.vertex);
+	}
+
+	// The fragment wrap: a stage reading gl_FragCoord or dFdy reads them through a loose helix_fragCoordY; one reading neither is
+	// compiled as written.
+	static function fragmentRows():Void {
+		var vertex = "#version 450\nlayout(location = 0) in vec2 p;\nlayout(location = 0) out vec2 uv;\nvoid main() { gl_Position = vec4(p, 0.0, 1.0); uv = p; }\n";
+		function fragment(version:String, body:String):String
+			return '#version $version\n'
+				+
+				(version == "300 es" ? "precision mediump float;\nin vec2 uv;\nout vec4 color;\n" : version == "450" ? "layout(location = 0) in vec2 uv;\nlayout(location = 0) out vec4 color;\n" : "in vec2 uv;\nout vec4 color;\n")
+				+ 'float row() { return gl_FragCoord.y; }\nvoid main() { color = vec4($body); }\n';
+		var glVertex = "#version 330\nin vec2 p;\nout vec2 uv;\nvoid main() { gl_Position = vec4(p, 0.0, 1.0); uv = p; }\n";
+		var esVertex = "#version 300 es\nin vec2 p;\nout vec2 uv;\nvoid main() { gl_Position = vec4(p, 0.0, 1.0); uv = p; }\n";
+		var reads = [
+			{name: "gl_FragCoord", body: "gl_FragCoord.xy, row(), 1.0"},
+			{name: "dFdy", body: "dFdy(uv), dFdx(uv)"}
+		];
+		for (r in reads) {
+			var source = compile(vertex, fragment("450", r.body));
+			var u = block(source, "helix_uniforms");
+			check(u != null
+				&& u.stage == "both"
+				&& u.slot == 0
+				&& describe(member(u, "helix_fragCoordY")) == "helix_fragCoordY vec2 @0 x1 /16 read",
+				'${r.name}: the uniform in helix_uniforms: ' + haxe.Json.stringify(u));
+			for (text in [
+				source.glsl300es.fragment,
+				source.glsl410.fragment,
+				source.sdlGpu.msl.fragment,
+				source.sdlGpu.hlsl.fragment
+			])
+				check(text.indexOf("helix_fragCoordY") >= 0, '${r.name}: every dialect reads the uniform: ' + text);
+		}
+		// Each form a stage is written in, and GLSL ES at its highest precision whatever the stage's default.
+		var es = compile(esVertex, fragment("300 es", "gl_FragCoord.xy, row(), dFdy(uv.x)"), {glsl410: true, sdlGpu: false});
+		check(~/highp vec2 helix_fragCoordY/.match(es.glsl300es.fragment) && ~/highp vec4 helix_fragCoord\b/.match(es.glsl300es.fragment),
+			"GLSL ES reads the rows at highp: " + es.glsl300es.fragment);
+		var gl = compile(glVertex, fragment("330", "gl_FragCoord.xy, row(), dFdy(uv.x)"), {glsl410: true, sdlGpu: false, clipScale: true});
+		var both = block(gl, "helix_uniforms");
+		check(describe(member(both, "helix_clipScale")) == "helix_clipScale vec4 @0 x1 /16 read"
+			&& describe(member(both, "helix_fragCoordY")) == "helix_fragCoordY vec2 @16 x1 /16 read",
+			"The clip scale, then the rows' uniform: "
+			+ haxe.Json.stringify(both));
+		// A stage reading neither has no uniform of the compiler's.
+		var plain = compile(vertex,
+			"#version 450\nlayout(location = 0) in vec2 uv;\nlayout(location = 0) out vec4 color;\nvoid main() { color = vec4(dFdx(uv), fwidth(uv)); }\n");
+		check(block(plain, "helix_uniforms") == null && plain.glsl300es.fragment.indexOf("helix_") < 0,
+			"A stage reading neither is unwrapped: " + plain.glsl300es.fragment);
+		// An error's line is the stage's own.
+		var message = refusal(vertex, fragment("450", "gl_FragCoord.xy, nothing, 1.0"));
+		check(message.indexOf("test.frag:5:") >= 0, "An error at the stage's line: " + message);
+		// Four blocks in the fragment stage leave none for the uniform.
+		var full = refusal(vertex,
+			"#version 450\nlayout(location = 0) out vec4 color;\nlayout(binding = 0) uniform A { float a; };\nlayout(binding = 1) uniform B { float b; };\n" +
+			"layout(binding = 2) uniform C { float c; };\nlayout(binding = 3) uniform D { float d; };\nvoid main() { color = vec4(a + b + c + d + gl_FragCoord.y); }\n");
+		check(full.indexOf("helix_uniforms has no binding left") >= 0, "No slot left for the uniform: " + full);
 	}
 
 	// GLSL's float literals in the fewest digits that read back as their 32-bit values, plain or with an exponent, in both GL forms; a

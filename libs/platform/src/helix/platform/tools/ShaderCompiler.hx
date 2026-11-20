@@ -47,6 +47,11 @@ import helix.platform.tools.ShaderText.ShaderDeclaration;
 	can be flipped through `ClipFlip.ClipScale`. With `ShaderCompileOptions.points` the same wrap writes `gl_PointSize = 1.0` after the
 	stage's `main`, whatever it wrote, for `Primitive.Points` pipelines, and the result's `ShaderSource.points` is true.
 
+	A fragment stage that reads `gl_FragCoord` or `dFdy` is wrapped too, whatever the options. The wrap adds a loose
+	`uniform vec2 helix_fragCoordY`, gathered into `helix_uniforms`, which the graphics adapters write at each draw. The stage reads
+	`gl_FragCoord.y` counted from the bottom row of the image drawn, and `dFdy` as the change toward the image's top, in every pass.
+	A draw passes `helix_uniforms`' bytes as it does any block's.
+
 	```haxe
 	var shader = graphics.createShader(ShaderCompiler.compile("triangle.vert", "triangle.frag"));
 	``` */
@@ -182,7 +187,7 @@ class ShaderCompiler {
 		var glslang = ShaderTools.glslang(), cross = ShaderTools.spirvCross();
 		var scratch = Scratch.make("helix-shader-");
 		try {
-			var source = compileIn(scratch, glslang, cross, vertex, fragment, options);
+			var source = compileIn(scratch, glslang, cross, vertex, fragment, options, false);
 			Files.removeDirectory(scratch);
 			return source;
 		} catch (error:haxe.Exception) {
@@ -194,7 +199,7 @@ class ShaderCompiler {
 
 	#if sys
 	static function compileIn(scratch:String, glslang:String, cross:String, vertex:{name:String, text:String}, fragment:{name:String, text:String},
-			options:ShaderCompileOptions):helix.platform.ShaderSource {
+			options:ShaderCompileOptions, rows:Bool):helix.platform.ShaderSource {
 		var given = [
 			{
 				stage: "vertex",
@@ -216,8 +221,20 @@ class ShaderCompiler {
 		if (options.points == true)
 			after.push("gl_PointSize = 1.0;");
 		if (after.length > 0)
-			given[0].text = wrapMain(given[0].text, vertex.name, "helix_main", options.clipScale == true ? "uniform vec4 helix_clipScale;" : "",
-				after.join("\n    "));
+			given[0].text = wrapMain(given[0].text, vertex.name, "vertex", "helix_main", options.clipScale == true ? "uniform vec4 helix_clipScale;" : "", [],
+				"", after.join("\n    "));
+		// The fragment stage's rows counted from the image's bottom: gl_FragCoord read through a copy with its y turned by the uniform the
+		// adapters write, and dFdy multiplied by the uniform's sign. (GLSL ES 300 has no dFdyFine or dFdyCoarse, so no program has.)
+		if (rows) {
+			var declarations = [
+				"uniform highp vec2 helix_fragCoordY;",
+				"highp vec4 helix_fragCoord;",
+				"#define gl_FragCoord helix_fragCoord",
+				"#define dFdy(v) (dFdy(v) * helix_fragCoordY.x)"
+			];
+			given[1].text = wrapMain(given[1].text, fragment.name, "fragment", "helix_main", declarations.join("\n"), ["gl_FragCoord", "dFdy"],
+				"helix_fragCoord = vec4(gl_FragCoord.x, gl_FragCoord.y * helix_fragCoordY.x + helix_fragCoordY.y, gl_FragCoord.zw);", "");
+		}
 		var include = "-P#extension GL_GOOGLE_include_directive : enable";
 		// Preprocessed, includes and defines resolved: the text step reads this.
 		var calls = [];
@@ -252,7 +269,7 @@ class ShaderCompiler {
 				suffix: "vert",
 				name: vertex.name,
 				// GL's clip depth (-1..1) as SDL_GPU's (0..1).
-				text: wrapMain(arranged.texts[0], vertex.name, "helix_gpu_main", "", "gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5;")
+				text: wrapMain(arranged.texts[0], vertex.name, "vertex", "helix_gpu_main", "", [], "", "gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5;")
 			});
 		var sdlGpuFragment = options.sdlGpu && arranged.sdlGpuFragment != arranged.texts[1];
 		if (sdlGpuFragment)
@@ -292,6 +309,9 @@ class ShaderCompiler {
 			var out = checked(run, Path.join([scratch, '${c.stage}.c.${c.suffix}']), c.name);
 			listings.set(c.stage, (k & 1 == 0 ? "" : listings.get(c.stage)) + "\n" + out);
 		}
+		// A fragment stage found reading gl_FragCoord or dFdy is compiled again, wrapped.
+		if (!rows && readsRows(listings.get("fragment")))
+			return compileIn(scratch, glslang, cross, vertex, fragment, options, true);
 		var spv = stage -> Path.join([scratch, '$stage.spv']);
 		var crossCalls = [];
 		var gl = ["--no-420pack-extension", "--no-support-nonzero-baseinstance"];
@@ -417,18 +437,24 @@ class ShaderCompiler {
 		return text;
 	}
 
-	// The text with its main renamed by the preprocessor (an include's too) and a main after it calling it, then doing more; a declaration
-	// before it; the line count kept.
-	static function wrapMain(text:String, name:String, renamed:String, declaration:String, after:String):String {
+	// The text with its main renamed by the preprocessor (an include's too) and a main after it calling it, with statements before the
+	// call and after it; declarations before the text, the macros among them undefined after it; the line count kept.
+	static function wrapMain(text:String, name:String, stage:String, renamed:String, declarations:String, macros:Array<String>, before:String,
+			after:String):String {
 		var version = ~/^[ \t]*#version[^\n]*\n/m;
 		if (!version.match(text))
-			throw new CommandException('shader: $name: the vertex stage starts with #version');
-		var before = version.matchedLeft() + version.matched(0);
-		return before
-			+ '#define main $renamed\n$declaration\n#line ${before.split("\n").length}\n'
+			throw new CommandException('shader: $name: the $stage stage starts with #version');
+		var head = version.matchedLeft() + version.matched(0);
+		return head
+			+ '#define main $renamed\n$declarations\n#line ${head.split("\n").length}\n'
 			+ version.matchedRight()
-			+ '\n#undef main\nvoid main()\n{\n    $renamed();\n    $after\n}\n';
+			+ '\n#undef main\n'
+			+ [for (m in macros) '#undef $m\n'].join("") + 'void main()\n{\n    $before\n    $renamed();\n    $after\n}\n';
 	}
+
+	// Whether a stage's listing reads gl_FragCoord or dFdy.
+	static function readsRows(listing:String):Bool
+		return ~/BuiltIn FragCoord\b|^\s*\d+:\s+\S+\s+DPdy\s/m.match(listing);
 
 	// glslang -E writes its preamble (the include extension) first; the text from the version on is the stage's.
 	static function dropPreamble(text:String):String {
@@ -520,13 +546,13 @@ class ShaderCompiler {
 				if (d.kind == "block" && d.instance != "")
 					instances.set(d.name, d.instance);
 			}
-		// Loose uniforms, each stage's in order, the clip scale the compiler's own.
+		// Loose uniforms, each stage's in order, the clip scale and the fragment rows' uniform the compiler's own.
 		var loose = [for (k in 0...2) all(k, "uniform")];
 		for (k in 0...2)
 			for (d in loose[k]) {
 				if (d.initialized)
 					stages[k].refuse(d.start, 'uniform ${d.name} has an initializer, which the compiler would drop');
-				if (options.looseUniforms != true && d.name != "helix_clipScale")
+				if (options.looseUniforms != true && d.name != "helix_clipScale" && d.name != "helix_fragCoordY")
 					stages[k].refuse(d.start, 'uniform ${d.name} is outside a block; a stage declares its uniforms in blocks');
 			}
 		function declaration(d:ShaderDeclaration):String

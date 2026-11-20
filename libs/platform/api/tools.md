@@ -33,6 +33,8 @@ What a program's source declares is what it binds: each uniform block, at its si
 
 With `ShaderCompileOptions.clipScale` the compiler wraps the vertex stage: `#define main helix_main` before the stage's text, a loose `uniform vec4 helix_clipScale;`, and after it `void main() { helix_main(); gl_Position *= helix_clipScale; }`, so any vertex stage can be flipped through `ClipFlip.ClipScale`. With `ShaderCompileOptions.points` the same wrap writes `gl_PointSize = 1.0` after the stage's `main`, whatever it wrote, for `Primitive.Points` pipelines, and the result's `ShaderSource.points` is true.
 
+A fragment stage that reads `gl_FragCoord` or `dFdy` is wrapped too, whatever the options. The wrap adds a loose `uniform vec2 helix_fragCoordY`, gathered into `helix_uniforms`, which the graphics adapters write at each draw. The stage reads `gl_FragCoord.y` counted from the bottom row of the image drawn, and `dFdy` as the change toward the image's top, in every pass. A draw passes `helix_uniforms`' bytes as it does any block's.
+
 ```haxe
 var shader = graphics.createShader(ShaderCompiler.compile("triangle.vert", "triangle.frag"));
 ```

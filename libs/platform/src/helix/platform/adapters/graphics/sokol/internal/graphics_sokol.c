@@ -87,8 +87,9 @@ static void load_gl(void){}
 #define MAX_BLOCKS 8
 #define MAX_TEXTURES 12
 /* A setter: count elements of a member (base 'f', 'i' or 'u'; comps a column's components; cols a matrix's columns, else 1), the first at
-   offset in the bytes of block (an index), each stride bytes after the last, to the GL location loc. */
-typedef struct{int block,offset,stride,count,loc;char base,comps,cols;}setter;
+   offset in the bytes of block (an index), each stride bytes after the last, to the GL location loc; rows the fragment rows' uniform
+   (helix_fragCoordY), which the adapter sets itself. */
+typedef struct{int block,offset,stride,count,loc;char base,comps,cols,rows;}setter;
 static struct{int texture_mask,unfiltered_mask,block_size[MAX_BLOCKS];char kind[MAX_TEXTURES];setter *setters;int setter_count;}programs[SLOTS];
 /* What an unbound slot reads (a draw's texture 0 where the program declares one): a 1x1 texture of the slot's kind, clear, made when first
    needed. */
@@ -531,11 +532,12 @@ static int add_setters(setter **list,int *count,int *cap,GLuint prog,const char 
    block (b: one both stages read, at the slot in each), each followed by its members, "m <type> <offset> <count> <stride> <path>", at their
    std140 places; "n <block> <vertex> <fragment>" the block's uniform's name in each stage (- for none); "t <slot> <v|f> <name>" a texture and
    its sampler, sharing the slot, "s <slot> <v|f> <name>" a shadow map (a depth array) and its comparison sampler, "c <slot> <v|f> <name>" a
-   cube and its sampler, "d <slot> <v|f> <name>" a data texture (RGBA32F, unfiltered) and its nonfiltering sampler. */
+   cube and its sampler, "d <slot> <v|f> <name>" a data texture (RGBA32F, unfiltered) and its nonfiltering sampler; "y <index> <offset>"
+   the fragment rows' uniform, in the block at index. */
 uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  load_gl();
  sg_shader_desc desc={.vertex_func={.source=vs,.entry="main"},.fragment_func={.source=fs,.entry="main"},.label="app_shader"};
- static char names[32][128];int name=0,textures=0,unfiltered=0,sizes[MAX_BLOCKS]={0};char kinds[MAX_TEXTURES]={0};
+ static char names[32][128];int name=0,textures=0,unfiltered=0,sizes[MAX_BLOCKS]={0},rows_index=-1,rows_offset=-1;char kinds[MAX_TEXTURES]={0};
  /* The blocks and their members as read, applied once the program is linked. */
  static struct{int slot;char stage;char name[128],vertex[128],fragment[128];}blocks[MAX_BLOCKS];int block_count=0;
  static struct{int block,offset,count,stride;char type[16],path[SLOTS];}members[1024];int member_count=0;
@@ -555,6 +557,9 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
    if(!block_count||member_count==1024||offset<0||count<1||stride<0)return 0;
    members[member_count].block=block_count-1;members[member_count].offset=offset;members[member_count].count=count;members[member_count].stride=stride;
    snprintf(members[member_count].type,16,"%s",type);snprintf(members[member_count].path,256,"%s",word);member_count++;
+  }else if(sscanf(line," y %d %d%n",&slot,&offset,&used)==2){
+   if(slot<0||slot>=MAX_BLOCKS||offset<0)return 0;
+   rows_index=slot;rows_offset=offset;
   }else if(sscanf(line," n %127s %127s %127s%n",other,word,third,&used)==3){
    for(int b=0;b<block_count;b++)if(!strcmp(blocks[b].name,other)){
     snprintf(blocks[b].vertex,128,"%s",strcmp(word,"-")?word:"");snprintf(blocks[b].fragment,128,"%s",strcmp(third,"-")?third:"");
@@ -578,6 +583,7 @@ uint32_t helix_shader(const char *vs,const char *fs,const char *layout){
  for(int i=0;i<member_count;i++){
   const int b=members[i].block;setter u={.block=blocks[b].stage=='f'?4+blocks[b].slot:blocks[b].slot,.offset=members[i].offset,.stride=members[i].stride};
   if(!type_of(members[i].type,&u)){free(list);sg_destroy_shader(shader);return 0;}
+  u.rows=u.block==rows_index&&u.offset==rows_offset;
   const char *vars[2]={blocks[b].stage!='f'?blocks[b].vertex:"",blocks[b].stage!='v'?blocks[b].fragment:""};
   for(int v=0;v<2;v++){
    if(!vars[v][0]||(v==1&&!strcmp(vars[0],vars[1])))continue;
@@ -807,7 +813,9 @@ static int bind_program(int shader,sg_bindings *bindings,const uint32_t *texture
 }
 /* Sets the program's uniforms after the pipeline and bindings, each member by its type from its std140 place in its block's bytes (the
    blocks one after another by index, a block both stages read at both, read from its vertex copy), repacked tight as GL takes them; the
-   pipeline's flip uniform written into a copy of its block: a clip scale always, a view-projection's y row negated in a flipped pass. */
+   pipeline's flip uniform written into a copy of its block: a clip scale always, a view-projection's y row negated in a flipped pass.
+   The fragment rows' uniform is the adapter's own: (-1, the pass's height) where the graphics API counts gl_FragCoord.y from the
+   image's top (GL in a flipped pass), (1, 0) otherwise. */
 static void apply_blocks(int shader,int p,const void *uniforms){
  static unsigned char *flip_copy;static size_t flip_size;static float *packed;static size_t packed_size;
  const unsigned char *at[MAX_BLOCKS];const unsigned char *base=uniforms;int offset=0;
@@ -820,8 +828,10 @@ static void apply_blocks(int shader,int p,const void *uniforms){
   else if(flip==2&&fo+64<=size)for(int i=1;i<16;i+=4){float v;memcpy(&v,flip_copy+fo+i*4,4);v=-v;memcpy(flip_copy+fo+i*4,&v,4);}
   at[fs]=flip_copy;
  }
+ const int turned=flipped!=(int)sg_query_features().origin_top_left;
  for(int k=0;k<programs[shader].setter_count;k++){
   const setter *u=&programs[shader].setters[k];
+  if(u->rows){glUniform2f(u->loc,turned?-1.0f:1.0f,turned?(float)frame_height:0.0f);continue;}
   const size_t words=(size_t)u->count*(size_t)u->comps*(size_t)u->cols;
   if(packed_size<words){float *g=realloc(packed,words*sizeof(float));if(!g)return;packed=g;packed_size=words;}
   const unsigned char *src=at[u->block]+u->offset;size_t w=0;

@@ -48,11 +48,13 @@ unread, as sprites were enough.
 
 - **`helixShadow` alone lit nothing, 2 of 3.** A shader of the program's own calling `helixShadow` and reading no other field of
   `lights` was drawn as if no light cast, without a word. Runs 2 and 3 each kept a dead read of the lights. Fixed (`1c26cce`).
-- **`gl_FragCoord.y` on the screen, 1 of 3.** Run 2's sky shader flips it. On the trial's display (Xvfb, Mesa's software GL) a
-  probe found `gl_FragCoord.y` counting from the top on the screen in helix-raylib and in the C implementation of raylib alike, so
-  run 2 met the display's GL. The same probe on a GPU (NVIDIA, GL) found what the trial didn't: the screen counts from the bottom in
-  both, and from the top in the frame a helix-raylib program reads the screen (`TakeScreenshot`), which draws the screen into a
-  target (DECISIONS 75). A render texture counts as raylib's does on both. Six of raylib 5.5's example shaders read it. Open.
+- **`gl_FragCoord.y` on the screen, 1 of 3.** Run 2's sky shader flips it. Run 2 judged its sky from its screenshots. From a
+  program's first screen read on, helix-raylib drew each frame into a target (DECISIONS 75), where `gl_FragCoord.y` counted from
+  the top. A probe on a GPU (NVIDIA) found the C implementation of raylib counting from the bottom on the screen and in a render
+  texture. helix-raylib matched it except in the frames of a screen read on GL and in a page, and on the screen in every frame on
+  SDL_GPU. Fixed: `gl_FragCoord.y` counts from the bottom row of the image in every pass (DECISIONS 84). On the trial's display
+  (Xvfb, Mesa's llvmpipe) the C implementation counts the screen from the top once the same shader has drawn into a render texture
+  in the frame, and from the bottom without that pass. Six of raylib 5.5's example shaders read `gl_FragCoord`.
 - **No serif face, 3 of 3.** The spec asks for a serif title and the program ships no font, so each asked for a font of the
   system's by its absolute path. A path is read under the asset host, natively as in a page, so the load failed and each drew in
   raylib's default font. The port met the same. The failure read "no source has it", and now reads "file not found in any of the
