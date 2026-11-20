@@ -9,14 +9,14 @@ import helix.services.screen.Screen;
 import helix.services.time.Time;
 
 /** Checks the screen reads that wait, `LoadImageFromTexture` and `LoadImageFromScreen`, on graphics that paint each target and the screen
-	in one color, counting the draws into it. A render texture drawn then read holds its clear and its draws, its frame's screen pass left
-	to the frame's end; drawn into again and read, it holds both passes' draws. The screen read part way through a frame holds the frame's
-	clear and the draws drawn so far, those still in rlgl's batch too, at the framebuffer's size; the frame goes on in the same target,
-	the later draws on top, and is copied to the screen without blending as it ends. Every frame after draws into the target and is
-	copied to the screen, its scissors at the framebuffer's scale, so a read between frames holds the frame last shown; a frame drawn
-	without a clear or a read is black. Once the framebuffer's size changes, the target is made again at it, and a read before the next
-	frame is black. A new window's first read, between frames, is black. Before `InitWindow`, the screen read logs why and returns an
-	empty image. Run by helix.py test on Node and natively. */
+	in one color, counting the draws into it. A render texture drawn then read holds its clear and its draws, its frame's screen pass left to
+	the frame's end; drawn into again and read, it holds both passes' draws; read inside `BeginTextureMode`, it holds the draw still in rlgl's
+	batch. The screen read part way through a frame holds the frame's clear and the draws drawn so far, those still in rlgl's batch too, at the
+	framebuffer's size; the frame goes on in the same target, the later draws on top, and is copied to the screen without blending as it ends.
+	Every frame after draws into the target and is copied to the screen, its scissors at the framebuffer's scale, so a read between frames
+	holds the frame last shown; a frame drawn without a clear or a read is black. Once the framebuffer's size changes, the target is made again
+	at it, and a read before the next frame is black. A new window's first read, between frames, is black. Before `InitWindow`, the screen read
+	logs why and returns an empty image. Run by helix.py test on Node and natively. */
 @:access(helix.raylib.internal.Runtime)
 class ScreenReadTests {
 	public static var checks = 0;
@@ -110,6 +110,18 @@ class ScreenReads {
 		ScreenReadTests.check(graphics.log.join(",") == "frame,draw 0,endFrame",
 			'the frame\'s end draws the screen\'s pass alone, the render texture passes already drawn: ${graphics.log}');
 		ScreenReadTests.check(graphics.painted(0) == "1 2 1", 'the screen: ${graphics.painted(0)}');
+
+		// A render texture read inside BeginTextureMode: the draw waiting in rlgl's batch is drawn first.
+		BeginDrawing();
+		BeginTextureMode(target);
+		DrawRectangle(0, 0, 2, 2, red);
+		graphics.log.resize(0);
+		image = LoadImageFromTexture(target.texture);
+		ScreenReadTests.check(graphics.log.join(",") == 'resume ${target.id},draw ${target.id},end,read ${target.id}',
+			'the batch drawn into the target, then read: ${graphics.log}');
+		ScreenReadTests.check(pixel(image, 0, 0) == "10 20 3 128", 'the batched draw in the image: ${pixel(image, 0, 0)}');
+		EndTextureMode();
+		EndDrawing();
 
 		// The screen read part way through a frame: what is drawn so far, the batch still waiting drawn first.
 		BeginDrawing();

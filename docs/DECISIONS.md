@@ -1274,18 +1274,20 @@ Why things are the way they are, numbered, in order.
     they were; fields on `PipelineDesc` naming the uniform, as `flip` has, when the compiler adds the uniform and the reflection
     says where it is; wrapping `dFdyFine` and `dFdyCoarse`, which GLSL ES 300 lacks, so no program compiles with them.
 
-85. **`TakeScreenshot` and `LoadImageFromScreen` draw rlgl's batch before they read.** It revises 75's "Both leave the draws
-    waiting in rlgl's batch undrawn" for the screen. The image holds every draw made before the call. A frame whose draws all wait in
-    the batch is a frame to save, so a first `TakeScreenshot` there saves it (73). `LoadImageFromTexture` inside `BeginTextureMode`
-    leaves the batch waiting, as before. raylib's screen reads leave the batch undrawn.
+85. **`TakeScreenshot`, `LoadImageFromScreen` and `LoadImageFromTexture` draw rlgl's batch before they read.** It revises 75's
+    "Both leave the draws waiting in rlgl's batch undrawn". The image holds every draw made before the call, a render texture's read
+    inside `BeginTextureMode` as the screen's. A frame whose draws all wait in the batch is a frame to save, so a first
+    `TakeScreenshot` there saves it (73). raylib's reads leave the batch undrawn.
 
     Why: `CloseWindow`'s refusal (73) moves a program's `TakeScreenshot` from after its last `EndDrawing`, where raylib's holds the
     whole frame, to before it, where the frame's 2D draws still wait in the batch. All three entrants of the Lanternholm trial were
     moved so, and saved screenshots without their controls (docs/trials/2026-11-19-lanternholm). A frame of 2D draws alone saved its
     clear and no more.
 
-    What it costs: the frame of a screen read makes one more draw where draws waited. A C program's mid-frame screenshot without
-    its batched draws gains them here. The parity references draw the batch before each read, so none changes.
+    A render texture's read follows the screen's, so one rule says what a read's image holds.
+
+    What it costs: the frame of a read makes one more draw where draws waited. A program whose read part way through a frame left
+    out its batched draws in raylib gains them here. The parity references draw the batch before each read, so none changes.
 
     Rejected: wording in the refusal naming `rlDrawRenderBatchActive`, which every program moved by the refusal would have to act
     on. Keeping the last frame so the first call works after `EndDrawing`, as 73 rejected.

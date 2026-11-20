@@ -3,10 +3,11 @@ import helix.raylib.Raylib.*;
 import js.Browser;
 
 /** Checks the screen reads that wait in a page on WebGL2 (tools/test_raylib_pages.py): a render texture cleared blue with its left half
-	drawn red, read by `LoadImageFromTexture`, holds both; the screen read part way through each frame, its left half drawn red over a
-	green clear and still in rlgl's batch, holds both at the framebuffer's size, opaque; the frame goes on, its top left quarter drawn blue on top, which the tool
-	checks on the page's screenshot (ScreenReadPage.check.json) with the red and the green kept. The screen read after the last frame,
-	between frames, holds that frame: the blue over the red, and the green. Leaves {passed, checks, failures} in `window.helixResult`. */
+	drawn red, read by `LoadImageFromTexture` inside `BeginTextureMode` with the red still in rlgl's batch, holds both; the screen read part
+	way through each frame, its left half drawn red over a green clear and still in rlgl's batch, holds both at the framebuffer's size, opaque;
+	the frame goes on, its top left quarter drawn blue on top, which the tool checks on the page's screenshot (ScreenReadPage.check.json) with
+	the red and the green kept. The screen read after the last frame, between frames, holds that frame: the blue over the red, and the green.
+	Leaves {passed, checks, failures} in `window.helixResult`. */
 class ScreenReadPage {
 	static var checks = 0;
 	static final failures:Array<String> = [];
@@ -33,8 +34,8 @@ class ScreenReadPage {
 			BeginTextureMode(target);
 			ClearBackground(BLUE);
 			DrawRectangle(0, 0, 2, 4, RED);
-			EndTextureMode();
 			var texture = LoadImageFromTexture(target.texture);
+			EndTextureMode();
 			check(texture.width == 4 && texture.height == 4, 'the render texture\'s size: ${texture.width} x ${texture.height}');
 			check(pixel(texture, 0, 1) == "230 41 55 255" && pixel(texture, 3, 2) == "0 121 241 255",
 				'the render texture\'s red and blue: ${pixel(texture, 0, 1)}, ${pixel(texture, 3, 2)}');

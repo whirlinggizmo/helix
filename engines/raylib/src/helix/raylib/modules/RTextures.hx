@@ -702,8 +702,8 @@ class RTextures {
 	/** Reads a texture's pixels into an image, and returns once they are read. See `LoadImageFromScreen` for reading the screen.
 
 		What was drawn into the texture so far is read: the frame's render texture passes up to the call are drawn first, and its
-		updates (`UpdateTexture`) made. Inside `BeginTextureMode`, the draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`)
-		aren't read, as in raylib.
+		updates (`UpdateTexture`) made. Inside `BeginTextureMode`, the draws waiting in rlgl's batch are drawn first too. raylib's image
+		leaves out the draws waiting in the batch.
 
 		The image is RGBA, whatever the texture's format.
 

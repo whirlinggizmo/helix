@@ -1748,14 +1748,15 @@ class FrameReads {
 	static var counting = false;
 
 	/** Draws the passes recorded so far part way through a frame, as rlgl draws into its framebuffers at once: each render texture's
-		pass and the textures' updates, and the screen's pass once the screen is read (`readScreen`). The batch waits, as rlgl's does
-		until it is flushed. The pass drawn into goes on from where it stopped, keeping what it drew.
+		pass and the textures' updates, and the screen's pass once the screen is read (`readScreen`). The draws waiting in the batch are
+		drawn with their pass. The pass drawn into goes on from where it stopped, keeping what it drew.
 
 		@param frame  The frame.
 		@param framebufferWidth  The screen's framebuffer width.
 		@param framebufferHeight  Its height. */
 	static function submit(frame:Frame, framebufferWidth:Int, framebufferHeight:Int):Void {
 		own(frame);
+		frame.cut();
 		var passes = frame.passes;
 		var screen = passes[passes.length - 1];
 		// The screen's pass is drawn only while the screen is held, so the frame's passes are those drawn while they are.

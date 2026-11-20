@@ -811,7 +811,7 @@ static macro function LoadImageAnimFromMemoryAsync(fileType:String, fileData:hax
   - `texture`: The texture.
   - returns: The image, `PIXELFORMAT_UNCOMPRESSED_R8G8B8A8`, or an empty one when it can't be read. Why it couldn't is logged.
 
-  What was drawn into the texture so far is read: the frame's render texture passes up to the call are drawn first, and its updates (`UpdateTexture`) made. Inside `BeginTextureMode`, the draws since rlgl's batch was last drawn (`rlDrawRenderBatchActive`) aren't read, as in raylib.
+  What was drawn into the texture so far is read: the frame's render texture passes up to the call are drawn first, and its updates (`UpdateTexture`) made. Inside `BeginTextureMode`, the draws waiting in rlgl's batch are drawn first too. raylib's image leaves out the draws waiting in the batch.
 
   The image is RGBA, whatever the texture's format.
 

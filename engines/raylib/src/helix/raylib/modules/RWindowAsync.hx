@@ -333,7 +333,7 @@ class RWindowAsync {
 		}
 		var framebufferWidth = Runtime.window.framebufferWidth,
 			framebufferHeight = Runtime.window.framebufferHeight;
-		// The draws waiting in the batch are the frame's too, a frame to read where they are all it has drawn.
+		// The draws waiting in the batch are the frame's too, a frame to read where they are all it has drawn: drawn before hasScreen asks.
 		frame.cut();
 		if (helix.raylib.internal.Frame.FrameReads.hasScreen(frame)) {
 			helix.raylib.internal.Frame.FrameReads.readScreen(frame, framebufferWidth, framebufferHeight,

@@ -352,7 +352,7 @@ class RTexturesAsync {
 		readTexture("LoadImageFromTextureAsync", texture, false, loaded, failed);
 	}
 
-	// Reads a texture's pixels for LoadImageFromTexture (now: the frame's passes so far drawn first) and LoadImageFromTextureAsync (as the
+	// Reads a texture's pixels for LoadImageFromTexture (now: the frame's passes so far drawn first, the batch with them) and LoadImageFromTextureAsync (as the
 	// frames before left them, after this frame when it updates the texture). Answered at a later poll.
 	static function readTexture(name:String, texture:Texture2D, now:Bool, loaded:Image->Void, failed:Null<String->Void>):Void {
 		var gpu = Textures.isCube(texture.id) ? 0 : Textures.onGpu(texture.id);
@@ -407,7 +407,6 @@ class RTexturesAsync {
 			Runtime.later(() -> refuse(name, "InitWindow first", failed));
 			return;
 		}
-		Runtime.frame.cut();
 		helix.raylib.internal.Frame.FrameReads.readScreen(Runtime.frame, Runtime.window.framebufferWidth, Runtime.window.framebufferHeight,
 			(pixels, width, height) -> {
 				var image = opaque(pixels, width, height);
