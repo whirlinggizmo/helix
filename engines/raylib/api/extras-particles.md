@@ -6,7 +6,7 @@
 
 *class* in [`engines/raylib/src/helix/raylib/extras/Particles.hx`](../src/helix/raylib/extras/Particles.hx), `import helix.raylib.extras.Particles;`
 
-Provides particle emitters, in 3D and in 2D. An emitter's settings are its fields, read each frame, so a program changes one by assigning it. A new emitter already emits a small fountain of soft white dots that fade. Imported apart: `import helix.raylib.extras.Particles.*;`.
+Provides particle emitters, in 3D and in 2D: smoke, fire, sparks, mist, dust motes and fireflies, a 3D emitter's thousands in one draw. An emitter's settings are its fields, read each frame, so a program changes one by assigning it. A new emitter already emits a small fountain of soft white dots that fade. Imported apart: `import helix.raylib.extras.Particles.*;`.
 
 The examples `engines/raylib/examples/extras/particles3d` and `engines/raylib/examples/extras/particles2d` use it.
 

@@ -65,7 +65,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
     - [ShadowOptions](extras-lighting.md#shadowoptions)
   - [Materials](extras-materials.md): Provides what a material emits, where it is cut out, and whether light and shadows fall on it, read by every draw with it: `DrawModel`'s, `DrawMesh`'s and `DrawMeshInstanced`'s, through helix-raylib's default shader and the Lighting extra's lit shaders.
   - [Models](extras-models.md): Provides what raylib has no call for on models: a model's bounds as posed, which raylib's `GetModelBoundingBox` leaves at the bind pose (`GetModelBoundingBoxPosed`), models merged into one (`LoadModelFromModels`), and two animations blended bone by bone (`UpdateModelAnimationMasked`, `GetModelBoneMask`).
-  - [Particles](extras-particles.md): Provides particle emitters, in 3D and in 2D.
+  - [Particles](extras-particles.md): Provides particle emitters, in 3D and in 2D: smoke, fire, sparks, mist, dust motes and fireflies, a 3D emitter's thousands in one draw.
     - [Emitter2D](extras-particles.md#emitter2d)
     - [Emitter3D](extras-particles.md#emitter3d)
     - [EmitterShape2D](extras-particles.md#emittershape2d)
