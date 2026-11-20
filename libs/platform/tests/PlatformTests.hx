@@ -82,8 +82,8 @@ class PlatformTests {
 		sys.io.File.saveContent('$outside/kept/a.txt', "kept");
 		sys.io.File.saveContent('$outside/b.txt', "kept");
 		var windows = Sys.systemName() == "Windows";
-		function link(name:String, target:String, isDirectory:Bool):Void {
-			var from = haxe.io.Path.join([sys.FileSystem.fullPath(directory), name]),
+		function link(name:String, target:String, isDirectory:Bool, ?under:String):Void {
+			var from = haxe.io.Path.join([sys.FileSystem.fullPath(under == null ? directory : under), name]),
 				to = sys.FileSystem.fullPath(target);
 			var made = windows ? Sys.command("cmd", [
 				"/c",
@@ -106,6 +106,17 @@ class PlatformTests {
 			&& sys.FileSystem.exists('$outside/kept/new.txt')
 			&& sys.io.File.getContent('$outside/b.txt') == "kept",
 			"the links' targets kept");
+		// The tools' removeDirectory removes a link under it the same way.
+		var tooled = "build/tests/platform-tools";
+		remove(tooled);
+		sys.FileSystem.createDirectory('$tooled/sub');
+		link("linked", '$outside/kept', true, '$tooled/sub');
+		link("linked.txt", '$outside/b.txt', false, tooled);
+		helix.platform.tools.Files.removeDirectory(tooled);
+		check(!sys.FileSystem.exists(tooled)
+			&& sys.FileSystem.exists('$outside/kept/a.txt')
+			&& sys.io.File.getContent('$outside/b.txt') == "kept",
+			"Files.removeDirectory removes links and keeps their targets");
 		remove(outside);
 		remove(directory);
 	}

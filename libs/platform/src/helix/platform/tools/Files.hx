@@ -32,18 +32,41 @@ class Files {
 		File.saveContent(path, text);
 	}
 
-	/** The directory at path removed with everything in it; nothing when it isn't there. */
-	public static function removeDirectory(path:String):Void {
-		if (!isDirectory(path))
+	/** The directory at path removed with everything in it; nothing when it isn't there. A link is removed as an entry and what it points
+		to is kept, as `rm -r` keeps it. */
+	public static function removeDirectory(path:String):Void
+		if (isDirectory(path))
+			remove(Path.removeTrailingSlashes(path));
+
+	// Removes a file, a link or a directory, never going through a link. An entry is deleted as a file first, which deletes a file and a
+	// link, but for a Windows link to a directory. Then it is deleted as a directory, which deletes that link and an empty directory. Only
+	// a directory of its own that refuses both is emptied first.
+	static function remove(path:String):Void {
+		if (deletes(() -> FileSystem.deleteFile(path)) || deletes(() -> FileSystem.deleteDirectory(path)))
 			return;
-		for (name in FileSystem.readDirectory(path)) {
-			var child = Path.join([path, name]);
-			if (isDirectory(child))
-				removeDirectory(child);
-			else
-				FileSystem.deleteFile(child);
-		}
+		if (!isOwnDirectory(path))
+			// Refused again, with the reason.
+			FileSystem.deleteFile(path);
+		for (name in FileSystem.readDirectory(path))
+			remove(Path.join([path, name]));
 		FileSystem.deleteDirectory(path);
+	}
+
+	// Whether a deletion deleted.
+	static function deletes(delete:Void->Void):Bool
+		return try {
+			delete();
+			true;
+		} catch (_:Dynamic)
+			false;
+
+	// Whether path is a directory and not a link to one: a link's real path is its target's. Windows' full path doesn't follow a link, so
+	// there a link the OS refused to delete counts as a directory.
+	static function isOwnDirectory(path:String):Bool {
+		var parent = Path.directory(path);
+		return isDirectory(path)
+			&& (Sys.systemName() == "Windows"
+				|| FileSystem.fullPath(path) == Path.join([FileSystem.fullPath(parent == "" ? "." : parent), Path.withoutDirectory(path)]));
 	}
 
 	/** The directory from copied to to, with everything in it; returns how many files. */
