@@ -73,7 +73,7 @@ The interfaces in `libs/platform/src/helix/platform/` are the authority; this is
 - `close()` natively destroys the window and in a page does nothing (a script can't close its tab); `canClose()` says whether `close`
   removes the window: true natively, false in a page, so a menu asks it before offering Quit.
 
-A request asks; the getter answers on a later frame. Presenting the frame is graphics' (`IGraphics.present`), where every backend
+A request asks; the getter answers on a later frame. Presenting the frame is graphics' (`IGraphics.present`), where every adapter
 actually swaps; the window only provides the surface.
 
 - Each request answers once, never during the call: `done` once the window reflects it, or `failed` with the reason it wasn't
@@ -238,11 +238,11 @@ enum Event {
   passes so far before a pass of fewer samples than one already in its command buffer, as NVIDIA's Vulkan driver loses the device on
   such a pair in one command buffer), `getRenderTargetDepth(target)` (a `RenderTargetDepth.Texture` target's depth as a texture of its own,
   read through a plain `sampler2D` after the target's pass: the depth 0 nearest to 1 farthest in its red channel, as GL's window depth has
-  it on every backend, its rows stored as the target's are, read nearest whatever the sampling's filter, as WebGL2 filters no depth
+  it on every adapter, its rows stored as the target's are, read nearest whatever the sampling's filter, as WebGL2 filters no depth
   texture and Vulkan needn't; disposed with its target, and refused by `disposeTexture` alone. Such a target has one sample:
   `createRenderTarget` refuses `RenderTargetDepth.Texture` with any other `msaaSampleCount`, 0 too, as SDL_GPU resolves no depth; sokol
   and SDL_GPU sample the depth texture their passes draw into, and WebGL2 attaches a `DEPTH_COMPONENT24` texture in place of its
-  renderbuffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler, at least 24 layers on every backend), `disposeTexture`; `canSample(format)`
+  renderbuffer), `createShadowMap(size, layerCount)` (a depth array read through a comparison sampler, at least 24 layers on every adapter), `disposeTexture`; `canSample(format)`
   and `canRender(format)` say what the GPU can.
 - Buffers: `createBuffer(capacityBytes)`, `updateBuffer` (replaces a stream buffer's contents for the draws after it) and `appendBuffer`
   (adds bytes after the frame's earlier ones and returns their byte offset, the earlier bytes staying readable, so many draws' vertex data
@@ -252,7 +252,7 @@ enum Event {
   primitive (`Primitive`: triangles, lines, or points), indexing, blend, the color channels written, depth test and write, culling and winding, depth-only, the clip flip and the
   place of the uniform it flips, and what attributes no buffer feeds read), each with its `dispose`. A `Blend` is a factor for each side (`BlendFactor`: zero, one, the source's or destination's color or alpha and
   their one-minus forms, the saturated source alpha) and an operation (`BlendOperation`: add, subtract, reverse subtract, min, max), for
-  the color and for the alpha apart, as every backend has them; `Blend.OPAQUE`, `ALPHA` (the alpha kept as `a + destination * (1 - a)`)
+  the color and for the alpha apart, as every adapter has them; `Blend.OPAQUE`, `ALPHA` (the alpha kept as `a + destination * (1 - a)`)
   and `ADDITIVE` are the common ones. No blend constant: no factor reads one. `colorWrite` (`ColorChannels`, all when omitted) masks the
   channels written; a pass's clear writes every channel.
 - Vertex layouts: a pipeline reads at most 8 buffers (`VertexBuffer`: a stride, whether it steps per instance, its attributes) and 16
@@ -261,12 +261,12 @@ enum Event {
   `Short4Norm`: unsigned over 255 or 65535, signed over 127 or 32767 with the lowest reading -1 and 0 reading 0). These are the formats
   sokol_gfx, SDL_GPU and WebGL2 all have (and WebGPU), each 4, 8, 12 or 16 bytes: none of 3 bytes or shorts, which only GL has, and no
   integers read unnormalized as floats ("scaled"), which only GL and WebGL2 have. Offsets and strides are multiples of 4, a stride at
-  most 255 (WebGL's limit, the platform's on every backend), and each attribute's `bytes` end within its record. A format of fewer
+  most 255 (WebGL's limit, the platform's on every adapter), and each attribute's `bytes` end within its record. A format of fewer
   components than its input reads the rest as 0, 0, 1 as (0, 0, 0, 1) has them; one of more reads the first ones (a `Byte4Norm` normal
   into a `vec3`). A matrix input takes an attribute a column. Every format feeds a float input: `createPipeline` refuses a layout
   feeding an `int`, `uint`, `ivecN` or `uvecN` input (`ShaderSource.attributeTypes`). The rules are one check
   (`adapters/shared/PipelineLayout`) that the WebGL2 and native adapters both call; the native C keeps those guarding its memory.
-- Points are one pixel on every backend, the one size each draws alike (Direct3D 12 draws no other; Vulkan's larger points are a device
+- Points are one pixel on every adapter, the one size each draws alike (Direct3D 12 draws no other; Vulkan's larger points are a device
   feature SDL_GPU doesn't ask for; WebGL2 promises only 1): a `Points` pipeline draws each vertex, or each index, as the pixel its
   position falls in, culling ignored, as a point has no face. Its program must be compiled with `ShaderCompileOptions.points`, which
   writes the size Vulkan and Metal require and GL leaves undefined unwritten (`ShaderSource.points`); a `Points` pipeline over any other
@@ -285,7 +285,7 @@ enum Event {
   type at its offset, through the names GL lists as active, as NVIDIA's driver also finds names GL doesn't list (sokol_gfx's own uniform layout computes offsets from a flat list of members, which can't hold a struct's padding,
   and has no `mat2`, `mat3`, `uint` or `bool`); SDL_GPU pushes the bytes whole (its Vulkan driver binds 4 KiB of each block, so a shader there reads no further into one). An attribute the program declares that no buffer feeds
   reads the pipeline's constant for its slot (`PipelineDesc.attributeConstants`), or (0, 0, 0, 1), a slot between fed ones too, so
-  every backend takes the same layouts: WebGL2 and sokol set it as the attribute's current value, SDL_GPU reads it from a buffer of
+  every adapter takes the same layouts: WebGL2 and sokol set it as the attribute's current value, SDL_GPU reads it from a buffer of
   its own stepped per instance. sokol refuses a layout whose fed attributes leave a gap of slots, and without its validation enables
   none past the gap, so its adapter gives such a slot a stand-in from a fed buffer and unwires it once the pipeline is made. A draw refuses a texture that is the open
   pass's own target (the render target drawn into, its depth texture, the shadow map whose layer is drawn into), as sampling what a pass
@@ -309,8 +309,8 @@ page `present` does nothing, since the browser presents when the frame's callbac
 presents at once and waits for nothing, and the frame may tear: GL swaps with interval 0, SDL_GPU presents IMMEDIATE, or MAILBOX where the
 window has no IMMEDIATE, or VSYNC where it has neither. A page always waits.
 
-Render targets are stored top row first on every backend, or bottom row first, as GL stores its framebuffers, when made so
-(`createRenderTarget`'s `bottomRowFirst`, which helix-raylib's render textures are, as raylib's are on GL). An adapter whose backend
+Render targets are stored top row first on every adapter, or bottom row first, as GL stores its framebuffers, when made so
+(`createRenderTarget`'s `bottomRowFirst`, which helix-raylib's render textures are, as raylib's are on GL). An adapter whose graphics API
 stores the other way draws into a target flipped, through the uniform a pipeline names (`PipelineDesc.flip`, `flipBlockSlot` and
 `flipOffset`): GL into a target top row first, and Metal and SDL_GPU into one bottom row first. With `ClipScale` every adapter writes the
 vec4 there, (1, -1, 1, 1) in a flipped pass and (1, 1, 1, 1) otherwise; with `ViewProjection` it negates the y row of the matrix there in
@@ -336,12 +336,12 @@ maps): the native adapters' tables are that size, the WebGL2 adapter's maps have
 
 The WebGL2 adapter pays for a draw once. It sets only the GL state that differs from the last draw's; a layout over static buffers is
 kept as a vertex array object and bound again when that mesh is drawn; and each draw's uniform blocks go into buffers of their own, taken
-in turn over three frames, since a write into a buffer a draw in flight still reads makes the GL driver wait for it (over ANGLE's GL
-backend that doubled a frame of 2000 draws, which ANGLE's Vulkan backend never showed, staging the write itself).
+in turn over three frames, since a write into a buffer a draw in flight still reads makes the GL driver wait for it (over ANGLE on
+GL that doubled a frame of 2000 draws, which ANGLE on Vulkan never showed, staging the write itself).
 
 ## Shader compiler
 
-`helix.platform.tools.ShaderCompiler`: a program on `IGraphics` needs every backend's dialect, and gets them from standard GLSL.
+`helix.platform.tools.ShaderCompiler`: a program on `IGraphics` needs every adapter's dialect, and gets them from standard GLSL.
 
 **What a program writes:** one file a stage (`triangle.vert`, `triangle.frag`), both in one of two forms, told apart by `#version`:
 Vulkan-style GLSL 450, where attributes may give `layout(location = n)` and blocks and textures `layout(binding = n)`; or GL's,
