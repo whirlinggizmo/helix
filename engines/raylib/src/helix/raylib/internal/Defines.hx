@@ -13,7 +13,7 @@ class Defines {
 	public static final ALL:Array<haxe.macro.Compiler.DefineDescription> = [
 		{
 			define: "helix-raylib-asset-host",
-			doc: "Where the program's files come from (SetAssetHost), unless the program sets it or the asset_host option sets one: a URL its files are fetched from, natively and in a page, or a directory, relative to the program's own. Defaults to ../web natively and to the page's own directory in a page.",
+			doc: "Where the program's assets come from (SetAssetHost), unless the program sets it or the asset_host option sets one: a URL the assets are fetched from, natively and in a page, or a directory, relative to the program's own. Defaults to ../web natively and to the page's own directory in a page.",
 			params: ["url or directory"]
 		},
 		{

@@ -64,7 +64,7 @@ class AssetRequest {
 		if (aborted)
 			return;
 		end();
-		var message = failure != null ? '$path: $failure' : '$path: no source has it';
+		var message = failure != null ? '$path: $failure' : '$path: file not found in any of the asset source paths';
 		if (failed != null)
 			failed(message);
 		else

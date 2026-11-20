@@ -119,7 +119,8 @@ class AssetsTests {
 
 		http.routes.remove(base + "music.ogg");
 		var gone = load(assets, "music.ogg");
-		check(gone.bytes == null && gone.failure.indexOf("no source has it") >= 0, "gone (404): no source has it");
+		check(gone.bytes == null
+			&& gone.failure.indexOf("file not found in any of the asset source paths") >= 0, "gone (404): file not found");
 		check(!kept(base, "music.ogg") && record(base, "music.ogg") == null, "and the copy and its record are removed");
 		http.routes.set(base + "old.txt", {status: 200, body: text("old")});
 		load(assets, "old.txt");
@@ -594,7 +595,8 @@ class AssetsTests {
 		var missing = null;
 		assets.locate("absent.ogg", (_, _) -> {}, m -> missing = m);
 		pump();
-		check(missing != null && missing.indexOf("no source has it") >= 0, "a file the server doesn't have: missing");
+		check(missing != null
+			&& missing.indexOf("file not found in any of the asset source paths") >= 0, "a file the server doesn't have: missing");
 	}
 
 	static function growing(source:helix.platform.StreamSource):Null<GrowingSource>
