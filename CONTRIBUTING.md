@@ -81,21 +81,15 @@ A check reports what ran, on which target. Nothing is called faster or smaller u
 
 ## Builds
 
-A build is named `<platform>-<config>-<backend>[-<option>...][-<sanitizer>]`, each part from a fixed list, so a name says what was
-built and where it is (`tools/variants.py` holds the lists).
+An example builds from the hxml files beside it, each into a directory of its own:
 
-- **platform:** what the program links against, this machine's for a native build: `linux-x64`, `linux-arm64`, `macos-arm64`,
-  `macos-x64`, `windows-x64-msvc` (hxcpp's default on Windows; `windows-x64-mingw` would be MinGW's, not supported yet), and `js` for
-  the browser.
-- **config:** `debug` or `release`. `release` is what ships: full dead-code elimination, the analyzer's optimizations, Terser in the
-  browser. `debug` finds faults: Haxe's `-debug` (a source map in the browser; natively hxcpp's debug runtime with stack lines and null
-  checks), the standard dead-code elimination, no optimizer, and the adapters' C unoptimized with its assertions and sokol_gfx's
-  validation on.
-- **backend:** always named, never implied by the platform: the exact API the build draws with, `webgl2`, `sdl3-gl`, `sdl3-gpu`.
-  `sdl3-gl` draws with sokol_gfx on GL. `sdl3-gpu` is SDL_GPU, whose driver (Vulkan, Direct3D 12, Metal) SDL picks as the program
-  starts; a program chooses it by constructing `Sdl3GpuGraphicsAdapter` (`-D sdl_gpu` in the platform's examples). WebGPU's, when it
-  comes, is `webgpu`. A `headless` backend (no window or GPU, for tests) is to come; none exists yet.
-- **options**, then a **sanitizer**, in that order: a name only adds, never `-noX`. None exists yet.
+- `build-web.hxml` builds a page, `web/app.js`, which draws with WebGL2.
+- `build-native.hxml` builds `native/Main`, which draws with GL through sokol_gfx.
+- `build-native-gpu.hxml` builds `native-gpu/Main`, which draws with SDL_GPU. SDL picks SDL_GPU's graphics API (Vulkan, Direct3D 12
+  or Metal) as the program starts. Not every example has this file.
+
+A program draws with SDL_GPU by constructing `Sdl3GpuGraphicsAdapter`. The platform's examples construct it under `-D sdl_gpu`, and
+helix-raylib does the same for a program built with that define.
 
 ## Tools
 
@@ -113,7 +107,7 @@ built and where it is (`tools/variants.py` holds the lists).
   `run`, and `tools/check_tools.py` refuses another in `tools/`. Every tool
   answers `--help` with its usage from its docstring (a Node tool's leading comment), does nothing else then, and refuses an argument
   it doesn't take (`tools/cli.py`). A module the tools import says so when it is run, and is named for what it holds, a plain noun that
-  can't read as a verb (`variants.py`, `pins.py`). Front doors keep their noun (`helix.py`). This table names every tool, and
+  can't read as a verb (`sdl3.py`, `pins.py`). Front doors keep their noun (`helix.py`). This table names every tool, and
   `tools/check_tools.py` checks all of it.
 - **A tool that runs programs takes the same two choices** (`cli.runs`): what runs, `--native` or `--page` (each alone, both by
   default), and where, `--headless` (the default: a private display, headless Chromium) or `--headed` (this machine's display), so CI
