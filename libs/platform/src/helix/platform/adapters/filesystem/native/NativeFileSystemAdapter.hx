@@ -119,16 +119,36 @@ class NativeFileSystemAdapter implements IFileSystem {
 		});
 	}
 
-	// Deletes what dir holds, leaving dir itself.
+	// Deletes what dir holds, leaving dir itself. A link is deleted as an entry and never gone through, as `rm -r` does. Each entry is
+	// deleted as a file first, which deletes a file and a link, but for a Windows link to a directory. Then it is deleted as a directory,
+	// which deletes that link and an empty directory. Only a directory of dir's own that refuses both is emptied first.
 	static function removeContents(dir:String):Void
 		for (entry in sys.FileSystem.readDirectory(dir)) {
 			var path = Path.join([dir, entry]);
-			if (sys.FileSystem.isDirectory(path)) {
-				removeContents(path);
-				sys.FileSystem.deleteDirectory(path);
-			} else
+			if (deletes(() -> sys.FileSystem.deleteFile(path)) || deletes(() -> sys.FileSystem.deleteDirectory(path)))
+				continue;
+			if (!isOwnDirectory(dir, entry))
+				// Refused again, with the reason.
 				sys.FileSystem.deleteFile(path);
+			removeContents(path);
+			sys.FileSystem.deleteDirectory(path);
 		}
+
+	// Whether a deletion deleted.
+	static function deletes(delete:Void->Void):Bool
+		return try {
+			delete();
+			true;
+		} catch (_:Dynamic)
+			false;
+
+	// Whether an entry is a directory and not a link to one: a link's real path is its target's. Windows' full path doesn't follow a link,
+	// so there a link the OS refused to delete counts as a directory.
+	static function isOwnDirectory(dir:String, entry:String):Bool {
+		var path = Path.join([dir, entry]);
+		return sys.FileSystem.isDirectory(path)
+			&& (Sys.systemName() == "Windows" || sys.FileSystem.fullPath(path) == Path.join([sys.FileSystem.fullPath(dir), entry]));
+	}
 
 	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void {
 		if (!FilePath.isValid(path)) {

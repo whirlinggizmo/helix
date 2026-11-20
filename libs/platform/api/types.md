@@ -894,6 +894,8 @@ function dispose():Void
 - `deleteFiles`: Deletes every file under the root, as when clearing a cache.
   - `deleted`: Called once the files are gone.
   - `failed`: Receives why the files can't be deleted.
+
+  A link under the root is deleted as an entry, and what it points to is kept, as `rm -r` keeps it. A path naming a file through a link reads, writes and deletes that file.
 - `getInfo`: Finds a file's size and when it was last written.
   - `path`: The file's path under the root.
   - `found`: Receives the file's size, in bytes, and when it was last written, in seconds since the Unix epoch.

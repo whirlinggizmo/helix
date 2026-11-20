@@ -39,15 +39,18 @@ class PlatformTests {
 	// A file's size and time, its directory's listing, and what is missing, on a directory of the tests' own.
 	static function fileSystem():Void {
 		var directory = "build/tests/platform-files";
+		// Removes a file, a link or a directory, never going through a link: a link left by a failed run is deleted as an entry.
 		function remove(path:String):Void {
+			for (delete in [sys.FileSystem.deleteFile, sys.FileSystem.deleteDirectory])
+				try {
+					delete(path);
+					return;
+				} catch (_:Dynamic) {}
 			if (!sys.FileSystem.exists(path))
 				return;
-			if (sys.FileSystem.isDirectory(path)) {
-				for (entry in sys.FileSystem.readDirectory(path))
-					remove('$path/$entry');
-				sys.FileSystem.deleteDirectory(path);
-			} else
-				sys.FileSystem.deleteFile(path);
+			for (entry in sys.FileSystem.readDirectory(path))
+				remove('$path/$entry');
+			sys.FileSystem.deleteDirectory(path);
 		}
 		remove(directory);
 		var files:helix.platform.IFileSystem = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory});
@@ -71,6 +74,39 @@ class PlatformTests {
 		check(list("sub") == "b.bin,deep/" && list("sub/deep") == "c.txt", "a directory's own entries");
 		check(list("a.txt") == "missing" && list("nope") == "missing", "a file or nothing is no directory");
 		check(list("../x") == 'failed: ${helix.platform.FilePath.INVALID}', "an invalid directory fails");
+
+		// Links under the root: a path through one reaches its target, and deleteFiles deletes the links and keeps their targets.
+		var outside = "build/tests/platform-outside";
+		remove(outside);
+		sys.FileSystem.createDirectory('$outside/kept');
+		sys.io.File.saveContent('$outside/kept/a.txt', "kept");
+		sys.io.File.saveContent('$outside/b.txt', "kept");
+		var windows = Sys.systemName() == "Windows";
+		function link(name:String, target:String, isDirectory:Bool):Void {
+			var from = haxe.io.Path.join([sys.FileSystem.fullPath(directory), name]),
+				to = sys.FileSystem.fullPath(target);
+			var made = windows ? Sys.command("cmd", [
+				"/c",
+				"mklink",
+				isDirectory ? "/J" : "",
+				from.split("/").join("\\"),
+				to.split("/").join("\\"),
+				">nul"
+			].filter(a -> a != "")) : Sys.command("ln", ["-s", to, from]);
+			check(made == 0, 'a link made, $name to $target');
+		}
+		link("linked", '$outside/kept', true);
+		link("linked.txt", '$outside/b.txt', false);
+		check(await(files, done -> files.write("linked/new.txt", haxe.io.Bytes.ofString("new"), () -> done(true), why -> done(why))) == true
+			&& sys.FileSystem.exists('$outside/kept/new.txt'),
+			"a write through a linked directory reaches its target");
+		check(await(files, done -> files.deleteFiles(() -> done(true), why -> done(why))) == true, "deleteFiles with links under the root");
+		check(list("") == "", 'the root emptied, its links deleted: ${list("")}');
+		check(sys.FileSystem.exists('$outside/kept/a.txt')
+			&& sys.FileSystem.exists('$outside/kept/new.txt')
+			&& sys.io.File.getContent('$outside/b.txt') == "kept",
+			"the links' targets kept");
+		remove(outside);
 		remove(directory);
 	}
 	#end

@@ -60,6 +60,9 @@ interface IFileSystem extends IPollable {
 
 	/** Deletes every file under the root, as when clearing a cache.
 
+		A link under the root is deleted as an entry, and what it points to is kept, as `rm -r` keeps it. A path naming a file through a
+		link reads, writes and deletes that file.
+
 		@param deleted  Called once the files are gone.
 		@param failed  Receives why the files can't be deleted. */
 	function deleteFiles(deleted:Void->Void, failed:String->Void):Void;
