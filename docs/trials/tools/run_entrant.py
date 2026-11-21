@@ -42,7 +42,7 @@ page/run.cjs, which type-checks the native build, builds the program for the pag
 on SwiftShader. The native build is the entrant's last step.
 
 --trial names another trial's variant to make the entrant from in place of Wardens (helix-raylib only), as
-../2026-11-15-lighting-shadows/module: the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
+/home/rknopf/projects/local/helix/trials/<trial>/inputs/module (../README.md, "Its inputs"): the variant's files (its brief.md and what else it gives, as docs/extras/), then its trial's own
 beside it (task.md, build.hxml; not its README.md or results.md), the assets its assets.txt lists from Wardens' assets/, and raylib 5.5's headers and C examples.
 
 --game names another game's folder to build in place of Wardens, as ../templates/lanternholm: its spec.md, its assets/ and reference/ when it has

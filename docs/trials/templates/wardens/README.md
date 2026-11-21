@@ -12,5 +12,4 @@ level-up choice drawn as skinned UI, sound, saves and run options. The engine tr
 - `review-brief.md`: the brief of the agent grading a run.
 
 A trial is made from it by `../../tools/run_entrant.py` (`--engine helix`, `c` or `three`, `--extras`, `--page`), its native runs
-shot by `take_screenshots.py` and graded with `review-brief.md`, and recorded in `docs/trials/<date>-<name>/` with the spec and
-briefs it used and its `results.md`.
+shot by `take_screenshots.py` and graded with `review-brief.md`, and recorded in `docs/trials/results/<date>-<name>.md`.

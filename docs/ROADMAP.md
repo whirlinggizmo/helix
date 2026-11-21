@@ -43,12 +43,12 @@ speed where docs/benchmarks.md records them.
   layer, as Haxe has none (`js.lib.Promise` is the browser's alone).
 - **The services' `Screen` named `Window`,** as helix's own libraries use the accurate word; helix-raylib keeps raylib's.
 - **What an engine costs agents, against raylib C:** Wardens built from its spec costs $2.40 a run in C and $2.51 on helix-raylib
-  (docs/trials/2026-11-15-wardens-baseline). A page build's ensure and the shaders compiled at build time cost nothing once a brief
-  says so (docs/trials/2026-11-15-wardens-cost). Next is Lanternholm (docs/trials/templates/lanternholm), a second game, three.js's
+  (docs/trials/results/2026-11-15-wardens-baseline.md). A page build's ensure and the shaders compiled at build time cost nothing once a brief
+  says so (docs/trials/results/2026-11-15-wardens-cost.md). Next is Lanternholm (docs/trials/templates/lanternholm), a second game, three.js's
   shape. Its port to helix-raylib wrote its own shadows (depth packed into a colour target, about 110 lines) and particles
   (billboards moved on the CPU, about 200), which the Lighting extra's shadows, the Shadowmaps extra and the Particles extra
   (DECISIONS 77) now provide. Built from its spec with the extras it costs $3.31 to $4.74 a run and meets 28 to 31 of its 35 items
-  (docs/trials/2026-11-19-lanternholm): each run cast the Lighting extra's shadows and none used the Particles extra.
+  (docs/trials/results/2026-11-19-lanternholm.md): each run cast the Lighting extra's shadows and none used the Particles extra.
 - **The sprite path's per-sprite cost in a page:** the bunnymark at 200k takes 4.54 ms over Vulkan (docs/benchmarks.md) against three.js's
   InstancedMesh at 3.84, both one instanced draw, so what is left is JavaScript a sprite, about 23 ns against 19: the record's twelve
   writes (about 2.5 ms for 200k, measured in isolation) and reading the bunnies' objects (about 2.1). The other texture draws (`DrawTextureRec`, `Pro`)

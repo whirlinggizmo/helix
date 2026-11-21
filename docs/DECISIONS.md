@@ -565,7 +565,7 @@ Why things are the way they are, numbered, in order.
     sheet of a control's states, down or across. The controls keep raygui's signatures and its text, so a skinned `GuiButton` is
     `GuiButton(bounds, text)`. raygui's box drawing goes through one hook, null until a skin is set, so a program setting none links
     none of it and draws exactly as raygui does (the raygui suites unchanged); `GuiSkinsTests` checks a skinned control draws the
-    vertices `DrawTextureNPatch` draws. A trial (docs/trials/2026-11-04-gui-skins) of two Sonnet agents changed the API, not the
+    vertices `DrawTextureNPatch` draws. A trial (docs/trials/results/2026-11-04-gui-skins.md) of two Sonnet agents changed the API, not the
     prose: the type moved to where they looked, the sheet cutter and the panels' skin were added, and the parts were tabled.
     Rejected: a skinned variant of each control (`GuiSkinnedButton`), which doubles the API agents must learn, and a scoped
     `GuiWithSkin(..., () -> ...)`, which raygui's style has no counterpart of.
@@ -887,7 +887,7 @@ Why things are the way they are, numbered, in order.
     `StopAutomationEventRecording`, as recording spans frames where `Begin` and `End` bracket one. Why: the frame stats were drawn
     only, so a game logging its frame time, or a scorer timing a trial's entrants alike, wrote its own timer. The Wardens spec asked
     each entrant for one, and each placed it differently. Other engines read them too (Unity's FrameTimingManager, Godot's
-    Performance monitors). Tried first from their doc comments by two Sonnet agents (docs/trials/2026-11-10-frame-stats-recording).
+    Performance monitors). Tried first from their doc comments by two Sonnet agents (docs/trials/results/2026-11-10-frame-stats-recording.md).
     Rejected: times in milliseconds, which `GetFrameTime` doesn't use; an `IsFrameStatsRecording`, which raylib's own recordings
     don't have.
 
@@ -979,7 +979,7 @@ Why things are the way they are, numbered, in order.
     entrant writing its own program met 72's refusal (the Wardens runs, the null font's six), and a screenshot waited for as a file call
     is waited for needs no callback, which raylib's `TakeScreenshot` never had.
 
-    Tried: docs/trials/2026-11-14-take-screenshot, nine Sonnet entrants. The three with the pages called it as they give it. The
+    Tried: docs/trials/results/2026-11-14-take-screenshot.md, nine Sonnet entrants. The three with the pages called it as they give it. The
     three without called it after the last `EndDrawing`, as a C program does, read `CloseWindow`'s refusal and moved it. The three
     given a program calling it late did the same.
 
@@ -999,7 +999,7 @@ Why things are the way they are, numbered, in order.
     The asset host is the option `asset_host`, then `SetAssetHost`, then `-D helix-raylib-asset-host`, then the default.
 
     Why: agents who know raylib write its loads, and met the refusals at their first compile. In the cost trial
-    (docs/trials/2026-11-15-wardens-cost) the twelve entrants briefed with one line on the ensure each ensured every file with one
+    (docs/trials/results/2026-11-15-wardens-cost.md) the twelve entrants briefed with one line on the ensure each ensured every file with one
     `EnsureAssetsAsync` and met no "not ensured" in a run; natively the baseline's helix-raylib entrants (2026-11-15-wardens-baseline)
     used raylib's loads as written, at about raylib C's cost.
 
@@ -1074,7 +1074,7 @@ Why things are the way they are, numbered, in order.
     Why: the Lanternholm port wrote its own particles (billboards moved on the CPU, about 200 lines), as a three.js program writes them
     too; raylib has none. Its API was agreed with the user as doc comments first (AGENTS.md: the spec is the authority).
 
-    The trial (docs/trials/2026-11-16-particles, three blind Sonnet entrants, each meeting the task) changed the API where the entrants
+    The trial (docs/trials/results/2026-11-16-particles.md, three blind Sonnet entrants, each meeting the task) changed the API where the entrants
     guessed otherwise. The spawn shapes are `Point`, `Box` and `Ellipsoid` in 3D and `Point`, `Rectangle` and `Ellipse` in 2D, every
     shape sized by `spawnHalfSize` (an ellipsoid's radii as a box's half sizes), so `spawnRadius` is gone; a half size of 0 flattens a
     shape, so a ring on the ground is an ellipsoid of height 0. `spawnShell` births on a shape's surface, spread by its area as it looks.
@@ -1101,7 +1101,7 @@ Why things are the way they are, numbered, in order.
     including it ports with one import, `import helix.raylib.extras.Lighting.*;`.
 
     Why: `rlights.h` isn't raylib's. A C program copies it from the examples beside its source. In the example headers trial
-    (docs/trials/2026-11-16-example-headers), three agents writing a lit scene read the lighting example including it and none reached
+    (docs/trials/results/2026-11-16-example-headers.md), three agents writing a lit scene read the lighting example including it and none reached
     for `Rlights`: each wrote its own uniforms, two calling it "a C helper". None looked for `reasings.h` either, so it gets no class: its
     curves are `helix.math.Interpolate`'s.
 
@@ -1262,7 +1262,7 @@ Why things are the way they are, numbered, in order.
     Why: a graphics API counts `gl_FragCoord.y` from the first row it stores, so the row a shader read changed with the adapter and
     with the target. Measured on a GPU before the change, the C implementation of raylib counted from the bottom everywhere.
     helix-raylib counted from the top in the frame of a screen read (75) on GL and in a page, and on the screen in every frame on
-    SDL_GPU. An entrant of the Lanternholm trial flipped a sky by hand (docs/trials/2026-11-19-lanternholm), and six of raylib 5.5's
+    SDL_GPU. An entrant of the Lanternholm trial flipped a sky by hand (docs/trials/results/2026-11-19-lanternholm.md), and six of raylib 5.5's
     example shaders read `gl_FragCoord`.
 
     What it costs: a page is about 0.2 KB larger gzipped for the WebGL2 adapter's write, and a wrapped fragment stage about 270
@@ -1281,7 +1281,7 @@ Why things are the way they are, numbered, in order.
 
     Why: `CloseWindow`'s refusal (73) moves a program's `TakeScreenshot` from after its last `EndDrawing`, where raylib's holds the
     whole frame, to before it, where the frame's 2D draws still wait in the batch. All three entrants of the Lanternholm trial were
-    moved so, and saved screenshots without their controls (docs/trials/2026-11-19-lanternholm). A frame of 2D draws alone saved its
+    moved so, and saved screenshots without their controls (docs/trials/results/2026-11-19-lanternholm.md). A frame of 2D draws alone saved its
     clear and no more.
 
     A render texture's read follows the screen's, so one rule says what a read's image holds.

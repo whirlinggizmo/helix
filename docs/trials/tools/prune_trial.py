@@ -4,7 +4,7 @@ scoring made, keeping its record here and the entrants' transcripts (~/.claude/p
 
     python3 prune_trial.py <record> <runs directory>... [--dry-run]
 
-The record is the trial's folder in docs/trials and must hold results.md. Each runs directory is refused when it is inside a git
+The record is the trial's results file in docs/trials/results, and must be there. Each runs directory is refused when it is inside a git
 repository (it would be a checkout, not runs) or holds a run still going (a run.log whose last line is its start). --dry-run lists what
 would be deleted, and its size, and deletes nothing."""
 import argparse
@@ -35,8 +35,8 @@ def main():
     parser.add_argument('runs', type=Path, nargs='+')
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
-    if not (args.record / 'results.md').is_file():
-        sys.exit(f'prune_trial: {args.record} holds no results.md; record the trial before pruning it')
+    if not args.record.is_file():
+        sys.exit(f'prune_trial: {args.record} is not a file; record the trial before pruning it')
     problems = []
     for runs in args.runs:
         if not runs.is_dir():
