@@ -7,8 +7,8 @@
 
 The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
 (docs/examples), with the engine's own files:
-- helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path), native/build.hxml with the company and
-  product every program defines (helix-trials, and the directory's name, so each entrant's saves are its own), and raylib 5.5's headers
+- helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path), native/build.hxml, its product define
+  made the directory's name, so each entrant's saves are its own, and raylib 5.5's headers
   in docs/include.
 - c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/CMakeLists.txt, raylib 5.5's headers in include/ and its desktop
   library as lib/libraylib.a.
@@ -82,6 +82,17 @@ def game_files(entrant, game):
         if (game / folder).is_dir():
             shutil.copytree(game / folder, entrant / folder)
 
+def named(entrant):
+    """Names the entrant's program for its build: its build.hxml's product define, the template's, made the directory's name, so each
+    entrant's saves are its own. A build.hxml without one gets the company's and the product's defines."""
+    hxml = entrant / 'build.hxml'
+    lines = hxml.read_text(encoding='utf-8').splitlines()
+    if not any(line.startswith('-D helix-product=') for line in lines):
+        lines += ['-D helix-company=helix-trials', '-D helix-product=']
+    hxml.write_text(''.join((f'-D helix-product={entrant.name}' if line.startswith('-D helix-product=') else line) + '\n' for line in lines),
+                    encoding='utf-8')
+
+
 def make(entrant, engine, trial=None, extras=None, game=WARDENS, page=False):
     """Makes the entrant's directory from the game's files and raylib 5.5's, or from another trial's variant."""
     if engine == 'three':
@@ -106,8 +117,7 @@ def make(entrant, engine, trial=None, extras=None, game=WARDENS, page=False):
             shutil.copy(WARDENS / 'assets' / name, entrant / 'assets' / name)
         brief = (entrant / 'brief.md').read_text(encoding='utf-8')
         (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
-        with open(entrant / 'build.hxml', 'a', encoding='utf-8') as f:
-            f.write(f'-D helix-company=helix-trials\n-D helix-product={entrant.name}\n')
+        named(entrant)
         (entrant / 'docs/include').mkdir(parents=True)
         for header in ('src/raylib.h', 'src/raymath.h', 'src/rlgl.h'):
             shutil.copy(raylib / header, entrant / 'docs/include')
@@ -120,8 +130,7 @@ def make(entrant, engine, trial=None, extras=None, game=WARDENS, page=False):
     for name in ('build.hxml', 'index.html', 'run.cjs') if page else ('build.hxml',) if engine == 'helix' else ('CMakeLists.txt',):
         shutil.copy(own / name, entrant / name)
     if engine == 'helix':
-        with open(entrant / 'build.hxml', 'a', encoding='utf-8') as f:
-            f.write(f'-D helix-company=helix-trials\n-D helix-product={entrant.name}\n')
+        named(entrant)
     game_files(entrant, game)
     include = entrant / ('include' if engine == 'c' else 'docs/include')
     include.mkdir(parents=True)

@@ -4,3 +4,5 @@
 -main Main
 -dce full
 -js main.js
+-D helix-company=helix-trials
+-D helix-product=api
