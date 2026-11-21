@@ -5,7 +5,6 @@ import helix.raylib.Raylib.*;
 import helix.raylib.internal.Runtime;
 import helix.services.input.Mouse;
 import helix.services.input.Touch;
-import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
 /** Checks helix-raylib's Async requests, raylib's window and cursor requests, and writes over fakes (services' `FakeWindow`, `FakeEvents`, `FakeDevices` and
@@ -73,8 +72,7 @@ class AsyncTests {
 		Runtime.clipboardAdapter = clipboard;
 		var files = new FakeFileSystem();
 		Runtime.polled.push(files);
-		Runtime.saves = new Saves(files);
-		Runtime.polled.push(Runtime.saves);
+		Runtime.setFiles(files, []);
 
 		// The window's requests.
 		check(answer((d, f) -> SetWindowSizeAsync(640, 360, d, f)) == "done"
@@ -205,8 +203,7 @@ class AsyncTests {
 		var shipped = new CountingFileSystem();
 		shipped.files.set("levels/1.txt", Bytes.ofString("level one"));
 		Runtime.polled.push(shipped);
-		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(shipped)]);
-		Runtime.polled.push(Runtime.assets);
+		Runtime.setFiles(files, [new helix.services.assets.FileSystemSource(shipped)]);
 		function savedText(fileName:String):String
 			return answer((d, f) -> LoadSavedFileTextAsync(fileName, text -> {
 				read = text;
@@ -254,7 +251,7 @@ class AsyncTests {
 		SetTraceLogCallback(null);
 		SetTraceLogLevel(LOG_NONE);
 
-		// Listings: the files the program wrote, in their directories.
+		// Listings: the files the program wrote and its own files, in their directories.
 		check(answer((d, f) -> SaveFileTextAsync("saves/a.txt", "a", d, f)) == "done"
 			&& answer((d, f) -> SaveFileDataAsync("saves/b.dat", Bytes.ofString("b"), 1, d, f)) == "done"
 			&& answer((d, f) -> SaveFileTextAsync("saves/deep/c.txt", "c", d, f)) == "done",
@@ -265,19 +262,25 @@ class AsyncTests {
 			pump(() -> listed != null);
 			return listed.paths.join(",");
 		}
-		check(list("") == "bytes.bin,notes.txt,saves", 'the root lists what was written there, and its directories: ${list("")}');
+		check(list("") == "bytes.bin,levels,notes.txt,saves", 'the root lists what was written there and the program\'s files: ${list("")}');
 		check(list("saves") == "saves/a.txt,saves/b.dat,saves/deep", 'a directory: ${list("saves")}');
-		check(list("levels") == "", "a directory nothing was written into lists nothing");
+		check(list("levels") == "levels/1.txt,levels/3.txt", 'a directory of the program\'s files: ${list("levels")}');
+		check(list("nowhere") == "", "a directory not found anywhere lists nothing");
 		var filtered:Null<FilePathList> = null;
 		LoadDirectoryFilesExAsync("saves", ".txt", true, l -> filtered = l);
 		pump(() -> filtered != null);
 		check(filtered.paths.join(",") == "saves/a.txt,saves/deep/c.txt", 'by extension, with the subdirectories: ${filtered.paths}');
 		var exists:Array<Bool> = [];
-		for (dir in ["saves/deep", "levels", "."])
+		for (dir in ["saves/deep", "nowhere", "."])
 			DirectoryExistsAsync(dir, yes -> exists.push(yes));
 		pump(() -> exists.length == 3);
-		check(exists.join(",") == "true,false,true", 'directories exist when written into, and the root always: $exists');
+		check(exists.join(",") == "true,false,true", 'directories exist when a file is in them, and the root always: $exists');
 
+		check(answer((d,
+				f) -> LoadFileDataAsync("/elsewhere/a.txt", _ -> d(), f)) == "failed: Invalid file path: /elsewhere/a.txt is outside every asset source's root",
+			"an absolute path outside the roots: refused, named as the program named it");
+		check(answer((d, f) -> LoadFileDataAsync("saves/../saves/a.txt", bytes -> bytes.toString() == "a" ? d() : f(bytes.toString()), f)) == "done",
+			"a saved file read through . and ..");
 		check(answer((d, f) -> SaveFileDataAsync("none.bin", Bytes.ofString("abc"), 9, d, f)) == "failed: none.bin: there are no 9 bytes to write",
 			"more bytes than there are");
 		files.failWrites = true;

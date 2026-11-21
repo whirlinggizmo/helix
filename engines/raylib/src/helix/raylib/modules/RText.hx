@@ -659,16 +659,17 @@ class RText {
 		@param fileName  The file.
 		@return  The font, the program's until `UnloadFont`. */
 	static function LoadFont(fileName:String):Font {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		var opened = Runtime.openFonts.get(path),
 			bmFont = Runtime.bmFonts.get(path);
-		return SyncLoads.load(path, opened != null || bmFont != null || RTextures.imageReady(path), () -> {
+		return SyncLoads.load(fileName, opened != null || bmFont != null || RTextures.imageReady(path), () -> {
 			if (opened == null && bmFont == null)
 				return RTextAsync.imageFont(RTextures.LoadImage(path));
 			var font = opened != null ? openedFont(opened, 32, null, 95) : fromBmFont(bmFont);
 			SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
 			return font;
-		}, (loaded, failed) -> RTextAsync.loadFont(path, loaded, failed), GetFontDefault);
+		}, (loaded, failed) -> RTextAsync.loadFont(fileName, loaded, failed),
+			GetFontDefault);
 	}
 
 	/** Loads a TrueType or OpenType font at a size, with the characters asked for.
@@ -683,10 +684,10 @@ class RText {
 		@param codepointCount  How many characters; 0 for 95, the printable ASCII when `codepoints` is null.
 		@return  The font, the program's until `UnloadFont`. */
 	static function LoadFontEx(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int):Font {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		var opened = Runtime.openFonts.get(path);
-		return SyncLoads.load(path, opened != null, () -> openedFont(opened, fontSize, codepoints, codepointCount),
-			(loaded, failed) -> RTextAsync.LoadFontExAsync(path, fontSize, codepoints, codepointCount, loaded, failed), GetFontDefault);
+		return SyncLoads.load(fileName, opened != null, () -> openedFont(opened, fontSize, codepoints, codepointCount),
+			(loaded, failed) -> RTextAsync.LoadFontExAsync(fileName, fontSize, codepoints, codepointCount, loaded, failed), GetFontDefault);
 	}
 
 	// A font an ensure opened, its glyphs rasterized during the call, as LoadFontFromMemoryAsync makes one.

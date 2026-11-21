@@ -121,9 +121,9 @@ class RAudio {
 		@param fileName  The file.
 		@return  The wave, the program's until `UnloadWave`. */
 	static function LoadWave(fileName:String):Wave {
-		var path = normalize(fileName);
-		return SyncLoads.load(path, Runtime.waves.exists(path), () -> WaveCopy(Runtime.waves.get(path)),
-			(loaded, failed) -> RAudioAsync.loadWave(path, RAudioAsync.readWave, loaded, failed), () -> new Wave());
+		var path = keyOf(fileName);
+		return SyncLoads.load(fileName, Runtime.waves.exists(path), () -> WaveCopy(Runtime.waves.get(path)),
+			(loaded, failed) -> RAudioAsync.loadWave(fileName, RAudioAsync.readWave, loaded, failed), () -> new Wave());
 	}
 
 	/** Unsupported. See `LoadWaveFromMemoryAsync` for loading a wave from a file's bytes.
@@ -365,7 +365,7 @@ class RAudio {
 		@param fileName  The file.
 		@return  The sound, the program's until `UnloadSound`. */
 	static function LoadSound(fileName:String):Sound {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (Runtime.audio == null) {
 			Runtime.log(4, 'LoadSound: $path: InitAudioDevice first');
 			return new Sound();
@@ -373,10 +373,10 @@ class RAudio {
 		var entry = sounds.get(path);
 		if (entry != null && entry.loaded != null)
 			return loadSound(path);
-		return SyncLoads.load(path, Runtime.waves.exists(path), () -> {
+		return SyncLoads.load(fileName, Runtime.waves.exists(path), () -> {
 			LoadSoundFromWave(Runtime.waves.get(path));
-		}, (loaded, failed) -> RAudioAsync.LoadSoundAsync(path, loaded, failed),
-			() -> new Sound());
+		},
+			(loaded, failed) -> RAudioAsync.LoadSoundAsync(fileName, loaded, failed), () -> new Sound());
 	}
 
 	/** Returns a sound made from a wave, ready to play at once.
@@ -446,7 +446,7 @@ class RAudio {
 			Runtime.log(4, 'LoadSoundAsync: InitAudioDevice first');
 			return sound;
 		}
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		sound.path = path;
 		var entry = sounds.get(path);
 		if (entry == null) {
@@ -459,7 +459,7 @@ class RAudio {
 			};
 			entry = made;
 			sounds.set(path, made);
-			made.cancel = Runtime.audio.load(path, loaded -> {
+			made.cancel = Runtime.audio.load(fileName, loaded -> {
 				made.cancel = null;
 				made.loaded = loaded;
 				for (s in made.waiting)
@@ -723,7 +723,7 @@ class RAudio {
 		@param fileName  The file.
 		@return  The music, the program's until `UnloadMusicStream`. */
 	static function LoadMusicStream(fileName:String):Music {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (Runtime.audio == null) {
 			Runtime.log(4, 'LoadMusicStream: $path: InitAudioDevice first');
 			return new Music();
@@ -737,7 +737,8 @@ class RAudio {
 		open(music, path, "LoadMusicStream", () -> {}, error -> Runtime.log(4, 'LoadMusicStream: $error'));
 		return music;
 		#else
-		return SyncLoads.load(path, false, () -> new Music(), (loaded, failed) -> RAudioAsync.LoadMusicStreamAsync(path, loaded, failed), () -> new Music());
+		return SyncLoads.load(fileName, false, () -> new Music(), (loaded, failed) -> RAudioAsync.LoadMusicStreamAsync(fileName, loaded, failed),
+			() -> new Music());
 		#end
 	}
 

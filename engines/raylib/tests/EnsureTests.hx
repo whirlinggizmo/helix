@@ -75,16 +75,14 @@ class EnsureTests {
 		check(failures.length == 1 && !whole, 'failed once, not ensured: $failures');
 		check(IsAssetEnsured("a.txt") && !IsAssetEnsured("missing.txt"), "the other file still ensured");
 
-		// A name is read from the host's root, `.` and `..` followed, never above it.
-		check(IsAssetEnsured("/b.txt")
-			&& IsAssetEnsured("x/../b.txt")
-			&& IsAssetEnsured("/x/./y/../../c.txt")
-			&& IsAssetEnsured("//b.txt"),
-			"a leading /, . and .. followed to the same file");
+		// A name is read from the host's root, `.` and `..` followed, never above it; an absolute path is another file.
+		check(IsAssetEnsured("x/../b.txt") && IsAssetEnsured("./x/./y/../../c.txt") && !IsAssetEnsured("/b.txt"),
+			". and .. followed to the same file, an absolute path another");
 		var escapes:Array<String> = [];
-		EnsureAssetsAsync(["../b.txt", "/x/../../b.txt"], () -> throw "a name above the host was ensured", error -> escapes.push(error));
+		EnsureAssetsAsync(["../b.txt", "x/../../b.txt"], () -> throw "a name above the host was ensured", error -> escapes.push(error));
 		poll();
-		check(escapes.length == 1 && !IsAssetEnsured("../b.txt"), 'a name climbing above the host fails: $escapes');
+		check(escapes.length == 1 && escapes[0].indexOf("is outside every asset source's root") >= 0 && !IsAssetEnsured("../b.txt"),
+			'a name climbing above the host fails, as outside every root: $escapes');
 
 		// An image ensured is decoded to its pixels, and raylib's loads of it answer at once.
 		var graphics = new CountingGraphics();
@@ -214,6 +212,7 @@ class EnsureTests {
 // its own; a name it hasn't is missing.
 
 @:access(helix.raylib.internal.Runtime)
+@:access(helix.services.assets.AssetSource)
 private class GatedSource extends AssetSource {
 	/** The files it has, by path. */
 	public final files:Map<String, String>;
@@ -231,8 +230,9 @@ private class GatedSource extends AssetSource {
 		this.files = files;
 	}
 
+	// A path's . and .. followed, as a file system source follows them.
 	function nameOf(path:String):Null<String>
-		return path;
+		return AssetSource.follow(path);
 
 	function locationOf(name:String):String
 		return name;

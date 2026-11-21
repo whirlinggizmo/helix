@@ -78,7 +78,6 @@ class DropTests {
 
 		// A dropped file that isn't text, read as text: as raylib's LoadFileText, up to its first NUL, never refused; what isn't UTF-8
 		// (which a browser's Bytes.toString throws a RangeError for) read as U+FFFD.
-		Runtime.saves = new helix.services.saves.Saves(Runtime.memory);
 		window.dropped.resize(0);
 		window.dropped.push({name: "noise.bin", bytes: Bytes.ofHex("61fffb9062006364")});
 		Runtime.dropping(1);

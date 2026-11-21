@@ -41,9 +41,9 @@ class RTextures {
 		@param fileName  The file.
 		@return  The texture, the program's until `UnloadTexture`. */
 	static function LoadTexture(fileName:String):Texture2D {
-		var path = normalize(fileName);
-		return SyncLoads.load(path, imageReady(path), () -> loadTexture(path), (loaded, failed) -> RTexturesAsync.loadTextureFile(path, loaded, failed),
-			() -> new Texture2D());
+		var path = keyOf(fileName);
+		return SyncLoads.load(fileName, imageReady(path), () -> loadTexture(path),
+			(loaded, failed) -> RTexturesAsync.loadTextureFile(fileName, loaded, failed), () -> new Texture2D());
 	}
 
 	// Whether an image file is in memory as a load builds from it: its pixels or its picture, or a QOI file's bytes.
@@ -59,7 +59,7 @@ class RTextures {
 	// to the GPU when first drawn.
 
 	static function loadTexture(fileName:String):Texture2D {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (Textures.hasPath(path)) {
 			var id = Textures.fromDecoded(path, null);
 			return new Texture2D(id, Textures.widthOf(id), Textures.heightOf(id));
@@ -599,9 +599,9 @@ class RTextures {
 		@param fileName  The file.
 		@return  The image. */
 	static function LoadImage(fileName:String):Image {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		var ready = haxe.io.Path.extension(path).toLowerCase() == "qoi" ? Runtime.files.exists(path) : Runtime.image(path) != null;
-		return SyncLoads.load(path, ready, () -> {
+		return SyncLoads.load(fileName, ready, () -> {
 			var image:Null<Image> = null;
 			if (haxe.io.Path.extension(path).toLowerCase() == "qoi")
 				RTexturesAsync.decoded("LoadImage", ".qoi", Runtime.files.get(path), loaded -> image = loaded, error -> Runtime.log(LOG_WARNING, error));
@@ -610,8 +610,8 @@ class RTextures {
 				image = RTexturesAsync.rgba(pixels.pixels.sub(0, pixels.pixels.length), pixels.width, pixels.height);
 			}
 			image == null ? new Image() : image;
-		}, (loaded, failed) -> RTexturesAsync.loadImage(path, loaded, failed),
-			() -> new Image());
+		},
+			(loaded, failed) -> RTexturesAsync.loadImage(fileName, loaded, failed), () -> new Image());
 	}
 
 	// ---- Images: loading and exporting ----
@@ -631,8 +631,8 @@ class RTextures {
 		@param headerSize  The bytes before the pixels, skipped when the file holds them and the pixels.
 		@return  The image. */
 	static function LoadImageRaw(fileName:String, width:Int, height:Int, format:Int, headerSize:Int):Image {
-		var path = normalize(fileName);
-		return SyncLoads.load(path, Runtime.files.exists(path), () -> {
+		var path = keyOf(fileName);
+		return SyncLoads.load(fileName, Runtime.files.exists(path), () -> {
 			var bytes = Runtime.files.get(path),
 				size = GetPixelDataSize(width, height, format);
 			if (size > bytes.length) {
@@ -642,7 +642,7 @@ class RTextures {
 			var start = headerSize > 0 && headerSize + size <= bytes.length ? headerSize : 0;
 			return new Image(bytes.sub(start, size), width, height, 1, format);
 		},
-			(loaded, failed) -> RTexturesAsync.LoadImageRawAsync(path, width, height, format, headerSize, loaded, failed), () -> new Image());
+			(loaded, failed) -> RTexturesAsync.LoadImageRawAsync(fileName, width, height, format, headerSize, loaded, failed), () -> new Image());
 	}
 
 	/** Unsupported. See `LoadImageFromMemoryAsync` for decoding an image file's bytes.
@@ -668,12 +668,12 @@ class RTextures {
 		@param frames  Receives the frames' count, in its first element.
 		@return  The image, the frames one under the next. */
 	static function LoadImageAnim(fileName:String, frames:Array<Int>):Image {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		var gif = haxe.io.Path.extension(path).toLowerCase() == "gif";
 		var ready = gif ? Runtime.files.exists(path) : Runtime.image(path) != null
 			|| Runtime.files.exists(path)
 			&& haxe.io.Path.extension(path).toLowerCase() == "qoi";
-		return SyncLoads.load(path, ready, () -> {
+		return SyncLoads.load(fileName, ready, () -> {
 			var image:Null<Image> = null;
 			if (gif)
 				RTexturesAsync.gifAnim("LoadImageAnim", path, Runtime.files.get(path), frames, loaded -> image = loaded,
@@ -684,7 +684,7 @@ class RTextures {
 			}
 			image == null ? new Image() : image;
 		},
-			(loaded, failed) -> RTexturesAsync.loadImageAnim(path, frames, loaded, failed), () -> new Image());
+			(loaded, failed) -> RTexturesAsync.loadImageAnim(fileName, frames, loaded, failed), () -> new Image());
 	}
 
 	/** Unsupported. See `LoadImageAnimFromMemoryAsync` for decoding an animated image file's bytes.

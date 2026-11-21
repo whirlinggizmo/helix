@@ -1,7 +1,6 @@
 import helix.raylib.Raylib.*;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Runtime;
-import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 import helix.services.time.Time;
 
@@ -45,13 +44,10 @@ class WaitTests {
 		Runtime.screen = new Screen(window, Runtime.events);
 		var files = new FakeFileSystem();
 		Runtime.polled.push(files);
-		Runtime.saves = new Saves(files);
-		Runtime.polled.push(Runtime.saves);
 		var shipped = new FakeFileSystem();
 		Runtime.polled.push(shipped);
 		Runtime.clipboardAdapter = new WaitClipboard();
-		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(shipped)]);
-		Runtime.polled.push(Runtime.assets);
+		Runtime.setFiles(files, [new helix.services.assets.FileSystemSource(shipped)]);
 
 		var doubled:Dynamic = WaitShapes.plain(4);
 		check(doubled == 8, 'a function reaching no wait returns its value at once: $doubled');

@@ -20,7 +20,6 @@ import helix.services.input.Gestures;
 import helix.services.input.Keyboard;
 import helix.services.input.Mouse;
 import helix.services.input.Touch;
-import helix.services.saves.Saves;
 import helix.services.time.Time;
 
 using StringTools;
@@ -29,7 +28,8 @@ using StringTools;
 	memory, and the frame.
 
 	raylib answers a load at once. A page can't wait for a file, so on every target helix-raylib loads through the `...Async` functions,
-	which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read when first used (`keptSaves`). */
+	which bring files into memory here. What `SaveFileText` and `SaveFileData` write are files in the data directory, read before the
+	program's own. */
 @:noCompletion
 class Runtime {
 	public static var system:ISystem;
@@ -43,7 +43,6 @@ class Runtime {
 	public static var graphics:Null<IGraphics> = null;
 	public static var frame:Null<Frame> = null;
 	public static var time:Null<Time> = null;
-	public static var saves:Null<Saves> = null;
 	public static var output:Null<IAudio> = null;
 	public static var audioDecoder:Null<IAudioDecoder> = null;
 	public static var audio:Null<helix.services.audio.Audio> = null;
@@ -51,7 +50,14 @@ class Runtime {
 	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and the `...Async` loads). */
 	public static var assets:Null<Assets> = null;
 
-	/** The files `LoadMusicStreamFromMemory` plays and the files dropped, read before the program's own, made with the assets. */
+	/** The data directory, where `SaveFileText` and `SaveFileData` write, read first; made with the assets. */
+	public static var data:Null<IFileSystem> = null;
+
+	/** The assets over the data directory alone, for the saved files' own reads (`LoadSavedFileDataAsync`); made with the assets. */
+	public static var saved:Null<Assets> = null;
+
+	/** The files `LoadMusicStreamFromMemory` plays and the files dropped, read after the data directory and before the program's own,
+		made with the assets. */
 	public static var memory:Null<MemoryFiles> = null;
 
 	/** Natively, the program's own files, read-only, made with the assets; null in a page, whose files are on its server. */
@@ -77,7 +83,8 @@ class Runtime {
 
 	public static final polled:Array<IPollable> = [];
 
-	/** What runs as the window closes, before it does: keeping the saves, and in a page disposing the input adapters made. */
+	/** What runs as the window closes, before it does: natively waiting for the files being written, and in a page disposing the input
+		adapters made. */
 	public static final closing:Array<Void->Void> = [];
 
 	/** The files in memory, by path, as the loads brought them in: an image file decoded for the GPU (`pictures`, until its texture is
@@ -220,8 +227,9 @@ class Runtime {
 	// What loading made and polls, apart from what later services add: forgotten when the host changes.
 	static final assetPolled:Array<helix.platform.IPollable> = [];
 
-	/** Makes what loads the program's files, once, over the asset host (`assetHost`): files dropped on the window and handed in first, then
-		the host, a URL's files fetched and kept in the program's cache, a directory's read in place. What decodes images is `imaging`'s,
+	/** Makes what loads the program's files, once, over the asset host (`assetHost`): the data directory first, written to, then files
+		dropped on the window and handed in, then the host, a URL's files fetched and kept in the program's cache, a directory's read in
+		place. What decodes images is `imaging`'s,
 		so a program loading only sounds or text never links an image decoder. */
 	public static function loading():Void {
 		if (assets != null)
@@ -232,6 +240,12 @@ class Runtime {
 		assetPolled.push(callback);
 		assetPolled.push(memory);
 		var hostSource:helix.services.assets.AssetSource;
+		#if js
+		data = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory()});
+		#else
+		data = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getDataDirectory()});
+		#end
+		assetPolled.push(data);
 		#if js
 		var http = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
 		var cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
@@ -254,10 +268,37 @@ class Runtime {
 			hostSource = new FileSystemSource(files);
 		}
 		#end
-		assets = new Assets([new FileSystemSource(memory), new FileSystemSource(callback), hostSource]);
+		assets = new Assets([
+			new FileSystemSource(data, true),
+			new FileSystemSource(memory),
+			new FileSystemSource(callback),
+			hostSource
+		]);
+		saved = new Assets([new FileSystemSource(data, true)]);
 		assetPolled.push(assets);
+		assetPolled.push(saved);
+		#if !js
+		closing.push(() -> while (writing > 0) {
+			pollAll();
+			Sys.sleep(.001);
+		});
+		#end
 		for (p in assetPolled)
 			polled.push(p);
+	}
+
+	/** Makes the assets over a data directory and other sources, in place of `loading`'s, as a test provides fakes: the data directory
+		first, written to, then the sources in order.
+
+		@param data  The data directory, which the caller polls, as it polls the sources' file systems.
+		@param sources  The sources read after it. */
+	public static function setFiles(data:IFileSystem, sources:Array<helix.services.assets.AssetSource>):Void {
+		Runtime.data = data;
+		var first:Array<helix.services.assets.AssetSource> = [new FileSystemSource(data, true)];
+		assets = new Assets(first.concat(sources));
+		saved = new Assets([new FileSystemSource(data, true)]);
+		polled.push(assets);
+		polled.push(saved);
 	}
 
 	/** Sets the program's asset host (`SetAssetHost`). What loading made over the old host is let go, and made again over the new one at
@@ -337,16 +378,82 @@ class Runtime {
 			models = new helix.services.models.Models(assets, decoding);
 	}
 
-	/** Brings a file into memory as bytes, in `files`. Answers at a later poll, never during the call. It decodes nothing, so a program
-		loading text or data never links an image decoder; `fetchImage` is for an image file.
+	/** The files being written to the data directory (`write`), which closing the window waits for natively. */
+	public static var writing = 0;
 
-		@param path  The file.
+	/** Writes a file to the data directory through the assets, and keeps its bytes in `files`, so a load of it after reads them at once.
+		Answers at a later poll.
+
+		@param path  The file, as the program named it.
+		@param bytes  Its bytes.
+		@param written  Called once it is written.
+		@param failed  Receives why it wasn't. */
+	public static function write(path:String, bytes:Bytes, written:Void->Void, failed:String->Void):Void {
+		loading();
+		writing++;
+		assets.write(path, bytes, () -> {
+			writing--;
+			files.set(keyOf(path), bytes);
+			written();
+		}, error -> {
+			writing--;
+			failed(error);
+		});
+	}
+
+	/** Returns the asset host's root, as `GetApplicationDirectory` returns it: the host's URL, or natively its directory, ending in `/`;
+		"./" in a page whose files are beside it. */
+	public static function applicationDirectory():String {
+		var host = assetHost();
+		#if js
+		return isUrlHost(host) ? haxe.io.Path.addTrailingSlash(host) : "./";
+		#else
+		if (isUrlHost(host))
+			return haxe.io.Path.addTrailingSlash(host);
+		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(haxe.io.Path.join([system.getProgramDirectory(), host])));
+		#end
+	}
+
+	/** Returns the key a file is kept in memory by: a path relative to the asset host's root, a leading `GetApplicationDirectory()`
+		removed, its `.` and `..` followed, so two spellings of one file share it. An absolute path keeps its leading `/`, and a path
+		climbing above the root keeps a leading `..`.
+
+		@param path  The file, as the program named it.
+		@return  Its key. */
+	public static function keyOf(path:String):String {
+		if (system != null) {
+			var application = applicationDirectory();
+			if (application != "./" && path.startsWith(application))
+				path = path.substr(application.length);
+		}
+		var absolute = path.startsWith("/");
+		if (path.indexOf(".") < 0 && path.indexOf("//") < 0 && !path.endsWith("/"))
+			return path;
+		var parts:Array<String> = [];
+		for (part in path.split("/")) {
+			if (part == "" || part == ".")
+				continue;
+			if (part != "..")
+				parts.push(part);
+			else if (parts.length > 0)
+				parts.pop();
+			else if (!absolute)
+				return "../" + path;
+		}
+		return (absolute ? "/" : "") + parts.join("/");
+	}
+
+	/** Brings a file into memory as bytes, in `files`, under its key (`keyOf`). Answers at a later poll, never during the call. It decodes
+		nothing, so a program loading text or data never links an image decoder; `fetchImage` is for an image file.
+
+		@param path  The file, as the program named it, which the assets are handed and the log names.
 		@param done  Receives whether it was brought in, and why not when it wasn't.
 		@param asking  Whether the call asks about the file (`FileExists`) rather than loads it. A file that isn't there is then logged as
 			information, where a load's caller warns. */
 	public static function fetch(path:String, done:Null<String>->Void, asking = false):Void {
 		loading();
-		if (files.exists(path)) {
+		var key = keyOf(path);
+		if (files.exists(key)) {
 			later(() -> done(null));
 			return;
 		}
@@ -358,7 +465,7 @@ class Runtime {
 			log(3, 'FILEIO: [$path] Loading');
 		assets.read(path, bytes -> {
 			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
-			files.set(path, bytes);
+			files.set(key, bytes);
 			done(null);
 		}, error -> {
 			if (asking) {
@@ -371,9 +478,9 @@ class Runtime {
 	}
 
 	/** Brings an image file into memory: its bytes in `files` and, for a PNG, JPEG, BMP or TGA file, its pixels decoded for the GPU in
-		`pictures`. Any other file is brought in as `fetch` does. Answers at a later poll, never during the call.
+		`pictures`, under its key (`keyOf`). Any other file is brought in as `fetch` does. Answers at a later poll, never during the call.
 
-		@param path  The file.
+		@param path  The file, as the program named it.
 		@param done  Receives whether it was brought in, and why not when it wasn't. */
 	public static function fetchImage(path:String, done:Null<String>->Void):Void {
 		var lower = path.toLowerCase();
@@ -383,27 +490,21 @@ class Runtime {
 		}
 		loading();
 		imaging();
-		if (pictures.exists(path) || images.exists(path)) {
+		var key = keyOf(path);
+		if (pictures.exists(key) || images.exists(key)) {
 			later(() -> done(null));
 			return;
 		}
-		if (files.exists(path)) {
-			decoding.decodeForGpu(files.get(path), decoded -> {
-				pictures.set(path, decoded);
+		function decode():Void
+			decoding.decodeForGpu(files.get(key), decoded -> {
+				pictures.set(key, decoded);
 				done(null);
 			}, error -> done('$path: $error'));
+		if (files.exists(key)) {
+			decode();
 			return;
 		}
-		fetch(path, error -> {
-			if (error != null) {
-				done(error);
-				return;
-			}
-			decoding.decodeForGpu(files.get(path), decoded -> {
-				pictures.set(path, decoded);
-				done(null);
-			}, error -> done('$path: $error'));
-		});
+		fetch(path, error -> error != null ? done(error) : decode());
 	}
 
 	/** The least level `log` writes, as `SetTraceLogLevel` sets it: raylib's LOG_INFO (3) until set. */
@@ -487,49 +588,6 @@ class Runtime {
 			return;
 		pictures.remove(path);
 		picture.dispose();
-	}
-
-	/** Gets the saves, made and read when first asked for, so a program that never saves never reads them. A value set before the read
-		has finished is held by the saves and made after it, so it wins over what was kept.
-
-		@return  The saves. */
-	public static function keptSaves():Saves {
-		if (saves != null)
-			return saves;
-		#if js
-		var data = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory()});
-		#else
-		var data = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getDataDirectory()});
-		#end
-		polled.push(data);
-		var kept = new Saves(data);
-		saves = kept;
-		polled.push(kept);
-		closing.push(() -> {
-			#if js
-			kept.flush();
-			#else
-			var written = false;
-			kept.flush(() -> written = true, error -> {
-				log(4, 'saves: $error');
-				written = true;
-			});
-			while (!written) {
-				pollAll();
-				Sys.sleep(.001);
-			}
-			#end
-		});
-		kept.load(() -> {}, error -> log(4, 'saves: $error'));
-		return kept;
-	}
-
-	/** Calls a function with the saves once they are read, at a later poll, in the order asked; the first call starts the read.
-
-		@param ready  Receives the saves. */
-	public static function withSaves(ready:Saves->Void):Void {
-		var kept = keptSaves();
-		kept.load(() -> ready(kept), _ -> ready(kept));
 	}
 
 	/** Opens the window, with the graphics and the events.

@@ -51,12 +51,12 @@ class RAudioAsync {
 		@param loaded  Receives the sound.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	static function LoadSoundAsync(fileName:String, loaded:Sound->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (Runtime.audio == null) {
 			Runtime.later(() -> refuse("LoadSoundAsync", '$path: InitAudioDevice first', failed));
 			return;
 		}
-		var sound = RAudio.loadSound(path);
+		var sound = RAudio.loadSound(fileName);
 		var entry = sounds.get(path);
 		if (entry.loaded != null)
 			Runtime.later(() -> loaded(sound));
@@ -66,15 +66,15 @@ class RAudioAsync {
 
 	// LoadWaveAsync's call (Raylib.LoadWaveAsync): the file fetched, then read by read, the reader its extension names (WaveMacro).
 	static function loadWave(fileName:String, read:WaveReader, loaded:Wave->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		Runtime.fetch(path, error -> {
+		var path = keyOf(fileName);
+		Runtime.fetch(fileName, error -> {
 			if (error != null) {
 				refuse("LoadWaveAsync", error, failed);
 				return;
 			}
 			var bytes = Runtime.files.get(path);
 			var type = GetFileExtension(fileName);
-			read(type == null ? "" : type, bytes, wave -> loadedWave(wave, loaded), message -> refuse("LoadWaveAsync", '$path: $message', failed));
+			read(type == null ? "" : type, bytes, wave -> loadedWave(wave, loaded), message -> refuse("LoadWaveAsync", '$fileName: $message', failed));
 		});
 	}
 
@@ -168,7 +168,7 @@ class RAudioAsync {
 		@param loaded  Receives the music, ready to play, once enough of the file has arrived to start.
 		@param failed  Optional. Receives why it couldn't be opened; when omitted, it is logged. */
 	static function LoadMusicStreamAsync(fileName:String, loaded:Music->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (StringTools.endsWith(path.toLowerCase(), ".flac")) {
 			Runtime.later(() -> refuse("LoadMusicStreamAsync", '$path: STREAM: File format not supported', failed));
 			return;
@@ -178,7 +178,7 @@ class RAudioAsync {
 			return;
 		}
 		var music = new Music();
-		RAudio.open(music, path, "LoadMusicStreamAsync", () -> loaded(music), error -> refuse("LoadMusicStreamAsync", error, failed));
+		RAudio.open(music, fileName, "LoadMusicStreamAsync", () -> loaded(music), error -> refuse("LoadMusicStreamAsync", error, failed));
 	}
 
 	/** Asynchronously writes a wave to a sound file, replacing raylib's `ExportWave`. See `ExportWaveAsCodeAsync` for writing a C header.

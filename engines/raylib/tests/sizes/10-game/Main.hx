@@ -30,7 +30,7 @@ import helix.raylib.Vector3;
 	"helix.platform.adapters.mouse.dom", "helix.platform.adapters.touch.dom", "helix.raylib.internal.AudioStreams", "helix.raylib.internal.FrameConverter",
 	"helix.raylib.modules.RFilesAsync", "helix.raylib.modules.RModels6", "helix.raylib.modules.RTextAsync", "helix.raylib.modules.RWindowAsync",
 	"helix.services.fonts", "helix.services.input.Gamepads", "helix.services.input.Gestures", "helix.services.input.Keyboard", "helix.services.input.Mouse",
-	"helix.services.input.Touch", "helix.services.saves")
+	"helix.services.input.Touch")
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "sizes");

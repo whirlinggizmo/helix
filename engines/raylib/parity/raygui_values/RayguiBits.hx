@@ -50,9 +50,7 @@ class RayguiBits {
 		open();
 		var files = new DiskFiles();
 		Runtime.polled.push(files);
-		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(files)]);
-		Runtime.saves = new helix.services.saves.Saves(files);
-		Runtime.polled.push(Runtime.saves);
+		Runtime.setFiles(files, []);
 		depth = false;
 		input = new Automation();
 		Automation.active = input;

@@ -66,12 +66,12 @@ class RAssets {
 		@param failed  Optional. Called with the reason the asset can't be ensured, in place of `ensured`. When omitted, the reason is
 			logged. */
 	static function EnsureAssetAsync(fileName:String, ensured:Void->Void, ?failed:String->Void):Void {
-		var path = RCore.normalize(fileName);
+		var path = RCore.keyOf(fileName);
 		if (Runtime.ensured.exists(path)) {
 			Runtime.later(ensured);
 			return;
 		}
-		prepare(path, error -> {
+		prepare(fileName, error -> {
 			if (error != null) {
 				Answers.refuse("EnsureAssetAsync", error, failed);
 				return;
@@ -89,11 +89,14 @@ class RAssets {
 			is logged. The assets already ensured stay ensured.
 		@param progress  Optional. Called as each asset is ensured, with the number ensured and the total. */
 	static function EnsureAssetsAsync(fileNames:Array<String>, ensured:Void->Void, ?failed:String->Void, ?progress:(done:Int, total:Int) -> Void):Void {
-		var paths:Array<String> = [];
+		// One name for each file, the first spelling of it.
+		var keys:Array<String> = [], paths:Array<String> = [];
 		for (name in fileNames) {
-			var path = RCore.normalize(name);
-			if (paths.indexOf(path) < 0)
-				paths.push(path);
+			var key = RCore.keyOf(name);
+			if (keys.indexOf(key) < 0) {
+				keys.push(key);
+				paths.push(name);
+			}
 		}
 		if (paths.length == 0) {
 			Runtime.later(ensured);
@@ -122,7 +125,7 @@ class RAssets {
 		@param fileName  The asset's file name, relative to the asset host.
 		@return  True when the asset has been ensured. */
 	static function IsAssetEnsured(fileName:String):Bool {
-		return Runtime.ensured.exists(RCore.normalize(fileName));
+		return Runtime.ensured.exists(RCore.keyOf(fileName));
 	}
 
 	// ---- Releasing ----
@@ -135,7 +138,7 @@ class RAssets {
 
 		@param fileName  The asset's file name, relative to the asset host. */
 	static function ReleaseAsset(fileName:String):Void {
-		var path = RCore.normalize(fileName);
+		var path = RCore.keyOf(fileName);
 		Runtime.ensured.remove(path);
 		Runtime.files.remove(path);
 		Runtime.images.remove(path);
@@ -168,7 +171,8 @@ class RAssets {
 	// Brings a file into memory as its kind needs, as EnsureAssetAsync lists them (a GIF's first frame as raylib's LoadImage reads it),
 	// anything else as its bytes, then calls done with null, or why it couldn't be.
 	static function prepare(path:String, done:Null<String>->Void):Void {
-		var type = haxe.io.Path.extension(path).toLowerCase();
+		var key = RCore.keyOf(path),
+			type = haxe.io.Path.extension(path).toLowerCase();
 		if (type == "gif") {
 			RTexturesAsync.gifFile("EnsureAssetAsync", path, () -> done(null), done);
 			return;
@@ -183,8 +187,8 @@ class RAssets {
 					done(error);
 					return;
 				}
-				RAudioAsync.readWave("." + type, Runtime.files.get(path), wave -> {
-					Runtime.waves.set(path, wave);
+				RAudioAsync.readWave("." + type, Runtime.files.get(key), wave -> {
+					Runtime.waves.set(key, wave);
 					done(null);
 				}, message -> done('$path: $message'));
 			});
@@ -202,18 +206,18 @@ class RAssets {
 				}
 			}
 			RModelsAsync.loadModel(path, model -> {
-				Runtime.models3d.set(path, model);
+				Runtime.models3d.set(key, model);
 				part(null);
 			}, part);
 			helix.raylib.internal.Animations.read(path, file -> {
-				Runtime.gltfFiles.set(path, file);
+				Runtime.gltfFiles.set(key, file);
 				part(null);
 			}, part);
 			return;
 		}
 		if (type == "obj") {
 			RModelsAsync.loadModel(path, model -> {
-				Runtime.models3d.set(path, model);
+				Runtime.models3d.set(key, model);
 				done(null);
 			}, done);
 			return;
@@ -225,8 +229,8 @@ class RAssets {
 					done(error);
 					return;
 				}
-				Runtime.fonts().openFont(Runtime.files.get(path), font -> {
-					Runtime.openFonts.set(path, font);
+				Runtime.fonts().openFont(Runtime.files.get(key), font -> {
+					Runtime.openFonts.set(key, font);
 					done(null);
 				}, message -> done('$path: $message'));
 			});
@@ -234,7 +238,7 @@ class RAssets {
 		}
 		if (type == "fnt") {
 			Runtime.fonts().loadBmFont(path, font -> {
-				Runtime.bmFonts.set(path, font);
+				Runtime.bmFonts.set(key, font);
 				done(null);
 			}, done);
 			return;
@@ -246,20 +250,20 @@ class RAssets {
 					done(error);
 					return;
 				}
-				var value = RCompiledShaders.read(Runtime.files.get(path));
+				var value = RCompiledShaders.read(Runtime.files.get(key));
 				if (value == null) {
 					done('$path isn\'t a compiled shader');
 					return;
 				}
-				Runtime.files.remove(path);
-				Runtime.compiledShaders.set(path, value);
+				Runtime.files.remove(key);
+				Runtime.compiledShaders.set(key, value);
 				done(null);
 			});
 			return;
 		}
 		if (type == "mtl") {
 			RModelsAsync.readLibrary(path, library -> RModelsAsync.withTextures(library, () -> {
-				Runtime.materialLibraries.set(path, library);
+				Runtime.materialLibraries.set(key, library);
 				done(null);
 			}), done);
 			return;

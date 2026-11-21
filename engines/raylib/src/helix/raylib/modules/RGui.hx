@@ -158,7 +158,7 @@ class RGui {
 
 		@param fileName  The style file. */
 	static function GuiLoadStyle(fileName:String):Void {
-		var path = RCore.normalize(fileName);
+		var path = RCore.keyOf(fileName);
 		#if js
 		if (!Runtime.files.exists(path)) {
 			Runtime.log(4, 'FILEIO: [$path] Failed to load: not ensured. See EnsureAssetsAsync');

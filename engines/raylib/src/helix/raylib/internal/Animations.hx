@@ -38,7 +38,7 @@ class Animations {
 				failed(error);
 				return;
 			}
-			var file = try GltfFile.read(Runtime.files.get(path), path) catch (e:Dynamic) {
+			var file = try GltfFile.read(Runtime.files.get(Runtime.keyOf(path)), path) catch (e:Dynamic) {
 				failed('$path: $e');
 				return;
 			}
@@ -55,7 +55,7 @@ class Animations {
 						return;
 					if (error == null)
 						try
-							file.setBuffer(m.bufferIndex, Runtime.files.get(m.path))
+							file.setBuffer(m.bufferIndex, Runtime.files.get(Runtime.keyOf(m.path)))
 						catch (e:Dynamic)
 							error = '$path: $e';
 					if (error != null) {

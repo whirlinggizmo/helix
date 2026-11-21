@@ -693,12 +693,12 @@ class RModels {
 		@param fileName  The file.
 		@return  The model, the program's until `UnloadModel`. */
 	static function LoadModel(fileName:String):Model {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		// An ensured file's model is kept while the ensure's own load lives, and each load shares it.
 		if (Runtime.models3d.exists(path))
 			return Models.load(path);
-		return SyncLoads.load(path, Models.isKept(path), () -> loadModel(path),
-			(loaded, failed) -> helix.raylib.modules.RModelsAsync.loadModel(path, loaded, failed), () -> new Model([], [], []));
+		return SyncLoads.load(fileName, Models.isKept(path), () -> loadModel(path),
+			(loaded, failed) -> helix.raylib.modules.RModelsAsync.loadModel(fileName, loaded, failed), () -> new Model([], [], []));
 	}
 
 	// ---- Models and meshes ----
@@ -713,11 +713,11 @@ class RModels {
 		@param materialCount  Receives how many, in its first element.
 		@return  The materials, each the program's until `UnloadMaterial`. */
 	static function LoadMaterials(fileName:String, materialCount:Array<Int>):Array<Material> {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		var library = Runtime.materialLibraries.get(path);
 		var materials:Array<Material> = library != null ? ObjModels.materials(library,
-			defaultShader()) : SyncLoads.load(path, false, () -> [],
-				(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadMaterialsAsync(path, loaded, failed), () -> []);
+			defaultShader()) : SyncLoads.load(fileName, false, () -> [],
+				(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadMaterialsAsync(fileName, loaded, failed), () -> []);
 		if (materialCount != null)
 			materialCount[0] = materials.length;
 		return materials;
@@ -727,7 +727,7 @@ class RModels {
 	// its other loads' meshes' GPU buffers and textures while one lives, with materials of its own; meshes go to the GPU when first drawn.
 
 	static function loadModel(fileName:String):Model {
-		var model = Models.load(normalize(fileName));
+		var model = Models.load(keyOf(fileName));
 		if (model != null)
 			return model;
 		var material = Models.defaultMaterial(defaultShader());
@@ -1627,9 +1627,9 @@ class RModels {
 		@param animCount  Optional. Receives how many, in its first element: the returned array's length.
 		@return  The animations, the program's until `UnloadModelAnimations`. */
 	static function LoadModelAnimations(fileName:String, ?animCount:Array<Int>):Array<ModelAnimation> {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		var file = Runtime.gltfFiles.get(path);
-		var animations:Array<ModelAnimation> = SyncLoads.load(path, file != null, () -> {
+		var animations:Array<ModelAnimation> = SyncLoads.load(fileName, file != null, () -> {
 			try
 				Animations.fromGltf(file, path)
 			catch (e:Dynamic) {
@@ -1637,7 +1637,7 @@ class RModels {
 				[];
 			}
 		},
-			(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadModelAnimationsAsync(path, loaded, failed), () -> []);
+			(loaded, failed) -> helix.raylib.modules.RModelsAsync.LoadModelAnimationsAsync(fileName, loaded, failed), () -> []);
 		if (animCount != null)
 			animCount[0] = animations.length;
 		return animations;
