@@ -23,7 +23,7 @@ import helix.platform.StreamSource;
 	path isn't under is passed over. A relative path is under every root it doesn't climb above, and an absolute path or a URL is under
 	the roots it is under. A source follows a path's `.` and `..`: `levels/../custom/1.json` reads `custom/1.json`. A path one file
 	names relative to itself is made with `join`. A path not under any asset source's root is refused with "Invalid file path: <path> is
-	outside every asset source's root". The name a path resolves to under a root is the kind `IFileSystem` accepts (`FilePath`), from
+	outside every asset source's root", or the reason a subclass words (`outside`). The name a path resolves to under a root is the kind `IFileSystem` accepts (`FilePath`), from
 	every source, so a name is refused alike on every target.
 
 	A failure names the path as passed. A file not found in any asset source fails with "<path>: file not found in any of the asset
@@ -430,6 +430,11 @@ class Assets implements IPollable {
 		answered();
 	}
 
-	static function outside(path:String):String
+	/** Returns why a path is refused as outside every source's root. A subclass names the roots in its own terms, as an engine over
+		Assets names its asset hosts.
+
+		@param path  The path, as passed.
+		@return  The reason, starting "Invalid file path: <path>". */
+	function outside(path:String):String
 		return 'Invalid file path: $path is outside every asset source\'s root';
 }

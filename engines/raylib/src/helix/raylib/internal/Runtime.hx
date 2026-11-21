@@ -289,7 +289,7 @@ class Runtime {
 			new FileSystemSource(memory),
 			new FileSystemSource(callback)
 		];
-		assets = new Assets(fixedSources.concat(hostSources()));
+		assets = new HostAssets(fixedSources.concat(hostSources()));
 		saved = new Assets([new FileSystemSource(data, true)]);
 		hosted = true;
 		polled.push(assets);
@@ -369,7 +369,7 @@ class Runtime {
 	public static function setFiles(data:IFileSystem, sources:Array<helix.services.assets.AssetSource>):Void {
 		Runtime.data = data;
 		var first:Array<helix.services.assets.AssetSource> = [new FileSystemSource(data, true)];
-		assets = new Assets(first.concat(sources));
+		assets = new HostAssets(first.concat(sources));
 		saved = new Assets([new FileSystemSource(data, true)]);
 		polled.push(assets);
 		polled.push(saved);
@@ -486,15 +486,26 @@ class Runtime {
 		`/`; "./" in a page whose files are beside it, and without a host. */
 	public static function applicationDirectory():String {
 		var hosts = assetHosts();
-		if (hosts.length == 0)
-			return "./";
-		var host = hosts[0];
 		#if js
-		return isUrlHost(host) ? haxe.io.Path.addTrailingSlash(host) : "./";
+		return hosts.length > 0 && isUrlHost(hosts[0]) ? hostRoot(hosts[0]) : "./";
 		#else
-		if (isUrlHost(host))
+		return hosts.length > 0 ? hostRoot(hosts[0]) : "./";
+		#end
+	}
+
+	/** Returns an asset host's root, ending in `/`: a URL as it is, natively a directory's full path, and in a page a directory beside
+		the page's.
+
+		@param host  The host, as `assetHosts` lists it.
+		@return  Its root. */
+	public static function hostRoot(host:String):String {
+		if (isUrlHost(host) || system == null)
 			return haxe.io.Path.addTrailingSlash(host);
-		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(haxe.io.Path.join([system.getProgramDirectory(), host])));
+		#if js
+		return haxe.io.Path.addTrailingSlash(system.getProgramDirectory() + host);
+		#else
+		var directory = haxe.io.Path.isAbsolute(host) ? host : haxe.io.Path.join([system.getProgramDirectory(), host]);
+		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(directory));
 		#end
 	}
 

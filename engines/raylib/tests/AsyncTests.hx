@@ -277,8 +277,12 @@ class AsyncTests {
 		check(exists.join(",") == "true,false,true", 'directories exist when a file is in them, and the root always: $exists');
 
 		check(answer((d,
-				f) -> LoadFileDataAsync("/elsewhere/a.txt", _ -> d(), f)) == "failed: Invalid file path: /elsewhere/a.txt is outside every asset source's root",
-			"an absolute path outside the roots: refused, named as the program named it");
+				f) -> LoadFileDataAsync("/elsewhere/a.txt", _ -> d(), f)) == "failed: Invalid file path: /elsewhere/a.txt is outside every asset host ("
+			+ [
+				for (host in helix.raylib.internal.Runtime.assetHosts())
+					helix.raylib.internal.Runtime.hostRoot(host)
+			].join(", ")
+				+ ")", "an absolute path outside the roots: refused, named as the program named it");
 		check(answer((d, f) -> LoadFileDataAsync("saves/../saves/a.txt", bytes -> bytes.toString() == "a" ? d() : f(bytes.toString()), f)) == "done",
 			"a saved file read through . and ..");
 		check(answer((d, f) -> SaveFileDataAsync("none.bin", Bytes.ofString("abc"), 9, d, f)) == "failed: none.bin: there are no 9 bytes to write",
