@@ -269,8 +269,8 @@ class RCore {
 
 		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
-		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
-		kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
+		Natively it is written to the data directory, as `ExportImage` writes, and `LoadImage` reads it back. In a page it is
+		downloaded, named by the name's last part.
 
 		The image is the framebuffer's size, its alpha opaque, as raylib's is.
 
@@ -1577,9 +1577,8 @@ class RCore {
 	/** Returns the working directory. See `GetApplicationDirectory` for finding
 		the program's files.
 
-		`TakeScreenshot` writes to it.
-
-		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
+		helix-raylib doesn't read or write files in it. A load reads the program's files, and a save, an export or a screenshot is
+		written to the data directory, wherever the working directory is.
 
 		@return  The directory, without a slash at its end. */
 	static function GetWorkingDirectory():String {
@@ -1602,9 +1601,7 @@ class RCore {
 
 	/** Changes the working directory.
 
-		`TakeScreenshot` writes to the new directory from then on.
-
-		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
+		helix-raylib's loads, saves, exports and screenshots are unchanged, as none of them uses the working directory.
 
 		A failure logs a warning.
 
@@ -1622,8 +1619,6 @@ class RCore {
 				changed = true;
 			}
 		} catch (_:Dynamic) {}
-		if (changed)
-			Runtime.workingDirectoryChanged();
 		#end
 		if (!changed)
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to change to directory: $dir');

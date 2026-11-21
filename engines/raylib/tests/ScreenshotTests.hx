@@ -8,7 +8,8 @@ import helix.services.screen.Screen;
 /** Checks `TakeScreenshot` on graphics that read back two pixels, its files handed to the test. The first call with nothing drawn on
 	the screen returns at once, and its screenshot is of the next frame, written as that frame ends. From then on the frames are kept: a
 	call between frames writes the frame last shown, and one during a frame the frame drawn so far, each before it returns, read from
-	the kept target. A first call in a frame whose draws all wait in rlgl's batch draws the batch and writes that frame. A screenshot that can't be saved is refused with the reason logged, and `CloseWindow` refuses a first screenshot
+	the kept target. A first call in a frame whose draws all wait in rlgl's batch draws the batch and writes that frame. In a page each
+	file is handed out as a download, natively written as `SaveFileData` writes it. A screenshot that can't be saved is refused with the reason logged, and `CloseWindow` refuses a first screenshot
 	left for a frame that never ended, writing none. Run by helix.py test on Node and natively. */
 @:access(helix.raylib.internal.Runtime)
 class ScreenshotTests {
@@ -57,7 +58,17 @@ class Screenshots {
 		SetTraceLogLevel(LOG_WARNING);
 		SetTraceLogCallback((level, text) -> if (level == LOG_WARNING) warnings.push(text));
 		var written = new WrittenFiles();
+		#if js
 		Runtime.exportAdapter = written;
+		#else
+		// Natively a screenshot is written to the data directory, as the exports are, through the program's save callback when it has one.
+		SetSaveFileDataCallback((fileName, data, dataSize) -> {
+			written.export(fileName,
+				StringTools.endsWith(fileName, ".png") ? "image/png" : StringTools.endsWith(fileName, ".qoi") ? "image/qoi" : "application/octet-stream",
+				data.sub(0, dataSize), _ -> {}, _ -> {});
+			return true;
+		});
+		#end
 
 		TakeScreenshot("early.png");
 		ScreenshotTests.check(warnings.length == 1

@@ -295,21 +295,6 @@ class RWindowAsync {
 			return;
 		}
 		var name = GetFileName(fileName);
-		var exporter = Runtime.exporter();
-		#if !js
-		// raylib 6.2's: a relative name under the working directory, an absolute one as it is.
-		var slash = lastSlash(fileName);
-		if (slash >= 0) {
-			var directory = fileName.substr(0, slash == 0 ? 1 : slash);
-			if (!isPathAbsolute(fileName))
-				directory = haxe.io.Path.join([Sys.getCwd(), directory]);
-			if (!sys.FileSystem.exists(directory) || !sys.FileSystem.isDirectory(directory)) {
-				Runtime.later(() -> refused('$fileName: Screenshot could not be saved: $directory isn\'t a directory'));
-				return;
-			}
-			exporter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: directory});
-		}
-		#end
 		var frame = Runtime.frame;
 		if (frame == null) {
 			Runtime.later(() -> refused('$name: Screenshot could not be saved: InitWindow first'));
@@ -324,12 +309,18 @@ class RWindowAsync {
 				failed('$name: Screenshot could not be saved: only .png, .qoi and .raw files are written');
 				return;
 			}
-			var type = IsFileExtension(name, ".png") ? "image/png" : IsFileExtension(name, ".qoi") ? "image/qoi" : "application/octet-stream";
-			exporter.export(name, type, file, where -> {
+			function written(where:String) {
 				Runtime.log(LOG_INFO, 'FILEIO: [$where] Image exported successfully');
 				Runtime.log(LOG_INFO, 'SYSTEM: [$where] Screenshot taken successfully');
 				saved();
-			}, error -> failed('$name: Screenshot could not be saved: $error'));
+			}
+			#if js
+			var type = IsFileExtension(name, ".png") ? "image/png" : IsFileExtension(name, ".qoi") ? "image/qoi" : "application/octet-stream";
+			Runtime.exporter().export(name, type, file, written, error -> failed('$name: Screenshot could not be saved: $error'));
+			#else
+			// Into the data directory, as the exports are.
+			RCore.writeData(fileName, file, file.length, () -> written(fileName), error -> failed('$fileName: Screenshot could not be saved: $error'));
+			#end
 		}
 		var framebufferWidth = Runtime.window.framebufferWidth,
 			framebufferHeight = Runtime.window.framebufferHeight;

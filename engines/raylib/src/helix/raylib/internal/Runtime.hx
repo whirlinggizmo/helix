@@ -841,26 +841,16 @@ class Runtime {
 		and `close` refuses those left. */
 	public static final screenshotsAsked:Array<{fileName:String}> = [];
 
-	/** Gets where files are handed out, made when first asked for: in a page a download, natively the working directory. */
+	#if js
+	/** Gets what hands a page's screenshots out as downloads, made when first asked for. */
 	public static function exporter():helix.platform.IExport {
-		if (exportAdapter == null) {
-			#if js
+		if (exportAdapter == null)
 			exportAdapter = new helix.platform.adapters.export.download.DownloadExportAdapter();
-			#else
-			exportAdapter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: Sys.getCwd()});
-			#end
-		}
 		return exportAdapter;
 	}
 
 	static var exportAdapter:Null<helix.platform.IExport> = null;
-
-	/** Makes what hands files out natively write to the working directory as it is now, after `ChangeDirectory`. */
-	public static function workingDirectoryChanged():Void {
-		#if !js
-		exportAdapter = null;
-		#end
-	}
+	#end
 
 	/** Gets the system's clipboard, made when first asked for. */
 	public static function clipboard():helix.platform.IClipboard {
