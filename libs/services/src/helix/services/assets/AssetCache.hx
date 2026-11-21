@@ -34,6 +34,9 @@ abstract class AssetCache {
 	/** Deletes a copy's record and then its bytes. */
 	abstract function forget(server:ServerSource, path:String, forgotten:Void->Void, failed:String->Void):Void;
 
+	/** Lists the paths of the server's copies under a directory, its subdirectories' too, from the server's root. */
+	abstract function listCopies(server:ServerSource, directory:String, listed:Array<String>->Void, failed:String->Void):Void;
+
 	/** Empties the copies, and forgets what this run holds. */
 	abstract function clearCopies(server:ServerSource, cleared:Void->Void, failed:String->Void):Void;
 

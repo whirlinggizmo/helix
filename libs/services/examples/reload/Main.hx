@@ -27,7 +27,7 @@ import helix.services.shaders.Shaders;
 	building again then redraws the running page with it. Natively nothing tells the assets, and the shader stays as compiled:
 
 	```haxe
-	reloader.assetsChanged = urls -> for (url in urls) assets.notifyUrlChanged(url);
+	reloader.assetsChanged = urls -> for (url in urls) assets.notifyChanged(url);
 	```
 
 	Its `time` is the frame's number over 60, so a frame always looks alike; the `quit_after_frame` option (`--quit_after_frame=60`

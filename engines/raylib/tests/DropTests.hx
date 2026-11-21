@@ -54,14 +54,14 @@ class DropTests {
 			&& first.paths[1] == "helix-raylib-dropped/2/art.png",
 			'a drop listed under its own paths: ${first.paths}');
 		var read:Bytes = null;
-		Runtime.assets.load(first.paths[0], bytes -> read = bytes, e -> throw e);
+		Runtime.assets.read(first.paths[0], bytes -> read = bytes, e -> throw e);
 		pump(() -> read != null);
 		check(read.toString() == "one", "a dropped file's path reads it");
 
 		UnloadDroppedFiles(first);
 		check(!IsFileDropped(), "UnloadDroppedFiles lets go of the list");
 		var again:Bytes = null;
-		Runtime.assets.load(first.paths[1], bytes -> again = bytes, e -> throw e);
+		Runtime.assets.read(first.paths[1], bytes -> again = bytes, e -> throw e);
 		pump(() -> again != null);
 		check(again.toString() == "two", "and the files stay");
 
@@ -72,7 +72,7 @@ class DropTests {
 		var second = LoadDroppedFiles();
 		check(second.count == 1 && second.paths[0] == "helix-raylib-dropped/3/file", 'the next drop replaces it: ${second.paths}');
 		var gone:Null<String> = null;
-		Runtime.assets.load(first.paths[1], _ -> throw "the last drop's file still read", e -> gone = e);
+		Runtime.assets.read(first.paths[1], _ -> throw "the last drop's file still read", e -> gone = e);
 		pump(() -> gone != null);
 		check(gone != null, "the last drop's files are let go");
 

@@ -307,18 +307,20 @@ Positions are in framebuffer pixels from the window's top-left corner. A key is 
 
 *class* in [`libs/platform/src/helix/platform/FilePath.hx`](../src/helix/platform/FilePath.hx), `import helix.platform.FilePath;`
 
-Provides the rule for the paths `IFileSystem` accepts, which every file system adapter checks, and which helix-services' `Assets` holds every source to, so a name is refused the same way on every target.
+Provides the rule for the paths `IFileSystem` accepts, which every file system adapter checks, so a name is refused the same way on every target.
 
 ```haxe
 static function isValid(path:String):Bool
-static inline var INVALID:String
+static function whyInvalid(path:String):Null<String>
 static function isDirectoryName(name:String):Bool
 ```
 
 - `isValid`: Returns whether a path is one `IFileSystem` accepts: plain names of letters, digits, `_`, `-` and `.` joined by `/`, at most 256 characters, none empty, `.` or `..`.
   - `path`: The path.
   - returns: True when it is.
-- `INVALID`: The failure for a path `isValid` refuses.
+- `whyInvalid`: Returns why a path isn't one `IFileSystem` accepts, or null when it is.
+  - `path`: The path.
+  - returns: "Invalid file path: <reason>", such as `Invalid file path: "my level.json" contains a character other than letters, digits, _, - and .`, or null.
 - `isDirectoryName`: Returns whether a name can be one directory's on every OS, as a program's company and product are: 1 to 64 characters, not `.` or `..`, no `/ \\ : * ? " < > |` or control characters, and no space or `.` at its end, which Windows drops.
   - `name`: The name.
   - returns: True when it can.
@@ -844,9 +846,9 @@ Defines files on this machine under one root, read and written whole by path.
 
 Natively the root is a directory on disk. In a page it is an IndexedDB database. A file on a server is read through `IHttp` instead.
 
-A file is reached by its path. It is read whole or located for streaming, and written whole or not at all, with no seeking. Its size and when it was last written are found with `getInfo`, and what a directory holds with `list`. A directory is made by writing a file under it, as a page has none of its own; there is no call that makes or deletes one. These are a page's limits, kept natively so a program works the same on both.
+A file is reached by its path. It is read whole or located for streaming, and written whole or not at all, with no seeking. Its size and when it was last written are found with `getInfo`, and a directory's files and subdirectories with `list`. A directory is made by writing a file under it, as a page has none of its own; there is no call that makes or deletes one. These are a page's limits, kept natively so a program works the same on both.
 
-A path is plain names joined by `/`, such as `audio/music.ogg`. Names use letters, digits, `_`, `-` and `.`, and the path is at most 256 characters. An absolute path, an empty name, `.` or `..` is refused through `failed`.
+A path is plain names joined by `/`, such as `audio/music.ogg`. Names use letters, digits, `_`, `-` and `.`, and the path is at most 256 characters. An absolute path, an empty name, `.` or `..` is refused through `failed`, with the reason `FilePath.whyInvalid` returns.
 
 One of each call's callbacks is called once, on the main thread, never during the call. `missing` is called when the file isn't there, and `failed` receives why for anything else.
 
@@ -903,13 +905,13 @@ function dispose():Void
   - `failed`: Receives why it can't be found.
 
   A directory isn't a file, so its path is missing here. In a page, a file written before the adapter kept write times was last written at 0.
-- `list`: Lists what a directory holds: its files' names, and its subdirectories' names ending in `/`.
+- `list`: Lists a directory's files' names, and its subdirectories' names ending in `/`.
   - `directory`: The directory's path under the root, or "" for the root.
   - `listed`: Receives the names, such as `["1.json", "bonus/"]`; none for an empty directory or a root not yet written.
   - `missing`: Called when there is no directory at the path, including when a file is there.
   - `failed`: Receives why it can't be listed.
 
-  Only the directory's own entries are listed, sorted, not what its subdirectories hold. Natively a name the paths can't hold (one with a space, say) is listed too, though no call reaches it. In a page a directory is there while a file is under it.
+  Only the directory's own entries are listed, sorted, not its subdirectories' entries. Natively a name no path can name (one with a space, say) is listed too, though no call reaches it. In a page a directory exists while a file is under it.
 - `locate`: Finds where a file is, so it can be played as it is read without loading it whole.
   - `path`: The file's path under the root.
   - `located`: Receives the location and a function that releases it. That function is called once, when the location is no longer read.

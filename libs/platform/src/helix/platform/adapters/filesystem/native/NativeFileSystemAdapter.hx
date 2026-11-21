@@ -48,7 +48,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 	static inline var READ_ONLY = "Read-only file system";
 
 	// A refusal, answered at a later poll.
-	function refuse(failed:String->Void, message = FilePath.INVALID):Void->Void {
+	function refuse(failed:String->Void, message:String):Void->Void {
 		var aborted = false;
 		mailbox.post(() -> if (!aborted) failed(message));
 		return () -> aborted = true;
@@ -56,7 +56,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 
 	public function read(path:String, maxBytes:Int, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void->Void {
 		if (!FilePath.isValid(path))
-			return refuse(failed);
+			return refuse(failed, FilePath.whyInvalid(path));
 		var file = Path.join([directory, path]);
 		return run(() -> try {
 			if (!sys.FileSystem.exists(file))
@@ -75,7 +75,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 
 	public function write(path:String, bytes:Bytes, written:Void->Void, failed:String->Void):Void {
 		if (!writable || !FilePath.isValid(path)) {
-			refuse(failed, writable ? FilePath.INVALID : READ_ONLY);
+			refuse(failed, writable ? FilePath.whyInvalid(path) : READ_ONLY);
 			return;
 		}
 		var file = Path.join([directory, path]);
@@ -90,7 +90,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 
 	public function deleteFile(path:String, deleted:Void->Void, failed:String->Void):Void {
 		if (!writable || !FilePath.isValid(path)) {
-			refuse(failed, writable ? FilePath.INVALID : READ_ONLY);
+			refuse(failed, writable ? FilePath.whyInvalid(path) : READ_ONLY);
 			return;
 		}
 		var file = Path.join([directory, path]);
@@ -152,7 +152,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 
 	public function getInfo(path:String, found:(size:Int, modified:Float) -> Void, missing:Void->Void, failed:String->Void):Void {
 		if (!FilePath.isValid(path)) {
-			refuse(failed);
+			refuse(failed, FilePath.whyInvalid(path));
 			return;
 		}
 		var file = Path.join([directory, path]);
@@ -172,7 +172,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 
 	public function list(path:String, listed:Array<String>->Void, missing:Void->Void, failed:String->Void):Void {
 		if (path != "" && !FilePath.isValid(path)) {
-			refuse(failed);
+			refuse(failed, FilePath.whyInvalid(path));
 			return;
 		}
 		var dir = path == "" ? directory : Path.join([directory, path]);
@@ -197,7 +197,7 @@ class NativeFileSystemAdapter implements IFileSystem {
 
 	public function locate(path:String, located:(location:String, release:Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void {
 		if (!FilePath.isValid(path)) {
-			refuse(failed);
+			refuse(failed, FilePath.whyInvalid(path));
 			return;
 		}
 		var file = Path.join([directory, path]);

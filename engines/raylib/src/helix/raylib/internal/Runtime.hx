@@ -356,7 +356,7 @@ class Runtime {
 			log(2, 'FILEIO: [$path] Checking whether the file exists');
 		else
 			log(3, 'FILEIO: [$path] Loading');
-		assets.load(path, bytes -> {
+		assets.read(path, bytes -> {
 			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
 			files.set(path, bytes);
 			done(null);

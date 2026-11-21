@@ -197,7 +197,7 @@ class Fonts {
 			path:String, size:Float, codepoints:Array<Int>, loaded:Font2D->Void, failed:Null<String->Void>):Void->Void {
 		var aborted = false, abortRasterize:Null<Void->Void> = null;
 		var report = (message:String) -> if (!aborted) fail(failed, message);
-		var abortLoad = assets.load(path, bytes -> {
+		var abortLoad = assets.read(path, bytes -> {
 			if (aborted)
 				return;
 			abortRasterize = raster(bytes, size, codepoints, (glyphs, ascent, descent, lineGap) -> {
@@ -231,7 +231,7 @@ class Fonts {
 				abort();
 			fail(failed, message);
 		};
-		aborts.push(assets.load(path, bytes -> {
+		aborts.push(assets.read(path, bytes -> {
 			if (aborted)
 				return;
 			// Replacing, not refusing: a face name in a system's 8-bit encoding needn't refuse the font, and a binary BMFont file

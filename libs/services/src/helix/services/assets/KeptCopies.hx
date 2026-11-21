@@ -123,6 +123,30 @@ class KeptCopies {
 			one();
 		}, deleted, _ -> deleted());
 
+	function listCopies(server:ServerSource, directory:String, listed:Array<String>->Void, failed:String->Void):Void {
+		var paths = [], left = 1, failure:Null<String> = null;
+		function one()
+			if (--left == 0)
+				failure == null ? listed(paths) : failed(failure);
+		function walk(under:String)
+			fileSystem.list('${server.directory}/files' + (under == "" ? "" : '/$under'), names -> {
+				for (name in names) {
+					var path = under == "" ? name : '$under/$name';
+					if (StringTools.endsWith(name, "/")) {
+						left++;
+						walk(path.substr(0, path.length - 1));
+					} else
+						paths.push(path);
+				}
+				one();
+			}, one, message -> {
+				if (failure == null)
+					failure = message;
+				one();
+			});
+		walk(directory);
+	}
+
 	function clearCopies(cleared:Void->Void, failed:String->Void):Void
 		fileSystem.deleteFiles(cleared, failed);
 

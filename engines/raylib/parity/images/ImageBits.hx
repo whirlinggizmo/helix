@@ -40,7 +40,7 @@ class ImageBits {
 
 	static function bytes(fileName:String):haxe.io.Bytes {
 		var data:haxe.io.Bytes = null;
-		Runtime.assets.load(fileName, d -> data = d, e -> throw e);
+		Runtime.assets.read(fileName, d -> data = d, e -> throw e);
 		pump(() -> data != null);
 		return data;
 	}

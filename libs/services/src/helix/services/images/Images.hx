@@ -36,7 +36,7 @@ class Images implements IPollable {
 		var request = new Request(path, failed);
 		request.loaded = loaded;
 		requests.push(request);
-		var abortLoad = assets.load(path, bytes -> if (!request.aborted) decodeInto(request, bytes), message -> if (!request.aborted) {
+		var abortLoad = assets.read(path, bytes -> if (!request.aborted) decodeInto(request, bytes), message -> if (!request.aborted) {
 			request.message = message;
 			ready.push(request);
 		});

@@ -18,7 +18,7 @@ import helix.services.assets.TrustCache;
 	a record without bytes and a record of an older shape all downloaded again; the manifests' tree deciding without asking, a listed
 	download hashed before it is kept, a file a manifest leaves out always asked about, the copies of names a newer manifest drops
 	deleted when it arrives; shipped files read in place; `deleteCopy`; located files; natively a server's stream downloaded in two
-	parts, its last 64 KiB first; aborts and dispose. */
+	parts, its last 64 KiB first; aborts and dispose; paths resolved against each source's root, writes, lists and the cache's list. */
 @:access(helix.services.assets.Assets)
 class AssetsTests {
 	static var checks = 0;
@@ -60,7 +60,7 @@ class AssetsTests {
 
 	static function load(assets:Assets, path:String):{bytes:Null<String>, failure:Null<String>} {
 		var result = {bytes: null, failure: null};
-		assets.load(path, bytes -> result.bytes = bytes.toString(), message -> result.failure = message);
+		assets.read(path, bytes -> result.bytes = bytes.toString(), message -> result.failure = message);
 		pump();
 		return result;
 	}
@@ -88,7 +88,7 @@ class AssetsTests {
 
 		var assets = make([new FileSystemSource(shipped), server(base, new RevalidateCache(cache))]);
 		var called = false;
-		assets.load("jump.wav", _ -> called = true);
+		assets.read("jump.wav", _ -> called = true);
 		check(!called, "never answered during the call");
 		pump();
 		check(called && http.requests.length == 0, "the first source that has it answers");
@@ -166,16 +166,17 @@ class AssetsTests {
 		#end
 
 		var answered = false;
-		var abort = assets.load("jump.wav", _ -> answered = true);
+		var abort = assets.read("jump.wav", _ -> answered = true);
 		abort();
 		pump();
 		check(!answered, "aborted: nothing called");
-		assets.load("fresh.txt", _ -> answered = true, _ -> answered = true);
+		assets.read("fresh.txt", _ -> answered = true, _ -> answered = true);
 		assets.dispose();
 		pump();
 		check(!answered, "disposed: nothing called");
 
 		watching(base);
+		paths(base);
 		var emptied = false;
 		assets.clearCache(() -> emptied = true);
 		check(!emptied, "clearCache answers later");
@@ -200,7 +201,7 @@ class AssetsTests {
 		check(http.requests.length == before + 1 && http.requests[before].noCache, "MemoryCache: downloaded past the HTTP caches");
 		before = http.requests.length;
 		var got = null;
-		off.load("dev.txt", bytes -> got = bytes.toString());
+		off.read("dev.txt", bytes -> got = bytes.toString());
 		check(got == null, "MemoryCache: a held file not answered during the call");
 		pump();
 		check(got == "dev" && http.requests.length == before, "MemoryCache: fetched once a run");
@@ -211,7 +212,7 @@ class AssetsTests {
 		http.routes.set(other + "my file.txt", {status: 200, body: text("spaced")});
 		before = http.requests.length;
 		var spaced = null;
-		off.load("my file.txt", _ -> throw "a server was asked for a path the file systems refuse", m -> spaced = m);
+		off.read("my file.txt", _ -> throw "a server was asked for a path the file systems refuse", m -> spaced = m);
 		check(spaced == null, "a refused path: not answered during the call");
 		pump();
 		check(spaced != null && spaced.indexOf("Invalid file path") >= 0 && http.requests.length == before,
@@ -352,7 +353,7 @@ class AssetsTests {
 		before = http.requests.length;
 		function shippedLoad(assets:Assets, path:String):Null<String> {
 			var got = null;
-			assets.load(path, bytes -> got = bytes.toString());
+			assets.read(path, bytes -> got = bytes.toString());
 			for (_ in 0...30) {
 				http.poll();
 				cache.poll();
@@ -494,10 +495,10 @@ class AssetsTests {
 		check(got.length == 1
 			&& load(served, "shaders/lit.shader").bytes == "lit v2", "a failed fetch keeps the old copy and calls no watch");
 		http.routes.set(base + "shaders/lit.shader", {status: 200, body: text("lit v3")});
-		served.notifyUrlChanged(base + "shaders/lit.shader?v=3");
+		served.notifyChanged(base + "shaders/lit.shader?v=3");
 		pump();
 		check(got.join(",") == "lit v2,lit v3", "an absolute URL the server serves maps to its path");
-		served.notifyUrlChanged("https://elsewhere.example/shaders/lit.shader");
+		served.notifyChanged("https://elsewhere.example/shaders/lit.shader");
 		pump();
 		check(got.length == 2, "a URL no source serves is skipped");
 
@@ -506,14 +507,164 @@ class AssetsTests {
 		var inPage = make([server(page, new RevalidateCache(cache))]);
 		var quads:Array<String> = [];
 		inPage.watch("shaders/quad.shader", bytes -> quads.push(bytes.toString()));
-		inPage.notifyUrlChanged("/assets/shaders/quad.shader");
+		inPage.notifyChanged("/assets/shaders/quad.shader");
 		pump();
-		inPage.notifyUrlChanged("http://localhost:8080/assets/shaders/quad.shader");
+		inPage.notifyChanged("http://localhost:8080/assets/shaders/quad.shader");
 		pump();
 		check(quads.join(",") == "quad v2,quad v2", "a source relative to the page: the URL from the server's root, or absolute, maps to its path");
-		inPage.notifyUrlChanged("/other/shaders/quad.shader");
+		inPage.notifyChanged("/other/shaders/quad.shader");
 		pump();
 		check(quads.length == 2, "a URL outside the source's skipped");
+	}
+
+	// Paths: each source resolving a path against its root, `.` and `..` followed, a path outside every root missing; join; a URL and a
+	// path from the server's root read from a server; writes to the first writable source, its watches told; lists merged from the file
+	// systems; a server's copies listed once its read answers; watches matched by where a source resolves the path.
+	static function paths(base:String):Void {
+		check(Assets.join("levels/1.json", "../custom/1.json") == "levels/../custom/1.json"
+			&& Assets.join("a.png", "b.png") == "b.png"
+			&& Assets.join("x/a.json", "/abs/b.png") == "/abs/b.png"
+			&& Assets.join(base + "a.json", "b.png") == base + "b.png",
+			"join: a path joined to the naming file's directory, an absolute path or URL as it is");
+
+		var files = new FakeFileSystem(), other = new FakeFileSystem();
+		files.files.set("custom/1.json", text("custom 1"));
+		files.files.set("levels/1.json", text("level 1"));
+		other.files.set("levels/2.json", text("level 2"));
+		other.files.set("levels/bonus/3.json", text("level 3"));
+		var local = make([new FileSystemSource(files), new FileSystemSource(other)]);
+		function pumpLocal()
+			for (_ in 0...10) {
+				files.poll();
+				other.poll();
+				local.poll();
+			}
+		var got = null;
+		local.read(Assets.join("levels/1.json", "../custom/1.json"), bytes -> got = bytes.toString());
+		pumpLocal();
+		check(got == "custom 1", "a joined path's .. followed by the source");
+		var missed = false, failure = null;
+		local.read("../secret.txt", _ -> throw "read outside the root", () -> missed = true, m -> failure = m);
+		pumpLocal();
+		check(missed && failure == null, "a path outside every root: missing");
+		local.read("../secret.txt", _ -> throw "read outside the root", m -> failure = m);
+		pumpLocal();
+		check(failure == "Invalid file path: ../secret.txt is outside every asset source's root", "without missing, its failure says so: " + failure);
+		missed = false;
+		local.read("my level.json", _ -> throw "read a name the file systems refuse", () -> missed = true, m -> failure = m);
+		pumpLocal();
+		check(missed, "a name the file systems refuse: missing");
+		check(new FileSystemSource(files).resolve("levels/../../x") == null
+			&& new FileSystemSource(files).resolve("./levels/1.json") != null,
+			"resolve: null above the root");
+		#if sys
+		var absolute = sys.FileSystem.absolutePath("fake") + "/levels/./1.json";
+		got = null;
+		local.read(absolute, bytes -> got = bytes.toString());
+		pumpLocal();
+		check(got == "level 1", "natively an absolute path under the root: read from it");
+		#end
+		missed = false;
+		local.read("/elsewhere/levels/1.json", _ -> throw "read an absolute path outside the root", () -> missed = true);
+		pumpLocal();
+		check(missed, "an absolute path outside every root: missing");
+
+		// Listed: the file systems' entries merged, sorted, once each.
+		var names = null;
+		local.list("levels", n -> names = n.join(","));
+		pumpLocal();
+		check(names == "1.json,2.json,bonus/", "a directory listed from every file system: " + names);
+		local.list("nowhere", n -> names = n.join(","));
+		pumpLocal();
+		check(names == "", "a directory not found in any: []");
+		failure = null;
+		local.list("../up", _ -> throw "listed outside", m -> failure = m);
+		pumpLocal();
+		check(failure != null && failure.indexOf("is outside every asset source's root") >= 0, "a directory outside every root fails");
+
+		// Written: to the first writable source, read back, its watches told.
+		var data = new FakeFileSystem();
+		var saving = make([new FileSystemSource(data, true), new FileSystemSource(files)]);
+		function pumpSaving()
+			for (_ in 0...10) {
+				data.poll();
+				files.poll();
+				saving.poll();
+			}
+		var seen = [];
+		saving.watch("./saves/../progress.json", bytes -> seen.push(bytes.toString()));
+		var written = false;
+		saving.write("progress.json", text("level 3"), () -> written = true);
+		check(!written, "a write answers later");
+		pumpSaving();
+		check(written && data.files.get("progress.json").toString() == "level 3" && seen.join(",") == "level 3",
+			"written to the writable source, and a watch of the same location told");
+		failure = null;
+		local.write("progress.json", text("x"), () -> throw "written to a read-only source", m -> failure = m);
+		pumpLocal();
+		check(failure == "progress.json: not under any writable asset source's root", "no writable source: " + failure);
+		saving.write("../progress.json", text("x"), () -> throw "written outside", m -> failure = m);
+		pumpSaving();
+		check(failure == "Invalid file path: ../progress.json is outside every asset source's root", "a write outside every root");
+		saving.list("", n -> names = n.join(","));
+		pumpSaving();
+		check(names == "custom/,levels/,progress.json", "every root listed: " + names);
+
+		// A server: a URL and a path from the server's root read from it, its copy listed once the read answers.
+		http.routes.set(base + "levels/a.txt", {status: 200, body: text("served a")});
+		var served = make([new FileSystemSource(files), server(base, new RevalidateCache(cache))]);
+		var copies = null;
+		served.read(base + "levels/../levels/a.txt", bytes -> {
+			got = bytes.toString();
+			served.listCache("levels", c -> copies = [for (copy in c) copy.path + " " + copy.url].join(","));
+		});
+		pump();
+		check(got == "served a"
+			&& copies == 'levels/a.txt ${base}levels/a.txt', "a URL read from its server, and its copy listed: " + copies);
+		got = null;
+		served.read("/game/levels/a.txt", bytes -> got = bytes.toString());
+		pump();
+		check(got == "served a", "a path from the server's root under its URL: read from it");
+		missed = false;
+		served.read("https://elsewhere.example/levels/a.txt", _ -> throw "read from another server", () -> missed = true);
+		pump();
+		check(missed, "another server's URL: missing");
+		served.list("levels", n -> names = n.join(","));
+		for (_ in 0...5) {
+			files.poll();
+			pump();
+		}
+		check(names == "1.json", "a list leaves a server's files out");
+		var held = make([server(base, new MemoryCache())]);
+		load(held, "levels/a.txt");
+		held.listCache("", c -> copies = [for (copy in c) copy.path].join(","));
+		pump();
+		check(copies == "levels/a.txt", "a memory cache's copies listed");
+
+		#if js
+		// In a page at https://example.com/game/, a source at "": a URL, a path from the server's root and a name each reach one watch.
+		js.Syntax.code("globalThis.location = {href: 'https://example.com/game/index.html?seed=1'}");
+		var inPage = make([server("", new MemoryCache())]);
+		js.Syntax.code("delete globalThis.location");
+		http.routes.set("levels/2.json", {status: 200, body: text("level 2")});
+		var levels = [];
+		inPage.watch("levels/2.json", bytes -> levels.push(bytes.toString()));
+		for (path in ["https://example.com/game/levels/2.json", "/game/levels/2.json", "levels/2.json"])
+			inPage.notifyChanged(path);
+		pump();
+		check(levels.length == 3, "in a page, a URL, a path from the server's root and a name reach a watch: " + levels.length);
+		inPage.listCache("", c -> copies = [for (copy in c) copy.url].join(","));
+		pump();
+		check(copies == "https://example.com/game/levels/2.json", "its copies listed by their URLs: " + copies);
+		#end
+
+		// Watches matched by the location a source resolves the path to.
+		var heard = [];
+		local.watch("levels/../custom/1.json", bytes -> heard.push(bytes.toString()));
+		files.files.set("custom/1.json", text("custom 2"));
+		local.notifyChanged("custom/1.json");
+		pumpLocal();
+		check(heard.join(",") == "custom 2", "a change of custom/1.json reaches a watch of levels/../custom/1.json");
 	}
 
 	#if !js

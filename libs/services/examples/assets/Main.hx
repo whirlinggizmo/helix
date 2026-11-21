@@ -82,7 +82,7 @@ class Main {
 		assets = new Assets([new FileSystemSource(shipped)]);
 		#end
 		polled.push(assets);
-		assets.load("hello.txt", bytes -> {
+		assets.read("hello.txt", bytes -> {
 			color = DONE;
 			trace('loaded hello.txt: ${bytes.toString()}');
 		});

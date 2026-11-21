@@ -137,7 +137,7 @@ class Main {
 		var held = [];
 		function from(i:Int)
 			if (i < names.length)
-				assets.load(names[i], bytes -> {
+				assets.read(names[i], bytes -> {
 					held.push('${names[i]} "${bytes.toString()}"');
 					from(i + 1);
 				});

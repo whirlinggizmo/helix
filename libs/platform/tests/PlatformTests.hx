@@ -69,11 +69,12 @@ class PlatformTests {
 			&& a.modified < Date.now().getTime() / 1000 + 2, "a file's time, seconds since the epoch: " + '${a.modified}');
 		check(info("sub") == "missing", "a directory has no file information");
 		check(info("nope.txt") == "missing", "a missing file has none");
-		check(info("bad path") == 'failed: ${helix.platform.FilePath.INVALID}', "an invalid path fails");
+		check(info("bad path") == 'failed: Invalid file path: "bad path" contains a character other than letters, digits, _, - and .',
+			"an invalid path fails, saying why");
 		check(list("") == "a.txt,sub-x.txt,sub/", 'the root: files, and directories ending in a slash, sorted: ${list("")}');
 		check(list("sub") == "b.bin,deep/" && list("sub/deep") == "c.txt", "a directory's own entries");
 		check(list("a.txt") == "missing" && list("nope") == "missing", "a file or nothing is no directory");
-		check(list("../x") == 'failed: ${helix.platform.FilePath.INVALID}', "an invalid directory fails");
+		check(list("../x") == 'failed: Invalid file path: "../x" contains ".."', "an invalid directory fails, saying why");
 
 		// Links under the root: a path through one reaches its target, and deleteFiles deletes the links and keeps their targets.
 		var outside = "build/tests/platform-outside";
@@ -130,6 +131,16 @@ class PlatformTests {
 			"directory names: not empty, . or .., no separator or reserved character");
 		check(!name("trailing ") && !name("trailing.") && !name([for (_ in 0...65) "x"].join("")),
 			"directory names: no space or . at the end, 64 characters at most");
+
+		// The paths a file system accepts, and why one is refused.
+		var why = helix.platform.FilePath.whyInvalid;
+		check(why("levels/1.json") == null && why("a-b_c.D9") == null, "paths: plain names joined by /");
+		check(why("") == "Invalid file path: the path is empty"
+			&& why("/a") == 'Invalid file path: "/a" is absolute'
+			&& why("a//b") == 'Invalid file path: "a//b" contains an empty name'
+			&& why("a/./b") == 'Invalid file path: "a/./b" contains "."',
+			"paths: empty, absolute, an empty name and . each say so");
+		check(why([for (_ in 0...257) "x"].join("")).indexOf("is longer than 256 characters") > 0, "paths: 256 characters at most");
 
 		// A page's finger ids: each landing finger receives the smallest id no finger down has.
 		var ids = new helix.platform.adapters.shared.FingerIds();

@@ -40,6 +40,14 @@ class MemoryCache extends AssetCache {
 		forgotten();
 	}
 
+	function listCopies(server:ServerSource, directory:String, listed:Array<String>->Void, failed:String->Void):Void {
+		var start = server.directory + "/" + (directory == "" ? "" : directory + "/");
+		listed([
+			for (k in held.keys())
+				if (StringTools.startsWith(k, start)) k.substr(server.directory.length + 1)
+		]);
+	}
+
 	function clearCopies(server:ServerSource, cleared:Void->Void, failed:String->Void):Void {
 		for (k in [for (k in held.keys()) k])
 			if (StringTools.startsWith(k, server.directory + "/"))

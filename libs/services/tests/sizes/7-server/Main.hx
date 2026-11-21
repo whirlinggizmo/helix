@@ -59,7 +59,7 @@ class Main {
 			new FileSystemSource(files),
 			new ServerSource("", httpClient, new RevalidateCache(downloads))
 		]);
-		assets.load("level.json", bytes -> trace(bytes.length));
+		assets.read("level.json", bytes -> trace(bytes.length));
 		var frame:Float->Void = null;
 		frame = _ -> {
 			events.poll();

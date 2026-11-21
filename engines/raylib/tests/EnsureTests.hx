@@ -231,7 +231,13 @@ private class GatedSource extends AssetSource {
 		this.files = files;
 	}
 
-	public function load(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
+	function nameOf(path:String):Null<String>
+		return path;
+
+	function locationOf(name:String):String
+		return name;
+
+	public function read(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
 		asked.push(path);
 		pending.push(() -> files.exists(path) ? loaded(Bytes.ofString(files.get(path))) : missing());
 		if (pending.length >= waitFor) {
@@ -242,7 +248,7 @@ private class GatedSource extends AssetSource {
 	}
 
 	public function refetch(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void
-		load(path, request, loaded, missing, failed);
+		read(path, request, loaded, missing, failed);
 
 	public function locate(path:String, request:AssetRequest, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
 		missing();

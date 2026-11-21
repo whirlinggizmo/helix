@@ -220,9 +220,8 @@ class ModelsTests {
 		check(latin != null
 			&& latin.materials[0].name == "caf\u00e9"
 			&& latin.materials[0].baseColorImageIndex == 0
-			&& latin.images[0] != null
-			&& latin.images[0].path == "objs/caf\u00e9.png",
-			"a Latin-1 library's texture named with é, loaded");
+			&& latin.images[0] == null,
+			"a Latin-1 library's texture named with é: the name read, the file missing, as every file system refuses the name");
 
 		files.files.set("objs/bad.obj", Bytes.ofString("v 0 0 0\nf 1 1 x\n"));
 		var why = "";
@@ -265,11 +264,11 @@ class ModelsTests {
 			materials: [{pbrMetallicRoughness: {baseColorTexture: {index: 0}}}],
 			textures: [{source: 0}, {source: 1}],
 			images: [
-				{uri: "wood%20grain.png"},
+				{uri: "wood%5Fgrain.png"},
 				{uri: "data:image/png;base64," + haxe.crypto.Base64.encode(Bytes.ofString("junk"))},
 				{uri: "data:image/png;base64," + haxe.crypto.Base64.encode(Bytes.ofString("2x2"))}
 			],
-			buffers: [{uri: "mesh%20data.bin", byteLength: 72}],
+			buffers: [{uri: "mesh%2Ddata.bin", byteLength: 72}],
 			bufferViews: [
 				{buffer: 0, byteOffset: 0, byteLength: 36},
 				{buffer: 0, byteOffset: 36, byteLength: 36}
@@ -292,8 +291,8 @@ class ModelsTests {
 		var gltf = haxe.Json.stringify(document);
 		var files = new FakeFileSystem();
 		files.files.set("models/thing.gltf", Bytes.ofString(gltf));
-		files.files.set("models/mesh data.bin", bin);
-		files.files.set("models/wood grain.png", Bytes.ofString("4x4"));
+		files.files.set("models/mesh-data.bin", bin);
+		files.files.set("models/wood_grain.png", Bytes.ofString("4x4"));
 		files.files.set("broken/thing.gltf", Bytes.ofString(gltf));
 		files.files.set("models/rig.gltf", Bytes.ofString(rig()));
 		var decoder = new FakeImageDecoder();
@@ -303,6 +302,7 @@ class ModelsTests {
 		function pump()
 			for (_ in 0...10) {
 				files.poll();
+				assets.poll();
 				decoder.poll();
 				images.poll();
 			}
@@ -322,7 +322,7 @@ class ModelsTests {
 		check(wood != null
 			&& wood.width == 4
 			&& wood.height == 4
-			&& wood.path == "models/wood grain.png"
+			&& wood.path == "models/wood_grain.png"
 			&& wood.encoded.toString() == "4x4",
 			"the image beside it, its name decoded, decoded for the GPU with its file's bytes");
 		var picture = wood.takeDecoded();
@@ -393,7 +393,7 @@ class ModelsTests {
 		var why = "";
 		models.loadGltf("broken/thing.gltf", _ -> throw "loaded without its buffer", message -> why = message);
 		pump();
-		check(why.indexOf("broken/mesh data.bin") >= 0, "a missing buffer fails the load, by its path");
+		check(why.indexOf("broken/mesh-data.bin") >= 0, "a missing buffer fails the load, by its path");
 		obj(files, models, pump);
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

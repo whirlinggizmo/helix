@@ -64,7 +64,7 @@ class Main {
 			new FileSystemSource(files),
 			new ServerSource("", httpClient, new ManifestCache(downloads))
 		]);
-		assets.load("level.json", bytes -> trace(bytes.length));
+		assets.read("level.json", bytes -> trace(bytes.length));
 		output = new WebAudioAdapter();
 		decoder = new WebAudioDecoderAdapter();
 		audio = new Audio(output, decoder, assets, system);

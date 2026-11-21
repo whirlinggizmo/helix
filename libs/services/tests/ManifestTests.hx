@@ -66,7 +66,7 @@ class ManifestTests {
 		]);
 		var got = [];
 		for (path in ["title.png", "levels/1.json", "music/song.ogg"])
-			assets.load(path, bytes -> got.push(bytes.toString()));
+			assets.read(path, bytes -> got.push(bytes.toString()));
 		for (_ in 0...40) {
 			http.poll();
 			cache.poll();
