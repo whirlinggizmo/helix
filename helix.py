@@ -106,12 +106,13 @@ REFUSED={'FileCalls':('sys.io.File.getContent: Use LoadFileText(fileName:String)
     'WaitCalls.hx:19: characters 19-31 : EndDrawing: Unsupported in a function used as a value.',
     'WaitCalls.hx:20: characters 31-49 : LoadFileData: Unsupported in a function used as a value.',
     'WaitCalls.hx:21: characters 44-74 : SaveFileText: Unsupported in a function used as a value.',
-    'WaitCalls.hx:22: characters 21-28 : frame(): Unsupported in a function used as a value.',
-    'WaitCalls.hx:23: characters 15-20 : frame: Unsupported as a value.',
+    'WaitCalls.hx:22: characters 21-28 : frame(): Unsupported in a function used as a value. It calls EndDrawing, which waits.',
+    'WaitCalls.hx:23: characters 15-20 : frame: Unsupported as a value. It calls EndDrawing, which waits.',
     'WaitCalls.hx:42: lines 42-45 : show(): Unsupported in interface WaitShown.',
     'WaitCalls.hx:61: lines 61-63 : update(): Unsupported as an override of WaitBase.update.',
-    'WaitCalls.hx:75: characters 22-33 : tick(): Unsupported in a function used as a value.',
-    'WaitCalls.hx:84: characters 4-16 : EndDrawing: Unsupported in a function used as a value.')}
+    'WaitCalls.hx:75: characters 22-33 : tick(): Unsupported in a function used as a value. It calls EndDrawing, which waits.',
+    'WaitCalls.hx:84: characters 4-16 : EndDrawing: Unsupported in a function used as a value.',
+    'WaitCalls.hx:97: characters 24-31 : start(): Unsupported in a function used as a value. It calls play(), which calls save(), which calls SaveFileText, which waits.')}
 
 def refused(base):
     """Each program in engines/raylib/tests/refused refused for JS and natively (typed alone), each of its refusals in the compiler's

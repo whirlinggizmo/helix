@@ -372,20 +372,50 @@ class Wait {
 		refusing.push({message: message, pos: pos});
 	}
 
-	// Refuses a call of a function that waits where a call can't wait.
+	// Refuses a call of a function that waits where a call can't wait, naming the calls it waits through.
 	static function refuseCall(c:Call, constructor:Bool):Void {
 		var name = c.field.name;
+		var why = ' ${through(c.key, c.field)}';
 		switch c.kind {
 			case Called if (constructor):
-				refuse('$name(): Unsupported in a constructor or a variable\'s initial value.', c.pos);
+				refuse('$name(): Unsupported in a constructor or a variable\'s initial value.$why', c.pos);
 			case Called:
 			case InLambda:
-				refuse('$name(): Unsupported in a function used as a value.', c.pos);
+				refuse('$name(): Unsupported in a function used as a value.$why', c.pos);
 			case AsValue:
-				refuse('$name: Unsupported as a value.', c.pos);
+				refuse('$name: Unsupported as a value.$why', c.pos);
 			case Unmatched:
-				refuse('$name(): Unsupported here.', c.pos);
+				refuse('$name(): Unsupported here.$why', c.pos);
 		}
+	}
+
+	// Why a function waits: "It calls EndDrawing, which waits.", or through the program's functions to it, "It calls play(), which
+	// calls SaveFileText, which waits."
+	static function through(key:String, field:ClassField):String {
+		var names = [];
+		var visited:Map<String, Bool> = [];
+		while (key != null && !visited.exists(key)) {
+			visited.set(key, true);
+			var state = states.get(key);
+			if (state == null)
+				break;
+			if (state.waitsIn != null) {
+				names.push(state.waitsIn);
+				break;
+			}
+			var next:Null<Call> = null;
+			if (state.calls != null)
+				for (c in state.calls)
+					if (next == null && c.kind == Called && c.key != key && reach(c.key, c.field, []) == YES)
+						next = c;
+			if (next == null)
+				break;
+			names.push(next.field.name + "()");
+			key = next.key;
+		}
+		if (names.length == 0)
+			return "It waits.";
+		return "It calls " + names.join(", which calls ") + ", which waits.";
 	}
 
 	// Refuses a waiting method that an interface declares, or that overrides one that doesn't wait: a call through the interface or
@@ -592,6 +622,7 @@ class Wait {
 				}
 		}
 		var calls:Array<Call> = [];
+		var waitsIn:Null<String> = null;
 		// The function declared in the body each call is in, by its variable, or -1.
 		var callsIn:Array<Int> = [];
 		var direct = false;
@@ -608,6 +639,8 @@ class Wait {
 						refuse(refusal.split(":")[0] + ": Unsupported in a constructor or a variable's initial value.", t.pos);
 					else {
 						direct = true;
+						if (waitsIn == null)
+							waitsIn = refusal.split(":")[0];
 						if (current >= 0)
 							locals.get(current).waits = true;
 					}
@@ -658,6 +691,7 @@ class Wait {
 		walk(typed, false);
 		state.calls = calls;
 		state.direct = direct;
+		state.waitsIn = waitsIn;
 		// The calls of functions that wait, and of those not known yet: one whose body is still being typed, which called its way here.
 		var waiting:Array<Call> = [];
 		var unknown:Array<Call> = [];
@@ -839,6 +873,8 @@ private class State {
 	public var pos:Null<Position> = null;
 	public var calls:Null<Array<Call>> = null;
 	public var direct = false;
+	// The first waiting call its body holds, by the name in its refusal (`EndDrawing`), or null.
+	public var waitsIn:Null<String> = null;
 	public var decided = false;
 	public var waits = false;
 	// In a page, which of the flags class's values chooses its body, or -1.

@@ -4,7 +4,7 @@ import helix.raylib.Raylib.*;
 /** A program calling what waits where a call can't wait, which doesn't build on any target: `helix.py test` builds it for JS and
 	natively and checks that each is refused with its own message: `EndDrawing` and a file call in a function used as a value, a function of
 	the program's that waits called in one and used as a value, a file call in a constructor and in a variable's initial value, a
-	function that waits declared by an interface and overriding one that doesn't, one of two functions calling each other called in a function used as a value, and `EndDrawing` in a function declared in a function and called by one used as a value. */
+	function that waits declared by an interface and overriding one that doesn't, one of two functions calling each other called in a function used as a value, `EndDrawing` in a function declared in a function and called by one used as a value, and a function waiting three calls down called in one used as a value, its refusal naming the calls down to `SaveFileText`. */
 @:build(helix.raylib.internal.Wait.build())
 class WaitCalls {
 	static var saved = LoadFileText("best.txt");
@@ -88,5 +88,24 @@ class WaitSteps {
 			step();
 		};
 		var steps = [twice];
+	}
+}
+
+@:build(helix.raylib.internal.Wait.build())
+class WaitStart {
+	public static function menu():Void {
+		var choices = [() -> start()];
+	}
+
+	static function start():Void {
+		play();
+	}
+
+	static function play():Void {
+		save();
+	}
+
+	static function save():Void {
+		SaveFileText("progress.txt", "1");
 	}
 }
