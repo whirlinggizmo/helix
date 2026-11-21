@@ -57,6 +57,7 @@ class SceneLights {
 	public static function add(light:helix.raylib.extras.Light):Void {
 		if (lights.length == 0) {
 			helix.raylib.modules.RModels.lighting = lightMesh;
+			helix.raylib.modules.RModels.grouping = group;
 			Frame.lighting = lightRun;
 		}
 		if (lights.indexOf(light) < 0)
@@ -121,6 +122,116 @@ class SceneLights {
 		else
 			place(local, model.toArray(instance), false);
 		return true;
+	}
+
+	// Each instance's bounds in the world (six numbers each), the instances in the parts' order, by their index, and each part's
+	// first and count as it is split, reused by each draw.
+	static final instanceBoxes:Array<Float> = [];
+	static final order:Array<Int> = [];
+	static final cuts:Array<Int> = [];
+
+	/** Splits an instanced draw through a lit program into parts by place, each lit by its own lights: a part the scene's lights reach
+		more of than a draw's (`DRAW_LIGHTS`) is halved across its longest side, by its instances' middles, until a part's lights fit,
+		it holds one instance, or neither half is reached by fewer lights than it. A draw through a program declaring no lights, or of a
+		mesh without positions, is one part.
+
+		@param p  The program.
+		@param mesh  The mesh.
+		@param transforms  The instances' transforms.
+		@param count  How many instances.
+		@param sorted  Filled with the transforms in the parts' order.
+		@param groups  Filled with each part's count, in order.
+		@return  How many parts. */
+	public static function group(p:Program, mesh:helix.raylib.Mesh, transforms:Array<helix.raylib.Matrix>, count:Int, sorted:Array<helix.raylib.Matrix>,
+			groups:Array<Int>):Int {
+		var twin = p.twin;
+		if (count < 2 || (fields(p).length == 0 && (twin == null || fields(twin).length == 0)))
+			return 1;
+		var local = meshBounds(mesh);
+		if (local == null)
+			return 1;
+		instanceBoxes.resize(count * 6);
+		order.resize(count);
+		for (i in 0...count) {
+			place(local, transforms[i].toArray(instance), false);
+			for (k in 0...6)
+				instanceBoxes[i * 6 + k] = box[k];
+			order[i] = i;
+		}
+		cuts.resize(0);
+		split(0, count, reaching(0, count));
+		if (cuts.length == 2)
+			return 1;
+		sorted.resize(count);
+		for (i in 0...count)
+			sorted[i] = transforms[order[i]];
+		groups.resize(0);
+		var n = 0;
+		while (n < cuts.length) {
+			groups.push(cuts[n + 1]);
+			n += 2;
+		}
+		return groups.length;
+	}
+
+	// Splits the instances order holds from first, count of them, reached by that many lights, into cuts.
+	static function split(first:Int, count:Int, reached:Int):Void {
+		if (reached <= DRAW_LIGHTS || count < 2) {
+			cuts.push(first);
+			cuts.push(count);
+			return;
+		}
+		// The longest side of their middles' bounds.
+		var axis = 0, longest = -1.;
+		for (k in 0...3) {
+			var least = Math.POSITIVE_INFINITY, most = Math.NEGATIVE_INFINITY;
+			for (i in first...first + count) {
+				var b = order[i] * 6,
+					middle = instanceBoxes[b + k] + instanceBoxes[b + k + 3];
+				if (middle < least)
+					least = middle;
+				if (middle > most)
+					most = middle;
+			}
+			if (most - least > longest) {
+				longest = most - least;
+				axis = k;
+			}
+		}
+		var part = order.slice(first, first + count);
+		part.sort((a,
+				b) -> Reflect.compare(instanceBoxes[a * 6 + axis] + instanceBoxes[a * 6 + axis + 3],
+				instanceBoxes[b * 6 + axis] + instanceBoxes[b * 6 + axis + 3]));
+		for (i in 0...count)
+			order[first + i] = part[i];
+		var half = count >> 1;
+		var below = reaching(first, half),
+			above = reaching(first + half, count - half);
+		if (below >= reached && above >= reached) {
+			cuts.push(first);
+			cuts.push(count);
+			return;
+		}
+		split(first, half, below);
+		split(first + half, count - half, above);
+	}
+
+	// How many of the scene's lights reach the instances order holds from first, count of them: their bounds put in box.
+	static function reaching(first:Int, count:Int):Int {
+		for (i in first...first + count) {
+			var b = order[i] * 6;
+			for (k in 0...3) {
+				if (i == first || instanceBoxes[b + k] < box[k])
+					box[k] = instanceBoxes[b + k];
+				if (i == first || instanceBoxes[b + k + 3] > box[k + 3])
+					box[k + 3] = instanceBoxes[b + k + 3];
+			}
+		}
+		var n = 0;
+		for (light in lights)
+			if (light.enabled && score(light) > 0)
+				n++;
+		return n;
 	}
 
 	// Lights a run of immediate vertices (rlgl's, a shape's): its bounds those of the vertices' positions, as the batch holds them.

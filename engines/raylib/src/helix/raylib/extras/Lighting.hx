@@ -37,8 +37,9 @@ import helix.raylib.modules.RLights;
 	**Which lights reach a draw.** Each draw is lit by the 8 lights that reach it most, scored against its bounds: a light's brightness
 	(its color times its intensity), times its falloff at the bounds' nearest point (none past its range), times a spot light's cone.
 	A directional light reaches everything. A point or spot light without a range reaches everything too, so a scene of many lamps sets
-	a range on each. `DrawMeshInstanced` scores its lights against the bounds of all its instances, and draws `LoadLightingShader`'s
-	and `LoadPbrShader`'s shaders placing each instance, posed and casting shadows as a mesh drawn alone.
+	a range on each. `DrawMeshInstanced` scores its lights against the bounds of all its instances. When more than 8 lights reach
+	them, it splits the instances by place into draws of their own, each lit by the 8 reaching its part most. It draws
+	`LoadLightingShader`'s and `LoadPbrShader`'s shaders placing each instance, posed and casting shadows as a mesh drawn alone.
 
 	**A program's own shader.** Including `<helix/raylib/shaders/lights.glsl>` declares `lights[MAX_LIGHTS]`, the draw's own lights
 	(8), `ambient` and `viewPos`, and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal)`, called as

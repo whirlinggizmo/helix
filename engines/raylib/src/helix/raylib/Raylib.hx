@@ -5962,7 +5962,8 @@ class Raylib {
 		A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
 
 		`LoadLightingShader`'s and `LoadPbrShader`'s shaders place each instance themselves, lit, posed and casting shadows as a mesh drawn
-		alone is. Any other shader draws nothing, with a warning, when it has no `mat4` attribute there.
+		alone is. Under the Lighting extra's lights, instances more than 8 lights reach are split by place into draws of their own, each
+		lit by the lights reaching its part most. Any other shader draws nothing, with a warning, when it has no `mat4` attribute there.
 
 		Sets `mvp` to the camera's alone and `matNormal` to the identity.
 

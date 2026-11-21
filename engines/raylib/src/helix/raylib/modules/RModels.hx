@@ -917,7 +917,8 @@ class RModels {
 		A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
 
 		`LoadLightingShader`'s and `LoadPbrShader`'s shaders place each instance themselves, lit, posed and casting shadows as a mesh drawn
-		alone is. Any other shader draws nothing, with a warning, when it has no `mat4` attribute there.
+		alone is. Under the Lighting extra's lights, instances more than 8 lights reach are split by place into draws of their own, each
+		lit by the lights reaching its part most. Any other shader draws nothing, with a warning, when it has no `mat4` attribute there.
 
 		Sets `mvp` to the camera's alone and `matNormal` to the identity.
 
@@ -950,6 +951,35 @@ class RModels {
 			}
 			shader = p.instanced;
 		}
+		// Split by place where the scene's lights reaching the instances are more than a draw's, each part a draw of its own lights.
+		var parts = grouping == null ? 1 : grouping(shader.program, mesh, transforms, count, sorted, groups);
+		if (parts <= 1) {
+			drawInstances(mesh, material, shader, transforms, count);
+			return;
+		}
+		var first = 0;
+		for (g in 0...parts) {
+			var n = groups[g];
+			part.resize(n);
+			for (i in 0...n)
+				part[i] = sorted[first + i];
+			drawInstances(mesh, material, shader, part, n);
+			first += n;
+		}
+	}
+
+	// Splits an instanced draw by place (SceneLights.group): set by the first CreateLight, null in a program making no light or in the
+	// shadow pass. Receives the program, the mesh, the instances' transforms and count, and fills the transforms in the parts' order and
+	// each part's count; returns how many parts.
+	static var grouping:Null<(p:helix.raylib.internal.Program, mesh:Mesh, transforms:Array<Matrix>, count:Int, sorted:Array<Matrix>, groups:Array<Int>) -> Int>;
+
+	// What grouping fills, and a part's transforms, reused by each draw.
+	static final sorted:Array<Matrix> = [];
+	static final groups:Array<Int> = [];
+	static final part:Array<Matrix> = [];
+
+	// Draws instances in one draw: their transforms in a buffer retired once the frame is drawn.
+	static function drawInstances(mesh:Mesh, material:Material, shader:Shader, transforms:Array<Matrix>, count:Int):Void {
 		var bytes = haxe.io.Bytes.alloc(count * 64);
 		var numbers = [];
 		for (i in 0...count) {

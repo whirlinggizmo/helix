@@ -80,6 +80,8 @@ class Shadows {
 	static var savedEyes:Null<(add:() -> Void, mesh:Bool)->Void>;
 	static var savedRunLighting:Null<(p:Program, data:haxe.io.Bytes, first:Int, count:Int, stride:Int) -> Void>;
 	static var savedLighting:Null<(p:Program, mesh:helix.raylib.Mesh, model:Matrix4, transforms:Null<Array<helix.raylib.Matrix>>, count:Int) -> Void>;
+	static var savedGrouping:Null<(p:Program, mesh:helix.raylib.Mesh, transforms:Array<helix.raylib.Matrix>, count:Int, sorted:Array<helix.raylib.Matrix>,
+			groups:Array<Int>) -> Int>;
 	static var savedSurfacing:Null<(shader:helix.raylib.Shader, material:helix.raylib.Material, modelEmissive:Null<Array<Float>>) -> helix.raylib.Shader>;
 	static var savedPass:Any;
 	static var savedView:Null<Matrix4>;
@@ -238,6 +240,7 @@ class Shadows {
 		savedRunLighting = Frame.lighting;
 		savedLighting = helix.raylib.modules.RModels.lighting;
 		savedSurfacing = helix.raylib.modules.RModels.surfacing;
+		savedGrouping = helix.raylib.modules.RModels.grouping;
 		savedPass = frame.currentPass;
 		savedView = frame.view;
 		savedProjection = frame.projection;
@@ -250,6 +253,8 @@ class Shadows {
 		Frame.lighting = null;
 		helix.raylib.modules.RModels.lighting = bound;
 		helix.raylib.modules.RModels.surfacing = surface;
+		// A caster's instances drawn whole: a map's lights are the light casting it.
+		helix.raylib.modules.RModels.grouping = null;
 	}
 
 	/** Ends the shadow pass: the batch cast, and the frame drawing as before it. */
@@ -263,6 +268,7 @@ class Shadows {
 		Frame.lighting = savedRunLighting;
 		helix.raylib.modules.RModels.lighting = savedLighting;
 		helix.raylib.modules.RModels.surfacing = savedSurfacing;
+		helix.raylib.modules.RModels.grouping = savedGrouping;
 		frame.drawInto(savedPass);
 		frame.view = savedView;
 		frame.projection = savedProjection;

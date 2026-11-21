@@ -12,7 +12,8 @@ import helix.raylib.internal.Runtime;
 	shader declaring `lights` is lit by the lights reaching its bounds most, 8 of more than 8, best first, the rest off; a range keeps a
 	far lamp off a draw; a spot light's cone keeps it off what it points away from; more than 4 lights light one draw; `UnloadLight`
 	removes a light; a light moves by its fields alone; a shader of 4 lights gets the best 4; `DrawMeshInstanced` scores against all
-	its instances, and draws the lit and PBR shaders through their instanced twins; immediate shapes drawn through a lit shader are lit by their vertices' bounds; and the light's fields (intensity,
+	its instances, splits them by place when more lights than a draw's reach them, and draws the lit and PBR shaders through their
+	instanced twins; immediate shapes drawn through a lit shader are lit by their vertices' bounds; and the light's fields (intensity,
 	range, cone) reach the next draw once assigned, each clamped to its range there. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
@@ -213,6 +214,29 @@ class LightingTests {
 			check(drawnFloat(twin.program, "ambient", 0) == 0.25, 'shader ${made.id}\'s twin: the ambient set on the shader after it was made');
 			check(made.program.instanced == twin && lit(twin.program).join(",") == "0", 'shader ${made.id} drawn again: the same twin, the sun alone');
 		}
+
+		// Instances spread among more lights than a draw's: split by place into draws of their own, each lit by the lamps near it. Ten
+		// lamps of range 2, an instance at each, and the sun: the halves are each reached by 6 lights, so two draws of 5.
+		var row = [
+			for (i in 0...10)
+				CreateLight(LIGHT_POINT, new Vector3(100 + i * 10, 0, 0), Vector3Zero(), WHITE, shader)
+		];
+		for (light in row)
+			light.range = 2;
+		material.shader = shader;
+		var twin = shader.program.instanced.program;
+		var before = Runtime.frame.pass.draws.length;
+		DrawMeshInstanced(mesh, material, [for (i in 0...10) MatrixTranslate(190 - i * 10, 0, 0)], 10);
+		var draws = Runtime.frame.pass.draws;
+		check(draws.length == before + 2 && draws[before].instances == 5 && draws[before + 1].instances == 5,
+			"instances reached by 11 lights: split into two draws of 5");
+		check(lit(twin).join(",") == "150,160,170,180,190,0", 'the second part lit by its own lamps and the sun: ${lit(twin)}');
+		for (light in row)
+			light.range = 0;
+		DrawMeshInstanced(mesh, material, [for (i in 0...10) MatrixTranslate(190 - i * 10, 0, 0)], 10);
+		check(Runtime.frame.pass.draws.length == before + 3, "every lamp reaching everything: one draw, as no part is reached by fewer");
+		for (light in row)
+			UnloadLight(light);
 
 		// Shapes drawn through a lit shader: scored against their vertices.
 		BeginShaderMode(shader);
