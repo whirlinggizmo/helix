@@ -1,6 +1,6 @@
 #version 330
 // helix-raylib's PBR shader's fragment stage (LoadPbrShader), over <helix/raylib/shaders/pbr.glsl>: a material's maps and values as
-// LoadModel reads a glTF's (albedo, metalness, roughness, normal, occlusion, emission), the values written by each draw, and unlitValue,
+// LoadModel reads a glTF's (albedo, metalness, roughness, normal, occlusion, emission), pbr.glsl's values written by each draw, and unlitValue,
 // 1 for a material marked unlit. A map the material lacks reads white, the normal map a flat normal. The emission map's texels times
 // emissiveColor are the material's emission.
 #include <helix/raylib/shaders/pbr.glsl>
@@ -16,8 +16,6 @@ uniform sampler2D normalMap;
 uniform sampler2D occlusionMap;
 uniform sampler2D emissiveMap;
 uniform vec4 colDiffuse;
-uniform float metallicValue;
-uniform float roughnessValue;
 uniform float unlitValue;
 out vec4 finalColor;
 void main() {

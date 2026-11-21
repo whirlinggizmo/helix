@@ -76,7 +76,7 @@ def test(native,audio_device):
 RAYLIB_TESTS=('CountTests','EnsureTests','DropTests','AudioStreamTests','RefusalTests','AsyncTests','SkinningTests','RestoreTests','ShaderFileTests','StructTests','TouchTests','SysTests','ModelMergeTests','PbrTests','VirtualGamepadExtraTests','DeviceTests','DebugTests','GuiSkinsTests','TexturesTests','FontTests','ScreenshotTests','SpritesTests','WaitTests','ScreenReadTests','ShaderValueTests','AnimationMaskTests','LightingTests','MaterialsTests','ShadowsTests','ShadowmapsTests','ParticlesTests','TweensTests','RaymathTests')
 # The tests' shaders (engines/raylib/tests/shaders): each compiled ahead of time as a program's is (CompileShaderFile), into
 # build/tests, and embedded in every test as a resource of its file's name.
-TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader'),('own_lights.vs','own_lights.fs','own_lights.shader'),('own_lights.vs','four_lights.fs','four_lights.shader'),('instanced_lights.vs','own_lights.fs','instanced_lights.shader'),('sway.vs','own_lights.fs','sway.shader'),('own_lights.vs','own_shadows.fs','own_shadows.shader')]
+TEST_SHADERS=[('glow.vs','glow.fs','glow.shader'),('glow.vs','emissive.fs','emissive.shader'),('own_skinning.vs',None,'own_skinning.shader'),('own_lights.vs','own_lights.fs','own_lights.shader'),('own_lights.vs','four_lights.fs','four_lights.shader'),('instanced_lights.vs','own_lights.fs','instanced_lights.shader'),('sway.vs','own_lights.fs','sway.shader'),('own_lights.vs','own_shadows.fs','own_shadows.shader'),('own_lights.vs','own_pbr.fs','own_pbr.shader')]
 
 def named(product):
     """The defines naming a test program, which every program sets: the company and the product."""

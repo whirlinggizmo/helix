@@ -105,7 +105,7 @@ class PbrTests {
 		}
 		check(pbr.locs[SHADER_LOC_VECTOR_VIEW] >= 0, "the view vector's location");
 		check(Std.isOfType(p, helix.raylib.internal.LitProgram) && Std.isOfType(p.twin, helix.raylib.internal.LitProgram),
-			"loading it makes its program and its skinned twin, each writing the material's values");
+			"loading it makes its program and its skinned twin, each computing a normal-mapped mesh's tangents");
 
 		// A material's values and maps in a draw: the values written, a map with a texture bound, one without reading white.
 		var cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
@@ -184,6 +184,15 @@ class PbrTests {
 		check(drawnInt(p, "lights.enabled") == 1 && drawnFloat(p, "lights.range") == 6 && drawnFloat(p, "lights.intensity") == 9,
 			"a light's range and intensity written into the draw's lights");
 		UnloadLight(lamp);
+
+		// A program's own shader including pbr.glsl: the material's metalness and roughness values written, as through LoadPbrShader's.
+		var own = LoadCompiledShaderFromMemory(haxe.Resource.getBytes("own_pbr.shader"));
+		material.shader = own;
+		material.maps[MATERIAL_MAP_METALNESS].value = 0.5;
+		material.maps[MATERIAL_MAP_ROUGHNESS].value = 0.125;
+		DrawModel(cube, new Vector3(0, 0, 0), 1, WHITE);
+		check(drawnFloat(own.program, "metallicValue") == 0.5 && drawnFloat(own.program, "roughnessValue") == 0.125,
+			"a program's own pbr.glsl shader: the metalness and roughness values written");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js

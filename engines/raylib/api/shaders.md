@@ -74,7 +74,7 @@ void main() {
 
 A metallic-roughness surface lit by rlights' lights, for a fragment stage.
 
-It includes <helix/raylib/shaders/lights.glsl>, so it declares the same uniforms, set the same way: the lights, and the material's emissiveColor, modelEmissiveColor and alphaCutoff.
+It includes <helix/raylib/shaders/lights.glsl>, so it declares the same uniforms, set the same way: the lights, and the material's emissiveColor, modelEmissiveColor and alphaCutoff. It also declares the material's metallicValue and roughnessValue, written by each draw: maps[MATERIAL_MAP_METALNESS].value and maps[MATERIAL_MAP_ROUGHNESS].value, as LoadModel reads a glTF's factors.
 
 vec3 helixDecodeSrgb(vec3 color) converts sRGB to linear. vec3 helixEncodeSrgb(vec3 linear) converts back.
 
@@ -101,6 +101,6 @@ out vec4 finalColor;
 void main() {
     vec4 texel = texture(texture0, fragTexCoord);
     vec4 base = vec4(helixDecodeSrgb(texel.rgb), texel.a)*colDiffuse*fragColor;
-    finalColor = helixPbr(base, 0.0, 0.5, 1.0, emissiveColor, fragPosition, fragNormal);
+    finalColor = helixPbr(base, metallicValue, roughnessValue, 1.0, emissiveColor, fragPosition, fragNormal);
 }
 ```

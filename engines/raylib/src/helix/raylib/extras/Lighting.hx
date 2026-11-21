@@ -44,7 +44,8 @@ import helix.raylib.modules.RLights;
 	(8), `ambient` and `viewPos`, and `vec4 helixLight(vec4 texelColor, vec4 tint, vec3 fragPosition, vec3 fragNormal)`, called as
 	`helixLight(texture(texture0, fragTexCoord), colDiffuse*fragColor, fragPosition, fragNormal)`. Including
 	`<helix/raylib/shaders/pbr.glsl>` declares `vec4 helixPbr(vec4 baseColor, float metallic, float roughness, float occlusion, vec3
-	emissive, vec3 fragPosition, vec3 normal)`, and the material's `emissiveColor` and `alphaCutoff` (the Materials extra). Both
+	emissive, vec3 fragPosition, vec3 normal)`, the material's `metallicValue` and `roughnessValue` (its metalness and roughness maps'
+	`value`), and its `emissiveColor` and `alphaCutoff` (the Materials extra), each written by every draw. Both
 	accept the world position and normal as raylib's `lighting.vs` passes them: `fragPosition` is
 	`vec3(matModel*vec4(vertexPosition, 1.0))` and `fragNormal` is `normalize(vec3(matNormal*vec4(vertexNormal, 1.0)))`. A model posed
 	by `UpdateModelAnimation` under a lit shader is skinned on the GPU. A program that calls none of this links none of it.

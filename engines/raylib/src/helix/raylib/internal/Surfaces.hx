@@ -4,7 +4,8 @@ import helix.services.shaders.ShaderUniform;
 
 /** Writes a material's values (the Materials extra's) into each draw through a shader declaring them: `emissiveColor`, the light the
 	material emits; `modelEmissiveColor`, the light its model emits (`SetModelEmissive`), 0 for a draw of a mesh alone;
-	`alphaCutoff`; `unlitValue`, 1 for an unlit material; and `shadowed`, 1 when shadows fall on it.
+	`alphaCutoff`; `unlitValue`, 1 for an unlit material; `shadowed`, 1 when shadows fall on it; and `metallicValue` and `roughnessValue`,
+	`maps[MATERIAL_MAP_METALNESS].value` and `maps[MATERIAL_MAP_ROUGHNESS].value`.
 
 	Set as the draws' hook (`RModels.surfacing`) by the first lit or PBR shader and the first compiled shader declaring one of them, so a
 	program using none links none of it. The Materials extra sets its own hook, which also chooses the default shader's variant. */
@@ -12,7 +13,15 @@ import helix.services.shaders.ShaderUniform;
 @:access(helix.raylib.Material)
 class Surfaces {
 	// The uniforms, by the indices of a program's surfaceFields.
-	static final FIELDS = ["emissiveColor", "modelEmissiveColor", "alphaCutoff", "unlitValue", "shadowed"];
+	static final FIELDS = [
+		"emissiveColor",
+		"modelEmissiveColor",
+		"alphaCutoff",
+		"unlitValue",
+		"shadowed",
+		"metallicValue",
+		"roughnessValue"
+	];
 	static final NONE:Array<Null<ShaderUniform>> = [];
 
 	/** Sets the draws' hook to this writer, unless one is set. */
@@ -70,6 +79,10 @@ class Surfaces {
 			number(p, f[3], material.unlit ? 1 : 0);
 		if (f[4] != null)
 			number(p, f[4], material.shadowed ? 1 : 0);
+		if (f[5] != null)
+			values.writeFloat(f[5], material.maps[helix.raylib.Raylib.MATERIAL_MAP_METALNESS].value);
+		if (f[6] != null)
+			values.writeFloat(f[6], material.maps[helix.raylib.Raylib.MATERIAL_MAP_ROUGHNESS].value);
 	}
 
 	// A color written as a vec3, or a vec4 of alpha 1.
