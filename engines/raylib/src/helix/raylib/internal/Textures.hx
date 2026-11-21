@@ -613,9 +613,17 @@ class Textures {
 			return false;
 		dropPicture(e);
 		if (e.gpu != 0) {
-			Runtime.graphics.disposeTexture(e.gpu);
-			samplings.remove(e.gpu);
-			cubeHandles.remove(e.gpu);
+			// A draw asked for earlier in the frame may sample it, as raylib's unload is safe once the draw call returns.
+			var gpu = e.gpu;
+			function free() {
+				Runtime.graphics.disposeTexture(gpu);
+				samplings.remove(gpu);
+				cubeHandles.remove(gpu);
+			}
+			if (Runtime.frame != null)
+				Runtime.frame.freeAfterDraws(free);
+			else
+				free();
 		}
 		entries.remove(id);
 		forget(id);

@@ -506,6 +506,17 @@ class Frame {
 	// What waits for the frame to be drawn.
 	final drawn:Array<() -> Void> = [];
 
+	/** Frees what a draw may read: once the frame is drawn when draws wait in it (a mesh's, or the batch's), and at once otherwise, as
+		raylib's unload is safe once the draw call returns.
+
+		@param free  The function that frees it. */
+	public function freeAfterDraws(free:() -> Void):Void {
+		if (drawCount > 0 || vertices > 0 || sprites > 0)
+			drawn.push(free);
+		else
+			free();
+	}
+
 	/** Draws the batch, rlgl's `rlDrawRenderBatchActive`: its runs into the pass, each through the current program, matrices and state
 		(in wire mode, its triangles as their edges, those culling leaves; in point mode, their corners). */
 	public function flush():Void {

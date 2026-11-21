@@ -12,7 +12,8 @@ import helix.raylib.internal.Textures;
 	texture leaving the other's, a lone load's UnloadMaterial freeing its textures, a load after the last re-reading the file; a shader
 	shared by two models' materials, the program unloading it first and last; two loads of an OBJ file sharing its textures and buffers,
 	and an MTL file's materials, held by the program, sharing a texture the program loaded; a cubemap in a model's cubemap map, as
-	raylib's skybox holds one; IQM, VOX and M3D files refused. Nothing is freed while held, nothing twice, and nothing
+	raylib's skybox holds one; a model and a texture unloaded after a draw in the frame, freed once it is drawn; IQM, VOX and M3D files
+	refused. Nothing is freed while held, nothing twice, and nothing
 	is left. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Textures)
@@ -132,6 +133,32 @@ class CountTests {
 		UnloadTexture(lone);
 		check(lone.id == 0 && !alive(id), "alone: UnloadTexture frees it");
 		clean("alone");
+
+		// Unloaded after a draw earlier in the frame: its texture and buffers kept until the frame is drawn, as raylib's draw is done
+		// when it returns.
+		var drawnModel = LoadModelFromMesh(cube()), drawnTexture = texture();
+		Runtime.frame.begin(64, 64);
+		DrawTexture(drawnTexture, 0, 0, WHITE);
+		DrawModel(drawnModel, new Vector3(0, 0, 0), 1, WHITE);
+		var liveBuffers = count(graphics.buffers),
+			liveTextures = count(graphics.textures);
+		var gpu = drawnModel.meshes[0].gpu,
+			meshBuffers = [for (b in gpu.buffers) if (b != 0) b].concat([gpu.indexBuffer]).filter(b -> b != 0),
+			textureHandle = Textures.entries.get(drawnTexture.id).gpu;
+		UnloadTexture(drawnTexture);
+		UnloadModel(drawnModel);
+		check(count(graphics.buffers) == liveBuffers && count(graphics.textures) == liveTextures,
+			'unloaded after a draw: kept until the frame is drawn, ${count(graphics.buffers)} buffers of $liveBuffers, ${count(graphics.textures)} textures of $liveTextures');
+		Runtime.frame.draw(64, 64, true);
+		check(!graphics.textures.exists(textureHandle)
+			&& meshBuffers.length > 0
+			&& !Lambda.exists(meshBuffers, b -> graphics.buffers.exists(b)),
+			"unloaded after a draw: freed once the frame is drawn");
+		// What the frame made to draw is its own from now on.
+		baseBuffers = count(graphics.buffers);
+		baseTextures = count(graphics.textures);
+		baseShaders = count(graphics.shaders);
+		clean("unloaded after a draw, the frame drawn");
 
 		// raylib's pattern: a texture assigned to a model, unloaded, then the model.
 		var model = LoadModelFromMesh(cube()), tex = texture();

@@ -216,20 +216,22 @@ class Models {
 		uploaded.resize(0);
 	}
 
-	// Lets go of a mesh's hold on a holder of GPU buffers, freeing them when it was the last.
+	// Lets go of a mesh's hold on a holder of GPU buffers, freeing them when it was the last (`Frame.freeAfterDraws`).
 	static function freeGpu(gpu:MeshGpu):Void {
 		if (--gpu.holders > 0)
 			return;
 		uploaded.remove(gpu);
-		function dispose(b:Int):Void
-			if (b != 0) {
-				Runtime.graphics.disposeBuffer(b);
-			}
-		if (gpu.buffers != null)
-			for (b in gpu.buffers)
-				dispose(b);
-		dispose(gpu.indexBuffer);
-		dispose(gpu.edgeBuffer);
+		var buffers = gpu.buffers == null ? [] : gpu.buffers.copy();
+		buffers.push(gpu.indexBuffer);
+		buffers.push(gpu.edgeBuffer);
+		function free()
+			for (b in buffers)
+				if (b != 0)
+					Runtime.graphics.disposeBuffer(b);
+		if (Runtime.frame != null)
+			Runtime.frame.freeAfterDraws(free);
+		else
+			free();
 		gpu.buffers = null;
 		gpu.indexBuffer = 0;
 		gpu.edgeBuffer = 0;
