@@ -94,6 +94,10 @@ speed where docs/benchmarks.md records them.
   Shader record's locations its own; music never, a stream being one playback; images never, a load being a mutable copy as raylib's
   is. Each engine's per-load records stay as its API has them; the sharing is underneath. After the jam, which measures the engine as
   it is.
+- **A pack of a program's assets, deferred:** one file made at build time from an asset directory, downloaded with a page or installed
+  beside a native program, and opened as a read-only file system. A `ManifestCache` accepts it as shipped files, so a packed file at
+  the hash the server's manifest lists is read from the pack, and only a changed file is downloaded. A page's first visit then costs one
+  request for its assets. The format, the tool that writes it and the file system that reads it are to be designed.
 - **Services features an engine needs and helix-raylib now reaches the platform for:** the mouse cursor (shape, visibility, lock) on
   `Mouse`, gamepad vibration and mappings on `Gamepads`, and a clipboard service.
 - **The layer above the services:** constructs the platform and the services for a target, runs the frame in order and ends with the
