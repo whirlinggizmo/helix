@@ -268,6 +268,9 @@ def type_text(node, full=False):
             return f'{args[0]}->{result}'
         named = [f'{n.lstrip("?")}:{t}' if n else t for n, t in zip(names + [''] * len(args), args)]
         return f'({", ".join(named)}) -> {result}'
+    if node.tag == 'a':
+        # By name: the compiler lists a structure's fields sorted, not as declared.
+        return '{' + ', '.join(f'{field.tag}:{type_text(field[0], full)}' for field in sorted(node, key=lambda field: field.tag)) + '}'
     return node.tag
 
 

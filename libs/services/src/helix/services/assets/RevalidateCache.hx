@@ -39,7 +39,7 @@ class RevalidateCache extends AssetCache {
 		copies.forget(server, path, forgotten, failed);
 
 	function listCopies(server:ServerSource, directory:String, listed:Array<String>->Void, failed:String->Void):Void
-		copies.listCopies(server, directory, listed, failed);
+		copies.listServerCopies(server, directory, listed, failed);
 
 	function clearCopies(server:ServerSource, cleared:Void->Void, failed:String->Void):Void
 		copies.clearCopies(cleared, failed);

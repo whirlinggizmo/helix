@@ -78,9 +78,10 @@ haxelib git helix-raylib https://github.com/whirlinggizmo/helix main engines/ray
 
 Defines, set in the build's hxml:
 
-- `-D helix-raylib-asset-host=<url or directory>`: where the program's files come from, unless the program calls `SetAssetHost` or
-  the `asset_host` option gives one (the Assets extra). A URL is fetched from, natively and in a page; a directory is relative to the
-  program's own. Default `../web` natively, the page's own directory in a page.
+- `-D helix-raylib-asset-hosts=<urls and directories>`: where the program's files come from, unless the program calls `SetAssetHosts`
+  or the `asset_hosts` option names the hosts (the Assets extra). The list is separated by commas, in the order the hosts are asked.
+  A URL is fetched from, natively and in a page; a directory is relative to the program's own. Default `../web` natively, the page's
+  own directory in a page.
 - `-D helix-raylib-custom-frame-control`: raylib's `SUPPORT_CUSTOM_FRAME_CONTROL`. `EndDrawing` only draws. The program calls
   `SwapScreenBuffer`, `WaitTime` and `PollInputEvents`.
 - `-D helix-raylib-portable-sys`: gives a page a `Sys` (the program's options from the URL's query, the console and the clock) and

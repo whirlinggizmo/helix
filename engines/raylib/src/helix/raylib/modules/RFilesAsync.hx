@@ -413,7 +413,8 @@ class RFilesAsync {
 	}
 
 	// A file's size and when it was last written, by its key: of the data directory's, then of the dropped files, else natively of the
-	// program's files. A null size when there is none, at a later poll; a page's own files are on its server, whose times aren't known.
+	// first directory host with it. A null size when there is none, at a later poll; a page's own files are on its servers, whose times
+	// aren't known.
 	static function infoOf(path:String, answer:(size:Null<Int>, modified:Float) -> Void):Void {
 		Runtime.loading();
 		if (!helix.platform.FilePath.isValid(path)) {
@@ -429,7 +430,14 @@ class RFilesAsync {
 				Runtime.log(LOG_WARNING, 'FILEIO: [$path] $error');
 				answer(null, 0);
 			});
-		} from(Runtime.data, () -> from(isDropped(path) ? Runtime.memory : Runtime.shipped, () -> answer(null, 0)));
+		}
+		function shipped(i:Int):Void {
+			if (i == Runtime.shipped.length)
+				answer(null, 0);
+			else
+				from(Runtime.shipped[i], () -> shipped(i + 1));
+		}
+		from(Runtime.data, () -> if (isDropped(path)) from(Runtime.memory, () -> answer(null, 0)) else shipped(0));
 	}
 
 	/** Asynchronously writes bytes as a C header, the text raylib's `ExportDataAsCode` writes. See

@@ -73,6 +73,7 @@ assets.poll();
 ```haxe
 function new(sources:Array<AssetSource>)
 static function join(from:String, path:String):String
+function setSources(sources:Array<AssetSource>):Void
 function read(path:String, read:haxe.io.Bytes -> Void, ?missing:() -> Void, ?failed:String -> Void):() -> Void
 function write(path:String, bytes:haxe.io.Bytes, ?written:() -> Void, ?failed:String -> Void):() -> Void
 function list(path:String, listed:Array<String> -> Void, ?failed:String -> Void):() -> Void
@@ -94,6 +95,10 @@ function dispose():Void
   - returns: The path to pass to `read`.
 
   `join("levels/1.json", "../custom/1.json")` returns `"levels/../custom/1.json"`, which reads `custom/1.json`.
+- `setSources`: Sets the sources, as a program does when a player turns a mod on. Every call made from now on asks them.
+  - `sources`: The places files are found, asked in order.
+
+  A call in flight is answered by the sources it was made over. Poll their HTTP clients and file systems until it is.
 - `read`: Reads a whole file.
   - `path`: The file's path: a name, a relative or absolute directory path, or a URL.
   - `read`: Receives the file's bytes.
@@ -176,6 +181,38 @@ function new(fileSystem:IFileSystem, ?writable:Bool = false)
 - `new`: Creates the source over a file system.
   - `fileSystem`: The file system the files are read from.
   - `writable`: Optional, false by default. Whether `Assets.write` writes files to it.
+
+## KeptCopies
+
+*class* in [`libs/services/src/helix/services/assets/KeptCopies.hx`](../src/helix/services/assets/KeptCopies.hx), `import helix.services.assets.KeptCopies;`
+
+Represents the copies a server's files are kept as in a file system, each with its record, which `RevalidateCache`, `TrustCache` and `ManifestCache` keep their copies in.
+
+A program constructs one over a cache's file system to list or empty every server's copies without a server source, as a settings screen showing the cache does. Several caches can keep their copies in one file system, and emptying one empties them all.
+
+A server's copies are under a directory of its own: the bytes at `files/<path>`, the record at `records/<path>`, and the server's URL in `url`. The pair is kept in an order that never leaves a record beside bytes it doesn't describe: a replacement deletes the old record, writes the bytes, then writes the record; a removal deletes the record, then the bytes. A copy is read only with its record, and only when it has the record's byte count; otherwise both are deleted and the file is downloaded again.
+
+```haxe
+function new(fileSystem:IFileSystem)
+final fileSystem:IFileSystem
+function listCopies(directory:String, listed:(Array<{url:String, path:String}>) -> Void, failed:String -> Void):Void
+function clearCopies(cleared:() -> Void, failed:String -> Void):Void
+```
+
+- `new`: Creates the copies over a file system used for nothing else.
+  - `fileSystem`: Where the copies are kept.
+- `fileSystem`: Gets the file system the copies are kept in.
+- `listCopies`: Lists every server's copies under a directory, its subdirectories' too, whatever server sources use the file system now.
+  - `directory`: The directory, from each server's root. "" lists every copy.
+  - `listed`: Receives the copies, sorted by path and then by URL. Each is its path from its server's root, and the URL it was downloaded from. The URL is the path alone when the server's URL isn't recorded.
+  - `failed`: Receives why the copies can't be listed.
+
+  It answers in the file system's polls.
+- `clearCopies`: Deletes every server's copies and records.
+  - `cleared`: Called once the file system is empty.
+  - `failed`: Receives why the copies can't be deleted.
+
+  It answers in the file system's polls.
 
 ## ManifestCache
 

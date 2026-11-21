@@ -4,7 +4,7 @@
     python3 score_page.py <entrant directory>... --helix <checkout> [--query QUERY]... [--viewport WIDTHxHEIGHT]
 
 Each entrant is copied to <entrant>.page (without native/, the entrant's own directory left as it was), built for JS from its own
-build.hxml, less its -cpp line and its helix-raylib-asset-host define, against --helix's haxelib, and served whole beside an index.html
+build.hxml, less its -cpp line and its helix-raylib-asset-hosts define, against --helix's haxelib, and served whole beside an index.html
 holding the canvas. It is run in headless Chromium on the GPU (this repository's tools/capture_page.cjs and Playwright) once with no query
 (the title) and once with each --query (by default ?enemies=200&seed=1), each writing page-<n>.png in the copy and printing the page's
 errors. The viewport is 800 x 600, or --viewport's size. A build that fails prints the compiler's messages."""
@@ -28,7 +28,7 @@ def build(entrant, helix, defines=(), suffix='.page'):
         shutil.rmtree(page)
     shutil.copytree(entrant, page, ignore=shutil.ignore_patterns('native'))
     lines = [line for line in (entrant / 'build.hxml').read_text(encoding='utf-8').splitlines()
-             if not line.startswith('-cpp') and 'helix-raylib-asset-host' not in line]
+             if not line.startswith('-cpp') and 'helix-raylib-asset-hosts' not in line]
     (page / 'page.hxml').write_text('\n'.join(lines + list(defines) + ['-js app.js', '-D js-es=6']) + '\n', encoding='utf-8')
     (page / 'index.html').write_text(PAGE, encoding='utf-8')
     built = subprocess.run(['haxe', 'page.hxml'], cwd=page, env=dict(os.environ, HAXELIB_PATH=str(helix / 'build/haxelib')),

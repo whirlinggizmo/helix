@@ -35,30 +35,58 @@ class Assets {
 	#if !macro
 	// ---- assets: the asset host, and files ensured ahead of raylib's loads (raylib/RAssets.hx) ----
 
-	/** Sets where the program's assets come from, unless the option `asset_host` names a host. Assets ensured before the call stay
-		ensured.
+	/** Sets where the program's assets come from, unless the option `asset_hosts` names the hosts. An asset is read from the first host
+		with a file at its path. Assets ensured before the call are released, and a load after the call reads the new hosts. An asset
+		being ensured or loaded during the call is read from the hosts set before it.
 
-		The host is the first of these that is set: the option `asset_host` (`--asset_host=https://example.com/game/` on the command
-		line, the environment variable HELIX_ASSET_HOST, `?asset_host=...` in a page's query), this call, the build's define
-		(`-D helix-raylib-asset-host=...`), and the default: natively `../web` beside the program's directory, in a page the page's own.
+		Each host is a URL (`https://...`, `http://...`) or a directory, relative to the program's directory when relative. A URL's assets
+		are fetched over HTTP and stored in the program's cache, and a changed file on the server replaces its cached copy. Natively a
+		directory's assets are read in place. In a page a directory is relative to the page's, and its assets are fetched as a URL's are.
 
-		A URL's assets are fetched over HTTP and kept in the program's cache, natively and in a page alike. A directory's are read in place.
+		A directory before a URL overrides the URL's files, as a mod does. Natively a directory after a URL is the URL's shipped files: a
+		shipped file the server's manifest lists at the same hash is read in place, and only a changed file is downloaded. The manifests
+		are written as the program builds, by `helix.services.tools.AssetManifests.write` over the shipped directory and the served one.
 
-		Every asset is read from the host, as a web server reads a file from its own root: a name starting with `/` from the host's root,
-		`.` and `..` followed, and nothing above the host. A name whose `..` climbs above it fails as a missing file does.
+		An asset's path is relative to each host, with `.` and `..` followed. An absolute path or a URL is read from the host it is
+		under. A path outside every host is refused as an invalid file path.
 
-		@param host  A URL (`https://...`, `http://...`), or a directory, relative to the program's directory when relative. */
-	public static inline function SetAssetHost(host:String):Void
-		RAssets.SetAssetHost(host);
+		The hosts are the first of these that is set: the option `asset_hosts`, a list separated by commas
+		(`--asset_hosts=mods/bigheads/,https://example.com/game/` on the command line, the environment variable HELIX_ASSET_HOSTS,
+		`?asset_hosts=...` in a page's query), this call, the build's define (`-D helix-raylib-asset-hosts=...`), and the default:
+		natively `../web` beside the program's directory, in a page the page's own directory.
 
-	/** Returns the asset host in use: the option's, `SetAssetHost`'s, the build's define's, or the default.
+		@param hosts  The hosts, in the order they are asked. */
+	public static inline function SetAssetHosts(hosts:Array<String>):Void
+		RAssets.SetAssetHosts(hosts);
 
-		@return  The host. */
-	public static inline function GetAssetHost():String
-		return RAssets.GetAssetHost();
+	/** Returns the asset hosts in use, in the order they are asked.
+
+		@param out  Optional. The array to fill and return.
+		@return  The hosts. */
+	public static inline function GetAssetHosts(?out:Array<String>):Array<String>
+		return RAssets.GetAssetHosts(out);
+
+	/** Asynchronously lists the assets stored in the program's cache under a directory. The cache contains every asset fetched from a
+		URL host, in this run or an earlier one, whatever the hosts in use now. Natively a host's manifests are listed among them.
+
+		@param path  The directory, relative to each host. "" lists the whole cache.
+		@param listed  Called with each cached asset's file name, relative to its host, and its host's URL.
+		@param failed  Optional. Called with the reason the cache can't be listed, in place of `listed`. When omitted, the reason is
+			logged. */
+	public static inline function ListAssetCacheAsync(path:String, listed:Array<{fileName:String, host:String}>->Void, ?failed:String->Void):Void
+		RAssets.ListAssetCacheAsync(path, listed, failed);
+
+	/** Asynchronously deletes every asset stored in the program's cache, whatever the hosts in use now. Ensured assets stay ensured, and
+		the files the program saved are untouched. A later ensure of a deleted asset fetches it again.
+
+		@param cleared  Optional. Called once the cache is empty.
+		@param failed  Optional. Called with the reason the cache can't be emptied, in place of `cleared`. When omitted, the reason is
+			logged. */
+	public static inline function ClearAssetCacheAsync(?cleared:Void->Void, ?failed:String->Void):Void
+		RAssets.ClearAssetCacheAsync(cleared, failed);
 
 	/** Asynchronously ensures an asset is available for raylib's `Load*` functions. Ensuring an asset fetches its bytes (if absent) from
-		the asset host into the program's cache, then decodes the asset into memory. See `EnsureAssetsAsync` for ensuring several assets
+		its asset host into the program's cache, then decodes the asset into memory. See `EnsureAssetsAsync` for ensuring several assets
 		in parallel.
 
 		Each kind of asset is decoded to:
@@ -75,7 +103,7 @@ class Assets {
 		Ensuring an asset already ensured doesn't refetch it, and the `ensured` callback is still called. Sequential `EnsureAssetAsync`
 		calls fetch and decode their assets in parallel.
 
-		@param fileName  The asset's file name, relative to the asset host.
+		@param fileName  The asset's file name, relative to the asset hosts.
 		@param ensured  Called once the asset is ensured.
 		@param failed  Optional. Called with the reason the asset can't be ensured, in place of `ensured`. When omitted, the reason is
 			logged. */
@@ -84,7 +112,7 @@ class Assets {
 
 	/** Asynchronously ensures several assets in parallel, each as `EnsureAssetAsync` does.
 
-		@param fileNames  The assets' file names, relative to the asset host.
+		@param fileNames  The assets' file names, relative to the asset hosts.
 		@param ensured  Called once every asset is ensured.
 		@param failed  Optional. Called once, with the reason an asset can't be ensured, in place of `ensured`. When omitted, the reason
 			is logged. The assets already ensured stay ensured.
@@ -95,7 +123,7 @@ class Assets {
 
 	/** Returns whether an asset has been ensured in this run (`EnsureAssetAsync`).
 
-		@param fileName  The asset's file name, relative to the asset host.
+		@param fileName  The asset's file name, relative to the asset hosts.
 		@return  True when the asset has been ensured. */
 	public static inline function IsAssetEnsured(fileName:String):Bool
 		return RAssets.IsAssetEnsured(fileName);
@@ -106,13 +134,13 @@ class Assets {
 
 		A program releases a level's assets when the player leaves the level.
 
-		@param fileName  The asset's file name, relative to the asset host. */
+		@param fileName  The asset's file name, relative to the asset hosts. */
 	public static inline function ReleaseAsset(fileName:String):Void
 		RAssets.ReleaseAsset(fileName);
 
 	/** Releases several assets, each as `ReleaseAsset` does.
 
-		@param fileNames  The assets' file names, relative to the asset host. */
+		@param fileNames  The assets' file names, relative to the asset hosts. */
 	public static inline function ReleaseAssets(fileNames:Array<String>):Void
 		RAssets.ReleaseAssets(fileNames);
 	#end

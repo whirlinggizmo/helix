@@ -9,6 +9,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
   - [AssetSource](assets.md#assetsource)
   - [Assets](assets.md#assets)
   - [FileSystemSource](assets.md#filesystemsource)
+  - [KeptCopies](assets.md#keptcopies)
   - [ManifestCache](assets.md#manifestcache)
   - [ManifestCacheOptions](assets.md#manifestcacheoptions)
   - [MemoryCache](assets.md#memorycache)

@@ -2,15 +2,17 @@
 """Checks helix-raylib in a page, where only a browser answers: each page test in engines/raylib/tests/page (a main class of its own,
 built with helix-raylib for the page beside an index.html holding the canvas) runs in Chromium (tools/capture_page.cjs), headless or with
 --headed in its window on this machine's display, and
-leaves {passed, checks, failures} in window.helixResult. A test's check.json, when there is one, names points of the page's screenshot
-and the colors expected there, each within a tolerance per channel, as tools/test_platform.py checks an example's. Exits 1 on any
-failure.
+leaves {passed, checks, failures} in window.helixResult. A test's .files directory, when there is one, is served beside the page. A
+test's check.json, when there is one, names points of the page's screenshot and the colors expected there, each within a tolerance per
+channel, as tools/test_platform.py checks an example's, and the page's errors it expects (errors), each a part of an error's text. Any
+other error of the page fails it. Exits 1 on any failure.
 
     python3 tools/test_raylib_pages.py [--browser BROWSER] [--headless | --headed] [TEST ...]
 
 BROWSER is a Chromium to run, or "" (the default) for Playwright's own. The tests default to all of them."""
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -35,6 +37,10 @@ def run(name, browser):
     web = OUT / name
     web.mkdir(parents=True, exist_ok=True)
     (web / 'index.html').write_text(PAGE, encoding='utf-8')
+    if (TESTS / f'{name}.files').is_dir():
+        shutil.copytree(TESTS / f'{name}.files', web, dirs_exist_ok=True)
+    expected = TESTS / f'{name}.check.json'
+    expectations = json.loads(expected.read_text(encoding='utf-8')) if expected.is_file() else {}
     built = subprocess.run(['haxe', '-lib', 'helix-raylib', '-cp', str(TESTS), '-main', name, '-D', 'helix-company=helix', '-D', f'helix-product={name}', '-js', str(web / 'app.js'), '-D', 'js-es=6', '-D', 'helix-raylib-portable-sys'],
                            cwd=ROOT, env=env, capture_output=True, text=True, encoding='utf-8')
     if built.returncode:
@@ -46,15 +52,18 @@ def run(name, browser):
     if ran.returncode:
         return [f'browser run failed\n{ran.stdout}{ran.stderr}']
     printed = json.loads(ran.stdout)
-    if printed['errors']:
-        return [f'page errors: {printed["errors"]}']
+    errors = [e for e in printed['errors'] if not any(part in e for part in expectations.get('errors', []))]
+    if errors:
+        return [f'page errors: {errors}']
+    unseen = [part for part in expectations.get('errors', []) if not any(part in e for e in printed['errors'])]
+    if unseen:
+        return [f'the errors expected of the page never came: {unseen}']
     result = printed['result']
     if result is None:
         return ['no result']
     problems = list(result['failures'])
-    expected = TESTS / f'{name}.check.json'
-    if expected.is_file():
-        problems += check_pixels(screenshot, json.loads(expected.read_text(encoding='utf-8')))
+    if 'points' in expectations:
+        problems += check_pixels(screenshot, expectations)
     if not problems:
         print(f'{name}: {result["checks"]} checks passed in the page', flush=True)
     return problems

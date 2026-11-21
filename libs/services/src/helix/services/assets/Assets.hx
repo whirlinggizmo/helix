@@ -69,12 +69,14 @@ import helix.platform.StreamSource;
 	assets.poll();
 	``` */
 class Assets implements IPollable {
-	final sources:Array<AssetSource>;
+	var sources:Array<AssetSource>;
 	final requests:Array<AssetRequest> = [];
 	// What answers at the next poll.
 	final queue:Array<Void->Void> = [];
 	// The functions watching each path, as passed, in the order added.
 	final watches = new Map<String, Array<Bytes->Void>>();
+	// The source each download still read was located in, whatever the sources are now.
+	final downloads = new Map<GrowingSource, AssetSource>();
 
 	/** Creates the assets over their sources, asked in order.
 
@@ -82,6 +84,14 @@ class Assets implements IPollable {
 	public function new(sources:Array<AssetSource>) {
 		this.sources = sources.copy();
 	}
+
+	/** Sets the sources, as a program does when a player turns a mod on. Every call made from now on asks them.
+
+		A call in flight is answered by the sources it was made over. Poll their HTTP clients and file systems until it is.
+
+		@param sources  The places files are found, asked in order. */
+	public function setSources(sources:Array<AssetSource>):Void
+		this.sources = sources.copy();
 
 	/** Returns the path a file names relative to itself, as a link in a page does: the path joined to the directory of the file
 		naming it. Its `.` and `..` are kept, for the sources to follow.
@@ -270,11 +280,19 @@ class Assets implements IPollable {
 		@return  The abort: nothing is called after it. */
 	public function locate(path:String, located:(source:StreamSource, release:Void->Void) -> Void, ?failed:String->Void):Void->Void {
 		var request = start(path, null, failed);
-		ask(request,
-			(source, name, next) -> source.locate(name, request, (stream, release) -> request.answer(() -> located(stream, release)), next, message -> {
-				request.failure = message;
-				next();
-			}));
+		ask(request, (source, name, next) -> source.locate(name, request, (stream, release) -> request.answer(() -> switch stream {
+			case Downloading(growing):
+				downloads.set(growing, source);
+				located(stream, () -> {
+					downloads.remove(growing);
+					release();
+				});
+			case _:
+				located(stream, release);
+		}), next, message -> {
+			request.failure = message;
+			next();
+		}));
 		return request.abort;
 	}
 
@@ -345,12 +363,8 @@ class Assets implements IPollable {
 	@:noCompletion
 	@:allow(helix.services.audio)
 	function tailOf(source:GrowingSource):Null<Bytes> {
-		for (s in sources) {
-			var tail = s.tailOf(source);
-			if (tail != null)
-				return tail;
-		}
-		return null;
+		var from = downloads.get(source);
+		return from == null ? null : from.tailOf(source);
 	}
 
 	function start(path:String, missing:Null<Void->Void>, failed:Null<String->Void>):AssetRequest {

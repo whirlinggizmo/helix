@@ -8,20 +8,73 @@ import helix.platform.IFileSystem;
 /** Represents the copies a server's files are kept as in a file system, each with its record, which `RevalidateCache`, `TrustCache` and
 	`ManifestCache` keep their copies in.
 
-	A server's copies are under a directory of its own: the bytes at `files/<path>`, the record at `records/<path>`. The pair is kept in an
-	order that never leaves a record beside bytes it doesn't describe: a replacement deletes the old record, writes the bytes, then writes
-	the record; a removal deletes the record, then the bytes. A copy is read only with its record, and only when it has the record's byte
-	count; otherwise both are deleted and the file is downloaded again. */
-@:noCompletion
+	A program constructs one over a cache's file system to list or empty every server's copies without a server source, as a settings
+	screen showing the cache does. Several caches can keep their copies in one file system, and emptying one empties them all.
+
+	A server's copies are under a directory of its own: the bytes at `files/<path>`, the record at `records/<path>`, and the server's URL
+	in `url`. The pair is kept in an order that never leaves a record beside bytes it doesn't describe: a replacement deletes the old
+	record, writes the bytes, then writes the record; a removal deletes the record, then the bytes. A copy is read only with its record,
+	and only when it has the record's byte count; otherwise both are deleted and the file is downloaded again. */
 @:allow(helix.services.assets)
 class KeptCopies {
 	/** Gets the file system the copies are kept in. */
 	public final fileSystem:IFileSystem;
 
-	/** Creates the copies over a file system used for nothing else. */
+	// The servers' directories whose URL is being written.
+	final naming = new Map<String, Bool>();
+
+	/** Creates the copies over a file system used for nothing else.
+
+		@param fileSystem  Where the copies are kept. */
 	public function new(fileSystem:IFileSystem) {
 		this.fileSystem = fileSystem;
 	}
+
+	/** Lists every server's copies under a directory, its subdirectories' too, whatever server sources use the file system now.
+
+		It answers in the file system's polls.
+
+		@param directory  The directory, from each server's root. "" lists every copy.
+		@param listed  Receives the copies, sorted by path and then by URL. Each is its path from its server's root, and the URL it was
+			downloaded from. The URL is the path alone when the server's URL isn't recorded.
+		@param failed  Receives why the copies can't be listed. */
+	public function listCopies(directory:String, listed:Array<{path:String, url:String}>->Void, failed:String->Void):Void {
+		var copies:Array<{path:String, url:String}> = [], left = 1, failure:Null<String> = null;
+		function one()
+			if (--left == 0) {
+				copies.sort((a, b) -> a.path != b.path ? Reflect.compare(a.path, b.path) : Reflect.compare(a.url, b.url));
+				failure == null ? listed(copies) : failed(failure);
+			}
+		function fail(message:String) {
+			if (failure == null)
+				failure = message;
+			one();
+		}
+		fileSystem.list("", names -> {
+			for (name in names)
+				if (StringTools.startsWith(name, "server-") && StringTools.endsWith(name, "/")) {
+					var server = name.substr(0, name.length - 1);
+					function walk(url:String)
+						listUnder('$server/files', directory, paths -> {
+							for (path in paths)
+								copies.push({path: path, url: url + path});
+							one();
+						}, fail);
+					left++;
+					fileSystem.read('$server/url', 1 << 16, bytes -> walk(bytes.toString()), () -> walk(""), _ -> walk(""));
+				}
+			one();
+		}, one, fail);
+	}
+
+	/** Deletes every server's copies and records.
+
+		It answers in the file system's polls.
+
+		@param cleared  Called once the file system is empty.
+		@param failed  Receives why the copies can't be deleted. */
+	public function clearCopies(cleared:Void->Void, failed:String->Void):Void
+		fileSystem.deleteFiles(cleared, failed);
 
 	/** Decides as `RevalidateCache` does, or as `TrustCache` does when trusted: a copy used while fresh (or always, trusted), asked about
 		otherwise, and downloaded when there's none. */
@@ -86,6 +139,14 @@ class KeptCopies {
 	}
 
 	function keep(server:ServerSource, path:String, bytes:Bytes, record:CopyRecord, replacing:Bool, kept:Void->Void, failed:String->Void):Void {
+		// With each copy, so the URL is there again after the file system is emptied, by these copies or by others over it.
+		if (!naming.exists(server.directory)) {
+			naming.set(server.directory, true);
+			fileSystem.write('${server.directory}/url', Bytes.ofString(server.base), () -> naming.remove(server.directory), message -> {
+				naming.remove(server.directory);
+				Log.warn('${server.base}\'s URL can\'t be kept: $message', "assets");
+			});
+		}
 		function write()
 			fileSystem.write(filePath(server, path), bytes, () -> {
 				writeRecord(server, path, record);
@@ -123,13 +184,17 @@ class KeptCopies {
 			one();
 		}, deleted, _ -> deleted());
 
-	function listCopies(server:ServerSource, directory:String, listed:Array<String>->Void, failed:String->Void):Void {
+	function listServerCopies(server:ServerSource, directory:String, listed:Array<String>->Void, failed:String->Void):Void
+		listUnder('${server.directory}/files', directory, listed, failed);
+
+	// The paths of the files under a directory of a root, its subdirectories' too, from the root; none when the directory isn't there.
+	function listUnder(root:String, directory:String, listed:Array<String>->Void, failed:String->Void):Void {
 		var paths = [], left = 1, failure:Null<String> = null;
 		function one()
 			if (--left == 0)
 				failure == null ? listed(paths) : failed(failure);
 		function walk(under:String)
-			fileSystem.list('${server.directory}/files' + (under == "" ? "" : '/$under'), names -> {
+			fileSystem.list(root + (under == "" ? "" : '/$under'), names -> {
 				for (name in names) {
 					var path = under == "" ? name : '$under/$name';
 					if (StringTools.endsWith(name, "/")) {
@@ -146,9 +211,6 @@ class KeptCopies {
 			});
 		walk(directory);
 	}
-
-	function clearCopies(cleared:Void->Void, failed:String->Void):Void
-		fileSystem.deleteFiles(cleared, failed);
 
 	static function recordPath(server:ServerSource, path:String):String
 		return '${server.directory}/records/$path';

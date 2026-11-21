@@ -5,6 +5,7 @@ import helix.platform.GrowingSource;
 import helix.services.assets.AssetSource;
 import helix.services.assets.Assets;
 import helix.services.assets.FileSystemSource;
+import helix.services.assets.KeptCopies;
 import helix.services.assets.ManifestCache;
 import helix.services.assets.MemoryCache;
 import helix.services.assets.RevalidateCache;
@@ -18,7 +19,10 @@ import helix.services.assets.TrustCache;
 	a record without bytes and a record of an older shape all downloaded again; the manifests' tree deciding without asking, a listed
 	download hashed before it is kept, a file a manifest leaves out always asked about, the copies of names a newer manifest drops
 	deleted when it arrives; shipped files read in place; `deleteCopy`; located files; natively a server's stream downloaded in two
-	parts, its last 64 KiB first; aborts and dispose; paths resolved against each source's root, writes, lists and the cache's list. */
+	parts, its last 64 KiB first; aborts and dispose; paths resolved against each source's root, writes, lists and the cache's list;
+	`KeptCopies` over a file system two servers' caches share, listing every server's copies with their URLs, one whose URL isn't
+	recorded by its path alone, and emptying them all, the URL recorded again with the next copy; and the sources set, a read in flight
+	answered by the sources it was made over, a read after by the new ones, and natively a located download still read to its end. */
 @:access(helix.services.assets.Assets)
 class AssetsTests {
 	static var checks = 0;
@@ -227,12 +231,13 @@ class AssetsTests {
 		http.routes.set(url + "a.txt", {status: 200, headers: ["etag" => '"a1"'], body: text("a one")});
 		var ops = cache.ops.length;
 		load(assets, "a.txt");
-		check(cache.ops.slice(ops).join(",") == 'write $d/files/a.txt,write $d/records/a.txt', "a first download: the bytes, then the record");
+		check(cache.ops.slice(ops).join(",") == 'write $d/url,write $d/files/a.txt,write $d/records/a.txt',
+			"a first download: the server's URL, the bytes, then the record: " + cache.ops.slice(ops));
 		http.routes.set(url + "a.txt", {status: 200, headers: ["etag" => '"a2"'], body: text("a two!")});
 		ops = cache.ops.length;
 		check(load(assets, "a.txt").bytes == "a two!", "a changed file: the new bytes");
-		check(cache.ops.slice(ops).join(",") == 'delete $d/records/a.txt,write $d/files/a.txt,write $d/records/a.txt',
-			"a replacement: the old record deleted, the bytes written, the record last");
+		check(cache.ops.slice(ops).join(",") == 'write $d/url,delete $d/records/a.txt,write $d/files/a.txt,write $d/records/a.txt',
+			"a replacement: the server's URL, the old record deleted, the bytes written, the record last: " + cache.ops.slice(ops));
 
 		// The record's write fails: no record is left beside the new bytes, and the next load downloads.
 		http.routes.set(url + "a.txt", {status: 200, headers: ["etag" => '"a3"'], body: text("a three")});
@@ -640,6 +645,79 @@ class AssetsTests {
 		held.listCache("", c -> copies = [for (copy in c) copy.path].join(","));
 		pump();
 		check(copies == "levels/a.txt", "a memory cache's copies listed");
+
+		// Two servers' caches over one file system: every copy listed and allGone without a server source.
+		var both = new FakeFileSystem(), mods = "https://mods.example/";
+		function pumpBoth()
+			for (_ in 0...4) {
+				both.poll();
+				pump();
+			}
+		http.routes.set(mods + "levels/a.txt", {status: 200, body: text("modded a")});
+		http.routes.set(mods + "skins/hat.png", {status: 200, body: text("hat")});
+		var modded = make([server(mods, new RevalidateCache(both))]);
+		var plain = make([server(base, new RevalidateCache(both))]);
+		modded.read("levels/a.txt", _ -> {});
+		modded.read("skins/hat.png", _ -> {});
+		plain.read("levels/a.txt", _ -> {});
+		pumpBoth();
+		var everything = new KeptCopies(both), all = null;
+		function listAll(directory:String):String {
+			all = null;
+			everything.listCopies(directory, c -> all = [for (copy in c) copy.path + " " + copy.url].join(","), m -> throw m);
+			check(all == null, "the copies listed later, not during the call");
+			pumpBoth();
+			return all;
+		}
+		check(listAll("") == 'levels/a.txt ${base}levels/a.txt,levels/a.txt ${mods}levels/a.txt,skins/hat.png ${mods}skins/hat.png',
+			"every server's copies listed with their URLs, by path then URL: " + all);
+		check(listAll("skins") == 'skins/hat.png ${mods}skins/hat.png', "a directory's copies: " + all);
+		check(listAll("nowhere") == "", "a directory no server has: no copies");
+		both.files.remove('${dir(mods)}/url');
+		check(listAll("skins") == "skins/hat.png skins/hat.png", "a server whose URL isn't recorded: its copy's path alone: " + all);
+		var allGone = false;
+		everything.clearCopies(() -> allGone = true, m -> throw m);
+		pumpBoth();
+		check(allGone && Lambda.count(both.files) == 0 && listAll("") == "", "every server's copies and records deleted");
+		var again:Null<String> = null;
+		modded.read("skins/hat.png", bytes -> again = bytes.toString());
+		pumpBoth();
+		check(again == "hat", "a deleted copy downloaded again: " + again);
+		check(listAll("") == 'skins/hat.png ${mods}skins/hat.png', "its server's URL recorded again with it: " + all);
+
+		// The sources set: a call in flight answered by the sources it was made over, a call after it by the new ones.
+		var earlier = new FakeFileSystem(), later = new FakeFileSystem();
+		earlier.files.set("a.txt", text("earlier"));
+		later.files.set("a.txt", text("later"));
+		function pumpSet()
+			for (_ in 0...4) {
+				earlier.poll();
+				later.poll();
+				pumpBoth();
+			}
+		var switched = make([new FileSystemSource(earlier)]),
+			inFlight:Null<String> = null;
+		switched.read("a.txt", bytes -> inFlight = bytes.toString());
+		switched.setSources([new FileSystemSource(later)]);
+		pumpSet();
+		check(inFlight == "earlier", "a read in flight as the sources are set: answered by the sources it was made over: " + inFlight);
+		var afterSet:Null<String> = null;
+		switched.read("a.txt", bytes -> afterSet = bytes.toString());
+		pumpSet();
+		check(afterSet == "later", "a read after the sources are set: answered by the new ones: " + afterSet);
+		#if !js
+		// Natively, a download located before the sources are set is still read to its end.
+		http.routes.set(mods + "tune.ogg", {status: 200, headers: ["last-modified" => "Fri, 30 Oct 2026 10:00:00 GMT"], body: Bytes.alloc(100000)});
+		var streaming = make([server(mods, new RevalidateCache(both))]),
+			tune:GrowingSource = null;
+		streaming.locate("tune.ogg", (s, _) -> tune = growing(s));
+		for (_ in 0...3)
+			both.poll();
+		http.poll();
+		streaming.setSources([]);
+		check(tune != null && streaming.tailOf(tune) != null, "a download located before the sources are set: its end still read");
+		pumpBoth();
+		#end
 
 		#if js
 		// In a page at https://example.com/game/, a source at "": a URL, a path from the server's root and a name each reach one watch.

@@ -1291,3 +1291,30 @@ Why things are the way they are, numbered, in order.
 
     Rejected: wording in the refusal naming `rlDrawRenderBatchActive`, which every program moved by the refusal would have to act
     on. Keeping the last frame so the first call works after `EndDrawing`, as 73 rejected.
+
+86. **A program's assets come from a list of hosts, asked in order.** It revises 74's "The asset host is the option `asset_host`".
+    `SetAssetHosts` and `GetAssetHosts` replace `SetAssetHost` and `GetAssetHost`, and the option, the environment variable and the
+    define are `asset_hosts`, HELIX_ASSET_HOSTS and `-D helix-raylib-asset-hosts`, each a list separated by commas. A host is a URL
+    or a directory. A URL's files are fetched and stored in the program's cache. Natively a directory's files are read in place, and
+    in a page a directory is fetched from the page's server. A directory before a URL overrides its files, as a mod does. Natively a
+    directory after a URL is the URL's shipped files, compared by the manifests (`ManifestCache`), so only a changed file is
+    downloaded. `ListAssetCacheAsync` and `ClearAssetCacheAsync` list and empty the cache of every URL host, whatever the hosts in
+    use.
+
+    One `Assets` serves the run. Setting the hosts sets its sources (`Assets.setSources`), so the sounds, the fonts, the images and
+    the models made over it read the new hosts. A call in flight is answered by the sources it was made over. `SetAssetHosts`
+    releases every file in memory, the ensured ones and the ones a load brought in, so a load after the call reads the new hosts.
+
+    Every URL host's copies are in one file system, natively `assets` under the cache directory. Each server's directory records
+    its URL beside its copies, written with each copy, so `KeptCopies` lists and empties the cache without a server source.
+
+    Why: one host can't serve a mod over a game, or a game whose shipped files a server updates. A list in order says both, and
+    says which file wins. The single host's setter made the assets again, which left the sounds and the fonts on the old ones,
+    lost the files handed in and dropped, and waited for ever at close on a save in flight.
+
+    What it costs: one small write with each copy stored, for the server's URL. Natively the cache's listing shows the manifests a
+    `ManifestCache` stored. A page with a directory before a URL asks the directory's server first and logs a 404 for each file
+    found only at the URL.
+
+    Rejected: one host with an overlay directory, which names two kinds of place for one idea. Making the assets again at each
+    change, for the reasons above. A pack of the shipped files in a page, deferred (ROADMAP).

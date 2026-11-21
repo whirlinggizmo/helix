@@ -76,6 +76,25 @@ class PlatformTests {
 		check(list("a.txt") == "missing" && list("nope") == "missing", "a file or nothing is no directory");
 		check(list("../x") == 'failed: Invalid file path: "../x" contains ".."', "an invalid directory fails, saying why");
 
+		// Writes at once into directories not yet made: each makes the directories above its file while the others make them too.
+		var problems:Array<String> = [];
+		for (round in 0...25) {
+			var left = 8;
+			for (i in 0...8)
+				files.write('fresh$round/a/b/c/d/$i.txt', haxe.io.Bytes.ofString("x"), () -> left--, why -> {
+					left--;
+					problems.push(why);
+				});
+			var until = Sys.time() + 10;
+			while (left > 0 && Sys.time() < until) {
+				files.poll();
+				Sys.sleep(.001);
+			}
+			if (left > 0)
+				problems.push('round $round: $left writes unanswered');
+		}
+		check(problems.length == 0, 'writes at once into directories not yet made: $problems');
+
 		// Links under the root: a path through one reaches its target, and deleteFiles deletes the links and keeps their targets.
 		var outside = "build/tests/platform-outside";
 		remove(outside);
