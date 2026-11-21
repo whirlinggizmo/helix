@@ -489,19 +489,21 @@ class Shadows {
 	}
 
 	/** Returns the shader the shadow pass draws through in a program's place, made with its first draw there: a compiled shader's
-		shadow variant, or for a built-in shader the default vertex stage's, with its skinned twin, which place a vertex as each of them
-		does. Its program is a twin of the program's (`Program.mirror`), written every uniform the program is, and writes depth alone.
+		shadow variant, or for a built-in shader the default vertex stage's (an instanced twin's own, `Program.casterShaders`), with its
+		skinned twin, which place a vertex as each of them does. Its program is a twin of the program's (`Program.mirror`), written every uniform the program is, and writes depth alone.
 
 		@param p  The program. */
 	public static function casterOf(p:Program):helix.raylib.Shader {
 		if (p.caster != null)
 			return p.caster;
 		var graphics = Runtime.graphics;
+		var own = p.casterShaders;
 		var caster = new Program(graphics,
-			p.casterSource != null ? new helix.services.shaders.Shader(p.casterSource, "shadow variant") : Defaults.shadowShader());
+			p.casterSource != null ? new helix.services.shaders.Shader(p.casterSource, "shadow variant") : own != null ? own[0] : Defaults.shadowShader());
 		caster.depthOnly = true;
+		caster.drawsInstances = p.drawsInstances;
 		if (p.casterSource == null) {
-			var skinned = new Program(graphics, Defaults.shadowSkinnedShader());
+			var skinned = new Program(graphics, own != null ? own[1] : Defaults.shadowSkinnedShader());
 			skinned.depthOnly = true;
 			caster.mirror(skinned);
 		}

@@ -71,6 +71,21 @@ class Program {
 	/** The shadow variant of a compiled shader (`CompileShaderFile`): its vertex stage writing depth alone, null for a built-in shader. */
 	public var casterSource:Null<helix.platform.ShaderSource>;
 
+	/** The shadow pass's vertex stages in this one's place, as built-in shaders: the caster's and its skinned twin's; null for raylib's
+		default vertex stage's (`Shadows`). An instanced twin's place each vertex by its instance. */
+	public var casterShaders:Null<Array<Shader>>;
+
+	/** Makes the program's instanced twin, drawn by `DrawMeshInstanced` in its place when it reads no instances' transforms itself
+		(`LoadLightingShader` and `LoadPbrShader`); null for a program without one. */
+	public var instancing:Null<Void->Program>;
+
+	/** The instanced twin as a shader (`instancing`), made by the first instanced draw through the program; null until then. */
+	public var instanced:Null<helix.raylib.Shader>;
+
+	/** Whether the program is an instanced twin (`instancing`), or its shadow caster, whose skinned twin (`twin`) reads the instances'
+		transforms too; unset, false. */
+	public var drawsInstances:Bool;
+
 	/** The shader the shadow pass draws through in this one's place, its program a twin of this one (`mirror`), made by the pass's first
 		draw through it (`Shadows`); null until then. */
 	public var caster:Null<helix.raylib.Shader>;

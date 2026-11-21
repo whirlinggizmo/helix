@@ -35,6 +35,8 @@ class RLighting {
 		var shader = @:privateAccess RModels.makeShader(Defaults.litShader());
 		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed (Skinning).
 		shader.program.mirror(new helix.raylib.internal.Program(helix.raylib.internal.Runtime.graphics, Defaults.litSkinnedShader()));
+		// Its instanced twin, drawn by DrawMeshInstanced.
+		shader.program.instancing = litInstanced;
 		startIntensities(shader);
 		helix.raylib.internal.Surfaces.install();
 		helix.raylib.internal.ShadowSlots.bind(shader.program, 0);
@@ -78,6 +80,8 @@ class RLighting {
 		var shader = @:privateAccess new Shader(p.handle, RModels.locations(p), p);
 		// Its skinned twin, drawn for a mesh UpdateModelAnimation posed (Skinning).
 		p.mirror(new helix.raylib.internal.LitProgram(helix.raylib.internal.Runtime.graphics, Defaults.pbrSkinnedShader()));
+		// Its instanced twin, drawn by DrawMeshInstanced.
+		p.instancing = pbrInstanced;
 		startIntensities(shader);
 		helix.raylib.internal.Surfaces.install();
 		helix.raylib.internal.ShadowSlots.bind(shader.program, 0);
@@ -165,6 +169,28 @@ class RLighting {
 	/** Ends the shadow pass `BeginShadowMode` began. The lit draws after it receive its shadows. */
 	static function EndShadowMode():Void {
 		helix.raylib.internal.Shadows.end();
+	}
+
+	// The lit shader's instanced twin (Program.instancing), with its skinned twin.
+	static function litInstanced():helix.raylib.internal.Program {
+		var graphics = helix.raylib.internal.Runtime.graphics;
+		return instancedTwin(new helix.raylib.internal.Program(graphics, Defaults.litInstancedShader()),
+			new helix.raylib.internal.Program(graphics, Defaults.litInstancedSkinnedShader()));
+	}
+
+	// The PBR shader's instanced twin (Program.instancing), with its skinned twin.
+	static function pbrInstanced():helix.raylib.internal.Program {
+		var graphics = helix.raylib.internal.Runtime.graphics;
+		return instancedTwin(new helix.raylib.internal.LitProgram(graphics, Defaults.pbrInstancedShader()),
+			new helix.raylib.internal.LitProgram(graphics, Defaults.pbrInstancedSkinnedShader()));
+	}
+
+	// An instanced twin, its skinned twin mirrored, and the shadow pass's vertex stages placing each vertex by its instance.
+	static function instancedTwin(p:helix.raylib.internal.Program, skinned:helix.raylib.internal.Program):helix.raylib.internal.Program {
+		p.mirror(skinned);
+		p.drawsInstances = true;
+		p.casterShaders = [Defaults.shadowInstancedShader(), Defaults.shadowInstancedSkinnedShader()];
+		return p;
 	}
 
 	// Starts each of a lit shader's lights at intensity 1, as lights.glsl's lights are until set: its MAX_LIGHTS, 8.

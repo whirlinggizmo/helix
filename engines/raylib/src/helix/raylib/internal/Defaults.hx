@@ -6,8 +6,8 @@ import haxe.macro.Expr;
 #end
 
 /** Holds helix-raylib's model shaders, compiled as the program builds from its files in `helix/raylib/shaders/`: raylib's default
-	(unlit), its variant reading a material's values, the lit one, the PBR one, each one's skinned twin, the shadow pass's, the sprite
-	shader, and the particle shaders. */
+	(unlit), its variant reading a material's values, the lit one, the PBR one, each one's skinned twin, the lit and PBR ones' instanced
+	twins, the shadow pass's, the sprite shader, and the particle shaders. */
 @:noCompletion
 class Defaults {
 	/** Returns raylib's default shader. */
@@ -104,5 +104,55 @@ class Defaults {
 		var pos = Context.currentPos();
 		return ShaderMacro.program("helix-raylib PBR vertex shader, skinned", ShaderMacro.builtIn("pbr_skinned.vs", pos), "helix-raylib PBR fragment shader",
 			ShaderMacro.builtIn("pbr.fs", pos), pos);
+	}
+
+	/** Returns the lit shader instanced: its vertex stage moving each vertex and normal by its instance's transform, its fragment stage
+		the lit one's. `DrawMeshInstanced` draws through it in place of the lit shader, so only a program that loads the lit shader and
+		draws instances links it. */
+	public static macro function litInstancedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("helix-raylib lit vertex shader, instanced", ShaderMacro.builtIn("lit_instanced.vs", pos),
+			"helix-raylib lit fragment shader", ShaderMacro.builtIn("lit.fs", pos), pos);
+	}
+
+	/** Returns the lit shader instanced and skinned: its vertex stage moving each vertex and normal by its bones, then by its instance's
+		transform, its fragment stage the lit one's. */
+	public static macro function litInstancedSkinnedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("helix-raylib lit vertex shader, instanced and skinned", ShaderMacro.builtIn("lit_instanced_skinned.vs", pos),
+			"helix-raylib lit fragment shader", ShaderMacro.builtIn("lit.fs", pos), pos);
+	}
+
+	/** Returns the PBR shader instanced: its vertex stage moving each vertex, normal and tangent by its instance's transform, its
+		fragment stage the PBR one's. `DrawMeshInstanced` draws through it in place of the PBR shader, so only a program that loads the
+		PBR shader and draws instances links it. */
+	public static macro function pbrInstancedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("helix-raylib PBR vertex shader, instanced", ShaderMacro.builtIn("pbr_instanced.vs", pos),
+			"helix-raylib PBR fragment shader", ShaderMacro.builtIn("pbr.fs", pos), pos);
+	}
+
+	/** Returns the PBR shader instanced and skinned: its vertex stage moving each vertex, normal and tangent by its bones, then by its
+		instance's transform, its fragment stage the PBR one's. */
+	public static macro function pbrInstancedSkinnedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("helix-raylib PBR vertex shader, instanced and skinned", ShaderMacro.builtIn("pbr_instanced_skinned.vs", pos),
+			"helix-raylib PBR fragment shader", ShaderMacro.builtIn("pbr.fs", pos), pos);
+	}
+
+	/** Returns the shadow pass's shader for the lit and PBR shaders drawn instanced: raylib's default vertex stage moving each vertex by
+		its instance's transform, and the shadow fragment stage. */
+	public static macro function shadowInstancedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("raylib default vertex shader, instanced", ShaderMacro.builtIn("unlit_instanced.vs", pos),
+			"helix-raylib shadow fragment shader", ShaderMacro.builtIn("shadow_cut.fs", pos), pos);
+	}
+
+	/** Returns the shadow pass's shader for the lit and PBR shaders' posed meshes drawn instanced: raylib's default vertex stage moving
+		each vertex by its bones, then by its instance's transform, and the shadow fragment stage. */
+	public static macro function shadowInstancedSkinnedShader():ExprOf<helix.services.shaders.Shader> {
+		var pos = Context.currentPos();
+		return ShaderMacro.program("raylib default vertex shader, instanced and skinned", ShaderMacro.builtIn("unlit_instanced_skinned.vs", pos),
+			"helix-raylib shadow fragment shader", ShaderMacro.builtIn("shadow_cut.fs", pos), pos);
 	}
 }

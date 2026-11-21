@@ -142,8 +142,8 @@ class Skinning {
 		var frame = Runtime.frame;
 		var p = shader.program;
 		var locs = shader.locs;
-		// The default shader's skinned twin.
-		if (instances == 0) {
+		// The program's skinned twin, or the default shader's: drawn for instances only by an instanced twin's, which reads them too.
+		if (instances == 0 || p.drawsInstances) {
 			var twin = p.twin;
 			if (twin == null && p == frame.defaultProgram) {
 				twin = new Program(Runtime.graphics, Defaults.skinnedShader());

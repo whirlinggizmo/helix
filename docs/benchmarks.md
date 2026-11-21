@@ -152,7 +152,7 @@ before, so a rung's increment is what the feature costs. Every rung is a release
 JavaScript unminified, as Haxe alone writes it; sizes in KB.
 
 <!-- gen_sizes -->
-Measured from cd8a8f2 2026-11-20 with Haxe 4.3.7.
+Measured from 16fb6aa2 2026-11-21 with Haxe 4.3.7.
 
 ### helix-platform
 
@@ -200,14 +200,14 @@ Programs on helix-services and what it sits on (`libs/services/tests/sizes/`), e
 | 5-saves | a value loaded, set and written | 80.6 | 17.4 (15.2) | +3.4 |
 | 6-assets | a file loaded from a file system | 84.2 | 18.1 (15.8) | +0.7 |
 | 7-server | a server after the file system, its files downloaded and kept (RevalidateCache) | 106.5 | 23.1 (19.9) | +5.0 |
-| 8-audio | a sound loaded through the assets and played | 126.5 | 27.4 (23.5) | +4.2 |
+| 8-audio | a sound loaded through the assets and played | 126.4 | 27.4 (23.5) | +4.2 |
 | 9-manifest | the server's copies known by its manifests (ManifestCache) | 137.4 | 29.7 (25.5) | +2.3 |
 
 Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
 
 | package | 1-clear | 2-time | 3-config | 4-input | 5-saves | 6-assets | 7-server | 8-audio | 9-manifest |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| services/assets | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.8 | 13.9 | 13.9 | 23.6 |
+| services/assets | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.8 | 13.9 | 13.9 | 23.5 |
 | haxe metadata | 8.8 | 9.1 | 9.4 | 12.8 | 14.4 | 14.9 | 17.2 | 19.1 | 19.3 |
 | platform/graphics | 14.1 | 14.1 | 14.1 | 14.1 | 14.1 | 14.1 | 14.1 | 14.1 | 14.1 |
 | services/input | 0.0 | 0.0 | 0.0 | 10.3 | 10.3 | 10.3 | 10.3 | 10.3 | 10.3 |
@@ -242,7 +242,7 @@ Programs on helix-render and what it sits on (`libs/render/tests/sizes/`), each 
 | 2-sprites | sprites: a texture made from an image in memory, drawn turned by the 2D batch | 156.0 | 32.7 (28.0) | +10.9 |
 | 3-text | text: a TrueType font loaded from beside the page, rasterized by the page's canvas, measured and drawn, and wrapped in a layout | 229.6 | 49.7 (41.8) | +17.0 |
 | 4-shapes | shapes: lines, a polyline, rectangles rounded and not, circles, ellipses and polygons, filled and stroked | 244.6 | 53.0 (44.5) | +3.2 |
-| 5-mesh | 3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D | 359.4 | 75.1 (62.1) | +22.1 |
+| 5-mesh | 3D: a cube made in memory, drawn unlit through a camera by the 3D batch, over the 2D | 359.4 | 75.1 (62.0) | +22.1 |
 | 6-lit | light: the cube drawn lit, metallic-roughness, under a sun and an ambient light | 422.0 | 87.3 (70.0) | +12.2 |
 
 Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
@@ -305,45 +305,45 @@ Programs written in raylib on helix-raylib (`engines/raylib/tests/sizes/`), each
 | 1-window | a window cleared each frame: raylib's loop and frame, and what helix-raylib builds before main | 167.0 | 35.1 (29.7) |  |
 | 2-shapes | 2D shapes: a rectangle, a circle, a line and a triangle | 195.0 | 39.9 (33.6) | +4.8 |
 | 3-text | text in raylib's default font | 220.9 | 46.4 (38.8) | +6.5 |
-| 4-texture | a texture loaded with LoadTextureAsync and drawn | 273.2 | 57.8 (47.7) | +11.4 |
-| 5-cube | 3D: a cube made with GenMeshCube and LoadModelFromMesh, drawn with a camera | 324.5 | 68.4 (56.2) | +10.6 |
-| 6-model | a glTF model loaded with LoadModelAsync and drawn beside the cube | 401.3 | 84.7 (68.8) | +16.3 |
-| 7-skinned | the model's animations loaded with LoadModelAnimationsAsync and one played | 447.4 | 93.1 (75.4) | +8.4 |
-| 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from the Lighting extra's CreateLight | 467.9 | 97.1 (78.4) | +4.0 |
-| 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 492.9 | 102.3 (82.5) | +5.2 |
-| 10-game | a game: what a real game uses, its file formats one of each | 691.2 | 139.3 (112.0) | +37.0 |
-| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6 and helix.raylib.extras a program can call, and every file reader | 2035.1 | 356.1 (270.3) | +216.9 |
+| 4-texture | a texture loaded with LoadTextureAsync and drawn | 273.6 | 57.9 (47.9) | +11.5 |
+| 5-cube | 3D: a cube made with GenMeshCube and LoadModelFromMesh, drawn with a camera | 325.5 | 68.6 (56.3) | +10.7 |
+| 6-model | a glTF model loaded with LoadModelAsync and drawn beside the cube | 402.3 | 84.9 (69.0) | +16.3 |
+| 7-skinned | the model's animations loaded with LoadModelAnimationsAsync and one played | 448.4 | 93.4 (75.5) | +8.5 |
+| 8-lit | light: the model lit by raylib's examples' lighting shader, compiled ahead of time and loaded with LoadCompiledShaderAsync, and one light from the Lighting extra's CreateLight | 468.9 | 97.4 (78.6) | +4.0 |
+| 9-audio | audio: a sound loaded with LoadSoundAsync and played once it is loaded | 493.9 | 102.5 (82.8) | +5.1 |
+| 10-game | a game: what a real game uses, its file formats one of each | 692.2 | 139.5 (112.3) | +37.0 |
+| 11-everything | everything: every function of Raylib, Raymath, Rlgl, Raygui, Raylib6 and helix.raylib.extras a program can call, and every file reader | 2123.8 | 362.2 (271.5) | +222.7 |
 
 Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
 
 | package | 1-window | 2-shapes | 3-text | 4-texture | 5-cube | 6-model | 7-skinned | 8-lit | 9-audio | 10-game | 11-everything |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| raylib/RLighting | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 164.5 |
 | formats | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 24.8 | 24.8 | 24.8 | 24.8 | 42.7 | 128.0 |
 | raylib/RTextures | 0.0 | 0.0 | 6.2 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 8.7 | 12.5 | 114.6 |
 | math | 8.8 | 9.5 | 9.5 | 9.5 | 23.6 | 33.0 | 39.9 | 39.9 | 39.9 | 46.9 | 105.2 |
 | program | 0.6 | 1.0 | 1.1 | 1.4 | 1.8 | 2.1 | 2.5 | 2.8 | 3.2 | 8.0 | 104.5 |
 | raylib/RGuiControls | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 86.7 |
 | raylib/RCore | 1.9 | 1.9 | 1.9 | 2.9 | 4.2 | 4.2 | 4.2 | 4.2 | 4.2 | 18.1 | 85.2 |
-| raylib/RModels | 0.0 | 0.0 | 0.0 | 0.0 | 7.4 | 7.9 | 8.2 | 8.4 | 8.5 | 12.8 | 81.0 |
-| raylib/RLighting | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 79.6 |
+| raylib/RModels | 0.0 | 0.0 | 0.0 | 0.0 | 7.5 | 7.9 | 8.2 | 8.5 | 8.5 | 12.8 | 81.5 |
 | raylib/RShapes | 0.0 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 8.6 | 4.5 | 64.1 |
-| raylib/Frame | 26.7 | 31.2 | 32.3 | 32.3 | 39.6 | 39.6 | 39.6 | 39.6 | 39.6 | 40.1 | 59.1 |
+| raylib/Frame | 26.7 | 31.2 | 32.3 | 32.3 | 39.8 | 39.8 | 39.8 | 39.8 | 39.8 | 40.2 | 59.2 |
 | raylib/RText | 0.0 | 0.0 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 4.7 | 16.9 | 53.6 |
 | platform/graphics | 46.5 | 47.4 | 47.4 | 47.4 | 47.4 | 47.4 | 47.9 | 47.9 | 47.9 | 48.9 | 52.2 |
-| haxe metadata | 13.3 | 14.1 | 14.8 | 19.5 | 20.5 | 23.6 | 24.0 | 24.6 | 26.7 | 34.0 | 48.4 |
+| haxe metadata | 13.3 | 14.1 | 14.8 | 19.5 | 20.5 | 23.6 | 24.0 | 24.6 | 26.7 | 34.0 | 49.6 |
 | raylib/EmitterDraws | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 41.3 |
 | raylib/Animations | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 2.4 | 20.8 | 20.8 | 20.8 | 24.4 | 41.0 |
-| raylib/Shadows | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 35.9 |
+| raylib/Shadows | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 36.0 |
 | services/input | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 15.5 | 33.1 |
-| services/shaders | 28.1 | 28.3 | 28.3 | 28.3 | 29.0 | 29.0 | 29.4 | 30.4 | 30.4 | 30.4 | 31.9 |
+| services/shaders | 28.1 | 28.3 | 28.3 | 28.3 | 29.0 | 29.0 | 29.4 | 30.4 | 30.4 | 30.4 | 32.7 |
 | raylib/RGui | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 31.1 |
 | raylib/RAudio | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 3.2 | 7.5 | 30.3 |
 | services/images | 0.0 | 0.2 | 0.2 | 1.9 | 1.9 | 1.9 | 1.9 | 1.9 | 1.9 | 3.2 | 28.6 |
 | platform/audio | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 9.0 | 24.8 | 26.4 |
-| raylib/Runtime | 9.1 | 9.6 | 9.7 | 15.0 | 15.0 | 15.3 | 15.3 | 15.3 | 15.3 | 21.2 | 25.4 |
+| raylib/Runtime | 9.1 | 9.6 | 9.7 | 15.4 | 15.4 | 15.7 | 15.7 | 15.7 | 15.7 | 21.7 | 25.8 |
 | std/haxe | 0.4 | 0.4 | 0.7 | 2.0 | 2.6 | 4.3 | 4.3 | 4.3 | 4.3 | 4.4 | 25.3 |
 | raylib/FrameConverter | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 24.3 | 25.2 |
-| raylib/Models | 0.0 | 0.0 | 0.0 | 0.0 | 8.4 | 21.0 | 21.1 | 21.1 | 21.1 | 21.7 | 24.1 |
+| raylib/Models | 0.0 | 0.0 | 0.0 | 0.0 | 8.6 | 21.1 | 21.3 | 21.3 | 21.3 | 21.8 | 24.2 |
 | raylib/Emitters | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 24.0 |
 | raylib | 0.0 | 0.8 | 1.4 | 1.5 | 5.9 | 6.6 | 6.9 | 7.2 | 7.5 | 9.3 | 22.8 |
 | geometry | 0.0 | 0.0 | 0.0 | 0.0 | 1.3 | 8.3 | 8.3 | 8.3 | 8.3 | 9.6 | 22.6 |
@@ -351,8 +351,8 @@ Each rung's JavaScript by package, raw KB, from its source map, a line's start (
 | raylib/Automation | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 18.7 |
 | raylib/RDebug | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 18.2 |
 | services/assets | 0.0 | 0.0 | 0.0 | 13.9 | 13.9 | 13.9 | 13.9 | 13.9 | 13.9 | 18.0 | 18.0 |
-| raylib/RFilesAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.4 | 17.5 |
-| raylib/Textures | 0.5 | 4.5 | 7.9 | 9.4 | 10.7 | 12.6 | 12.6 | 13.0 | 13.0 | 13.1 | 17.5 |
+| raylib/Textures | 0.5 | 4.5 | 7.9 | 9.4 | 10.9 | 12.8 | 12.8 | 13.1 | 13.1 | 13.3 | 17.7 |
+| raylib/RFilesAsync | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 1.4 | 17.6 |
 | raylib/ParShapes | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 17.4 |
 | raylib/RTexturesAsync | 0.0 | 0.0 | 0.0 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 0.4 | 2.7 | 16.4 |
 | raylib/RRlgl | 0.0 | 3.0 | 3.0 | 3.0 | 3.1 | 3.1 | 3.1 | 3.1 | 3.1 | 5.9 | 16.1 |

@@ -916,7 +916,8 @@ class RModels {
 
 		A mesh posed by `UpdateModelAnimation` draws in that pose through a shader that includes `<helix/raylib/shaders/skinning.glsl>`.
 
-		Draws nothing, with a warning, when the shader has no `mat4` attribute there.
+		`LoadLightingShader`'s and `LoadPbrShader`'s shaders place each instance themselves, lit, posed and casting shadows as a mesh drawn
+		alone is. Any other shader draws nothing, with a warning, when it has no `mat4` attribute there.
 
 		Sets `mvp` to the camera's alone and `matNormal` to the identity.
 
@@ -932,12 +933,22 @@ class RModels {
 		if (count <= 0)
 			return;
 		var shader = material.shader == null || material.shader.program == null ? defaultShader() : material.shader;
-		var slot = shader.locs[SHADER_LOC_MATRIX_MODEL],
-			names = shader.program.attributes;
-		if (slot < 0 || slot + 4 > names.length || names[slot] == "" || names[slot + 1] != "") {
-			Runtime.log(LOG_WARNING,
-				'SHADER: [ID ${shader.id}] DrawMeshInstanced: no mat4 attribute at SHADER_LOC_MATRIX_MODEL for the instances\' transforms');
-			return;
+		if (!readsInstances(shader)) {
+			// The lit and PBR shaders' instanced twin, made with their first instanced draw.
+			var p = shader.program;
+			if (p.instancing == null) {
+				Runtime.log(LOG_WARNING,
+					'SHADER: [ID ${shader.id}] DrawMeshInstanced: no mat4 attribute at SHADER_LOC_MATRIX_MODEL for the instances\' transforms');
+				return;
+			}
+			if (p.instanced == null) {
+				var twin = p.instancing();
+				p.mirror(twin);
+				var locs = locations(twin);
+				locs[SHADER_LOC_MATRIX_MODEL] = twin.attributes.indexOf("instanceTransform");
+				p.instanced = new Shader(twin.handle, locs, twin);
+			}
+			shader = p.instanced;
 		}
 		var bytes = haxe.io.Bytes.alloc(count * 64);
 		var numbers = [];
@@ -948,7 +959,14 @@ class RModels {
 		}
 		var buffer = Runtime.graphics.createStaticBuffer(bytes, bytes.length, false);
 		Runtime.frame.retire(buffer);
-		drawMesh(mesh, material, new Matrix4(), WHITE, buffer, count, transforms);
+		drawMesh(mesh, material, new Matrix4(), WHITE, buffer, count, transforms, shader);
+	}
+
+	// Whether a shader reads the instances' transforms: a mat4 attribute at SHADER_LOC_MATRIX_MODEL.
+	static function readsInstances(shader:Shader):Bool {
+		var slot = shader.locs[SHADER_LOC_MATRIX_MODEL],
+			names = shader.program.attributes;
+		return slot >= 0 && slot + 4 <= names.length && names[slot] != "" && names[slot + 1] == "";
 	}
 
 	/** Sends a mesh's vertices to the GPU, so the mesh can be drawn.
@@ -2255,13 +2273,14 @@ class RModels {
 	// The light the model being drawn emits (SetModelEmissive), for its meshes' draws; null outside DrawModel.
 	static var modelEmissive:Null<Array<Float>>;
 
-	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix4, tint:Color, instances:Int = 0, instanceCount:Int = 1,
-			?transforms:Array<Matrix>):Void {
+	static function drawMesh(mesh:Mesh, material:Material, transform:Matrix4, tint:Color, instances:Int = 0, instanceCount:Int = 1, ?transforms:Array<Matrix>,
+			?drawnWith:Shader):Void {
 		if (mesh.gpu.buffers == null)
 			Models.upload(mesh);
 		if (mesh.gpu.buffers == null)
 			return;
-		var shader = material.shader == null || material.shader.program == null ? defaultShader() : material.shader;
+		var shader = drawnWith != null ? drawnWith : material.shader == null
+			|| material.shader.program == null ? defaultShader() : material.shader;
 		if (surfacing != null)
 			shader = surfacing(shader, material, modelEmissive);
 		if (lighting != null)

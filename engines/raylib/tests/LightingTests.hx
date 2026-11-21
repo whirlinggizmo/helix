@@ -12,7 +12,7 @@ import helix.raylib.internal.Runtime;
 	shader declaring `lights` is lit by the lights reaching its bounds most, 8 of more than 8, best first, the rest off; a range keeps a
 	far lamp off a draw; a spot light's cone keeps it off what it points away from; more than 4 lights light one draw; `UnloadLight`
 	removes a light; a light moves by its fields alone; a shader of 4 lights gets the best 4; `DrawMeshInstanced` scores against all
-	its instances; immediate shapes drawn through a lit shader are lit by their vertices' bounds; and the light's fields (intensity,
+	its instances, and draws the lit and PBR shaders through their instanced twins; immediate shapes drawn through a lit shader are lit by their vertices' bounds; and the light's fields (intensity,
 	range, cone) reach the next draw once assigned, each clamped to its range there. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Frame)
@@ -193,6 +193,26 @@ class LightingTests {
 		check(lit(instanced.program).join(",") == "0", "one instance far from the lamp: the sun alone");
 		DrawMeshInstanced(mesh, material, [MatrixTranslate(-10, 0, 0), MatrixTranslate(10, 0, 0)], 2);
 		check(lit(instanced.program).length == 2, "an instance by the lamp: the lamp lights the draw");
+
+		// The lit and PBR shaders drawn instanced: through their instanced twins, lit as the program's own instanced shader is. The default
+		// shader draws nothing.
+		var draws = Runtime.frame.pass.draws.length;
+		DrawMeshInstanced(mesh, LoadMaterialDefault(), [MatrixTranslate(10, 0, 0)], 1);
+		check(Runtime.frame.pass.draws.length == draws, "the default shader drawn instanced: nothing drawn");
+		for (made in [shader, LoadPbrShader()]) {
+			material.shader = made;
+			DrawMeshInstanced(mesh, material, [MatrixTranslate(-10, 0, 0), MatrixTranslate(10, 0, 0)], 2);
+			var twin = made.program.instanced;
+			check(twin != null && Runtime.frame.pass.draws.length > draws && lastDraw().instances == 2,
+				'shader ${made.id} drawn instanced: two instances drawn');
+			check(twin.program.attributes.indexOf("instanceTransform") == twin.locs[SHADER_LOC_MATRIX_MODEL],
+				'shader ${made.id}\'s twin reads the instances\' transforms');
+			check(lit(twin.program).length == 2, 'shader ${made.id} drawn instanced: the lamp by an instance lights the draw');
+			SetShaderValue(made, GetShaderLocation(made, "ambient"), [0.25, 0.25, 0.25, 1.0], SHADER_UNIFORM_VEC4);
+			DrawMeshInstanced(mesh, material, [MatrixTranslate(-10, 0, 0)], 1);
+			check(drawnFloat(twin.program, "ambient", 0) == 0.25, 'shader ${made.id}\'s twin: the ambient set on the shader after it was made');
+			check(made.program.instanced == twin && lit(twin.program).join(",") == "0", 'shader ${made.id} drawn again: the same twin, the sun alone');
+		}
 
 		// Shapes drawn through a lit shader: scored against their vertices.
 		BeginShaderMode(shader);
