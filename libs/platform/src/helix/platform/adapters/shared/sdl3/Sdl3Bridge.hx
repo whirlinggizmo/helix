@@ -1,6 +1,7 @@
 package helix.platform.adapters.shared.sdl3;
 
 @:buildXml("<set name='HELIX_PLATFORM' value='${haxelib:helix-platform}' unless='HELIX_PLATFORM'/>
+<error value='HELIX_SDL3_LIBRARY is unset. It names the SDL3 library a native build links (CONTRIBUTING.md, Prerequisites): python3 tools/sdl3.py in the helix checkout finds or builds it, and prints its path after sdl3: link.' unless='HELIX_SDL3_LIBRARY'/>
 <files id='helix-platform-sdl3' dir='${HELIX_PLATFORM}/src/helix/platform/adapters'>
  <compilerflag value='-I${HELIX_PLATFORM}/vendor/sdl3'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/shared'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/shared/sdl3'/>
  <compilerflag value='-DNDEBUG' unless='debug'/><compilerflag value='-O2' if='windows' unless='debug'/><compilerflag value='-O3' unless='windows||debug'/><compilerflag value='-D_POSIX_C_SOURCE=200809L' if='linux'/>

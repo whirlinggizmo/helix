@@ -1,6 +1,7 @@
 package helix.platform.adapters.shared.sdl3mixer;
 
 @:buildXml("<set name='HELIX_PLATFORM' value='${haxelib:helix-platform}' unless='HELIX_PLATFORM'/>
+<error value='HELIX_SDL3_LIBRARY is unset. It names the SDL3 library a native build links (CONTRIBUTING.md, Prerequisites): python3 tools/sdl3.py in the helix checkout finds or builds it, and prints its path after sdl3: link.' unless='HELIX_SDL3_LIBRARY'/>
 <files id='helix-platform-sdl3mixer' dir='${HELIX_PLATFORM}/vendor/sdl3_mixer/src'>
  <compilerflag value='-I${HELIX_PLATFORM}/vendor/sdl3'/><compilerflag value='-I${HELIX_PLATFORM}/vendor/sdl3_mixer/include'/><compilerflag value='-I${HELIX_PLATFORM}/vendor/sdl3_mixer/src'/>
  <compilerflag value='-DDECODER_WAV'/><compilerflag value='-DDECODER_OGGVORBIS_STB'/><compilerflag value='-DDECODER_MP3_DRMP3'/><compilerflag value='-DDECODER_FLAC_DRFLAC'/>
