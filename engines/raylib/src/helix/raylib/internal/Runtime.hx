@@ -20,7 +20,6 @@ import helix.services.input.Gestures;
 import helix.services.input.Keyboard;
 import helix.services.input.Mouse;
 import helix.services.input.Touch;
-import helix.services.saves.Saves;
 import helix.services.time.Time;
 
 using StringTools;
@@ -29,7 +28,8 @@ using StringTools;
 	memory, and the frame.
 
 	raylib answers a load at once. A page can't wait for a file, so on every target helix-raylib loads through the `...Async` functions,
-	which bring files into memory here. The saves, which hold what `SaveFileText` writes, are read when first used (`keptSaves`). */
+	which bring files into memory here. What `SaveFileText` and `SaveFileData` write are files in the data directory, read before the
+	program's own. */
 @:noCompletion
 class Runtime {
 	public static var system:ISystem;
@@ -43,7 +43,6 @@ class Runtime {
 	public static var graphics:Null<IGraphics> = null;
 	public static var frame:Null<Frame> = null;
 	public static var time:Null<Time> = null;
-	public static var saves:Null<Saves> = null;
 	public static var output:Null<IAudio> = null;
 	public static var audioDecoder:Null<IAudioDecoder> = null;
 	public static var audio:Null<helix.services.audio.Audio> = null;
@@ -51,11 +50,19 @@ class Runtime {
 	/** The program's files, as the preload found them, for what loads from them later (`Audio`, and the `...Async` loads). */
 	public static var assets:Null<Assets> = null;
 
-	/** The files `LoadMusicStreamFromMemory` plays and the files dropped, read before the program's own, made with the assets. */
+	/** The data directory, where `SaveFileText` and `SaveFileData` write, read first; made with the assets. */
+	public static var data:Null<IFileSystem> = null;
+
+	/** The assets over the data directory alone, for the saved files' own reads (`LoadSavedFileDataAsync`); made with the assets. */
+	public static var saved:Null<Assets> = null;
+
+	/** The files `LoadMusicStreamFromMemory` plays and the files dropped, read after the data directory and before the program's own,
+		made with the assets. */
 	public static var memory:Null<MemoryFiles> = null;
 
-	/** Natively, the program's own files, read-only, made with the assets; null in a page, whose files are on its server. */
-	public static var shipped:Null<IFileSystem> = null;
+	/** Natively, the asset hosts that are directories, each read-only, in the hosts' order, listed as the hosts are set; empty in a page, whose
+		files are on its servers. */
+	public static final shipped:Array<IFileSystem> = [];
 
 	/** The paths of the files last dropped, once each was read; empty when none were or after `UnloadDroppedFiles`. */
 	public static var dropped:Array<String> = [];
@@ -77,7 +84,8 @@ class Runtime {
 
 	public static final polled:Array<IPollable> = [];
 
-	/** What runs as the window closes, before it does: keeping the saves, and in a page disposing the input adapters made. */
+	/** What runs as the window closes, before it does: natively waiting for the files being written, and in a page disposing the input
+		adapters made. */
 	public static final closing:Array<Void->Void> = [];
 
 	/** The files in memory, by path, as the loads brought them in: an image file decoded for the GPU (`pictures`, until its texture is
@@ -184,30 +192,35 @@ class Runtime {
 		main();
 	}
 
-	/** The asset host the build sets (`-D helix-raylib-asset-host`), null without one. Set as the program starts. */
-	public static var builtHost:Null<String> = null;
+	/** The asset hosts the build sets (`-D helix-raylib-asset-hosts`), as its list reads, null without one. Set as the program starts. */
+	public static var builtHosts:Null<String> = null;
 
-	/** The asset host the program sets (`SetAssetHost`), null until it does. */
-	public static var programHost:Null<String> = null;
+	/** The asset hosts the program sets (`SetAssetHosts`), null until it does. */
+	public static var programHosts:Null<Array<String>> = null;
 
-	/** Returns the asset host in use, the first of these that is set: the option `asset_host`, the program's (`SetAssetHost`), the
-		build's (`-D helix-raylib-asset-host`), and the default, natively `../web` beside the program's directory, in a page the
-		page's own.
+	/** Returns the asset hosts in use, in the order they are asked, the first of these that is set: the option `asset_hosts`, the
+		program's (`SetAssetHosts`), the build's (`-D helix-raylib-asset-hosts`), and the default, natively `../web` beside the program's
+		directory, in a page the page's own directory.
 
-		@return  The host: a URL, or a directory relative to the program's. */
-	public static function assetHost():String {
-		var option = system == null ? null : system.getOption("asset_host");
-		if (option != null && option != "")
-			return option;
-		if (programHost != null)
-			return programHost;
-		if (builtHost != null)
-			return builtHost;
-		#if js
-		return "";
-		#else
-		return "../web";
-		#end
+		@param out  Optional. The array to fill and return.
+		@return  The hosts: each a URL, or a directory relative to the program's. */
+	public static function assetHosts(?out:Array<String>):Array<String> {
+		if (out == null)
+			out = [];
+		else
+			out.resize(0);
+		var option = system == null ? null : system.getOption("asset_hosts");
+		var list = option != null && option != "" ? option : programHosts == null ? builtHosts : null;
+		if (list != null) {
+			for (host in list.split(","))
+				if (host.trim() != "")
+					out.push(host.trim());
+		} else if (programHosts != null) {
+			for (host in programHosts)
+				out.push(host);
+		} else
+			out.push(#if js "" #else "../web" #end);
+		return out;
 	}
 
 	/** Returns whether an asset host is a URL, fetched over HTTP, rather than a directory.
@@ -217,66 +230,180 @@ class Runtime {
 	public static function isUrlHost(host:String):Bool
 		return host.startsWith("http://") || host.startsWith("https://");
 
-	// What loading made and polls, apart from what later services add: forgotten when the host changes.
-	static final assetPolled:Array<helix.platform.IPollable> = [];
+	// Whether `loading` made the assets, over the hosts. False while a test's own sources stand in (`setFiles`), which setting the hosts
+	// leaves as they are.
+	static var hosted = false;
 
-	/** Makes what loads the program's files, once, over the asset host (`assetHost`): files dropped on the window and handed in first, then
-		the host, a URL's files fetched and kept in the program's cache, a directory's read in place. What decodes images is `imaging`'s,
-		so a program loading only sounds or text never links an image decoder. */
+	// The sources asked before the hosts, whatever the hosts become: the data directory, the files handed in and dropped, and the load
+	// callback's.
+	static var fixedSources:Array<helix.services.assets.AssetSource> = [];
+
+	// The HTTP client the URL hosts' files are fetched through, made with the first of them and polled from then on.
+	static var http:Null<helix.platform.IHttp> = null;
+
+	#if !js
+	// Each directory host's file system, by its directory, made once and polled from then on, so a read in flight as the hosts are set
+	// is answered.
+	static final hostDirectories = new Map<String, IFileSystem>();
+	#end
+
+	// The program's cache of its URL hosts' files, made at its first use and polled from then on, whatever the hosts become.
+	static var cache:Null<IFileSystem> = null;
+
+	/** Returns the file system of the program's cache, which each URL host's fetched files are stored in. Natively it is the directory
+		`assets` of the program's cache directory, and in a page the store the cache directory names. */
+	public static function cacheFiles():IFileSystem {
+		if (cache == null) {
+			#if js
+			cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
+			#else
+			cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({
+				directory: haxe.io.Path.join([system.getCacheDirectory(), "assets"])
+			});
+			#end
+			polled.push(cache);
+		}
+		return cache;
+	}
+
+	/** Makes what loads the program's files, once, over the asset hosts (`assetHosts`): the data directory first, written to, then
+		files dropped on the window and handed in, then each host in order. A URL's files are fetched and stored in the program's cache.
+		Natively a directory's are read in place, and the directories after a URL are its shipped files, known by their manifests. In a
+		page a directory is fetched from the page's server. What decodes images is `imaging`'s, so a program loading only sounds or text
+		never links an image decoder. */
 	public static function loading():Void {
 		if (assets != null)
 			return;
-		var host = assetHost();
 		var callback = new CallbackFiles();
 		memory = new MemoryFiles();
-		assetPolled.push(callback);
-		assetPolled.push(memory);
-		var hostSource:helix.services.assets.AssetSource;
 		#if js
-		var http = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
-		var cache = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getCacheDirectory()});
-		assetPolled.push(http);
-		assetPolled.push(cache);
-		hostSource = new ServerSource(isUrlHost(host) ? host : system.getProgramDirectory() + host, http, new RevalidateCache(cache));
+		data = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory()});
 		#else
-		if (isUrlHost(host)) {
-			var http = new helix.platform.adapters.http.haxehttp.HaxeHttpAdapter();
-			var cache = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getCacheDirectory()});
-			assetPolled.push(http);
-			assetPolled.push(cache);
-			shipped = cache;
-			hostSource = new ServerSource(host, http, new RevalidateCache(cache));
-		} else {
+		data = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getDataDirectory()});
+		#end
+		polled.push(callback);
+		polled.push(memory);
+		polled.push(data);
+		fixedSources = [
+			new FileSystemSource(data, true),
+			new FileSystemSource(memory),
+			new FileSystemSource(callback)
+		];
+		assets = new HostAssets(fixedSources.concat(hostSources()));
+		saved = new Assets([new FileSystemSource(data, true)]);
+		hosted = true;
+		polled.push(assets);
+		polled.push(saved);
+		#if !js
+		closing.push(() -> while (writing > 0) {
+			pollAll();
+			Sys.sleep(.001);
+		});
+		#end
+	}
+
+	// Makes a source for each asset host (`assetHosts`), in order, and lists the directory hosts' file systems in `shipped`. What a source
+	// is read through is polled from then on.
+	static function hostSources():Array<helix.services.assets.AssetSource> {
+		var hosts = assetHosts(),
+			sources:Array<helix.services.assets.AssetSource> = [];
+		shipped.resize(0);
+		#if js
+		var copies:Null<RevalidateCache> = null;
+		for (host in hosts) {
+			if (copies == null)
+				copies = new RevalidateCache(cacheFiles());
+			sources.push(new ServerSource(isUrlHost(host) ? host : system.getProgramDirectory() + host, httpClient(), copies));
+		}
+		#else
+		var directories:Array<Null<IFileSystem>> = [];
+		for (host in hosts) {
+			if (isUrlHost(host)) {
+				directories.push(null);
+				continue;
+			}
 			var directory = haxe.io.Path.isAbsolute(host) ? host : haxe.io.Path.join([system.getProgramDirectory(), host]);
-			var files = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
-			assetPolled.push(files);
-			shipped = files;
-			hostSource = new FileSystemSource(files);
+			var files = hostDirectories.get(directory);
+			if (files == null) {
+				files = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: directory, readOnly: true});
+				hostDirectories.set(directory, files);
+				polled.push(files);
+			}
+			shipped.push(files);
+			directories.push(files);
+		}
+		for (i in 0...hosts.length) {
+			var files = directories[i];
+			if (files != null) {
+				sources.push(new FileSystemSource(files));
+				continue;
+			}
+			var after = [
+				for (j in i + 1...hosts.length)
+					if (directories[j] != null) (directories[j] : IFileSystem)
+			];
+			sources.push(new ServerSource(hosts[i], httpClient(),
+				after.length > 0 ? new helix.services.assets.ManifestCache(cacheFiles(), {shipped: after}) : new RevalidateCache(cacheFiles())));
 		}
 		#end
-		assets = new Assets([new FileSystemSource(memory), new FileSystemSource(callback), hostSource]);
-		assetPolled.push(assets);
-		for (p in assetPolled)
-			polled.push(p);
+		return sources;
 	}
 
-	/** Sets the program's asset host (`SetAssetHost`). What loading made over the old host is let go, and made again over the new one at
-		the next load: files already ensured stay in memory.
-
-		@param host  The host: a URL, or a directory relative to the program's. */
-	public static function setAssetHost(host:String):Void {
-		programHost = host;
-		if (assets == null)
-			return;
-		for (p in assetPolled)
-			polled.remove(p);
-		assetPolled.resize(0);
-		assets = null;
-		if (decoding != null)
-			polled.remove(decoding);
-		decoding = null;
-		models = null;
+	static function httpClient():helix.platform.IHttp {
+		if (http == null) {
+			#if js
+			http = new helix.platform.adapters.http.fetchapi.FetchApiHttpAdapter();
+			#else
+			http = new helix.platform.adapters.http.haxehttp.HaxeHttpAdapter();
+			#end
+			polled.push(http);
+		}
+		return http;
 	}
+
+	/** Makes the assets over a data directory and other sources, in place of `loading`'s, as a test provides fakes: the data directory
+		first, written to, then the sources in order.
+
+		@param data  The data directory, which the caller polls, as it polls the sources' file systems.
+		@param sources  The sources read after it. */
+	public static function setFiles(data:IFileSystem, sources:Array<helix.services.assets.AssetSource>):Void {
+		Runtime.data = data;
+		var first:Array<helix.services.assets.AssetSource> = [new FileSystemSource(data, true)];
+		assets = new HostAssets(first.concat(sources));
+		saved = new Assets([new FileSystemSource(data, true)]);
+		polled.push(assets);
+		polled.push(saved);
+	}
+
+	/** Sets the program's asset hosts (`SetAssetHosts`). Every load made from now on asks them, through the same assets, so the
+		sounds, the fonts, the images and the models read them too. A load in flight is answered by the hosts it was made over. The caller
+		releases the files in memory first.
+
+		@param hosts  The hosts, in the order they are asked: each a URL, or a directory relative to the program's. */
+	public static function setAssetHosts(hosts:Array<String>):Void {
+		programHosts = hosts.copy();
+		if (hosted)
+			assets.setSources(fixedSources.concat(hostSources()));
+	}
+
+	/** Lists the files stored in the program's cache under a directory of each URL host (`ListAssetCacheAsync`), whatever the hosts in
+		use. Answers in a later poll.
+
+		@param path  The directory, relative to each host. "" lists the whole cache.
+		@param listed  Receives each file's name, relative to its host, and its host's URL, "" when it isn't recorded.
+		@param failed  Receives why the cache can't be listed. */
+	public static function listAssetCache(path:String, listed:Array<{fileName:String, host:String}>->Void, failed:String->Void):Void
+		new helix.services.assets.KeptCopies(cacheFiles()).listCopies(keyOf(path), copies -> listed([
+			for (copy in copies)
+				{fileName: copy.path, host: copy.url.substr(0, copy.url.length - copy.path.length)}
+		]), failed);
+
+	/** Deletes every file stored in the program's cache (`ClearAssetCacheAsync`), whatever the hosts in use. Answers in a later poll.
+
+		@param cleared  Called once the cache is empty.
+		@param failed  Receives why the cache can't be emptied. */
+	public static function clearAssetCache(cleared:Void->Void, failed:String->Void):Void
+		new helix.services.assets.KeptCopies(cacheFiles()).clearCopies(cleared, failed);
 
 	/** The files ensured in this run (`EnsureAssetAsync`), by their normalized paths: each in memory as its kind needs, a load of it
 		answering at once. */
@@ -315,20 +442,15 @@ class Runtime {
 		loading();
 		if (decoding != null)
 			return;
-		if (imageDecoder == null) {
-			#if js
-			imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
-			#else
-			imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
-			#end
-			polled.push(imageDecoder);
-		}
+		#if js
+		var imageDecoder = new helix.platform.adapters.imagedecoder.canvas.CanvasImageDecoderAdapter();
+		#else
+		var imageDecoder = new helix.platform.adapters.imagedecoder.stb.StbImageDecoderAdapter();
+		#end
+		polled.push(imageDecoder);
 		decoding = new helix.services.images.Images(imageDecoder, assets);
 		polled.push(decoding);
 	}
-
-	// The platform's image decoder, made once: the images over it are made again when the asset host changes.
-	static var imageDecoder:Null<helix.platform.IImageDecoder> = null;
 
 	/** Makes what reads the program's models, once, over the assets and the images (`modelling`). */
 	public static function modelling():Void {
@@ -337,16 +459,96 @@ class Runtime {
 			models = new helix.services.models.Models(assets, decoding);
 	}
 
-	/** Brings a file into memory as bytes, in `files`. Answers at a later poll, never during the call. It decodes nothing, so a program
-		loading text or data never links an image decoder; `fetchImage` is for an image file.
+	/** The files being written to the data directory (`write`), which closing the window waits for natively. */
+	public static var writing = 0;
 
-		@param path  The file.
+	/** Writes a file to the data directory through the assets, and keeps its bytes in `files`, so a load of it after reads them at once.
+		Answers at a later poll.
+
+		@param path  The file, as the program named it.
+		@param bytes  Its bytes.
+		@param written  Called once it is written.
+		@param failed  Receives why it wasn't. */
+	public static function write(path:String, bytes:Bytes, written:Void->Void, failed:String->Void):Void {
+		loading();
+		writing++;
+		assets.write(path, bytes, () -> {
+			writing--;
+			files.set(keyOf(path), bytes);
+			written();
+		}, error -> {
+			writing--;
+			failed(error);
+		});
+	}
+
+	/** Returns the first asset host's root, as `GetApplicationDirectory` returns it: the host's URL, or natively its directory, ending in
+		`/`; "./" in a page whose files are beside it, and without a host. */
+	public static function applicationDirectory():String {
+		var hosts = assetHosts();
+		#if js
+		return hosts.length > 0 && isUrlHost(hosts[0]) ? hostRoot(hosts[0]) : "./";
+		#else
+		return hosts.length > 0 ? hostRoot(hosts[0]) : "./";
+		#end
+	}
+
+	/** Returns an asset host's root, ending in `/`: a URL as it is, natively a directory's full path, and in a page a directory beside
+		the page's.
+
+		@param host  The host, as `assetHosts` lists it.
+		@return  Its root. */
+	public static function hostRoot(host:String):String {
+		if (isUrlHost(host) || system == null)
+			return haxe.io.Path.addTrailingSlash(host);
+		#if js
+		return haxe.io.Path.addTrailingSlash(system.getProgramDirectory() + host);
+		#else
+		var directory = haxe.io.Path.isAbsolute(host) ? host : haxe.io.Path.join([system.getProgramDirectory(), host]);
+		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(directory));
+		#end
+	}
+
+	/** Returns the key a file is kept in memory by: a path relative to an asset host's root, a leading `GetApplicationDirectory()`
+		removed, its `.` and `..` followed, so two spellings of one file share it. An absolute path keeps its leading `/`, and a path
+		climbing above the root keeps a leading `..`.
+
+		@param path  The file, as the program named it.
+		@return  Its key. */
+	public static function keyOf(path:String):String {
+		if (system != null) {
+			var application = applicationDirectory();
+			if (application != "./" && path.startsWith(application))
+				path = path.substr(application.length);
+		}
+		var absolute = path.startsWith("/");
+		if (path.indexOf(".") < 0 && path.indexOf("//") < 0 && !path.endsWith("/"))
+			return path;
+		var parts:Array<String> = [];
+		for (part in path.split("/")) {
+			if (part == "" || part == ".")
+				continue;
+			if (part != "..")
+				parts.push(part);
+			else if (parts.length > 0)
+				parts.pop();
+			else if (!absolute)
+				return "../" + path;
+		}
+		return (absolute ? "/" : "") + parts.join("/");
+	}
+
+	/** Brings a file into memory as bytes, in `files`, under its key (`keyOf`). Answers at a later poll, never during the call. It decodes
+		nothing, so a program loading text or data never links an image decoder; `fetchImage` is for an image file.
+
+		@param path  The file, as the program named it, which the assets are handed and the log names.
 		@param done  Receives whether it was brought in, and why not when it wasn't.
 		@param asking  Whether the call asks about the file (`FileExists`) rather than loads it. A file that isn't there is then logged as
 			information, where a load's caller warns. */
 	public static function fetch(path:String, done:Null<String>->Void, asking = false):Void {
 		loading();
-		if (files.exists(path)) {
+		var key = keyOf(path);
+		if (files.exists(key)) {
 			later(() -> done(null));
 			return;
 		}
@@ -356,9 +558,9 @@ class Runtime {
 			log(2, 'FILEIO: [$path] Checking whether the file exists');
 		else
 			log(3, 'FILEIO: [$path] Loading');
-		assets.load(path, bytes -> {
+		assets.read(path, bytes -> {
 			// The file's bytes are kept too, for LoadFileDataAsync; an image's are small beside its pixels.
-			files.set(path, bytes);
+			files.set(key, bytes);
 			done(null);
 		}, error -> {
 			if (asking) {
@@ -371,9 +573,9 @@ class Runtime {
 	}
 
 	/** Brings an image file into memory: its bytes in `files` and, for a PNG, JPEG, BMP or TGA file, its pixels decoded for the GPU in
-		`pictures`. Any other file is brought in as `fetch` does. Answers at a later poll, never during the call.
+		`pictures`, under its key (`keyOf`). Any other file is brought in as `fetch` does. Answers at a later poll, never during the call.
 
-		@param path  The file.
+		@param path  The file, as the program named it.
 		@param done  Receives whether it was brought in, and why not when it wasn't. */
 	public static function fetchImage(path:String, done:Null<String>->Void):Void {
 		var lower = path.toLowerCase();
@@ -383,27 +585,21 @@ class Runtime {
 		}
 		loading();
 		imaging();
-		if (pictures.exists(path) || images.exists(path)) {
+		var key = keyOf(path);
+		if (pictures.exists(key) || images.exists(key)) {
 			later(() -> done(null));
 			return;
 		}
-		if (files.exists(path)) {
-			decoding.decodeForGpu(files.get(path), decoded -> {
-				pictures.set(path, decoded);
+		function decode():Void
+			decoding.decodeForGpu(files.get(key), decoded -> {
+				pictures.set(key, decoded);
 				done(null);
 			}, error -> done('$path: $error'));
+		if (files.exists(key)) {
+			decode();
 			return;
 		}
-		fetch(path, error -> {
-			if (error != null) {
-				done(error);
-				return;
-			}
-			decoding.decodeForGpu(files.get(path), decoded -> {
-				pictures.set(path, decoded);
-				done(null);
-			}, error -> done('$path: $error'));
-		});
+		fetch(path, error -> error != null ? done(error) : decode());
 	}
 
 	/** The least level `log` writes, as `SetTraceLogLevel` sets it: raylib's LOG_INFO (3) until set. */
@@ -487,49 +683,6 @@ class Runtime {
 			return;
 		pictures.remove(path);
 		picture.dispose();
-	}
-
-	/** Gets the saves, made and read when first asked for, so a program that never saves never reads them. A value set before the read
-		has finished is held by the saves and made after it, so it wins over what was kept.
-
-		@return  The saves. */
-	public static function keptSaves():Saves {
-		if (saves != null)
-			return saves;
-		#if js
-		var data = new helix.platform.adapters.filesystem.browser.BrowserFileSystemAdapter({name: system.getDataDirectory()});
-		#else
-		var data = new helix.platform.adapters.filesystem.native.NativeFileSystemAdapter({directory: system.getDataDirectory()});
-		#end
-		polled.push(data);
-		var kept = new Saves(data);
-		saves = kept;
-		polled.push(kept);
-		closing.push(() -> {
-			#if js
-			kept.flush();
-			#else
-			var written = false;
-			kept.flush(() -> written = true, error -> {
-				log(4, 'saves: $error');
-				written = true;
-			});
-			while (!written) {
-				pollAll();
-				Sys.sleep(.001);
-			}
-			#end
-		});
-		kept.load(() -> {}, error -> log(4, 'saves: $error'));
-		return kept;
-	}
-
-	/** Calls a function with the saves once they are read, at a later poll, in the order asked; the first call starts the read.
-
-		@param ready  Receives the saves. */
-	public static function withSaves(ready:Saves->Void):Void {
-		var kept = keptSaves();
-		kept.load(() -> ready(kept), _ -> ready(kept));
 	}
 
 	/** Opens the window, with the graphics and the events.
@@ -652,11 +805,10 @@ class Runtime {
 		return gesturesService;
 	}
 
-	/** Gets the fonts service, made when first asked for and again after the asset host changes, over the platform's font rasterizer,
-		the assets and the images. The rasterizer is made once, so the fonts it opened stay open as the host changes. */
+	/** Gets the fonts service, made when first asked for, over the platform's font rasterizer, the assets and the images. */
 	public static function fonts():helix.services.fonts.Fonts {
 		imaging();
-		if (fontsService == null || fontsAssets != assets) {
+		if (fontsService == null) {
 			if (fontRasterizer == null) {
 				#if js
 				fontRasterizer = new helix.platform.adapters.fontrasterizer.canvas.CanvasFontRasterizerAdapter();
@@ -666,13 +818,11 @@ class Runtime {
 				polled.push(fontRasterizer);
 			}
 			fontsService = new helix.services.fonts.Fonts(fontRasterizer, assets, decoding);
-			fontsAssets = assets;
 		}
 		return fontsService;
 	}
 
 	static var fontsService:Null<helix.services.fonts.Fonts> = null;
-	static var fontsAssets:Null<Assets> = null;
 	static var fontRasterizer:Null<helix.platform.IFontRasterizer> = null;
 
 	/** Gets the screenshots, made over the graphics when first asked for: the frame reads them back as each frame ends (`Frame.ended`). */
@@ -691,26 +841,16 @@ class Runtime {
 		and `close` refuses those left. */
 	public static final screenshotsAsked:Array<{fileName:String}> = [];
 
-	/** Gets where files are handed out, made when first asked for: in a page a download, natively the working directory. */
+	#if js
+	/** Gets what hands a page's screenshots out as downloads, made when first asked for. */
 	public static function exporter():helix.platform.IExport {
-		if (exportAdapter == null) {
-			#if js
+		if (exportAdapter == null)
 			exportAdapter = new helix.platform.adapters.export.download.DownloadExportAdapter();
-			#else
-			exportAdapter = new helix.platform.adapters.export.filesystem.FileSystemExportAdapter({directory: Sys.getCwd()});
-			#end
-		}
 		return exportAdapter;
 	}
 
 	static var exportAdapter:Null<helix.platform.IExport> = null;
-
-	/** Makes what hands files out natively write to the working directory as it is now, after `ChangeDirectory`. */
-	public static function workingDirectoryChanged():Void {
-		#if !js
-		exportAdapter = null;
-		#end
-	}
+	#end
 
 	/** Gets the system's clipboard, made when first asked for. */
 	public static function clipboard():helix.platform.IClipboard {

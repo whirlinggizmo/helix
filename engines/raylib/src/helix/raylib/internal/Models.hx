@@ -642,12 +642,13 @@ class Models {
 		bones, and what the file holds, its materials made of it for each load. It holds no count on anything; it stays while any load of
 		the file lives (`release`).
 
+		@param path  The file's key (`Runtime.keyOf`).
 		@param read  The model.
 		@param shader  The default shader.
 		@param attached  Optional. Each mesh's bone when its node is a child of one and it has no joints of its own, or -1. */
-	public static function keep(read:Model3D, shader:Shader, ?attached:Array<Int>):Void {
-		if (!loaded.exists(read.path))
-			loaded.set(read.path, {
+	public static function keep(path:String, read:Model3D, shader:Shader, ?attached:Array<Int>):Void {
+		if (!loaded.exists(path))
+			loaded.set(path, {
 				template: templateOf(read, attached),
 				materials: () -> materialsOf(read, shader),
 				loads: 0

@@ -49,8 +49,8 @@ class RTexturesAsync {
 
 	// LoadImageAsync's call for a GIF file: its first frame, kept as the file's image.
 	static function loadGifImage(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		gifFile("LoadImageAsync", path, () -> {
+		var path = keyOf(fileName);
+		gifFile("LoadImageAsync", fileName, () -> {
 			var image = Runtime.image(path);
 			loaded(rgba(image.pixels.sub(0, image.pixels.length), image.width, image.height));
 		}, failed);
@@ -59,16 +59,17 @@ class RTexturesAsync {
 	// Brings a GIF file into memory, its first frame composited as raylib 5.5's LoadImage reads it (gifFrames) and kept as the file's
 	// image (Runtime.images), then calls done; a file that can't be read or is no GIF is refused for the load named.
 	static function gifFile(name:String, path:String, done:Void->Void, failed:Null<String->Void>):Void {
+		var key = keyOf(path);
 		Runtime.fetch(path, error -> {
 			if (error != null) {
 				refuse(name, error, failed);
 				return;
 			}
-			if (!Runtime.images.exists(path)) {
-				var frame = gifFrames(name, path, Runtime.files.get(path), false, failed);
+			if (!Runtime.images.exists(key)) {
+				var frame = gifFrames(name, path, Runtime.files.get(key), false, failed);
 				if (frame == null)
 					return;
-				Runtime.images.set(path, new helix.services.images.Image(path, frame.width, frame.height, frame.data));
+				Runtime.images.set(key, new helix.services.images.Image(key, frame.width, frame.height, frame.data));
 			}
 			done();
 		});
@@ -76,10 +77,10 @@ class RTexturesAsync {
 
 	// LoadImageAsync's call for any other file.
 	static function loadPlainImage(fileName:String, loaded:Image->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName),
+		var path = keyOf(fileName),
 			type = haxe.io.Path.extension(path).toLowerCase();
 		if (type == "qoi") {
-			Runtime.fetch(path, error -> {
+			Runtime.fetch(fileName, error -> {
 				if (error != null)
 					refuse("LoadImageAsync", error, failed);
 				else
@@ -88,10 +89,10 @@ class RTexturesAsync {
 			return;
 		}
 		if (!isDecoded(type)) {
-			Runtime.later(() -> refuse("LoadImageAsync", '$path: .$type images aren\'t read here', failed));
+			Runtime.later(() -> refuse("LoadImageAsync", '$fileName: .$type images aren\'t read here', failed));
 			return;
 		}
-		Runtime.fetchImage(path, error -> {
+		Runtime.fetchImage(fileName, error -> {
 			if (error != null) {
 				refuse("LoadImageAsync", error, failed);
 				return;
@@ -121,7 +122,7 @@ class RTexturesAsync {
 		LoadFileDataAsync(fileName, bytes -> {
 			var size = GetPixelDataSize(width, height, format);
 			if (size > bytes.length) {
-				refuse("LoadImageRawAsync", '${normalize(fileName)}: ${bytes.length} bytes, too few for $width x $height pixels', failed);
+				refuse("LoadImageRawAsync", '${keyOf(fileName)}: ${bytes.length} bytes, too few for $width x $height pixels', failed);
 				return;
 			}
 			var start = headerSize > 0 && headerSize + size <= bytes.length ? headerSize : 0;
@@ -174,8 +175,8 @@ class RTexturesAsync {
 
 	// LoadImageAnimAsync's call for a GIF file.
 	static function loadGifAnim(fileName:String, frames:Array<Int>, loaded:Image->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		Runtime.fetch(path, error -> {
+		var path = keyOf(fileName);
+		Runtime.fetch(fileName, error -> {
 			if (error != null)
 				refuse("LoadImageAnimAsync", error, failed);
 			else
@@ -320,14 +321,14 @@ class RTexturesAsync {
 
 	// LoadTextureAsync's call for a GIF file: its first frame, kept as the file's image so later loads share its texture.
 	static function loadGifTexture(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		gifFile("LoadTextureAsync", path, () -> loaded(RTextures.loadTexture(path)), failed);
+		var path = keyOf(fileName);
+		gifFile("LoadTextureAsync", fileName, () -> loaded(RTextures.loadTexture(path)), failed);
 	}
 
 	// LoadTextureAsync's call for any other file.
 	static function loadPlainTexture(fileName:String, loaded:Texture2D->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		Runtime.fetchImage(path, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
+		var path = keyOf(fileName);
+		Runtime.fetchImage(fileName, error -> error == null ? loaded(RTextures.loadTexture(path)) : refuse("LoadTextureAsync", error, failed));
 	}
 
 	/** Asynchronously reads a texture's pixels into an RGBA image, as the frames drawn before this one left them. See
@@ -457,7 +458,7 @@ class RTexturesAsync {
 
 	// Whether a file's extension is .gif, in any case.
 	static function isGif(fileName:String):Bool {
-		return haxe.io.Path.extension(normalize(fileName)).toLowerCase() == "gif";
+		return haxe.io.Path.extension(keyOf(fileName)).toLowerCase() == "gif";
 	}
 
 	// Whether an image file's extension is one the platform decodes.

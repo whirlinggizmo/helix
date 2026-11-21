@@ -34,8 +34,8 @@ class RCompiledShaders {
 		@return  The shader, the program's until `UnloadShader`, or an empty one (id 0) when the file isn't a compiled shader, with a
 			warning. */
 	static function LoadCompiledShader(compiledShaderFileName:String):Shader {
-		var path = RCore.normalize(compiledShaderFileName);
-		return SyncLoads.load(path, Runtime.compiledShaders.exists(path) || Runtime.files.exists(path), () -> {
+		var path = RCore.keyOf(compiledShaderFileName);
+		return SyncLoads.load(compiledShaderFileName, Runtime.compiledShaders.exists(path) || Runtime.files.exists(path), () -> {
 			var value = Runtime.compiledShaders.exists(path) ? Runtime.compiledShaders.get(path) : read(Runtime.files.get(path));
 			if (value != null)
 				return make(value, compiledShaderFileName);
@@ -62,8 +62,8 @@ class RCompiledShaders {
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	static function LoadCompiledShaderAsync(compiledShaderFileName:String, loaded:Shader->Void, ?failed:String->Void):Void {
 		// One of the program's files, fetched as a texture's or a model's is.
-		var path = RCore.normalize(compiledShaderFileName);
-		Runtime.fetch(path, error -> {
+		var path = RCore.keyOf(compiledShaderFileName);
+		Runtime.fetch(compiledShaderFileName, error -> {
 			if (error != null) {
 				refuse("LoadCompiledShaderAsync", error, failed);
 				return;

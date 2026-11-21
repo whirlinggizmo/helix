@@ -698,7 +698,7 @@ def main():
 # The libraries with defines of their own: their haxelib, the macro registering them, and an example.
 DEFINES={'helix.math':('helix-math','helix.math.macros.Defines','-D helix-math-standard-trig'),
          'helix.platform':('helix-platform','helix.platform.macros.Defines','-D helix-product=Asteroids'),
-         'helix.raylib':('helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-asset-host=../assets')}
+         'helix.raylib':('helix-raylib','helix.raylib.internal.Defines','-D helix-raylib-asset-hosts=../assets')}
 
 def defines_section(env,library,macro,example):
     """A library's defines, as its init macro registers them for the compiler (its Defines.ALL), so the reference and

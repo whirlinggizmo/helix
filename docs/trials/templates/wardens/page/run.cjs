@@ -1,6 +1,6 @@
 // Builds the game (build.hxml) for a page and runs it there: node run.cjs [arguments], each --name or --name=value, the program's
 // arguments as the page's query gives them (Sys.args()). The native build is type-checked first (haxe build.hxml --no-output), then
-// the page is built from build.hxml's lines, less its -cpp line and its helix-raylib-asset-host define, as app.js beside index.html,
+// the page is built from build.hxml's lines, less its -cpp line and its helix-raylib-asset-hosts define, as app.js beside index.html,
 // and opened in headless Chromium (Playwright's own, on SwiftShader) at 1280 x 720, muted. What the page logs and its errors are
 // printed, and each file it downloads (a screenshot TakeScreenshot saves) is saved in this directory under its name. The run ends
 // when the program has (it waits on no frame, timer or fetch for a second) or after 60 seconds. What the page saves (its local
@@ -15,7 +15,7 @@ for (const a of process.argv.slice(2)) {
 }
 const haxe = args => spawnSync('haxe', args, {cwd: root, stdio: 'inherit'}).status === 0;
 if (!haxe(['build.hxml', '--no-output'])) { console.error('run.cjs: the native build has errors'); process.exit(1); }
-const lines = fs.readFileSync(path.join(root, 'build.hxml'), 'utf8').split('\n').filter(l => !l.startsWith('-cpp') && !l.includes('helix-raylib-asset-host'));
+const lines = fs.readFileSync(path.join(root, 'build.hxml'), 'utf8').split('\n').filter(l => !l.startsWith('-cpp') && !l.includes('helix-raylib-asset-hosts'));
 fs.writeFileSync(path.join(root, 'page.hxml'), ['# Written by run.cjs from build.hxml.', ...lines, '-js app.js', '-D js-es=6'].join('\n') + '\n');
 if (!haxe(['page.hxml'])) { console.error('run.cjs: the page build has errors'); process.exit(1); }
 

@@ -1941,9 +1941,8 @@ class Raylib {
 	/** Returns the working directory. See `GetApplicationDirectory` for finding
 		the program's files.
 
-		`TakeScreenshot` writes to it.
-
-		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
+		helix-raylib doesn't read or write files in it. A load reads the program's files, and a save, an export or a screenshot is
+		written to the data directory, wherever the working directory is.
 
 		@return  The directory, without a slash at its end. */
 	public static inline function GetWorkingDirectory():String
@@ -1960,9 +1959,7 @@ class Raylib {
 
 	/** Changes the working directory.
 
-		`TakeScreenshot` writes to the new directory from then on.
-
-		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
+		helix-raylib's loads, saves, exports and screenshots are unchanged, as none of them uses the working directory.
 
 		A failure logs a warning.
 
@@ -2780,7 +2777,7 @@ class Raylib {
 
 		Reads the first of these that has the file:
 		- the program's `SetLoadFileDataCallback`
-		- what `SaveFileData` wrote
+		- the data directory, where `SaveFileData` and `SaveFileText` write
 		- the program's files
 
 		@param fileName  The file.
@@ -2793,12 +2790,12 @@ class Raylib {
 
 		Reads the first of these that has the file:
 		- the program's `SetLoadFileTextCallback`
-		- what `SaveFileText` wrote
+		- the data directory, where `SaveFileText` and `SaveFileData` write
 		- the program's files
 
 		The text ends at the file's first NUL byte, as raylib's C string does.
 
-		A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
+		A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it contains.
 
 		@param fileName  The file.
 		@param loaded  Receives its text.
@@ -2806,7 +2803,8 @@ class Raylib {
 	public static inline function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void
 		RFilesAsync.LoadFileTextAsync(fileName, loaded, failed);
 
-	/** Asynchronously reads a saved file's bytes: one `SaveFileData` or `SaveFileText` wrote. See `LoadFileDataAsync` for any other file.
+	/** Asynchronously reads a saved file's bytes: one in the data directory, where `SaveFileData` and `SaveFileText` write. See
+		`LoadFileDataAsync` for any other file.
 
 		Reads the program's `SetLoadFileDataCallback` first when it has one. A file that wasn't saved fails, at a later frame.
 
@@ -2816,7 +2814,8 @@ class Raylib {
 	public static inline function LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void
 		RFilesAsync.LoadSavedFileDataAsync(fileName, loaded, failed);
 
-	/** Asynchronously reads a saved text file: one `SaveFileText` or `SaveFileData` wrote. See `LoadFileTextAsync` for any other file.
+	/** Asynchronously reads a saved text file: one in the data directory, where `SaveFileText` and `SaveFileData` write. See
+		`LoadFileTextAsync` for any other file.
 
 		Reads the program's `SetLoadFileTextCallback` first when it has one. A file that wasn't saved fails, at a later frame.
 
@@ -2830,8 +2829,8 @@ class Raylib {
 
 	/** Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
 
-		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as
-		`SaveFileTextAsync`'s are.
+		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are written to the data
+		directory, as `SaveFileTextAsync`'s are, and kept across runs.
 
 		`LoadFileDataAsync` reads them back.
 
@@ -2847,7 +2846,7 @@ class Raylib {
 
 		Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
-		Otherwise it is kept across runs, and answered once the write has finished.
+		Otherwise it is written to the data directory, kept across runs, and answered once the write has finished.
 
 		`LoadFileTextAsync` reads it back.
 
@@ -2863,9 +2862,9 @@ class Raylib {
 
 		The answer comes at a later frame, never during the call.
 
-		A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
+		A file exists when it is in the data directory, where `SaveFileText` and `SaveFileData` write, or one of the program's.
 
-		Finding one of the program's files reads it, so a load of it after answers at once.
+		Finding a file reads it, so a load of it after answers at once.
 
 		Why a file doesn't exist is logged at `LOG_INFO`.
 
@@ -2874,8 +2873,8 @@ class Raylib {
 	public static inline function FileExistsAsync(fileName:String, answer:Bool->Void):Void
 		RFilesAsync.FileExistsAsync(fileName, answer);
 
-	/** Asynchronously answers whether a saved file exists: one `SaveFileText` or `SaveFileData` wrote. See `FileExistsAsync` for any
-		other file.
+	/** Asynchronously answers whether a saved file exists: one in the data directory, where `SaveFileText` and `SaveFileData` write. See
+		`FileExistsAsync` for any other file.
 
 		The answer comes at a later frame, never during the call.
 
@@ -2889,11 +2888,12 @@ class Raylib {
 
 		The answer comes at a later frame, never during the call.
 
-		A directory exists when a file `SaveFileText` or `SaveFileData` wrote is in it. The root ("", "." or "./") always exists.
+		A directory exists when a file is in it: in the data directory, where `SaveFileText` and `SaveFileData` write, among the dropped
+		files, or natively among the program's files. The root ("", "." or "./") always exists.
 
-		`helix-raylib-dropped` and the directories under it hold the dropped files.
+		`helix-raylib-dropped` and the directories under it contain the dropped files.
 
-		The program's own files aren't in directories: a program names each one it loads.
+		In a page the program's files are on its server, which lists no directory.
 
 		@param dirPath  The directory.
 		@param answer  Receives true when it exists. */
@@ -2906,7 +2906,7 @@ class Raylib {
 		The answer comes at a later frame, never during the call.
 
 		These are files:
-		- a file `SaveFileText` or `SaveFileData` wrote
+		- a file in the data directory, where `SaveFileText` and `SaveFileData` write
 		- a dropped file
 		- a file the program has
 
@@ -2920,7 +2920,8 @@ class Raylib {
 		The answer comes at a later frame, never during the call.
 
 		The size is:
-		- for a file `SaveFileText` or `SaveFileData` wrote, or the callback `SetLoadFileDataCallback` set returns, its bytes' size
+		- for a file the callback `SetLoadFileDataCallback` set returns, its bytes' size
+		- for a file in the data directory, where `SaveFileText` and `SaveFileData` write, its size
 		- for a dropped file, its own
 		- for a file of the program's, its size
 
@@ -2934,10 +2935,10 @@ class Raylib {
 		The answer comes at a later frame, never during the call.
 
 		The time is:
+		- for a file in the data directory, where `SaveFileText` and `SaveFileData` write, when it was written
 		- for a file of the program's, its time on disk
-		- for a file `SaveFileText` or `SaveFileData` wrote, when it was saved
 		- for a dropped file, the time kept for it
-		- 0 for a file whose time isn't kept, such as one the program's load callback returns
+		- 0 for a file whose time isn't kept, such as one the program's load callback returns or one on a page's server
 
 		@param fileName  The file.
 		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
@@ -2954,8 +2955,9 @@ class Raylib {
 
 		The paths are sorted by name.
 
-		The files listed are those `SaveFileText` and `SaveFileData` wrote, and the dropped files, in `DirectoryExistsAsync`'s
-		directories. The program's own files aren't listed: a program names each one it loads.
+		The files listed are those in the data directory, where `SaveFileText` and `SaveFileData` write, the dropped files, and natively
+		the program's files, as raylib lists them. In a page the program's files are on its server, which lists no directory, and the log
+		says so.
 
 		@param dirPath  The directory.
 		@param loaded  Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as
@@ -7070,8 +7072,8 @@ class Raylib {
 
 		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
-		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
-		kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
+		Natively it is written to the data directory, as `ExportImage` writes, and `LoadImage` reads it back. In a page it is
+		downloaded, named by the name's last part.
 
 		The image is the framebuffer's size, its alpha opaque, as raylib's is.
 

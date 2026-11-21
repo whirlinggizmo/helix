@@ -15,7 +15,7 @@ import helix.services.assets.Assets;
 	features), leaves the shader as it was: its `reloadError` says why, and the log says so with the path.
 
 	**Who wires it.** Nothing watches files on its own. The program wires its hot reloader to the assets, one line in a page's
-	development build with hotreload-hx: `reloader.assetsChanged = urls -> for (url in urls) assets.notifyUrlChanged(url);`. Nothing is
+	development build with hotreload-hx: `reloader.assetsChanged = urls -> for (url in urls) assets.notifyChanged(url);`. Nothing is
 	polled beyond the assets' adapters (the HTTP client and file systems the program already polls each frame): this has no `poll`.
 
 	**A release build** needs no conditional. hotreload-hx's `Reloader` does nothing outside a hot JS build (`-D hotreload`), on any
@@ -115,7 +115,7 @@ class Shaders {
 		@return  A function that aborts the load and stops watching; nothing is called after it. */
 	public function load(path:String, loaded:Shader->Void, ?failed:String->Void):Void->Void {
 		var stop:Null<Void->Void> = null, done = false;
-		var abort = assets.load(path, bytes -> {
+		var abort = assets.read(path, bytes -> {
 			var parsed = parse(bytes);
 			if (parsed == null || parsed.kind != "shader") {
 				fail(path, parsed == null ? "not a shader file" : "a file of variants, not one shader", failed);
@@ -143,7 +143,7 @@ class Shaders {
 		@return  A function that aborts the load and stops watching; nothing is called after it. */
 	public function loadVariants(path:String, loaded:ShaderVariants->Void, ?failed:String->Void):Void->Void {
 		var stop:Null<Void->Void> = null;
-		var abort = assets.load(path, bytes -> {
+		var abort = assets.read(path, bytes -> {
 			var parsed = parse(bytes);
 			if (parsed == null || parsed.kind != "variants") {
 				fail(path, parsed == null ? "not a shader file" : "one shader, not a file of variants", failed);

@@ -34,14 +34,23 @@ class AtomicFile {
 		}
 	}
 
-	// Makes dir and its parents. Two threads may make the same directory at once: one that exists by the time making it fails is fine.
-	static function makeDirectory(dir:String):Void
-		if (dir != "")
-			try
-				sys.FileSystem.createDirectory(dir)
-			catch (error:Dynamic)
-				if (!sys.FileSystem.exists(dir) || !sys.FileSystem.isDirectory(dir))
+	// Makes dir and its parents. Two threads may make the same directories at once. Making one that another thread made first fails, so
+	// it's tried again, each try getting at least one directory further, until dir exists.
+	static function makeDirectory(dir:String):Void {
+		if (dir == "")
+			return;
+		var tries = ~/[\/\\]/g.split(dir).length + 1;
+		while (true)
+			try {
+				sys.FileSystem.createDirectory(dir);
+				return;
+			} catch (error:Dynamic) {
+				if (sys.FileSystem.exists(dir) && sys.FileSystem.isDirectory(dir))
+					return;
+				if (--tries <= 0)
 					throw error;
+			}
+	}
 
 	// Renames from over to, replacing it in one step: 1 when it did.
 	static function replace(from:String, to:String):Int {

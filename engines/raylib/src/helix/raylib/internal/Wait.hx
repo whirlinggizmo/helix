@@ -118,9 +118,9 @@ class Wait {
 						body = forwarded(body, parent, forwards);
 					var wrapped = macro @:pos(body.pos) helix.raylib.internal.Wait.body($body, $v{key}, $v{field.name == "new"}, false);
 					if (isMain && field.name == "main") {
-						var host = Context.definedValue("helix-raylib-asset-host");
+						var hosts = Context.definedValue("helix-raylib-asset-hosts");
 						wrapped = macro @:pos(body.pos) {
-							helix.raylib.internal.Runtime.builtHost = $v{host};
+							helix.raylib.internal.Runtime.builtHosts = $v{hosts};
 							helix.raylib.internal.Runtime.boot(function() $wrapped);
 						};
 					}

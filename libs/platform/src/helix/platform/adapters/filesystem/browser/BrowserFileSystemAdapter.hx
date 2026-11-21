@@ -67,7 +67,7 @@ class BrowserFileSystemAdapter implements IFileSystem {
 			if (aborted)
 				return;
 			if (error != null || path != null && !FilePath.isValid(path)) {
-				var message = error != null ? error : FilePath.INVALID;
+				var message = error != null ? error : FilePath.whyInvalid(path);
 				js.Browser.window.setTimeout(() -> fail(message), 0);
 				return;
 			}

@@ -601,9 +601,7 @@ static macro function EndDrawing():Void
 - `GetWorkingDirectory`: Returns the working directory. See `GetApplicationDirectory` for finding the program's files.
   - returns: The directory, without a slash at its end.
 
-  `TakeScreenshot` writes to it.
-
-  helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
+  helix-raylib doesn't read or write files in it. A load reads the program's files, and a save, an export or a screenshot is written to the data directory, wherever the working directory is.
 - `GetApplicationDirectory`: Returns the directory the program's files are read from.
   - returns: The directory, with a slash at its end.
 
@@ -612,9 +610,7 @@ static macro function EndDrawing():Void
   - `dir`: The directory.
   - returns: True when the working directory is it now.
 
-  `TakeScreenshot` writes to the new directory from then on.
-
-  helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
+  helix-raylib's loads, saves, exports and screenshots are unchanged, as none of them uses the working directory.
 
   A failure logs a warning.
 - `IsFileExtension`: Returns whether a file name ends in one of some extensions, ignoring the case of A to Z.
@@ -962,7 +958,7 @@ static macro function EndDrawing():Void
 
   The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
-  It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
+  Natively it is written to the data directory, as `ExportImage` writes, and `LoadImage` reads it back. In a page it is downloaded, named by the name's last part.
 
   The image is the framebuffer's size, its alpha opaque, as raylib's is.
 
@@ -1203,24 +1199,24 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   - `loaded`: Receives its bytes.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  Reads the first of these that has the file: - the program's `SetLoadFileDataCallback` - what `SaveFileData` wrote - the program's files
+  Reads the first of these that has the file: - the program's `SetLoadFileDataCallback` - the data directory, where `SaveFileData` and `SaveFileText` write - the program's files
 - `LoadFileTextAsync`: Asynchronously reads a text file, replacing raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
-  Reads the first of these that has the file: - the program's `SetLoadFileTextCallback` - what `SaveFileText` wrote - the program's files
+  Reads the first of these that has the file: - the program's `SetLoadFileTextCallback` - the data directory, where `SaveFileText` and `SaveFileData` write - the program's files
 
   The text ends at the file's first NUL byte, as raylib's C string does.
 
-  A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
-- `LoadSavedFileDataAsync`: Asynchronously reads a saved file's bytes: one `SaveFileData` or `SaveFileText` wrote. See `LoadFileDataAsync` for any other file.
+  A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it contains.
+- `LoadSavedFileDataAsync`: Asynchronously reads a saved file's bytes: one in the data directory, where `SaveFileData` and `SaveFileText` write. See `LoadFileDataAsync` for any other file.
   - `fileName`: The file.
   - `loaded`: Receives its bytes.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
 
   Reads the program's `SetLoadFileDataCallback` first when it has one. A file that wasn't saved fails, at a later frame.
-- `LoadSavedFileTextAsync`: Asynchronously reads a saved text file: one `SaveFileText` or `SaveFileData` wrote. See `LoadFileTextAsync` for any other file.
+- `LoadSavedFileTextAsync`: Asynchronously reads a saved text file: one in the data directory, where `SaveFileText` and `SaveFileData` write. See `LoadFileTextAsync` for any other file.
   - `fileName`: The file.
   - `loaded`: Receives its text.
   - `failed`: Optional. Receives why it couldn't be read; when omitted, it is logged.
@@ -1235,7 +1231,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
   - `done`: Optional. Called once the file is written, or once it is refused, at a later poll.
   - `failed`: Optional. Receives why it wasn't; when omitted, it is logged.
 
-  They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as `SaveFileTextAsync`'s are.
+  They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are written to the data directory, as `SaveFileTextAsync`'s are, and kept across runs.
 
   `LoadFileDataAsync` reads them back.
 - `SaveFileTextAsync`: Asynchronously writes a text file, replacing raylib's `SaveFileText`. See `SaveFileDataAsync` for writing bytes.
@@ -1246,7 +1242,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
-  Otherwise it is kept across runs, and answered once the write has finished.
+  Otherwise it is written to the data directory, kept across runs, and answered once the write has finished.
 
   `LoadFileTextAsync` reads it back.
 - `FileExistsAsync`: Asynchronously answers whether a file exists, replacing raylib's `FileExists`. See `DirectoryExistsAsync` for a directory.
@@ -1255,12 +1251,12 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The answer comes at a later frame, never during the call.
 
-  A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
+  A file exists when it is in the data directory, where `SaveFileText` and `SaveFileData` write, or one of the program's.
 
-  Finding one of the program's files reads it, so a load of it after answers at once.
+  Finding a file reads it, so a load of it after answers at once.
 
   Why a file doesn't exist is logged at `LOG_INFO`.
-- `SavedFileExistsAsync`: Asynchronously answers whether a saved file exists: one `SaveFileText` or `SaveFileData` wrote. See `FileExistsAsync` for any other file.
+- `SavedFileExistsAsync`: Asynchronously answers whether a saved file exists: one in the data directory, where `SaveFileText` and `SaveFileData` write. See `FileExistsAsync` for any other file.
   - `fileName`: The file.
   - `answer`: Receives true when it was saved.
 
@@ -1271,32 +1267,32 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The answer comes at a later frame, never during the call.
 
-  A directory exists when a file `SaveFileText` or `SaveFileData` wrote is in it. The root ("", "." or "./") always exists.
+  A directory exists when a file is in it: in the data directory, where `SaveFileText` and `SaveFileData` write, among the dropped files, or natively among the program's files. The root ("", "." or "./") always exists.
 
-  `helix-raylib-dropped` and the directories under it hold the dropped files.
+  `helix-raylib-dropped` and the directories under it contain the dropped files.
 
-  The program's own files aren't in directories: a program names each one it loads.
+  In a page the program's files are on its server, which lists no directory.
 - `IsPathFileAsync`: Asynchronously answers whether a path is a file, not a directory, replacing raylib's `IsPathFile`. See `DirectoryExistsAsync` for a directory.
   - `path`: The path.
   - `answer`: Receives true for a file; false for a directory or nothing there.
 
   The answer comes at a later frame, never during the call.
 
-  These are files: - a file `SaveFileText` or `SaveFileData` wrote - a dropped file - a file the program has
+  These are files: - a file in the data directory, where `SaveFileText` and `SaveFileData` write - a dropped file - a file the program has
 - `GetFileLengthAsync`: Asynchronously answers a file's size, replacing raylib's `GetFileLength`.
   - `fileName`: The file.
   - `answer`: Receives its size in bytes; 0 when there is no file, as raylib's.
 
   The answer comes at a later frame, never during the call.
 
-  The size is: - for a file `SaveFileText` or `SaveFileData` wrote, or the callback `SetLoadFileDataCallback` set returns, its bytes' size - for a dropped file, its own - for a file of the program's, its size
+  The size is: - for a file the callback `SetLoadFileDataCallback` set returns, its bytes' size - for a file in the data directory, where `SaveFileText` and `SaveFileData` write, its size - for a dropped file, its own - for a file of the program's, its size
 - `GetFileModTimeAsync`: Asynchronously answers when a file was last written, replacing raylib's `GetFileModTime`.
   - `fileName`: The file.
   - `answer`: Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's.
 
   The answer comes at a later frame, never during the call.
 
-  The time is: - for a file of the program's, its time on disk - for a file `SaveFileText` or `SaveFileData` wrote, when it was saved - for a dropped file, the time kept for it - 0 for a file whose time isn't kept, such as one the program's load callback returns
+  The time is: - for a file in the data directory, where `SaveFileText` and `SaveFileData` write, when it was written - for a file of the program's, its time on disk - for a dropped file, the time kept for it - 0 for a file whose time isn't kept, such as one the program's load callback returns or one on a page's server
 - `LoadDirectoryFilesAsync`: Asynchronously lists a directory's files and subdirectories, replacing raylib's `LoadDirectoryFiles`. See `LoadDirectoryFilesExAsync` for a filter by extension and the subdirectories' files.
   - `dirPath`: The directory.
   - `loaded`: Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as raylib's.
@@ -1307,7 +1303,7 @@ static function ExportAutomationEventListAsync(list:AutomationEventList, fileNam
 
   The paths are sorted by name.
 
-  The files listed are those `SaveFileText` and `SaveFileData` wrote, and the dropped files, in `DirectoryExistsAsync`'s directories. The program's own files aren't listed: a program names each one it loads.
+  The files listed are those in the data directory, where `SaveFileText` and `SaveFileData` write, the dropped files, and natively the program's files, as raylib lists them. In a page the program's files are on its server, which lists no directory, and the log says so.
 - `LoadDirectoryFilesExAsync`: Asynchronously lists a directory's files with some extensions, and with `scanSubdirs` its subdirectories' too, replacing raylib's `LoadDirectoryFilesEx`. See `LoadDirectoryFilesAsync` for listing one directory's every file and subdirectory.
   - `basePath`: The directory.
   - `filter`: The extensions kept, such as ".png;.jpg;DIR", or null for every file.

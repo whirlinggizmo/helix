@@ -3,7 +3,7 @@
 -main Main
 -dce full
 -cpp native
--D helix-raylib-asset-host=..
+-D helix-raylib-asset-hosts=..
 -D helix-raylib-portable-sys
 -D helix-company=helix-trials
 -D helix-product=wardens

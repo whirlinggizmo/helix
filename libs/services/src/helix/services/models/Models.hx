@@ -84,7 +84,7 @@ class Models {
 			else
 				Log.warn(message, "models");
 		}
-		aborts.push(assets.load(path, bytes -> {
+		aborts.push(assets.read(path, bytes -> {
 			if (aborted)
 				return;
 			var file = try GltfFile.read(bytes, path) catch (e:String) {
@@ -134,7 +134,7 @@ class Models {
 			}
 			var waiting = buffers.length;
 			for (buffer in buffers)
-				aborts.push(assets.load(buffer.path, (bytes:Bytes) -> {
+				aborts.push(assets.read(buffer.path, (bytes:Bytes) -> {
 					if (aborted || finished)
 						return;
 					try
@@ -181,7 +181,7 @@ class Models {
 			else
 				Log.warn(message, "models");
 		}
-		aborts.push(assets.load(path, bytes -> {
+		aborts.push(assets.read(path, bytes -> {
 			if (aborted)
 				return;
 			var file = try ObjFile.read(bytes, path) catch (e:String) {
@@ -236,7 +236,7 @@ class Models {
 				if (--left == 0 && !aborted && !finished)
 					textures();
 			for (i => libraryPath in paths)
-				aborts.push(assets.load(libraryPath, (bytes:Bytes) -> {
+				aborts.push(assets.read(libraryPath, (bytes:Bytes) -> {
 					libraries[i] = try MtlFile.read(bytes, libraryPath) catch (e:String) {
 						Log.warn('$libraryPath: $e', "models");
 						null;
@@ -261,7 +261,7 @@ class Models {
 	// An image in a file of its own: read through the assets and decoded for the GPU, as one held in the model is. A failure names the file.
 	function loadImage(path:String, loaded:ModelImage3D->Void, failed:String->Void):Void->Void {
 		var aborted = false, abortDecode:Null<Void->Void> = null;
-		var abortLoad = assets.load(path,
+		var abortLoad = assets.read(path,
 			bytes -> if (!aborted) abortDecode = images.decodeForGpu(bytes, image -> loaded(new ModelImage3D(path, bytes, image)),
 				message -> failed('$path: $message')),
 			failed);

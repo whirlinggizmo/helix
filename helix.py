@@ -156,6 +156,17 @@ def raylib_tests(native):
             native_build.place_runtimes(ROOT/'build/tests'/f'{main}-cpp',found)
             result([str(ROOT/'build/tests'/f'{main}-cpp'/(f'{main}.exe' if sys.platform=='win32' else main))])
         print(f'{main}: {value["checks"]} checks (Node{" and hxcpp" if native else ""})',flush=True)
+    if native:asset_hosts(base)
+
+def asset_hosts(base):
+    """helix-raylib's asset hosts in hxcpp (engines/raylib/tests/native's AssetHostsTests), over directories of the test's own and a
+    server of its own on this machine. Built without -D helix-raylib-portable-sys, as the test writes its files with Haxe's own calls."""
+    import native_build,sdl3
+    found=sdl3.find()
+    run(['haxe',*base,*named('AssetHostsTests'),'-cp','engines/raylib/tests/native','-main','AssetHostsTests','-cpp','build/tests/AssetHostsTests-cpp','-D','analyzer-optimize','-D',native_build.ARCH],env=native_build.env(found))
+    native_build.place_runtimes(ROOT/'build/tests/AssetHostsTests-cpp',found)
+    value=result([str(ROOT/'build/tests/AssetHostsTests-cpp'/('AssetHostsTests.exe' if sys.platform=='win32' else 'AssetHostsTests'))])
+    print(f'AssetHostsTests: {value["checks"]} checks (hxcpp)',flush=True)
 
 def vector_allocation():
     """helix-math's vectors are built in place in hxcpp: the C++ generated for Vector2, Vector3 and Vector4, every member kept, defines

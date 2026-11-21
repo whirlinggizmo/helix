@@ -59,7 +59,7 @@ dropped.
 | Whether something is there | `hasX(...)`, naming what it looks for; never a bare `has` | `saves.hasKey("level")`, `config.hasOption("speed")` |
 | Whether an action is possible here, so whether to offer it | `canX()` | `window.canMove()`, `window.canClose()` |
 | Ask for what the platform may refuse or grant later | `requestX(...)` | `window.requestFullscreen(true)`, `window.requestSize(800, 600)` |
-| An action | a verb | `window.close()`, `audio.stop(voice)`, `assets.load(path, done)` |
+| An action | a verb | `window.close()`, `audio.stop(voice)`, `assets.read(path, done)` |
 | A count or a limit | a property naming what it counts, ending in `Count`; an array of counts ends in `Counts`; the limit first | `events.gamepadCount`, `graphics.msaaSampleCount`, `graphics.maxMsaaSampleCount`, `wav.channelCount` |
 | How far a sequence runs | `length`, or a name ending in `Length`, in the sequence's own elements (a string's characters, an array's items, a buffer's bytes), its positions 0 to the length less one | `bytes.length`, `bytes(buffer, messageLength, arrivalTime)` |
 | An index | a property naming what it indexes, ending in `Index`; an array of indices ends in `Indices`. A mesh's vertex indices stay `indices`, as glTF and raylib name them | `GltfNode.meshIndex`, `GltfMaterial.baseColorImageIndex`, `Model3D.meshMaterialIndices`, `Mesh3D.indices` |

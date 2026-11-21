@@ -601,8 +601,8 @@ In a page the browser's events arrive on the main thread, and the adapter holds 
 
 `IFileSystem`: files that reside on this machine, under one root given at construction (natively a directory, in a page an IndexedDB
 database), read and written whole by path. A path is plain names joined by `/` (`audio/music.ogg`): letters, digits, `_`, `-` and `.`,
-at most 256 characters, none empty, `.` or `..`; every adapter checks it, by `FilePath.isValid`, which a layer above may hold its other
-sources to as well (helix-services' `Assets` does). A directory is there while a file is under it, as a page's are: there is no call
+at most 256 characters, none empty, `.` or `..`. Every adapter checks it, by `FilePath.isValid`, and refuses a path with the reason
+`FilePath.whyInvalid` returns. A directory is there while a file is under it, as a page's are: there is no call
 that makes or deletes one, and no seeking.
 
 - `root`, the root as given; `canWrite`, whether it can be written.

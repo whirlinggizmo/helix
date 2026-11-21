@@ -41,15 +41,15 @@ class RModelsAsync {
 	// LoadModelAsync's call where its file's name isn't known as the program builds (Raylib.LoadModelAsync): the reader picked by its
 	// extension as it runs, so both readers are in the program. A format helix-raylib doesn't read is refused.
 	static function loadModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName), lower = path.toLowerCase();
+		var path = keyOf(fileName), lower = path.toLowerCase();
 		var extension = lower.lastIndexOf(".") >= 0 ? lower.substr(lower.lastIndexOf(".")) : "";
 		if (extension == ".iqm" || extension == ".vox" || extension == ".m3d") {
-			Runtime.later(() -> refuse("LoadModelAsync", '$path: ${extension.substr(1).toUpperCase()} models are not supported; glTF, GLB and OBJ are',
+			Runtime.later(() -> refuse("LoadModelAsync", '$fileName: ${extension.substr(1).toUpperCase()} models are not supported; glTF, GLB and OBJ are',
 				failed));
 			return;
 		}
 		if (extension != ".glb" && extension != ".gltf" && extension != ".obj") {
-			Runtime.later(() -> refuse("LoadModelAsync", '$path: only glTF, GLB and OBJ are read here', failed));
+			Runtime.later(() -> refuse("LoadModelAsync", '$fileName: only glTF, GLB and OBJ are read here', failed));
 			return;
 		}
 		if (extension == ".obj")
@@ -60,46 +60,47 @@ class RModelsAsync {
 
 	// LoadModelAsync's call for a glTF or GLB file.
 	static function loadGltfModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (Models.isKept(path)) {
 			Runtime.later(() -> loaded(RModels.loadModel(path)));
 			return;
 		}
 		Runtime.modelling();
-		Runtime.models.loadGltf(path, read -> {
+		Runtime.models.loadGltf(fileName, read -> {
 			// raylib assigns a mesh without joints whose node is a bone's child to that bone: the nodes are the file's, read again.
 			if (read.skeleton != null && read.skins.length > 0 && Lambda.exists(read.meshes, m -> m.jointIndices == null)) {
-				Animations.read(path, file -> {
-					Models.keep(read, defaultShader(), Animations.attached(file));
+				Animations.read(fileName, file -> {
+					Models.keep(path, read, defaultShader(), Animations.attached(file));
 					loaded(RModels.loadModel(path));
 				}, error -> refuse("LoadModelAsync", error, failed));
 				return;
 			}
-			Models.keep(read, defaultShader());
+			Models.keep(path, read, defaultShader());
 			loaded(RModels.loadModel(path));
 		}, error -> refuse("LoadModelAsync", error, failed));
 	}
 
 	// LoadModelAsync's call for an OBJ file.
 	static function loadObjModel(fileName:String, loaded:Model->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (Models.isKept(path)) {
 			Runtime.later(() -> loaded(RModels.loadModel(path)));
 			return;
 		}
-		loadObj(path, loaded, failed);
+		loadObj(fileName, loaded, failed);
 	}
 
 	// An OBJ file, the last library its mtllib lines name (one that can't be read logged and left out) and that library's textures (one that
 	// can't be, logged and left none), then its model kept for its loads.
 	static function loadObj(path:String, loaded:Model->Void, failed:Null<String->Void>):Void {
+		var key = keyOf(path);
 		Runtime.fetch(path, error -> {
 			if (error != null) {
 				refuse("LoadModelAsync", error, failed);
 				return;
 			}
 			// raylib reads an empty file as one it can't read.
-			var bytes = Runtime.files.get(path);
+			var bytes = Runtime.files.get(key);
 			if (bytes.length == 0) {
 				refuse("LoadModelAsync", '$path: Unable to read obj file', failed);
 				return;
@@ -111,9 +112,9 @@ class RModelsAsync {
 			function made(library:Null<MtlFile>):Void
 				withTextures(library, () -> {
 					var shader = defaultShader();
-					Models.keepMade(path, ObjModels.template(obj, library), library != null && library.materials.length > 0 ? () ->
-						ObjModels.materials(library, shader) : () -> [Models.defaultMaterial(shader)]);
-					loaded(RModels.loadModel(path));
+					Models.keepMade(key, ObjModels.template(obj, library), library != null && library.materials.length > 0 ? () -> ObjModels.materials(library,
+						shader) : () -> [Models.defaultMaterial(shader)]);
+					loaded(RModels.loadModel(key));
 				});
 			var libraryPath = ObjModels.libraryPath(obj);
 			if (libraryPath == null)
@@ -133,7 +134,7 @@ class RModelsAsync {
 				failed(error);
 				return;
 			}
-			var library = try MtlFile.read(Runtime.files.get(path), path) catch (e:String) {
+			var library = try MtlFile.read(Runtime.files.get(keyOf(path)), path) catch (e:String) {
 				failed('$path: $e');
 				return;
 			}
@@ -172,19 +173,19 @@ class RModelsAsync {
 		@param loaded  Receives the animations, as many as the file has; their count is its length.
 		@param failed  Optional. Receives why they couldn't be loaded; when omitted, it is logged. */
 	static function LoadModelAnimationsAsync(fileName:String, loaded:Array<ModelAnimation>->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName), lower = path.toLowerCase();
+		var path = keyOf(fileName), lower = path.toLowerCase();
 		if (StringTools.endsWith(lower, ".iqm") || StringTools.endsWith(lower, ".m3d")) {
-			Runtime.later(() -> refuse("LoadModelAnimationsAsync", '$path: ${lower.substr(-3).toUpperCase()} animations are not supported; glTF and GLB are',
-				failed));
+			Runtime.later(() -> refuse("LoadModelAnimationsAsync",
+				'$fileName: ${lower.substr(-3).toUpperCase()} animations are not supported; glTF and GLB are', failed));
 			return;
 		}
 		if (!(StringTools.endsWith(lower, ".glb") || StringTools.endsWith(lower, ".gltf"))) {
-			Runtime.later(() -> refuse("LoadModelAnimationsAsync", '$path: only glTF and GLB are read here', failed));
+			Runtime.later(() -> refuse("LoadModelAnimationsAsync", '$fileName: only glTF and GLB are read here', failed));
 			return;
 		}
-		Animations.read(path, file -> {
-			var animations = try Animations.fromGltf(file, path) catch (e:Dynamic) {
-				refuse("LoadModelAnimationsAsync", '$path: $e', failed);
+		Animations.read(fileName, file -> {
+			var animations = try Animations.fromGltf(file, fileName) catch (e:Dynamic) {
+				refuse("LoadModelAnimationsAsync", '$fileName: $e', failed);
 				return;
 			}
 			loaded(animations);
@@ -218,12 +219,12 @@ class RModelsAsync {
 		@param failed  Optional. Receives why they couldn't be loaded (the file isn't an .mtl file, can't be found or can't be read); when
 			omitted, it is logged. */
 	static function LoadMaterialsAsync(fileName:String, loaded:Array<Material>->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		if (!StringTools.endsWith(path.toLowerCase(), ".mtl")) {
-			Runtime.later(() -> refuse("LoadMaterialsAsync", '$path: only .mtl files are read here', failed));
+			Runtime.later(() -> refuse("LoadMaterialsAsync", '$fileName: only .mtl files are read here', failed));
 			return;
 		}
-		readLibrary(path, library -> withTextures(library, () -> loaded(ObjModels.materials(library, defaultShader()))),
+		readLibrary(fileName, library -> withTextures(library, () -> loaded(ObjModels.materials(library, defaultShader()))),
 			error -> refuse("LoadMaterialsAsync", error, failed));
 	}
 

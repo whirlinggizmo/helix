@@ -12,9 +12,9 @@ class Defines {
 	/** helix-raylib's defines, each with its documentation. */
 	public static final ALL:Array<haxe.macro.Compiler.DefineDescription> = [
 		{
-			define: "helix-raylib-asset-host",
-			doc: "Where the program's assets come from (SetAssetHost), unless the program sets it or the asset_host option sets one: a URL the assets are fetched from, natively and in a page, or a directory, relative to the program's own. Defaults to ../web natively and to the page's own directory in a page.",
-			params: ["url or directory"]
+			define: "helix-raylib-asset-hosts",
+			doc: "Where the program's assets come from (SetAssetHosts), unless the program sets the hosts or the asset_hosts option names them: a list separated by commas, in the order the hosts are asked. Each host is a URL the assets are fetched from, natively and in a page, or a directory, relative to the program's own. Defaults to ../web natively and to the page's own directory in a page.",
+			params: ["urls and directories"]
 		},
 		{
 			define: "helix-raylib-host-warnings",

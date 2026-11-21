@@ -41,57 +41,48 @@ class RFilesAsync {
 
 		Reads the first of these that has the file:
 		- the program's `SetLoadFileDataCallback`
-		- what `SaveFileData` wrote
+		- the data directory, where `SaveFileData` and `SaveFileText` write
 		- the program's files
 
 		@param fileName  The file.
 		@param loaded  Receives its bytes.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		Runtime.withSaves(_ -> {
-			var bytes = RCore.dataNow(path);
-			if (bytes != null) {
-				Runtime.later(() -> loaded(bytes));
-				return;
-			}
-			Runtime.fetch(path, error -> error == null ? loaded(Runtime.files.get(path)) : refuse("LoadFileDataAsync", error, failed));
-		});
+		var path = keyOf(fileName);
+		var bytes = RCore.dataNow(path);
+		if (bytes != null) {
+			Runtime.later(() -> loaded(bytes));
+			return;
+		}
+		Runtime.fetch(fileName, error -> error == null ? loaded(Runtime.files.get(path)) : refuse("LoadFileDataAsync", error, failed));
 	}
 
 	/** Asynchronously reads a text file, replacing raylib's `LoadFileText`. See `LoadFileDataAsync` for reading a file's bytes.
 
 		Reads the first of these that has the file:
 		- the program's `SetLoadFileTextCallback`
-		- what `SaveFileText` wrote
+		- the data directory, where `SaveFileText` and `SaveFileData` write
 		- the program's files
 
 		The text ends at the file's first NUL byte, as raylib's C string does.
 
-		A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it holds.
+		A byte that isn't UTF-8 is read as U+FFFD. A file is never refused for what it contains.
 
 		@param fileName  The file.
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
+		var path = keyOf(fileName);
 		var given = RCore.loadText == null ? null : RCore.loadText(path);
 		if (given != null) {
 			Runtime.later(() -> loaded(given));
 			return;
 		}
-		Runtime.withSaves(saves -> {
-			if (saves.hasKey(SAVED + path)) {
-				var text = saves.getString(SAVED + path, "");
-				Runtime.later(() -> loaded(text));
-				return;
-			}
-			Runtime.fetch(path, error -> error == null ? loaded(fileText(Runtime.files.get(path))) : refuse("LoadFileTextAsync", error, failed));
-		});
+		Runtime.fetch(fileName, error -> error == null ? loaded(fileText(Runtime.files.get(path))) : refuse("LoadFileTextAsync", error, failed));
 	}
 
 	// A file's text as raylib's LoadFileText returns it: its bytes up to the first NUL (a C string ends there for every text function), and
-	// never refused for what they hold; bytes that aren't UTF-8, which a String can't hold, read as U+FFFD.
+	// never refused for what they contain; bytes that aren't UTF-8, which a String can't represent, read as U+FFFD.
 	static function fileText(bytes:haxe.io.Bytes):String {
 		var end = 0;
 		while (end < bytes.length && bytes.get(end) != 0)
@@ -99,7 +90,8 @@ class RFilesAsync {
 		return helix.formats.text.Utf8Text.decodeReplacing(bytes, 0, end);
 	}
 
-	/** Asynchronously reads a saved file's bytes: one `SaveFileData` or `SaveFileText` wrote. See `LoadFileDataAsync` for any other file.
+	/** Asynchronously reads a saved file's bytes: one in the data directory, where `SaveFileData` and `SaveFileText` write. See
+		`LoadFileDataAsync` for any other file.
 
 		Reads the program's `SetLoadFileDataCallback` first when it has one. A file that wasn't saved fails, at a later frame.
 
@@ -107,19 +99,16 @@ class RFilesAsync {
 		@param loaded  Receives its bytes.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadSavedFileDataAsync(fileName:String, loaded:haxe.io.Bytes->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		var given = CallbackFiles.load == null ? null : CallbackFiles.load(path);
+		var given = CallbackFiles.load == null ? null : CallbackFiles.load(keyOf(fileName));
 		if (given != null) {
 			Runtime.later(() -> loaded(given));
 			return;
 		}
-		Runtime.withSaves(saves -> {
-			var bytes = savedBytes(saves, path);
-			Runtime.later(() -> bytes != null ? loaded(bytes) : refuse("LoadSavedFileDataAsync", notSaved(saves, path), failed));
-		});
+		readSaved(fileName, loaded, error -> refuse("LoadSavedFileDataAsync", error, failed));
 	}
 
-	/** Asynchronously reads a saved text file: one `SaveFileText` or `SaveFileData` wrote. See `LoadFileTextAsync` for any other file.
+	/** Asynchronously reads a saved text file: one in the data directory, where `SaveFileText` and `SaveFileData` write. See
+		`LoadFileTextAsync` for any other file.
 
 		Reads the program's `SetLoadFileTextCallback` first when it has one. A file that wasn't saved fails, at a later frame.
 
@@ -129,35 +118,24 @@ class RFilesAsync {
 		@param loaded  Receives its text.
 		@param failed  Optional. Receives why it couldn't be read; when omitted, it is logged. */
 	static function LoadSavedFileTextAsync(fileName:String, loaded:String->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		var given = RCore.loadText == null ? null : RCore.loadText(path);
+		var given = RCore.loadText == null ? null : RCore.loadText(keyOf(fileName));
 		if (given != null) {
 			Runtime.later(() -> loaded(given));
 			return;
 		}
-		Runtime.withSaves(saves -> {
-			var bytes = savedBytes(saves, path);
-			Runtime.later(() -> bytes != null ? loaded(fileText(bytes)) : refuse("LoadSavedFileTextAsync", notSaved(saves, path), failed));
-		});
+		readSaved(fileName, bytes -> loaded(fileText(bytes)), error -> refuse("LoadSavedFileTextAsync", error, failed));
 	}
 
-	// A saved file's bytes, as SaveFileData or SaveFileText kept them (bytes first, as the two write one file natively), or null.
-	static function savedBytes(saves:helix.services.saves.Saves, path:String):Null<haxe.io.Bytes> {
-		if (saves.hasKey(SAVED_DATA + path))
-			return haxe.crypto.Base64.decode(saves.getString(SAVED_DATA + path, ""));
-		if (saves.hasKey(SAVED + path))
-			return haxe.io.Bytes.ofString(saves.getString(SAVED + path, ""));
-		return null;
+	// A file read from the data directory alone, or why it couldn't be: not saved, or the directory's failure.
+	static function readSaved(fileName:String, read:haxe.io.Bytes->Void, failed:String->Void):Void {
+		Runtime.loading();
+		Runtime.saved.read(fileName, read, () -> failed('$fileName: no file was saved with that name'), failed);
 	}
-
-	// Why a saved file couldn't be read.
-	static function notSaved(saves:helix.services.saves.Saves, path:String):String
-		return saves.loaded ? '$path: no file was saved with that name' : '$path: the saves can\'t be read';
 
 	/** Asynchronously writes a file's bytes, replacing raylib's `SaveFileData`. See `SaveFileTextAsync` for writing text.
 
-		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are kept across runs, as
-		`SaveFileTextAsync`'s are.
+		They are written through the program's `SetSaveFileDataCallback` when it has one. Otherwise they are written to the data
+		directory, as `SaveFileTextAsync`'s are, and kept across runs.
 
 		`LoadFileDataAsync` reads them back.
 
@@ -174,7 +152,7 @@ class RFilesAsync {
 
 		Written through the program's `SetSaveFileTextCallback` when it has one, during the call, and answered by what that returned.
 
-		Otherwise it is kept across runs, and answered once the write has finished.
+		Otherwise it is written to the data directory, kept across runs, and answered once the write has finished.
 
 		`LoadFileTextAsync` reads it back.
 
@@ -191,38 +169,31 @@ class RFilesAsync {
 
 		The answer comes at a later frame, never during the call.
 
-		A file exists when `SaveFileText` or `SaveFileData` wrote it, or when it is one of the program's.
+		A file exists when it is in the data directory, where `SaveFileText` and `SaveFileData` write, or one of the program's.
 
-		Finding one of the program's files reads it, so a load of it after answers at once.
+		Finding a file reads it, so a load of it after answers at once.
 
 		Why a file doesn't exist is logged at `LOG_INFO`.
 
 		@param fileName  The file.
 		@param answer  Receives true when it exists. */
 	static function FileExistsAsync(fileName:String, answer:Bool->Void):Void {
-		var path = normalize(fileName);
-		Runtime.withSaves(saves -> {
-			if (saves.hasKey(SAVED + path) || saves.hasKey(SAVED_DATA + path) || Runtime.files.exists(path) || Runtime.images.exists(path)
-				|| Runtime.pictures.exists(path))
-				Runtime.later(() -> answer(true));
-			else
-				Runtime.fetch(path, error -> answer(error == null), true);
-		});
+		var path = keyOf(fileName);
+		if (Runtime.files.exists(path) || Runtime.images.exists(path) || Runtime.pictures.exists(path))
+			Runtime.later(() -> answer(true));
+		else
+			Runtime.fetch(fileName, error -> answer(error == null), true);
 	}
 
-	/** Asynchronously answers whether a saved file exists: one `SaveFileText` or `SaveFileData` wrote. See `FileExistsAsync` for any
-		other file.
+	/** Asynchronously answers whether a saved file exists: one in the data directory, where `SaveFileText` and `SaveFileData` write. See
+		`FileExistsAsync` for any other file.
 
 		The answer comes at a later frame, never during the call.
 
 		@param fileName  The file.
 		@param answer  Receives true when it was saved. */
 	static function SavedFileExistsAsync(fileName:String, answer:Bool->Void):Void {
-		var path = normalize(fileName);
-		Runtime.withSaves(saves -> {
-			var saved = saves.hasKey(SAVED + path) || saves.hasKey(SAVED_DATA + path);
-			Runtime.later(() -> answer(saved));
-		});
+		readSaved(fileName, _ -> answer(true), _ -> answer(false));
 	}
 
 	/** Asynchronously answers whether a directory exists, replacing raylib's `DirectoryExists`. See
@@ -230,16 +201,18 @@ class RFilesAsync {
 
 		The answer comes at a later frame, never during the call.
 
-		A directory exists when a file `SaveFileText` or `SaveFileData` wrote is in it. The root ("", "." or "./") always exists.
+		A directory exists when a file is in it: in the data directory, where `SaveFileText` and `SaveFileData` write, among the dropped
+		files, or natively among the program's files. The root ("", "." or "./") always exists.
 
-		`helix-raylib-dropped` and the directories under it hold the dropped files.
+		`helix-raylib-dropped` and the directories under it contain the dropped files.
 
-		The program's own files aren't in directories: a program names each one it loads.
+		In a page the program's files are on its server, which lists no directory.
 
 		@param dirPath  The directory.
 		@param answer  Receives true when it exists. */
 	static function DirectoryExistsAsync(dirPath:String, answer:Bool->Void):Void {
-		listOf(directoryOf(dirPath), names -> answer(names != null));
+		var root = keyOf(dirPath == null ? "" : dirPath) == "";
+		listOf(dirPath, names -> answer(names != null && (root || names.length > 0)));
 	}
 
 	/** Asynchronously answers whether a path is a file, not a directory, replacing raylib's `IsPathFile`. See
@@ -248,29 +221,26 @@ class RFilesAsync {
 		The answer comes at a later frame, never during the call.
 
 		These are files:
-		- a file `SaveFileText` or `SaveFileData` wrote
+		- a file in the data directory, where `SaveFileText` and `SaveFileData` write
 		- a dropped file
 		- a file the program has
 
 		@param path  The path.
 		@param answer  Receives true for a file; false for a directory or nothing there. */
 	static function IsPathFileAsync(path:String, answer:Bool->Void):Void {
-		var file = normalize(path);
-		Runtime.withSaves(saves -> {
-			if (saves.hasKey(SAVED + file) || saves.hasKey(SAVED_DATA + file) || Runtime.file(file) != null || Runtime.images.exists(file)
-				|| Runtime.pictures.exists(file)) {
-				Runtime.later(() -> answer(true));
+		var file = keyOf(path);
+		if (Runtime.file(file) != null || Runtime.images.exists(file) || Runtime.pictures.exists(file)) {
+			Runtime.later(() -> answer(true));
+			return;
+		}
+		infoOf(file, (size, _) -> {
+			#if js
+			if (size == null && !isDropped(file)) {
+				Runtime.fetch(path, error -> answer(error == null), true);
 				return;
 			}
-			infoOf(file, (size, _) -> {
-				#if js
-				if (size == null && !isDropped(file)) {
-					Runtime.fetch(file, error -> answer(error == null), true);
-					return;
-				}
-				#end
-				answer(size != null);
-			});
+			#end
+			answer(size != null);
 		});
 	}
 
@@ -279,35 +249,32 @@ class RFilesAsync {
 		The answer comes at a later frame, never during the call.
 
 		The size is:
-		- for a file `SaveFileText` or `SaveFileData` wrote, or the callback `SetLoadFileDataCallback` set returns, its bytes' size
+		- for a file the callback `SetLoadFileDataCallback` set returns, its bytes' size
+		- for a file in the data directory, where `SaveFileText` and `SaveFileData` write, its size
 		- for a dropped file, its own
 		- for a file of the program's, its size
 
 		@param fileName  The file.
 		@param answer  Receives its size in bytes; 0 when there is no file, as raylib's. */
 	static function GetFileLengthAsync(fileName:String, answer:Int->Void):Void {
-		var path = normalize(fileName);
-		Runtime.withSaves(saves -> {
-			var given = CallbackFiles.load == null ? null : CallbackFiles.load(path);
-			var size = given != null ? given.length : saves.hasKey(SAVED + path) ? haxe.io.Bytes.ofString(saves.getString(SAVED + path, ""))
-				.length : saves.hasKey(SAVED_DATA + path) ? haxe.crypto.Base64.decode(saves.getString(SAVED_DATA + path, "")).length : -1;
-			if (size >= 0) {
-				Runtime.later(() -> answer(size));
+		var path = keyOf(fileName);
+		var given = CallbackFiles.load == null ? null : CallbackFiles.load(path);
+		if (given != null) {
+			Runtime.later(() -> answer(given.length));
+			return;
+		}
+		infoOf(path, (size, _) -> {
+			if (size != null) {
+				answer(size);
 				return;
 			}
-			infoOf(path, (size, _) -> {
-				if (size != null) {
-					answer(size);
-					return;
-				}
-				#if js
-				if (!isDropped(path)) {
-					Runtime.fetch(path, error -> answer(error == null ? Runtime.files.get(path).length : 0), true);
-					return;
-				}
-				#end
-				answer(0);
-			});
+			#if js
+			if (!isDropped(path)) {
+				Runtime.fetch(fileName, error -> answer(error == null ? Runtime.files.get(path).length : 0), true);
+				return;
+			}
+			#end
+			answer(0);
 		});
 	}
 
@@ -316,23 +283,15 @@ class RFilesAsync {
 		The answer comes at a later frame, never during the call.
 
 		The time is:
+		- for a file in the data directory, where `SaveFileText` and `SaveFileData` write, when it was written
 		- for a file of the program's, its time on disk
-		- for a file `SaveFileText` or `SaveFileData` wrote, when it was saved
 		- for a dropped file, the time kept for it
-		- 0 for a file whose time isn't kept, such as one the program's load callback returns
+		- 0 for a file whose time isn't kept, such as one the program's load callback returns or one on a page's server
 
 		@param fileName  The file.
 		@param answer  Receives the time, in whole seconds since the Unix epoch; 0 when there is no file or no time, as raylib's. */
 	static function GetFileModTimeAsync(fileName:String, answer:Int->Void):Void {
-		var path = normalize(fileName);
-		Runtime.withSaves(saves -> {
-			if (saves.hasKey(SAVED_TIME + path) && (saves.hasKey(SAVED + path) || saves.hasKey(SAVED_DATA + path))) {
-				var time = Std.int(saves.getFloat(SAVED_TIME + path, 0));
-				Runtime.later(() -> answer(time));
-				return;
-			}
-			infoOf(path, (size, modified) -> answer(size == null ? 0 : Std.int(Math.ffloor(modified))));
-		});
+		infoOf(keyOf(fileName), (size, modified) -> answer(size == null ? 0 : Std.int(Math.ffloor(modified))));
 	}
 
 	/** Asynchronously lists a directory's files and subdirectories, replacing raylib's `LoadDirectoryFiles`. See
@@ -345,14 +304,15 @@ class RFilesAsync {
 
 		The paths are sorted by name.
 
-		The files listed are those `SaveFileText` and `SaveFileData` wrote, and the dropped files, in `DirectoryExistsAsync`'s
-		directories. The program's own files aren't listed: a program names each one it loads.
+		The files listed are those in the data directory, where `SaveFileText` and `SaveFileData` write, the dropped files, and natively
+		the program's files, as raylib lists them. In a page the program's files are on its server, which lists no directory, and the log
+		says so.
 
 		@param dirPath  The directory.
 		@param loaded  Receives the list, its `capacity` its `count`; empty, with a warning, when the directory can't be listed, as
 			raylib's. */
 	static function LoadDirectoryFilesAsync(dirPath:String, loaded:FilePathList->Void):Void {
-		listOf(directoryOf(dirPath), names -> {
+		listOf(dirPath, names -> {
 			var list = new FilePathList();
 			if (names == null)
 				Runtime.log(LOG_WARNING, "FILEIO: Failed to open requested directory");
@@ -392,7 +352,7 @@ class RFilesAsync {
 			list.count++;
 		}
 		function scan(dirPath:String, done:Void->Void):Void {
-			listOf(directoryOf(dirPath), names -> {
+			listOf(dirPath, names -> {
 				if (names == null) {
 					Runtime.log(LOG_WARNING, 'FILEIO: Directory cannot be opened ($dirPath)');
 					done();
@@ -429,14 +389,6 @@ class RFilesAsync {
 		scan(basePath, () -> loaded(list));
 	}
 
-	// A directory's path as the file systems accept it: "" for the root ("", "." or "./"), without "./" before it or a slash after.
-	static function directoryOf(dirPath:String):String {
-		var path = normalize(dirPath == null ? "" : dirPath);
-		while (StringTools.endsWith(path, "/"))
-			path = path.substr(0, path.length - 1);
-		return path == "." ? "" : path;
-	}
-
 	// A name in a directory, as raylib joins them: the directory as provided, a slash, the name.
 	static function joined(dirPath:String, name:String):String {
 		var base = dirPath == null ? "" : dirPath;
@@ -450,51 +402,42 @@ class RFilesAsync {
 		return path == "helix-raylib-dropped" || StringTools.startsWith(path, helix.raylib.internal.MemoryFiles.DROPPED);
 	}
 
-	// Lists a directory: of the dropped files, else of the files SaveFileText and SaveFileData wrote, a subdirectory's name ending in a
-	// slash. Null when there is none, at a later poll. The root always exists. The program's own files are never listed, on any target.
-	static function listOf(directory:String, listed:Null<Array<String>>->Void):Void {
-		if (directory != "" && !helix.platform.FilePath.isValid(directory)) {
-			Runtime.later(() -> listed(null));
-			return;
-		}
-		if (isDropped(directory)) {
-			Runtime.loading();
-			Runtime.memory.list(directory, names -> listed(names), () -> listed(null), error -> {
-				Runtime.log(LOG_WARNING, 'FILEIO: [$directory] $error');
-				listed(null);
-			});
-			return;
-		}
-		Runtime.withSaves(saves -> {
-			var names = new Map<String, Bool>();
-			for (key in saves.getKeys()) {
-				var path = StringTools.startsWith(key,
-					SAVED) ? key.substr(SAVED.length) : StringTools.startsWith(key, SAVED_DATA) ? key.substr(SAVED_DATA.length) : null;
-				if (path == null || directory != "" && !StringTools.startsWith(path, directory + "/"))
-					continue;
-				var inside = directory == "" ? path : path.substr(directory.length + 1);
-				var slash = inside.indexOf("/");
-				names.set(slash < 0 ? inside : inside.substr(0, slash + 1), true);
-			}
-			var sorted = [for (name in names.keys()) name];
-			sorted.sort((a, b) -> a < b ? -1 : a > b ? 1 : 0);
-			Runtime.later(() -> listed(directory == "" || sorted.length > 0 ? sorted : null));
+	// Lists a directory through the assets, a subdirectory's name ending in a slash: the data directory's, the dropped files' and natively
+	// the program's files. Null when the path is refused, with a warning, at a later poll.
+	static function listOf(dirPath:String, listed:Null<Array<String>>->Void):Void {
+		Runtime.loading();
+		Runtime.assets.list(dirPath == null ? "" : dirPath, names -> listed(names), error -> {
+			Runtime.log(LOG_WARNING, 'FILEIO: [$dirPath] $error');
+			listed(null);
 		});
 	}
 
-	// A file's size and when it was last written: of the dropped files, else natively of the program's files. A null size when there is
-	// none, at a later poll; a page's own files are on its server, whose times aren't known.
+	// A file's size and when it was last written, by its key: of the data directory's, then of the dropped files, else natively of the
+	// first directory host with it. A null size when there is none, at a later poll; a page's own files are on its servers, whose times
+	// aren't known.
 	static function infoOf(path:String, answer:(size:Null<Int>, modified:Float) -> Void):Void {
 		Runtime.loading();
-		var files:helix.platform.IFileSystem = isDropped(path) ? Runtime.memory : Runtime.shipped;
-		if (files == null || !helix.platform.FilePath.isValid(path)) {
+		if (!helix.platform.FilePath.isValid(path)) {
 			Runtime.later(() -> answer(null, 0));
 			return;
 		}
-		files.getInfo(path, (size, modified) -> answer(size, modified), () -> answer(null, 0), error -> {
-			Runtime.log(LOG_WARNING, 'FILEIO: [$path] $error');
-			answer(null, 0);
-		});
+		function from(files:Null<helix.platform.IFileSystem>, missing:Void->Void):Void {
+			if (files == null) {
+				Runtime.later(missing);
+				return;
+			}
+			files.getInfo(path, (size, modified) -> answer(size, modified), missing, error -> {
+				Runtime.log(LOG_WARNING, 'FILEIO: [$path] $error');
+				answer(null, 0);
+			});
+		}
+		function shipped(i:Int):Void {
+			if (i == Runtime.shipped.length)
+				answer(null, 0);
+			else
+				from(Runtime.shipped[i], () -> shipped(i + 1));
+		}
+		from(Runtime.data, () -> if (isDropped(path)) from(Runtime.memory, () -> answer(null, 0)) else shipped(0));
 	}
 
 	/** Asynchronously writes bytes as a C header, the text raylib's `ExportDataAsCode` writes. See

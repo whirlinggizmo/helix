@@ -61,7 +61,7 @@ class RTextAsync {
 
 	// LoadFontAsync's call for any other file.
 	static function loadPlainFont(fileName:String, loaded:Font->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName),
+		var path = keyOf(fileName),
 			type = haxe.io.Path.extension(path).toLowerCase();
 		if (type == "fnt") {
 			Runtime.fonts().loadBmFont(path, font -> {
@@ -100,13 +100,13 @@ class RTextAsync {
 		@param loaded  Receives the font once its glyphs are ready.
 		@param failed  Optional. Receives why it couldn't be loaded; when omitted, it is logged. */
 	static function LoadFontExAsync(fileName:String, fontSize:Int, codepoints:Array<Int>, codepointCount:Int, loaded:Font->Void, ?failed:String->Void):Void {
-		var path = normalize(fileName);
-		Runtime.fetch(path, error -> {
+		var path = keyOf(fileName);
+		Runtime.fetch(fileName, error -> {
 			if (error != null)
 				refuse("LoadFontExAsync", error, failed);
 			else
 				LoadFontFromMemoryAsync("." + haxe.io.Path.extension(path), Runtime.files.get(path), Runtime.files.get(path).length, fontSize, codepoints,
-					codepointCount, loaded, message -> refuse("LoadFontExAsync", '$path: $message', failed));
+					codepointCount, loaded, message -> refuse("LoadFontExAsync", '$fileName: $message', failed));
 		});
 	}
 

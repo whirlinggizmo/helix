@@ -48,7 +48,7 @@ class Main {
 		saves.load(() -> saves.setInt("runs", saves.getInt("runs", 0) + 1));
 		files = new BrowserFileSystemAdapter({name: "files"});
 		assets = new Assets([new FileSystemSource(files)]);
-		assets.load("level.json", bytes -> trace(bytes.length));
+		assets.read("level.json", bytes -> trace(bytes.length));
 		var frame:Float->Void = null;
 		frame = _ -> {
 			events.poll();

@@ -56,9 +56,7 @@ class ShaderFileTests {
 		Runtime.polled.push(files);
 		var data = new FakeFileSystem();
 		Runtime.polled.push(data);
-		Runtime.saves = new helix.services.saves.Saves(data);
-		Runtime.polled.push(Runtime.saves);
-		Runtime.assets = new helix.services.assets.Assets([new helix.services.assets.FileSystemSource(files)]);
+		Runtime.setFiles(data, [new helix.services.assets.FileSystemSource(files)]);
 
 		var loaded = load("glow.shader");
 		check(loaded.shader != null, "a compiled shader: loaded");

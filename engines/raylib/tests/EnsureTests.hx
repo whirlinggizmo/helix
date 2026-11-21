@@ -19,9 +19,10 @@ import helix.services.time.Time;
 	`LoadFontEx` and `LoadFont` during the call, and closed as it's released; a compiled shader ensured (tests/shaders' glow, embedded
 	by the build), loaded at once by `LoadCompiledShader`, one not ensured loaded during the call natively and empty in a page, and a
 	.shader file that isn't a compiled shader failing its ensure; an .mtl file ensured, each `LoadMaterials` of it materials of its own,
-	until it's released; and the asset host's order,
-	the option first, then `SetAssetHost`, then the build's define, then the default. On a source of the test's own that answers only
-	once as many fetches as it waits for have been asked. */
+	until it's released; and the asset hosts' order,
+	the option first, then `SetAssetHosts`, then the build's define, then the default, each list in its order, and the ensured assets
+	released as the hosts are set. On a source of the test's own that answers only once as many fetches as it waits for have been
+	asked. */
 @:access(helix.raylib.internal.Runtime)
 class EnsureTests {
 	static var checks = 0;
@@ -38,7 +39,7 @@ class EnsureTests {
 		Runtime.system = system;
 		Runtime.time = new Time(system);
 		var gate = new GatedSource(["a.txt" => "A", "b.txt" => "B", "c.txt" => "C", "d.txt" => "D", "e.txt" => "E"]);
-		Runtime.assets = new Assets([gate]);
+		Runtime.assets = new helix.raylib.internal.HostAssets([gate]);
 		Runtime.polled.push(Runtime.assets);
 
 		// Three files ensured together: answered only as the third is asked, which fetches one after another would never reach.
@@ -75,16 +76,14 @@ class EnsureTests {
 		check(failures.length == 1 && !whole, 'failed once, not ensured: $failures');
 		check(IsAssetEnsured("a.txt") && !IsAssetEnsured("missing.txt"), "the other file still ensured");
 
-		// A name is read from the host's root, `.` and `..` followed, never above it.
-		check(IsAssetEnsured("/b.txt")
-			&& IsAssetEnsured("x/../b.txt")
-			&& IsAssetEnsured("/x/./y/../../c.txt")
-			&& IsAssetEnsured("//b.txt"),
-			"a leading /, . and .. followed to the same file");
+		// A name is read from the host's root, `.` and `..` followed, never above it; an absolute path is another file.
+		check(IsAssetEnsured("x/../b.txt") && IsAssetEnsured("./x/./y/../../c.txt") && !IsAssetEnsured("/b.txt"),
+			". and .. followed to the same file, an absolute path another");
 		var escapes:Array<String> = [];
-		EnsureAssetsAsync(["../b.txt", "/x/../../b.txt"], () -> throw "a name above the host was ensured", error -> escapes.push(error));
+		EnsureAssetsAsync(["../b.txt", "x/../../b.txt"], () -> throw "a name above the host was ensured", error -> escapes.push(error));
 		poll();
-		check(escapes.length == 1 && !IsAssetEnsured("../b.txt"), 'a name climbing above the host fails: $escapes');
+		check(escapes.length == 1 && escapes[0].indexOf("is outside every asset host (") >= 0 && !IsAssetEnsured("../b.txt"),
+			'a name climbing above the host fails, as outside every root: $escapes');
 
 		// An image ensured is decoded to its pixels, and raylib's loads of it answer at once.
 		var graphics = new CountingGraphics();
@@ -182,19 +181,31 @@ class EnsureTests {
 		check(LoadImageRaw("pixels.raw", 2, 2, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, 0).data == null, "in a page, a released file doesn't load");
 		#end
 
-		// The host: the option, then the program's, then the build's define, then the default.
+		// The hosts: the option's, then the program's, then the build's define's, then the default.
 		#if js
-		check(GetAssetHost() == "", 'the default in a page: ${GetAssetHost()}');
+		check(GetAssetHosts().length == 1 && GetAssetHosts()[0] == "", 'the default in a page: ${GetAssetHosts()}');
 		#else
-		check(GetAssetHost() == "../web", 'the default natively: ${GetAssetHost()}');
+		check(GetAssetHosts().join("|") == "../web", 'the default natively: ${GetAssetHosts()}');
 		#end
-		Runtime.builtHost = "https://built.example/";
-		check(GetAssetHost() == "https://built.example/", "the build's define over the default");
-		SetAssetHost("files/");
-		check(GetAssetHost() == "files/", "the program's over the build's");
-		system.options.set("asset_host", "https://option.example/");
-		check(GetAssetHost() == "https://option.example/", "the option over the program's");
-		check(IsAssetEnsured("b.txt"), "files ensured stay ensured as the host changes");
+		Runtime.builtHosts = "mods/, https://built.example/,";
+		check(GetAssetHosts().join("|") == "mods/|https://built.example/", 'the build\'s define over the default, its list in order: ${GetAssetHosts()}');
+		var out = ["stale"];
+		check(GetAssetHosts(out) == out
+			&& out.join("|") == "mods/|https://built.example/", 'the hosts filled into an array provided: $out');
+		check(IsAssetEnsured("b.txt") && Runtime.files.exists("b.txt"), "a file ensured before the hosts are set");
+		var hosts = ["files/", "https://program.example/"],
+			before = Runtime.assets;
+		Runtime.files.set("loaded.txt", haxe.io.Bytes.ofString("a load's"));
+		SetAssetHosts(hosts);
+		hosts.push("later/");
+		check(GetAssetHosts().join("|") == "files/|https://program.example/", 'the program\'s over the build\'s, as they were when set: ${GetAssetHosts()}');
+		check(!IsAssetEnsured("b.txt") && !Runtime.files.exists("b.txt") && !IsAssetEnsured("a.txt"), "the ensured assets released as the hosts are set");
+		check(!Runtime.files.exists("loaded.txt"), "a file a load brought into memory released too");
+		check(Runtime.assets == before, "the assets the same, for the sounds and the fonts loading through them");
+		system.options.set("asset_hosts", "https://option.example/,extra/");
+		check(GetAssetHosts().join("|") == "https://option.example/|extra/", 'the option over the program\'s: ${GetAssetHosts()}');
+		SetAssetHosts(["ignored/"]);
+		check(GetAssetHosts().join("|") == "https://option.example/|extra/", "the option over a later SetAssetHosts");
 
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
@@ -214,6 +225,7 @@ class EnsureTests {
 // its own; a name it hasn't is missing.
 
 @:access(helix.raylib.internal.Runtime)
+@:access(helix.services.assets.AssetSource)
 private class GatedSource extends AssetSource {
 	/** The files it has, by path. */
 	public final files:Map<String, String>;
@@ -231,7 +243,14 @@ private class GatedSource extends AssetSource {
 		this.files = files;
 	}
 
-	public function load(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
+	// A path's . and .. followed, as a file system source follows them.
+	function nameOf(path:String):Null<String>
+		return AssetSource.follow(path);
+
+	function locationOf(name:String):String
+		return name;
+
+	public function read(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void {
 		asked.push(path);
 		pending.push(() -> files.exists(path) ? loaded(Bytes.ofString(files.get(path))) : missing());
 		if (pending.length >= waitFor) {
@@ -242,7 +261,7 @@ private class GatedSource extends AssetSource {
 	}
 
 	public function refetch(path:String, request:AssetRequest, loaded:Bytes->Void, missing:Void->Void, failed:String->Void):Void
-		load(path, request, loaded, missing, failed);
+		read(path, request, loaded, missing, failed);
 
 	public function locate(path:String, request:AssetRequest, located:(StreamSource, Void->Void) -> Void, missing:Void->Void, failed:String->Void):Void
 		missing();

@@ -269,8 +269,8 @@ class RCore {
 
 		The name's extension picks the format, as `ExportImageAsync` does: ".png", ".qoi" or ".raw". Any other is refused.
 
-		It is written where the name says, as raylib 6.2 writes it. A relative name is under the working directory, its directories
-		kept. An absolute one is where it is. A directory that isn't there isn't made, and the screenshot is refused.
+		Natively it is written to the data directory, as `ExportImage` writes, and `LoadImage` reads it back. In a page it is
+		downloaded, named by the name's last part.
 
 		The image is the framebuffer's size, its alpha opaque, as raylib's is.
 
@@ -1476,46 +1476,29 @@ class RCore {
 	}
 
 	// Writes a text file as SaveFileTextAsync does: through the program's SetSaveFileTextCallback when it has one, answered at a later
-	// poll by what it returned; else kept in the saves, answered once they are written.
+	// poll by what it returned; else to the data directory, answered once it is written.
 	static function writeText(fileName:String, text:String, written:Void->Void, failed:String->Void):Void {
-		var path = normalize(fileName);
 		if (saveText != null) {
-			var wrote = saveText(path, text);
-			Runtime.later(() -> wrote ? written() : failed('$path: the program\'s save callback didn\'t write it'));
+			var wrote = saveText(keyOf(fileName), text);
+			Runtime.later(() -> wrote ? written() : failed('$fileName: the program\'s save callback didn\'t write it'));
 			return;
 		}
-		keep(path, SAVED + path, text, written, failed);
+		Runtime.write(fileName, haxe.io.Bytes.ofString(text), written, failed);
 	}
 
-	// Writes a file's bytes as SaveFileDataAsync does: through the program's SetSaveFileDataCallback when it has one, else kept in the
-	// saves.
+	// Writes a file's bytes as SaveFileDataAsync does: through the program's SetSaveFileDataCallback when it has one, else to the data
+	// directory.
 	static function writeData(fileName:String, data:Null<haxe.io.Bytes>, dataSize:Int, written:Void->Void, failed:String->Void):Void {
-		var path = normalize(fileName);
 		if (data == null || dataSize < 0 || dataSize > data.length) {
-			Runtime.later(() -> failed('$path: there are no $dataSize bytes to write'));
+			Runtime.later(() -> failed('$fileName: there are no $dataSize bytes to write'));
 			return;
 		}
 		if (saveData != null) {
-			var wrote = saveData(path, data, dataSize);
-			Runtime.later(() -> wrote ? written() : failed('$path: the program\'s save callback didn\'t write it'));
+			var wrote = saveData(keyOf(fileName), data, dataSize);
+			Runtime.later(() -> wrote ? written() : failed('$fileName: the program\'s save callback didn\'t write it'));
 			return;
 		}
-		keep(path, SAVED_DATA + path, haxe.crypto.Base64.encode(data.sub(0, dataSize)), written, failed);
-	}
-
-	// Keeps a file in the saves under its key, with the time it was written, once they are read; answered once they are written. Saves
-	// that can't be read are left as they are.
-	static function keep(path:String, key:String, value:String, written:Void->Void, failed:String->Void):Void {
-		var time = Math.ffloor(Date.now().getTime() / 1000);
-		Runtime.withSaves(saves -> {
-			if (!saves.loaded) {
-				failed('$path: the saves can\'t be read, so nothing is written to them');
-				return;
-			}
-			saves.setString(key, value);
-			saves.setFloat(SAVED_TIME + path, time);
-			saves.flush(written, error -> failed('$path: $error'));
-		});
+		Runtime.write(fileName, data.sub(0, dataSize), written, failed);
 	}
 
 	/** Reads a file's bytes, and returns them. See `LoadFileText` for reading a text file.
@@ -1594,9 +1577,8 @@ class RCore {
 	/** Returns the working directory. See `GetApplicationDirectory` for finding
 		the program's files.
 
-		`TakeScreenshot` writes to it.
-
-		helix-raylib's loads don't read from it. A file's name is under the program's files wherever the working directory is.
+		helix-raylib doesn't read or write files in it. A load reads the program's files, and a save, an export or a screenshot is
+		written to the data directory, wherever the working directory is.
 
 		@return  The directory, without a slash at its end. */
 	static function GetWorkingDirectory():String {
@@ -1614,21 +1596,12 @@ class RCore {
 
 		@return  The directory, with a slash at its end. */
 	static function GetApplicationDirectory():String {
-		var host = Runtime.assetHost();
-		#if js
-		return Runtime.isUrlHost(host) ? haxe.io.Path.addTrailingSlash(host) : "./";
-		#else
-		if (Runtime.isUrlHost(host))
-			return haxe.io.Path.addTrailingSlash(host);
-		return haxe.io.Path.addTrailingSlash(haxe.io.Path.normalize(haxe.io.Path.join([Runtime.system.getProgramDirectory(), host])));
-		#end
+		return Runtime.applicationDirectory();
 	}
 
 	/** Changes the working directory.
 
-		`TakeScreenshot` writes to the new directory from then on.
-
-		helix-raylib's loads are unchanged, reading the program's files wherever the working directory is.
+		helix-raylib's loads, saves, exports and screenshots are unchanged, as none of them uses the working directory.
 
 		A failure logs a warning.
 
@@ -1646,8 +1619,6 @@ class RCore {
 				changed = true;
 			}
 		} catch (_:Dynamic) {}
-		if (changed)
-			Runtime.workingDirectoryChanged();
 		#end
 		if (!changed)
 			Runtime.log(LOG_WARNING, 'SYSTEM: Failed to change to directory: $dir');
@@ -1812,7 +1783,7 @@ class RCore {
 	static function MakeDirectory(dirPath:String):Int {
 		if (dirPath == null || dirPath == "")
 			return 1;
-		var path = normalize(dirPath);
+		var path = keyOf(dirPath);
 		while (path.length > 1 && StringTools.endsWith(path, "/"))
 			path = path.substr(0, path.length - 1);
 		return path == "" || path == "." || path == "/" || helix.platform.FilePath.isValid(path) ? 0 : -1;
@@ -2470,15 +2441,12 @@ class RCore {
 	}
 
 	// ---- What the functions share ----
-	static inline final SAVED_DATA = "data:";
-	// When a file SaveFileText or SaveFileData wrote was saved, in seconds since the Unix epoch.
-	static inline final SAVED_TIME = "time:";
 	static var loadText:Null<String->Null<String>> = null;
 	static var saveText:Null<(String, String) -> Bool> = null;
 	static var saveData:Null<(String, haxe.io.Bytes, Int) -> Bool> = null;
 
-	// A file's bytes as they are at hand, without logging: the program's load callback's, then the saves' (once read), then the
-	// program's own an async load brought in.
+	// A file's bytes as they are at hand, without logging: the program's load callback's, then those an async load or a write brought
+	// in.
 
 	static function dataNow(path:String):Null<haxe.io.Bytes> {
 		if (CallbackFiles.load != null) {
@@ -2486,12 +2454,9 @@ class RCore {
 			if (given != null)
 				return given;
 		}
-		if (Runtime.saves != null && Runtime.saves.hasKey(SAVED_DATA + path))
-			return haxe.crypto.Base64.decode(Runtime.saves.getString(SAVED_DATA + path, ""));
 		return Runtime.file(path);
 	}
 
-	static inline final SAVED = "file:";
 	static inline final BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	static var crcTable:Null<Array<Int>> = null;
 	// MD5's shift for each step, and its constants, the binary integer parts of the sines of 1 to 64.
@@ -2546,29 +2511,9 @@ class RCore {
 	static var warnedMouseRefused = false;
 	static var warnedVibration = false;
 
-	// A file's name as the loads and saves read it: relative to the asset host's root, a leading `GetApplicationDirectory()` removed,
-	// and `/`, `.` and `..` followed as a web server follows them. A name climbing above the root keeps a leading `..`, which every file
-	// system refuses (`FilePath`), so it fails as a missing file does.
-	static function normalize(path:String):String {
-		if (Runtime.system != null) {
-			var application = GetApplicationDirectory();
-			if (application != "./" && StringTools.startsWith(path, application))
-				path = path.substr(application.length);
-		}
-		if (path.indexOf(".") < 0 && !StringTools.startsWith(path, "/") && path.indexOf("//") < 0)
-			return path;
-		var parts:Array<String> = [];
-		for (part in path.split("/")) {
-			if (part == "" || part == ".")
-				continue;
-			if (part != "..")
-				parts.push(part);
-			else if (parts.length > 0)
-				parts.pop();
-			else
-				return "../" + path;
-		}
-		return parts.join("/");
+	// The key a file is kept in memory by (`Runtime.keyOf`).
+	static function keyOf(path:String):String {
+		return Runtime.keyOf(path);
 	}
 
 	// Whether a key is held, as the keyboard has it: false for a key that isn't the platform's own number (a right-hand modifier).

@@ -7,9 +7,9 @@
 
 The entrant directory is made, and must not be there yet unless --command is given, from the spec, assets/ and raylib 5.5's C examples
 (docs/examples), with the engine's own files:
-- helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path), native/build.hxml, its product define
-  made the directory's name, so each entrant's saves are its own, and raylib 5.5's headers
-  in docs/include.
+- helix (helix-raylib, in Haxe): native/brief.md as brief.md (its {DIR} the directory's path, its {DATA} the data directory the program
+  saves files in), native/build.hxml, its product define made the directory's name, so each entrant's saves are its own, and raylib 5.5's
+  headers in docs/include.
 - c (the control, raylib 5.5 in C): native-c/brief.md as brief.md, native-c/CMakeLists.txt, raylib 5.5's headers in include/ and its desktop
   library as lib/libraylib.a.
 - three (three.js 0.187, in JavaScript or TypeScript, for the browser): three/brief.md as brief.md, three/index.html, three/run.cjs (it
@@ -93,6 +93,13 @@ def named(entrant):
                     encoding='utf-8')
 
 
+def filled(brief, entrant):
+    """A brief with its {DIR} the entrant's directory and its {DATA} the data directory its native program saves files in, under its
+    company and product (helix-trials and the directory's name)."""
+    data = entrant.parent / '.home' / entrant.name / 'data' / 'helix-trials' / entrant.name
+    return brief.replace('{DIR}', str(entrant)).replace('{DATA}', str(data))
+
+
 def make(entrant, engine, trial=None, extras=None, game=WARDENS, page=False):
     """Makes the entrant's directory from the game's files and raylib 5.5's, or from another trial's variant."""
     if engine == 'three':
@@ -116,7 +123,7 @@ def make(entrant, engine, trial=None, extras=None, game=WARDENS, page=False):
             (entrant / 'assets' / name).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(WARDENS / 'assets' / name, entrant / 'assets' / name)
         brief = (entrant / 'brief.md').read_text(encoding='utf-8')
-        (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
+        (entrant / 'brief.md').write_text(filled(brief, entrant), encoding='utf-8')
         named(entrant)
         (entrant / 'docs/include').mkdir(parents=True)
         for header in ('src/raylib.h', 'src/raymath.h', 'src/rlgl.h'):
@@ -126,7 +133,7 @@ def make(entrant, engine, trial=None, extras=None, game=WARDENS, page=False):
     entrant.mkdir(parents=True)
     own = WARDENS / ('page' if page else 'native' if engine == 'helix' else 'native-c')
     brief = brief_of(game, own.name, 'brief-extras.md' if extras and not page else 'brief.md')
-    (entrant / 'brief.md').write_text(brief.replace('{DIR}', str(entrant)), encoding='utf-8')
+    (entrant / 'brief.md').write_text(filled(brief, entrant), encoding='utf-8')
     for name in ('build.hxml', 'index.html', 'run.cjs') if page else ('build.hxml',) if engine == 'helix' else ('CMakeLists.txt',):
         shutil.copy(own / name, entrant / name)
     if engine == 'helix':
