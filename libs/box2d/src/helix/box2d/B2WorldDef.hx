@@ -52,7 +52,7 @@ class B2WorldDef {
 	/** Expected counts that let Box2D reserve memory when the world is created. Defaults to zero for all of them, reserving nothing. */
 	public var capacity:B2Capacity;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultWorldDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultWorldDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

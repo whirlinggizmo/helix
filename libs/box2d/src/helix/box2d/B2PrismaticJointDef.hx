@@ -35,7 +35,7 @@ class B2PrismaticJointDef {
 	/** The speed the motor aims for, typically in meters per second. Defaults to 0. */
 	public var motorSpeed:Float;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultPrismaticJointDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultPrismaticJointDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

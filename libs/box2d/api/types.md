@@ -49,7 +49,7 @@ var allowFastRotation:Bool
 var enableContactRecycling:Bool
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultBodyDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultBodyDef()` returns. The structs it holds are made with it.
 - `type`: How the body moves: static, kinematic or dynamic. Defaults to `b2_staticBody`.
 - `position`: The body's starting position in the world, in length units. Create the body here, since creating it at the origin and moving it afterward nearly doubles the cost. Defaults to the origin.
 - `rotation`: The body's starting rotation. Make one from an angle with `b2MakeRot`. Defaults to no rotation.
@@ -221,7 +221,7 @@ An alias of `(shapeId:B2ShapeId, point:B2Pos, normal:B2Vec2, fraction:Float, con
 
 *class* in [`libs/box2d/src/helix/box2d/B2ChainDef.hx`](../src/helix/box2d/B2ChainDef.hx), `import helix.box2d.B2ChainDef;`
 
-Everything needed to create a chain of line segments with `b2CreateChain`. A chain is one-sided, with no mass, so use it on static bodies. It has a counter-clockwise winding, where the normal points right of the segment direction. It's either a loop or open, and an open chain needs a ghost point at each end. The distance between two points must exceed `B2_LINEAR_SLOP`, and the chain must not intersect itself. Use chains only when you understand these limits.
+Everything needed to create a chain of line segments with `b2CreateChain`. A chain is one-sided, with no mass, so use it on static bodies. It has a counter-clockwise winding, where the normal points right of the segment direction. It collides on one side, its front, which is to the right looking from each point to the next: points listed from right to left make ground whose top is up. It's either a loop or open, and an open chain needs a ghost point at each end, as `b2CreateChain` refuses an open chain whose ghost points are left at their defaults. The distance between two points must exceed `B2_LINEAR_SLOP`, and the chain must not intersect itself. Use chains only when you understand these limits.
 
 ```haxe
 function new()
@@ -237,7 +237,7 @@ var isLoop:Bool
 var enableSensorEvents:Bool
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultChainDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultChainDef()` returns. The structs it holds are made with it.
 - `userData`: Any Haxe value the program keeps with the chain, returned as set. Defaults to null.
 - `points`: The chain's points, read from index 0 up to `pointCount`. Each consecutive pair is a segment, and for a loop the last and first point are a segment too. Box2D copies them. Defaults to none.
 - `pointCount`: The number of points to use. At least 2 for an open chain and at least 3 for a loop. Defaults to 0.
@@ -537,7 +537,7 @@ var drawIslands:Bool
 var context:Dynamic
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultDebugDraw()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultDebugDraw()` returns. The structs it holds are made with it.
 - `DrawPolygonFcn`: Draws the outline of a closed polygon. Box2D calls it when drawing weld joints, once for the box of each joint frame. `transform` is the joint frame in the world, `vertices` are in that frame in counter-clockwise order from index 0 up to `vertexCount`, and `color` is the color to draw with. `context` is the debug draw object's `context`.
 - `DrawSolidPolygonFcn`: Draws a filled polygon. Box2D calls it for each polygon shape when `drawShapes` is true. `transform` is the body's transform in the world, `vertices` are in the body's frame in counter-clockwise order from index 0 up to `vertexCount`, `radius` rounds its corners (0 for none), and `color` is the color to draw with. `context` is the debug draw object's `context`.
 - `DrawCircleFcn`: Draws the outline of a circle. Box2D calls it when drawing revolute joints. `center` is the circle's center in the world, `radius` its radius, and `color` the color to draw with. `context` is the debug draw object's `context`.
@@ -611,7 +611,7 @@ var maxMotorForce:Float
 var motorSpeed:Float
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultDistanceJointDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultDistanceJointDef()` returns. The structs it holds are made with it.
 - `base`: Base joint definition. Its bodies, frames and thresholds are set here.
 - `length`: The rest length of the joint, in length units. Clamped to a stable minimum. Defaults to 1.
 - `enableSpring`: Whether the joint acts as a spring. When false the joint is rigid, and its limit and motor are ignored. Defaults to false.
@@ -665,7 +665,7 @@ var falloff:Float
 var impulsePerLength:Float
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultExplosionDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultExplosionDef()` returns. The structs it holds are made with it.
 - `maskBits`: The categories of shape the explosion affects. Defaults to all bits.
 - `position`: The center of the explosion, in the world. Defaults to the origin.
 - `radius`: The radius of the explosion, in length units. Defaults to 0.
@@ -685,7 +685,7 @@ var maskBits:haxe.Int64
 var groupIndex:Int
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultFilter()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultFilter()` returns. The structs it holds are made with it.
 - `categoryBits`: The categories the shape belongs to, usually one bit for each kind of object in the program, such as static, dynamic or player. Defaults to 1.
 - `maskBits`: The categories the shape collides with. A player might collide with static objects and other players only. Defaults to all bits.
 - `groupIndex`: A group of shapes that never collide (negative) or always collide (positive), whatever the mask bits say. 0 has no effect. A ragdoll whose shapes share one unique negative index does not collide with itself. Defaults to 0.
@@ -701,7 +701,7 @@ function new()
 var base:B2JointDef
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultFilterJointDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultFilterJointDef()` returns. The structs it holds are made with it.
 - `base`: Base joint definition. Its bodies, frames and thresholds are set here.
 
 ## B2FrictionCallbackFcn
@@ -1165,7 +1165,7 @@ var angularDampingRatio:Float
 var maxSpringTorque:Float
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultMotorJointDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultMotorJointDef()` returns. The structs it holds are made with it.
 - `base`: Base joint definition. Its bodies, frames and thresholds are set here.
 - `linearVelocity`: The linear velocity to aim for, in meters per second. Defaults to zero.
 - `maxVelocityForce`: The most force the motor applies to reach the linear velocity, in newtons. Defaults to 0.
@@ -1287,7 +1287,7 @@ var maxMotorForce:Float
 var motorSpeed:Float
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultPrismaticJointDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultPrismaticJointDef()` returns. The structs it holds are made with it.
 - `base`: Base joint definition. Its bodies, frames and thresholds are set here.
 - `enableSpring`: Whether a linear spring acts along the joint axis. Defaults to false.
 - `hertz`: The spring stiffness, in cycles per second. Defaults to 0.
@@ -1370,7 +1370,7 @@ var categoryBits:haxe.Int64
 var maskBits:haxe.Int64
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultQueryFilter()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultQueryFilter()` returns. The structs it holds are made with it.
 - `categoryBits`: The categories of the query, usually one bit. Defaults to 1.
 - `maskBits`: The shape categories the query finds. Defaults to all bits.
 
@@ -1456,7 +1456,7 @@ var maxMotorTorque:Float
 var motorSpeed:Float
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultRevoluteJointDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultRevoluteJointDef()` returns. The structs it holds are made with it.
 - `base`: Base joint definition. Its bodies, frames and thresholds are set here.
 - `targetAngle`: The angle the spring aims for, in radians. Defaults to 0.
 - `enableSpring`: Whether a rotational spring acts on the hinge. Defaults to false.
@@ -1645,7 +1645,7 @@ var invokeContactCreation:Bool
 var updateBodyMass:Bool
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultShapeDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultShapeDef()` returns. The structs it holds are made with it.
 - `userData`: Any Haxe value the program keeps with the shape, returned as set. Defaults to null.
 - `material`: The surface material of the shape. Defaults to a friction of 0.6 and zero for the rest.
 - `density`: The density of the shape's interior, usually in kilograms per square meter. Defaults to 1.
@@ -1787,7 +1787,7 @@ var userMaterialId:haxe.Int64
 var customColor:Int
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultSurfaceMaterial()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultSurfaceMaterial()` returns. The structs it holds are made with it.
 - `friction`: The Coulomb (dry) friction coefficient, usually 0 to 1. Defaults to 0.6.
 - `restitution`: The coefficient of restitution (bounce), usually 0 to 1. Defaults to 0.
 - `rollingResistance`: The rolling resistance, usually 0 to 1. Defaults to 0.
@@ -1885,7 +1885,7 @@ var q:B2Rot
 
 - `new`: Creates one, as C's initializer lists its fields.
   - `p`: Optional. The translation. A zero vector when omitted.
-  - `q`: Optional. The rotation. A zero rotation, cosine and sine both 0, when omitted.
+  - `q`: Optional. The rotation. When omitted, the rotation that turns nothing (`b2Rot_identity`).
 - `p`: The translation, in length units.
 - `q`: The rotation.
 
@@ -1951,7 +1951,7 @@ var linearDampingRatio:Float
 var angularDampingRatio:Float
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultWeldJointDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultWeldJointDef()` returns. The structs it holds are made with it.
 - `base`: Base joint definition. Its bodies, frames and thresholds are set here.
 - `linearHertz`: The linear stiffness, in cycles per second. 0 is the maximum stiffness. Defaults to 0.
 - `angularHertz`: The angular stiffness, in cycles per second. 0 is the maximum stiffness. Defaults to 0.
@@ -1978,7 +1978,7 @@ var maxMotorTorque:Float
 var motorSpeed:Float
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultWheelJointDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultWheelJointDef()` returns. The structs it holds are made with it.
 - `base`: Base joint definition. Its bodies, frames and thresholds are set here.
 - `enableSpring`: Whether a linear spring acts along the local axis. Defaults to true.
 - `hertz`: The spring stiffness, in cycles per second. Defaults to 1.
@@ -2024,7 +2024,7 @@ var userData:Dynamic
 var capacity:B2Capacity
 ```
 
-- `new`: Creates one holding Box2D's defaults, as `b2DefaultWorldDef()` returns.
+- `new`: Creates one holding Box2D's defaults, as `b2DefaultWorldDef()` returns. The structs it holds are made with it.
 - `gravity`: The gravity, in meters per second squared. Box2D has no up direction. Defaults to (0, -10).
 - `restitutionThreshold`: The approach speed, in meters per second, above which collisions bounce. Defaults to 1 meter per second.
 - `restitutionIterations`: The number of iterations of the restitution solver. More iterations can mean less box spinning. Defaults to 2.
@@ -2100,6 +2100,8 @@ Natively, Box2D is compiled into the program, and `loadAsync` calls `loaded` bef
 The build of Box2D the module holds is single precision and cross-platform deterministic: the same steps from the same state produce the same bits natively and in a page.
 
 Box2D's types are Haxe types named as Box2D names them with a capital first letter (`b2BodyDef` is `B2BodyDef`), as Haxe requires; functions, fields, enum values and constants keep Box2D's names. A struct Box2D passes by value is a Haxe object, which the garbage collector frees; a function returning one accepts an optional `out` that receives the result. What Box2D holds (a world, a body, a shape, a joint, a chain) is reached by its id and lives in the module until it is destroyed.
+
+A def from its `b2Default` function, or from its constructor, holds Box2D's defaults, with the structs it holds already made (`def.base.localFrameA.p`, `shapeDef.material.friction`), so their fields are set directly. An `out` is filled in place, and an array a call fills reuses the elements it holds, so a step's reads allocate nothing when each is passed the same one.
 
 ```haxe
 static function loadAsync(loaded:() -> Void, ?failed:String -> Void, ?wasmUrl:String):Void
@@ -3059,7 +3061,7 @@ static macro function copyWasm(directory:String):Void
 - `b2SetLogCallback`: Replaces the default function that receives Box2D's log messages.
   - `logFcn`: The function that receives each log message. Must not be null.
 - `b2GetVersion`: Returns the version of Box2D.
-  - `out`: Optional. The `B2Version` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Version` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Version`, which is `out` when provided.
 - `b2IsDoublePrecision`: Returns whether the library was built with `BOX2D_DOUBLE_PRECISION` (large world mode).
   - returns: True when built with double precision.
@@ -3150,7 +3152,7 @@ static macro function copyWasm(directory:String):Void
   Box2D computes this itself, so the result is the same on every platform, which `Math.atan2` does not guarantee. The error is up to about 0.0023 degrees. Returns 0 when both arguments are 0.
 - `b2ComputeCosSin`: Returns the cosine and sine of an angle, computed so the result is the same on every platform.
   - `radians`: The angle, in radians.
-  - `out`: Optional. The `B2CosSin` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CosSin` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2CosSin`, which is `out` when provided.
 - `b2Dot`: Returns the dot product of two vectors.
   - `a`: The first vector.
@@ -3163,82 +3165,82 @@ static macro function copyWasm(directory:String):Void
 - `b2CrossVS`: Returns the cross product of a vector and a scalar, a vector in 2D.
   - `v`: The vector.
   - `s`: The scalar.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided. It holds `(s * v.y, -s * v.x)`.
 - `b2CrossSV`: Returns the cross product of a scalar and a vector, a vector in 2D.
   - `s`: The scalar.
   - `v`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided. It holds `(-s * v.y, s * v.x)`.
 - `b2LeftPerp`: Returns the vector rotated 90 degrees counter-clockwise, which is `b2CrossSV(1, v)`.
   - `v`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided. It holds `(-v.y, v.x)`.
 - `b2RightPerp`: Returns the vector rotated 90 degrees clockwise, which is `b2CrossVS(v, 1)`.
   - `v`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided. It holds `(v.y, -v.x)`.
 - `b2Add`: Returns the sum of two vectors.
   - `a`: The first vector.
   - `b`: The second vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Sub`: Returns the difference `a - b` of two vectors.
   - `a`: The vector to subtract from.
   - `b`: The vector to subtract.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Neg`: Returns the negation of a vector.
   - `a`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Lerp`: Returns the point between two vectors at a fraction of the way from the first to the second.
   - `a`: The vector at `t` of 0.
   - `b`: The vector at `t` of 1.
   - `t`: The fraction, 0 to 1.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Mul`: Returns the component-wise product of two vectors.
   - `a`: The first vector.
   - `b`: The second vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2MulSV`: Returns a vector scaled by a scalar.
   - `s`: The scalar.
   - `v`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2MulAdd`: Returns `a + s * b`.
   - `a`: The vector to add to.
   - `s`: The scalar.
   - `b`: The vector to scale.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2MulSub`: Returns `a - s * b`.
   - `a`: The vector to subtract from.
   - `s`: The scalar.
   - `b`: The vector to scale.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Abs`: Returns the absolute value of each component of a vector.
   - `a`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Min`: Returns the smaller of each component of two vectors.
   - `a`: The first vector.
   - `b`: The second vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Max`: Returns the larger of each component of two vectors.
   - `a`: The first vector.
   - `b`: The second vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Clamp`: Returns a vector with each component limited to the range between the matching components of two vectors.
   - `v`: The vector.
   - `a`: The lower bound vector.
   - `b`: The upper bound vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Length`: Returns the length of a vector.
   - `v`: The vector.
@@ -3249,7 +3251,7 @@ static macro function copyWasm(directory:String):Void
   - returns: The distance.
 - `b2Normalize`: Returns a vector scaled to length 1.
   - `a`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 
   Returns the zero vector when the length is too small to scale.
@@ -3259,18 +3261,18 @@ static macro function copyWasm(directory:String):Void
 - `b2GetLengthAndNormalize`: Returns a vector scaled to length 1, and stores the vector's original length.
   - `length`: A one-element array. The call stores the original length at index 0.
   - `a`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 
   Returns the zero vector, with a length of 0, when the length is too small to scale.
 - `b2NormalizeRot`: Returns a rotation scaled to unit magnitude.
   - `q`: The rotation.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 - `b2IntegrateRotation`: Returns a rotation advanced by an angular displacement.
   - `q1`: The initial rotation.
   - `deltaAngle`: The angular displacement, in radians.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 
   The result is normalized.
@@ -3283,29 +3285,29 @@ static macro function copyWasm(directory:String):Void
   - returns: The squared distance.
 - `b2MakeRot`: Returns the rotation for an angle.
   - `radians`: The angle, in radians.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 - `b2MakeRotFromUnitVector`: Returns the rotation whose x-axis is a unit vector.
   - `unitVector`: The unit vector, which must be normalized.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 - `b2ComputeRotationBetweenUnitVectors`: Returns the rotation from one unit vector to another.
   - `v1`: The first unit vector.
   - `v2`: The second unit vector.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 - `b2IsNormalizedRot`: Returns whether a rotation has unit magnitude, within a small tolerance.
   - `q`: The rotation.
   - returns: True when the rotation is normalized.
 - `b2InvertRot`: Returns the inverse of a rotation.
   - `a`: The rotation.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 - `b2NLerp`: Returns the normalized linear interpolation between two rotations.
   - `q1`: The rotation at `t` of 0.
   - `q2`: The rotation at `t` of 1.
   - `t`: The fraction, 0 to 1.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 - `b2ComputeAngularVelocity`: Returns the angular velocity that rotates from one rotation to another over a time step.
   - `q1`: The initial rotation.
@@ -3317,21 +3319,21 @@ static macro function copyWasm(directory:String):Void
   - returns: The angle, in radians.
 - `b2Rot_GetXAxis`: Returns the x-axis of a rotation.
   - `q`: The rotation.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2Rot_GetYAxis`: Returns the y-axis of a rotation.
   - `q`: The rotation.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2MulRot`: Returns the product `q * r` of two rotations.
   - `q`: The left rotation.
   - `r`: The right rotation.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 - `b2InvMulRot`: Returns the product `inv(a) * b` of two rotations.
   - `a`: The rotation to invert.
   - `b`: The rotation to multiply by.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Rot`, which is `out` when provided.
 
   The result rotates a vector in frame `b` into a vector in frame `a`.
@@ -3347,46 +3349,46 @@ static macro function copyWasm(directory:String):Void
 - `b2RotateVector`: Returns a vector rotated by a rotation.
   - `q`: The rotation.
   - `v`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2InvRotateVector`: Returns a vector rotated by the inverse of a rotation.
   - `q`: The rotation to invert.
   - `v`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2TransformPoint`: Returns a point transformed by a transform, for example from local space to world space.
   - `t`: The transform.
   - `p`: The point.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2InvTransformPoint`: Returns a point transformed by the inverse of a transform, for example from world space to local space.
   - `t`: The transform to invert.
   - `p`: The point.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2MulTransforms`: Returns the product of two transforms.
   - `A`: The outer transform.
   - `B`: The inner transform.
-  - `out`: Optional. The `B2Transform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Transform`, which is `out` when provided.
 
   Applied to a point local to frame `B`, the result converts the point to frame `A`'s space, then into the world. This equals `A.q.Rot(B.q.Rot(v1) + B.p) + A.p`.
 - `b2InvMulTransforms`: Returns the transform that converts a point local to frame `B` into a point local to frame `A`.
   - `A`: The transform of frame `A`.
   - `B`: The transform of frame `B`.
-  - `out`: Optional. The `B2Transform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Transform`, which is `out` when provided.
 
   The result is `A.q' * B.q * v1 + A.q' * (B.p - A.p)`.
 - `b2ToPos`: Returns a vector as a world position.
   - `v`: The vector.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Pos`, which is `out` when provided.
 
   Returns a copy of the vector in single precision.
 - `b2ToVec2`: Returns a world position as a vector.
   - `p`: The world position.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 
   Returns a copy of the position in single precision.
@@ -3403,65 +3405,65 @@ static macro function copyWasm(directory:String):Void
 - `b2SubPos`: Returns the difference `a - b` of two world positions as a vector.
   - `a`: The position to subtract from.
   - `b`: The position to subtract.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2OffsetPos`: Returns a world position moved by a vector.
   - `p`: The world position.
   - `d`: The offset.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Pos`, which is `out` when provided.
 - `b2LerpPos`: Returns the world position between two positions at a fraction of the way from the first to the second.
   - `a`: The position at `t` of 0.
   - `b`: The position at `t` of 1.
   - `t`: The fraction, 0 to 1.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Pos`, which is `out` when provided.
 - `b2TransformWorldPoint`: Returns a local point transformed to a world position.
   - `t`: The world transform.
   - `p`: The local point.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Pos`, which is `out` when provided.
 - `b2InvTransformWorldPoint`: Returns a world position transformed to a point local to a world transform.
   - `t`: The world transform.
   - `p`: The world position.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2InvMulWorldTransforms`: Returns the transform of frame `B` relative to frame `A`.
   - `A`: The world transform of frame `A`.
   - `B`: The world transform of frame `B`.
-  - `out`: Optional. The `B2Transform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Transform`, which is `out` when provided.
 - `b2MulWorldTransforms`: Returns a local transform converted into world space by a world transform.
   - `A`: The world transform.
   - `B`: The local transform.
-  - `out`: Optional. The `B2WorldTransform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2WorldTransform`, which is `out` when provided.
 - `b2ToRelativeTransform`: Returns a world transform expressed relative to a base position.
   - `t`: The world transform.
   - `base`: The base world position.
-  - `out`: Optional. The `B2Transform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Transform`, which is `out` when provided.
 - `b2MakeWorldTransform`: Returns a transform as a world transform.
   - `t`: The transform.
-  - `out`: Optional. The `B2WorldTransform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2WorldTransform`, which is `out` when provided.
 
   The conversion loses nothing.
 - `b2MulMV`: Returns a 2-by-2 matrix multiplied by a vector.
   - `A`: The matrix.
   - `v`: The vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2GetInverse22`: Returns the inverse of a 2-by-2 matrix.
   - `A`: The matrix.
-  - `out`: Optional. The `B2Mat22` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Mat22` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Mat22`, which is `out` when provided.
 
   Returns the zero matrix when the matrix is singular.
 - `b2Solve22`: Returns the solution `x` of `A * x = b`.
   - `A`: The matrix.
   - `b`: The right-hand side column vector.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 
   Cheaper than computing the inverse when solving once. Returns the zero vector when the matrix is singular.
@@ -3471,16 +3473,16 @@ static macro function copyWasm(directory:String):Void
   - returns: True when `a` contains `b`.
 - `b2AABB_Center`: Returns the center of a bounding box.
   - `a`: The bounding box.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2AABB_Extents`: Returns the half-widths of a bounding box.
   - `a`: The bounding box.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2Vec2`, which is `out` when provided.
 - `b2AABB_Union`: Returns the smallest bounding box that contains two bounding boxes.
   - `a`: The first bounding box.
   - `b`: The second bounding box.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2AABB`, which is `out` when provided.
 - `b2AABB_Overlaps`: Returns whether two bounding boxes overlap.
   - `a`: The first bounding box.
@@ -3490,7 +3492,7 @@ static macro function copyWasm(directory:String):Void
   - `points`: The circle centers, read from index 0 up to `count`.
   - `count`: The number of points. Must be greater than zero.
   - `radius`: The radius of every circle.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The `B2AABB`, which is `out` when provided.
 - `b2PlaneSeparation`: Returns the signed separation of a point from a plane.
   - `plane`: The plane.
@@ -3519,7 +3521,7 @@ static macro function copyWasm(directory:String):Void
 - `b2MakePolygon`: Makes a convex polygon from a convex hull.
   - `hull`: The hull, computed by `b2ComputeHull`.
   - `radius`: The rounding radius of the polygon, in length units. Zero makes sharp corners.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon.
 
   The hull must come directly from `b2ComputeHull`. A hull that is not valid fails Box2D's assertion in a debug build, and a hull with fewer than 3 points produces a square with a half-width of 0.5. Do not fill in the hull's fields by hand.
@@ -3527,7 +3529,7 @@ static macro function copyWasm(directory:String):Void
   - `hull`: The hull, computed by `b2ComputeHull`.
   - `position`: The offset of the polygon, in length units.
   - `rotation`: The rotation of the polygon.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon, with sharp corners.
 
   The hull must come directly from `b2ComputeHull`. A hull that is not valid fails Box2D's assertion in a debug build, and a hull with fewer than 3 points produces a square with a half-width of 0.5.
@@ -3536,31 +3538,31 @@ static macro function copyWasm(directory:String):Void
   - `position`: The offset of the polygon, in length units.
   - `rotation`: The rotation of the polygon.
   - `radius`: The rounding radius of the polygon, in length units.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon.
 
   The hull must come directly from `b2ComputeHull`. A hull that is not valid fails Box2D's assertion in a debug build, and a hull with fewer than 3 points produces a square with a half-width of 0.5.
 - `b2MakeSquare`: Makes a square polygon centered on the origin, without a convex hull.
   - `halfWidth`: The half-width of the square, in length units.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon.
 - `b2MakeBox`: Makes a box polygon centered on the origin, without a convex hull.
   - `halfWidth`: The half-width along the x-axis, in length units.
   - `halfHeight`: The half-height along the y-axis, in length units.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon.
 - `b2MakeRoundedBox`: Makes a box polygon with rounded corners centered on the origin, without a convex hull.
   - `halfWidth`: The half-width along the x-axis, in length units.
   - `halfHeight`: The half-height along the y-axis, in length units.
   - `radius`: The rounding radius, in length units. The rounding extends beyond the half-width and half-height.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon.
 - `b2MakeOffsetBox`: Makes a box polygon moved and rotated by an offset, without a convex hull.
   - `halfWidth`: The half-width along the box's x-axis, in length units.
   - `halfHeight`: The half-height along the box's y-axis, in length units.
   - `center`: The local center of the box, in length units.
   - `rotation`: The local rotation of the box.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon.
 - `b2MakeOffsetRoundedBox`: Makes a box polygon with rounded corners, moved and rotated by an offset, without a convex hull.
   - `halfWidth`: The half-width along the box's x-axis, in length units.
@@ -3568,47 +3570,47 @@ static macro function copyWasm(directory:String):Void
   - `center`: The local center of the box, in length units.
   - `rotation`: The local rotation of the box.
   - `radius`: The rounding radius, in length units. The rounding extends beyond the half-width and half-height.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon.
 - `b2TransformPolygon`: Returns a polygon moved by a transform. Useful for moving a shape from one body to another.
   - `transform`: The transform to apply.
   - `polygon`: The polygon to transform.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The transformed polygon.
 - `b2ComputeCircleMass`: Computes the mass, center of mass and rotational inertia of a circle.
   - `shape`: The circle.
   - `density`: The density, in kilograms per square meter.
-  - `out`: Optional. The `B2MassData` to fill; a new one when omitted.
+  - `out`: Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The mass data.
 - `b2ComputeCapsuleMass`: Computes the mass, center of mass and rotational inertia of a capsule.
   - `shape`: The capsule.
   - `density`: The density, in kilograms per square meter.
-  - `out`: Optional. The `B2MassData` to fill; a new one when omitted.
+  - `out`: Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The mass data.
 - `b2ComputePolygonMass`: Computes the mass, center of mass and rotational inertia of a polygon.
   - `shape`: The polygon.
   - `density`: The density, in kilograms per square meter.
-  - `out`: Optional. The `B2MassData` to fill; a new one when omitted.
+  - `out`: Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The mass data.
 - `b2ComputeCircleBounds`: Computes the bounding box of a transformed circle.
   - `shape`: The circle, in its local space.
   - `transform`: The world transform of the shape.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The axis-aligned bounding box in world space.
 - `b2ComputeCapsuleBounds`: Computes the bounding box of a transformed capsule.
   - `shape`: The capsule, in its local space.
   - `transform`: The world transform of the shape.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The axis-aligned bounding box in world space.
 - `b2ComputePolygonBounds`: Computes the bounding box of a transformed polygon.
   - `shape`: The polygon, in its local space.
   - `transform`: The world transform of the shape.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The axis-aligned bounding box in world space.
 - `b2ComputeSegmentBounds`: Computes the bounding box of a transformed line segment.
   - `shape`: The line segment, in its local space.
   - `transform`: The world transform of the shape.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The axis-aligned bounding box in world space.
 - `b2PointInCircle`: Tests whether a point overlaps a circle, in the shape's local space.
   - `shape`: The circle.
@@ -3625,48 +3627,48 @@ static macro function copyWasm(directory:String):Void
 - `b2CastRayCircle`: Casts a ray against a circle, in the shape's local space.
   - `shape`: The circle.
   - `input`: The ray, in the shape's local space.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the ray misses.
 - `b2CastRayCapsule`: Casts a ray against a capsule, in the shape's local space.
   - `shape`: The capsule.
   - `input`: The ray, in the shape's local space.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the ray misses.
 - `b2CastRaySegment`: Casts a ray against a line segment, in the segment's local space. The segment may be one-sided.
   - `shape`: The line segment.
   - `input`: The ray, in the segment's local space.
   - `oneSided`: When true, a hit from the left side of the segment counts as a miss.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the ray misses.
 - `b2CastRayPolygon`: Casts a ray against a polygon, in the shape's local space.
   - `shape`: The polygon.
   - `input`: The ray, in the shape's local space.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the ray misses.
 - `b2CastShapeCircle`: Casts a moving shape against a circle, in the shape's local space.
   - `shape`: The shape that stays in place.
   - `input`: The moving shape, its translation and its `maxFraction`.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the moving shape misses.
 - `b2CastShapeCapsule`: Casts a moving shape against a capsule, in the shape's local space.
   - `shape`: The shape that stays in place.
   - `input`: The moving shape, its translation and its `maxFraction`.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the moving shape misses.
 - `b2CastShapeSegment`: Casts a moving shape against a line segment, in the shape's local space.
   - `shape`: The shape that stays in place.
   - `input`: The moving shape, its translation and its `maxFraction`.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the moving shape misses.
 - `b2CastShapePolygon`: Casts a moving shape against a convex polygon, in the shape's local space.
   - `shape`: The shape that stays in place.
   - `input`: The moving shape, its translation and its `maxFraction`.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output. `hit` is false when the moving shape misses.
 - `b2ComputeHull`: Computes the convex hull of a set of points.
   - `points`: The points. Read from index 0 up to `count`.
   - `count`: The number of points. Must be at least 3 and at most `B2_MAX_POLYGON_VERTICES`.
-  - `out`: Optional. The `B2Hull` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Hull` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The hull. Its `count` is 0 when the computation fails.
 
   Fails when all the points are very close together, when all the points lie on a line, or when `count` is outside that range. Points that are close together are welded and collinear points are removed. Do not modify a hull once it is computed.
@@ -3680,18 +3682,18 @@ static macro function copyWasm(directory:String):Void
   - `q1`: The second end point of the first segment.
   - `p2`: The first end point of the second segment.
   - `q2`: The second end point of the second segment.
-  - `out`: Optional. The `B2SegmentDistanceResult` to fill; a new one when omitted.
+  - `out`: Optional. The `B2SegmentDistanceResult` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The closest point on each segment, the fractions along each segment and the squared distance between the points.
 - `b2ComputeShapeDistance`: Computes the closest points between two shapes, each represented as a point cloud.
   - `input`: The two proxies, the transform of proxy B in proxy A's frame and whether the proxy radii count.
   - `cache`: The simplex cache. Updated by the call, so a later call with a nearby transform starts faster. Set its `count` to 0 on the first call.
   - `simplexes`: Optional. Receives the algorithm's simplexes, for debugging, from index 0. Elements it holds are reused, and missing ones are made.
   - `simplexCapacity`: Optional. The most simplexes to store; 0 when omitted.
-  - `out`: Optional. The `B2DistanceOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2DistanceOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The closest points on each proxy, the distance, and the iteration and simplex counts.
 - `b2CastShape`: Casts shape B, moving by a translation, against shape A, which stays in place.
   - `input`: The two proxies, the transform of proxy B in proxy A's frame, the translation of B, `maxFraction` and `canEncroach`.
-  - `out`: Optional. The `B2CastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast output, in shape A's frame. `hit` is false when B misses A.
 
   The hit point and normal are in shape A's frame. Shapes that already touch produce a `fraction` of 0.
@@ -3699,7 +3701,7 @@ static macro function copyWasm(directory:String):Void
   - `points`: The points. Read from index 0 up to `count`.
   - `count`: The number of points. At most `B2_MAX_POLYGON_VERTICES`, and a larger count is clamped to it.
   - `radius`: The radius around the points, in length units.
-  - `out`: Optional. The `B2ShapeProxy` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeProxy` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The proxy.
 - `b2MakeOffsetProxy`: Makes a proxy for the overlap, shape cast and distance functions, with its points moved and rotated by an offset. The points are copied.
   - `points`: The points. Read from index 0 up to `count`.
@@ -3707,16 +3709,16 @@ static macro function copyWasm(directory:String):Void
   - `radius`: The radius around the points, in length units.
   - `position`: The offset of the points, in length units.
   - `rotation`: The rotation of the points.
-  - `out`: Optional. The `B2ShapeProxy` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeProxy` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The proxy.
 - `b2GetSweepTransform`: Evaluates the transform of a sweep at a time.
   - `sweep`: The sweep, holding the center of mass and rotation at the start and the end.
   - `time`: The time as a fraction from 0 (the start) to 1 (the end).
-  - `out`: Optional. The `B2Transform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The transform of the body's origin at that time.
 - `b2ComputeTimeOfImpact`: Computes the upper bound on the time before two moving shapes penetrate.
   - `input`: The two proxies, their sweeps and the interval `maxFraction`.
-  - `out`: Optional. The `B2TOIOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2TOIOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The output state and the time fraction.
 
   Time is a fraction from 0 to `maxFraction`. The computation uses a swept separating axis and can miss intermediate collisions where the shapes pass without penetrating. Call it again when the time interval changes.
@@ -3724,156 +3726,156 @@ static macro function copyWasm(directory:String):Void
   - `circleA`: The first circle. Shape A, in its local space.
   - `circleB`: The second circle. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideCapsuleAndCircle`: Computes the contact manifold between a capsule and a circle.
   - `capsuleA`: The capsule. Shape A, in its local space.
   - `circleB`: The circle. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideSegmentAndCircle`: Computes the contact manifold between a segment and a circle.
   - `segmentA`: The segment. Shape A, in its local space.
   - `circleB`: The circle. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollidePolygonAndCircle`: Computes the contact manifold between a polygon and a circle.
   - `polygonA`: The polygon. Shape A, in its local space.
   - `circleB`: The circle. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideCapsules`: Computes the contact manifold between two capsules.
   - `capsuleA`: The first capsule. Shape A, in its local space.
   - `capsuleB`: The second capsule. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideSegmentAndCapsule`: Computes the contact manifold between a segment and a capsule.
   - `segmentA`: The segment. Shape A, in its local space.
   - `capsuleB`: The capsule. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollidePolygonAndCapsule`: Computes the contact manifold between a polygon and a capsule.
   - `polygonA`: The polygon. Shape A, in its local space.
   - `capsuleB`: The capsule. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollidePolygons`: Computes the contact manifold between two polygons.
   - `polygonA`: The first polygon. Shape A, in its local space.
   - `polygonB`: The second polygon. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideSegmentAndPolygon`: Computes the contact manifold between a segment and a polygon.
   - `segmentA`: The segment. Shape A, in its local space.
   - `polygonB`: The polygon. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideChainSegmentAndCircle`: Computes the contact manifold between a chain segment and a circle.
   - `segmentA`: The chain segment. Shape A, in its local space.
   - `circleB`: The circle. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideChainSegmentAndCapsule`: Computes the contact manifold between a chain segment and a capsule.
   - `segmentA`: The chain segment. Shape A, in its local space.
   - `capsuleB`: The capsule. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
   - `cache`: The simplex cache, updated by the call. Set its `count` to 0 on the first call.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2CollideChainSegmentAndPolygon`: Computes the contact manifold between a chain segment and a polygon, which may be rounded.
   - `segmentA`: The chain segment. Shape A, in its local space.
   - `polygonB`: The polygon. Shape B, in its local space.
   - `xf`: The transform of shape B in shape A's frame.
   - `cache`: The simplex cache, updated by the call. Set its `count` to 0 on the first call.
-  - `out`: Optional. The `B2LocalManifold` to fill; a new one when omitted.
+  - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
 - `b2DefaultWorldDef`: Returns a world definition set to Box2D's defaults.
-  - `out`: Optional. The `B2WorldDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The world definition.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultBodyDef`: Returns a body definition set to Box2D's defaults.
-  - `out`: Optional. The `B2BodyDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2BodyDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The body definition.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultFilter`: Returns a collision filter set to Box2D's defaults.
-  - `out`: Optional. The `B2Filter` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Filter` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The filter, with `categoryBits` 1, `maskBits` of all ones and `groupIndex` 0.
 - `b2DefaultQueryFilter`: Returns a query filter set to Box2D's defaults.
-  - `out`: Optional. The `B2QueryFilter` to fill; a new one when omitted.
+  - `out`: Optional. The `B2QueryFilter` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The query filter, with `categoryBits` 1 and `maskBits` of all ones.
 - `b2DefaultSurfaceMaterial`: Returns a surface material set to Box2D's defaults.
-  - `out`: Optional. The `B2SurfaceMaterial` to fill; a new one when omitted.
+  - `out`: Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The surface material.
 - `b2DefaultShapeDef`: Returns a shape definition set to Box2D's defaults.
-  - `out`: Optional. The `B2ShapeDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The shape definition.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultChainDef`: Returns a chain definition set to Box2D's defaults.
-  - `out`: Optional. The `B2ChainDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ChainDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The chain definition.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultDistanceJointDef`: Returns a distance joint definition set to Box2D's defaults.
-  - `out`: Optional. The `B2DistanceJointDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2DistanceJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The distance joint definition.
 
   Joint definitions have `B2JointDef` as their `base`, with its own defaults.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultFilterJointDef`: Returns a filter joint definition set to Box2D's defaults.
-  - `out`: Optional. The `B2FilterJointDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2FilterJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The filter joint definition.
 
   Joint definitions have `B2JointDef` as their `base`, with its own defaults.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultMotorJointDef`: Returns a motor joint definition set to Box2D's defaults.
-  - `out`: Optional. The `B2MotorJointDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2MotorJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The motor joint definition.
 
   Joint definitions have `B2JointDef` as their `base`, with its own defaults.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultPrismaticJointDef`: Returns a prismatic joint definition set to Box2D's defaults.
-  - `out`: Optional. The `B2PrismaticJointDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2PrismaticJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The prismatic joint definition.
 
   Joint definitions have `B2JointDef` as their `base`, with its own defaults.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultRevoluteJointDef`: Returns a revolute joint definition set to Box2D's defaults.
-  - `out`: Optional. The `B2RevoluteJointDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2RevoluteJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The revolute joint definition.
 
   Joint definitions have `B2JointDef` as their `base`, with its own defaults.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultWeldJointDef`: Returns a weld joint definition set to Box2D's defaults.
-  - `out`: Optional. The `B2WeldJointDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WeldJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The weld joint definition.
 
   Joint definitions have `B2JointDef` as their `base`, with its own defaults.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultWheelJointDef`: Returns a wheel joint definition set to Box2D's defaults.
-  - `out`: Optional. The `B2WheelJointDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WheelJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The wheel joint definition.
 
   Joint definitions have `B2JointDef` as their `base`, with its own defaults.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
 - `b2DefaultExplosionDef`: Returns a explosion definition set to Box2D's defaults.
-  - `out`: Optional. The `B2ExplosionDef` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ExplosionDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The explosion definition.
 
   Make a definition with this call rather than with zeros, which are not its defaults.
@@ -3883,11 +3885,11 @@ static macro function copyWasm(directory:String):Void
 
   The last slot, `B2_GRAPH_COLOR_COUNT` minus 1, is the overflow color.
 - `b2DefaultDebugDraw`: Returns a debug draw interface set to Box2D's defaults, so a program can implement a subset of the drawing callbacks.
-  - `out`: Optional. The `B2DebugDraw` to fill; a new one when omitted.
+  - `out`: Optional. The `B2DebugDraw` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The debug draw interface. Each drawing callback is an empty function, `drawingBounds` covers the whole world, `forceScale` and `jointScale` are 1, and `drawShapes` is true.
 - `b2CreateWorld`: Creates a world for rigid body simulation.
   - `def`: The world's definition. Make it with `b2DefaultWorldDef`. The definition is not retained.
-  - `out`: Optional. The `B2WorldId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new world's id.
 
   A world contains bodies, shapes and constraints. Up to `B2_MAX_WORLDS` worlds can exist at once. Each world is independent of the others.
@@ -3915,29 +3917,29 @@ static macro function copyWasm(directory:String):Void
   The object's callbacks receive each primitive to draw, and its flags choose which kinds of data are drawn.
 - `b2World_GetBounds`: Returns the world bounds, the union of the bounds of all shapes.
   - `worldId`: The world.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The bounds, in world coordinates.
 - `b2World_GetBodyEvents`: Returns the body events from the most recent time step.
   - `worldId`: The world.
-  - `out`: Optional. The `B2BodyEvents` to fill; a new one when omitted.
+  - `out`: Optional. The `B2BodyEvents` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The body events.
 
   The event data is valid until the next step. Copy anything the program keeps after that.
 - `b2World_GetSensorEvents`: Returns the sensor events from the most recent time step.
   - `worldId`: The world.
-  - `out`: Optional. The `B2SensorEvents` to fill; a new one when omitted.
+  - `out`: Optional. The `B2SensorEvents` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The sensor events.
 
   The event data is valid until the next step. Copy anything the program keeps after that.
 - `b2World_GetContactEvents`: Returns the contact events from the most recent time step.
   - `worldId`: The world.
-  - `out`: Optional. The `B2ContactEvents` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ContactEvents` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact events.
 
   The event data is valid until the next step. Copy anything the program keeps after that.
 - `b2World_GetJointEvents`: Returns the joint events from the most recent time step.
   - `worldId`: The world.
-  - `out`: Optional. The `B2JointEvents` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointEvents` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The joint events.
 
   The event data is valid until the next step. Copy anything the program keeps after that.
@@ -3948,7 +3950,7 @@ static macro function copyWasm(directory:String):Void
   - `filter`: The filter that chooses which shapes are reported.
   - `fcn`: The callback, called for each shape found. Returning false stops the query.
   - `context`: A value passed to the callback.
-  - `out`: Optional. The `B2TreeStats` to fill; a new one when omitted.
+  - `out`: Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: Counters of the tree traversal.
 
   Shapes are reported when their bounds overlap the box. The shapes themselves may not overlap it. The box is relative to the origin, which keeps the test precise far from the world origin in large world mode. Near the world origin, provide `b2Pos_zero` and a box in world coordinates.
@@ -3959,7 +3961,7 @@ static macro function copyWasm(directory:String):Void
   - `filter`: The filter that chooses which shapes are reported.
   - `fcn`: The callback, called for each shape found. Returning false stops the query.
   - `context`: A value passed to the callback.
-  - `out`: Optional. The `B2TreeStats` to fill; a new one when omitted.
+  - `out`: Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: Counters of the tree traversal.
 
   The proxy points are relative to the origin. Near the world origin, provide `b2Pos_zero` and points in world coordinates.
@@ -3970,7 +3972,7 @@ static macro function copyWasm(directory:String):Void
   - `filter`: The filter that chooses which shapes the ray can hit.
   - `fcn`: The callback, called for each hit. It returns -1 to ignore the shape, 0 to stop, the hit's fraction to clip the cast to the closest hit, or 1 to continue.
   - `context`: A value passed to the callback.
-  - `out`: Optional. The `B2TreeStats` to fill; a new one when omitted.
+  - `out`: Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: Counters of the tree traversal.
 
   The callback chooses whether the cast finds the closest hit, any hit or several hits, by the value it returns. The callback may receive shapes in any order. See `b2World_CastRayClosest` for finding the closest hit alone.
@@ -3979,7 +3981,7 @@ static macro function copyWasm(directory:String):Void
   - `origin`: The start point of the ray.
   - `translation`: The vector from the ray's start point to its end point.
   - `filter`: The filter that chooses which shapes the ray can hit.
-  - `out`: Optional. The `B2RayResult` to fill; a new one when omitted.
+  - `out`: Optional. The `B2RayResult` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The hit, with its `hit` field false when the ray hit no shape.
 
   Ignores shapes that contain the ray's start point. Allows no custom filtering. See `b2World_CastRay` for a callback that chooses what to keep.
@@ -3991,7 +3993,7 @@ static macro function copyWasm(directory:String):Void
   - `filter`: The filter that chooses which shapes the proxy can hit.
   - `fcn`: The callback, called for each hit. It returns -1 to ignore the shape, 0 to stop, the hit's fraction to clip the cast to the closest hit, or 1 to continue.
   - `context`: A value passed to the callback.
-  - `out`: Optional. The `B2TreeStats` to fill; a new one when omitted.
+  - `out`: Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: Counters of the tree traversal.
 
   Works as `b2World_CastRay` does, with a shape in place of a point. The proxy points are relative to the origin. The points the callback receives are world positions.
@@ -4063,7 +4065,7 @@ static macro function copyWasm(directory:String):Void
   Box2D has no up direction. The program chooses one. The default is set by `B2WorldDef.gravity`.
 - `b2World_GetGravity`: Returns the gravity vector of the world.
   - `worldId`: The world.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The gravity, usually in meters per second squared.
 - `b2World_Explode`: Applies a radial explosion to the bodies around a point.
   - `worldId`: The world.
@@ -4114,15 +4116,15 @@ static macro function copyWasm(directory:String):Void
   - returns: The count of awake bodies.
 - `b2World_GetProfile`: Returns the timings of the most recent step.
   - `worldId`: The world.
-  - `out`: Optional. The `B2Profile` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Profile` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The profile, with times in milliseconds.
 - `b2World_GetCounters`: Returns the world's counters and sizes.
   - `worldId`: The world.
-  - `out`: Optional. The `B2Counters` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Counters` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The counters.
 - `b2World_GetMaxCapacity`: Returns the largest sizes the world has reached.
   - `worldId`: The world.
-  - `out`: Optional. The `B2Capacity` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Capacity` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The capacities.
 
   Provide the result in a `B2WorldDef` to avoid allocations and copies while the program runs.
@@ -4183,14 +4185,14 @@ static macro function copyWasm(directory:String):Void
   - `image`: A snapshot written by `b2World_GetSnapshot`.
   - `size`: The size of the snapshot, in bytes.
   - `workerCount`: The new world's number of workers. 0 runs one worker. In a page the module runs one worker, whatever the count.
-  - `out`: Optional. The `B2WorldId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new world's id, or `b2_nullWorldId` on failure.
 
   Mainly useful for replay. The callbacks are the defaults.
 - `b2CreateBody`: Creates a rigid body in a world.
   - `worldId`: The world.
   - `def`: The body's definition. Make it with `b2DefaultBodyDef`.
-  - `out`: Optional. The `B2BodyId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new body's id.
 
   The definition is not retained. A body has no shapes until `b2CreateCircleShape` and the other shape calls add them. Refused and logged during a callback.
@@ -4232,15 +4234,15 @@ static macro function copyWasm(directory:String):Void
   - returns: The value, as it was set.
 - `b2Body_GetPosition`: Returns the position of the body's origin in the world.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The position.
 - `b2Body_GetRotation`: Returns the body's rotation in the world.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2Rot` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The rotation, a cosine and sine pair.
 - `b2Body_GetTransform`: Returns the body's transform in the world.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2WorldTransform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The transform.
 - `b2Body_SetTransform`: Moves the body to a position and rotation in the world.
   - `bodyId`: The body.
@@ -4251,26 +4253,26 @@ static macro function copyWasm(directory:String):Void
 - `b2Body_GetLocalPoint`: Returns a world point in the body's local space.
   - `bodyId`: The body.
   - `worldPoint`: The point in world coordinates.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The point in the body's local space.
 - `b2Body_GetWorldPoint`: Returns a point of the body's local space in the world.
   - `bodyId`: The body.
   - `localPoint`: The point in the body's local space.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The point in world coordinates.
 - `b2Body_GetLocalVector`: Returns a world vector in the body's local space.
   - `bodyId`: The body.
   - `worldVector`: The vector in world coordinates.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The vector in the body's local space.
 - `b2Body_GetWorldVector`: Returns a vector of the body's local space in the world.
   - `bodyId`: The body.
   - `localVector`: The vector in the body's local space.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The vector in world coordinates.
 - `b2Body_GetLinearVelocity`: Returns the linear velocity of the body's center of mass.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The velocity, usually in meters per second.
 - `b2Body_GetAngularVelocity`: Returns the body's angular velocity.
   - `bodyId`: The body.
@@ -4283,7 +4285,7 @@ static macro function copyWasm(directory:String):Void
   - `angularVelocity`: The velocity, in radians per second.
 - `b2Body_SetTargetTransform`: Sets the body's velocity to reach a transform after a time step.
   - `bodyId`: The body.
-  - `target`: The transform to reach.
+  - `target`: The transform to reach at the end of the next step.
   - `timeStep`: The time step of the next call to `b2World_Step`, in seconds.
   - `wake`: True to wake the body.
 
@@ -4291,12 +4293,12 @@ static macro function copyWasm(directory:String):Void
 - `b2Body_GetLocalPointVelocity`: Returns the velocity of a point fixed to the body, in the body's local space.
   - `bodyId`: The body.
   - `localPoint`: The point in the body's local space.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The velocity, usually in meters per second.
 - `b2Body_GetWorldPointVelocity`: Returns the velocity of a point fixed to the body, in world coordinates.
   - `bodyId`: The body.
   - `worldPoint`: The point in world coordinates.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The velocity, usually in meters per second.
 - `b2Body_ApplyForce`: Applies a force at a point in the world.
   - `bodyId`: The body.
@@ -4354,11 +4356,11 @@ static macro function copyWasm(directory:String):Void
   - returns: The inertia, usually in kilogram meters squared.
 - `b2Body_GetLocalCenter`: Returns the body's center of mass in its local space.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The center of mass.
 - `b2Body_GetWorldCenter`: Returns the body's center of mass in the world.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The center of mass, in world coordinates.
 - `b2Body_SetMassData`: Overrides the body's mass properties.
   - `bodyId`: The body.
@@ -4367,7 +4369,7 @@ static macro function copyWasm(directory:String):Void
   Box2D normally computes them from the shapes and their density. Adding or removing a shape, or changing the body's type, discards the override. When motion locks fix rotation, the rotational inertia stays zero and the value provided is ignored.
 - `b2Body_GetMassData`: Returns the body's mass data.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2MassData` to fill; a new one when omitted.
+  - `out`: Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The mass, center of mass and rotational inertia.
 - `b2Body_UpdateMassFromShapes`: Recomputes the body's mass properties from its shapes.
   - `bodyId`: The body.
@@ -4449,7 +4451,7 @@ static macro function copyWasm(directory:String):Void
   The mass properties are recomputed, since a locked rotation sets the rotational inertia to zero.
 - `b2Body_GetMotionLocks`: Returns which motions of the body are locked.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2MotionLocks` to fill; a new one when omitted.
+  - `out`: Optional. The `B2MotionLocks` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The locks.
 - `b2Body_SetBullet`: Sets whether the body is a bullet.
   - `bodyId`: The body.
@@ -4479,7 +4481,7 @@ static macro function copyWasm(directory:String):Void
   Each shape's setting is `B2ShapeDef.enableHitEvents`.
 - `b2Body_GetWorld`: Returns the world that holds the body.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2WorldId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The world's id.
 - `b2Body_GetShapeCount`: Returns the number of shapes on the body.
   - `bodyId`: The body.
@@ -4515,7 +4517,7 @@ static macro function copyWasm(directory:String):Void
   _Note that only the elements below the returned count are valid._
 - `b2Body_ComputeBounds`: Returns the world bounds of all the body's shapes.
   - `bodyId`: The body.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The bounds, in world coordinates.
 
   The bounds may not contain the body's origin. When the body has no shapes, the bounds are empty and centered on the origin.
@@ -4532,7 +4534,7 @@ static macro function copyWasm(directory:String):Void
   - `bodyId`: The body to attach the shape to.
   - `def`: The shape's definition.
   - `circle`: The circle, in the body's local space.
-  - `out`: Optional. The `B2ShapeId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new shape's id, or `b2_nullShapeId` when the circle is invalid.
 
   The shape definition and the circle are copied. Contacts are created at the next step.
@@ -4542,7 +4544,7 @@ static macro function copyWasm(directory:String):Void
   - `bodyId`: The body to attach the shape to.
   - `def`: The shape's definition.
   - `segment`: The segment, in the body's local space.
-  - `out`: Optional. The `B2ShapeId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new shape's id, or `b2_nullShapeId` when the segment is too short.
 
   The shape definition and the segment are copied. Contacts are created at the next step.
@@ -4550,7 +4552,7 @@ static macro function copyWasm(directory:String):Void
   - `bodyId`: The body to attach the shape to.
   - `def`: The shape's definition.
   - `chainSegment`: The chain segment, in the body's local space.
-  - `out`: Optional. The `B2ShapeId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new shape's id, or `b2_nullShapeId` when the segment is too short.
 
   The shape definition and the chain segment are copied. Contacts are created at the next step.
@@ -4562,7 +4564,7 @@ static macro function copyWasm(directory:String):Void
   - `bodyId`: The body to attach the shape to.
   - `def`: The shape's definition.
   - `capsule`: The capsule, in the body's local space.
-  - `out`: Optional. The `B2ShapeId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new shape's id, or `b2_nullShapeId` when the capsule's length is too small.
 
   The shape definition and the capsule are copied. Contacts are created at the next step.
@@ -4570,7 +4572,7 @@ static macro function copyWasm(directory:String):Void
   - `bodyId`: The body to attach the shape to.
   - `def`: The shape's definition.
   - `polygon`: The polygon, in the body's local space.
-  - `out`: Optional. The `B2ShapeId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new shape's id, or `b2_nullShapeId` when the polygon is invalid.
 
   The shape definition and the polygon are copied. Contacts are created at the next step.
@@ -4593,11 +4595,11 @@ static macro function copyWasm(directory:String):Void
   - returns: The shape's type.
 - `b2Shape_GetBody`: Returns the id of the body a shape is attached to.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2BodyId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The body's id.
 - `b2Shape_GetWorld`: Returns the id of the world that owns a shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2WorldId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The world's id.
 - `b2Shape_IsSensor`: Returns whether a shape is a sensor.
   - `shapeId`: The shape.
@@ -4654,11 +4656,11 @@ static macro function copyWasm(directory:String):Void
   Refused while the world is stepping, such as from a callback.
 - `b2Shape_GetSurfaceMaterial`: Returns the surface material of a shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2SurfaceMaterial` to fill; a new one when omitted.
+  - `out`: Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The surface material.
 - `b2Shape_GetFilter`: Returns the collision filter of a shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2Filter` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Filter` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The filter.
 - `b2Shape_SetFilter`: Sets the collision filter of a shape.
   - `shapeId`: The shape.
@@ -4719,37 +4721,37 @@ static macro function copyWasm(directory:String):Void
   - `shapeId`: The shape.
   - `origin`: The ray's start, in world space.
   - `translation`: The ray's displacement, in meters.
-  - `out`: Optional. The `B2WorldCastOutput` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldCastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The cast result.
 
   The ray starts at the origin and extends by the translation. The output point is a world position.
 - `b2Shape_GetCircle`: Returns a copy of the circle of a circle shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2Circle` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Circle` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The circle, in the body's local space.
 
   Asserts that the shape is a circle.
 - `b2Shape_GetSegment`: Returns a copy of the segment of a segment shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2Segment` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Segment` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The segment, in the body's local space.
 
   Asserts that the shape is a segment.
 - `b2Shape_GetChainSegment`: Returns a copy of the chain segment of a chain segment shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2ChainSegment` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ChainSegment` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The chain segment, in the body's local space.
 
   Chain segment shapes come from chains and from `b2CreateChainSegmentShape`. Asserts that the shape is a chain segment.
 - `b2Shape_GetCapsule`: Returns a copy of the capsule of a capsule shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2Capsule` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Capsule` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The capsule, in the body's local space.
 
   Asserts that the shape is a capsule.
 - `b2Shape_GetPolygon`: Returns a copy of the convex polygon of a polygon shape.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2Polygon` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The polygon, in the body's local space.
 
   Asserts that the shape is a polygon.
@@ -4792,7 +4794,7 @@ static macro function copyWasm(directory:String):Void
   Refused while the world is stepping, such as from a callback.
 - `b2Shape_GetParentChain`: Returns the chain a chain segment shape belongs to.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2ChainId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ChainId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The chain's id, or `b2_nullChainId` when the shape isn't a chain segment of a chain.
 - `b2Shape_GetContactCapacity`: Returns the capacity needed to retrieve all the touching contacts of a shape.
   - `shapeId`: The shape.
@@ -4834,16 +4836,16 @@ static macro function copyWasm(directory:String):Void
   Refused while the world is stepping, such as from a callback.
 - `b2Shape_GetBounds`: Returns the current bounding box of a shape, in world space.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2AABB` to fill; a new one when omitted.
+  - `out`: Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The bounding box.
 - `b2Shape_ComputeMassData`: Computes the mass data of a shape from its geometry and density.
   - `shapeId`: The shape.
-  - `out`: Optional. The `B2MassData` to fill; a new one when omitted.
+  - `out`: Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The mass data, in the body's local space.
 - `b2Shape_GetClosestPoint`: Returns the point on a shape closest to a target point.
   - `shapeId`: The shape.
   - `target`: The target point, in world space.
-  - `out`: Optional. The `B2Pos` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The closest point, in world space.
 
   The target and the result are world positions.
@@ -4858,7 +4860,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreateChain`: Creates a chain shape and attaches it to a body.
   - `bodyId`: The body to attach the chain to.
   - `def`: The chain's definition.
-  - `out`: Optional. The `B2ChainId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ChainId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new chain's id.
 
   The chain makes one chain segment shape for each segment, with ghost vertices at its ends and at the seam of a loop. See `B2ChainDef` for the points and the materials.
@@ -4870,7 +4872,7 @@ static macro function copyWasm(directory:String):Void
   Refused while the world is stepping, such as from a callback.
 - `b2Chain_GetWorld`: Returns the id of the world that owns a chain shape.
   - `chainId`: The chain.
-  - `out`: Optional. The `B2WorldId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The world's id.
 - `b2Chain_GetSegmentCount`: Returns the number of segments of a chain shape.
   - `chainId`: The chain.
@@ -4896,7 +4898,7 @@ static macro function copyWasm(directory:String):Void
 - `b2Chain_GetSurfaceMaterial`: Returns the surface material of one segment of a chain shape.
   - `chainId`: The chain.
   - `segmentIndex`: The index of the segment, from 0 up to the segment count.
-  - `out`: Optional. The `B2SurfaceMaterial` to fill; a new one when omitted.
+  - `out`: Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The surface material.
 - `b2Chain_IsValid`: Returns whether a chain id refers to a chain shape that exists.
   - `id`: The chain id.
@@ -4917,15 +4919,15 @@ static macro function copyWasm(directory:String):Void
   - returns: The joint's type.
 - `b2Joint_GetBodyA`: Returns the id of body A of a joint.
   - `jointId`: The joint.
-  - `out`: Optional. The `B2BodyId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: Body A's id.
 - `b2Joint_GetBodyB`: Returns the id of body B of a joint.
   - `jointId`: The joint.
-  - `out`: Optional. The `B2BodyId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: Body B's id.
 - `b2Joint_GetWorld`: Returns the id of the world that owns a joint.
   - `jointId`: The joint.
-  - `out`: Optional. The `B2WorldId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The world's id.
 - `b2Joint_SetLocalFrameA`: Sets the frame of a joint on body A.
   - `jointId`: The joint.
@@ -4934,7 +4936,7 @@ static macro function copyWasm(directory:String):Void
   The frame is a position and rotation in body A's local space.
 - `b2Joint_GetLocalFrameA`: Returns the frame of a joint on body A.
   - `jointId`: The joint.
-  - `out`: Optional. The `B2Transform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The frame, in body A's local space.
 - `b2Joint_SetLocalFrameB`: Sets the frame of a joint on body B.
   - `jointId`: The joint.
@@ -4943,7 +4945,7 @@ static macro function copyWasm(directory:String):Void
   The frame is a position and rotation in body B's local space.
 - `b2Joint_GetLocalFrameB`: Returns the frame of a joint on body B.
   - `jointId`: The joint.
-  - `out`: Optional. The `B2Transform` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The frame, in body B's local space.
 - `b2Joint_SetCollideConnected`: Sets whether the bodies of a joint collide with each other.
   - `jointId`: The joint.
@@ -4963,7 +4965,7 @@ static macro function copyWasm(directory:String):Void
   - `jointId`: The joint.
 - `b2Joint_GetConstraintForce`: Returns the constraint force of a joint, in newtons.
   - `jointId`: The joint.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The force.
 
   The force is the one applied at the last step.
@@ -5013,7 +5015,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreateDistanceJoint`: Creates a distance joint between two bodies and returns its id.
   - `worldId`: The world.
   - `def`: The joint's definition, read during the call.
-  - `out`: Optional. The `B2JointId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new joint's id.
 
   The joint keeps a point on body A and a point on body B a set distance apart, and works as a rope or a spring. See `B2DistanceJointDef` for the settings.
@@ -5115,7 +5117,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreateFilterJoint`: Creates a filter joint between two bodies and returns its id.
   - `worldId`: The world.
   - `def`: The joint's definition, read during the call.
-  - `out`: Optional. The `B2JointId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new joint's id.
 
   The joint disables collision between the two bodies and keeps them in the same simulation island. See `B2FilterJointDef` for the settings.
@@ -5124,7 +5126,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreateMotorJoint`: Creates a motor joint between two bodies and returns its id.
   - `worldId`: The world.
   - `def`: The joint's definition, read during the call.
-  - `out`: Optional. The `B2JointId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new joint's id.
 
   The joint drives the relative velocity or the relative transform of the two bodies. With a velocity of zero it acts like top-down friction. See `B2MotorJointDef` for the settings.
@@ -5135,7 +5137,7 @@ static macro function copyWasm(directory:String):Void
   - `velocity`: The desired relative linear velocity, in meters per second.
 - `b2MotorJoint_GetLinearVelocity`: Returns the relative linear velocity the motor joint drives toward, in meters per second.
   - `jointId`: The motor joint.
-  - `out`: Optional. The `B2Vec2` to fill; a new one when omitted.
+  - `out`: Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The desired relative linear velocity.
 - `b2MotorJoint_SetAngularVelocity`: Sets the relative angular velocity the motor joint drives toward, in radians per second.
   - `jointId`: The motor joint.
@@ -5206,7 +5208,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreatePrismaticJoint`: Creates a prismatic (slider) joint between two bodies and returns its id.
   - `worldId`: The world.
   - `def`: The joint's definition, read during the call.
-  - `out`: Optional. The `B2JointId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new joint's id.
 
   Body B slides along the x-axis of frame A and can not rotate relative to body A. See `B2PrismaticJointDef` for the settings.
@@ -5296,7 +5298,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreateRevoluteJoint`: Creates a revolute joint between two bodies and returns its id.
   - `worldId`: The world.
   - `def`: The joint's definition, read during the call.
-  - `out`: Optional. The `B2JointId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new joint's id.
 
   A point on body B is fixed to a point on body A, and the bodies rotate freely relative to each other. See `B2RevoluteJointDef` for the settings.
@@ -5384,7 +5386,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreateWeldJoint`: Creates a weld joint between two bodies and returns its id.
   - `worldId`: The world.
   - `def`: The joint's definition, read during the call.
-  - `out`: Optional. The `B2JointId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new joint's id.
 
   The joint connects the two bodies rigidly, and its springs mimic soft-body simulation. See `B2WeldJointDef` for the settings.
@@ -5421,7 +5423,7 @@ static macro function copyWasm(directory:String):Void
 - `b2CreateWheelJoint`: Creates a wheel joint between two bodies and returns its id.
   - `worldId`: The world.
   - `def`: The joint's definition, read during the call.
-  - `out`: Optional. The `B2JointId` to fill; a new one when omitted.
+  - `out`: Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The new joint's id.
 
   Body B is a wheel that rotates freely and slides along the x-axis of frame A. See `B2WheelJointDef` for the settings.
@@ -5499,7 +5501,7 @@ static macro function copyWasm(directory:String):Void
   A contact id can become orphaned when its contact ends. Check it with this call before using it in other contact calls.
 - `b2Contact_GetData`: Returns the data of a contact: its id, its two shapes and its manifold.
   - `contactId`: The contact.
-  - `out`: Optional. The `B2ContactData` to fill; a new one when omitted.
+  - `out`: Optional. The `B2ContactData` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact's data.
 
   The manifold is a copy of the contact's and may have no points when the shapes are not touching. The contact id must be valid.

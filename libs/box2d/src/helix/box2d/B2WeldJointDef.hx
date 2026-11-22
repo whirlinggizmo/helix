@@ -17,7 +17,7 @@ class B2WeldJointDef {
 	/** The angular damping ratio, non-dimensional. 1 is critical damping. Defaults to 0. */
 	public var angularDampingRatio:Float;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultWeldJointDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultWeldJointDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

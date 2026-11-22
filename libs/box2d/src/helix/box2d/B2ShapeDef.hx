@@ -40,7 +40,7 @@ class B2ShapeDef {
 	/** Whether the body's mass is recomputed when the shape is created. When false, call `b2Body_UpdateMassFromShapes` or `b2Body_SetMassData` before stepping the world. Defaults to true. */
 	public var updateBodyMass:Bool;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultShapeDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultShapeDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

@@ -20,7 +20,7 @@ class B2SurfaceMaterial {
 	/** The color to debug draw the shape with, as 0xRRGGBB. Defaults to 0, which draws the usual color. */
 	public var customColor:Int;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultSurfaceMaterial()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultSurfaceMaterial()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

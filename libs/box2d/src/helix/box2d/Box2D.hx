@@ -33,7 +33,11 @@ package helix.box2d;
 	Box2D's types are Haxe types named as Box2D names them with a capital first letter (`b2BodyDef` is `B2BodyDef`), as Haxe requires;
 	functions, fields, enum values and constants keep Box2D's names. A struct Box2D passes by value is a Haxe object, which the garbage
 	collector frees; a function returning one accepts an optional `out` that receives the result. What Box2D holds (a world, a body,
-	a shape, a joint, a chain) is reached by its id and lives in the module until it is destroyed. */
+	a shape, a joint, a chain) is reached by its id and lives in the module until it is destroyed.
+
+	A def from its `b2Default` function, or from its constructor, holds Box2D's defaults, with the structs it holds already made
+	(`def.base.localFrameA.p`, `shapeDef.material.friction`), so their fields are set directly. An `out` is filled in place, and an
+	array a call fills reuses the elements it holds, so a step's reads allocate nothing when each is passed the same one. */
 class Box2D {
 	#if !macro
 	/** Asynchronously loads the module.
@@ -781,7 +785,7 @@ class Box2D {
 
 	/** Returns the version of Box2D.
 
-		@param out  Optional. The `B2Version` to fill; a new one when omitted.
+		@param out  Optional. The `B2Version` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Version`, which is `out` when provided. */
 	public static function b2GetVersion(?out:B2Version):B2Version {
 		throw "not built yet";
@@ -999,7 +1003,7 @@ class Box2D {
 	/** Returns the cosine and sine of an angle, computed so the result is the same on every platform.
 
 		@param radians  The angle, in radians.
-		@param out  Optional. The `B2CosSin` to fill; a new one when omitted.
+		@param out  Optional. The `B2CosSin` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2CosSin`, which is `out` when provided. */
 	public static function b2ComputeCosSin(radians:Float, ?out:B2CosSin):B2CosSin {
 		throw "not built yet";
@@ -1027,7 +1031,7 @@ class Box2D {
 
 		@param v  The vector.
 		@param s  The scalar.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(s * v.y, -s * v.x)`. */
 	public static function b2CrossVS(v:B2Vec2, s:Float, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1037,7 +1041,7 @@ class Box2D {
 
 		@param s  The scalar.
 		@param v  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(-s * v.y, s * v.x)`. */
 	public static function b2CrossSV(s:Float, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1046,7 +1050,7 @@ class Box2D {
 	/** Returns the vector rotated 90 degrees counter-clockwise, which is `b2CrossSV(1, v)`.
 
 		@param v  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(-v.y, v.x)`. */
 	public static function b2LeftPerp(v:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1055,7 +1059,7 @@ class Box2D {
 	/** Returns the vector rotated 90 degrees clockwise, which is `b2CrossVS(v, 1)`.
 
 		@param v  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(v.y, -v.x)`. */
 	public static function b2RightPerp(v:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1065,7 +1069,7 @@ class Box2D {
 
 		@param a  The first vector.
 		@param b  The second vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Add(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1075,7 +1079,7 @@ class Box2D {
 
 		@param a  The vector to subtract from.
 		@param b  The vector to subtract.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Sub(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1084,7 +1088,7 @@ class Box2D {
 	/** Returns the negation of a vector.
 
 		@param a  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Neg(a:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1095,7 +1099,7 @@ class Box2D {
 		@param a  The vector at `t` of 0.
 		@param b  The vector at `t` of 1.
 		@param t  The fraction, 0 to 1.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Lerp(a:B2Vec2, b:B2Vec2, t:Float, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1105,7 +1109,7 @@ class Box2D {
 
 		@param a  The first vector.
 		@param b  The second vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Mul(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1115,7 +1119,7 @@ class Box2D {
 
 		@param s  The scalar.
 		@param v  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulSV(s:Float, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1126,7 +1130,7 @@ class Box2D {
 		@param a  The vector to add to.
 		@param s  The scalar.
 		@param b  The vector to scale.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulAdd(a:B2Vec2, s:Float, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1137,7 +1141,7 @@ class Box2D {
 		@param a  The vector to subtract from.
 		@param s  The scalar.
 		@param b  The vector to scale.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulSub(a:B2Vec2, s:Float, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1146,7 +1150,7 @@ class Box2D {
 	/** Returns the absolute value of each component of a vector.
 
 		@param a  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Abs(a:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1156,7 +1160,7 @@ class Box2D {
 
 		@param a  The first vector.
 		@param b  The second vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Min(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1166,7 +1170,7 @@ class Box2D {
 
 		@param a  The first vector.
 		@param b  The second vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Max(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1177,7 +1181,7 @@ class Box2D {
 		@param v  The vector.
 		@param a  The lower bound vector.
 		@param b  The upper bound vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Clamp(v:B2Vec2, a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1205,7 +1209,7 @@ class Box2D {
 		Returns the zero vector when the length is too small to scale.
 
 		@param a  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Normalize(a:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1225,7 +1229,7 @@ class Box2D {
 
 		@param length  A one-element array. The call stores the original length at index 0.
 		@param a  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2GetLengthAndNormalize(length:Array<Float>, a:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1234,7 +1238,7 @@ class Box2D {
 	/** Returns a rotation scaled to unit magnitude.
 
 		@param q  The rotation.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2NormalizeRot(q:B2Rot, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1246,7 +1250,7 @@ class Box2D {
 
 		@param q1  The initial rotation.
 		@param deltaAngle  The angular displacement, in radians.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2IntegrateRotation(q1:B2Rot, deltaAngle:Float, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1272,7 +1276,7 @@ class Box2D {
 	/** Returns the rotation for an angle.
 
 		@param radians  The angle, in radians.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2MakeRot(radians:Float, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1281,7 +1285,7 @@ class Box2D {
 	/** Returns the rotation whose x-axis is a unit vector.
 
 		@param unitVector  The unit vector, which must be normalized.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2MakeRotFromUnitVector(unitVector:B2Vec2, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1291,7 +1295,7 @@ class Box2D {
 
 		@param v1  The first unit vector.
 		@param v2  The second unit vector.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2ComputeRotationBetweenUnitVectors(v1:B2Vec2, v2:B2Vec2, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1308,7 +1312,7 @@ class Box2D {
 	/** Returns the inverse of a rotation.
 
 		@param a  The rotation.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2InvertRot(a:B2Rot, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1319,7 +1323,7 @@ class Box2D {
 		@param q1  The rotation at `t` of 0.
 		@param q2  The rotation at `t` of 1.
 		@param t  The fraction, 0 to 1.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2NLerp(q1:B2Rot, q2:B2Rot, t:Float, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1346,7 +1350,7 @@ class Box2D {
 	/** Returns the x-axis of a rotation.
 
 		@param q  The rotation.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Rot_GetXAxis(q:B2Rot, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1355,7 +1359,7 @@ class Box2D {
 	/** Returns the y-axis of a rotation.
 
 		@param q  The rotation.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Rot_GetYAxis(q:B2Rot, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1365,7 +1369,7 @@ class Box2D {
 
 		@param q  The left rotation.
 		@param r  The right rotation.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2MulRot(q:B2Rot, r:B2Rot, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1377,7 +1381,7 @@ class Box2D {
 
 		@param a  The rotation to invert.
 		@param b  The rotation to multiply by.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2InvMulRot(a:B2Rot, b:B2Rot, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -1406,7 +1410,7 @@ class Box2D {
 
 		@param q  The rotation.
 		@param v  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2RotateVector(q:B2Rot, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1416,7 +1420,7 @@ class Box2D {
 
 		@param q  The rotation to invert.
 		@param v  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2InvRotateVector(q:B2Rot, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1426,7 +1430,7 @@ class Box2D {
 
 		@param t  The transform.
 		@param p  The point.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2TransformPoint(t:B2Transform, p:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1436,7 +1440,7 @@ class Box2D {
 
 		@param t  The transform to invert.
 		@param p  The point.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2InvTransformPoint(t:B2Transform, p:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1448,7 +1452,7 @@ class Box2D {
 
 		@param A  The outer transform.
 		@param B  The inner transform.
-		@param out  Optional. The `B2Transform` to fill; a new one when omitted.
+		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2MulTransforms(A:B2Transform, B:B2Transform, ?out:B2Transform):B2Transform {
 		throw "not built yet";
@@ -1460,7 +1464,7 @@ class Box2D {
 
 		@param A  The transform of frame `A`.
 		@param B  The transform of frame `B`.
-		@param out  Optional. The `B2Transform` to fill; a new one when omitted.
+		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2InvMulTransforms(A:B2Transform, B:B2Transform, ?out:B2Transform):B2Transform {
 		throw "not built yet";
@@ -1471,7 +1475,7 @@ class Box2D {
 		Returns a copy of the vector in single precision.
 
 		@param v  The vector.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2ToPos(v:B2Vec2, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -1482,7 +1486,7 @@ class Box2D {
 		Returns a copy of the position in single precision.
 
 		@param p  The world position.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2ToVec2(p:B2Pos, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1512,7 +1516,7 @@ class Box2D {
 
 		@param a  The position to subtract from.
 		@param b  The position to subtract.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2SubPos(a:B2Pos, b:B2Pos, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1522,7 +1526,7 @@ class Box2D {
 
 		@param p  The world position.
 		@param d  The offset.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2OffsetPos(p:B2Pos, d:B2Vec2, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -1533,7 +1537,7 @@ class Box2D {
 		@param a  The position at `t` of 0.
 		@param b  The position at `t` of 1.
 		@param t  The fraction, 0 to 1.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2LerpPos(a:B2Pos, b:B2Pos, t:Float, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -1543,7 +1547,7 @@ class Box2D {
 
 		@param t  The world transform.
 		@param p  The local point.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2TransformWorldPoint(t:B2WorldTransform, p:B2Vec2, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -1553,7 +1557,7 @@ class Box2D {
 
 		@param t  The world transform.
 		@param p  The world position.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2InvTransformWorldPoint(t:B2WorldTransform, p:B2Pos, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1563,7 +1567,7 @@ class Box2D {
 
 		@param A  The world transform of frame `A`.
 		@param B  The world transform of frame `B`.
-		@param out  Optional. The `B2Transform` to fill; a new one when omitted.
+		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2InvMulWorldTransforms(A:B2WorldTransform, B:B2WorldTransform, ?out:B2Transform):B2Transform {
 		throw "not built yet";
@@ -1573,7 +1577,7 @@ class Box2D {
 
 		@param A  The world transform.
 		@param B  The local transform.
-		@param out  Optional. The `B2WorldTransform` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2WorldTransform`, which is `out` when provided. */
 	public static function b2MulWorldTransforms(A:B2WorldTransform, B:B2Transform, ?out:B2WorldTransform):B2WorldTransform {
 		throw "not built yet";
@@ -1583,7 +1587,7 @@ class Box2D {
 
 		@param t  The world transform.
 		@param base  The base world position.
-		@param out  Optional. The `B2Transform` to fill; a new one when omitted.
+		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2ToRelativeTransform(t:B2WorldTransform, base:B2Pos, ?out:B2Transform):B2Transform {
 		throw "not built yet";
@@ -1594,7 +1598,7 @@ class Box2D {
 		The conversion loses nothing.
 
 		@param t  The transform.
-		@param out  Optional. The `B2WorldTransform` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2WorldTransform`, which is `out` when provided. */
 	public static function b2MakeWorldTransform(t:B2Transform, ?out:B2WorldTransform):B2WorldTransform {
 		throw "not built yet";
@@ -1604,7 +1608,7 @@ class Box2D {
 
 		@param A  The matrix.
 		@param v  The vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulMV(A:B2Mat22, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1615,7 +1619,7 @@ class Box2D {
 		Returns the zero matrix when the matrix is singular.
 
 		@param A  The matrix.
-		@param out  Optional. The `B2Mat22` to fill; a new one when omitted.
+		@param out  Optional. The `B2Mat22` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Mat22`, which is `out` when provided. */
 	public static function b2GetInverse22(A:B2Mat22, ?out:B2Mat22):B2Mat22 {
 		throw "not built yet";
@@ -1627,7 +1631,7 @@ class Box2D {
 
 		@param A  The matrix.
 		@param b  The right-hand side column vector.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Solve22(A:B2Mat22, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1645,7 +1649,7 @@ class Box2D {
 	/** Returns the center of a bounding box.
 
 		@param a  The bounding box.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2AABB_Center(a:B2AABB, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1654,7 +1658,7 @@ class Box2D {
 	/** Returns the half-widths of a bounding box.
 
 		@param a  The bounding box.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2AABB_Extents(a:B2AABB, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -1664,7 +1668,7 @@ class Box2D {
 
 		@param a  The first bounding box.
 		@param b  The second bounding box.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2AABB`, which is `out` when provided. */
 	public static function b2AABB_Union(a:B2AABB, b:B2AABB, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -1684,7 +1688,7 @@ class Box2D {
 		@param points  The circle centers, read from index 0 up to `count`.
 		@param count  The number of points. Must be greater than zero.
 		@param radius  The radius of every circle.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2AABB`, which is `out` when provided. */
 	public static function b2MakeAABB(points:Array<B2Vec2>, count:Int, radius:Float, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -1747,7 +1751,7 @@ class Box2D {
 
 		@param hull  The hull, computed by `b2ComputeHull`.
 		@param radius  The rounding radius of the polygon, in length units. Zero makes sharp corners.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakePolygon(hull:B2Hull, radius:Float, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1760,7 +1764,7 @@ class Box2D {
 		@param hull  The hull, computed by `b2ComputeHull`.
 		@param position  The offset of the polygon, in length units.
 		@param rotation  The rotation of the polygon.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon, with sharp corners. */
 	public static function b2MakeOffsetPolygon(hull:B2Hull, position:B2Vec2, rotation:B2Rot, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1774,7 +1778,7 @@ class Box2D {
 		@param position  The offset of the polygon, in length units.
 		@param rotation  The rotation of the polygon.
 		@param radius  The rounding radius of the polygon, in length units.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeOffsetRoundedPolygon(hull:B2Hull, position:B2Vec2, rotation:B2Rot, radius:Float, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1783,7 +1787,7 @@ class Box2D {
 	/** Makes a square polygon centered on the origin, without a convex hull.
 
 		@param halfWidth  The half-width of the square, in length units.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeSquare(halfWidth:Float, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1793,7 +1797,7 @@ class Box2D {
 
 		@param halfWidth  The half-width along the x-axis, in length units.
 		@param halfHeight  The half-height along the y-axis, in length units.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeBox(halfWidth:Float, halfHeight:Float, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1804,7 +1808,7 @@ class Box2D {
 		@param halfWidth  The half-width along the x-axis, in length units.
 		@param halfHeight  The half-height along the y-axis, in length units.
 		@param radius  The rounding radius, in length units. The rounding extends beyond the half-width and half-height.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeRoundedBox(halfWidth:Float, halfHeight:Float, radius:Float, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1816,7 +1820,7 @@ class Box2D {
 		@param halfHeight  The half-height along the box's y-axis, in length units.
 		@param center  The local center of the box, in length units.
 		@param rotation  The local rotation of the box.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeOffsetBox(halfWidth:Float, halfHeight:Float, center:B2Vec2, rotation:B2Rot, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1829,7 +1833,7 @@ class Box2D {
 		@param center  The local center of the box, in length units.
 		@param rotation  The local rotation of the box.
 		@param radius  The rounding radius, in length units. The rounding extends beyond the half-width and half-height.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeOffsetRoundedBox(halfWidth:Float, halfHeight:Float, center:B2Vec2, rotation:B2Rot, radius:Float, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1839,7 +1843,7 @@ class Box2D {
 
 		@param transform  The transform to apply.
 		@param polygon  The polygon to transform.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The transformed polygon. */
 	public static function b2TransformPolygon(transform:B2Transform, polygon:B2Polygon, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -1849,7 +1853,7 @@ class Box2D {
 
 		@param shape  The circle.
 		@param density  The density, in kilograms per square meter.
-		@param out  Optional. The `B2MassData` to fill; a new one when omitted.
+		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data. */
 	public static function b2ComputeCircleMass(shape:B2Circle, density:Float, ?out:B2MassData):B2MassData {
 		throw "not built yet";
@@ -1859,7 +1863,7 @@ class Box2D {
 
 		@param shape  The capsule.
 		@param density  The density, in kilograms per square meter.
-		@param out  Optional. The `B2MassData` to fill; a new one when omitted.
+		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data. */
 	public static function b2ComputeCapsuleMass(shape:B2Capsule, density:Float, ?out:B2MassData):B2MassData {
 		throw "not built yet";
@@ -1869,7 +1873,7 @@ class Box2D {
 
 		@param shape  The polygon.
 		@param density  The density, in kilograms per square meter.
-		@param out  Optional. The `B2MassData` to fill; a new one when omitted.
+		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data. */
 	public static function b2ComputePolygonMass(shape:B2Polygon, density:Float, ?out:B2MassData):B2MassData {
 		throw "not built yet";
@@ -1879,7 +1883,7 @@ class Box2D {
 
 		@param shape  The circle, in its local space.
 		@param transform  The world transform of the shape.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputeCircleBounds(shape:B2Circle, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -1889,7 +1893,7 @@ class Box2D {
 
 		@param shape  The capsule, in its local space.
 		@param transform  The world transform of the shape.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputeCapsuleBounds(shape:B2Capsule, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -1899,7 +1903,7 @@ class Box2D {
 
 		@param shape  The polygon, in its local space.
 		@param transform  The world transform of the shape.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputePolygonBounds(shape:B2Polygon, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -1909,7 +1913,7 @@ class Box2D {
 
 		@param shape  The line segment, in its local space.
 		@param transform  The world transform of the shape.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputeSegmentBounds(shape:B2Segment, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -1946,7 +1950,7 @@ class Box2D {
 
 		@param shape  The circle.
 		@param input  The ray, in the shape's local space.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRayCircle(shape:B2Circle, input:B2RayCastInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -1956,7 +1960,7 @@ class Box2D {
 
 		@param shape  The capsule.
 		@param input  The ray, in the shape's local space.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRayCapsule(shape:B2Capsule, input:B2RayCastInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -1967,7 +1971,7 @@ class Box2D {
 		@param shape  The line segment.
 		@param input  The ray, in the segment's local space.
 		@param oneSided  When true, a hit from the left side of the segment counts as a miss.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRaySegment(shape:B2Segment, input:B2RayCastInput, oneSided:Bool, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -1977,7 +1981,7 @@ class Box2D {
 
 		@param shape  The polygon.
 		@param input  The ray, in the shape's local space.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRayPolygon(shape:B2Polygon, input:B2RayCastInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -1987,7 +1991,7 @@ class Box2D {
 
 		@param shape  The shape that stays in place.
 		@param input  The moving shape, its translation and its `maxFraction`.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapeCircle(shape:B2Circle, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -1997,7 +2001,7 @@ class Box2D {
 
 		@param shape  The shape that stays in place.
 		@param input  The moving shape, its translation and its `maxFraction`.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapeCapsule(shape:B2Capsule, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -2007,7 +2011,7 @@ class Box2D {
 
 		@param shape  The shape that stays in place.
 		@param input  The moving shape, its translation and its `maxFraction`.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapeSegment(shape:B2Segment, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -2017,7 +2021,7 @@ class Box2D {
 
 		@param shape  The shape that stays in place.
 		@param input  The moving shape, its translation and its `maxFraction`.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapePolygon(shape:B2Polygon, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -2029,7 +2033,7 @@ class Box2D {
 
 		@param points  The points. Read from index 0 up to `count`.
 		@param count  The number of points. Must be at least 3 and at most `B2_MAX_POLYGON_VERTICES`.
-		@param out  Optional. The `B2Hull` to fill; a new one when omitted.
+		@param out  Optional. The `B2Hull` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The hull. Its `count` is 0 when the computation fails. */
 	public static function b2ComputeHull(points:Array<B2Vec2>, count:Int, ?out:B2Hull):B2Hull {
 		throw "not built yet";
@@ -2051,7 +2055,7 @@ class Box2D {
 		@param q1  The second end point of the first segment.
 		@param p2  The first end point of the second segment.
 		@param q2  The second end point of the second segment.
-		@param out  Optional. The `B2SegmentDistanceResult` to fill; a new one when omitted.
+		@param out  Optional. The `B2SegmentDistanceResult` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The closest point on each segment, the fractions along each segment and the squared distance between the points. */
 	public static function b2ComputeSegmentDistance(p1:B2Vec2, q1:B2Vec2, p2:B2Vec2, q2:B2Vec2, ?out:B2SegmentDistanceResult):B2SegmentDistanceResult {
 		throw "not built yet";
@@ -2063,7 +2067,7 @@ class Box2D {
 		@param cache  The simplex cache. Updated by the call, so a later call with a nearby transform starts faster. Set its `count` to 0 on the first call.
 		@param simplexes  Optional. Receives the algorithm's simplexes, for debugging, from index 0. Elements it holds are reused, and missing ones are made.
 		@param simplexCapacity  Optional. The most simplexes to store; 0 when omitted.
-		@param out  Optional. The `B2DistanceOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2DistanceOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The closest points on each proxy, the distance, and the iteration and simplex counts. */
 	public static function b2ComputeShapeDistance(input:B2DistanceInput, cache:B2SimplexCache, ?simplexes:Array<B2Simplex>, simplexCapacity = 0,
 			?out:B2DistanceOutput):B2DistanceOutput {
@@ -2075,7 +2079,7 @@ class Box2D {
 		The hit point and normal are in shape A's frame. Shapes that already touch produce a `fraction` of 0.
 
 		@param input  The two proxies, the transform of proxy B in proxy A's frame, the translation of B, `maxFraction` and `canEncroach`.
-		@param out  Optional. The `B2CastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output, in shape A's frame. `hit` is false when B misses A. */
 	public static function b2CastShape(input:B2ShapeCastPairInput, ?out:B2CastOutput):B2CastOutput {
 		throw "not built yet";
@@ -2086,7 +2090,7 @@ class Box2D {
 		@param points  The points. Read from index 0 up to `count`.
 		@param count  The number of points. At most `B2_MAX_POLYGON_VERTICES`, and a larger count is clamped to it.
 		@param radius  The radius around the points, in length units.
-		@param out  Optional. The `B2ShapeProxy` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeProxy` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The proxy. */
 	public static function b2MakeProxy(points:Array<B2Vec2>, count:Int, radius:Float, ?out:B2ShapeProxy):B2ShapeProxy {
 		throw "not built yet";
@@ -2099,7 +2103,7 @@ class Box2D {
 		@param radius  The radius around the points, in length units.
 		@param position  The offset of the points, in length units.
 		@param rotation  The rotation of the points.
-		@param out  Optional. The `B2ShapeProxy` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeProxy` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The proxy. */
 	public static function b2MakeOffsetProxy(points:Array<B2Vec2>, count:Int, radius:Float, position:B2Vec2, rotation:B2Rot, ?out:B2ShapeProxy):B2ShapeProxy {
 		throw "not built yet";
@@ -2109,7 +2113,7 @@ class Box2D {
 
 		@param sweep  The sweep, holding the center of mass and rotation at the start and the end.
 		@param time  The time as a fraction from 0 (the start) to 1 (the end).
-		@param out  Optional. The `B2Transform` to fill; a new one when omitted.
+		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The transform of the body's origin at that time. */
 	public static function b2GetSweepTransform(sweep:B2Sweep, time:Float, ?out:B2Transform):B2Transform {
 		throw "not built yet";
@@ -2120,7 +2124,7 @@ class Box2D {
 		Time is a fraction from 0 to `maxFraction`. The computation uses a swept separating axis and can miss intermediate collisions where the shapes pass without penetrating. Call it again when the time interval changes.
 
 		@param input  The two proxies, their sweeps and the interval `maxFraction`.
-		@param out  Optional. The `B2TOIOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2TOIOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The output state and the time fraction. */
 	public static function b2ComputeTimeOfImpact(input:B2TOIInput, ?out:B2TOIOutput):B2TOIOutput {
 		throw "not built yet";
@@ -2131,7 +2135,7 @@ class Box2D {
 		@param circleA  The first circle. Shape A, in its local space.
 		@param circleB  The second circle. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideCircles(circleA:B2Circle, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2142,7 +2146,7 @@ class Box2D {
 		@param capsuleA  The capsule. Shape A, in its local space.
 		@param circleB  The circle. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideCapsuleAndCircle(capsuleA:B2Capsule, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2153,7 +2157,7 @@ class Box2D {
 		@param segmentA  The segment. Shape A, in its local space.
 		@param circleB  The circle. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideSegmentAndCircle(segmentA:B2Segment, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2164,7 +2168,7 @@ class Box2D {
 		@param polygonA  The polygon. Shape A, in its local space.
 		@param circleB  The circle. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollidePolygonAndCircle(polygonA:B2Polygon, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2175,7 +2179,7 @@ class Box2D {
 		@param capsuleA  The first capsule. Shape A, in its local space.
 		@param capsuleB  The second capsule. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideCapsules(capsuleA:B2Capsule, capsuleB:B2Capsule, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2186,7 +2190,7 @@ class Box2D {
 		@param segmentA  The segment. Shape A, in its local space.
 		@param capsuleB  The capsule. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideSegmentAndCapsule(segmentA:B2Segment, capsuleB:B2Capsule, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2197,7 +2201,7 @@ class Box2D {
 		@param polygonA  The polygon. Shape A, in its local space.
 		@param capsuleB  The capsule. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollidePolygonAndCapsule(polygonA:B2Polygon, capsuleB:B2Capsule, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2208,7 +2212,7 @@ class Box2D {
 		@param polygonA  The first polygon. Shape A, in its local space.
 		@param polygonB  The second polygon. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollidePolygons(polygonA:B2Polygon, polygonB:B2Polygon, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2219,7 +2223,7 @@ class Box2D {
 		@param segmentA  The segment. Shape A, in its local space.
 		@param polygonB  The polygon. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideSegmentAndPolygon(segmentA:B2Segment, polygonB:B2Polygon, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2230,7 +2234,7 @@ class Box2D {
 		@param segmentA  The chain segment. Shape A, in its local space.
 		@param circleB  The circle. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideChainSegmentAndCircle(segmentA:B2ChainSegment, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
 		throw "not built yet";
@@ -2242,7 +2246,7 @@ class Box2D {
 		@param capsuleB  The capsule. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
 		@param cache  The simplex cache, updated by the call. Set its `count` to 0 on the first call.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideChainSegmentAndCapsule(segmentA:B2ChainSegment, capsuleB:B2Capsule, xf:B2Transform, cache:B2SimplexCache,
 			?out:B2LocalManifold):B2LocalManifold {
@@ -2255,7 +2259,7 @@ class Box2D {
 		@param polygonB  The polygon. Shape B, in its local space.
 		@param xf  The transform of shape B in shape A's frame.
 		@param cache  The simplex cache, updated by the call. Set its `count` to 0 on the first call.
-		@param out  Optional. The `B2LocalManifold` to fill; a new one when omitted.
+		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideChainSegmentAndPolygon(segmentA:B2ChainSegment, polygonB:B2Polygon, xf:B2Transform, cache:B2SimplexCache,
 			?out:B2LocalManifold):B2LocalManifold {
@@ -2268,7 +2272,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2WorldDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world definition. */
 	public static function b2DefaultWorldDef(?out:B2WorldDef):B2WorldDef {
 		throw "not built yet";
@@ -2278,7 +2282,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2BodyDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2BodyDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The body definition. */
 	public static function b2DefaultBodyDef(?out:B2BodyDef):B2BodyDef {
 		throw "not built yet";
@@ -2286,7 +2290,7 @@ class Box2D {
 
 	/** Returns a collision filter set to Box2D's defaults.
 
-		@param out  Optional. The `B2Filter` to fill; a new one when omitted.
+		@param out  Optional. The `B2Filter` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The filter, with `categoryBits` 1, `maskBits` of all ones and `groupIndex` 0. */
 	public static function b2DefaultFilter(?out:B2Filter):B2Filter {
 		throw "not built yet";
@@ -2294,7 +2298,7 @@ class Box2D {
 
 	/** Returns a query filter set to Box2D's defaults.
 
-		@param out  Optional. The `B2QueryFilter` to fill; a new one when omitted.
+		@param out  Optional. The `B2QueryFilter` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The query filter, with `categoryBits` 1 and `maskBits` of all ones. */
 	public static function b2DefaultQueryFilter(?out:B2QueryFilter):B2QueryFilter {
 		throw "not built yet";
@@ -2302,7 +2306,7 @@ class Box2D {
 
 	/** Returns a surface material set to Box2D's defaults.
 
-		@param out  Optional. The `B2SurfaceMaterial` to fill; a new one when omitted.
+		@param out  Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The surface material. */
 	public static function b2DefaultSurfaceMaterial(?out:B2SurfaceMaterial):B2SurfaceMaterial {
 		throw "not built yet";
@@ -2312,7 +2316,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2ShapeDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The shape definition. */
 	public static function b2DefaultShapeDef(?out:B2ShapeDef):B2ShapeDef {
 		throw "not built yet";
@@ -2322,7 +2326,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2ChainDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2ChainDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The chain definition. */
 	public static function b2DefaultChainDef(?out:B2ChainDef):B2ChainDef {
 		throw "not built yet";
@@ -2334,7 +2338,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2DistanceJointDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2DistanceJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The distance joint definition. */
 	public static function b2DefaultDistanceJointDef(?out:B2DistanceJointDef):B2DistanceJointDef {
 		throw "not built yet";
@@ -2346,7 +2350,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2FilterJointDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2FilterJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The filter joint definition. */
 	public static function b2DefaultFilterJointDef(?out:B2FilterJointDef):B2FilterJointDef {
 		throw "not built yet";
@@ -2358,7 +2362,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2MotorJointDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2MotorJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The motor joint definition. */
 	public static function b2DefaultMotorJointDef(?out:B2MotorJointDef):B2MotorJointDef {
 		throw "not built yet";
@@ -2370,7 +2374,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2PrismaticJointDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2PrismaticJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The prismatic joint definition. */
 	public static function b2DefaultPrismaticJointDef(?out:B2PrismaticJointDef):B2PrismaticJointDef {
 		throw "not built yet";
@@ -2382,7 +2386,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2RevoluteJointDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2RevoluteJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The revolute joint definition. */
 	public static function b2DefaultRevoluteJointDef(?out:B2RevoluteJointDef):B2RevoluteJointDef {
 		throw "not built yet";
@@ -2394,7 +2398,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2WeldJointDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2WeldJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The weld joint definition. */
 	public static function b2DefaultWeldJointDef(?out:B2WeldJointDef):B2WeldJointDef {
 		throw "not built yet";
@@ -2406,7 +2410,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2WheelJointDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2WheelJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The wheel joint definition. */
 	public static function b2DefaultWheelJointDef(?out:B2WheelJointDef):B2WheelJointDef {
 		throw "not built yet";
@@ -2416,7 +2420,7 @@ class Box2D {
 
 		Make a definition with this call rather than with zeros, which are not its defaults.
 
-		@param out  Optional. The `B2ExplosionDef` to fill; a new one when omitted.
+		@param out  Optional. The `B2ExplosionDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The explosion definition. */
 	public static function b2DefaultExplosionDef(?out:B2ExplosionDef):B2ExplosionDef {
 		throw "not built yet";
@@ -2434,7 +2438,7 @@ class Box2D {
 
 	/** Returns a debug draw interface set to Box2D's defaults, so a program can implement a subset of the drawing callbacks.
 
-		@param out  Optional. The `B2DebugDraw` to fill; a new one when omitted.
+		@param out  Optional. The `B2DebugDraw` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The debug draw interface. Each drawing callback is an empty function, `drawingBounds` covers the whole world, `forceScale` and `jointScale` are 1, and `drawShapes` is true. */
 	public static function b2DefaultDebugDraw(?out:B2DebugDraw):B2DebugDraw {
 		throw "not built yet";
@@ -2449,7 +2453,7 @@ class Box2D {
 		Invalid values in the definition are rejected and logged, and the null world id is returned.
 
 		@param def  The world's definition. Make it with `b2DefaultWorldDef`. The definition is not retained.
-		@param out  Optional. The `B2WorldId` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new world's id. */
 	public static function b2CreateWorld(def:B2WorldDef, ?out:B2WorldId):B2WorldId {
 		throw "not built yet";
@@ -2498,7 +2502,7 @@ class Box2D {
 	/** Returns the world bounds, the union of the bounds of all shapes.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The bounds, in world coordinates. */
 	public static function b2World_GetBounds(worldId:B2WorldId, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -2509,7 +2513,7 @@ class Box2D {
 		The event data is valid until the next step. Copy anything the program keeps after that.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2BodyEvents` to fill; a new one when omitted.
+		@param out  Optional. The `B2BodyEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The body events. */
 	public static function b2World_GetBodyEvents(worldId:B2WorldId, ?out:B2BodyEvents):B2BodyEvents {
 		throw "not built yet";
@@ -2520,7 +2524,7 @@ class Box2D {
 		The event data is valid until the next step. Copy anything the program keeps after that.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2SensorEvents` to fill; a new one when omitted.
+		@param out  Optional. The `B2SensorEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The sensor events. */
 	public static function b2World_GetSensorEvents(worldId:B2WorldId, ?out:B2SensorEvents):B2SensorEvents {
 		throw "not built yet";
@@ -2531,7 +2535,7 @@ class Box2D {
 		The event data is valid until the next step. Copy anything the program keeps after that.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2ContactEvents` to fill; a new one when omitted.
+		@param out  Optional. The `B2ContactEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact events. */
 	public static function b2World_GetContactEvents(worldId:B2WorldId, ?out:B2ContactEvents):B2ContactEvents {
 		throw "not built yet";
@@ -2542,7 +2546,7 @@ class Box2D {
 		The event data is valid until the next step. Copy anything the program keeps after that.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2JointEvents` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The joint events. */
 	public static function b2World_GetJointEvents(worldId:B2WorldId, ?out:B2JointEvents):B2JointEvents {
 		throw "not built yet";
@@ -2558,7 +2562,7 @@ class Box2D {
 		@param filter  The filter that chooses which shapes are reported.
 		@param fcn  The callback, called for each shape found. Returning false stops the query.
 		@param context  A value passed to the callback.
-		@param out  Optional. The `B2TreeStats` to fill; a new one when omitted.
+		@param out  Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Counters of the tree traversal. */
 	public static function b2World_OverlapAABB(worldId:B2WorldId, origin:B2Pos, aabb:B2AABB, filter:B2QueryFilter, fcn:B2OverlapResultCallbackFcn,
 			context:Dynamic, ?out:B2TreeStats):B2TreeStats {
@@ -2575,7 +2579,7 @@ class Box2D {
 		@param filter  The filter that chooses which shapes are reported.
 		@param fcn  The callback, called for each shape found. Returning false stops the query.
 		@param context  A value passed to the callback.
-		@param out  Optional. The `B2TreeStats` to fill; a new one when omitted.
+		@param out  Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Counters of the tree traversal. */
 	public static function b2World_OverlapShape(worldId:B2WorldId, origin:B2Pos, proxy:B2ShapeProxy, filter:B2QueryFilter, fcn:B2OverlapResultCallbackFcn,
 			context:Dynamic, ?out:B2TreeStats):B2TreeStats {
@@ -2592,7 +2596,7 @@ class Box2D {
 		@param filter  The filter that chooses which shapes the ray can hit.
 		@param fcn  The callback, called for each hit. It returns -1 to ignore the shape, 0 to stop, the hit's fraction to clip the cast to the closest hit, or 1 to continue.
 		@param context  A value passed to the callback.
-		@param out  Optional. The `B2TreeStats` to fill; a new one when omitted.
+		@param out  Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Counters of the tree traversal. */
 	public static function b2World_CastRay(worldId:B2WorldId, origin:B2Pos, translation:B2Vec2, filter:B2QueryFilter, fcn:B2CastResultCallbackFcn,
 			context:Dynamic, ?out:B2TreeStats):B2TreeStats {
@@ -2607,7 +2611,7 @@ class Box2D {
 		@param origin  The start point of the ray.
 		@param translation  The vector from the ray's start point to its end point.
 		@param filter  The filter that chooses which shapes the ray can hit.
-		@param out  Optional. The `B2RayResult` to fill; a new one when omitted.
+		@param out  Optional. The `B2RayResult` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The hit, with its `hit` field false when the ray hit no shape. */
 	public static function b2World_CastRayClosest(worldId:B2WorldId, origin:B2Pos, translation:B2Vec2, filter:B2QueryFilter, ?out:B2RayResult):B2RayResult {
 		throw "not built yet";
@@ -2624,7 +2628,7 @@ class Box2D {
 		@param filter  The filter that chooses which shapes the proxy can hit.
 		@param fcn  The callback, called for each hit. It returns -1 to ignore the shape, 0 to stop, the hit's fraction to clip the cast to the closest hit, or 1 to continue.
 		@param context  A value passed to the callback.
-		@param out  Optional. The `B2TreeStats` to fill; a new one when omitted.
+		@param out  Optional. The `B2TreeStats` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Counters of the tree traversal. */
 	public static function b2World_CastShape(worldId:B2WorldId, origin:B2Pos, proxy:B2ShapeProxy, translation:B2Vec2, filter:B2QueryFilter,
 			fcn:B2CastResultCallbackFcn, context:Dynamic, ?out:B2TreeStats):B2TreeStats {
@@ -2776,7 +2780,7 @@ class Box2D {
 	/** Returns the gravity vector of the world.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The gravity, usually in meters per second squared. */
 	public static function b2World_GetGravity(worldId:B2WorldId, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -2887,7 +2891,7 @@ class Box2D {
 	/** Returns the timings of the most recent step.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2Profile` to fill; a new one when omitted.
+		@param out  Optional. The `B2Profile` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The profile, with times in milliseconds. */
 	public static function b2World_GetProfile(worldId:B2WorldId, ?out:B2Profile):B2Profile {
 		throw "not built yet";
@@ -2896,7 +2900,7 @@ class Box2D {
 	/** Returns the world's counters and sizes.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2Counters` to fill; a new one when omitted.
+		@param out  Optional. The `B2Counters` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The counters. */
 	public static function b2World_GetCounters(worldId:B2WorldId, ?out:B2Counters):B2Counters {
 		throw "not built yet";
@@ -2907,7 +2911,7 @@ class Box2D {
 		Provide the result in a `B2WorldDef` to avoid allocations and copies while the program runs.
 
 		@param worldId  The world.
-		@param out  Optional. The `B2Capacity` to fill; a new one when omitted.
+		@param out  Optional. The `B2Capacity` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The capacities. */
 	public static function b2World_GetMaxCapacity(worldId:B2WorldId, ?out:B2Capacity):B2Capacity {
 		throw "not built yet";
@@ -3023,7 +3027,7 @@ class Box2D {
 		@param image  A snapshot written by `b2World_GetSnapshot`.
 		@param size  The size of the snapshot, in bytes.
 		@param workerCount  The new world's number of workers. 0 runs one worker. In a page the module runs one worker, whatever the count.
-		@param out  Optional. The `B2WorldId` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new world's id, or `b2_nullWorldId` on failure. */
 	public static function b2CreateWorldFromSnapshot(image:haxe.io.Bytes, size:Int, workerCount:Int, ?out:B2WorldId):B2WorldId {
 		throw "not built yet";
@@ -3040,7 +3044,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The body's definition. Make it with `b2DefaultBodyDef`.
-		@param out  Optional. The `B2BodyId` to fill; a new one when omitted.
+		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new body's id. */
 	public static function b2CreateBody(worldId:B2WorldId, def:B2BodyDef, ?out:B2BodyId):B2BodyId {
 		throw "not built yet";
@@ -3120,7 +3124,7 @@ class Box2D {
 	/** Returns the position of the body's origin in the world.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The position. */
 	public static function b2Body_GetPosition(bodyId:B2BodyId, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -3129,7 +3133,7 @@ class Box2D {
 	/** Returns the body's rotation in the world.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2Rot` to fill; a new one when omitted.
+		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The rotation, a cosine and sine pair. */
 	public static function b2Body_GetRotation(bodyId:B2BodyId, ?out:B2Rot):B2Rot {
 		throw "not built yet";
@@ -3138,7 +3142,7 @@ class Box2D {
 	/** Returns the body's transform in the world.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2WorldTransform` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The transform. */
 	public static function b2Body_GetTransform(bodyId:B2BodyId, ?out:B2WorldTransform):B2WorldTransform {
 		throw "not built yet";
@@ -3159,7 +3163,7 @@ class Box2D {
 
 		@param bodyId  The body.
 		@param worldPoint  The point in world coordinates.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The point in the body's local space. */
 	public static function b2Body_GetLocalPoint(bodyId:B2BodyId, worldPoint:B2Pos, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -3169,7 +3173,7 @@ class Box2D {
 
 		@param bodyId  The body.
 		@param localPoint  The point in the body's local space.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The point in world coordinates. */
 	public static function b2Body_GetWorldPoint(bodyId:B2BodyId, localPoint:B2Vec2, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -3179,7 +3183,7 @@ class Box2D {
 
 		@param bodyId  The body.
 		@param worldVector  The vector in world coordinates.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The vector in the body's local space. */
 	public static function b2Body_GetLocalVector(bodyId:B2BodyId, worldVector:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -3189,7 +3193,7 @@ class Box2D {
 
 		@param bodyId  The body.
 		@param localVector  The vector in the body's local space.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The vector in world coordinates. */
 	public static function b2Body_GetWorldVector(bodyId:B2BodyId, localVector:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -3198,7 +3202,7 @@ class Box2D {
 	/** Returns the linear velocity of the body's center of mass.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The velocity, usually in meters per second. */
 	public static function b2Body_GetLinearVelocity(bodyId:B2BodyId, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -3233,7 +3237,7 @@ class Box2D {
 		The result is close to the target but may not be exact. Meant for kinematic bodies. The target is not applied when the needed velocity is below the sleep threshold and the body is asleep.
 
 		@param bodyId  The body.
-		@param target  The transform to reach.
+		@param target  The transform to reach at the end of the next step.
 		@param timeStep  The time step of the next call to `b2World_Step`, in seconds.
 		@param wake  True to wake the body. */
 	public static function b2Body_SetTargetTransform(bodyId:B2BodyId, target:B2WorldTransform, timeStep:Float, wake:Bool):Void {
@@ -3244,7 +3248,7 @@ class Box2D {
 
 		@param bodyId  The body.
 		@param localPoint  The point in the body's local space.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The velocity, usually in meters per second. */
 	public static function b2Body_GetLocalPointVelocity(bodyId:B2BodyId, localPoint:B2Vec2, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -3254,7 +3258,7 @@ class Box2D {
 
 		@param bodyId  The body.
 		@param worldPoint  The point in world coordinates.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The velocity, usually in meters per second. */
 	public static function b2Body_GetWorldPointVelocity(bodyId:B2BodyId, worldPoint:B2Pos, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -3362,7 +3366,7 @@ class Box2D {
 	/** Returns the body's center of mass in its local space.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The center of mass. */
 	public static function b2Body_GetLocalCenter(bodyId:B2BodyId, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -3371,7 +3375,7 @@ class Box2D {
 	/** Returns the body's center of mass in the world.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The center of mass, in world coordinates. */
 	public static function b2Body_GetWorldCenter(bodyId:B2BodyId, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -3390,7 +3394,7 @@ class Box2D {
 	/** Returns the body's mass data.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2MassData` to fill; a new one when omitted.
+		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass, center of mass and rotational inertia. */
 	public static function b2Body_GetMassData(bodyId:B2BodyId, ?out:B2MassData):B2MassData {
 		throw "not built yet";
@@ -3577,7 +3581,7 @@ class Box2D {
 	/** Returns which motions of the body are locked.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2MotionLocks` to fill; a new one when omitted.
+		@param out  Optional. The `B2MotionLocks` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The locks. */
 	public static function b2Body_GetMotionLocks(bodyId:B2BodyId, ?out:B2MotionLocks):B2MotionLocks {
 		throw "not built yet";
@@ -3642,7 +3646,7 @@ class Box2D {
 	/** Returns the world that holds the body.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2WorldId` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Body_GetWorld(bodyId:B2BodyId, ?out:B2WorldId):B2WorldId {
 		throw "not built yet";
@@ -3715,7 +3719,7 @@ class Box2D {
 		The bounds may not contain the body's origin. When the body has no shapes, the bounds are empty and centered on the origin.
 
 		@param bodyId  The body.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The bounds, in world coordinates. */
 	public static function b2Body_ComputeBounds(bodyId:B2BodyId, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -3754,7 +3758,7 @@ class Box2D {
 		@param bodyId  The body to attach the shape to.
 		@param def  The shape's definition.
 		@param circle  The circle, in the body's local space.
-		@param out  Optional. The `B2ShapeId` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the circle is invalid. */
 	public static function b2CreateCircleShape(bodyId:B2BodyId, def:B2ShapeDef, circle:B2Circle, ?out:B2ShapeId):B2ShapeId {
 		throw "not built yet";
@@ -3767,7 +3771,7 @@ class Box2D {
 		@param bodyId  The body to attach the shape to.
 		@param def  The shape's definition.
 		@param segment  The segment, in the body's local space.
-		@param out  Optional. The `B2ShapeId` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the segment is too short. */
 	public static function b2CreateSegmentShape(bodyId:B2BodyId, def:B2ShapeDef, segment:B2Segment, ?out:B2ShapeId):B2ShapeId {
 		throw "not built yet";
@@ -3784,7 +3788,7 @@ class Box2D {
 		@param bodyId  The body to attach the shape to.
 		@param def  The shape's definition.
 		@param chainSegment  The chain segment, in the body's local space.
-		@param out  Optional. The `B2ShapeId` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the segment is too short. */
 	public static function b2CreateChainSegmentShape(bodyId:B2BodyId, def:B2ShapeDef, chainSegment:B2ChainSegment, ?out:B2ShapeId):B2ShapeId {
 		throw "not built yet";
@@ -3797,7 +3801,7 @@ class Box2D {
 		@param bodyId  The body to attach the shape to.
 		@param def  The shape's definition.
 		@param capsule  The capsule, in the body's local space.
-		@param out  Optional. The `B2ShapeId` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the capsule's length is too small. */
 	public static function b2CreateCapsuleShape(bodyId:B2BodyId, def:B2ShapeDef, capsule:B2Capsule, ?out:B2ShapeId):B2ShapeId {
 		throw "not built yet";
@@ -3812,7 +3816,7 @@ class Box2D {
 		@param bodyId  The body to attach the shape to.
 		@param def  The shape's definition.
 		@param polygon  The polygon, in the body's local space.
-		@param out  Optional. The `B2ShapeId` to fill; a new one when omitted.
+		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the polygon is invalid. */
 	public static function b2CreatePolygonShape(bodyId:B2BodyId, def:B2ShapeDef, polygon:B2Polygon, ?out:B2ShapeId):B2ShapeId {
 		throw "not built yet";
@@ -3851,7 +3855,7 @@ class Box2D {
 	/** Returns the id of the body a shape is attached to.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2BodyId` to fill; a new one when omitted.
+		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The body's id. */
 	public static function b2Shape_GetBody(shapeId:B2ShapeId, ?out:B2BodyId):B2BodyId {
 		throw "not built yet";
@@ -3860,7 +3864,7 @@ class Box2D {
 	/** Returns the id of the world that owns a shape.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2WorldId` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Shape_GetWorld(shapeId:B2ShapeId, ?out:B2WorldId):B2WorldId {
 		throw "not built yet";
@@ -3982,7 +3986,7 @@ class Box2D {
 	/** Returns the surface material of a shape.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2SurfaceMaterial` to fill; a new one when omitted.
+		@param out  Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The surface material. */
 	public static function b2Shape_GetSurfaceMaterial(shapeId:B2ShapeId, ?out:B2SurfaceMaterial):B2SurfaceMaterial {
 		throw "not built yet";
@@ -3991,7 +3995,7 @@ class Box2D {
 	/** Returns the collision filter of a shape.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2Filter` to fill; a new one when omitted.
+		@param out  Optional. The `B2Filter` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The filter. */
 	public static function b2Shape_GetFilter(shapeId:B2ShapeId, ?out:B2Filter):B2Filter {
 		throw "not built yet";
@@ -4109,7 +4113,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param origin  The ray's start, in world space.
 		@param translation  The ray's displacement, in meters.
-		@param out  Optional. The `B2WorldCastOutput` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldCastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast result. */
 	public static function b2Shape_CastRay(shapeId:B2ShapeId, origin:B2Pos, translation:B2Vec2, ?out:B2WorldCastOutput):B2WorldCastOutput {
 		throw "not built yet";
@@ -4120,7 +4124,7 @@ class Box2D {
 		Asserts that the shape is a circle.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2Circle` to fill; a new one when omitted.
+		@param out  Optional. The `B2Circle` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The circle, in the body's local space. */
 	public static function b2Shape_GetCircle(shapeId:B2ShapeId, ?out:B2Circle):B2Circle {
 		throw "not built yet";
@@ -4131,7 +4135,7 @@ class Box2D {
 		Asserts that the shape is a segment.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2Segment` to fill; a new one when omitted.
+		@param out  Optional. The `B2Segment` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The segment, in the body's local space. */
 	public static function b2Shape_GetSegment(shapeId:B2ShapeId, ?out:B2Segment):B2Segment {
 		throw "not built yet";
@@ -4142,7 +4146,7 @@ class Box2D {
 		Chain segment shapes come from chains and from `b2CreateChainSegmentShape`. Asserts that the shape is a chain segment.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2ChainSegment` to fill; a new one when omitted.
+		@param out  Optional. The `B2ChainSegment` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The chain segment, in the body's local space. */
 	public static function b2Shape_GetChainSegment(shapeId:B2ShapeId, ?out:B2ChainSegment):B2ChainSegment {
 		throw "not built yet";
@@ -4153,7 +4157,7 @@ class Box2D {
 		Asserts that the shape is a capsule.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2Capsule` to fill; a new one when omitted.
+		@param out  Optional. The `B2Capsule` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The capsule, in the body's local space. */
 	public static function b2Shape_GetCapsule(shapeId:B2ShapeId, ?out:B2Capsule):B2Capsule {
 		throw "not built yet";
@@ -4164,7 +4168,7 @@ class Box2D {
 		Asserts that the shape is a polygon.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2Polygon` to fill; a new one when omitted.
+		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon, in the body's local space. */
 	public static function b2Shape_GetPolygon(shapeId:B2ShapeId, ?out:B2Polygon):B2Polygon {
 		throw "not built yet";
@@ -4235,7 +4239,7 @@ class Box2D {
 	/** Returns the chain a chain segment shape belongs to.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2ChainId` to fill; a new one when omitted.
+		@param out  Optional. The `B2ChainId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The chain's id, or `b2_nullChainId` when the shape isn't a chain segment of a chain. */
 	public static function b2Shape_GetParentChain(shapeId:B2ShapeId, ?out:B2ChainId):B2ChainId {
 		throw "not built yet";
@@ -4302,7 +4306,7 @@ class Box2D {
 	/** Returns the current bounding box of a shape, in world space.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2AABB` to fill; a new one when omitted.
+		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The bounding box. */
 	public static function b2Shape_GetBounds(shapeId:B2ShapeId, ?out:B2AABB):B2AABB {
 		throw "not built yet";
@@ -4311,7 +4315,7 @@ class Box2D {
 	/** Computes the mass data of a shape from its geometry and density.
 
 		@param shapeId  The shape.
-		@param out  Optional. The `B2MassData` to fill; a new one when omitted.
+		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data, in the body's local space. */
 	public static function b2Shape_ComputeMassData(shapeId:B2ShapeId, ?out:B2MassData):B2MassData {
 		throw "not built yet";
@@ -4323,7 +4327,7 @@ class Box2D {
 
 		@param shapeId  The shape.
 		@param target  The target point, in world space.
-		@param out  Optional. The `B2Pos` to fill; a new one when omitted.
+		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The closest point, in world space. */
 	public static function b2Shape_GetClosestPoint(shapeId:B2ShapeId, target:B2Pos, ?out:B2Pos):B2Pos {
 		throw "not built yet";
@@ -4350,7 +4354,7 @@ class Box2D {
 
 		@param bodyId  The body to attach the chain to.
 		@param def  The chain's definition.
-		@param out  Optional. The `B2ChainId` to fill; a new one when omitted.
+		@param out  Optional. The `B2ChainId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new chain's id. */
 	public static function b2CreateChain(bodyId:B2BodyId, def:B2ChainDef, ?out:B2ChainId):B2ChainId {
 		throw "not built yet";
@@ -4368,7 +4372,7 @@ class Box2D {
 	/** Returns the id of the world that owns a chain shape.
 
 		@param chainId  The chain.
-		@param out  Optional. The `B2WorldId` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Chain_GetWorld(chainId:B2ChainId, ?out:B2WorldId):B2WorldId {
 		throw "not built yet";
@@ -4419,7 +4423,7 @@ class Box2D {
 
 		@param chainId  The chain.
 		@param segmentIndex  The index of the segment, from 0 up to the segment count.
-		@param out  Optional. The `B2SurfaceMaterial` to fill; a new one when omitted.
+		@param out  Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The surface material. */
 	public static function b2Chain_GetSurfaceMaterial(chainId:B2ChainId, segmentIndex:Int, ?out:B2SurfaceMaterial):B2SurfaceMaterial {
 		throw "not built yet";
@@ -4465,7 +4469,7 @@ class Box2D {
 	/** Returns the id of body A of a joint.
 
 		@param jointId  The joint.
-		@param out  Optional. The `B2BodyId` to fill; a new one when omitted.
+		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Body A's id. */
 	public static function b2Joint_GetBodyA(jointId:B2JointId, ?out:B2BodyId):B2BodyId {
 		throw "not built yet";
@@ -4474,7 +4478,7 @@ class Box2D {
 	/** Returns the id of body B of a joint.
 
 		@param jointId  The joint.
-		@param out  Optional. The `B2BodyId` to fill; a new one when omitted.
+		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Body B's id. */
 	public static function b2Joint_GetBodyB(jointId:B2JointId, ?out:B2BodyId):B2BodyId {
 		throw "not built yet";
@@ -4483,7 +4487,7 @@ class Box2D {
 	/** Returns the id of the world that owns a joint.
 
 		@param jointId  The joint.
-		@param out  Optional. The `B2WorldId` to fill; a new one when omitted.
+		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Joint_GetWorld(jointId:B2JointId, ?out:B2WorldId):B2WorldId {
 		throw "not built yet";
@@ -4502,7 +4506,7 @@ class Box2D {
 	/** Returns the frame of a joint on body A.
 
 		@param jointId  The joint.
-		@param out  Optional. The `B2Transform` to fill; a new one when omitted.
+		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The frame, in body A's local space. */
 	public static function b2Joint_GetLocalFrameA(jointId:B2JointId, ?out:B2Transform):B2Transform {
 		throw "not built yet";
@@ -4521,7 +4525,7 @@ class Box2D {
 	/** Returns the frame of a joint on body B.
 
 		@param jointId  The joint.
-		@param out  Optional. The `B2Transform` to fill; a new one when omitted.
+		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The frame, in body B's local space. */
 	public static function b2Joint_GetLocalFrameB(jointId:B2JointId, ?out:B2Transform):B2Transform {
 		throw "not built yet";
@@ -4573,7 +4577,7 @@ class Box2D {
 		The force is the one applied at the last step.
 
 		@param jointId  The joint.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The force. */
 	public static function b2Joint_GetConstraintForce(jointId:B2JointId, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -4675,7 +4679,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The joint's definition, read during the call.
-		@param out  Optional. The `B2JointId` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateDistanceJoint(worldId:B2WorldId, def:B2DistanceJointDef, ?out:B2JointId):B2JointId {
 		throw "not built yet";
@@ -4902,7 +4906,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The joint's definition, read during the call.
-		@param out  Optional. The `B2JointId` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateFilterJoint(worldId:B2WorldId, def:B2FilterJointDef, ?out:B2JointId):B2JointId {
 		throw "not built yet";
@@ -4916,7 +4920,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The joint's definition, read during the call.
-		@param out  Optional. The `B2JointId` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateMotorJoint(worldId:B2WorldId, def:B2MotorJointDef, ?out:B2JointId):B2JointId {
 		throw "not built yet";
@@ -4933,7 +4937,7 @@ class Box2D {
 	/** Returns the relative linear velocity the motor joint drives toward, in meters per second.
 
 		@param jointId  The motor joint.
-		@param out  Optional. The `B2Vec2` to fill; a new one when omitted.
+		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The desired relative linear velocity. */
 	public static function b2MotorJoint_GetLinearVelocity(jointId:B2JointId, ?out:B2Vec2):B2Vec2 {
 		throw "not built yet";
@@ -5103,7 +5107,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The joint's definition, read during the call.
-		@param out  Optional. The `B2JointId` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreatePrismaticJoint(worldId:B2WorldId, def:B2PrismaticJointDef, ?out:B2JointId):B2JointId {
 		throw "not built yet";
@@ -5308,7 +5312,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The joint's definition, read during the call.
-		@param out  Optional. The `B2JointId` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateRevoluteJoint(worldId:B2WorldId, def:B2RevoluteJointDef, ?out:B2JointId):B2JointId {
 		throw "not built yet";
@@ -5511,7 +5515,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The joint's definition, read during the call.
-		@param out  Optional. The `B2JointId` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateWeldJoint(worldId:B2WorldId, def:B2WeldJointDef, ?out:B2JointId):B2JointId {
 		throw "not built yet";
@@ -5593,7 +5597,7 @@ class Box2D {
 
 		@param worldId  The world.
 		@param def  The joint's definition, read during the call.
-		@param out  Optional. The `B2JointId` to fill; a new one when omitted.
+		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateWheelJoint(worldId:B2WorldId, def:B2WheelJointDef, ?out:B2JointId):B2JointId {
 		throw "not built yet";
@@ -5769,7 +5773,7 @@ class Box2D {
 		The manifold is a copy of the contact's and may have no points when the shapes are not touching. The contact id must be valid.
 
 		@param contactId  The contact.
-		@param out  Optional. The `B2ContactData` to fill; a new one when omitted.
+		@param out  Optional. The `B2ContactData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact's data. */
 	public static function b2Contact_GetData(contactId:B2ContactId, ?out:B2ContactData):B2ContactData {
 		throw "not built yet";

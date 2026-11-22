@@ -59,7 +59,7 @@ class B2BodyDef {
 	/** Whether the body's contacts are recycled between steps. Recycling improves performance but may cause ghost collisions, so turn it off for characters. Defaults to true. */
 	public var enableContactRecycling:Bool;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultBodyDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultBodyDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

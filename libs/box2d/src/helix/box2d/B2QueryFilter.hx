@@ -8,7 +8,7 @@ class B2QueryFilter {
 	/** The shape categories the query finds. Defaults to all bits. */
 	public var maskBits:haxe.Int64;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultQueryFilter()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultQueryFilter()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

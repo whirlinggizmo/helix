@@ -11,7 +11,7 @@ class B2Filter {
 	/** A group of shapes that never collide (negative) or always collide (positive), whatever the mask bits say. 0 has no effect. A ragdoll whose shapes share one unique negative index does not collide with itself. Defaults to 0. */
 	public var groupIndex:Int;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultFilter()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultFilter()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

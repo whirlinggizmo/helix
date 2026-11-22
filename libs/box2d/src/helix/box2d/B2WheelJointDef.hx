@@ -32,7 +32,7 @@ class B2WheelJointDef {
 	/** The speed the motor aims for, in radians per second. Defaults to 0. */
 	public var motorSpeed:Float;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultWheelJointDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultWheelJointDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

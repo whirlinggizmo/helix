@@ -17,7 +17,7 @@ class B2ExplosionDef {
 	/** The impulse applied for each unit of the shape's perimeter that faces the explosion. Negative for an implosion. Defaults to 0. */
 	public var impulsePerLength:Float;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultExplosionDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultExplosionDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

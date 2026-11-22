@@ -41,7 +41,7 @@ class B2DistanceJointDef {
 	/** The speed the motor aims for, usually in meters per second. Defaults to 0. */
 	public var motorSpeed:Float;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultDistanceJointDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultDistanceJointDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

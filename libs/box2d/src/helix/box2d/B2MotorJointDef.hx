@@ -35,7 +35,7 @@ class B2MotorJointDef {
 	/** The most torque the angular spring applies, in newton-meters. Defaults to 0. */
 	public var maxSpringTorque:Float;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultMotorJointDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultMotorJointDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

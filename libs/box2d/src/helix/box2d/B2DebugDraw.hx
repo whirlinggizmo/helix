@@ -90,7 +90,7 @@ class B2DebugDraw {
 	/** Any Haxe value the program keeps with the debug draw object, passed to each drawing function as `context` and returned as set. Defaults to null. */
 	public var context:Dynamic;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultDebugDraw()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultDebugDraw()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}

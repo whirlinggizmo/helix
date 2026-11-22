@@ -1,6 +1,6 @@
 package helix.box2d;
 
-/** Everything needed to create a chain of line segments with `b2CreateChain`. A chain is one-sided, with no mass, so use it on static bodies. It has a counter-clockwise winding, where the normal points right of the segment direction. It's either a loop or open, and an open chain needs a ghost point at each end. The distance between two points must exceed `B2_LINEAR_SLOP`, and the chain must not intersect itself. Use chains only when you understand these limits. */
+/** Everything needed to create a chain of line segments with `b2CreateChain`. A chain is one-sided, with no mass, so use it on static bodies. It has a counter-clockwise winding, where the normal points right of the segment direction. It collides on one side, its front, which is to the right looking from each point to the next: points listed from right to left make ground whose top is up. It's either a loop or open, and an open chain needs a ghost point at each end, as `b2CreateChain` refuses an open chain whose ghost points are left at their defaults. The distance between two points must exceed `B2_LINEAR_SLOP`, and the chain must not intersect itself. Use chains only when you understand these limits. */
 class B2ChainDef {
 	/** Any Haxe value the program keeps with the chain, returned as set. Defaults to null. */
 	public var userData:Dynamic;
@@ -32,7 +32,7 @@ class B2ChainDef {
 	/** Whether sensors detect the chain. Defaults to false. */
 	public var enableSensorEvents:Bool;
 
-	/** Creates one holding Box2D's defaults, as `b2DefaultChainDef()` returns. */
+	/** Creates one holding Box2D's defaults, as `b2DefaultChainDef()` returns. The structs it holds are made with it. */
 	public function new() {
 		throw "not built yet";
 	}
