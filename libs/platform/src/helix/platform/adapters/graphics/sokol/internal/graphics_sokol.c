@@ -831,7 +831,8 @@ static void apply_blocks(int shader,int p,const void *uniforms){
  const int turned=flipped!=(int)sg_query_features().origin_top_left;
  for(int k=0;k<programs[shader].setter_count;k++){
   const setter *u=&programs[shader].setters[k];
-  if(u->rows){glUniform2f(u->loc,turned?-1.0f:1.0f,turned?(float)frame_height:0.0f);continue;}
+  /* glUniform2fv, which sokol's Win32 GL loader declares, where it declares no glUniform2f. */
+  if(u->rows){const GLfloat rows[2]={turned?-1.0f:1.0f,turned?(float)frame_height:0.0f};glUniform2fv(u->loc,1,rows);continue;}
   const size_t words=(size_t)u->count*(size_t)u->comps*(size_t)u->cols;
   if(packed_size<words){float *g=realloc(packed,words*sizeof(float));if(!g)return;packed=g;packed_size=words;}
   const unsigned char *src=at[u->block]+u->offset;size_t w=0;
