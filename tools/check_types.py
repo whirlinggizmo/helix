@@ -41,6 +41,9 @@ def targets(web=False):
     # helix-jolt whole, its tests and its examples, on both targets.
     found.append(('jolt js',['-lib','helix-jolt','--macro',"include('helix.jolt')",'-js','build/check_types.js']))
     if not web:found.append(('jolt cpp',['-lib','helix-jolt','--macro',"include('helix.jolt')",'-cpp','build/check_types-cpp']))
+    # helix-box2d whole, on both targets.
+    found.append(('box2d js',['-lib','helix-box2d','--macro',"include('helix.box2d')",'-js','build/check_types.js']))
+    if not web:found.append(('box2d cpp',['-lib','helix-box2d','--macro',"include('helix.box2d')",'-cpp','build/check_types-cpp']))
     for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'libs/jolt/examples').glob('*/Main.hx'))]+[(ROOT/'libs/jolt/tests','JoltTests')]:
         name=f'jolt example {directory.name}' if main=='Main' else 'jolt tests'
         found.append((f'{name} js',['-lib','helix-jolt','-cp',str(directory.relative_to(ROOT)),'-main',main,'-js','build/check_types.js']))

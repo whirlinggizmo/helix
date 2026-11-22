@@ -1,0 +1,12 @@
+{
+	"name": "helix-box2d",
+	"url": "https://github.com/whirlinggizmo/helix",
+	"license": "BSD",
+	"tags": ["physics", "box2d", "js", "cpp"],
+	"description": "Box2D 3.2 under its C names, natively through hxcpp and in a page through a WebAssembly module the library ships.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {"helix-math": ""}
+}

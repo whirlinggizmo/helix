@@ -36,6 +36,7 @@ LAYERS = [
     ('helix-tweens', 'libs/tweens/src', ['helix.tweens'], ['helix-math']),
     ('helix-log', 'libs/log/src', ['helix.log'], []),
     ('helix-jolt', 'libs/jolt/src', ['helix.jolt'], ['helix-math']),
+    ('helix-box2d', 'libs/box2d/src', ['helix.box2d'], ['helix-math']),
     ('helix-formats', 'libs/formats/src', ['helix.formats'], ['helix-math']),
     ('helix-platform', 'libs/platform/src', ['helix.platform'], ['helix-formats', 'helix-geometry', 'helix-math']),
     ('helix-services', 'libs/services/src', ['helix.services'], ['helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),

@@ -93,5 +93,12 @@
       "files": "Jolt/'s .cpp, .h and .inl files, and LICENSE",
       "built": "natively with the program by hxcpp (files.xml), and into libs/jolt/wasm/jolt.wasm by Emscripten (tools/gen_jolt.py)"
     }
+  },
+  "box2d": {
+    "version": "3.2.0",
+    "source": "https://github.com/erincatto/box2d/tree/v3.2.0",
+    "license": "MIT",
+    "url": "https://github.com/erincatto/box2d/archive/refs/tags/v3.2.0.tar.gz",
+    "sha256": "ffec747b27a2267016f8d0240d658c82d187fb2271fa0f69fcbe53fbc067180d"
   }
 }

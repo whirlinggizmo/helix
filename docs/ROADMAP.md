@@ -131,9 +131,9 @@ speed where docs/benchmarks.md records them.
   its native half alone, as QUIC needs TLS 1.3, which hxcpp's TLS predates; WebSocket the fallback where a browser lacks it, WebRTC's data
   channels only for peer to peer. Later, and netcode above the transports (state kept in step, prediction and rollback, lobbies), with the
   user's vfstudio and vfcore for ideas.
-- **Box2D 3.x through the C ABI, as helix-jolt is (GOALS 5, DECISIONS 87):** Box2D's C behind a flat C file of numbers alone, compiled
-  into a native program by hxcpp and into a `.wasm` the library ships, one Haxe extern over both, in Box2D's own names, its test
-  checking the same steps make the same bits on Node and natively. Work off the frame (a Web Worker in a page, a thread natively)
+- **helix-box2d built, Box2D 3.2 through the C ABI as helix-jolt is (GOALS 5, DECISIONS 87, 88):** its API is drafted under Box2D's C
+  names. Next, Box2D's C behind a flat C file of numbers alone, compiled into a native program by hxcpp and into a `.wasm` the library
+  ships, one Haxe extern over both, its test checking the same steps make the same bits on Node and natively. Work off the frame (a Web Worker in a page, a thread natively)
   waits for physics to need it.
 - **helix-jolt's next parts:** `CharacterVirtual`, then wheeled vehicles, then ragdolls and soft bodies, each in JoltPhysics.js's
   names; physics materials and callback filters; `StateRecorder`, for rollback.

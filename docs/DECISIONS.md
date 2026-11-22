@@ -1345,3 +1345,23 @@ Why things are the way they are, numbered, in order.
     Rejected: Jolt's C++ API with its allocator and job system passed in, which is more setup in every program. A helix-shaped API,
     which nobody already knows. JoltPhysics.js's module itself, whose objects live in the module and are freed by hand. A module per
     feature, deferred while one module serves.
+
+88. **helix-box2d is Box2D 3.2 under its C names.** Its API is Box2D's own C API: `b2CreateWorld`, `b2DefaultBodyDef`,
+    `b2Body_GetPosition`, the ids and the defs, Box2D's fields and enum values, through `import helix.box2d.Box2D.*`, as helix-raylib's
+    is raylib's (24), so `check_names` leaves it unjudged. Haxe changes three things. A type's name takes a capital first letter
+    (`B2BodyDef`), as Haxe refuses a type named in lower case. A struct passed by value is a Haxe object, and a function returning one
+    accepts an optional out. A C pointer and its count are an `Array` and an `Int`, a `float *` out value is a one-element array, user
+    data is `Dynamic`, and a callback is a Haxe function. It holds all of Box2D but what 3.2 calls experimental (the mover and pogo
+    joints, the character mover's planes, recording and replay) and the parts a program doesn't call (the dynamic tree, the
+    allocator, assert and task hooks), and it keeps snapshots and the state hash.
+
+    Underneath, it is to be built as helix-jolt is (87): Box2D vendored unchanged, a flat C file passing numbers alone, compiled into
+    a native program by hxcpp and into a `.wasm` the library ships, one Haxe extern over both, its test checking the same steps make
+    the same bits in Node and natively. Box2D's own description of its API (`api/box2d_api.json`) lists every function the draft
+    declares, so a tool can check the draft against it.
+
+    Why: Box2D's C API is already ids and plain structs, and the one agents and developers know, with Box2D's manual and samples
+    written in it. Box2D is cross-platform deterministic since 3.1, and the same at any thread count.
+
+    Rejected: box2d3-wasm's JavaScript names (Birch-san's binding of 3.1), which fewer know and which lag Box2D's releases. A
+    Haxe-shaped object API (`world.createBody`), which nobody already knows.
