@@ -43,6 +43,7 @@ OBJECTS = ROOT / 'build' / 'box2d-wasm'
 # The defines every translation unit shares, natively and in the module: NDEBUG leaves Box2D's asserts out, so invalid input is
 # logged and refused, as a release build of Box2D does.
 DEFINES = ['NDEBUG']
+AVX2 = 'contact_solver_w8.c'
 
 # What helix-box2d leaves out (DECISIONS 88): what Box2D 3.2 calls experimental, and the parts a program doesn't call.
 EXCLUDED = re.compile(
@@ -122,9 +123,13 @@ def files_xml():
              # hxcpp rebuilds a file when its source is newer, never for a header it includes: a new release's base.h (its version)
              # is newer than every object, so each is rebuilt rather than linked from the release before.
              "  <depend name='${HELIX_BOX2D}/vendor/box2d/include/box2d/base.h'/>"]
-    lines += [f"  <file name='{s}'/>" for s in sources()]
+    flags = lines[3:]
+    lines += [f"  <file name='{s}'/>" for s in sources() if s != AVX2]
     lines += [f"  <file name='../../../src/helix/box2d/internal/{name}'/>" for name in ('hb.c', 'hb_io.c')]
-    lines += ['</files>', '</xml>', '']
+    lines += ['</files>']
+    # Box2D's eight-wide contact solver, which it runs when the processor has AVX2: MSVC compiles it only for AVX2, as Box2D's CMake does.
+    lines += ["<files id='helix-box2d-avx2' dir='${HELIX_BOX2D}/vendor/box2d/src'>", *flags, "  <compilerflag value='/arch:AVX2' if='windows'/>",
+              f"  <file name='{AVX2}'/>", '</files>', '</xml>', '']
     return '\n'.join(lines)
 
 
@@ -1010,7 +1015,7 @@ def hb_hx(externs):
             '@:buildXml("<set name=\'HELIX_BOX2D\' value=\'${haxelib:helix-box2d}\' unless=\'HELIX_BOX2D\'/>\n'
             '<include name=\'${HELIX_BOX2D}/vendor/box2d/files.xml\'/>\n'
             '<files id=\'haxe\'><compilerflag value=\'-I${HELIX_BOX2D}/src/helix/box2d/internal\'/></files>\n'
-            '<target id=\'haxe\'><files id=\'helix-box2d\'/></target>")\n#else\n@:native("helixBox2d")\n#end\n@:noCompletion\nextern class Hb {\n'
+            '<target id=\'haxe\'><files id=\'helix-box2d\'/><files id=\'helix-box2d-avx2\'/></target>")\n#else\n@:native("helixBox2d")\n#end\n@:noCompletion\nextern class Hb {\n'
             + '\n'.join(externs) + '\n}\n')
 
 

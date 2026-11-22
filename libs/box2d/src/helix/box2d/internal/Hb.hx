@@ -7,7 +7,7 @@ package helix.box2d.internal;
 @:buildXml("<set name='HELIX_BOX2D' value='${haxelib:helix-box2d}' unless='HELIX_BOX2D'/>
 <include name='${HELIX_BOX2D}/vendor/box2d/files.xml'/>
 <files id='haxe'><compilerflag value='-I${HELIX_BOX2D}/src/helix/box2d/internal'/></files>
-<target id='haxe'><files id='helix-box2d'/></target>")
+<target id='haxe'><files id='helix-box2d'/><files id='helix-box2d-avx2'/></target>")
 #else
 @:native("helixBox2d")
 #end

@@ -20,7 +20,6 @@
   <file name='contact.c'/>
   <file name='contact_solver.c'/>
   <file name='contact_solver_w4.c'/>
-  <file name='contact_solver_w8.c'/>
   <file name='core.c'/>
   <file name='distance.c'/>
   <file name='distance_joint.c'/>
@@ -56,5 +55,19 @@
   <file name='wheel_joint.c'/>
   <file name='../../../src/helix/box2d/internal/hb.c'/>
   <file name='../../../src/helix/box2d/internal/hb_io.c'/>
+</files>
+<files id='helix-box2d-avx2' dir='${HELIX_BOX2D}/vendor/box2d/src'>
+  <compilerflag value='-I${HELIX_BOX2D}/vendor/box2d/include'/>
+  <compilerflag value='-I${HELIX_BOX2D}/src/helix/box2d/internal'/>
+  <compilerflag value='-DNDEBUG'/>
+  <compilerflag value='-std=gnu17' unless='windows'/>
+  <compilerflag value='/std:c17' if='windows'/>
+  <compilerflag value='/experimental:c11atomics' if='windows'/>
+  <compilerflag value='-ffp-contract=off' unless='windows'/>
+  <compilerflag value='/fp:precise' if='windows'/>
+  <compilerflag value='-O2' unless='debug'/>
+  <depend name='${HELIX_BOX2D}/vendor/box2d/include/box2d/base.h'/>
+  <compilerflag value='/arch:AVX2' if='windows'/>
+  <file name='contact_solver_w8.c'/>
 </files>
 </xml>
