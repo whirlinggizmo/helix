@@ -73,7 +73,8 @@ def vendor():
 def tree_hash():
     """A hash of the vendored tree: each file's path and bytes, in order."""
     digest = hashlib.sha256()
-    for path in sorted(p for p in (VENDOR / 'Jolt').rglob('*') if p.is_file()):
+    # Sorted by the path's text, as Windows orders paths themselves without regard to case.
+    for path in sorted((p for p in (VENDOR / 'Jolt').rglob('*') if p.is_file()), key=lambda p: p.relative_to(VENDOR).as_posix()):
         digest.update(path.relative_to(VENDOR).as_posix().encode() + b'\0' + path.read_bytes())
     return digest.hexdigest()
 
@@ -93,7 +94,7 @@ def files_xml():
              "  <compilerflag value='-ffp-contract=off' unless='windows'/>", "  <compilerflag value='/fp:precise' if='windows'/>",
              "  <compilerflag value='-O2' unless='debug'/>"]
     lines += [f"  <file name='{s}'/>" for s in sources()]
-    lines += [f"  <file name='../../../src/helix/jolt/internal/{p.name}'/>" for p in sorted(INTERNAL.glob('*.cpp'))]
+    lines += [f"  <file name='../../../src/helix/jolt/internal/{name}'/>" for name in sorted(p.name for p in INTERNAL.glob('*.cpp'))]
     lines += ['</files>', '</xml>', '']
     return '\n'.join(lines)
 
