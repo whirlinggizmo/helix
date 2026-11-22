@@ -1,0 +1,12 @@
+{
+	"name": "helix-jolt",
+	"url": "https://github.com/whirlinggizmo/helix",
+	"license": "BSD",
+	"tags": ["physics", "jolt", "js", "cpp"],
+	"description": "Jolt Physics with JoltPhysics.js's API, natively through hxcpp and in a page through a WebAssembly module the library ships.",
+	"version": "0.1.0",
+	"classPath": "src/",
+	"releasenote": "First release.",
+	"contributors": ["whirlinggizmo"],
+	"dependencies": {"helix-math": ""}
+}
