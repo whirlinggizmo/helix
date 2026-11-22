@@ -1467,7 +1467,7 @@ var motorSpeed:Float
 - `upperAngle`: The highest angle the limit allows, in radians. At most 0.99 times pi. Defaults to 0.
 - `enableMotor`: Whether the joint motor is on. Defaults to false.
 - `maxMotorTorque`: The most torque the motor applies, typically in newton-meters. Defaults to 0.
-- `motorSpeed`: The speed the motor aims for, in radians per second. Defaults to 0.
+- `motorSpeed`: The speed the motor aims for, in radians per second: body B's angular velocity relative to body A's. Positive turns body B counterclockwise relative to body A. Defaults to 0.
 
 ## B2Rot
 
@@ -1988,7 +1988,7 @@ var motorSpeed:Float
 - `upperTranslation`: The highest translation the limit allows, in length units. Defaults to 0.
 - `enableMotor`: Whether the rotational motor is on. Defaults to false.
 - `maxMotorTorque`: The most torque the motor applies, typically in newton-meters. Defaults to 0.
-- `motorSpeed`: The speed the motor aims for, in radians per second. Defaults to 0.
+- `motorSpeed`: The speed the motor aims for, in radians per second: body B's angular velocity relative to body A's. Positive turns body B counterclockwise relative to body A, so a wheel rolling toward +x on level ground needs a negative speed. Defaults to 0.
 
 ## B2WorldCastOutput
 
@@ -2101,7 +2101,7 @@ The build of Box2D the module holds is single precision and cross-platform deter
 
 Box2D's types are Haxe types named as Box2D names them with a capital first letter (`b2BodyDef` is `B2BodyDef`), as Haxe requires; functions, fields, enum values and constants keep Box2D's names. A struct Box2D passes by value is a Haxe object, which the garbage collector frees; a function returning one accepts an optional `out` that receives the result. What Box2D holds (a world, a body, a shape, a joint, a chain) is reached by its id and lives in the module until it is destroyed.
 
-A def from its `b2Default` function, or from its constructor, holds Box2D's defaults, with the structs it holds already made (`def.base.localFrameA.p`, `shapeDef.material.friction`), so their fields are set directly. An `out` is filled in place, and an array a call fills reuses the elements it holds, so a step's reads allocate nothing when each is passed the same one.
+A def from its `b2Default` function, or from its constructor, holds Box2D's defaults, with the structs it holds already made (`def.base.localFrameA.p`, `shapeDef.material.friction`), so their fields are set directly. An `out` is filled in place, and an array a call fills reuses the elements it holds and grows as needed, so a step's reads allocate nothing when each is passed the same one.
 
 ```haxe
 static function loadAsync(loaded:() -> Void, ?failed:String -> Void, ?wasmUrl:String):Void
@@ -5362,7 +5362,7 @@ static macro function copyWasm(directory:String):Void
   - returns: True when the motor is enabled.
 - `b2RevoluteJoint_SetTargetMotorSpeed`: Sets the speed the revolute joint's motor drives the joint angle at, in radians per second.
   - `jointId`: The revolute joint.
-  - `motorSpeed`: The target speed, in radians per second.
+  - `motorSpeed`: The target speed, in radians per second. Positive turns body B counterclockwise relative to body A.
 - `b2RevoluteJoint_GetTargetMotorSpeed`: Returns the speed the revolute joint's motor drives the joint angle at, in radians per second.
   - `jointId`: The revolute joint.
   - returns: The target speed.
@@ -5481,7 +5481,7 @@ static macro function copyWasm(directory:String):Void
   - returns: True when the motor is enabled.
 - `b2WheelJoint_SetTargetMotorSpeed`: Sets the speed the wheel joint's motor drives the wheel's rotation at, in radians per second.
   - `jointId`: The wheel joint.
-  - `motorSpeed`: The target speed, in radians per second.
+  - `motorSpeed`: The target speed, in radians per second. Positive turns body B counterclockwise relative to body A, so a wheel rolling toward +x on level ground needs a negative speed.
 - `b2WheelJoint_GetTargetMotorSpeed`: Returns the speed the wheel joint's motor drives the wheel's rotation at, in radians per second.
   - `jointId`: The wheel joint.
   - returns: The target speed.

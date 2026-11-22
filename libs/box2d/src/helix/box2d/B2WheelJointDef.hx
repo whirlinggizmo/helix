@@ -29,7 +29,7 @@ class B2WheelJointDef {
 	/** The most torque the motor applies, typically in newton-meters. Defaults to 0. */
 	public var maxMotorTorque:Float;
 
-	/** The speed the motor aims for, in radians per second. Defaults to 0. */
+	/** The speed the motor aims for, in radians per second: body B's angular velocity relative to body A's. Positive turns body B counterclockwise relative to body A, so a wheel rolling toward +x on level ground needs a negative speed. Defaults to 0. */
 	public var motorSpeed:Float;
 
 	/** Creates one holding Box2D's defaults, as `b2DefaultWheelJointDef()` returns. The structs it holds are made with it. */

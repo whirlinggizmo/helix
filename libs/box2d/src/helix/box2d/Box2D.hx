@@ -37,7 +37,7 @@ package helix.box2d;
 
 	A def from its `b2Default` function, or from its constructor, holds Box2D's defaults, with the structs it holds already made
 	(`def.base.localFrameA.p`, `shapeDef.material.friction`), so their fields are set directly. An `out` is filled in place, and an
-	array a call fills reuses the elements it holds, so a step's reads allocate nothing when each is passed the same one. */
+	array a call fills reuses the elements it holds and grows as needed, so a step's reads allocate nothing when each is passed the same one. */
 class Box2D {
 	#if !macro
 	/** Asynchronously loads the module.
@@ -5452,7 +5452,7 @@ class Box2D {
 	/** Sets the speed the revolute joint's motor drives the joint angle at, in radians per second.
 
 		@param jointId  The revolute joint.
-		@param motorSpeed  The target speed, in radians per second. */
+		@param motorSpeed  The target speed, in radians per second. Positive turns body B counterclockwise relative to body A. */
 	public static function b2RevoluteJoint_SetTargetMotorSpeed(jointId:B2JointId, motorSpeed:Float):Void {
 		throw "not built yet";
 	}
@@ -5721,7 +5721,7 @@ class Box2D {
 	/** Sets the speed the wheel joint's motor drives the wheel's rotation at, in radians per second.
 
 		@param jointId  The wheel joint.
-		@param motorSpeed  The target speed, in radians per second. */
+		@param motorSpeed  The target speed, in radians per second. Positive turns body B counterclockwise relative to body A, so a wheel rolling toward +x on level ground needs a negative speed. */
 	public static function b2WheelJoint_SetTargetMotorSpeed(jointId:B2JointId, motorSpeed:Float):Void {
 		throw "not built yet";
 	}
