@@ -1,2 +1,4 @@
-# Jolt is C++17: hxcpp then leaves the C++ standard to the compiler, whose default is C++17, in place of its own C++11.
+# Jolt is C++17: hxcpp then leaves the C++ standard to the compiler, whose default is C++17, in place of its own C++11; on macOS,
+# Toolchain keeps hxcpp's toolchain on libc++.
 -D HXCPP_NO_CPP11
+--macro helix.jolt.internal.Toolchain.select()
