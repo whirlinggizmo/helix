@@ -10,6 +10,8 @@ package helix.platform.adapters.shared.sdl3;
  <file name='shared/sdl3/sdl3.c'/>
 </files>
 <files id='haxe'><compilerflag value='-I${HELIX_PLATFORM}/vendor/sdl3'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/shared'/><compilerflag value='-I${HELIX_PLATFORM}/src/helix/platform/adapters/shared/sdl3'/></files>
+<!-- hxcpp's zlib 1.2.11 defines fdopen as NULL on macOS, and macOS 15's stdio.h then fails to declare it: fdopen defined as itself keeps zlib's from it. -->
+<files id='hxcpp_zlib'><compilerflag value='-Dfdopen=fdopen' if='macos'/></files>
 <target id='haxe'>
  <files id='helix-platform-sdl3'/>
  <lib name='${HELIX_SDL3_LIBRARY}'/>
