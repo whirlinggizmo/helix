@@ -11,6 +11,7 @@
   <compilerflag value='-ffp-contract=off' unless='windows'/>
   <compilerflag value='/fp:precise' if='windows'/>
   <compilerflag value='-O2' unless='debug'/>
+  <depend name='${HELIX_JOLT}/vendor/jolt/Jolt/Core/Core.h'/>
   <file name='AABBTree/AABBTreeBuilder.cpp'/>
   <file name='Compute/CPU/ComputeBufferCPU.cpp'/>
   <file name='Compute/CPU/ComputeQueueCPU.cpp'/>

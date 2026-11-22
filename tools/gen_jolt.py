@@ -92,7 +92,10 @@ def files_xml():
              "  <compilerflag value='-I${HELIX_JOLT}/vendor/jolt'/>", "  <compilerflag value='-I${HELIX_JOLT}/src/helix/jolt/internal'/>",
              *flags, "  <compilerflag value='-std=c++17' unless='windows'/>", "  <compilerflag value='/std:c++17' if='windows'/>",
              "  <compilerflag value='-ffp-contract=off' unless='windows'/>", "  <compilerflag value='/fp:precise' if='windows'/>",
-             "  <compilerflag value='-O2' unless='debug'/>"]
+             "  <compilerflag value='-O2' unless='debug'/>",
+             # hxcpp rebuilds a file when its source is newer, never for a header it includes: a new release's Core.h (its version) is
+             # newer than every object, so each is rebuilt rather than linked from the release before.
+             "  <depend name='${HELIX_JOLT}/vendor/jolt/Jolt/Core/Core.h'/>"]
     lines += [f"  <file name='{s}'/>" for s in sources()]
     lines += [f"  <file name='../../../src/helix/jolt/internal/{name}'/>" for name in sorted(p.name for p in INTERNAL.glob('*.cpp'))]
     lines += ['</files>', '</xml>', '']
