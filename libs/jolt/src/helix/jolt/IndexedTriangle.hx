@@ -17,6 +17,8 @@ class IndexedTriangle {
 		@param inI2  The second vertex's index.
 		@param inI3  The third vertex's index. */
 	public function new(inI1:Int, inI2:Int, inI3:Int) {
-		throw "not built yet";
+		mIdx0 = inI1;
+		mIdx1 = inI2;
+		mIdx2 = inI3;
 	}
 }

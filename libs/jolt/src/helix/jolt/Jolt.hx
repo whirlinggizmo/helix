@@ -1,5 +1,7 @@
 package helix.jolt;
 
+import helix.jolt.internal.Hj;
+
 /** Provides the Jolt Physics module: loading the module, and destroying what a program made in it.
 
 	A program loads the module once, before it constructs anything in this package:
@@ -248,6 +250,7 @@ class Jolt {
 	/** The `SixDOFConstraintSettings_EAxis` value SixDOFConstraintSettings_EAxis_RotationZ: Turning about z. */
 	public static inline final SixDOFConstraintSettings_EAxis_RotationZ:SixDOFConstraintSettings_EAxis = SixDOFConstraintSettings_EAxis.SixDOFConstraintSettings_EAxis_RotationZ;
 
+	#if !macro
 	/** Asynchronously loads the module.
 
 		Calling it again after the module has loaded calls `loaded` again.
@@ -263,14 +266,59 @@ class Jolt {
 		@param failed  Optional. Receives why the module couldn't be loaded; when omitted, it is thrown.
 		@param wasmUrl  Optional. In a page, the module's URL; defaults to `jolt.wasm`. Ignored natively. */
 	public static function loadAsync(loaded:Void->Void, ?failed:String->Void, ?wasmUrl:String):Void {
-		throw "not built yet";
+		if (loaded_) {
+			loaded();
+			return;
+		}
+		#if js
+		var url = wasmUrl == null ? "jolt.wasm" : wasmUrl;
+		var instantiate = (bytes:js.lib.ArrayBuffer) -> {
+			var imports = {
+				env: {emscripten_notify_memory_growth: (index:Int) -> {}},
+				wasi_snapshot_preview1: {
+					clock_time_get: (id:Int, precision:Dynamic, at:Int) -> {
+						js.Syntax.code("new DataView(helixJolt.memory.buffer).setBigUint64({0}, 0n, true)", at);
+						return 0;
+					}
+				}
+			};
+			js.lib.WebAssembly.instantiate(bytes, imports).then(result -> {
+				var exports:Dynamic = result.instance.exports;
+				js.Syntax.code("globalThis.helixJolt = {0}", exports);
+				exports._initialize();
+				Hj.init();
+				loaded_ = true;
+				loaded();
+			}, error -> fail(failed, url + " couldn't be run: " + error));
+		};
+		if (js.Syntax.code("typeof process !== 'undefined' && process.versions != null && process.versions.node != null")) {
+			var bytes:Dynamic = null;
+			try {
+				bytes = js.Syntax.code("require('fs').readFileSync({0})", url);
+			} catch (error:Dynamic) {
+				fail(failed, url + " couldn't be read: " + error);
+				return;
+			}
+			instantiate(js.Syntax.code("{0}.buffer.slice({0}.byteOffset, {0}.byteOffset + {0}.byteLength)", bytes));
+		} else
+			js.Browser.window.fetch(url).then(response -> {
+				if (!response.ok)
+					fail(failed, url + " couldn't be fetched: " + response.status);
+				else
+					response.arrayBuffer().then(instantiate);
+			}, error -> fail(failed, url + " couldn't be fetched: " + error));
+		#else
+		Hj.init();
+		loaded_ = true;
+		loaded();
+		#end
 	}
 
 	/** Returns whether the module has loaded.
 
 		@return  True once `loaded` has been called. */
 	public static function isLoaded():Bool {
-		throw "not built yet";
+		return loaded_;
 	}
 
 	/** Destroys a `JoltInterface`, its `PhysicsSystem`, and every body, shape and constraint made in it, whether the program holds
@@ -279,14 +327,46 @@ class Jolt {
 		A call on what was destroyed (`Release` among them) is skipped after.
 		@param inJoltInterface  The interface to destroy. */
 	public static function destroy(inJoltInterface:JoltInterface):Void {
-		throw "not built yet";
+		Hj.worldDestroy(inJoltInterface.world);
+		Constraint.forgetWorld(inJoltInterface.world);
+		worlds--;
+		if (worlds == 0)
+			Shape.forgetAll();
 	}
+	#end
 
 	/** Copies the module (`jolt.wasm`) into a directory as the program builds: a build macro, called from the build's hxml.
 
 		Skipped natively, where Jolt is compiled into the program.
 		@param directory  The page's directory, relative to the build's working directory. */
 	public static macro function copyWasm(directory:String):haxe.macro.Expr {
-		throw "not built yet";
+		#if macro
+		var here = haxe.io.Path.directory(haxe.io.Path.normalize(sys.FileSystem.absolutePath(haxe.macro.Context.resolvePath("helix/jolt/Jolt.hx"))));
+		var source = haxe.io.Path.join([here, "..", "..", "..", "wasm", "jolt.wasm"]);
+		if (haxe.macro.Context.defined("js")) {
+			sys.FileSystem.createDirectory(directory);
+			sys.io.File.copy(sys.FileSystem.absolutePath(source), haxe.io.Path.join([directory, "jolt.wasm"]));
+		}
+		#end
+		return macro null;
 	}
+
+	#if !macro
+	static var loaded_ = false;
+	@:allow(helix.jolt) static var worlds = 0;
+
+	static function fail(failed:Null<String->Void>, message:String):Void {
+		if (failed != null)
+			failed(message);
+		else
+			throw message;
+	}
+
+	/** Refuses a world made before the module has loaded, and counts it. */
+	@:allow(helix.jolt) static function ensureLoaded():Void {
+		if (!loaded_)
+			throw "Jolt.loadAsync must have called loaded before a JoltInterface is made";
+		worlds++;
+	}
+	#end
 }

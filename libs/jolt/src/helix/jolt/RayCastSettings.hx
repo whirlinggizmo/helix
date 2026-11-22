@@ -18,6 +18,7 @@ class RayCastSettings {
 
 		@param inBackFaceMode  The mode. */
 	public function SetBackFaceMode(inBackFaceMode:EBackFaceMode):Void {
-		throw "not built yet";
+		mBackFaceModeTriangles = inBackFaceMode;
+		mBackFaceModeConvex = inBackFaceMode;
 	}
 }

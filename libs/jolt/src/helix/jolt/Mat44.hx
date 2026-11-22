@@ -21,7 +21,11 @@ abstract Mat44(Matrix4) from Matrix4 to Matrix4 {
 		@param out  Optional. The transform to fill; a new one when omitted.
 		@return  The transform. */
 	public static function sRotationTranslation(inR:Quat, inT:Vec3, ?out:Mat44):Mat44 {
-		throw "not built yet";
+		var m:Matrix4 = Matrix4.fromQuaternion(inR.x, inR.y, inR.z, inR.w, out);
+		m.m12 = inT.x;
+		m.m13 = inT.y;
+		m.m14 = inT.z;
+		return m;
 	}
 
 	/** Returns the transform that moves.
@@ -30,7 +34,7 @@ abstract Mat44(Matrix4) from Matrix4 to Matrix4 {
 		@param out  Optional. The transform to fill; a new one when omitted.
 		@return  The transform. */
 	public static function sTranslation(inV:Vec3, ?out:Mat44):Mat44 {
-		throw "not built yet";
+		return Matrix4.fromTranslation(inV.x, inV.y, inV.z, out);
 	}
 
 	/** Returns the transform's translation.
@@ -38,7 +42,7 @@ abstract Mat44(Matrix4) from Matrix4 to Matrix4 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The translation. */
 	public function GetTranslation(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.getTranslation(out);
 	}
 
 	/** Returns the transform's rotation.
@@ -46,6 +50,6 @@ abstract Mat44(Matrix4) from Matrix4 to Matrix4 {
 		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The rotation. */
 	public function GetQuaternion(?out:Quat):Quat {
-		throw "not built yet";
+		return this.getRotation(out);
 	}
 }

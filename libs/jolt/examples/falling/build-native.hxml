@@ -1,0 +1,8 @@
+# The falling box natively: haxe build-native.hxml -> native/Main; hxcpp compiles Jolt and helix-jolt's C++ with it.
+-lib helix-jolt
+-D helix-company=helix
+-D helix-product=jolt-falling
+-cp .
+-main Main
+-dce full
+-cpp native

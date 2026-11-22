@@ -25,7 +25,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
 	public static function sZero(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return out == null ? new Vec3() : (out : Vector3).set(0, 0, 0);
 	}
 
 	/** Returns (1, 1, 1).
@@ -33,7 +33,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
 	public static function sOne(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return out == null ? new Vec3(1, 1, 1) : (out : Vector3).set(1, 1, 1);
 	}
 
 	/** Returns (1, 0, 0).
@@ -41,7 +41,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
 	public static function sAxisX(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return out == null ? new Vec3(1, 0, 0) : (out : Vector3).set(1, 0, 0);
 	}
 
 	/** Returns (0, 1, 0).
@@ -49,7 +49,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
 	public static function sAxisY(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return out == null ? new Vec3(0, 1, 0) : (out : Vector3).set(0, 1, 0);
 	}
 
 	/** Returns (0, 0, 1).
@@ -57,7 +57,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
 	public static function sAxisZ(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return out == null ? new Vec3(0, 0, 1) : (out : Vector3).set(0, 0, 1);
 	}
 
 	/** Returns a vector with one value in each component.
@@ -66,49 +66,49 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The vector. */
 	public static function sReplicate(inValue:Float, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		return out == null ? new Vec3(inValue, inValue, inValue) : (out : Vector3).set(inValue, inValue, inValue);
 	}
 
 	/** Returns the x component.
 
 		@return  The component. */
 	public function GetX():Float {
-		throw "not built yet";
+		return this.x;
 	}
 
 	/** Returns the y component.
 
 		@return  The component. */
 	public function GetY():Float {
-		throw "not built yet";
+		return this.y;
 	}
 
 	/** Returns the z component.
 
 		@return  The component. */
 	public function GetZ():Float {
-		throw "not built yet";
+		return this.z;
 	}
 
 	/** Sets the x component.
 
 		@param inX  The component. */
 	public function SetX(inX:Float):Void {
-		throw "not built yet";
+		this.x = inX;
 	}
 
 	/** Sets the y component.
 
 		@param inY  The component. */
 	public function SetY(inY:Float):Void {
-		throw "not built yet";
+		this.y = inY;
 	}
 
 	/** Sets the z component.
 
 		@param inZ  The component. */
 	public function SetZ(inZ:Float):Void {
-		throw "not built yet";
+		this.z = inZ;
 	}
 
 	/** Sets the three components.
@@ -117,21 +117,21 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param inY  The y component.
 		@param inZ  The z component. */
 	public function Set(inX:Float, inY:Float, inZ:Float):Void {
-		throw "not built yet";
+		this.set(inX, inY, inZ);
 	}
 
 	/** Returns the vector's length.
 
 		@return  The length. */
 	public function Length():Float {
-		throw "not built yet";
+		return this.length;
 	}
 
 	/** Returns the square of the vector's length.
 
 		@return  The length squared. */
 	public function LengthSq():Float {
-		throw "not built yet";
+		return this.lengthSquared;
 	}
 
 	/** Returns the vector scaled to a length of 1.
@@ -139,7 +139,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
 		@return  The vector. */
 	public function Normalized(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.normalize(out);
 	}
 
 	/** Returns the dot product with another vector.
@@ -147,7 +147,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param inRHS  The other vector.
 		@return  The dot product. */
 	public function Dot(inRHS:Vec3):Float {
-		throw "not built yet";
+		return this.dot(inRHS);
 	}
 
 	/** Returns the cross product with another vector.
@@ -156,7 +156,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be either vector.
 		@return  The cross product. */
 	public function Cross(inRHS:Vec3, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.cross(inRHS, out);
 	}
 
 	/** Returns the sum with another vector.
@@ -165,7 +165,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be either vector.
 		@return  The sum. */
 	public function AddVec3(inV:Vec3, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.add(inV, out);
 	}
 
 	/** Returns the difference from another vector.
@@ -174,7 +174,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be either vector.
 		@return  The difference. */
 	public function SubVec3(inV:Vec3, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.subtract(inV, out);
 	}
 
 	/** Returns the vector multiplied by a number.
@@ -183,7 +183,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be this vector.
 		@return  The product. */
 	public function MulFloat(inV:Float, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.scale(inV, out);
 	}
 
 	/** Returns whether the vector is within a distance of (0, 0, 0).
@@ -191,7 +191,7 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param inMaxDistSq  Optional. The square of the distance; defaults to 1e-12.
 		@return  True when the vector is that close. */
 	public function IsNearZero(inMaxDistSq = 1e-12):Bool {
-		throw "not built yet";
+		return this.lengthSquared <= inMaxDistSq;
 	}
 
 	/** Returns whether the vector is within a distance of another.
@@ -200,6 +200,6 @@ abstract Vec3(Vector3) from Vector3 to Vector3 {
 		@param inMaxDistSq  Optional. The square of the distance; defaults to 1e-12.
 		@return  True when the vectors are that close. */
 	public function IsClose(inV:Vec3, inMaxDistSq = 1e-12):Bool {
-		throw "not built yet";
+		return this.distanceSquared(inV) <= inMaxDistSq;
 	}
 }

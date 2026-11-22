@@ -14,14 +14,14 @@ abstract BodyID(Int) {
 
 		@return  The index. */
 	public function GetIndex():Int {
-		throw "not built yet";
+		return this & 0x7fffff;
 	}
 
 	/** Returns the id's whole value, the index and the sequence number together.
 
 		@return  The value. */
 	public function GetIndexAndSequenceNumber():Int {
-		throw "not built yet";
+		return this;
 	}
 
 	/** Returns whether two ids are the same.
@@ -42,6 +42,6 @@ abstract BodyID(Int) {
 
 		@return  False for the invalid id. */
 	public function IsInvalid():Bool {
-		throw "not built yet";
+		return this == -1;
 	}
 }

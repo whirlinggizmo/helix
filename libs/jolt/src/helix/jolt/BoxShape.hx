@@ -1,5 +1,8 @@
 package helix.jolt;
 
+import helix.jolt.internal.Hj;
+import helix.jolt.internal.Io;
+
 /** Represents a box, centered on its body. */
 class BoxShape extends ConvexShape {
 	/** Creates a box.
@@ -9,7 +12,7 @@ class BoxShape extends ConvexShape {
 		0.05. */
 	public function new(inHalfExtent:Vec3, inConvexRadius = 0.05) {
 		super();
-		throw "not built yet";
+		register(Hj.shapeBox(inHalfExtent.x, inHalfExtent.y, inHalfExtent.z, inConvexRadius));
 	}
 
 	/** Returns half the box's size along each axis.
@@ -17,6 +20,7 @@ class BoxShape extends ConvexShape {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The half extent, in meters. */
 	public function GetHalfExtent(?out:Vec3):Vec3 {
-		throw "not built yet";
+		Hj.shapeGetDimensions(handle);
+		return Io.vec3(0, out);
 	}
 }

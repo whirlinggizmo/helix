@@ -1,5 +1,7 @@
 package helix.jolt;
 
+import helix.jolt.internal.Io;
+
 /** Represents a constraint holding a point of one body to another, the second body's axis kept within a cone about the first's: a
 	shoulder. */
 class ConeConstraintSettings extends TwoBodyConstraintSettings<ConeConstraint> {
@@ -21,6 +23,31 @@ class ConeConstraintSettings extends TwoBodyConstraintSettings<ConeConstraint> {
 	/** Creates the settings. */
 	public function new() {
 		super();
-		throw "not built yet";
+		mPoint1 = new RVec3();
+		mTwistAxis1 = new Vec3(1, 0, 0);
+		mPoint2 = new RVec3();
+		mTwistAxis2 = new Vec3(1, 0, 0);
+	}
+
+	override function write():Int {
+		super.write();
+		Io.setF(0, mPoint1.x);
+		Io.setF(1, mPoint1.y);
+		Io.setF(2, mPoint1.z);
+		Io.setF(3, mTwistAxis1.x);
+		Io.setF(4, mTwistAxis1.y);
+		Io.setF(5, mTwistAxis1.z);
+		Io.setF(6, mPoint2.x);
+		Io.setF(7, mPoint2.y);
+		Io.setF(8, mPoint2.z);
+		Io.setF(9, mTwistAxis2.x);
+		Io.setF(10, mTwistAxis2.y);
+		Io.setF(11, mTwistAxis2.z);
+		Io.setF(12, mHalfConeAngle);
+		return 5;
+	}
+
+	override function make(world:Int, handle:Int):ConeConstraint {
+		return new ConeConstraint(world, handle);
 	}
 }

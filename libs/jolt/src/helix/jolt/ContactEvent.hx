@@ -1,5 +1,7 @@
 package helix.jolt;
 
+import helix.jolt.Jolt.*;
+
 /** Represents a contact between two bodies in a step, read from a `ContactEventQueue`: an extra of helix-jolt's. */
 class ContactEvent {
 	/** Gets or sets what happened. */
@@ -30,6 +32,12 @@ class ContactEvent {
 
 	/** Creates an empty event. */
 	public function new() {
-		throw "not built yet";
+		mType = EContactEventType_Added;
+		mBodyID1 = new BodyID();
+		mBodyID2 = new BodyID();
+		mSubShapeID1 = new SubShapeID();
+		mSubShapeID2 = new SubShapeID();
+		mWorldSpaceNormal = new Vec3();
+		mContactPoint = new RVec3();
 	}
 }

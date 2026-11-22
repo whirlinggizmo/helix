@@ -7,6 +7,7 @@ class SpecifiedObjectLayerFilter extends ObjectLayerFilter {
 		@param inObjectLayer  The object layer. */
 	public function new(inObjectLayer:Int) {
 		super();
-		throw "not built yet";
+		kind = 2;
+		value = inObjectLayer;
 	}
 }

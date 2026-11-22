@@ -1,5 +1,8 @@
 package helix.jolt;
 
+import helix.jolt.internal.Hj;
+import helix.jolt.internal.Io;
+
 /** Provides the calls that make, change and read bodies, by their ids. Returned by `PhysicsSystem.GetBodyInterface`.
 
 	```haxe
@@ -11,7 +14,13 @@ package helix.jolt;
 
 	A call on an id that names no body is skipped, and one returning a value returns zero, the identity or false. */
 class BodyInterface {
-	function new() {}
+	var world:Int;
+	var bodies:BodyLockInterfaceNoLock;
+
+	@:allow(helix.jolt) function new(world:Int, bodies:BodyLockInterfaceNoLock) {
+		this.world = world;
+		this.bodies = bodies;
+	}
 
 	/** Makes a body, not yet in the simulation.
 
@@ -20,7 +29,12 @@ class BodyInterface {
 		@param inSettings  What the body is made from, read once.
 		@return  The body, or null when the system holds `JoltSettings.mMaxBodies` already. */
 	public function CreateBody(inSettings:BodyCreationSettings):Body {
-		throw "not built yet";
+		var shape = inSettings.GetShape();
+		if (shape == null)
+			return null;
+		inSettings.write();
+		var id = Hj.bodyCreate(world, shape.handle, 0, 0);
+		return id == -1 ? null : bodies.body(new BodyID(id));
 	}
 
 	/** Makes a body and adds it to the simulation.
@@ -29,14 +43,19 @@ class BodyInterface {
 		@param inActivationMode  Whether the body wakes.
 		@return  The body's id, invalid when the system holds `JoltSettings.mMaxBodies` already. */
 	public function CreateAndAddBody(inSettings:BodyCreationSettings, inActivationMode:EActivation):BodyID {
-		throw "not built yet";
+		var shape = inSettings.GetShape();
+		if (shape == null)
+			return new BodyID();
+		inSettings.write();
+		return new BodyID(Hj.bodyCreate(world, shape.handle, 1, cast inActivationMode));
 	}
 
 	/** Destroys a body, which must have been removed. Its id names no body after.
 
 		@param inBodyID  The body. */
 	public function DestroyBody(inBodyID:BodyID):Void {
-		throw "not built yet";
+		Hj.bodyDestroy(world, inBodyID.GetIndexAndSequenceNumber());
+		bodies.forget(inBodyID);
 	}
 
 	/** Adds a body to the simulation.
@@ -44,14 +63,14 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inActivationMode  Whether the body wakes. */
 	public function AddBody(inBodyID:BodyID, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		Hj.bodyAdd(world, inBodyID.GetIndexAndSequenceNumber(), (cast inActivationMode : Int));
 	}
 
 	/** Removes a body from the simulation, keeping it to add again.
 
 		@param inBodyID  The body. */
 	public function RemoveBody(inBodyID:BodyID):Void {
-		throw "not built yet";
+		Hj.bodyRemove(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Returns whether a body is in the simulation.
@@ -59,7 +78,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  True after `AddBody` and before `RemoveBody`. */
 	public function IsAdded(inBodyID:BodyID):Bool {
-		throw "not built yet";
+		return Hj.bodyIsAdded(world, inBodyID.GetIndexAndSequenceNumber()) != 0;
 	}
 
 	/** Makes a constraint between two bodies, not yet acting.
@@ -79,7 +98,8 @@ class BodyInterface {
 		@return  The constraint, of the kind the settings make (a `HingeConstraint` from `HingeConstraintSettings`), or null when both
 		ids are invalid. */
 	public function CreateConstraint<T:TwoBodyConstraint>(inSettings:TwoBodyConstraintSettings<T>, inBodyID1:BodyID, inBodyID2:BodyID):T {
-		throw "not built yet";
+		var handle = Hj.constraintCreate(world, inSettings.write(), inBodyID1.GetIndexAndSequenceNumber(), inBodyID2.GetIndexAndSequenceNumber());
+		return handle == -1 ? null : inSettings.make(world, handle);
 	}
 
 	/** Returns a body's shape.
@@ -87,7 +107,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  The shape. */
 	public function GetShape(inBodyID:BodyID):Shape {
-		throw "not built yet";
+		return Shape.of(Hj.bodyGetShape(world, inBodyID.GetIndexAndSequenceNumber()));
 	}
 
 	/** Replaces a body's shape.
@@ -97,7 +117,7 @@ class BodyInterface {
 		@param inUpdateMassProperties  Whether the mass and inertia are worked out again from the shape.
 		@param inActivationMode  Whether the body wakes. */
 	public function SetShape(inBodyID:BodyID, inShape:Shape, inUpdateMassProperties:Bool, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		Hj.bodySetShape(world, inBodyID.GetIndexAndSequenceNumber(), inShape.handle, inUpdateMassProperties ? 1 : 0, (cast inActivationMode : Int));
 	}
 
 	/** Moves a body to another object layer.
@@ -105,7 +125,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inLayer  The object layer. */
 	public function SetObjectLayer(inBodyID:BodyID, inLayer:Int):Void {
-		throw "not built yet";
+		Hj.bodySetObjectLayer(world, inBodyID.GetIndexAndSequenceNumber(), inLayer);
 	}
 
 	/** Returns a body's object layer.
@@ -113,7 +133,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  The object layer. */
 	public function GetObjectLayer(inBodyID:BodyID):Int {
-		throw "not built yet";
+		return Hj.bodyGetObjectLayer(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Places a body.
@@ -125,7 +145,8 @@ class BodyInterface {
 		@param inRotation  The rotation.
 		@param inActivationMode  Whether the body wakes. */
 	public function SetPositionAndRotation(inBodyID:BodyID, inPosition:RVec3, inRotation:Quat, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		Hj.bodySetPositionAndRotation(world, inBodyID.GetIndexAndSequenceNumber(), inPosition.x, inPosition.y, inPosition.z, inRotation.x, inRotation.y,
+			inRotation.z, inRotation.w, (cast inActivationMode : Int));
 	}
 
 	/** Reads where a body is.
@@ -134,7 +155,9 @@ class BodyInterface {
 		@param outPosition  Receives the position, in meters.
 		@param outRotation  Receives the rotation. */
 	public function GetPositionAndRotation(inBodyID:BodyID, outPosition:RVec3, outRotation:Quat):Void {
-		throw "not built yet";
+		Hj.bodyGetPositionAndRotation(world, inBodyID.GetIndexAndSequenceNumber());
+		Io.vec3(0, outPosition);
+		Io.quat(3, outRotation);
 	}
 
 	/** Moves a body.
@@ -143,7 +166,7 @@ class BodyInterface {
 		@param inPosition  The position, in meters.
 		@param inActivationMode  Whether the body wakes. */
 	public function SetPosition(inBodyID:BodyID, inPosition:RVec3, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		Hj.bodySetPosition(world, inBodyID.GetIndexAndSequenceNumber(), inPosition.x, inPosition.y, inPosition.z, (cast inActivationMode : Int));
 	}
 
 	/** Returns a body's position.
@@ -152,7 +175,8 @@ class BodyInterface {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position, in meters. */
 	public function GetPosition(inBodyID:BodyID, ?out:RVec3):RVec3 {
-		throw "not built yet";
+		Hj.bodyGetPositionAndRotation(world, inBodyID.GetIndexAndSequenceNumber());
+		return Io.vec3(0, out);
 	}
 
 	/** Turns a body.
@@ -161,7 +185,7 @@ class BodyInterface {
 		@param inRotation  The rotation.
 		@param inActivationMode  Whether the body wakes. */
 	public function SetRotation(inBodyID:BodyID, inRotation:Quat, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		Hj.bodySetRotation(world, inBodyID.GetIndexAndSequenceNumber(), inRotation.x, inRotation.y, inRotation.z, inRotation.w, (cast inActivationMode : Int));
 	}
 
 	/** Returns a body's rotation.
@@ -170,7 +194,8 @@ class BodyInterface {
 		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The rotation. */
 	public function GetRotation(inBodyID:BodyID, ?out:Quat):Quat {
-		throw "not built yet";
+		Hj.bodyGetPositionAndRotation(world, inBodyID.GetIndexAndSequenceNumber());
+		return Io.quat(3, out);
 	}
 
 	/** Returns a body's transform: its rotation and position, for drawing it.
@@ -179,7 +204,8 @@ class BodyInterface {
 		@param out  Optional. The transform to fill; a new one when omitted.
 		@return  The transform. */
 	public function GetWorldTransform(inBodyID:BodyID, ?out:RMat44):RMat44 {
-		throw "not built yet";
+		Hj.bodyGetWorldTransform(world, inBodyID.GetIndexAndSequenceNumber());
+		return Io.mat44(0, out);
 	}
 
 	/** Returns the transform of a body's center of mass.
@@ -188,7 +214,8 @@ class BodyInterface {
 		@param out  Optional. The transform to fill; a new one when omitted.
 		@return  The transform. */
 	public function GetCenterOfMassTransform(inBodyID:BodyID, ?out:RMat44):RMat44 {
-		throw "not built yet";
+		Hj.bodyGetCenterOfMassTransform(world, inBodyID.GetIndexAndSequenceNumber());
+		return Io.mat44(0, out);
 	}
 
 	/** Moves a kinematic body to a place over a step, pushing the dynamic bodies it meets.
@@ -200,7 +227,8 @@ class BodyInterface {
 		@param inTargetRotation  The rotation it arrives at.
 		@param inDeltaTime  The seconds of the next step, as passed to `JoltInterface.Step`. */
 	public function MoveKinematic(inBodyID:BodyID, inTargetPosition:RVec3, inTargetRotation:Quat, inDeltaTime:Float):Void {
-		throw "not built yet";
+		Hj.bodyMoveKinematic(world, inBodyID.GetIndexAndSequenceNumber(), inTargetPosition.x, inTargetPosition.y, inTargetPosition.z, inTargetRotation.x,
+			inTargetRotation.y, inTargetRotation.z, inTargetRotation.w, inDeltaTime);
 	}
 
 	/** Sets a body's velocity.
@@ -208,7 +236,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inLinearVelocity  The velocity, in meters a second. */
 	public function SetLinearVelocity(inBodyID:BodyID, inLinearVelocity:Vec3):Void {
-		throw "not built yet";
+		Hj.bodySetLinearVelocity(world, inBodyID.GetIndexAndSequenceNumber(), inLinearVelocity.x, inLinearVelocity.y, inLinearVelocity.z);
 	}
 
 	/** Returns a body's velocity.
@@ -217,7 +245,8 @@ class BodyInterface {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The velocity, in meters a second. */
 	public function GetLinearVelocity(inBodyID:BodyID, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		Hj.bodyGetVelocities(world, inBodyID.GetIndexAndSequenceNumber());
+		return Io.vec3(0, out);
 	}
 
 	/** Adds to a body's velocity.
@@ -225,7 +254,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inLinearVelocity  The velocity added, in meters a second. */
 	public function AddLinearVelocity(inBodyID:BodyID, inLinearVelocity:Vec3):Void {
-		throw "not built yet";
+		Hj.bodyAddLinearVelocity(world, inBodyID.GetIndexAndSequenceNumber(), inLinearVelocity.x, inLinearVelocity.y, inLinearVelocity.z);
 	}
 
 	/** Sets a body's angular velocity.
@@ -233,7 +262,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inAngularVelocity  The angular velocity, in radians a second about each axis. */
 	public function SetAngularVelocity(inBodyID:BodyID, inAngularVelocity:Vec3):Void {
-		throw "not built yet";
+		Hj.bodySetAngularVelocity(world, inBodyID.GetIndexAndSequenceNumber(), inAngularVelocity.x, inAngularVelocity.y, inAngularVelocity.z);
 	}
 
 	/** Returns a body's angular velocity.
@@ -242,7 +271,8 @@ class BodyInterface {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The angular velocity, in radians a second about each axis. */
 	public function GetAngularVelocity(inBodyID:BodyID, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		Hj.bodyGetVelocities(world, inBodyID.GetIndexAndSequenceNumber());
+		return Io.vec3(3, out);
 	}
 
 	/** Returns the velocity of a point on a body.
@@ -252,7 +282,8 @@ class BodyInterface {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The velocity, in meters a second. */
 	public function GetPointVelocity(inBodyID:BodyID, inPoint:RVec3, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		Hj.bodyGetPointVelocity(world, inBodyID.GetIndexAndSequenceNumber(), inPoint.x, inPoint.y, inPoint.z);
+		return Io.vec3(0, out);
 	}
 
 	/** Adds a force through a body's center of mass, or at a point, for the next step.
@@ -262,7 +293,11 @@ class BodyInterface {
 		@param inPoint  Optional. Where the force pushes, in the world, in meters; the center of mass when omitted.
 		@param inActivationMode  Whether the body wakes. */
 	public function AddForce(inBodyID:BodyID, inForce:Vec3, ?inPoint:RVec3, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		if (inPoint == null)
+			Hj.bodyAddForce(world, inBodyID.GetIndexAndSequenceNumber(), inForce.x, inForce.y, inForce.z, 0, 0, 0, 0, (cast inActivationMode : Int));
+		else
+			Hj.bodyAddForce(world, inBodyID.GetIndexAndSequenceNumber(), inForce.x, inForce.y, inForce.z, 1, inPoint.x, inPoint.y, inPoint.z,
+				(cast inActivationMode : Int));
 	}
 
 	/** Adds a torque for the next step.
@@ -271,7 +306,7 @@ class BodyInterface {
 		@param inTorque  The torque, in newton meters.
 		@param inActivationMode  Whether the body wakes. */
 	public function AddTorque(inBodyID:BodyID, inTorque:Vec3, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		Hj.bodyAddTorque(world, inBodyID.GetIndexAndSequenceNumber(), inTorque.x, inTorque.y, inTorque.z, (cast inActivationMode : Int));
 	}
 
 	/** Adds an impulse through a body's center of mass, or at a point, changing its velocity at once.
@@ -280,7 +315,10 @@ class BodyInterface {
 		@param inImpulse  The impulse, in kilogram meters a second.
 		@param inPoint  Optional. Where the impulse pushes, in the world, in meters; the center of mass when omitted. */
 	public function AddImpulse(inBodyID:BodyID, inImpulse:Vec3, ?inPoint:RVec3):Void {
-		throw "not built yet";
+		if (inPoint == null)
+			Hj.bodyAddImpulse(world, inBodyID.GetIndexAndSequenceNumber(), inImpulse.x, inImpulse.y, inImpulse.z, 0, 0, 0, 0);
+		else
+			Hj.bodyAddImpulse(world, inBodyID.GetIndexAndSequenceNumber(), inImpulse.x, inImpulse.y, inImpulse.z, 1, inPoint.x, inPoint.y, inPoint.z);
 	}
 
 	/** Adds an angular impulse, changing a body's angular velocity at once.
@@ -288,21 +326,21 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inAngularImpulse  The angular impulse, in kilogram square meters a second. */
 	public function AddAngularImpulse(inBodyID:BodyID, inAngularImpulse:Vec3):Void {
-		throw "not built yet";
+		Hj.bodyAddAngularImpulse(world, inBodyID.GetIndexAndSequenceNumber(), inAngularImpulse.x, inAngularImpulse.y, inAngularImpulse.z);
 	}
 
 	/** Wakes a body.
 
 		@param inBodyID  The body. */
 	public function ActivateBody(inBodyID:BodyID):Void {
-		throw "not built yet";
+		Hj.bodyActivate(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Puts a body to sleep.
 
 		@param inBodyID  The body. */
 	public function DeactivateBody(inBodyID:BodyID):Void {
-		throw "not built yet";
+		Hj.bodyDeactivate(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Returns whether a body is awake.
@@ -310,7 +348,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  True when the body is awake. */
 	public function IsActive(inBodyID:BodyID):Bool {
-		throw "not built yet";
+		return Hj.bodyIsActive(world, inBodyID.GetIndexAndSequenceNumber()) != 0;
 	}
 
 	/** Changes how a body moves.
@@ -321,7 +359,7 @@ class BodyInterface {
 		@param inMotionType  How the body moves.
 		@param inActivationMode  Whether the body wakes. */
 	public function SetMotionType(inBodyID:BodyID, inMotionType:EMotionType, inActivationMode:EActivation):Void {
-		throw "not built yet";
+		Hj.bodySetMotionType(world, inBodyID.GetIndexAndSequenceNumber(), cast inMotionType, (cast inActivationMode : Int));
 	}
 
 	/** Returns how a body moves.
@@ -329,7 +367,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  The motion type. */
 	public function GetMotionType(inBodyID:BodyID):EMotionType {
-		throw "not built yet";
+		return cast Hj.bodyGetMotionType(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Sets how a body's motion is tested for collisions.
@@ -337,7 +375,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inMotionQuality  The motion quality. */
 	public function SetMotionQuality(inBodyID:BodyID, inMotionQuality:EMotionQuality):Void {
-		throw "not built yet";
+		Hj.bodySetMotionQuality(world, inBodyID.GetIndexAndSequenceNumber(), cast inMotionQuality);
 	}
 
 	/** Sets a body's bounce.
@@ -345,7 +383,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inRestitution  The bounce, 0 to 1. */
 	public function SetRestitution(inBodyID:BodyID, inRestitution:Float):Void {
-		throw "not built yet";
+		Hj.bodySetRestitution(world, inBodyID.GetIndexAndSequenceNumber(), inRestitution);
 	}
 
 	/** Returns a body's bounce.
@@ -353,7 +391,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  The bounce, 0 to 1. */
 	public function GetRestitution(inBodyID:BodyID):Float {
-		throw "not built yet";
+		return Hj.bodyGetRestitution(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Sets a body's friction.
@@ -361,7 +399,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inFriction  The friction, 0 or more. */
 	public function SetFriction(inBodyID:BodyID, inFriction:Float):Void {
-		throw "not built yet";
+		Hj.bodySetFriction(world, inBodyID.GetIndexAndSequenceNumber(), inFriction);
 	}
 
 	/** Returns a body's friction.
@@ -369,7 +407,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  The friction. */
 	public function GetFriction(inBodyID:BodyID):Float {
-		throw "not built yet";
+		return Hj.bodyGetFriction(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Sets how much of the gravity a body falls by.
@@ -377,7 +415,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inFactor  The factor: 0 floats, 1 falls. */
 	public function SetGravityFactor(inBodyID:BodyID, inFactor:Float):Void {
-		throw "not built yet";
+		Hj.bodySetGravityFactor(world, inBodyID.GetIndexAndSequenceNumber(), inFactor);
 	}
 
 	/** Returns how much of the gravity a body falls by.
@@ -385,7 +423,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  The factor. */
 	public function GetGravityFactor(inBodyID:BodyID):Float {
-		throw "not built yet";
+		return Hj.bodyGetGravityFactor(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Makes a body a sensor or a solid body. `BodyCreationSettings.mIsSensor` says what a sensor detects.
@@ -393,7 +431,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inIsSensor  Whether the body is a sensor. */
 	public function SetIsSensor(inBodyID:BodyID, inIsSensor:Bool):Void {
-		throw "not built yet";
+		Hj.bodySetIsSensor(world, inBodyID.GetIndexAndSequenceNumber(), inIsSensor ? 1 : 0);
 	}
 
 	/** Returns whether a body is a sensor.
@@ -401,7 +439,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  True for a sensor. */
 	public function IsSensor(inBodyID:BodyID):Bool {
-		throw "not built yet";
+		return Hj.bodyIsSensor(world, inBodyID.GetIndexAndSequenceNumber()) != 0;
 	}
 
 	/** Returns the number a program keeps with a body.
@@ -409,7 +447,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@return  The number. */
 	public function GetUserData(inBodyID:BodyID):Int {
-		throw "not built yet";
+		return Hj.bodyGetUserData(world, inBodyID.GetIndexAndSequenceNumber());
 	}
 
 	/** Sets the number a program keeps with a body.
@@ -417,7 +455,7 @@ class BodyInterface {
 		@param inBodyID  The body.
 		@param inUserData  The number. */
 	public function SetUserData(inBodyID:BodyID, inUserData:Int):Void {
-		throw "not built yet";
+		Hj.bodySetUserData(world, inBodyID.GetIndexAndSequenceNumber(), inUserData);
 	}
 
 	/** Returns a body's shape where the body is, for asking the shape about a query's hit.
@@ -426,7 +464,9 @@ class BodyInterface {
 		@param out  Optional. The transformed shape to fill; a new one when omitted.
 		@return  The transformed shape. */
 	public function GetTransformedShape(inBodyID:BodyID, ?out:TransformedShape):TransformedShape {
-		throw "not built yet";
+		var transformed = out == null ? new TransformedShape() : out;
+		transformed.read(inBodyID, Shape.of(Hj.bodyGetTransformedShape(world, inBodyID.GetIndexAndSequenceNumber())));
+		return transformed;
 	}
 
 	/** Reads where many bodies are, in one call: an extra of helix-jolt's, for drawing what moved.
@@ -439,7 +479,17 @@ class BodyInterface {
 		then its rotation's x, y, z and w.
 		@return  The number of bodies read: fewer than `inBodyIDs` lists when `outValues` holds fewer. */
 	public function GetPositionsAndRotations(inBodyIDs:BodyIDVector, outValues:haxe.io.Float32Array):Int {
-		throw "not built yet";
+		var count = inBodyIDs.size();
+		if (outValues.length < count * 7)
+			count = Std.int(outValues.length / 7);
+		var base = Io.bulk(count * 32);
+		for (n in 0...count)
+			Io.setBulkI(base, n, inBodyIDs.at(n).GetIndexAndSequenceNumber());
+		Hj.bodiesGetPositionsAndRotations(world, count);
+		base = Io.bulk(count * 32);
+		for (n in 0...count * 7)
+			outValues[n] = Io.bulkF(base, count + n);
+		return count;
 	}
 
 	/** Reads many bodies' transforms, in one call: an extra of helix-jolt's, for drawing them instanced.
@@ -450,6 +500,34 @@ class BodyInterface {
 		@param outTransforms  Receives a transform a body, in the order of `inBodyIDs`. Transforms in the array are filled in place, and ones are added when it is shorter.
 		@return  The number of bodies read. */
 	public function GetWorldTransforms(inBodyIDs:BodyIDVector, outTransforms:Array<Mat44>):Int {
-		throw "not built yet";
+		var count = inBodyIDs.size();
+		var base = Io.bulk(count * 68);
+		for (n in 0...count)
+			Io.setBulkI(base, n, inBodyIDs.at(n).GetIndexAndSequenceNumber());
+		Hj.bodiesGetWorldTransforms(world, count);
+		base = Io.bulk(count * 68);
+		for (n in 0...count) {
+			if (n == outTransforms.length)
+				outTransforms.push(new Mat44());
+			var m:helix.math.Matrix4 = outTransforms[n];
+			var at = count + n * 16;
+			m.m0 = Io.bulkF(base, at);
+			m.m1 = Io.bulkF(base, at + 1);
+			m.m2 = Io.bulkF(base, at + 2);
+			m.m3 = Io.bulkF(base, at + 3);
+			m.m4 = Io.bulkF(base, at + 4);
+			m.m5 = Io.bulkF(base, at + 5);
+			m.m6 = Io.bulkF(base, at + 6);
+			m.m7 = Io.bulkF(base, at + 7);
+			m.m8 = Io.bulkF(base, at + 8);
+			m.m9 = Io.bulkF(base, at + 9);
+			m.m10 = Io.bulkF(base, at + 10);
+			m.m11 = Io.bulkF(base, at + 11);
+			m.m12 = Io.bulkF(base, at + 12);
+			m.m13 = Io.bulkF(base, at + 13);
+			m.m14 = Io.bulkF(base, at + 14);
+			m.m15 = Io.bulkF(base, at + 15);
+		}
+		return count;
 	}
 }

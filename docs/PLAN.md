@@ -11,6 +11,7 @@ libs/                the libraries
   geometry/          cameras, rays, meshes, tests on shapes                   depends on math
   tweens/            values along easing curves over time, and sequences      depends on math
   log/               levels and tags, to the console or stdio                 depends on nothing
+  jolt/              Jolt Physics with JoltPhysics.js's API, through a C ABI   depends on math
   formats/           file formats read into plain data: glTF, BMFont, fonts   depends on math
   platform/          the hardware and the OS as interfaces and adapters        depends on math, formats
   services/          what a program needs over the platform that isn't drawing

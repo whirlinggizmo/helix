@@ -21,7 +21,10 @@ class RShapeCast {
 		@param inCenterOfMassStart  The transform of the shape's center of mass at the start.
 		@param inDirection  The direction, its length how far the shape is swept, in meters. */
 	public function new(inShape:Shape, inScale:Vec3, inCenterOfMassStart:RMat44, inDirection:Vec3) {
-		throw "not built yet";
+		mShape = inShape;
+		mScale = inScale;
+		mCenterOfMassStart = inCenterOfMassStart;
+		mDirection = inDirection;
 	}
 
 	/** Returns where the shape's center of mass is a fraction of the way along the cast.
@@ -30,6 +33,7 @@ class RShapeCast {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The point, in meters. */
 	public function GetPointOnRay(inFraction:Float, ?out:RVec3):RVec3 {
-		throw "not built yet";
+		var start = mCenterOfMassStart.GetTranslation(out);
+		return (start : helix.math.Vector3).addScaled(mDirection, inFraction, start);
 	}
 }

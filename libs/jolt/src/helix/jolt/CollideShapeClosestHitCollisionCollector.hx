@@ -8,13 +8,36 @@ class CollideShapeClosestHitCollisionCollector extends CollideShapeCollector {
 	/** Creates an empty collector. */
 	public function new() {
 		super();
-		throw "not built yet";
+		mHit = new CollideShapeResult();
 	}
 
 	/** Returns whether the query hit anything.
 
 		@return  True when `mHit` holds a hit. */
 	public function HadHit():Bool {
-		throw "not built yet";
+		return hadHit;
+	}
+
+	var hadHit = false;
+	var hit = new CollideShapeResult();
+
+	override function kind():Int {
+		return 1;
+	}
+
+	override public function Reset():Void {
+		hadHit = false;
+	}
+
+	override function take(base:Int, count:Int):Void {
+		if (count == 0)
+			return;
+		CollideShapeCollector.read(hit, base, 0);
+		if (!hadHit || hit.mPenetrationDepth > mHit.mPenetrationDepth) {
+			var kept = mHit;
+			mHit = hit;
+			hit = kept;
+			hadHit = true;
+		}
 	}
 }

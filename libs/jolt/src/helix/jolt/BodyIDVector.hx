@@ -5,14 +5,15 @@ package helix.jolt;
 class BodyIDVector {
 	/** Creates an empty list. */
 	public function new() {
-		throw "not built yet";
+		ids = [];
+		count = 0;
 	}
 
 	/** Returns the number of ids.
 
 		@return  The count. */
 	public function size():Int {
-		throw "not built yet";
+		return count;
 	}
 
 	/** Returns an id.
@@ -20,18 +21,33 @@ class BodyIDVector {
 		@param inIndex  The id's index, 0 to `size() - 1`.
 		@return  The id. */
 	public function at(inIndex:Int):BodyID {
-		throw "not built yet";
+		return ids[inIndex];
 	}
 
 	/** Adds an id at the end.
 
 		@param inBodyID  The id. */
 	public function push_back(inBodyID:BodyID):Void {
-		throw "not built yet";
+		if (count < ids.length)
+			ids[count] = inBodyID;
+		else
+			ids.push(inBodyID);
+		count++;
 	}
 
 	/** Removes every id, keeping the memory. */
 	public function clear():Void {
-		throw "not built yet";
+		count = 0;
+	}
+
+	@:allow(helix.jolt) var ids:Array<BodyID>;
+	@:allow(helix.jolt) var count:Int;
+
+	/** Fills the list from the bulk buffer's first `length` ints. */
+	@:allow(helix.jolt) function readBulk(length:Int):Void {
+		var base = helix.jolt.internal.Io.bulk(length * 4);
+		count = 0;
+		for (n in 0...length)
+			push_back(new BodyID(helix.jolt.internal.Io.bulkI(base, n)));
 	}
 }

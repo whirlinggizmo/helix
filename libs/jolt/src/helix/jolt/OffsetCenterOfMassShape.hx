@@ -1,5 +1,7 @@
 package helix.jolt;
 
+import helix.jolt.internal.Hj;
+
 /** Represents another shape with its center of mass moved: a car's, low, so it doesn't roll. */
 class OffsetCenterOfMassShape extends Shape {
 	/** Creates the shape, holding the shape it changes.
@@ -8,6 +10,6 @@ class OffsetCenterOfMassShape extends Shape {
 		@param inOffset  How far the center of mass moves, in meters. */
 	public function new(inShape:Shape, inOffset:Vec3) {
 		super();
-		throw "not built yet";
+		register(Hj.shapeOffsetCenterOfMass(inShape.handle, inOffset.x, inOffset.y, inOffset.z));
 	}
 }

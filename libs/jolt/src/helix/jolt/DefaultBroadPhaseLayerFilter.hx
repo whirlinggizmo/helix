@@ -8,6 +8,7 @@ class DefaultBroadPhaseLayerFilter extends BroadPhaseLayerFilter {
 		@param inObjectLayer  The object layer. */
 	public function new(inObjectVsBroadPhaseLayerFilter:ObjectVsBroadPhaseLayerFilter, inObjectLayer:Int) {
 		super();
-		throw "not built yet";
+		kind = 1;
+		value = inObjectLayer;
 	}
 }

@@ -60,6 +60,7 @@ python3 tools/test_raylib_parity.py                 # helix-raylib against rayli
 python3 tools/format_source.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake each library's api/ after a doc comment changes (--check in the tests)
+python3 tools/gen_jolt.py                   # remake helix-jolt's files.xml and jolt.wasm after its C++ changes (Emscripten; --check in the tests)
 python3 tools/gen_raylib.py                 # remake helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and extras/*.hx after a section changes (--check in the tests)
 ```
 
@@ -134,6 +135,7 @@ helix-raylib does the same for a program built with that define.
 | `tools/format_source.py` | haxe-formatter over the libraries (`--check` only checks) |
 | `tools/gen_apidoc.py` | The API reference from the doc comments: each library's `api/` (committed) and `build/api` (`--check`) |
 | `tools/build_pages.py` | The GitHub Pages site in `build/site`: the API reference's HTML at `api/`. The pages workflow deploys it |
+| `tools/gen_jolt.py` | helix-jolt's files made from Jolt Physics: its vendored sources from the pinned release (`--vendor`), hxcpp's list of them (`vendor/jolt/files.xml`), and `wasm/jolt.wasm` built by Emscripten (`--check`: the sources and the list are current) |
 | `tools/gen_sizes.py` | Each library's and engine's web size ladder (`<directory>/tests/sizes`) against `docs/sizes.json` (`--write` remakes it and `docs/benchmarks.md`'s web sizes, `--check`), and with `--check` what each rung links against what its `@:adds` declares |
 | `tools/gen_speed.py` | helix-raylib's speed and size against raylib C, Godot, three.js (in a page and in Electron), Lime and helix-legacy on the same programs (`tools/speed/contenders`), when asked, never in CI: the contenders whose rows are stale, or `--all`; `--write` remakes `docs/speed.json`, `docs/benchmarks.md`'s speed tables and its charts, once the machine is quiet and the control steady |
 | `tools/gen_raylib.py` | helix-raylib's `Raylib.hx`, `Raymath.hx`, `Rlgl.hx` and the `extras` modules: forwards to each function of its sections (`engines/raylib/src/helix/raylib/modules`, read through `haxe -xml`), by section (`--check`) |

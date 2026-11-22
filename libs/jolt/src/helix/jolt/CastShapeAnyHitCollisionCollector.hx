@@ -8,13 +8,30 @@ class CastShapeAnyHitCollisionCollector extends CastShapeCollector {
 	/** Creates an empty collector. */
 	public function new() {
 		super();
-		throw "not built yet";
+		mHit = new ShapeCastResult();
 	}
 
 	/** Returns whether the query hit anything.
 
 		@return  True when `mHit` holds a hit. */
 	public function HadHit():Bool {
-		throw "not built yet";
+		return hadHit;
+	}
+
+	var hadHit = false;
+
+	override function kind():Int {
+		return 2;
+	}
+
+	override public function Reset():Void {
+		hadHit = false;
+	}
+
+	override function take(base:Int, count:Int):Void {
+		if (count == 0 || hadHit)
+			return;
+		CastShapeCollector.read(mHit, base, 0);
+		hadHit = true;
 	}
 }

@@ -1,5 +1,8 @@
 package helix.jolt;
 
+import helix.jolt.internal.Hj;
+import helix.jolt.internal.Io;
+
 /** Represents what a height field is built from: a square grid of heights, for terrain. The grid lies along x and z, a sample's place
 	being `mOffset + mScale * (x, height, z)`. */
 class HeightFieldShapeSettings extends ShapeSettings {
@@ -25,6 +28,21 @@ class HeightFieldShapeSettings extends ShapeSettings {
 	/** Creates the settings with no samples. */
 	public function new() {
 		super();
-		throw "not built yet";
+		mOffset = new Vec3();
+		mScale = new Vec3(1, 1, 1);
+	}
+
+	override function make():Int {
+		var count = mSampleCount * mSampleCount;
+		var base = Io.bulk(count * 4);
+		for (n in 0...count)
+			Io.setBulkF(base, n, n < mHeightSamples.length ? mHeightSamples[n] : HeightFieldShapeConstantValues.cNoCollisionValue);
+		Io.setF(0, mOffset.x);
+		Io.setF(1, mOffset.y);
+		Io.setF(2, mOffset.z);
+		Io.setF(3, mScale.x);
+		Io.setF(4, mScale.y);
+		Io.setF(5, mScale.z);
+		return Hj.shapeHeightField(mSampleCount, mBlockSize, mBitsPerSample, mUserData);
 	}
 }

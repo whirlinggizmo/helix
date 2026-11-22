@@ -38,6 +38,13 @@ def targets(web=False):
     for directory in sorted(p.parent for p in (ROOT/'libs/render/examples').glob('*/Main.hx')):
         found.append((f'render example {directory.name} js',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-cp','libs/render/examples','-main','Main','-js','build/check_types.js']))
         if not web:found.append((f'render example {directory.name} cpp',['-lib','helix-render','-cp',str(directory.relative_to(ROOT)),'-cp','libs/render/examples','-main','Main','-cpp','build/check_types-cpp']))
+    # helix-jolt whole, its tests and its examples, on both targets.
+    found.append(('jolt js',['-lib','helix-jolt','--macro',"include('helix.jolt')",'-js','build/check_types.js']))
+    if not web:found.append(('jolt cpp',['-lib','helix-jolt','--macro',"include('helix.jolt')",'-cpp','build/check_types-cpp']))
+    for directory,main in [(p.parent,'Main') for p in sorted((ROOT/'libs/jolt/examples').glob('*/Main.hx'))]+[(ROOT/'libs/jolt/tests','JoltTests')]:
+        name=f'jolt example {directory.name}' if main=='Main' else 'jolt tests'
+        found.append((f'{name} js',['-lib','helix-jolt','-cp',str(directory.relative_to(ROOT)),'-main',main,'-js','build/check_types.js']))
+        if not web:found.append((f'{name} cpp',['-lib','helix-jolt','-cp',str(directory.relative_to(ROOT)),'-main',main,'-cpp','build/check_types-cpp']))
     # helix-raylib whole, on both targets: its modules, internals and extras, which no entry point above reaches.
     found.append(('raylib js',['-lib','helix-raylib','--macro',"include('helix.raylib')",'-js','build/check_types.js']))
     if not web:found.append(('raylib cpp',['-lib','helix-raylib','--macro',"include('helix.raylib')",'-cpp','build/check_types-cpp']))

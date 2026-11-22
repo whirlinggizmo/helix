@@ -11,6 +11,6 @@ abstract SubShapeID(Int) {
 
 		@return  The value. */
 	public function GetValue():Int {
-		throw "not built yet";
+		return this;
 	}
 }

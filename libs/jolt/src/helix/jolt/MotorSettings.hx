@@ -19,6 +19,8 @@ class MotorSettings {
 
 	/** Creates a motor with no limit. */
 	public function new() {
-		throw "not built yet";
+		mSpringSettings = new SpringSettings();
+		mSpringSettings.mFrequency = 2;
+		mSpringSettings.mDamping = 1;
 	}
 }

@@ -7,6 +7,7 @@ class SpecifiedBroadPhaseLayerFilter extends BroadPhaseLayerFilter {
 		@param inBroadPhaseLayer  The broad phase layer. */
 	public function new(inBroadPhaseLayer:BroadPhaseLayer) {
 		super();
-		throw "not built yet";
+		kind = 2;
+		value = inBroadPhaseLayer.GetValue();
 	}
 }

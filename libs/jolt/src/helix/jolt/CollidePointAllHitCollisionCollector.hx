@@ -8,13 +8,29 @@ class CollidePointAllHitCollisionCollector extends CollidePointCollector {
 	/** Creates an empty collector. */
 	public function new() {
 		super();
-		throw "not built yet";
+		mHits = [];
 	}
 
 	/** Returns whether the query hit anything.
 
 		@return  True when `mHits` holds a hit. */
 	public function HadHit():Bool {
-		throw "not built yet";
+		return mHits.length > 0;
+	}
+
+	var spare:Array<CollidePointResult> = [];
+
+	override public function Reset():Void {
+		for (hit in mHits)
+			spare.push(hit);
+		mHits.resize(0);
+	}
+
+	override function take(base:Int, count:Int):Void {
+		for (n in 0...count) {
+			var hit = spare.length > 0 ? spare.pop() : new CollidePointResult();
+			CollidePointCollector.read(hit, base, n * 2);
+			mHits.push(hit);
+		}
 	}
 }

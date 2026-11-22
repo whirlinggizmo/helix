@@ -8,6 +8,7 @@ class DefaultObjectLayerFilter extends ObjectLayerFilter {
 		@param inObjectLayer  The object layer. */
 	public function new(inObjectLayerPairFilter:ObjectLayerPairFilter, inObjectLayer:Int) {
 		super();
-		throw "not built yet";
+		kind = 1;
+		value = inObjectLayer;
 	}
 }

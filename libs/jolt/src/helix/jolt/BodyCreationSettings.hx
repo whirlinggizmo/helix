@@ -1,5 +1,7 @@
 package helix.jolt;
 
+import helix.jolt.internal.Io;
+
 /** Represents what a body is made from: its shape, where it starts and how it moves. Read once by `BodyInterface.CreateBody`, and may
 	be changed and read again for another body.
 
@@ -87,20 +89,64 @@ class BodyCreationSettings {
 		@param inMotionType  Optional. How the body moves; defaults to `EMotionType_Dynamic`.
 		@param inObjectLayer  Optional. The object layer; defaults to 0. */
 	public function new(?inShape:Shape, ?inPosition:RVec3, ?inRotation:Quat, inMotionType:EMotionType = EMotionType_Dynamic, inObjectLayer = 0) {
-		throw "not built yet";
+		shape = inShape;
+		mPosition = inPosition == null ? new RVec3() : inPosition;
+		mRotation = inRotation == null ? Quat.sIdentity() : inRotation;
+		mLinearVelocity = new Vec3();
+		mAngularVelocity = new Vec3();
+		mMotionType = inMotionType;
+		mObjectLayer = inObjectLayer;
+		mMassPropertiesOverride = new MassProperties();
 	}
 
 	/** Returns the shape.
 
 		@return  The shape, or null if there is none. */
 	public function GetShape():Null<Shape> {
-		throw "not built yet";
+		return shape;
 	}
 
 	/** Sets the shape.
 
 		@param inShape  The shape. */
 	public function SetShape(inShape:Shape):Void {
-		throw "not built yet";
+		shape = inShape;
+	}
+
+	var shape:Null<Shape>;
+
+	/** Writes the settings into the shared areas, in hj_body_create's order. */
+	@:allow(helix.jolt) function write():Void {
+		Io.setF(0, mPosition.x);
+		Io.setF(1, mPosition.y);
+		Io.setF(2, mPosition.z);
+		Io.setF(3, mRotation.x);
+		Io.setF(4, mRotation.y);
+		Io.setF(5, mRotation.z);
+		Io.setF(6, mRotation.w);
+		Io.setF(7, mLinearVelocity.x);
+		Io.setF(8, mLinearVelocity.y);
+		Io.setF(9, mLinearVelocity.z);
+		Io.setF(10, mAngularVelocity.x);
+		Io.setF(11, mAngularVelocity.y);
+		Io.setF(12, mAngularVelocity.z);
+		Io.setF(13, mFriction);
+		Io.setF(14, mRestitution);
+		Io.setF(15, mLinearDamping);
+		Io.setF(16, mAngularDamping);
+		Io.setF(17, mMaxLinearVelocity);
+		Io.setF(18, mMaxAngularVelocity);
+		Io.setF(19, mGravityFactor);
+		Io.setF(20, mMassPropertiesOverride.mMass);
+		Io.setMat44(21, mMassPropertiesOverride.mInertia);
+		Io.setI(0, mUserData);
+		Io.setI(1, mObjectLayer);
+		Io.setI(2, cast mMotionType);
+		Io.setI(3, cast mAllowedDOFs);
+		Io.setI(4, mAllowDynamicOrKinematic ? 1 : 0);
+		Io.setI(5, mIsSensor ? 1 : 0);
+		Io.setI(6, cast mMotionQuality);
+		Io.setI(7, mAllowSleeping ? 1 : 0);
+		Io.setI(8, cast mOverrideMassProperties);
 	}
 }

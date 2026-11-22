@@ -17,6 +17,8 @@ class Float3 {
 		@param inY  The y component.
 		@param inZ  The z component. */
 	public function new(inX:Float, inY:Float, inZ:Float) {
-		throw "not built yet";
+		x = inX;
+		y = inY;
+		z = inZ;
 	}
 }

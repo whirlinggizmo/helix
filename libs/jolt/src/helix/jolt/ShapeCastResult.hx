@@ -11,6 +11,6 @@ class ShapeCastResult extends CollideShapeResult {
 	/** Creates an empty result. */
 	public function new() {
 		super();
-		throw "not built yet";
+		// The vectors are the collide shape result's.
 	}
 }

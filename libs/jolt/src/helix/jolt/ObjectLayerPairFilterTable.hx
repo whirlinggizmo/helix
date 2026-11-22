@@ -13,14 +13,15 @@ class ObjectLayerPairFilterTable extends ObjectLayerPairFilter {
 		@param inNumObjectLayers  The number of object layers. */
 	public function new(inNumObjectLayers:Int) {
 		super();
-		throw "not built yet";
+		numObjectLayers = inNumObjectLayers;
+		pairs = [for (_ in 0...inNumObjectLayers * inNumObjectLayers) false];
 	}
 
 	/** Returns the number of object layers.
 
 		@return  The count. */
 	public function GetNumObjectLayers():Int {
-		throw "not built yet";
+		return numObjectLayers;
 	}
 
 	/** Makes two object layers collide, each with the other.
@@ -28,7 +29,7 @@ class ObjectLayerPairFilterTable extends ObjectLayerPairFilter {
 		@param inLayer1  One layer.
 		@param inLayer2  The other layer, or the same one. */
 	public function EnableCollision(inLayer1:Int, inLayer2:Int):Void {
-		throw "not built yet";
+		set(inLayer1, inLayer2, true);
 	}
 
 	/** Makes two object layers pass through each other.
@@ -36,6 +37,13 @@ class ObjectLayerPairFilterTable extends ObjectLayerPairFilter {
 		@param inLayer1  One layer.
 		@param inLayer2  The other layer, or the same one. */
 	public function DisableCollision(inLayer1:Int, inLayer2:Int):Void {
-		throw "not built yet";
+		set(inLayer1, inLayer2, false);
+	}
+
+	function set(inLayer1:Int, inLayer2:Int, inCollide:Bool):Void {
+		if (inLayer1 < 0 || inLayer2 < 0 || inLayer1 >= numObjectLayers || inLayer2 >= numObjectLayers)
+			return;
+		pairs[inLayer1 * numObjectLayers + inLayer2] = inCollide;
+		pairs[inLayer2 * numObjectLayers + inLayer1] = inCollide;
 	}
 }

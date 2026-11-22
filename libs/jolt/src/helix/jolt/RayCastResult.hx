@@ -14,6 +14,7 @@ class RayCastResult {
 
 	/** Creates a result of no hit. */
 	public function new() {
-		throw "not built yet";
+		mBodyID = new BodyID();
+		mSubShapeID2 = new SubShapeID();
 	}
 }

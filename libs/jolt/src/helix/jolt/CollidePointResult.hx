@@ -10,6 +10,7 @@ class CollidePointResult {
 
 	/** Creates an empty result. */
 	public function new() {
-		throw "not built yet";
+		mBodyID = new BodyID();
+		mSubShapeID2 = new SubShapeID();
 	}
 }

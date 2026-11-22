@@ -131,14 +131,12 @@ speed where docs/benchmarks.md records them.
   its native half alone, as QUIC needs TLS 1.3, which hxcpp's TLS predates; WebSocket the fallback where a browser lacks it, WebRTC's data
   channels only for peer to peer. Later, and netcode above the transports (state kept in step, prediction and rollback, lobbies), with the
   user's vfstudio and vfcore for ideas.
-- **A C library through the C ABI, Box2D 3.x first (GOALS 5):** the pattern every C library follows, proved on one. A flat C file of the
-  library's calls shaped for bulk work (a step, poses read into a buffer the caller owns, events read the same way), compiled from its
-  pinned source into a native program by hxcpp, and built from the same source into a `.wasm` the library ships, fetched only by a
-  program that uses it (no C toolchain in a user's path, goal 6). One Haxe class over both, in Box2D's own names, the target chosen by
-  the compiler: a binding, not an adapter, with no interface until a second implementation exists (DECISIONS 53's rule). In a page it
-  loads as the assets do, natively at once. Its test runs one scene on Node and natively and checks the two agree. helix-legacy's
-  physics study measured the crossing: 32-byte poses read in bulk, 10 to 30 ns a body in a browser. Jolt follows behind a C file of
-  its own (no exceptions or RTTI). Work off the frame (a Web Worker in a page, a thread natively) waits for physics to need it.
+- **Box2D 3.x through the C ABI, as helix-jolt is (GOALS 5, DECISIONS 87):** Box2D's C behind a flat C file of numbers alone, compiled
+  into a native program by hxcpp and into a `.wasm` the library ships, one Haxe extern over both, in Box2D's own names, its test
+  checking the same steps make the same bits on Node and natively. Work off the frame (a Web Worker in a page, a thread natively)
+  waits for physics to need it.
+- **helix-jolt's next parts:** `CharacterVirtual`, then wheeled vehicles, then ragdolls and soft bodies, each in JoltPhysics.js's
+  names; physics materials and callback filters; `StateRecorder`, for rollback.
 - **Pathfinding, the binding's second library:** grid A* and flow fields in Haxe, for tile and top-down games; a navmesh for 3D
   through the binding, Recast building it from a level's geometry (ahead of time, or once at load) and Detour querying it (paths,
   raycasts, the nearest point, DetourCrowd steering many agents, their positions read back in bulk), C++ behind a C file of its own,

@@ -13,7 +13,8 @@ class RRayCast {
 		@param inOrigin  Optional. The origin; defaults to (0, 0, 0).
 		@param inDirection  Optional. The direction and reach; defaults to (0, 0, 0). */
 	public function new(?inOrigin:RVec3, ?inDirection:Vec3) {
-		throw "not built yet";
+		mOrigin = inOrigin == null ? new RVec3() : inOrigin;
+		mDirection = inDirection == null ? new Vec3() : inDirection;
 	}
 
 	/** Returns the point a fraction of the way along the ray, such as a hit's.
@@ -22,6 +23,6 @@ class RRayCast {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The point, in meters. */
 	public function GetPointOnRay(inFraction:Float, ?out:RVec3):RVec3 {
-		throw "not built yet";
+		return (mOrigin : helix.math.Vector3).addScaled(mDirection, inFraction, out == null ? new helix.math.Vector3() : out);
 	}
 }

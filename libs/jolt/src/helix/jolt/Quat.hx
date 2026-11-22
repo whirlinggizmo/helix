@@ -24,7 +24,7 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
 	public static function sIdentity(?out:Quat):Quat {
-		throw "not built yet";
+		return out == null ? new Quat(0, 0, 0, 1) : (out : Quaternion).set(0, 0, 0, 1);
 	}
 
 	/** Returns a rotation about an axis.
@@ -34,7 +34,7 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
 	public static function sRotation(inAxis:Vec3, inAngle:Float, ?out:Quat):Quat {
-		throw "not built yet";
+		return Quaternion.fromAxisAngle(inAxis.x, inAxis.y, inAxis.z, inAngle, out);
 	}
 
 	/** Returns the shortest rotation turning one direction onto another.
@@ -44,7 +44,7 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
 	public static function sFromTo(inFrom:Vec3, inTo:Vec3, ?out:Quat):Quat {
-		throw "not built yet";
+		return Quaternion.fromBetween(inFrom, inTo, out);
 	}
 
 	/** Returns the rotation of angles about x, then y, then z.
@@ -53,35 +53,35 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The quaternion to fill; a new one when omitted.
 		@return  The quaternion. */
 	public static function sEulerAngles(inInput:Vec3, ?out:Quat):Quat {
-		throw "not built yet";
+		return Quaternion.fromEuler(inInput.x, inInput.y, inInput.z, helix.math.EulerOrder.ZYX, out);
 	}
 
 	/** Returns the x component.
 
 		@return  The component. */
 	public function GetX():Float {
-		throw "not built yet";
+		return this.x;
 	}
 
 	/** Returns the y component.
 
 		@return  The component. */
 	public function GetY():Float {
-		throw "not built yet";
+		return this.y;
 	}
 
 	/** Returns the z component.
 
 		@return  The component. */
 	public function GetZ():Float {
-		throw "not built yet";
+		return this.z;
 	}
 
 	/** Returns the w component.
 
 		@return  The component. */
 	public function GetW():Float {
-		throw "not built yet";
+		return this.w;
 	}
 
 	/** Sets the four components.
@@ -91,7 +91,7 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param inZ  The z component.
 		@param inW  The w component. */
 	public function Set(inX:Float, inY:Float, inZ:Float, inW:Float):Void {
-		throw "not built yet";
+		this.set(inX, inY, inZ, inW);
 	}
 
 	/** Returns the angles about x, then y, then z, that make the rotation.
@@ -99,16 +99,16 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The angles, in radians. */
 	public function GetEulerAngles(?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.toEuler(helix.math.EulerOrder.ZYX, out);
 	}
 
-	/** Returns this rotation followed by another.
+	/** Returns another rotation followed by this one, as Jolt's `*` does.
 
 		@param inQ  The rotation applied first.
 		@param out  Optional. The quaternion to fill; a new one when omitted. It may be either quaternion.
 		@return  The product. */
 	public function MulQuat(inQ:Quat, ?out:Quat):Quat {
-		throw "not built yet";
+		return this.prepend(inQ, out);
 	}
 
 	/** Returns a vector turned by the rotation.
@@ -117,7 +117,7 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The vector to fill; a new one when omitted. It may be inV.
 		@return  The turned vector. */
 	public function MulVec3(inV:Vec3, ?out:Vec3):Vec3 {
-		throw "not built yet";
+		return this.transformPoint(inV.x, inV.y, inV.z, out);
 	}
 
 	/** Returns the rotation scaled to a length of 1.
@@ -125,7 +125,7 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The quaternion to fill; a new one when omitted. It may be this quaternion.
 		@return  The quaternion. */
 	public function Normalized(?out:Quat):Quat {
-		throw "not built yet";
+		return this.normalize(out);
 	}
 
 	/** Returns the opposite rotation.
@@ -133,7 +133,7 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The quaternion to fill; a new one when omitted. It may be this quaternion.
 		@return  The quaternion. */
 	public function Conjugated(?out:Quat):Quat {
-		throw "not built yet";
+		return this.invert(out);
 	}
 
 	/** Returns the rotation a fraction of the way to another, along the sphere.
@@ -143,6 +143,6 @@ abstract Quat(Quaternion) from Quaternion to Quaternion {
 		@param out  Optional. The quaternion to fill; a new one when omitted. It may be either quaternion.
 		@return  The rotation. */
 	public function SLERP(inDestination:Quat, inFraction:Float, ?out:Quat):Quat {
-		throw "not built yet";
+		return Quaternion.slerp(this, inDestination, inFraction, out);
 	}
 }

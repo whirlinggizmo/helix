@@ -1,5 +1,7 @@
 package helix.jolt;
 
+import helix.jolt.internal.Hj;
+
 /** Represents what a tapered capsule is built from: a capsule along y whose ends are spheres of different radii. */
 class TaperedCapsuleShapeSettings extends ConvexShapeSettings {
 	/** Gets or sets half the height between the ends' centers, in meters. */
@@ -18,6 +20,12 @@ class TaperedCapsuleShapeSettings extends ConvexShapeSettings {
 		@param inBottomRadius  The bottom end's radius, in meters. */
 	public function new(inHalfHeightOfTaperedCylinder:Float, inTopRadius:Float, inBottomRadius:Float) {
 		super();
-		throw "not built yet";
+		mHalfHeightOfTaperedCylinder = inHalfHeightOfTaperedCylinder;
+		mTopRadius = inTopRadius;
+		mBottomRadius = inBottomRadius;
+	}
+
+	override function make():Int {
+		return Hj.shapeTaperedCapsule(mHalfHeightOfTaperedCylinder, mTopRadius, mBottomRadius, mDensity, mUserData);
 	}
 }

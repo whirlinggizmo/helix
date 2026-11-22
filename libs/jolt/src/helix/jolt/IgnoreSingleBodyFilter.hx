@@ -7,6 +7,7 @@ class IgnoreSingleBodyFilter extends BodyFilter {
 		@param inBodyID  The body skipped. */
 	public function new(inBodyID:BodyID) {
 		super();
-		throw "not built yet";
+		kind = 1;
+		value = inBodyID.GetIndexAndSequenceNumber();
 	}
 }

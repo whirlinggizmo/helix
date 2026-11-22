@@ -33,7 +33,8 @@ def test(native,audio_device):
     """The adapter rule's check, the layers' check, the names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the
     API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/gen_sizes.py --check), the doc comments' check
     (tools/check_docs.py); each library's tests on the interpreter and Node, the shader compiler's on the interpreter, Trig's bits across
-    targets and Trig with -D helix-math-standard-trig, helix-raylib's tests on Node; and with native each library's tests, Trig's bits,
+    targets and Trig with -D helix-math-standard-trig, helix-jolt's tests on Node, helix-raylib's tests on Node; and with native each
+    library's tests, Trig's bits, helix-jolt's tests in hxcpp with their digests compared to Node's,
     Trig with the define and helix-raylib's tests in hxcpp, the
     vectors' allocation in hxcpp's C++, and the platform's C tests (SDL3's dummy audio driver)."""
     run([sys.executable,'tools/check_adapters.py'])
@@ -41,6 +42,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/check_names.py'])
     run([sys.executable,'tools/check_tools.py'])
     run([sys.executable,'tools/gen_raylib.py','--check'])
+    run([sys.executable,'tools/gen_jolt.py','--check'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/gen_sizes.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
@@ -64,6 +66,7 @@ def test(native,audio_device):
     value=result(['haxe','-lib','helix-services','-cp',pins.LIBRARIES['helix-services']/'tests','-main','ManifestTests','--interp'])
     print(f'ManifestTests: {value["checks"]} checks (interpreter)',flush=True)
     trig(native)
+    jolt_tests(native)
     raylib_tests(native)
     if native:
         vector_allocation()
@@ -202,6 +205,20 @@ def trig(native):
         sys.exit(f'helix.math.Trig differs between targets: {hashes}')
     print(f'Trig bits: the same on {", ".join(hashes)}: {next(iter(hashes.values()))}',flush=True)
     standard_trig(native)
+
+def jolt_tests(native):
+    """helix-jolt's tests (libs/jolt/tests' JoltTests) on Node, over the library's jolt.wasm, and with native in hxcpp, Jolt compiled into
+    the program; the digests of the scene's state at each stage the same on both, as the same steps make the same bits."""
+    args=['haxe','-lib','helix-jolt','-cp','libs/jolt/tests','-main','JoltTests',*named('JoltTests')]
+    run(args+['-js','build/tests/JoltTests.js','-dce','full'])
+    value=result(['node','build/tests/JoltTests.js'])
+    if native:
+        from native_build import ARCH
+        run(args+['-cpp','build/tests/JoltTests-cpp','-dce','full','-D','analyzer-optimize','-D',ARCH])
+        native_value=result([str(ROOT/'build/tests/JoltTests-cpp'/('JoltTests.exe' if sys.platform=='win32' else 'JoltTests'))])
+        if native_value['digest']!=value['digest']:
+            sys.exit(f'helix-jolt differs between targets: Node {value["digest"]}, hxcpp {native_value["digest"]}')
+    print(f'JoltTests: {value["checks"]} checks (Node{" and hxcpp" if native else ""}), digests {value["digest"]}',flush=True)
 
 def standard_trig(native):
     """-D helix-math-standard-trig: listed by the compiler for a build on helix-math, and with it Trig's functions the standard library's

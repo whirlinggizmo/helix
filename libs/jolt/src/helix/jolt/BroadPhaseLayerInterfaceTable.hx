@@ -14,7 +14,8 @@ class BroadPhaseLayerInterfaceTable extends BroadPhaseLayerInterface {
 		@param inNumBroadPhaseLayers  The number of broad phase layers. */
 	public function new(inNumObjectLayers:Int, inNumBroadPhaseLayers:Int) {
 		super();
-		throw "not built yet";
+		numBroadPhaseLayers = inNumBroadPhaseLayers;
+		map = [for (_ in 0...inNumObjectLayers) 0];
 	}
 
 	/** Puts an object layer in a broad phase layer.
@@ -22,6 +23,7 @@ class BroadPhaseLayerInterfaceTable extends BroadPhaseLayerInterface {
 		@param inObjectLayer  The object layer.
 		@param inBroadPhaseLayer  The broad phase layer. */
 	public function MapObjectToBroadPhaseLayer(inObjectLayer:Int, inBroadPhaseLayer:BroadPhaseLayer):Void {
-		throw "not built yet";
+		if (inObjectLayer >= 0 && inObjectLayer < map.length)
+			map[inObjectLayer] = inBroadPhaseLayer.GetValue();
 	}
 }

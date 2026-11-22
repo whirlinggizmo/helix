@@ -1,5 +1,7 @@
 package helix.jolt;
 
+import helix.jolt.internal.Io;
+
 /** Represents a constraint keeping two points of two bodies within a range of distances: a rope, a rod, a spring. */
 class DistanceConstraintSettings extends TwoBodyConstraintSettings<DistanceConstraint> {
 	/** Gets or sets the point on the first body, in meters. Defaults to (0, 0, 0). */
@@ -20,6 +22,29 @@ class DistanceConstraintSettings extends TwoBodyConstraintSettings<DistanceConst
 	/** Creates the settings. */
 	public function new() {
 		super();
-		throw "not built yet";
+		mPoint1 = new RVec3();
+		mPoint2 = new RVec3();
+		mLimitsSpringSettings = new SpringSettings();
+	}
+
+	override function write():Int {
+		super.write();
+		Io.setF(0, mPoint1.x);
+		Io.setF(1, mPoint1.y);
+		Io.setF(2, mPoint1.z);
+		Io.setF(3, mPoint2.x);
+		Io.setF(4, mPoint2.y);
+		Io.setF(5, mPoint2.z);
+		Io.setF(6, mMinDistance);
+		Io.setF(7, mMaxDistance);
+		Io.setI(2, cast mLimitsSpringSettings.mMode);
+		Io.setF(8, mLimitsSpringSettings.mFrequency);
+		Io.setF(9, mLimitsSpringSettings.mStiffness);
+		Io.setF(10, mLimitsSpringSettings.mDamping);
+		return 2;
+	}
+
+	override function make(world:Int, handle:Int):DistanceConstraint {
+		return new DistanceConstraint(world, handle);
 	}
 }

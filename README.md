@@ -14,6 +14,7 @@ HeliX is a suite of libraries and engines for Haxe game development.  It provide
 | [helix-geometry](libs/geometry/README.md) | Boxes, planes, spheres, cameras, frustums, rays, meshes in the usual shapes, and tests on segments, triangles and polygons | [API](https://whirlinggizmo.github.io/helix/api/helix/geometry/index.html) | helix-math |
 | [helix-tweens](libs/tweens/README.md) | Tweens: numbers, vectors, rotations and colors along easing curves, points along curves, sequences, repeats and callbacks | [API](https://whirlinggizmo.github.io/helix/api/helix/tweens/index.html) | helix-math |
 | [helix-log](libs/log/README.md) | Levels and tags, to the browser's console or the process's output | [API](https://whirlinggizmo.github.io/helix/api/helix/log/index.html) |  |
+| [helix-jolt](libs/jolt/README.md) | Jolt Physics with JoltPhysics.js's API: rigid bodies, shapes, queries, contact events and constraints, natively and in a page, deterministic across both | [API](https://whirlinggizmo.github.io/helix/api/helix/jolt/index.html) | helix-math |
 | [helix-formats](libs/formats/README.md) | File formats read into plain data: glTF 2.0 and GLB models, BMFont text fonts, TrueType and OpenType font tables | [API](https://whirlinggizmo.github.io/helix/api/helix/formats/index.html) | helix-math |
 | [helix-platform](libs/platform/README.md) | Provides access to hardware and OS functions via adapters and interfaces | [API](https://whirlinggizmo.github.io/helix/api/helix/platform/index.html) | helix-formats, helix-geometry, helix-math |
 | [helix-services](libs/services/README.md) | Time, input, assets, audio, images, models, fonts, the screen, screenshots, shaders, saves and config over the platform | [API](https://whirlinggizmo.github.io/helix/api/helix/services/index.html) | helix-platform, helix-formats, helix-geometry, helix-math, helix-log |
@@ -30,7 +31,7 @@ HeliX is a suite of libraries and engines for Haxe game development.  It provide
 The libraries aren't published yet, so point haxelib at the checkout once:
 
 ```console
-for lib in platform math geometry tweens formats log services render; do haxelib dev helix-$lib <checkout>/libs/$lib; done
+for lib in platform math geometry tweens formats log jolt services render; do haxelib dev helix-$lib <checkout>/libs/$lib; done
 haxelib dev helix-raylib <checkout>/engines/raylib
 ```
 

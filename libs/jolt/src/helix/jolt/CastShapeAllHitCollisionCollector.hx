@@ -8,18 +8,34 @@ class CastShapeAllHitCollisionCollector extends CastShapeCollector {
 	/** Creates an empty collector. */
 	public function new() {
 		super();
-		throw "not built yet";
+		mHits = [];
 	}
 
 	/** Returns whether the query hit anything.
 
 		@return  True when `mHits` holds a hit. */
 	public function HadHit():Bool {
-		throw "not built yet";
+		return mHits.length > 0;
 	}
 
 	/** Sorts the hits, nearest first. */
 	public function Sort():Void {
-		throw "not built yet";
+		mHits.sort((a, b) -> a.mFraction < b.mFraction ? -1 : a.mFraction > b.mFraction ? 1 : 0);
+	}
+
+	var spare:Array<ShapeCastResult> = [];
+
+	override public function Reset():Void {
+		for (hit in mHits)
+			spare.push(hit);
+		mHits.resize(0);
+	}
+
+	override function take(base:Int, count:Int):Void {
+		for (n in 0...count) {
+			var hit = spare.length > 0 ? spare.pop() : new ShapeCastResult();
+			CastShapeCollector.read(hit, base, n * 15);
+			mHits.push(hit);
+		}
 	}
 }

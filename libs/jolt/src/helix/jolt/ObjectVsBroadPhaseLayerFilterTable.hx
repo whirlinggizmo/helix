@@ -12,6 +12,7 @@ class ObjectVsBroadPhaseLayerFilterTable extends ObjectVsBroadPhaseLayerFilter {
 	public function new(inBroadPhaseLayerInterface:BroadPhaseLayerInterfaceTable, inNumBroadPhaseLayers:Int,
 			inObjectLayerPairFilter:ObjectLayerPairFilterTable, inNumObjectLayers:Int) {
 		super();
-		throw "not built yet";
+		broadPhaseLayers = inBroadPhaseLayerInterface;
+		objectPairs = inObjectLayerPairFilter;
 	}
 }
