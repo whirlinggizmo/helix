@@ -224,33 +224,27 @@ int helix_can_sample(int format){sg_pixel_format f=format_of(format);if(f==SG_PI
  return info.sample&&(format!=4||info.filter);}
 /* The bytes of a w x h level (a face's, for a cube) of format: 4 a texel, 8 for half floats, or 4x4 blocks of 16. */
 static size_t level_bytes(int format,int w,int h){return format==0?(size_t)w*(size_t)h*4:format==4?(size_t)w*(size_t)h*8:(size_t)((w+3)/4)*(size_t)((h+3)/4)*16;}
+/* The most mip levels a texture has: sokol's own limit, no longer in its public API. */
+#define MAX_LEVELS 16
 /* levels mip levels of format, each half the last (at least 1), packed one after another in data. */
 uint32_t helix_texture(int w,int h,const void *data,int bytes,int levels,int format){
- if(w<=0||h<=0||w>16384||h>16384||!data||levels<1||levels>SG_MAX_MIPMAPS||!helix_can_sample(format))return 0;
- sg_image_desc desc={.width=w,.height=h,.num_mipmaps=levels,.pixel_format=format_of(format)};
+ if(w<=0||h<=0||w>16384||h>16384||!data||levels<1||levels>MAX_LEVELS||!helix_can_sample(format))return 0;
  size_t offset=0;int lw=w,lh=h;
- for(int i=0;i<levels;i++){
-  const size_t size=level_bytes(format,lw,lh);
-  desc.data.mip_levels[i]=(sg_range){(const char *)data+offset,size};offset+=size;
-  lw=lw>1?lw/2:1;lh=lh>1?lh/2:1;
- }
+ for(int i=0;i<levels;i++){offset+=level_bytes(format,lw,lh);lw=lw>1?lw/2:1;lh=lh>1?lh/2:1;}
  if(offset!=(size_t)bytes)return 0;
- sg_image image=sg_make_image(&desc);
+ sg_image image=sg_make_image(&(sg_image_desc){.width=w,.height=h,.num_mipmaps=levels,.pixel_format=format_of(format),.data={data,offset}});
  if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID)return 0;
  return held_handle(TEXTURE_IDS,sg_make_view(&(sg_view_desc){.texture.image=image}).id,(double)bytes);
 }
 /* A cube of size, levels mip levels of format, each its six faces (+X, -X, +Y, -Y, +Z, -Z) one after another, the levels packed one after
    another in data. */
 uint32_t helix_cube_texture(int size,const void *data,int bytes,int levels,int format){
- if(size<=0||size>16384||!data||levels<1||levels>SG_MAX_MIPMAPS||!helix_can_sample(format))return 0;
- sg_image_desc desc={.type=SG_IMAGETYPE_CUBE,.width=size,.height=size,.num_mipmaps=levels,.pixel_format=format_of(format)};
+ if(size<=0||size>16384||!data||levels<1||levels>MAX_LEVELS||!helix_can_sample(format))return 0;
  size_t offset=0;int s=size;
- for(int i=0;i<levels;i++){
-  const size_t level=6*level_bytes(format,s,s);
-  desc.data.mip_levels[i]=(sg_range){(const char *)data+offset,level};offset+=level;s=s>1?s/2:1;
- }
+ for(int i=0;i<levels;i++){offset+=6*level_bytes(format,s,s);s=s>1?s/2:1;}
  if(offset!=(size_t)bytes)return 0;
- sg_image image=sg_make_image(&desc);
+ sg_image image=sg_make_image(&(sg_image_desc){.type=SG_IMAGETYPE_CUBE,.width=size,.height=size,.num_mipmaps=levels,.pixel_format=format_of(format),
+  .data={data,offset}});
  if(sg_query_image_state(image)!=SG_RESOURCESTATE_VALID)return 0;
  return held_handle(TEXTURE_IDS,sg_make_view(&(sg_view_desc){.texture.image=image}).id,(double)bytes);
 }

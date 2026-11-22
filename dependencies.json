@@ -4,11 +4,11 @@
   "formatter": "1.18.0",
   "dox": "1.6.0",
   "sokol": {
-    "revision": "c237609b19a5f95b9ca3c06473cf056ba5d9524e",
+    "revision": "59b5c0b215ff4f2ee36b089d73e4159200852f91",
     "fork": "https://github.com/whirlinggizmo/sokol (the Whirling Gizmo fork)",
-    "upstream": "https://github.com/floooh/sokol 5e94d129",
+    "upstream": "https://github.com/floooh/sokol 09558a10",
     "headers": {
-      "libs/platform/vendor/sokol/sokol_gfx.h": "478679b767f811cb9208e334225f23c8adc65556f2e1b757a68a8f9c79b94e47",
+      "libs/platform/vendor/sokol/sokol_gfx.h": "8570d57dda73508c79b1d3d613e843901c62af9e87d05dff044377475e8cd0ff",
       "libs/platform/vendor/sokol/sokol_log.h": "a8d55de21694410740e752ea8e57c4103d5951d20339ba9712e24232adef9a42"
     }
   },
