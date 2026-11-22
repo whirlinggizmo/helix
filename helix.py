@@ -31,10 +31,10 @@ def result(args,**kw):
 
 def test(native,audio_device):
     """The adapter rule's check, the layers' check, the names' check (tools/check_names.py), the tools' check (tools/check_tools.py), the
-    API reference's check (tools/gen_apidoc.py --check), the size ladder's check (tools/gen_sizes.py --check), the doc comments' check
+    API reference's check (tools/gen_apidoc.py --check), the generated files' checks (gen_raylib, gen_jolt, gen_box2d), the size ladder's check (tools/gen_sizes.py --check), the doc comments' check
     (tools/check_docs.py); each library's tests on the interpreter and Node, the shader compiler's on the interpreter, Trig's bits across
-    targets and Trig with -D helix-math-standard-trig, helix-jolt's tests on Node, helix-raylib's tests on Node; and with native each
-    library's tests, Trig's bits, helix-jolt's tests in hxcpp with their digests compared to Node's,
+    targets and Trig with -D helix-math-standard-trig, helix-jolt's and helix-box2d's tests on Node, helix-raylib's tests on Node; and with
+    native each library's tests, Trig's bits, helix-jolt's and helix-box2d's tests in hxcpp with their digests compared to Node's,
     Trig with the define and helix-raylib's tests in hxcpp, the
     vectors' allocation in hxcpp's C++, and the platform's C tests (SDL3's dummy audio driver)."""
     run([sys.executable,'tools/check_adapters.py'])
@@ -43,6 +43,7 @@ def test(native,audio_device):
     run([sys.executable,'tools/check_tools.py'])
     run([sys.executable,'tools/gen_raylib.py','--check'])
     run([sys.executable,'tools/gen_jolt.py','--check'])
+    run([sys.executable,'tools/gen_box2d.py','--check'])
     run([sys.executable,'tools/gen_apidoc.py','--check'])
     run([sys.executable,'tools/gen_sizes.py','--check'])
     run([sys.executable,'tools/check_docs.py'])
@@ -67,6 +68,7 @@ def test(native,audio_device):
     print(f'ManifestTests: {value["checks"]} checks (interpreter)',flush=True)
     trig(native)
     jolt_tests(native)
+    box2d_tests(native)
     raylib_tests(native)
     if native:
         vector_allocation()
@@ -219,6 +221,20 @@ def jolt_tests(native):
         if native_value['digest']!=value['digest']:
             sys.exit(f'helix-jolt differs between targets: Node {value["digest"]}, hxcpp {native_value["digest"]}')
     print(f'JoltTests: {value["checks"]} checks (Node{" and hxcpp" if native else ""}), digests {value["digest"]}',flush=True)
+
+def box2d_tests(native):
+    """helix-box2d's tests (libs/box2d/tests' Box2DTests) on Node, over the library's box2d.wasm, and with native in hxcpp, Box2D compiled into
+    the program; the digests of the scene's state at each stage the same on both, as the same steps make the same bits."""
+    args=['haxe','-lib','helix-box2d','-cp','libs/box2d/tests','-main','Box2DTests',*named('Box2DTests')]
+    run(args+['-js','build/tests/Box2DTests.js','-dce','full'])
+    value=result(['node','build/tests/Box2DTests.js'])
+    if native:
+        from native_build import ARCH
+        run(args+['-cpp','build/tests/Box2DTests-cpp','-dce','full','-D','analyzer-optimize','-D',ARCH])
+        native_value=result([str(ROOT/'build/tests/Box2DTests-cpp'/('Box2DTests.exe' if sys.platform=='win32' else 'Box2DTests'))])
+        if native_value['digest']!=value['digest']:
+            sys.exit(f'helix-box2d differs between targets: Node {value["digest"]}, hxcpp {native_value["digest"]}')
+    print(f'Box2DTests: {value["checks"]} checks (Node{" and hxcpp" if native else ""}), digests {value["digest"]}',flush=True)
 
 def standard_trig(native):
     """-D helix-math-standard-trig: listed by the compiler for a build on helix-math, and with it Trig's functions the standard library's

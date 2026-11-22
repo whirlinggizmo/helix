@@ -32,3 +32,6 @@ engines/raylib/examples/**/web/assets/*.shader
 libs/jolt/examples/*/native/
 libs/jolt/examples/*/main.js
 libs/jolt/examples/*/jolt.wasm
+libs/box2d/examples/*/native/
+libs/box2d/examples/*/main.js
+libs/box2d/examples/*/box2d.wasm

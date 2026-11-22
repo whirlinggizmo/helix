@@ -13,6 +13,10 @@ class B2Transform {
 		@param p  Optional. The translation. A zero vector when omitted.
 		@param q  Optional. The rotation. When omitted, the rotation that turns nothing (`b2Rot_identity`). */
 	public function new(?p:B2Vec2, ?q:B2Rot) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2Transform(this);
+		if (p != null)
+			this.p = p;
+		if (q != null)
+			this.q = q;
 	}
 }

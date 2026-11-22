@@ -13,6 +13,8 @@ class B2Rot {
 		@param c  Optional. The cosine; 1 when omitted.
 		@param s  Optional. The sine; 0 when omitted. Both omitted, the rotation turns nothing. */
 	public function new(c = 1., s = 0.) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2Rot(this);
+		this.c = c;
+		this.s = s;
 	}
 }

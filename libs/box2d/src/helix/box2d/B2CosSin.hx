@@ -13,6 +13,8 @@ class B2CosSin {
 		@param cosine  Optional. The cosine. Zero when omitted.
 		@param sine  Optional. The sine. Zero when omitted. */
 	public function new(cosine = 0., sine = 0.) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2CosSin(this);
+		this.cosine = cosine;
+		this.sine = sine;
 	}
 }

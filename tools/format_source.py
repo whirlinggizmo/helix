@@ -1,7 +1,8 @@
 """Lay out the libraries' Haxe source with haxe-formatter (docs/CONVENTIONS.md), or --check that it is laid out.
 
 The formatter is pinned in dependencies.json and installed into the repository's own haxelib (build/haxelib), as hxcpp is.
-hxformat.json holds only what differs from the pinned version's defaults: the files left alone (build output). Laying out runs the formatter
+hxformat.json holds only what differs from the pinned version's defaults: the files left alone (build output, and the Haxe
+tools/gen_box2d.py writes, which its --check keeps exact). Laying out runs the formatter
 until its own check passes, as it lays some code out again on a second pass."""
 import argparse
 import json

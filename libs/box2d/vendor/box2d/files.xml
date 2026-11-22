@@ -1,0 +1,60 @@
+<xml>
+<!-- Written by tools/gen_box2d.py. -->
+<files id='helix-box2d' dir='${HELIX_BOX2D}/vendor/box2d/src'>
+  <compilerflag value='-I${HELIX_BOX2D}/vendor/box2d/include'/>
+  <compilerflag value='-I${HELIX_BOX2D}/src/helix/box2d/internal'/>
+  <compilerflag value='-DNDEBUG'/>
+  <compilerflag value='-std=gnu17' unless='windows'/>
+  <compilerflag value='/std:c17' if='windows'/>
+  <compilerflag value='/experimental:c11atomics' if='windows'/>
+  <compilerflag value='-ffp-contract=off' unless='windows'/>
+  <compilerflag value='/fp:precise' if='windows'/>
+  <compilerflag value='-O2' unless='debug'/>
+  <depend name='${HELIX_BOX2D}/vendor/box2d/include/box2d/base.h'/>
+  <file name='aabb.c'/>
+  <file name='arena_allocator.c'/>
+  <file name='bitset.c'/>
+  <file name='body.c'/>
+  <file name='broad_phase.c'/>
+  <file name='constraint_graph.c'/>
+  <file name='contact.c'/>
+  <file name='contact_solver.c'/>
+  <file name='contact_solver_w4.c'/>
+  <file name='contact_solver_w8.c'/>
+  <file name='core.c'/>
+  <file name='distance.c'/>
+  <file name='distance_joint.c'/>
+  <file name='dynamic_tree.c'/>
+  <file name='geometry.c'/>
+  <file name='hull.c'/>
+  <file name='id_pool.c'/>
+  <file name='island.c'/>
+  <file name='joint.c'/>
+  <file name='manifold.c'/>
+  <file name='math_functions.c'/>
+  <file name='motor_joint.c'/>
+  <file name='mover.c'/>
+  <file name='mover_joint.c'/>
+  <file name='parallel_for.c'/>
+  <file name='physics_world.c'/>
+  <file name='pogo_joint.c'/>
+  <file name='prismatic_joint.c'/>
+  <file name='recording.c'/>
+  <file name='replay.c'/>
+  <file name='revolute_joint.c'/>
+  <file name='scheduler.c'/>
+  <file name='sensor.c'/>
+  <file name='shape.c'/>
+  <file name='simd.c'/>
+  <file name='snapshot.c'/>
+  <file name='solver.c'/>
+  <file name='solver_set.c'/>
+  <file name='table.c'/>
+  <file name='timer.c'/>
+  <file name='types.c'/>
+  <file name='weld_joint.c'/>
+  <file name='wheel_joint.c'/>
+  <file name='../../../src/helix/box2d/internal/hb.c'/>
+  <file name='../../../src/helix/box2d/internal/hb_io.c'/>
+</files>
+</xml>

@@ -2103,6 +2103,8 @@ Box2D's types are Haxe types named as Box2D names them with a capital first lett
 
 A def from its `b2Default` function, or from its constructor, holds Box2D's defaults, with the structs it holds already made (`def.base.localFrameA.p`, `shapeDef.material.friction`), so their fields are set directly. An `out` is filled in place, and an array a call fills reuses the elements it holds and grows as needed, so a step's reads allocate nothing when each is passed the same one.
 
+A callback is a Haxe function. The ids, vectors and structs it receives are reused from one call to the next, so it copies one it keeps. Natively, a callback Box2D calls during a step (a filter, pre-solve, friction or restitution) may run on one of Box2D's threads when the world has more than one worker.
+
 ```haxe
 static function loadAsync(loaded:() -> Void, ?failed:String -> Void, ?wasmUrl:String):Void
 static inline var B2_AABB_MARGIN_FRACTION:Float

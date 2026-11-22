@@ -37,6 +37,6 @@ class B2JointDef {
 
 	/** Creates one holding the base values that every joint's default definition starts from, as `b2DefaultDistanceJointDef()` and the other default functions set in their `base`. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2JointDef(this);
 	}
 }

@@ -17,6 +17,9 @@ class B2Version {
 		@param minor  Optional. Incremental changes.
 		@param revision  Optional. Bug fixes. */
 	public function new(major = 0, minor = 0, revision = 0) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2Version(this);
+		this.major = major;
+		this.minor = minor;
+		this.revision = revision;
 	}
 }

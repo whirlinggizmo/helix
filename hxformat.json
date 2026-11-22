@@ -3,6 +3,7 @@
 		"\\.haxelib",
 		"\\.git",
 		"node_modules",
-		"build/"
+		"build/",
+		"libs/box2d/src/helix/box2d/internal/(Calls|Init|Dispatch|Hb)\\.hx"
 	]
 }

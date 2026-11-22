@@ -34,6 +34,7 @@ class B2ChainDef {
 
 	/** Creates one holding Box2D's defaults, as `b2DefaultChainDef()` returns. The structs it holds are made with it. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2ChainDef(this);
+		helix.box2d.internal.Calls.b2DefaultChainDef(this);
 	}
 }

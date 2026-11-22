@@ -17,6 +17,11 @@ class B2RayCastInput {
 		@param translation  Optional. Translation of the ray cast.
 		@param maxFraction  Optional. The maximum fraction of the translation to consider, typically 1. */
 	public function new(?origin:B2Vec2, ?translation:B2Vec2, maxFraction = 0.) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2RayCastInput(this);
+		if (origin != null)
+			this.origin = origin;
+		if (translation != null)
+			this.translation = translation;
+		this.maxFraction = maxFraction;
 	}
 }

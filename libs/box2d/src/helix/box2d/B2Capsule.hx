@@ -17,6 +17,11 @@ class B2Capsule {
 		@param center2  Optional. Local center of the second semicircle.
 		@param radius  Optional. The radius of the semicircles. */
 	public function new(?center1:B2Vec2, ?center2:B2Vec2, radius = 0.) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2Capsule(this);
+		if (center1 != null)
+			this.center1 = center1;
+		if (center2 != null)
+			this.center2 = center2;
+		this.radius = radius;
 	}
 }

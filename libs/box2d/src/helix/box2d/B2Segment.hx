@@ -13,6 +13,10 @@ class B2Segment {
 		@param point1  Optional. The first point.
 		@param point2  Optional. The second point. */
 	public function new(?point1:B2Vec2, ?point2:B2Vec2) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2Segment(this);
+		if (point1 != null)
+			this.point1 = point1;
+		if (point2 != null)
+			this.point2 = point2;
 	}
 }

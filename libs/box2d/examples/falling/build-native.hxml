@@ -1,0 +1,8 @@
+# The falling box natively: haxe build-native.hxml -> native/Main; hxcpp compiles Box2D and helix-box2d's C with it.
+-lib helix-box2d
+-D helix-company=helix
+-D helix-product=box2d-falling
+-cp .
+-main Main
+-dce full
+-cpp native

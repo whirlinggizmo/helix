@@ -1355,13 +1355,22 @@ Why things are the way they are, numbered, in order.
     joints, the character mover's planes, recording and replay) and the parts a program doesn't call (the dynamic tree, the
     allocator, assert and task hooks), and it keeps snapshots and the state hash.
 
-    Underneath, it is to be built as helix-jolt is (87): Box2D vendored unchanged, a flat C file passing numbers alone, compiled into
-    a native program by hxcpp and into a `.wasm` the library ships, one Haxe extern over both, its test checking the same steps make
-    the same bits in Node and natively. Box2D's own description of its API (`api/box2d_api.json`) lists every function the draft
-    declares, so a tool can check the draft against it.
+    Underneath, it is built as helix-jolt is (87): Box2D vendored unchanged (`tools/gen_box2d.py`), and a C function of numbers alone
+    for each of Box2D's, compiled into a native program by hxcpp and into `box2d.wasm`, one Haxe extern over both. Unlike Jolt's, the
+    calls are generated, C and Haxe both, from Box2D's own description of its API (`api/box2d_api.json`): ids, vectors and numbers
+    pass as arguments, and structs, arrays and strings as 32-bit words through one buffer that grows. A callback reaches Haxe through
+    a trampoline, an import of the module in a page and a function pointer natively, its functions held in a slot whose number crosses
+    as Box2D's context. User data stays on the Haxe side, kept by id, as a Haxe value can't cross into the module. The test checks
+    the same steps make the same bits in Node and natively, and natively on four of Box2D's threads as on one.
 
     Why: Box2D's C API is already ids and plain structs, and the one agents and developers know, with Box2D's manual and samples
-    written in it. Box2D is cross-platform deterministic since 3.1, and the same at any thread count.
+    written in it. Box2D is cross-platform deterministic since 3.1, and the same at any thread count. Generating the calls keeps 509
+    functions in step with Box2D's description, and the next release's.
+
+    What it costs: the module is 316 KB, 121 KB gzipped, and runs one worker, as it has no threads. A struct crosses as words both
+    ways, so a call returning one copies it. A program on helix-box2d builds without hxcpp's `-std=gnu99`
+    (`extraParams.hxml`'s `-D HXCPP_NO_GNU99`), as Box2D is C17. Natively a callback may run on one of Box2D's threads, which joins
+    hxcpp's collector for the call.
 
     Rejected: box2d3-wasm's JavaScript names (Birch-san's binding of 3.1), which fewer know and which lag Box2D's releases. A
     Haxe-shaped object API (`world.createBody`), which nobody already knows.

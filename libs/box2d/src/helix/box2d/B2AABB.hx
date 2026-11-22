@@ -13,6 +13,10 @@ class B2AABB {
 		@param lowerBound  Optional. The lower corner. A zero vector when omitted.
 		@param upperBound  Optional. The upper corner. A zero vector when omitted. */
 	public function new(?lowerBound:B2Vec2, ?upperBound:B2Vec2) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2AABB(this);
+		if (lowerBound != null)
+			this.lowerBound = lowerBound;
+		if (upperBound != null)
+			this.upperBound = upperBound;
 	}
 }

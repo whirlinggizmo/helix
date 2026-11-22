@@ -99,6 +99,12 @@
     "source": "https://github.com/erincatto/box2d/tree/v3.2.0",
     "license": "MIT",
     "url": "https://github.com/erincatto/box2d/archive/refs/tags/v3.2.0.tar.gz",
-    "sha256": "ffec747b27a2267016f8d0240d658c82d187fb2271fa0f69fcbe53fbc067180d"
+    "sha256": "ffec747b27a2267016f8d0240d658c82d187fb2271fa0f69fcbe53fbc067180d",
+    "treeSha256": "e402bb156472f81c252d8e9c6ab26dabefc30b0e99665fb7a65481a69e26c028",
+    "vendored": {
+      "directory": "libs/box2d/vendor/box2d",
+      "files": "src/'s .c, .h and .inl files, include/box2d/'s headers, api/box2d_api.json and LICENSE",
+      "built": "natively with the program by hxcpp (files.xml), and into libs/box2d/wasm/box2d.wasm by Emscripten (tools/gen_box2d.py)"
+    }
   }
 }

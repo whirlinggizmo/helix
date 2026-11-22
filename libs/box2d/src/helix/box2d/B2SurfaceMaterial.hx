@@ -22,6 +22,7 @@ class B2SurfaceMaterial {
 
 	/** Creates one holding Box2D's defaults, as `b2DefaultSurfaceMaterial()` returns. The structs it holds are made with it. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2SurfaceMaterial(this);
+		helix.box2d.internal.Calls.b2DefaultSurfaceMaterial(this);
 	}
 }

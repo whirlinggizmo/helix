@@ -37,6 +37,7 @@ class B2RevoluteJointDef {
 
 	/** Creates one holding Box2D's defaults, as `b2DefaultRevoluteJointDef()` returns. The structs it holds are made with it. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2RevoluteJointDef(this);
+		helix.box2d.internal.Calls.b2DefaultRevoluteJointDef(this);
 	}
 }

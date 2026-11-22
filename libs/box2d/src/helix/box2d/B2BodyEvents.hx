@@ -10,6 +10,6 @@ class B2BodyEvents {
 
 	/** Creates one, its fields zero. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2BodyEvents(this);
 	}
 }

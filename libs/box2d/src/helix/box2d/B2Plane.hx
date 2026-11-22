@@ -13,6 +13,9 @@ class B2Plane {
 		@param normal  Optional. The unit normal. A zero vector when omitted.
 		@param offset  Optional. The offset. Zero when omitted. */
 	public function new(?normal:B2Vec2, offset = 0.) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2Plane(this);
+		if (normal != null)
+			this.normal = normal;
+		this.offset = offset;
 	}
 }

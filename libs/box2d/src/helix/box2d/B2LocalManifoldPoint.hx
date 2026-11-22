@@ -13,6 +13,6 @@ class B2LocalManifoldPoint {
 
 	/** Creates one, its fields zero. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2LocalManifoldPoint(this);
 	}
 }

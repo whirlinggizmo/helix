@@ -37,7 +37,11 @@ package helix.box2d;
 
 	A def from its `b2Default` function, or from its constructor, holds Box2D's defaults, with the structs it holds already made
 	(`def.base.localFrameA.p`, `shapeDef.material.friction`), so their fields are set directly. An `out` is filled in place, and an
-	array a call fills reuses the elements it holds and grows as needed, so a step's reads allocate nothing when each is passed the same one. */
+	array a call fills reuses the elements it holds and grows as needed, so a step's reads allocate nothing when each is passed the same one.
+
+	A callback is a Haxe function. The ids, vectors and structs it receives are reused from one call to the next, so it copies one it
+	keeps. Natively, a callback Box2D calls during a step (a filter, pre-solve, friction or restitution) may run on one of Box2D's
+	threads when the world has more than one worker. */
 class Box2D {
 	#if !macro
 	/** Asynchronously loads the module.
@@ -55,7 +59,72 @@ class Box2D {
 		@param failed  Optional. Receives why the module couldn't be loaded; when omitted, it is thrown.
 		@param wasmUrl  Optional. In a page, the module's URL; defaults to `box2d.wasm`. Ignored natively. */
 	public static function loadAsync(loaded:Void->Void, ?failed:String->Void, ?wasmUrl:String):Void {
-		throw "not built yet";
+		if (loaded_) {
+			loaded();
+			return;
+		}
+		#if js
+		var url = wasmUrl == null ? "box2d.wasm" : wasmUrl;
+		var instantiate = (bytes:js.lib.ArrayBuffer) -> {
+			var env:Dynamic = helix.box2d.internal.Dispatch.hooks();
+			env.emscripten_notify_memory_growth = (index:Int) -> {};
+			var imports = {
+				env: env,
+				wasi_snapshot_preview1: {
+					clock_time_get: (id:Int, precision:Dynamic, at:Int) -> {
+						js.Syntax.code("new DataView(helixBox2d.memory.buffer).setBigUint64({0}, 0n, true)", at);
+						return 0;
+					},
+					fd_write: (fd:Int, iovs:Int, count:Int, written:Int) -> 0,
+					fd_close: (fd:Int) -> 0,
+					fd_seek: (fd:Int, offset:Dynamic, whence:Int, at:Int) -> 0,
+					proc_exit: (code:Int) -> {}
+				}
+			};
+			js.lib.WebAssembly.instantiate(bytes, imports).then(result -> {
+				var exports:Dynamic = result.instance.exports;
+				js.Syntax.code("globalThis.helixBox2d = {0}", exports);
+				exports._initialize();
+				ready();
+				loaded();
+			}, error -> fail(failed, url + " couldn't be run: " + error));
+		};
+		if (js.Syntax.code("typeof process !== 'undefined' && process.versions != null && process.versions.node != null")) {
+			var bytes:Dynamic = null;
+			try {
+				bytes = js.Syntax.code("require('fs').readFileSync({0})", url);
+			} catch (error:Dynamic) {
+				fail(failed, url + " couldn't be read: " + error);
+				return;
+			}
+			instantiate(js.Syntax.code("{0}.buffer.slice({0}.byteOffset, {0}.byteOffset + {0}.byteLength)", bytes));
+		} else
+			js.Browser.window.fetch(url).then(response -> {
+				if (!response.ok)
+					fail(failed, url + " couldn't be fetched: " + response.status);
+				else
+					response.arrayBuffer().then(instantiate);
+			}, error -> fail(failed, url + " couldn't be fetched: " + error));
+		#else
+		helix.box2d.internal.Dispatch.hooks();
+		ready();
+		loaded();
+		#end
+	}
+
+	static var loaded_ = false;
+
+	/** Sends Box2D's log through Haxe, which prints it unless `b2SetLogCallback` set a function. */
+	static function ready():Void {
+		helix.box2d.internal.Hb.b2SetLogCallback(1);
+		loaded_ = true;
+	}
+
+	static function fail(failed:Null<String->Void>, message:String):Void {
+		if (failed != null)
+			failed(message);
+		else
+			throw message;
 	}
 
 	/** For small objects the margin is limited to this fraction times the maximum extent. */
@@ -134,16 +203,16 @@ class Box2D {
 
 		@param id  A world, body, shape, joint, chain or contact id.
 		@return  Whether it is null. */
-	public static function B2_IS_NULL(id:{index1:Int}):Bool {
-		throw "not built yet";
+	public static inline function B2_IS_NULL(id:{index1:Int}):Bool {
+		return id.index1 == 0;
 	}
 
 	/** Whether an id isn't null.
 
 		@param id  A world, body, shape, joint, chain or contact id.
 		@return  Whether it isn't null. */
-	public static function B2_IS_NON_NULL(id:{index1:Int}):Bool {
-		throw "not built yet";
+	public static inline function B2_IS_NON_NULL(id:{index1:Int}):Bool {
+		return id.index1 != 0;
 	}
 
 	/** Whether two ids of one kind are the same.
@@ -151,8 +220,8 @@ class Box2D {
 		@param id1  An id.
 		@param id2  Another id of the same kind.
 		@return  Whether they are the same. */
-	public static function B2_ID_EQUALS(id1:{index1:Int, world0:Int, generation:Int}, id2:{index1:Int, world0:Int, generation:Int}):Bool {
-		throw "not built yet";
+	public static inline function B2_ID_EQUALS(id1:{index1:Int, world0:Int, generation:Int}, id2:{index1:Int, world0:Int, generation:Int}):Bool {
+		return id1.index1 == id2.index1 && id1.world0 == id2.world0 && id1.generation == id2.generation;
 	}
 
 	/** A 2x2 matrix of zeros, new each time it is read. */
@@ -198,67 +267,67 @@ class Box2D {
 	public static var b2_nullContactId(get, never):B2ContactId;
 
 	static function get_B2_CONTACT_RECYCLE_DISTANCE():Float
-		throw "not built yet";
+		return 10 * get_B2_LINEAR_SLOP();
 
 	static function get_B2_DEFAULT_CATEGORY_BITS():haxe.Int64
-		throw "not built yet";
+		return haxe.Int64.make(0, 1);
 
 	static function get_B2_DEFAULT_MASK_BITS():haxe.Int64
-		throw "not built yet";
+		return haxe.Int64.make(-1, -1);
 
 	static function get_B2_HUGE():Float
-		throw "not built yet";
+		return 100000 * b2GetLengthUnitsPerMeter();
 
 	static function get_B2_LINEAR_SLOP():Float
-		throw "not built yet";
+		return 0.005 * b2GetLengthUnitsPerMeter();
 
 	static function get_B2_MAX_AABB_MARGIN():Float
-		throw "not built yet";
+		return 0.05 * b2GetLengthUnitsPerMeter();
 
 	static function get_B2_SPECULATIVE_DISTANCE():Float
-		throw "not built yet";
+		return 4 * get_B2_LINEAR_SLOP();
 
 	static function get_b2Mat22_zero():B2Mat22
-		throw "not built yet";
+		return new B2Mat22();
 
 	static function get_b2Pos_zero():B2Pos
-		throw "not built yet";
+		return new B2Vec2();
 
 	static function get_b2Rot_identity():B2Rot
-		throw "not built yet";
+		return new B2Rot();
 
 	static function get_b2Transform_identity():B2Transform
-		throw "not built yet";
+		return new B2Transform();
 
 	static function get_b2Vec2_zero():B2Vec2
-		throw "not built yet";
+		return new B2Vec2();
 
 	static function get_b2WorldTransform_identity():B2WorldTransform
-		throw "not built yet";
+		return new B2Transform();
 
 	static function get_b2_emptySimplexCache():B2SimplexCache
-		throw "not built yet";
+		return new B2SimplexCache();
 
 	static function get_b2_lengthUnitsPerMeter():Float
-		throw "not built yet";
+		return b2GetLengthUnitsPerMeter();
 
 	static function get_b2_nullWorldId():B2WorldId
-		throw "not built yet";
+		return new B2WorldId();
 
 	static function get_b2_nullBodyId():B2BodyId
-		throw "not built yet";
+		return new B2BodyId();
 
 	static function get_b2_nullShapeId():B2ShapeId
-		throw "not built yet";
+		return new B2ShapeId();
 
 	static function get_b2_nullChainId():B2ChainId
-		throw "not built yet";
+		return new B2ChainId();
 
 	static function get_b2_nullJointId():B2JointId
-		throw "not built yet";
+		return new B2JointId();
 
 	static function get_b2_nullContactId():B2ContactId
-		throw "not built yet";
+		return new B2ContactId();
 
 	/** The `B2BodyType` value b2_staticBody: Zero mass, zero velocity, may be manually moved. */
 	public static inline final b2_staticBody:B2BodyType = B2BodyType.b2_staticBody;
@@ -773,14 +842,14 @@ class Box2D {
 
 		@return  The allocated bytes. */
 	public static function b2GetByteCount():Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetByteCount();
 	}
 
 	/** Replaces the default function that receives Box2D's log messages.
 
 		@param logFcn  The function that receives each log message. Must not be null. */
 	public static function b2SetLogCallback(logFcn:B2LogCallbackFcn):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2SetLogCallback(logFcn);
 	}
 
 	/** Returns the version of Box2D.
@@ -788,21 +857,21 @@ class Box2D {
 		@param out  Optional. The `B2Version` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Version`, which is `out` when provided. */
 	public static function b2GetVersion(?out:B2Version):B2Version {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetVersion(out);
 	}
 
 	/** Returns whether the library was built with `BOX2D_DOUBLE_PRECISION` (large world mode).
 
 		@return  True when built with double precision. */
 	public static function b2IsDoublePrecision():Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsDoublePrecision();
 	}
 
 	/** Returns whether the current CPU has the AVX2 instruction set.
 
 		@return  True when AVX2 is available. */
 	public static function b2IsAVX2Available():Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsAVX2Available();
 	}
 
 	/** Returns the current system tick count.
@@ -811,7 +880,7 @@ class Box2D {
 
 		@return  The tick count. */
 	public static function b2GetTicks():haxe.Int64 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetTicks();
 	}
 
 	/** Returns the milliseconds that have passed since an earlier tick count.
@@ -819,7 +888,7 @@ class Box2D {
 		@param ticks  A tick count returned by `b2GetTicks`.
 		@return  The elapsed time, in milliseconds. */
 	public static function b2GetMilliseconds(ticks:haxe.Int64):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetMilliseconds(ticks);
 	}
 
 	/** Returns the milliseconds that have passed since an earlier tick count, and replaces that count with the current one.
@@ -827,7 +896,7 @@ class Box2D {
 		@param ticks  A one-element array holding a tick count returned by `b2GetTicks`. The call stores the current tick count at index 0.
 		@return  The elapsed time, in milliseconds. */
 	public static function b2GetMillisecondsAndReset(ticks:Array<haxe.Int64>):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetMillisecondsAndReset(ticks);
 	}
 
 	/** Returns the djb2 hash of bytes, for determinism testing.
@@ -839,7 +908,7 @@ class Box2D {
 		@param count  The number of bytes to hash.
 		@return  The hash, as an unsigned 32-bit value held in an `Int`. */
 	public static function b2Hash(hash:Int, data:haxe.io.Bytes, count:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Hash(hash, data, count);
 	}
 
 	// math_functions.h
@@ -849,7 +918,7 @@ class Box2D {
 		@param a  The number.
 		@return  False when the number is NaN or infinity. */
 	public static function b2IsValidFloat(a:Float):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidFloat(a);
 	}
 
 	/** Returns whether both components of a vector are finite.
@@ -857,7 +926,7 @@ class Box2D {
 		@param v  The vector.
 		@return  False when a component is NaN or infinity. */
 	public static function b2IsValidVec2(v:B2Vec2):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidVec2(v);
 	}
 
 	/** Returns whether a rotation is finite and normalized.
@@ -865,7 +934,7 @@ class Box2D {
 		@param q  The rotation.
 		@return  False when a component is NaN or infinity, or the rotation is not normalized. */
 	public static function b2IsValidRot(q:B2Rot):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidRot(q);
 	}
 
 	/** Returns whether a transform is finite and its rotation is normalized.
@@ -873,7 +942,7 @@ class Box2D {
 		@param t  The transform.
 		@return  False when a component is NaN or infinity, or the rotation is not normalized. */
 	public static function b2IsValidTransform(t:B2Transform):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidTransform(t);
 	}
 
 	/** Returns whether a bounding box is finite and its upper bound is not below its lower bound.
@@ -881,7 +950,7 @@ class Box2D {
 		@param aabb  The bounding box.
 		@return  False when a component is NaN or infinity, or the upper bound is below the lower bound in either axis. */
 	public static function b2IsValidAABB(aabb:B2AABB):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidAABB(aabb);
 	}
 
 	/** Returns whether a plane is finite and its normal is a unit vector.
@@ -889,7 +958,7 @@ class Box2D {
 		@param a  The plane.
 		@return  False when the plane's normal is not a unit vector, or a component is NaN or infinity. */
 	public static function b2IsValidPlane(a:B2Plane):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidPlane(a);
 	}
 
 	/** Returns whether a world position is finite.
@@ -897,7 +966,7 @@ class Box2D {
 		@param p  The world position.
 		@return  False when a component is NaN or infinity. */
 	public static function b2IsValidPos(p:B2Pos):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidPos(p);
 	}
 
 	/** Returns whether a world transform is finite and its rotation is normalized.
@@ -905,7 +974,7 @@ class Box2D {
 		@param t  The world transform.
 		@return  False when a component is NaN or infinity, or the rotation is not normalized. */
 	public static function b2IsValidWorldTransform(t:B2WorldTransform):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidWorldTransform(t);
 	}
 
 	/** Returns the smaller of two integers.
@@ -914,7 +983,7 @@ class Box2D {
 		@param b  The second integer.
 		@return  The smaller integer. */
 	public static function b2MinInt(a:Int, b:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MinInt(a, b);
 	}
 
 	/** Returns the larger of two integers.
@@ -923,7 +992,7 @@ class Box2D {
 		@param b  The second integer.
 		@return  The larger integer. */
 	public static function b2MaxInt(a:Int, b:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MaxInt(a, b);
 	}
 
 	/** Returns the absolute value of an integer.
@@ -931,7 +1000,7 @@ class Box2D {
 		@param a  The integer.
 		@return  The absolute value. */
 	public static function b2AbsInt(a:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2AbsInt(a);
 	}
 
 	/** Returns an integer limited to a range.
@@ -941,7 +1010,7 @@ class Box2D {
 		@param upper  The upper bound.
 		@return  The integer, or the nearest bound when it lies outside the range. */
 	public static function b2ClampInt(a:Int, lower:Int, upper:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ClampInt(a, lower, upper);
 	}
 
 	/** Returns the integer division of a numerator by a denominator, rounded up.
@@ -950,7 +1019,7 @@ class Box2D {
 		@param denominator  The denominator. Must be greater than zero.
 		@return  The quotient, rounded up. */
 	public static function b2CeilingInt(numerator:Int, denominator:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CeilingInt(numerator, denominator);
 	}
 
 	/** Returns the smaller of two floats.
@@ -959,7 +1028,7 @@ class Box2D {
 		@param b  The second float.
 		@return  The smaller float. */
 	public static function b2MinFloat(a:Float, b:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MinFloat(a, b);
 	}
 
 	/** Returns the larger of two floats.
@@ -968,7 +1037,7 @@ class Box2D {
 		@param b  The second float.
 		@return  The larger float. */
 	public static function b2MaxFloat(a:Float, b:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MaxFloat(a, b);
 	}
 
 	/** Returns the absolute value of a float.
@@ -976,7 +1045,7 @@ class Box2D {
 		@param a  The float.
 		@return  The absolute value. */
 	public static function b2AbsFloat(a:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2AbsFloat(a);
 	}
 
 	/** Returns a float limited to a range.
@@ -986,7 +1055,7 @@ class Box2D {
 		@param upper  The upper bound.
 		@return  The float, or the nearest bound when it lies outside the range. */
 	public static function b2ClampFloat(a:Float, lower:Float, upper:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ClampFloat(a, lower, upper);
 	}
 
 	/** Returns an approximate arctangent of `y / x`, in radians within [-pi, pi].
@@ -997,7 +1066,7 @@ class Box2D {
 		@param x  The x coordinate.
 		@return  The angle, in radians. */
 	public static function b2Atan2(y:Float, x:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Atan2(y, x);
 	}
 
 	/** Returns the cosine and sine of an angle, computed so the result is the same on every platform.
@@ -1006,7 +1075,7 @@ class Box2D {
 		@param out  Optional. The `B2CosSin` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2CosSin`, which is `out` when provided. */
 	public static function b2ComputeCosSin(radians:Float, ?out:B2CosSin):B2CosSin {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeCosSin(radians, out);
 	}
 
 	/** Returns the dot product of two vectors.
@@ -1015,7 +1084,7 @@ class Box2D {
 		@param b  The second vector.
 		@return  The dot product. */
 	public static function b2Dot(a:B2Vec2, b:B2Vec2):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Dot(a, b);
 	}
 
 	/** Returns the cross product of two vectors, a scalar in 2D.
@@ -1024,7 +1093,7 @@ class Box2D {
 		@param b  The second vector.
 		@return  The cross product, `a.x * b.y - a.y * b.x`. */
 	public static function b2Cross(a:B2Vec2, b:B2Vec2):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Cross(a, b);
 	}
 
 	/** Returns the cross product of a vector and a scalar, a vector in 2D.
@@ -1034,7 +1103,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(s * v.y, -s * v.x)`. */
 	public static function b2CrossVS(v:B2Vec2, s:Float, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CrossVS(v, s, out);
 	}
 
 	/** Returns the cross product of a scalar and a vector, a vector in 2D.
@@ -1044,7 +1113,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(-s * v.y, s * v.x)`. */
 	public static function b2CrossSV(s:Float, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CrossSV(s, v, out);
 	}
 
 	/** Returns the vector rotated 90 degrees counter-clockwise, which is `b2CrossSV(1, v)`.
@@ -1053,7 +1122,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(-v.y, v.x)`. */
 	public static function b2LeftPerp(v:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2LeftPerp(v, out);
 	}
 
 	/** Returns the vector rotated 90 degrees clockwise, which is `b2CrossVS(v, 1)`.
@@ -1062,7 +1131,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. It holds `(v.y, -v.x)`. */
 	public static function b2RightPerp(v:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RightPerp(v, out);
 	}
 
 	/** Returns the sum of two vectors.
@@ -1072,7 +1141,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Add(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Add(a, b, out);
 	}
 
 	/** Returns the difference `a - b` of two vectors.
@@ -1082,7 +1151,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Sub(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Sub(a, b, out);
 	}
 
 	/** Returns the negation of a vector.
@@ -1091,7 +1160,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Neg(a:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Neg(a, out);
 	}
 
 	/** Returns the point between two vectors at a fraction of the way from the first to the second.
@@ -1102,7 +1171,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Lerp(a:B2Vec2, b:B2Vec2, t:Float, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Lerp(a, b, t, out);
 	}
 
 	/** Returns the component-wise product of two vectors.
@@ -1112,7 +1181,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Mul(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Mul(a, b, out);
 	}
 
 	/** Returns a vector scaled by a scalar.
@@ -1122,7 +1191,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulSV(s:Float, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MulSV(s, v, out);
 	}
 
 	/** Returns `a + s * b`.
@@ -1133,7 +1202,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulAdd(a:B2Vec2, s:Float, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MulAdd(a, s, b, out);
 	}
 
 	/** Returns `a - s * b`.
@@ -1144,7 +1213,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulSub(a:B2Vec2, s:Float, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MulSub(a, s, b, out);
 	}
 
 	/** Returns the absolute value of each component of a vector.
@@ -1153,7 +1222,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Abs(a:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Abs(a, out);
 	}
 
 	/** Returns the smaller of each component of two vectors.
@@ -1163,7 +1232,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Min(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Min(a, b, out);
 	}
 
 	/** Returns the larger of each component of two vectors.
@@ -1173,7 +1242,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Max(a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Max(a, b, out);
 	}
 
 	/** Returns a vector with each component limited to the range between the matching components of two vectors.
@@ -1184,7 +1253,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Clamp(v:B2Vec2, a:B2Vec2, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Clamp(v, a, b, out);
 	}
 
 	/** Returns the length of a vector.
@@ -1192,7 +1261,7 @@ class Box2D {
 		@param v  The vector.
 		@return  The length. */
 	public static function b2Length(v:B2Vec2):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Length(v);
 	}
 
 	/** Returns the distance between two points.
@@ -1201,7 +1270,7 @@ class Box2D {
 		@param b  The second point.
 		@return  The distance. */
 	public static function b2Distance(a:B2Vec2, b:B2Vec2):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Distance(a, b);
 	}
 
 	/** Returns a vector scaled to length 1.
@@ -1212,7 +1281,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Normalize(a:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Normalize(a, out);
 	}
 
 	/** Returns whether a vector has length 1, within a small tolerance.
@@ -1220,7 +1289,7 @@ class Box2D {
 		@param a  The vector.
 		@return  True when the vector is normalized. */
 	public static function b2IsNormalized(a:B2Vec2):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsNormalized(a);
 	}
 
 	/** Returns a vector scaled to length 1, and stores the vector's original length.
@@ -1232,7 +1301,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2GetLengthAndNormalize(length:Array<Float>, a:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetLengthAndNormalize(length, a, out);
 	}
 
 	/** Returns a rotation scaled to unit magnitude.
@@ -1241,7 +1310,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2NormalizeRot(q:B2Rot, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2NormalizeRot(q, out);
 	}
 
 	/** Returns a rotation advanced by an angular displacement.
@@ -1253,7 +1322,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2IntegrateRotation(q1:B2Rot, deltaAngle:Float, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IntegrateRotation(q1, deltaAngle, out);
 	}
 
 	/** Returns the squared length of a vector.
@@ -1261,7 +1330,7 @@ class Box2D {
 		@param v  The vector.
 		@return  The squared length. */
 	public static function b2LengthSquared(v:B2Vec2):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2LengthSquared(v);
 	}
 
 	/** Returns the squared distance between two points.
@@ -1270,7 +1339,7 @@ class Box2D {
 		@param b  The second point.
 		@return  The squared distance. */
 	public static function b2DistanceSquared(a:B2Vec2, b:B2Vec2):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceSquared(a, b);
 	}
 
 	/** Returns the rotation for an angle.
@@ -1279,7 +1348,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2MakeRot(radians:Float, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeRot(radians, out);
 	}
 
 	/** Returns the rotation whose x-axis is a unit vector.
@@ -1288,7 +1357,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2MakeRotFromUnitVector(unitVector:B2Vec2, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeRotFromUnitVector(unitVector, out);
 	}
 
 	/** Returns the rotation from one unit vector to another.
@@ -1298,7 +1367,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2ComputeRotationBetweenUnitVectors(v1:B2Vec2, v2:B2Vec2, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeRotationBetweenUnitVectors(v1, v2, out);
 	}
 
 	/** Returns whether a rotation has unit magnitude, within a small tolerance.
@@ -1306,7 +1375,7 @@ class Box2D {
 		@param q  The rotation.
 		@return  True when the rotation is normalized. */
 	public static function b2IsNormalizedRot(q:B2Rot):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsNormalizedRot(q);
 	}
 
 	/** Returns the inverse of a rotation.
@@ -1315,7 +1384,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2InvertRot(a:B2Rot, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2InvertRot(a, out);
 	}
 
 	/** Returns the normalized linear interpolation between two rotations.
@@ -1326,7 +1395,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2NLerp(q1:B2Rot, q2:B2Rot, t:Float, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2NLerp(q1, q2, t, out);
 	}
 
 	/** Returns the angular velocity that rotates from one rotation to another over a time step.
@@ -1336,7 +1405,7 @@ class Box2D {
 		@param inv_h  The inverse of the time step, in 1/seconds.
 		@return  The angular velocity, in radians per second. */
 	public static function b2ComputeAngularVelocity(q1:B2Rot, q2:B2Rot, inv_h:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeAngularVelocity(q1, q2, inv_h);
 	}
 
 	/** Returns the angle of a rotation, in radians within [-pi, pi].
@@ -1344,7 +1413,7 @@ class Box2D {
 		@param q  The rotation.
 		@return  The angle, in radians. */
 	public static function b2Rot_GetAngle(q:B2Rot):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Rot_GetAngle(q);
 	}
 
 	/** Returns the x-axis of a rotation.
@@ -1353,7 +1422,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Rot_GetXAxis(q:B2Rot, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Rot_GetXAxis(q, out);
 	}
 
 	/** Returns the y-axis of a rotation.
@@ -1362,7 +1431,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Rot_GetYAxis(q:B2Rot, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Rot_GetYAxis(q, out);
 	}
 
 	/** Returns the product `q * r` of two rotations.
@@ -1372,7 +1441,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2MulRot(q:B2Rot, r:B2Rot, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MulRot(q, r, out);
 	}
 
 	/** Returns the product `inv(a) * b` of two rotations.
@@ -1384,7 +1453,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Rot`, which is `out` when provided. */
 	public static function b2InvMulRot(a:B2Rot, b:B2Rot, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2InvMulRot(a, b, out);
 	}
 
 	/** Returns the angle of one rotation relative to another, in radians.
@@ -1393,7 +1462,7 @@ class Box2D {
 		@param b  The rotation to measure.
 		@return  The angle of `b` relative to `a`, in radians within [-pi, pi]. */
 	public static function b2RelativeAngle(a:B2Rot, b:B2Rot):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RelativeAngle(a, b);
 	}
 
 	/** Returns an angle brought into the range [-pi, pi].
@@ -1403,7 +1472,7 @@ class Box2D {
 		@param radians  The angle, in radians.
 		@return  The equivalent angle, in radians. */
 	public static function b2UnwindAngle(radians:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2UnwindAngle(radians);
 	}
 
 	/** Returns a vector rotated by a rotation.
@@ -1413,7 +1482,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2RotateVector(q:B2Rot, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RotateVector(q, v, out);
 	}
 
 	/** Returns a vector rotated by the inverse of a rotation.
@@ -1423,7 +1492,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2InvRotateVector(q:B2Rot, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2InvRotateVector(q, v, out);
 	}
 
 	/** Returns a point transformed by a transform, for example from local space to world space.
@@ -1433,7 +1502,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2TransformPoint(t:B2Transform, p:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2TransformPoint(t, p, out);
 	}
 
 	/** Returns a point transformed by the inverse of a transform, for example from world space to local space.
@@ -1443,7 +1512,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2InvTransformPoint(t:B2Transform, p:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2InvTransformPoint(t, p, out);
 	}
 
 	/** Returns the product of two transforms.
@@ -1455,7 +1524,7 @@ class Box2D {
 		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2MulTransforms(A:B2Transform, B:B2Transform, ?out:B2Transform):B2Transform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MulTransforms(A, B, out);
 	}
 
 	/** Returns the transform that converts a point local to frame `B` into a point local to frame `A`.
@@ -1467,7 +1536,7 @@ class Box2D {
 		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2InvMulTransforms(A:B2Transform, B:B2Transform, ?out:B2Transform):B2Transform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2InvMulTransforms(A, B, out);
 	}
 
 	/** Returns a vector as a world position.
@@ -1478,7 +1547,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2ToPos(v:B2Vec2, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ToPos(v, out);
 	}
 
 	/** Returns a world position as a vector.
@@ -1489,7 +1558,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2ToVec2(p:B2Pos, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ToVec2(p, out);
 	}
 
 	/** Returns a world coordinate narrowed to a float, rounded toward negative infinity.
@@ -1499,7 +1568,7 @@ class Box2D {
 		@param x  The world coordinate.
 		@return  The coordinate, rounded down. */
 	public static function b2RoundDownFloat(x:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RoundDownFloat(x);
 	}
 
 	/** Returns a world coordinate narrowed to a float, rounded toward positive infinity.
@@ -1509,7 +1578,7 @@ class Box2D {
 		@param x  The world coordinate.
 		@return  The coordinate, rounded up. */
 	public static function b2RoundUpFloat(x:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RoundUpFloat(x);
 	}
 
 	/** Returns the difference `a - b` of two world positions as a vector.
@@ -1519,7 +1588,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2SubPos(a:B2Pos, b:B2Pos, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2SubPos(a, b, out);
 	}
 
 	/** Returns a world position moved by a vector.
@@ -1529,7 +1598,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2OffsetPos(p:B2Pos, d:B2Vec2, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2OffsetPos(p, d, out);
 	}
 
 	/** Returns the world position between two positions at a fraction of the way from the first to the second.
@@ -1540,7 +1609,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2LerpPos(a:B2Pos, b:B2Pos, t:Float, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2LerpPos(a, b, t, out);
 	}
 
 	/** Returns a local point transformed to a world position.
@@ -1550,7 +1619,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Pos`, which is `out` when provided. */
 	public static function b2TransformWorldPoint(t:B2WorldTransform, p:B2Vec2, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2TransformWorldPoint(t, p, out);
 	}
 
 	/** Returns a world position transformed to a point local to a world transform.
@@ -1560,7 +1629,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2InvTransformWorldPoint(t:B2WorldTransform, p:B2Pos, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2InvTransformWorldPoint(t, p, out);
 	}
 
 	/** Returns the transform of frame `B` relative to frame `A`.
@@ -1570,7 +1639,7 @@ class Box2D {
 		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2InvMulWorldTransforms(A:B2WorldTransform, B:B2WorldTransform, ?out:B2Transform):B2Transform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2InvMulWorldTransforms(A, B, out);
 	}
 
 	/** Returns a local transform converted into world space by a world transform.
@@ -1580,7 +1649,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2WorldTransform`, which is `out` when provided. */
 	public static function b2MulWorldTransforms(A:B2WorldTransform, B:B2Transform, ?out:B2WorldTransform):B2WorldTransform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MulWorldTransforms(A, B, out);
 	}
 
 	/** Returns a world transform expressed relative to a base position.
@@ -1590,7 +1659,7 @@ class Box2D {
 		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Transform`, which is `out` when provided. */
 	public static function b2ToRelativeTransform(t:B2WorldTransform, base:B2Pos, ?out:B2Transform):B2Transform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ToRelativeTransform(t, base, out);
 	}
 
 	/** Returns a transform as a world transform.
@@ -1601,7 +1670,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2WorldTransform`, which is `out` when provided. */
 	public static function b2MakeWorldTransform(t:B2Transform, ?out:B2WorldTransform):B2WorldTransform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeWorldTransform(t, out);
 	}
 
 	/** Returns a 2-by-2 matrix multiplied by a vector.
@@ -1611,7 +1680,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2MulMV(A:B2Mat22, v:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MulMV(A, v, out);
 	}
 
 	/** Returns the inverse of a 2-by-2 matrix.
@@ -1622,7 +1691,7 @@ class Box2D {
 		@param out  Optional. The `B2Mat22` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Mat22`, which is `out` when provided. */
 	public static function b2GetInverse22(A:B2Mat22, ?out:B2Mat22):B2Mat22 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetInverse22(A, out);
 	}
 
 	/** Returns the solution `x` of `A * x = b`.
@@ -1634,7 +1703,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2Solve22(A:B2Mat22, b:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Solve22(A, b, out);
 	}
 
 	/** Returns whether one bounding box fully contains another.
@@ -1643,7 +1712,7 @@ class Box2D {
 		@param b  The bounding box to test.
 		@return  True when `a` contains `b`. */
 	public static function b2AABB_Contains(a:B2AABB, b:B2AABB):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2AABB_Contains(a, b);
 	}
 
 	/** Returns the center of a bounding box.
@@ -1652,7 +1721,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2AABB_Center(a:B2AABB, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2AABB_Center(a, out);
 	}
 
 	/** Returns the half-widths of a bounding box.
@@ -1661,7 +1730,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2Vec2`, which is `out` when provided. */
 	public static function b2AABB_Extents(a:B2AABB, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2AABB_Extents(a, out);
 	}
 
 	/** Returns the smallest bounding box that contains two bounding boxes.
@@ -1671,7 +1740,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2AABB`, which is `out` when provided. */
 	public static function b2AABB_Union(a:B2AABB, b:B2AABB, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2AABB_Union(a, b, out);
 	}
 
 	/** Returns whether two bounding boxes overlap.
@@ -1680,7 +1749,7 @@ class Box2D {
 		@param b  The second bounding box.
 		@return  True when the bounding boxes overlap. */
 	public static function b2AABB_Overlaps(a:B2AABB, b:B2AABB):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2AABB_Overlaps(a, b);
 	}
 
 	/** Returns the bounding box of circles of one radius centered on points.
@@ -1691,7 +1760,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The `B2AABB`, which is `out` when provided. */
 	public static function b2MakeAABB(points:Array<B2Vec2>, count:Int, radius:Float, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeAABB(points, count, radius, out);
 	}
 
 	/** Returns the signed separation of a point from a plane.
@@ -1700,7 +1769,7 @@ class Box2D {
 		@param point  The point.
 		@return  The distance along the plane's normal, positive on the normal's side. */
 	public static function b2PlaneSeparation(plane:B2Plane, point:B2Vec2):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PlaneSeparation(plane, point);
 	}
 
 	/** Returns the new velocity of a one-dimensional mass-spring-damper that drives toward a position of zero.
@@ -1714,7 +1783,7 @@ class Box2D {
 		@param timeStep  The time step, in seconds.
 		@return  The new velocity. */
 	public static function b2SpringDamper(hertz:Float, dampingRatio:Float, position:Float, velocity:Float, timeStep:Float):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2SpringDamper(hertz, dampingRatio, position, velocity, timeStep);
 	}
 
 	/** Sets the length units per meter, for programs whose units are not meters.
@@ -1725,14 +1794,14 @@ class Box2D {
 
 		@param lengthUnits  The length units per meter. Must be finite and greater than zero. */
 	public static function b2SetLengthUnitsPerMeter(lengthUnits:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2SetLengthUnitsPerMeter(lengthUnits);
 	}
 
 	/** Returns the length units per meter.
 
 		@return  The length units per meter. The default is 1. */
 	public static function b2GetLengthUnitsPerMeter():Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetLengthUnitsPerMeter();
 	}
 
 	// collision.h
@@ -1742,7 +1811,7 @@ class Box2D {
 		@param input  The ray cast input to check.
 		@return  True when the input is valid, false when it holds a NaN, an infinity or an out of range `maxFraction`. */
 	public static function b2IsValidRay(input:B2RayCastInput):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2IsValidRay(input);
 	}
 
 	/** Makes a convex polygon from a convex hull.
@@ -1754,7 +1823,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakePolygon(hull:B2Hull, radius:Float, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakePolygon(hull, radius, out);
 	}
 
 	/** Makes a convex polygon from a convex hull, moved and rotated by an offset.
@@ -1767,7 +1836,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon, with sharp corners. */
 	public static function b2MakeOffsetPolygon(hull:B2Hull, position:B2Vec2, rotation:B2Rot, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeOffsetPolygon(hull, position, rotation, out);
 	}
 
 	/** Makes a rounded convex polygon from a convex hull, moved and rotated by an offset.
@@ -1781,7 +1850,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeOffsetRoundedPolygon(hull:B2Hull, position:B2Vec2, rotation:B2Rot, radius:Float, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeOffsetRoundedPolygon(hull, position, rotation, radius, out);
 	}
 
 	/** Makes a square polygon centered on the origin, without a convex hull.
@@ -1790,7 +1859,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeSquare(halfWidth:Float, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeSquare(halfWidth, out);
 	}
 
 	/** Makes a box polygon centered on the origin, without a convex hull.
@@ -1800,7 +1869,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeBox(halfWidth:Float, halfHeight:Float, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeBox(halfWidth, halfHeight, out);
 	}
 
 	/** Makes a box polygon with rounded corners centered on the origin, without a convex hull.
@@ -1811,7 +1880,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeRoundedBox(halfWidth:Float, halfHeight:Float, radius:Float, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeRoundedBox(halfWidth, halfHeight, radius, out);
 	}
 
 	/** Makes a box polygon moved and rotated by an offset, without a convex hull.
@@ -1823,7 +1892,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeOffsetBox(halfWidth:Float, halfHeight:Float, center:B2Vec2, rotation:B2Rot, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeOffsetBox(halfWidth, halfHeight, center, rotation, out);
 	}
 
 	/** Makes a box polygon with rounded corners, moved and rotated by an offset, without a convex hull.
@@ -1836,7 +1905,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon. */
 	public static function b2MakeOffsetRoundedBox(halfWidth:Float, halfHeight:Float, center:B2Vec2, rotation:B2Rot, radius:Float, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeOffsetRoundedBox(halfWidth, halfHeight, center, rotation, radius, out);
 	}
 
 	/** Returns a polygon moved by a transform. Useful for moving a shape from one body to another.
@@ -1846,7 +1915,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The transformed polygon. */
 	public static function b2TransformPolygon(transform:B2Transform, polygon:B2Polygon, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2TransformPolygon(transform, polygon, out);
 	}
 
 	/** Computes the mass, center of mass and rotational inertia of a circle.
@@ -1856,7 +1925,7 @@ class Box2D {
 		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data. */
 	public static function b2ComputeCircleMass(shape:B2Circle, density:Float, ?out:B2MassData):B2MassData {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeCircleMass(shape, density, out);
 	}
 
 	/** Computes the mass, center of mass and rotational inertia of a capsule.
@@ -1866,7 +1935,7 @@ class Box2D {
 		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data. */
 	public static function b2ComputeCapsuleMass(shape:B2Capsule, density:Float, ?out:B2MassData):B2MassData {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeCapsuleMass(shape, density, out);
 	}
 
 	/** Computes the mass, center of mass and rotational inertia of a polygon.
@@ -1876,7 +1945,7 @@ class Box2D {
 		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data. */
 	public static function b2ComputePolygonMass(shape:B2Polygon, density:Float, ?out:B2MassData):B2MassData {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputePolygonMass(shape, density, out);
 	}
 
 	/** Computes the bounding box of a transformed circle.
@@ -1886,7 +1955,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputeCircleBounds(shape:B2Circle, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeCircleBounds(shape, transform, out);
 	}
 
 	/** Computes the bounding box of a transformed capsule.
@@ -1896,7 +1965,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputeCapsuleBounds(shape:B2Capsule, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeCapsuleBounds(shape, transform, out);
 	}
 
 	/** Computes the bounding box of a transformed polygon.
@@ -1906,7 +1975,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputePolygonBounds(shape:B2Polygon, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputePolygonBounds(shape, transform, out);
 	}
 
 	/** Computes the bounding box of a transformed line segment.
@@ -1916,7 +1985,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The axis-aligned bounding box in world space. */
 	public static function b2ComputeSegmentBounds(shape:B2Segment, transform:B2WorldTransform, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeSegmentBounds(shape, transform, out);
 	}
 
 	/** Tests whether a point overlaps a circle, in the shape's local space.
@@ -1925,7 +1994,7 @@ class Box2D {
 		@param point  The point, in the shape's local space.
 		@return  True when the point is inside the shape. */
 	public static function b2PointInCircle(shape:B2Circle, point:B2Vec2):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PointInCircle(shape, point);
 	}
 
 	/** Tests whether a point overlaps a capsule, in the shape's local space.
@@ -1934,7 +2003,7 @@ class Box2D {
 		@param point  The point, in the shape's local space.
 		@return  True when the point is inside the shape. */
 	public static function b2PointInCapsule(shape:B2Capsule, point:B2Vec2):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PointInCapsule(shape, point);
 	}
 
 	/** Tests whether a point overlaps a convex polygon, in the shape's local space.
@@ -1943,7 +2012,7 @@ class Box2D {
 		@param point  The point, in the shape's local space.
 		@return  True when the point is inside the shape. */
 	public static function b2PointInPolygon(shape:B2Polygon, point:B2Vec2):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PointInPolygon(shape, point);
 	}
 
 	/** Casts a ray against a circle, in the shape's local space.
@@ -1953,7 +2022,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRayCircle(shape:B2Circle, input:B2RayCastInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastRayCircle(shape, input, out);
 	}
 
 	/** Casts a ray against a capsule, in the shape's local space.
@@ -1963,7 +2032,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRayCapsule(shape:B2Capsule, input:B2RayCastInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastRayCapsule(shape, input, out);
 	}
 
 	/** Casts a ray against a line segment, in the segment's local space. The segment may be one-sided.
@@ -1974,7 +2043,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRaySegment(shape:B2Segment, input:B2RayCastInput, oneSided:Bool, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastRaySegment(shape, input, oneSided, out);
 	}
 
 	/** Casts a ray against a polygon, in the shape's local space.
@@ -1984,7 +2053,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the ray misses. */
 	public static function b2CastRayPolygon(shape:B2Polygon, input:B2RayCastInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastRayPolygon(shape, input, out);
 	}
 
 	/** Casts a moving shape against a circle, in the shape's local space.
@@ -1994,7 +2063,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapeCircle(shape:B2Circle, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastShapeCircle(shape, input, out);
 	}
 
 	/** Casts a moving shape against a capsule, in the shape's local space.
@@ -2004,7 +2073,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapeCapsule(shape:B2Capsule, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastShapeCapsule(shape, input, out);
 	}
 
 	/** Casts a moving shape against a line segment, in the shape's local space.
@@ -2014,7 +2083,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapeSegment(shape:B2Segment, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastShapeSegment(shape, input, out);
 	}
 
 	/** Casts a moving shape against a convex polygon, in the shape's local space.
@@ -2024,7 +2093,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output. `hit` is false when the moving shape misses. */
 	public static function b2CastShapePolygon(shape:B2Polygon, input:B2ShapeCastInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastShapePolygon(shape, input, out);
 	}
 
 	/** Computes the convex hull of a set of points.
@@ -2036,7 +2105,7 @@ class Box2D {
 		@param out  Optional. The `B2Hull` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The hull. Its `count` is 0 when the computation fails. */
 	public static function b2ComputeHull(points:Array<B2Vec2>, count:Int, ?out:B2Hull):B2Hull {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeHull(points, count, out);
 	}
 
 	/** Returns whether a hull is valid, meaning convex and without collinear points.
@@ -2046,7 +2115,7 @@ class Box2D {
 		@param hull  The hull to check.
 		@return  True when the hull is valid. */
 	public static function b2ValidateHull(hull:B2Hull):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ValidateHull(hull);
 	}
 
 	/** Computes the closest points between two line segments, clamping at the end points.
@@ -2058,7 +2127,7 @@ class Box2D {
 		@param out  Optional. The `B2SegmentDistanceResult` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The closest point on each segment, the fractions along each segment and the squared distance between the points. */
 	public static function b2ComputeSegmentDistance(p1:B2Vec2, q1:B2Vec2, p2:B2Vec2, q2:B2Vec2, ?out:B2SegmentDistanceResult):B2SegmentDistanceResult {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeSegmentDistance(p1, q1, p2, q2, out);
 	}
 
 	/** Computes the closest points between two shapes, each represented as a point cloud.
@@ -2071,7 +2140,7 @@ class Box2D {
 		@return  The closest points on each proxy, the distance, and the iteration and simplex counts. */
 	public static function b2ComputeShapeDistance(input:B2DistanceInput, cache:B2SimplexCache, ?simplexes:Array<B2Simplex>, simplexCapacity = 0,
 			?out:B2DistanceOutput):B2DistanceOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeShapeDistance(input, cache, simplexes, simplexCapacity, out);
 	}
 
 	/** Casts shape B, moving by a translation, against shape A, which stays in place.
@@ -2082,7 +2151,7 @@ class Box2D {
 		@param out  Optional. The `B2CastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast output, in shape A's frame. `hit` is false when B misses A. */
 	public static function b2CastShape(input:B2ShapeCastPairInput, ?out:B2CastOutput):B2CastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CastShape(input, out);
 	}
 
 	/** Makes a proxy for the overlap, shape cast and distance functions. The points are copied.
@@ -2093,7 +2162,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeProxy` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The proxy. */
 	public static function b2MakeProxy(points:Array<B2Vec2>, count:Int, radius:Float, ?out:B2ShapeProxy):B2ShapeProxy {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeProxy(points, count, radius, out);
 	}
 
 	/** Makes a proxy for the overlap, shape cast and distance functions, with its points moved and rotated by an offset. The points are copied.
@@ -2106,7 +2175,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeProxy` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The proxy. */
 	public static function b2MakeOffsetProxy(points:Array<B2Vec2>, count:Int, radius:Float, position:B2Vec2, rotation:B2Rot, ?out:B2ShapeProxy):B2ShapeProxy {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MakeOffsetProxy(points, count, radius, position, rotation, out);
 	}
 
 	/** Evaluates the transform of a sweep at a time.
@@ -2116,7 +2185,7 @@ class Box2D {
 		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The transform of the body's origin at that time. */
 	public static function b2GetSweepTransform(sweep:B2Sweep, time:Float, ?out:B2Transform):B2Transform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetSweepTransform(sweep, time, out);
 	}
 
 	/** Computes the upper bound on the time before two moving shapes penetrate.
@@ -2127,7 +2196,7 @@ class Box2D {
 		@param out  Optional. The `B2TOIOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The output state and the time fraction. */
 	public static function b2ComputeTimeOfImpact(input:B2TOIInput, ?out:B2TOIOutput):B2TOIOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2ComputeTimeOfImpact(input, out);
 	}
 
 	/** Computes the contact manifold between two circles.
@@ -2138,7 +2207,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideCircles(circleA:B2Circle, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideCircles(circleA, circleB, xf, out);
 	}
 
 	/** Computes the contact manifold between a capsule and a circle.
@@ -2149,7 +2218,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideCapsuleAndCircle(capsuleA:B2Capsule, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideCapsuleAndCircle(capsuleA, circleB, xf, out);
 	}
 
 	/** Computes the contact manifold between a segment and a circle.
@@ -2160,7 +2229,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideSegmentAndCircle(segmentA:B2Segment, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideSegmentAndCircle(segmentA, circleB, xf, out);
 	}
 
 	/** Computes the contact manifold between a polygon and a circle.
@@ -2171,7 +2240,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollidePolygonAndCircle(polygonA:B2Polygon, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollidePolygonAndCircle(polygonA, circleB, xf, out);
 	}
 
 	/** Computes the contact manifold between two capsules.
@@ -2182,7 +2251,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideCapsules(capsuleA:B2Capsule, capsuleB:B2Capsule, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideCapsules(capsuleA, capsuleB, xf, out);
 	}
 
 	/** Computes the contact manifold between a segment and a capsule.
@@ -2193,7 +2262,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideSegmentAndCapsule(segmentA:B2Segment, capsuleB:B2Capsule, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideSegmentAndCapsule(segmentA, capsuleB, xf, out);
 	}
 
 	/** Computes the contact manifold between a polygon and a capsule.
@@ -2204,7 +2273,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollidePolygonAndCapsule(polygonA:B2Polygon, capsuleB:B2Capsule, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollidePolygonAndCapsule(polygonA, capsuleB, xf, out);
 	}
 
 	/** Computes the contact manifold between two polygons.
@@ -2215,7 +2284,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollidePolygons(polygonA:B2Polygon, polygonB:B2Polygon, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollidePolygons(polygonA, polygonB, xf, out);
 	}
 
 	/** Computes the contact manifold between a segment and a polygon.
@@ -2226,7 +2295,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideSegmentAndPolygon(segmentA:B2Segment, polygonB:B2Polygon, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideSegmentAndPolygon(segmentA, polygonB, xf, out);
 	}
 
 	/** Computes the contact manifold between a chain segment and a circle.
@@ -2237,7 +2306,7 @@ class Box2D {
 		@param out  Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideChainSegmentAndCircle(segmentA:B2ChainSegment, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideChainSegmentAndCircle(segmentA, circleB, xf, out);
 	}
 
 	/** Computes the contact manifold between a chain segment and a capsule.
@@ -2250,7 +2319,7 @@ class Box2D {
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideChainSegmentAndCapsule(segmentA:B2ChainSegment, capsuleB:B2Capsule, xf:B2Transform, cache:B2SimplexCache,
 			?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideChainSegmentAndCapsule(segmentA, capsuleB, xf, cache, out);
 	}
 
 	/** Computes the contact manifold between a chain segment and a polygon, which may be rounded.
@@ -2263,7 +2332,7 @@ class Box2D {
 		@return  The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch. */
 	public static function b2CollideChainSegmentAndPolygon(segmentA:B2ChainSegment, polygonB:B2Polygon, xf:B2Transform, cache:B2SimplexCache,
 			?out:B2LocalManifold):B2LocalManifold {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CollideChainSegmentAndPolygon(segmentA, polygonB, xf, cache, out);
 	}
 
 	// types.h
@@ -2275,7 +2344,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world definition. */
 	public static function b2DefaultWorldDef(?out:B2WorldDef):B2WorldDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultWorldDef(out);
 	}
 
 	/** Returns a body definition set to Box2D's defaults.
@@ -2285,7 +2354,7 @@ class Box2D {
 		@param out  Optional. The `B2BodyDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The body definition. */
 	public static function b2DefaultBodyDef(?out:B2BodyDef):B2BodyDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultBodyDef(out);
 	}
 
 	/** Returns a collision filter set to Box2D's defaults.
@@ -2293,7 +2362,7 @@ class Box2D {
 		@param out  Optional. The `B2Filter` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The filter, with `categoryBits` 1, `maskBits` of all ones and `groupIndex` 0. */
 	public static function b2DefaultFilter(?out:B2Filter):B2Filter {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultFilter(out);
 	}
 
 	/** Returns a query filter set to Box2D's defaults.
@@ -2301,7 +2370,7 @@ class Box2D {
 		@param out  Optional. The `B2QueryFilter` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The query filter, with `categoryBits` 1 and `maskBits` of all ones. */
 	public static function b2DefaultQueryFilter(?out:B2QueryFilter):B2QueryFilter {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultQueryFilter(out);
 	}
 
 	/** Returns a surface material set to Box2D's defaults.
@@ -2309,7 +2378,7 @@ class Box2D {
 		@param out  Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The surface material. */
 	public static function b2DefaultSurfaceMaterial(?out:B2SurfaceMaterial):B2SurfaceMaterial {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultSurfaceMaterial(out);
 	}
 
 	/** Returns a shape definition set to Box2D's defaults.
@@ -2319,7 +2388,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The shape definition. */
 	public static function b2DefaultShapeDef(?out:B2ShapeDef):B2ShapeDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultShapeDef(out);
 	}
 
 	/** Returns a chain definition set to Box2D's defaults.
@@ -2329,7 +2398,7 @@ class Box2D {
 		@param out  Optional. The `B2ChainDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The chain definition. */
 	public static function b2DefaultChainDef(?out:B2ChainDef):B2ChainDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultChainDef(out);
 	}
 
 	/** Returns a distance joint definition set to Box2D's defaults.
@@ -2341,7 +2410,7 @@ class Box2D {
 		@param out  Optional. The `B2DistanceJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The distance joint definition. */
 	public static function b2DefaultDistanceJointDef(?out:B2DistanceJointDef):B2DistanceJointDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultDistanceJointDef(out);
 	}
 
 	/** Returns a filter joint definition set to Box2D's defaults.
@@ -2353,7 +2422,7 @@ class Box2D {
 		@param out  Optional. The `B2FilterJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The filter joint definition. */
 	public static function b2DefaultFilterJointDef(?out:B2FilterJointDef):B2FilterJointDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultFilterJointDef(out);
 	}
 
 	/** Returns a motor joint definition set to Box2D's defaults.
@@ -2365,7 +2434,7 @@ class Box2D {
 		@param out  Optional. The `B2MotorJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The motor joint definition. */
 	public static function b2DefaultMotorJointDef(?out:B2MotorJointDef):B2MotorJointDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultMotorJointDef(out);
 	}
 
 	/** Returns a prismatic joint definition set to Box2D's defaults.
@@ -2377,7 +2446,7 @@ class Box2D {
 		@param out  Optional. The `B2PrismaticJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The prismatic joint definition. */
 	public static function b2DefaultPrismaticJointDef(?out:B2PrismaticJointDef):B2PrismaticJointDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultPrismaticJointDef(out);
 	}
 
 	/** Returns a revolute joint definition set to Box2D's defaults.
@@ -2389,7 +2458,7 @@ class Box2D {
 		@param out  Optional. The `B2RevoluteJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The revolute joint definition. */
 	public static function b2DefaultRevoluteJointDef(?out:B2RevoluteJointDef):B2RevoluteJointDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultRevoluteJointDef(out);
 	}
 
 	/** Returns a weld joint definition set to Box2D's defaults.
@@ -2401,7 +2470,7 @@ class Box2D {
 		@param out  Optional. The `B2WeldJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The weld joint definition. */
 	public static function b2DefaultWeldJointDef(?out:B2WeldJointDef):B2WeldJointDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultWeldJointDef(out);
 	}
 
 	/** Returns a wheel joint definition set to Box2D's defaults.
@@ -2413,7 +2482,7 @@ class Box2D {
 		@param out  Optional. The `B2WheelJointDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The wheel joint definition. */
 	public static function b2DefaultWheelJointDef(?out:B2WheelJointDef):B2WheelJointDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultWheelJointDef(out);
 	}
 
 	/** Returns a explosion definition set to Box2D's defaults.
@@ -2423,7 +2492,7 @@ class Box2D {
 		@param out  Optional. The `B2ExplosionDef` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The explosion definition. */
 	public static function b2DefaultExplosionDef(?out:B2ExplosionDef):B2ExplosionDef {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultExplosionDef(out);
 	}
 
 	/** Returns the debug draw color of a constraint graph color slot.
@@ -2433,7 +2502,7 @@ class Box2D {
 		@param index  The color slot, from 0 up to `B2_GRAPH_COLOR_COUNT` minus 1.
 		@return  The color, as a hex value. */
 	public static function b2GetGraphColor(index:Int):B2HexColor {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2GetGraphColor(index);
 	}
 
 	/** Returns a debug draw interface set to Box2D's defaults, so a program can implement a subset of the drawing callbacks.
@@ -2441,7 +2510,7 @@ class Box2D {
 		@param out  Optional. The `B2DebugDraw` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The debug draw interface. Each drawing callback is an empty function, `drawingBounds` covers the whole world, `forceScale` and `jointScale` are 1, and `drawShapes` is true. */
 	public static function b2DefaultDebugDraw(?out:B2DebugDraw):B2DebugDraw {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DefaultDebugDraw(out);
 	}
 
 	// box2d.h
@@ -2456,14 +2525,14 @@ class Box2D {
 		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new world's id. */
 	public static function b2CreateWorld(def:B2WorldDef, ?out:B2WorldId):B2WorldId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateWorld(def, out);
 	}
 
 	/** Destroys a world, with all its bodies, shapes and joints.
 
 		@param worldId  The world. */
 	public static function b2DestroyWorld(worldId:B2WorldId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DestroyWorld(worldId);
 	}
 
 	/** Returns whether a world id refers to a world that exists.
@@ -2473,7 +2542,7 @@ class Box2D {
 		@param id  The world id to check.
 		@return  True when the world exists. */
 	public static function b2World_IsValid(id:B2WorldId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_IsValid(id);
 	}
 
 	/** Simulates a world for one time step.
@@ -2486,7 +2555,7 @@ class Box2D {
 		@param timeStep  The time to simulate, in seconds.
 		@param subStepCount  The number of sub-steps in the step. More sub-steps increase accuracy. Usually 4. */
 	public static function b2World_Step(worldId:B2WorldId, timeStep:Float, subStepCount:Int):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_Step(worldId, timeStep, subStepCount);
 	}
 
 	/** Draws the world's shapes and other debug data through a debug draw object.
@@ -2496,7 +2565,7 @@ class Box2D {
 		@param worldId  The world.
 		@param draw  The debug draw object, with its callbacks and flags. */
 	public static function b2World_Draw(worldId:B2WorldId, draw:B2DebugDraw):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_Draw(worldId, draw);
 	}
 
 	/** Returns the world bounds, the union of the bounds of all shapes.
@@ -2505,7 +2574,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The bounds, in world coordinates. */
 	public static function b2World_GetBounds(worldId:B2WorldId, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetBounds(worldId, out);
 	}
 
 	/** Returns the body events from the most recent time step.
@@ -2516,7 +2585,7 @@ class Box2D {
 		@param out  Optional. The `B2BodyEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The body events. */
 	public static function b2World_GetBodyEvents(worldId:B2WorldId, ?out:B2BodyEvents):B2BodyEvents {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetBodyEvents(worldId, out);
 	}
 
 	/** Returns the sensor events from the most recent time step.
@@ -2527,7 +2596,7 @@ class Box2D {
 		@param out  Optional. The `B2SensorEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The sensor events. */
 	public static function b2World_GetSensorEvents(worldId:B2WorldId, ?out:B2SensorEvents):B2SensorEvents {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetSensorEvents(worldId, out);
 	}
 
 	/** Returns the contact events from the most recent time step.
@@ -2538,7 +2607,7 @@ class Box2D {
 		@param out  Optional. The `B2ContactEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact events. */
 	public static function b2World_GetContactEvents(worldId:B2WorldId, ?out:B2ContactEvents):B2ContactEvents {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetContactEvents(worldId, out);
 	}
 
 	/** Returns the joint events from the most recent time step.
@@ -2549,7 +2618,7 @@ class Box2D {
 		@param out  Optional. The `B2JointEvents` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The joint events. */
 	public static function b2World_GetJointEvents(worldId:B2WorldId, ?out:B2JointEvents):B2JointEvents {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetJointEvents(worldId, out);
 	}
 
 	/** Calls a callback for each shape whose bounds may overlap a box.
@@ -2566,7 +2635,7 @@ class Box2D {
 		@return  Counters of the tree traversal. */
 	public static function b2World_OverlapAABB(worldId:B2WorldId, origin:B2Pos, aabb:B2AABB, filter:B2QueryFilter, fcn:B2OverlapResultCallbackFcn,
 			context:Dynamic, ?out:B2TreeStats):B2TreeStats {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_OverlapAABB(worldId, origin, aabb, filter, fcn, context, out);
 	}
 
 	/** Calls a callback for each shape that overlaps a shape proxy.
@@ -2583,7 +2652,7 @@ class Box2D {
 		@return  Counters of the tree traversal. */
 	public static function b2World_OverlapShape(worldId:B2WorldId, origin:B2Pos, proxy:B2ShapeProxy, filter:B2QueryFilter, fcn:B2OverlapResultCallbackFcn,
 			context:Dynamic, ?out:B2TreeStats):B2TreeStats {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_OverlapShape(worldId, origin, proxy, filter, fcn, context, out);
 	}
 
 	/** Casts a ray into the world and calls a callback for each shape in its path.
@@ -2600,7 +2669,7 @@ class Box2D {
 		@return  Counters of the tree traversal. */
 	public static function b2World_CastRay(worldId:B2WorldId, origin:B2Pos, translation:B2Vec2, filter:B2QueryFilter, fcn:B2CastResultCallbackFcn,
 			context:Dynamic, ?out:B2TreeStats):B2TreeStats {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_CastRay(worldId, origin, translation, filter, fcn, context, out);
 	}
 
 	/** Casts a ray into the world and returns the closest hit.
@@ -2614,7 +2683,7 @@ class Box2D {
 		@param out  Optional. The `B2RayResult` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The hit, with its `hit` field false when the ray hit no shape. */
 	public static function b2World_CastRayClosest(worldId:B2WorldId, origin:B2Pos, translation:B2Vec2, filter:B2QueryFilter, ?out:B2RayResult):B2RayResult {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_CastRayClosest(worldId, origin, translation, filter, out);
 	}
 
 	/** Casts a shape proxy through the world and calls a callback for each shape in its path.
@@ -2632,7 +2701,7 @@ class Box2D {
 		@return  Counters of the tree traversal. */
 	public static function b2World_CastShape(worldId:B2WorldId, origin:B2Pos, proxy:B2ShapeProxy, translation:B2Vec2, filter:B2QueryFilter,
 			fcn:B2CastResultCallbackFcn, context:Dynamic, ?out:B2TreeStats):B2TreeStats {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_CastShape(worldId, origin, proxy, translation, filter, fcn, context, out);
 	}
 
 	/** Sets whether bodies in the world can fall asleep.
@@ -2642,7 +2711,7 @@ class Box2D {
 		@param worldId  The world.
 		@param flag  True to let bodies sleep. */
 	public static function b2World_EnableSleeping(worldId:B2WorldId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_EnableSleeping(worldId, flag);
 	}
 
 	/** Returns whether bodies in the world can fall asleep.
@@ -2650,7 +2719,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  True when sleeping is enabled. */
 	public static function b2World_IsSleepingEnabled(worldId:B2WorldId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_IsSleepingEnabled(worldId);
 	}
 
 	/** Sets whether continuous collision between dynamic and static bodies is on.
@@ -2660,7 +2729,7 @@ class Box2D {
 		@param worldId  The world.
 		@param flag  True to enable continuous collision. */
 	public static function b2World_EnableContinuous(worldId:B2WorldId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_EnableContinuous(worldId, flag);
 	}
 
 	/** Returns whether continuous collision is on.
@@ -2668,7 +2737,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  True when continuous collision is enabled. */
 	public static function b2World_IsContinuousEnabled(worldId:B2WorldId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_IsContinuousEnabled(worldId);
 	}
 
 	/** Sets the speed below which a collision doesn't bounce.
@@ -2678,7 +2747,7 @@ class Box2D {
 		@param worldId  The world.
 		@param value  The threshold, usually in meters per second. */
 	public static function b2World_SetRestitutionThreshold(worldId:B2WorldId, value:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetRestitutionThreshold(worldId, value);
 	}
 
 	/** Returns the speed below which a collision doesn't bounce.
@@ -2686,7 +2755,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The threshold, usually in meters per second. */
 	public static function b2World_GetRestitutionThreshold(worldId:B2WorldId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetRestitutionThreshold(worldId);
 	}
 
 	/** Sets the number of iterations of the restitution solver.
@@ -2696,7 +2765,7 @@ class Box2D {
 		@param worldId  The world.
 		@param iterations  The iteration count. */
 	public static function b2World_SetRestitutionIterations(worldId:B2WorldId, iterations:Int):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetRestitutionIterations(worldId, iterations);
 	}
 
 	/** Returns the number of iterations of the restitution solver.
@@ -2704,7 +2773,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The iteration count. */
 	public static function b2World_GetRestitutionIterations(worldId:B2WorldId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetRestitutionIterations(worldId);
 	}
 
 	/** Sets whether restitution propagates through a stack of bodies.
@@ -2714,7 +2783,7 @@ class Box2D {
 		@param worldId  The world.
 		@param flag  True to enable propagation. */
 	public static function b2World_EnableRestitutionPropagation(worldId:B2WorldId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_EnableRestitutionPropagation(worldId, flag);
 	}
 
 	/** Returns whether restitution propagation is on.
@@ -2722,7 +2791,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  True when propagation is enabled. */
 	public static function b2World_IsRestitutionPropagationEnabled(worldId:B2WorldId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_IsRestitutionPropagationEnabled(worldId);
 	}
 
 	/** Sets the collision speed that generates a hit event.
@@ -2732,7 +2801,7 @@ class Box2D {
 		@param worldId  The world.
 		@param value  The threshold, usually in meters per second. */
 	public static function b2World_SetHitEventThreshold(worldId:B2WorldId, value:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetHitEventThreshold(worldId, value);
 	}
 
 	/** Returns the collision speed that generates a hit event.
@@ -2740,7 +2809,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The threshold, usually in meters per second. */
 	public static function b2World_GetHitEventThreshold(worldId:B2WorldId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetHitEventThreshold(worldId);
 	}
 
 	/** Registers the callback that decides whether two shapes collide.
@@ -2751,7 +2820,7 @@ class Box2D {
 		@param fcn  The callback. When null, the callback is removed.
 		@param context  A value passed to the callback. */
 	public static function b2World_SetCustomFilterCallback(worldId:B2WorldId, fcn:B2CustomFilterCallbackFcn, context:Dynamic):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetCustomFilterCallback(worldId, fcn, context);
 	}
 
 	/** Registers the callbacks called before a contact is solved and before continuous collision.
@@ -2764,7 +2833,7 @@ class Box2D {
 		@param context  A value passed to the callbacks. */
 	public static function b2World_SetPreSolveCallback(worldId:B2WorldId, preSolveFcn:B2PreSolveCallbackFcn, preContinuousFcn:B2PreContinuousCallbackFcn,
 			context:Dynamic):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetPreSolveCallback(worldId, preSolveFcn, preContinuousFcn, context);
 	}
 
 	/** Sets the gravity vector of the world.
@@ -2774,7 +2843,7 @@ class Box2D {
 		@param worldId  The world.
 		@param gravity  The gravity, usually in meters per second squared. */
 	public static function b2World_SetGravity(worldId:B2WorldId, gravity:B2Vec2):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetGravity(worldId, gravity);
 	}
 
 	/** Returns the gravity vector of the world.
@@ -2783,7 +2852,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The gravity, usually in meters per second squared. */
 	public static function b2World_GetGravity(worldId:B2WorldId, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetGravity(worldId, out);
 	}
 
 	/** Applies a radial explosion to the bodies around a point.
@@ -2791,7 +2860,7 @@ class Box2D {
 		@param worldId  The world.
 		@param explosionDef  The explosion's position, radius, falloff and strength. */
 	public static function b2World_Explode(worldId:B2WorldId, explosionDef:B2ExplosionDef):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_Explode(worldId, explosionDef);
 	}
 
 	/** Sets the contact tuning parameters of the world.
@@ -2803,7 +2872,7 @@ class Box2D {
 		@param dampingRatio  The contact bounciness, with 1 being critical damping. Non-dimensional.
 		@param pushSpeed  The largest speed at which a contact constraint pushes bodies apart, usually in meters per second. */
 	public static function b2World_SetContactTuning(worldId:B2WorldId, hertz:Float, dampingRatio:Float, pushSpeed:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetContactTuning(worldId, hertz, dampingRatio, pushSpeed);
 	}
 
 	/** Reads the contact tuning parameters of the world.
@@ -2815,7 +2884,7 @@ class Box2D {
 		@param dampingRatio  Receives the contact damping ratio.
 		@param pushSpeed  Receives the largest push speed, usually in meters per second. */
 	public static function b2World_GetContactTuning(worldId:B2WorldId, hertz:Array<Float>, dampingRatio:Array<Float>, pushSpeed:Array<Float>):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_GetContactTuning(worldId, hertz, dampingRatio, pushSpeed);
 	}
 
 	/** Sets the distance within which a contact's points are reused.
@@ -2825,7 +2894,7 @@ class Box2D {
 		@param worldId  The world.
 		@param recycleDistance  The distance, usually in meters. */
 	public static function b2World_SetContactRecycleDistance(worldId:B2WorldId, recycleDistance:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetContactRecycleDistance(worldId, recycleDistance);
 	}
 
 	/** Returns the distance within which a contact's points are reused.
@@ -2833,7 +2902,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The distance, usually in meters. */
 	public static function b2World_GetContactRecycleDistance(worldId:B2WorldId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetContactRecycleDistance(worldId);
 	}
 
 	/** Sets the largest speed a body can have.
@@ -2841,7 +2910,7 @@ class Box2D {
 		@param worldId  The world.
 		@param maximumLinearSpeed  The speed, usually in meters per second. */
 	public static function b2World_SetMaxLinearSpeed(worldId:B2WorldId, maximumLinearSpeed:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetMaxLinearSpeed(worldId, maximumLinearSpeed);
 	}
 
 	/** Returns the largest speed a body can have.
@@ -2849,7 +2918,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The speed, usually in meters per second. */
 	public static function b2World_GetMaxLinearSpeed(worldId:B2WorldId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetMaxLinearSpeed(worldId);
 	}
 
 	/** Sets whether constraints are warm started.
@@ -2859,7 +2928,7 @@ class Box2D {
 		@param worldId  The world.
 		@param flag  True to enable warm starting. */
 	public static function b2World_EnableWarmStarting(worldId:B2WorldId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_EnableWarmStarting(worldId, flag);
 	}
 
 	/** Returns whether constraints are warm started.
@@ -2867,7 +2936,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  True when warm starting is enabled. */
 	public static function b2World_IsWarmStartingEnabled(worldId:B2WorldId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_IsWarmStartingEnabled(worldId);
 	}
 
 	/** Sets whether the solver uses SSE2 even where AVX2 is available.
@@ -2877,7 +2946,7 @@ class Box2D {
 		@param worldId  The world.
 		@param flag  True to use SSE2. */
 	public static function b2World_EnableSSE2Fallback(worldId:B2WorldId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_EnableSSE2Fallback(worldId, flag);
 	}
 
 	/** Returns the number of awake bodies.
@@ -2885,7 +2954,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The count of awake bodies. */
 	public static function b2World_GetAwakeBodyCount(worldId:B2WorldId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetAwakeBodyCount(worldId);
 	}
 
 	/** Returns the timings of the most recent step.
@@ -2894,7 +2963,7 @@ class Box2D {
 		@param out  Optional. The `B2Profile` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The profile, with times in milliseconds. */
 	public static function b2World_GetProfile(worldId:B2WorldId, ?out:B2Profile):B2Profile {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetProfile(worldId, out);
 	}
 
 	/** Returns the world's counters and sizes.
@@ -2903,7 +2972,7 @@ class Box2D {
 		@param out  Optional. The `B2Counters` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The counters. */
 	public static function b2World_GetCounters(worldId:B2WorldId, ?out:B2Counters):B2Counters {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetCounters(worldId, out);
 	}
 
 	/** Returns the largest sizes the world has reached.
@@ -2914,7 +2983,7 @@ class Box2D {
 		@param out  Optional. The `B2Capacity` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The capacities. */
 	public static function b2World_GetMaxCapacity(worldId:B2WorldId, ?out:B2Capacity):B2Capacity {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetMaxCapacity(worldId, out);
 	}
 
 	/** Sets the value stored in the world.
@@ -2922,7 +2991,7 @@ class Box2D {
 		@param worldId  The world.
 		@param userData  Any value. */
 	public static function b2World_SetUserData(worldId:B2WorldId, userData:Dynamic):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetUserData(worldId, userData);
 	}
 
 	/** Returns the value stored in the world.
@@ -2930,7 +2999,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The value, as it was set. */
 	public static function b2World_GetUserData(worldId:B2WorldId):Dynamic {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetUserData(worldId);
 	}
 
 	/** Sets the callback that mixes two shapes' friction.
@@ -2940,7 +3009,7 @@ class Box2D {
 		@param worldId  The world.
 		@param callback  The callback. When null, the default mixing returns. */
 	public static function b2World_SetFrictionCallback(worldId:B2WorldId, callback:B2FrictionCallbackFcn):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetFrictionCallback(worldId, callback);
 	}
 
 	/** Sets the callback that mixes two shapes' restitution.
@@ -2950,7 +3019,7 @@ class Box2D {
 		@param worldId  The world.
 		@param callback  The callback. When null, the default mixing returns. */
 	public static function b2World_SetRestitutionCallback(worldId:B2WorldId, callback:B2RestitutionCallbackFcn):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetRestitutionCallback(worldId, callback);
 	}
 
 	/** Sets the number of workers a step spreads its work across.
@@ -2962,7 +3031,7 @@ class Box2D {
 		@param worldId  The world.
 		@param count  The number of workers. */
 	public static function b2World_SetWorkerCount(worldId:B2WorldId, count:Int):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_SetWorkerCount(worldId, count);
 	}
 
 	/** Returns the number of workers a step spreads its work across.
@@ -2974,7 +3043,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The number of workers. */
 	public static function b2World_GetWorkerCount(worldId:B2WorldId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetWorkerCount(worldId);
 	}
 
 	/** Rebuilds the broad phase tree of static shapes.
@@ -2983,7 +3052,7 @@ class Box2D {
 
 		@param worldId  The world. */
 	public static function b2World_RebuildStaticTree(worldId:B2WorldId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2World_RebuildStaticTree(worldId);
 	}
 
 	/** Returns a hash of the world's simulation state.
@@ -2993,7 +3062,7 @@ class Box2D {
 		@param worldId  The world.
 		@return  The hash. */
 	public static function b2World_GetStateHash(worldId:B2WorldId):haxe.Int64 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetStateHash(worldId);
 	}
 
 	/** Writes a snapshot of the world's simulation state into a buffer.
@@ -3005,7 +3074,7 @@ class Box2D {
 		@param capacity  The size of the buffer, in bytes.
 		@return  The number of bytes the snapshot needs. Nothing is written when that exceeds the capacity. 0 when the world is in the middle of a step. */
 	public static function b2World_GetSnapshot(worldId:B2WorldId, image:haxe.io.Bytes, capacity:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_GetSnapshot(worldId, image, capacity);
 	}
 
 	/** Restores a world's simulation state from a snapshot.
@@ -3017,7 +3086,7 @@ class Box2D {
 		@param size  The size of the snapshot, in bytes.
 		@return  True on success. When the image is rejected, for a bad magic number, version or layout, the world is unchanged. When a corrupt image is found after the rebuild starts, false is returned and the world is unusable, so the program must destroy it. */
 	public static function b2World_RestoreFromSnapshot(worldId:B2WorldId, image:haxe.io.Bytes, size:Int):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2World_RestoreFromSnapshot(worldId, image, size);
 	}
 
 	/** Creates a world from a snapshot.
@@ -3030,7 +3099,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new world's id, or `b2_nullWorldId` on failure. */
 	public static function b2CreateWorldFromSnapshot(image:haxe.io.Bytes, size:Int, workerCount:Int, ?out:B2WorldId):B2WorldId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateWorldFromSnapshot(image, size, workerCount, out);
 	}
 
 	/** Creates a rigid body in a world.
@@ -3047,7 +3116,7 @@ class Box2D {
 		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new body's id. */
 	public static function b2CreateBody(worldId:B2WorldId, def:B2BodyDef, ?out:B2BodyId):B2BodyId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateBody(worldId, def, out);
 	}
 
 	/** Destroys a body, with all its shapes and joints.
@@ -3056,7 +3125,7 @@ class Box2D {
 
 		@param bodyId  The body. */
 	public static function b2DestroyBody(bodyId:B2BodyId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DestroyBody(bodyId);
 	}
 
 	/** Returns whether a body id refers to a body that exists.
@@ -3066,7 +3135,7 @@ class Box2D {
 		@param id  The body id to check.
 		@return  True when the body exists. */
 	public static function b2Body_IsValid(id:B2BodyId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_IsValid(id);
 	}
 
 	/** Returns the body's type: static, kinematic or dynamic.
@@ -3074,7 +3143,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The type. */
 	public static function b2Body_GetType(bodyId:B2BodyId):B2BodyType {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetType(bodyId);
 	}
 
 	/** Changes the body's type.
@@ -3084,7 +3153,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param type  The new type. */
 	public static function b2Body_SetType(bodyId:B2BodyId, type:B2BodyType):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetType(bodyId, type);
 	}
 
 	/** Sets the body's name.
@@ -3094,7 +3163,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param name  The name, for debugging. */
 	public static function b2Body_SetName(bodyId:B2BodyId, name:String):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetName(bodyId, name);
 	}
 
 	/** Returns the body's name.
@@ -3102,7 +3171,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The name, empty when none was set. */
 	public static function b2Body_GetName(bodyId:B2BodyId):String {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetName(bodyId);
 	}
 
 	/** Sets the value stored in the body.
@@ -3110,7 +3179,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param userData  Any value. */
 	public static function b2Body_SetUserData(bodyId:B2BodyId, userData:Dynamic):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetUserData(bodyId, userData);
 	}
 
 	/** Returns the value stored in the body.
@@ -3118,7 +3187,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The value, as it was set. */
 	public static function b2Body_GetUserData(bodyId:B2BodyId):Dynamic {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetUserData(bodyId);
 	}
 
 	/** Returns the position of the body's origin in the world.
@@ -3127,7 +3196,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The position. */
 	public static function b2Body_GetPosition(bodyId:B2BodyId, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetPosition(bodyId, out);
 	}
 
 	/** Returns the body's rotation in the world.
@@ -3136,7 +3205,7 @@ class Box2D {
 		@param out  Optional. The `B2Rot` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The rotation, a cosine and sine pair. */
 	public static function b2Body_GetRotation(bodyId:B2BodyId, ?out:B2Rot):B2Rot {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetRotation(bodyId, out);
 	}
 
 	/** Returns the body's transform in the world.
@@ -3145,7 +3214,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldTransform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The transform. */
 	public static function b2Body_GetTransform(bodyId:B2BodyId, ?out:B2WorldTransform):B2WorldTransform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetTransform(bodyId, out);
 	}
 
 	/** Moves the body to a position and rotation in the world.
@@ -3156,7 +3225,7 @@ class Box2D {
 		@param position  The new position of the body's origin.
 		@param rotation  The new rotation. */
 	public static function b2Body_SetTransform(bodyId:B2BodyId, position:B2Pos, rotation:B2Rot):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetTransform(bodyId, position, rotation);
 	}
 
 	/** Returns a world point in the body's local space.
@@ -3166,7 +3235,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The point in the body's local space. */
 	public static function b2Body_GetLocalPoint(bodyId:B2BodyId, worldPoint:B2Pos, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetLocalPoint(bodyId, worldPoint, out);
 	}
 
 	/** Returns a point of the body's local space in the world.
@@ -3176,7 +3245,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The point in world coordinates. */
 	public static function b2Body_GetWorldPoint(bodyId:B2BodyId, localPoint:B2Vec2, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetWorldPoint(bodyId, localPoint, out);
 	}
 
 	/** Returns a world vector in the body's local space.
@@ -3186,7 +3255,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The vector in the body's local space. */
 	public static function b2Body_GetLocalVector(bodyId:B2BodyId, worldVector:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetLocalVector(bodyId, worldVector, out);
 	}
 
 	/** Returns a vector of the body's local space in the world.
@@ -3196,7 +3265,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The vector in world coordinates. */
 	public static function b2Body_GetWorldVector(bodyId:B2BodyId, localVector:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetWorldVector(bodyId, localVector, out);
 	}
 
 	/** Returns the linear velocity of the body's center of mass.
@@ -3205,7 +3274,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The velocity, usually in meters per second. */
 	public static function b2Body_GetLinearVelocity(bodyId:B2BodyId, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetLinearVelocity(bodyId, out);
 	}
 
 	/** Returns the body's angular velocity.
@@ -3213,7 +3282,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The velocity, in radians per second. */
 	public static function b2Body_GetAngularVelocity(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetAngularVelocity(bodyId);
 	}
 
 	/** Sets the linear velocity of the body's center of mass.
@@ -3221,7 +3290,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param linearVelocity  The velocity, usually in meters per second. */
 	public static function b2Body_SetLinearVelocity(bodyId:B2BodyId, linearVelocity:B2Vec2):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetLinearVelocity(bodyId, linearVelocity);
 	}
 
 	/** Sets the body's angular velocity.
@@ -3229,7 +3298,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param angularVelocity  The velocity, in radians per second. */
 	public static function b2Body_SetAngularVelocity(bodyId:B2BodyId, angularVelocity:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetAngularVelocity(bodyId, angularVelocity);
 	}
 
 	/** Sets the body's velocity to reach a transform after a time step.
@@ -3241,7 +3310,7 @@ class Box2D {
 		@param timeStep  The time step of the next call to `b2World_Step`, in seconds.
 		@param wake  True to wake the body. */
 	public static function b2Body_SetTargetTransform(bodyId:B2BodyId, target:B2WorldTransform, timeStep:Float, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetTargetTransform(bodyId, target, timeStep, wake);
 	}
 
 	/** Returns the velocity of a point fixed to the body, in the body's local space.
@@ -3251,7 +3320,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The velocity, usually in meters per second. */
 	public static function b2Body_GetLocalPointVelocity(bodyId:B2BodyId, localPoint:B2Vec2, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetLocalPointVelocity(bodyId, localPoint, out);
 	}
 
 	/** Returns the velocity of a point fixed to the body, in world coordinates.
@@ -3261,7 +3330,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The velocity, usually in meters per second. */
 	public static function b2Body_GetWorldPointVelocity(bodyId:B2BodyId, worldPoint:B2Pos, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetWorldPointVelocity(bodyId, worldPoint, out);
 	}
 
 	/** Applies a force at a point in the world.
@@ -3273,7 +3342,7 @@ class Box2D {
 		@param point  The point of application, in world coordinates.
 		@param wake  True to wake the body. */
 	public static function b2Body_ApplyForce(bodyId:B2BodyId, force:B2Vec2, point:B2Pos, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_ApplyForce(bodyId, force, point, wake);
 	}
 
 	/** Applies a force to the body's center of mass.
@@ -3284,7 +3353,7 @@ class Box2D {
 		@param force  The force in world coordinates, usually in newtons.
 		@param wake  True to wake the body. */
 	public static function b2Body_ApplyForceToCenter(bodyId:B2BodyId, force:B2Vec2, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_ApplyForceToCenter(bodyId, force, wake);
 	}
 
 	/** Applies a torque to the body.
@@ -3295,7 +3364,7 @@ class Box2D {
 		@param torque  The torque about the z axis, out of the screen, usually in newton meters.
 		@param wake  True to wake the body. */
 	public static function b2Body_ApplyTorque(bodyId:B2BodyId, torque:Float, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_ApplyTorque(bodyId, torque, wake);
 	}
 
 	/** Removes the force and torque applied to the body.
@@ -3304,7 +3373,7 @@ class Box2D {
 
 		@param bodyId  The body. */
 	public static function b2Body_ClearForces(bodyId:B2BodyId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_ClearForces(bodyId);
 	}
 
 	/** Applies an impulse at a point in the world.
@@ -3318,7 +3387,7 @@ class Box2D {
 		@param point  The point of application, in world coordinates.
 		@param wake  True to wake the body. */
 	public static function b2Body_ApplyLinearImpulse(bodyId:B2BodyId, impulse:B2Vec2, point:B2Pos, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_ApplyLinearImpulse(bodyId, impulse, point, wake);
 	}
 
 	/** Applies an impulse to the body's center of mass.
@@ -3331,7 +3400,7 @@ class Box2D {
 		@param impulse  The impulse in world coordinates, usually in newton seconds.
 		@param wake  True to wake the body. */
 	public static function b2Body_ApplyLinearImpulseToCenter(bodyId:B2BodyId, impulse:B2Vec2, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_ApplyLinearImpulseToCenter(bodyId, impulse, wake);
 	}
 
 	/** Applies an angular impulse to the body.
@@ -3344,7 +3413,7 @@ class Box2D {
 		@param impulse  The angular impulse, usually in kilogram meters squared per second.
 		@param wake  True to wake the body. */
 	public static function b2Body_ApplyAngularImpulse(bodyId:B2BodyId, impulse:Float, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_ApplyAngularImpulse(bodyId, impulse, wake);
 	}
 
 	/** Returns the body's mass.
@@ -3352,7 +3421,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The mass, usually in kilograms. */
 	public static function b2Body_GetMass(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetMass(bodyId);
 	}
 
 	/** Returns the body's rotational inertia.
@@ -3360,7 +3429,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The inertia, usually in kilogram meters squared. */
 	public static function b2Body_GetRotationalInertia(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetRotationalInertia(bodyId);
 	}
 
 	/** Returns the body's center of mass in its local space.
@@ -3369,7 +3438,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The center of mass. */
 	public static function b2Body_GetLocalCenter(bodyId:B2BodyId, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetLocalCenter(bodyId, out);
 	}
 
 	/** Returns the body's center of mass in the world.
@@ -3378,7 +3447,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The center of mass, in world coordinates. */
 	public static function b2Body_GetWorldCenter(bodyId:B2BodyId, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetWorldCenter(bodyId, out);
 	}
 
 	/** Overrides the body's mass properties.
@@ -3388,7 +3457,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param massData  The mass, center of mass and rotational inertia. */
 	public static function b2Body_SetMassData(bodyId:B2BodyId, massData:B2MassData):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetMassData(bodyId, massData);
 	}
 
 	/** Returns the body's mass data.
@@ -3397,7 +3466,7 @@ class Box2D {
 		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass, center of mass and rotational inertia. */
 	public static function b2Body_GetMassData(bodyId:B2BodyId, ?out:B2MassData):B2MassData {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetMassData(bodyId, out);
 	}
 
 	/** Recomputes the body's mass properties from its shapes.
@@ -3406,7 +3475,7 @@ class Box2D {
 
 		@param bodyId  The body. */
 	public static function b2Body_UpdateMassFromShapes(bodyId:B2BodyId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_UpdateMassFromShapes(bodyId);
 	}
 
 	/** Sets the body's linear damping.
@@ -3416,7 +3485,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param linearDamping  The damping, non-negative. */
 	public static function b2Body_SetLinearDamping(bodyId:B2BodyId, linearDamping:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetLinearDamping(bodyId, linearDamping);
 	}
 
 	/** Returns the body's linear damping.
@@ -3424,7 +3493,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The damping. */
 	public static function b2Body_GetLinearDamping(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetLinearDamping(bodyId);
 	}
 
 	/** Sets the body's angular damping.
@@ -3434,7 +3503,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param angularDamping  The damping, non-negative. */
 	public static function b2Body_SetAngularDamping(bodyId:B2BodyId, angularDamping:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetAngularDamping(bodyId, angularDamping);
 	}
 
 	/** Returns the body's angular damping.
@@ -3442,7 +3511,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The damping. */
 	public static function b2Body_GetAngularDamping(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetAngularDamping(bodyId);
 	}
 
 	/** Sets the factor that scales gravity on the body.
@@ -3452,7 +3521,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param gravityScale  The factor, 1 for full gravity. */
 	public static function b2Body_SetGravityScale(bodyId:B2BodyId, gravityScale:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetGravityScale(bodyId, gravityScale);
 	}
 
 	/** Returns the factor that scales gravity on the body.
@@ -3460,7 +3529,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The factor. */
 	public static function b2Body_GetGravityScale(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetGravityScale(bodyId);
 	}
 
 	/** Returns whether the body is awake.
@@ -3468,7 +3537,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  True when the body is awake. */
 	public static function b2Body_IsAwake(bodyId:B2BodyId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_IsAwake(bodyId);
 	}
 
 	/** Wakes the body, or puts it to sleep.
@@ -3478,7 +3547,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param awake  True to wake the body, false to put it to sleep. */
 	public static function b2Body_SetAwake(bodyId:B2BodyId, awake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetAwake(bodyId, awake);
 	}
 
 	/** Wakes the bodies touching the body.
@@ -3487,7 +3556,7 @@ class Box2D {
 
 		@param bodyId  The body. */
 	public static function b2Body_WakeTouching(bodyId:B2BodyId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_WakeTouching(bodyId);
 	}
 
 	/** Sets whether the body can fall asleep.
@@ -3497,7 +3566,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param enableSleep  True to let the body sleep. */
 	public static function b2Body_EnableSleeping(bodyId:B2BodyId, enableSleep:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_EnableSleeping(bodyId, enableSleep);
 	}
 
 	/** Returns whether the body can fall asleep.
@@ -3505,7 +3574,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  True when sleeping is enabled. */
 	public static function b2Body_IsSleepingEnabled(bodyId:B2BodyId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_IsSleepingEnabled(bodyId);
 	}
 
 	/** Sets the speed below which the body can fall asleep.
@@ -3513,7 +3582,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param sleepThreshold  The threshold, usually in meters per second. */
 	public static function b2Body_SetSleepThreshold(bodyId:B2BodyId, sleepThreshold:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetSleepThreshold(bodyId, sleepThreshold);
 	}
 
 	/** Returns the speed below which the body can fall asleep.
@@ -3521,7 +3590,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The threshold, usually in meters per second. */
 	public static function b2Body_GetSleepThreshold(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetSleepThreshold(bodyId);
 	}
 
 	/** Sets the body's continuous collision safety factor.
@@ -3531,7 +3600,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param safetyFactor  The factor, non-dimensional. */
 	public static function b2Body_SetSafetyFactor(bodyId:B2BodyId, safetyFactor:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetSafetyFactor(bodyId, safetyFactor);
 	}
 
 	/** Returns the body's continuous collision safety factor.
@@ -3539,7 +3608,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The factor, non-dimensional. */
 	public static function b2Body_GetSafetyFactor(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetSafetyFactor(bodyId);
 	}
 
 	/** Returns whether the body is enabled.
@@ -3547,7 +3616,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  True when the body is enabled. */
 	public static function b2Body_IsEnabled(bodyId:B2BodyId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_IsEnabled(bodyId);
 	}
 
 	/** Removes the body from the simulation.
@@ -3556,7 +3625,7 @@ class Box2D {
 
 		@param bodyId  The body. */
 	public static function b2Body_Disable(bodyId:B2BodyId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_Disable(bodyId);
 	}
 
 	/** Adds a disabled body back to the simulation.
@@ -3565,7 +3634,7 @@ class Box2D {
 
 		@param bodyId  The body. */
 	public static function b2Body_Enable(bodyId:B2BodyId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_Enable(bodyId);
 	}
 
 	/** Sets which motions of the body are locked.
@@ -3575,7 +3644,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param locks  The locks. */
 	public static function b2Body_SetMotionLocks(bodyId:B2BodyId, locks:B2MotionLocks):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetMotionLocks(bodyId, locks);
 	}
 
 	/** Returns which motions of the body are locked.
@@ -3584,7 +3653,7 @@ class Box2D {
 		@param out  Optional. The `B2MotionLocks` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The locks. */
 	public static function b2Body_GetMotionLocks(bodyId:B2BodyId, ?out:B2MotionLocks):B2MotionLocks {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetMotionLocks(bodyId, out);
 	}
 
 	/** Sets whether the body is a bullet.
@@ -3594,7 +3663,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param flag  True to make the body a bullet. */
 	public static function b2Body_SetBullet(bodyId:B2BodyId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_SetBullet(bodyId, flag);
 	}
 
 	/** Returns whether the body is a bullet.
@@ -3602,7 +3671,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  True when the body is a bullet. */
 	public static function b2Body_IsBullet(bodyId:B2BodyId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_IsBullet(bodyId);
 	}
 
 	/** Sets whether the body's contacts reuse their manifolds when the body moves slightly.
@@ -3612,7 +3681,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param flag  True to enable contact recycling. */
 	public static function b2Body_EnableContactRecycling(bodyId:B2BodyId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_EnableContactRecycling(bodyId, flag);
 	}
 
 	/** Returns whether the body's contacts reuse their manifolds.
@@ -3620,7 +3689,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  True when contact recycling is enabled. */
 	public static function b2Body_IsContactRecyclingEnabled(bodyId:B2BodyId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_IsContactRecyclingEnabled(bodyId);
 	}
 
 	/** Sets whether all the body's shapes generate contact events.
@@ -3630,7 +3699,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param flag  True to enable contact events. */
 	public static function b2Body_EnableContactEvents(bodyId:B2BodyId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_EnableContactEvents(bodyId, flag);
 	}
 
 	/** Sets whether all the body's shapes generate hit events.
@@ -3640,7 +3709,7 @@ class Box2D {
 		@param bodyId  The body.
 		@param flag  True to enable hit events. */
 	public static function b2Body_EnableHitEvents(bodyId:B2BodyId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Body_EnableHitEvents(bodyId, flag);
 	}
 
 	/** Returns the world that holds the body.
@@ -3649,7 +3718,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Body_GetWorld(bodyId:B2BodyId, ?out:B2WorldId):B2WorldId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetWorld(bodyId, out);
 	}
 
 	/** Returns the number of shapes on the body.
@@ -3657,7 +3726,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The count of shapes. */
 	public static function b2Body_GetShapeCount(bodyId:B2BodyId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetShapeCount(bodyId);
 	}
 
 	/** Fills an array with the ids of the body's shapes, up to a capacity.
@@ -3669,7 +3738,7 @@ class Box2D {
 		@param capacity  The most to store.
 		@return  The number of ids stored in the array. */
 	public static function b2Body_GetShapes(bodyId:B2BodyId, shapeArray:Array<B2ShapeId>, capacity:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetShapes(bodyId, shapeArray, capacity);
 	}
 
 	/** Returns the number of joints on the body.
@@ -3677,7 +3746,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The count of joints. */
 	public static function b2Body_GetJointCount(bodyId:B2BodyId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetJointCount(bodyId);
 	}
 
 	/** Fills an array with the ids of the body's joints, up to a capacity.
@@ -3689,7 +3758,7 @@ class Box2D {
 		@param capacity  The most to store.
 		@return  The number of ids stored in the array. */
 	public static function b2Body_GetJoints(bodyId:B2BodyId, jointArray:Array<B2JointId>, capacity:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetJoints(bodyId, jointArray, capacity);
 	}
 
 	/** Returns the capacity needed to read all the touching contacts of the body.
@@ -3697,7 +3766,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The capacity. */
 	public static function b2Body_GetContactCapacity(bodyId:B2BodyId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetContactCapacity(bodyId);
 	}
 
 	/** Fills an array with the body's touching contacts, up to a capacity.
@@ -3711,7 +3780,7 @@ class Box2D {
 		@param capacity  The most to store.
 		@return  The number of contacts stored in the array. */
 	public static function b2Body_GetContactData(bodyId:B2BodyId, contactData:Array<B2ContactData>, capacity:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetContactData(bodyId, contactData, capacity);
 	}
 
 	/** Returns the world bounds of all the body's shapes.
@@ -3722,7 +3791,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The bounds, in world coordinates. */
 	public static function b2Body_ComputeBounds(bodyId:B2BodyId, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_ComputeBounds(bodyId, out);
 	}
 
 	/** Returns the smallest distance from any point on the body's shapes to its center of mass.
@@ -3730,7 +3799,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The distance. */
 	public static function b2Body_GetMinExtent(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetMinExtent(bodyId);
 	}
 
 	/** Returns the largest distance from any point on the body's shapes to its center of mass.
@@ -3738,7 +3807,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The distance. */
 	public static function b2Body_GetMaxExtent(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetMaxExtent(bodyId);
 	}
 
 	/** Returns an upper bound on the distance from any point on the body's shapes to the body's origin.
@@ -3746,7 +3815,7 @@ class Box2D {
 		@param bodyId  The body.
 		@return  The distance, conservative. */
 	public static function b2Body_GetMaxExtentFromOrigin(bodyId:B2BodyId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Body_GetMaxExtentFromOrigin(bodyId);
 	}
 
 	/** Creates a circle shape and attaches it to a body.
@@ -3761,7 +3830,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the circle is invalid. */
 	public static function b2CreateCircleShape(bodyId:B2BodyId, def:B2ShapeDef, circle:B2Circle, ?out:B2ShapeId):B2ShapeId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateCircleShape(bodyId, def, circle, out);
 	}
 
 	/** Creates a line segment shape and attaches it to a body.
@@ -3774,7 +3843,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the segment is too short. */
 	public static function b2CreateSegmentShape(bodyId:B2BodyId, def:B2ShapeDef, segment:B2Segment, ?out:B2ShapeId):B2ShapeId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateSegmentShape(bodyId, def, segment, out);
 	}
 
 	/** Creates a loose chain segment shape and attaches it to a body.
@@ -3791,7 +3860,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the segment is too short. */
 	public static function b2CreateChainSegmentShape(bodyId:B2BodyId, def:B2ShapeDef, chainSegment:B2ChainSegment, ?out:B2ShapeId):B2ShapeId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateChainSegmentShape(bodyId, def, chainSegment, out);
 	}
 
 	/** Creates a capsule shape and attaches it to a body.
@@ -3804,7 +3873,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the capsule's length is too small. */
 	public static function b2CreateCapsuleShape(bodyId:B2BodyId, def:B2ShapeDef, capsule:B2Capsule, ?out:B2ShapeId):B2ShapeId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateCapsuleShape(bodyId, def, capsule, out);
 	}
 
 	/** Creates a convex polygon shape and attaches it to a body.
@@ -3819,7 +3888,7 @@ class Box2D {
 		@param out  Optional. The `B2ShapeId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new shape's id, or `b2_nullShapeId` when the polygon is invalid. */
 	public static function b2CreatePolygonShape(bodyId:B2BodyId, def:B2ShapeDef, polygon:B2Polygon, ?out:B2ShapeId):B2ShapeId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreatePolygonShape(bodyId, def, polygon, out);
 	}
 
 	/** Destroys a shape.
@@ -3831,7 +3900,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param updateBodyMass  Whether to update the body's mass data now. */
 	public static function b2DestroyShape(shapeId:B2ShapeId, updateBodyMass:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DestroyShape(shapeId, updateBodyMass);
 	}
 
 	/** Returns whether a shape id refers to a shape that exists.
@@ -3841,7 +3910,7 @@ class Box2D {
 		@param id  The shape id.
 		@return  True when the shape exists. */
 	public static function b2Shape_IsValid(id:B2ShapeId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_IsValid(id);
 	}
 
 	/** Returns the type of a shape.
@@ -3849,7 +3918,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  The shape's type. */
 	public static function b2Shape_GetType(shapeId:B2ShapeId):B2ShapeType {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetType(shapeId);
 	}
 
 	/** Returns the id of the body a shape is attached to.
@@ -3858,7 +3927,7 @@ class Box2D {
 		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The body's id. */
 	public static function b2Shape_GetBody(shapeId:B2ShapeId, ?out:B2BodyId):B2BodyId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetBody(shapeId, out);
 	}
 
 	/** Returns the id of the world that owns a shape.
@@ -3867,7 +3936,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Shape_GetWorld(shapeId:B2ShapeId, ?out:B2WorldId):B2WorldId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetWorld(shapeId, out);
 	}
 
 	/** Returns whether a shape is a sensor.
@@ -3877,7 +3946,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  True when the shape is a sensor. */
 	public static function b2Shape_IsSensor(shapeId:B2ShapeId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_IsSensor(shapeId);
 	}
 
 	/** Sets the user data of a shape.
@@ -3885,7 +3954,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param userData  Any Haxe value, returned as set by `b2Shape_GetUserData`. */
 	public static function b2Shape_SetUserData(shapeId:B2ShapeId, userData:Dynamic):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetUserData(shapeId, userData);
 	}
 
 	/** Returns the user data of a shape.
@@ -3895,7 +3964,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  The value set by `b2Shape_SetUserData`, or null when none was set. */
 	public static function b2Shape_GetUserData(shapeId:B2ShapeId):Dynamic {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetUserData(shapeId);
 	}
 
 	/** Sets the mass density of a shape, in kg/m^2.
@@ -3908,7 +3977,7 @@ class Box2D {
 		@param density  The density in kg/m^2, zero or more.
 		@param updateBodyMass  Whether to update the body's mass data now. */
 	public static function b2Shape_SetDensity(shapeId:B2ShapeId, density:Float, updateBodyMass:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetDensity(shapeId, density, updateBodyMass);
 	}
 
 	/** Returns the mass density of a shape, in kg/m^2.
@@ -3916,7 +3985,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  The density. */
 	public static function b2Shape_GetDensity(shapeId:B2ShapeId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetDensity(shapeId);
 	}
 
 	/** Sets the friction of a shape.
@@ -3926,7 +3995,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param friction  The friction coefficient, zero or more. */
 	public static function b2Shape_SetFriction(shapeId:B2ShapeId, friction:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetFriction(shapeId, friction);
 	}
 
 	/** Returns the friction of a shape.
@@ -3934,7 +4003,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  The friction coefficient. */
 	public static function b2Shape_GetFriction(shapeId:B2ShapeId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetFriction(shapeId);
 	}
 
 	/** Sets the restitution (bounciness) of a shape.
@@ -3944,7 +4013,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param restitution  The restitution, normally from 0 to 1. */
 	public static function b2Shape_SetRestitution(shapeId:B2ShapeId, restitution:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetRestitution(shapeId, restitution);
 	}
 
 	/** Returns the restitution (bounciness) of a shape.
@@ -3952,7 +4021,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  The restitution. */
 	public static function b2Shape_GetRestitution(shapeId:B2ShapeId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetRestitution(shapeId);
 	}
 
 	/** Sets the user material identifier of a shape.
@@ -3962,7 +4031,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param material  The identifier. */
 	public static function b2Shape_SetUserMaterial(shapeId:B2ShapeId, material:haxe.Int64):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetUserMaterial(shapeId, material);
 	}
 
 	/** Returns the user material identifier of a shape.
@@ -3970,7 +4039,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  The identifier. */
 	public static function b2Shape_GetUserMaterial(shapeId:B2ShapeId):haxe.Int64 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetUserMaterial(shapeId);
 	}
 
 	/** Sets the surface material of a shape.
@@ -3980,7 +4049,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param surfaceMaterial  The new surface material. */
 	public static function b2Shape_SetSurfaceMaterial(shapeId:B2ShapeId, surfaceMaterial:B2SurfaceMaterial):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetSurfaceMaterial(shapeId, surfaceMaterial);
 	}
 
 	/** Returns the surface material of a shape.
@@ -3989,7 +4058,7 @@ class Box2D {
 		@param out  Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The surface material. */
 	public static function b2Shape_GetSurfaceMaterial(shapeId:B2ShapeId, ?out:B2SurfaceMaterial):B2SurfaceMaterial {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetSurfaceMaterial(shapeId, out);
 	}
 
 	/** Returns the collision filter of a shape.
@@ -3998,7 +4067,7 @@ class Box2D {
 		@param out  Optional. The `B2Filter` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The filter. */
 	public static function b2Shape_GetFilter(shapeId:B2ShapeId, ?out:B2Filter):B2Filter {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetFilter(shapeId, out);
 	}
 
 	/** Sets the collision filter of a shape.
@@ -4012,7 +4081,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param filter  The new filter. */
 	public static function b2Shape_SetFilter(shapeId:B2ShapeId, filter:B2Filter):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetFilter(shapeId, filter);
 	}
 
 	/** Sets whether a shape generates sensor events.
@@ -4024,7 +4093,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param flag  True to generate sensor events. */
 	public static function b2Shape_EnableSensorEvents(shapeId:B2ShapeId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_EnableSensorEvents(shapeId, flag);
 	}
 
 	/** Returns whether a shape generates sensor events.
@@ -4032,7 +4101,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  True when sensor events are enabled. */
 	public static function b2Shape_AreSensorEventsEnabled(shapeId:B2ShapeId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_AreSensorEventsEnabled(shapeId);
 	}
 
 	/** Sets whether a shape generates contact begin and end events.
@@ -4046,7 +4115,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param flag  True to generate contact events. */
 	public static function b2Shape_EnableContactEvents(shapeId:B2ShapeId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_EnableContactEvents(shapeId, flag);
 	}
 
 	/** Returns whether a shape generates contact begin and end events.
@@ -4054,7 +4123,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  True when contact events are enabled. */
 	public static function b2Shape_AreContactEventsEnabled(shapeId:B2ShapeId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_AreContactEventsEnabled(shapeId);
 	}
 
 	/** Sets whether a shape calls the pre-solve callback.
@@ -4066,7 +4135,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param flag  True to call the pre-solve callback. */
 	public static function b2Shape_EnablePreSolveEvents(shapeId:B2ShapeId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_EnablePreSolveEvents(shapeId, flag);
 	}
 
 	/** Returns whether a shape calls the pre-solve callback.
@@ -4074,7 +4143,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  True when pre-solve events are enabled. */
 	public static function b2Shape_ArePreSolveEventsEnabled(shapeId:B2ShapeId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_ArePreSolveEventsEnabled(shapeId);
 	}
 
 	/** Sets whether a shape generates contact hit events.
@@ -4086,7 +4155,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param flag  True to generate hit events. */
 	public static function b2Shape_EnableHitEvents(shapeId:B2ShapeId, flag:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_EnableHitEvents(shapeId, flag);
 	}
 
 	/** Returns whether a shape generates contact hit events.
@@ -4094,7 +4163,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  True when hit events are enabled. */
 	public static function b2Shape_AreHitEventsEnabled(shapeId:B2ShapeId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_AreHitEventsEnabled(shapeId);
 	}
 
 	/** Returns whether a world point overlaps a shape.
@@ -4103,7 +4172,7 @@ class Box2D {
 		@param point  The point, in world space.
 		@return  True when the point is inside the shape. */
 	public static function b2Shape_TestPoint(shapeId:B2ShapeId, point:B2Pos):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_TestPoint(shapeId, point);
 	}
 
 	/** Casts a ray against a single shape.
@@ -4116,7 +4185,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldCastOutput` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The cast result. */
 	public static function b2Shape_CastRay(shapeId:B2ShapeId, origin:B2Pos, translation:B2Vec2, ?out:B2WorldCastOutput):B2WorldCastOutput {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_CastRay(shapeId, origin, translation, out);
 	}
 
 	/** Returns a copy of the circle of a circle shape.
@@ -4127,7 +4196,7 @@ class Box2D {
 		@param out  Optional. The `B2Circle` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The circle, in the body's local space. */
 	public static function b2Shape_GetCircle(shapeId:B2ShapeId, ?out:B2Circle):B2Circle {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetCircle(shapeId, out);
 	}
 
 	/** Returns a copy of the segment of a segment shape.
@@ -4138,7 +4207,7 @@ class Box2D {
 		@param out  Optional. The `B2Segment` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The segment, in the body's local space. */
 	public static function b2Shape_GetSegment(shapeId:B2ShapeId, ?out:B2Segment):B2Segment {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetSegment(shapeId, out);
 	}
 
 	/** Returns a copy of the chain segment of a chain segment shape.
@@ -4149,7 +4218,7 @@ class Box2D {
 		@param out  Optional. The `B2ChainSegment` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The chain segment, in the body's local space. */
 	public static function b2Shape_GetChainSegment(shapeId:B2ShapeId, ?out:B2ChainSegment):B2ChainSegment {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetChainSegment(shapeId, out);
 	}
 
 	/** Returns a copy of the capsule of a capsule shape.
@@ -4160,7 +4229,7 @@ class Box2D {
 		@param out  Optional. The `B2Capsule` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The capsule, in the body's local space. */
 	public static function b2Shape_GetCapsule(shapeId:B2ShapeId, ?out:B2Capsule):B2Capsule {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetCapsule(shapeId, out);
 	}
 
 	/** Returns a copy of the convex polygon of a polygon shape.
@@ -4171,7 +4240,7 @@ class Box2D {
 		@param out  Optional. The `B2Polygon` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The polygon, in the body's local space. */
 	public static function b2Shape_GetPolygon(shapeId:B2ShapeId, ?out:B2Polygon):B2Polygon {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetPolygon(shapeId, out);
 	}
 
 	/** Changes a shape into a circle, or updates its circle.
@@ -4183,7 +4252,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param circle  The circle, in the body's local space. */
 	public static function b2Shape_SetCircle(shapeId:B2ShapeId, circle:B2Circle):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetCircle(shapeId, circle);
 	}
 
 	/** Changes a shape into a capsule, or updates its capsule.
@@ -4195,7 +4264,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param capsule  The capsule, in the body's local space. */
 	public static function b2Shape_SetCapsule(shapeId:B2ShapeId, capsule:B2Capsule):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetCapsule(shapeId, capsule);
 	}
 
 	/** Changes a shape into a segment, or updates its segment.
@@ -4207,7 +4276,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param segment  The segment, in the body's local space. */
 	public static function b2Shape_SetSegment(shapeId:B2ShapeId, segment:B2Segment):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetSegment(shapeId, segment);
 	}
 
 	/** Changes a shape into a polygon, or updates its polygon.
@@ -4219,7 +4288,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param polygon  The polygon, in the body's local space. */
 	public static function b2Shape_SetPolygon(shapeId:B2ShapeId, polygon:B2Polygon):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetPolygon(shapeId, polygon);
 	}
 
 	/** Changes a shape into a loose chain segment, or updates its chain segment.
@@ -4233,7 +4302,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@param chainSegment  The chain segment, in the body's local space. */
 	public static function b2Shape_SetChainSegment(shapeId:B2ShapeId, chainSegment:B2ChainSegment):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_SetChainSegment(shapeId, chainSegment);
 	}
 
 	/** Returns the chain a chain segment shape belongs to.
@@ -4242,7 +4311,7 @@ class Box2D {
 		@param out  Optional. The `B2ChainId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The chain's id, or `b2_nullChainId` when the shape isn't a chain segment of a chain. */
 	public static function b2Shape_GetParentChain(shapeId:B2ShapeId, ?out:B2ChainId):B2ChainId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetParentChain(shapeId, out);
 	}
 
 	/** Returns the capacity needed to retrieve all the touching contacts of a shape.
@@ -4254,7 +4323,7 @@ class Box2D {
 		@param shapeId  The shape.
 		@return  The number of contacts on the shape's body, which is at least the number of touching contacts of the shape. Returns 0 for a sensor shape. */
 	public static function b2Shape_GetContactCapacity(shapeId:B2ShapeId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetContactCapacity(shapeId);
 	}
 
 	/** Fills an array with the touching contacts of a shape.
@@ -4272,7 +4341,7 @@ class Box2D {
 		@param capacity  The most to store.
 		@return  The number of elements filled. */
 	public static function b2Shape_GetContactData(shapeId:B2ShapeId, contactData:Array<B2ContactData>, capacity:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetContactData(shapeId, contactData, capacity);
 	}
 
 	/** Returns the capacity needed to retrieve all the shapes overlapping a sensor shape.
@@ -4284,7 +4353,7 @@ class Box2D {
 		@param shapeId  The sensor shape.
 		@return  The capacity `b2Shape_GetSensorData` needs to return every overlap. */
 	public static function b2Shape_GetSensorCapacity(shapeId:B2ShapeId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetSensorCapacity(shapeId);
 	}
 
 	/** Fills an array with the shapes that overlapped a sensor shape at the previous step.
@@ -4300,7 +4369,7 @@ class Box2D {
 		@param capacity  The most to store.
 		@return  The number of elements filled. */
 	public static function b2Shape_GetSensorData(shapeId:B2ShapeId, visitorIds:Array<B2ShapeId>, capacity:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetSensorData(shapeId, visitorIds, capacity);
 	}
 
 	/** Returns the current bounding box of a shape, in world space.
@@ -4309,7 +4378,7 @@ class Box2D {
 		@param out  Optional. The `B2AABB` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The bounding box. */
 	public static function b2Shape_GetBounds(shapeId:B2ShapeId, ?out:B2AABB):B2AABB {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetBounds(shapeId, out);
 	}
 
 	/** Computes the mass data of a shape from its geometry and density.
@@ -4318,7 +4387,7 @@ class Box2D {
 		@param out  Optional. The `B2MassData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The mass data, in the body's local space. */
 	public static function b2Shape_ComputeMassData(shapeId:B2ShapeId, ?out:B2MassData):B2MassData {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_ComputeMassData(shapeId, out);
 	}
 
 	/** Returns the point on a shape closest to a target point.
@@ -4330,7 +4399,7 @@ class Box2D {
 		@param out  Optional. The `B2Pos` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The closest point, in world space. */
 	public static function b2Shape_GetClosestPoint(shapeId:B2ShapeId, target:B2Pos, ?out:B2Pos):B2Pos {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Shape_GetClosestPoint(shapeId, target, out);
 	}
 
 	/** Applies a wind force to the body of a shape, using the density of air.
@@ -4343,7 +4412,7 @@ class Box2D {
 		@param lift  The lift coefficient, for the force perpendicular to the relative velocity.
 		@param wake  Whether to wake the body when it sleeps. */
 	public static function b2Shape_ApplyWind(shapeId:B2ShapeId, wind:B2Vec2, drag:Float, lift:Float, wake:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Shape_ApplyWind(shapeId, wind, drag, lift, wake);
 	}
 
 	/** Creates a chain shape and attaches it to a body.
@@ -4357,7 +4426,7 @@ class Box2D {
 		@param out  Optional. The `B2ChainId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new chain's id. */
 	public static function b2CreateChain(bodyId:B2BodyId, def:B2ChainDef, ?out:B2ChainId):B2ChainId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateChain(bodyId, def, out);
 	}
 
 	/** Destroys a chain shape and its segment shapes.
@@ -4366,7 +4435,7 @@ class Box2D {
 
 		@param chainId  The chain. */
 	public static function b2DestroyChain(chainId:B2ChainId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DestroyChain(chainId);
 	}
 
 	/** Returns the id of the world that owns a chain shape.
@@ -4375,7 +4444,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Chain_GetWorld(chainId:B2ChainId, ?out:B2WorldId):B2WorldId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Chain_GetWorld(chainId, out);
 	}
 
 	/** Returns the number of segments of a chain shape.
@@ -4383,7 +4452,7 @@ class Box2D {
 		@param chainId  The chain.
 		@return  The segment count. */
 	public static function b2Chain_GetSegmentCount(chainId:B2ChainId):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Chain_GetSegmentCount(chainId);
 	}
 
 	/** Fills an array with the segment shape ids of a chain shape.
@@ -4395,7 +4464,7 @@ class Box2D {
 		@param capacity  The most to store.
 		@return  The number of elements filled. */
 	public static function b2Chain_GetSegments(chainId:B2ChainId, segmentArray:Array<B2ShapeId>, capacity:Int):Int {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Chain_GetSegments(chainId, segmentArray, capacity);
 	}
 
 	/** Sets the surface material of every segment of a chain shape.
@@ -4405,7 +4474,7 @@ class Box2D {
 		@param chainId  The chain.
 		@param material  The surface material. */
 	public static function b2Chain_SetAllSurfaceMaterials(chainId:B2ChainId, material:B2SurfaceMaterial):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Chain_SetAllSurfaceMaterials(chainId, material);
 	}
 
 	/** Sets the surface material of one segment of a chain shape.
@@ -4416,7 +4485,7 @@ class Box2D {
 		@param material  The surface material, copied into the segment.
 		@param segmentIndex  The index of the segment, from 0 up to the segment count. */
 	public static function b2Chain_SetSurfaceMaterial(chainId:B2ChainId, material:B2SurfaceMaterial, segmentIndex:Int):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Chain_SetSurfaceMaterial(chainId, material, segmentIndex);
 	}
 
 	/** Returns the surface material of one segment of a chain shape.
@@ -4426,7 +4495,7 @@ class Box2D {
 		@param out  Optional. The `B2SurfaceMaterial` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The surface material. */
 	public static function b2Chain_GetSurfaceMaterial(chainId:B2ChainId, segmentIndex:Int, ?out:B2SurfaceMaterial):B2SurfaceMaterial {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Chain_GetSurfaceMaterial(chainId, segmentIndex, out);
 	}
 
 	/** Returns whether a chain id refers to a chain shape that exists.
@@ -4436,7 +4505,7 @@ class Box2D {
 		@param id  The chain id.
 		@return  True when the chain exists. */
 	public static function b2Chain_IsValid(id:B2ChainId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Chain_IsValid(id);
 	}
 
 	/** Destroys a joint.
@@ -4445,7 +4514,7 @@ class Box2D {
 
 		@param jointId  The joint. */
 	public static function b2DestroyJoint(jointId:B2JointId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DestroyJoint(jointId);
 	}
 
 	/** Returns whether a joint id refers to a joint that exists.
@@ -4455,7 +4524,7 @@ class Box2D {
 		@param id  The joint id.
 		@return  True when the joint exists. */
 	public static function b2Joint_IsValid(id:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_IsValid(id);
 	}
 
 	/** Returns the type of a joint.
@@ -4463,7 +4532,7 @@ class Box2D {
 		@param jointId  The joint.
 		@return  The joint's type. */
 	public static function b2Joint_GetType(jointId:B2JointId):B2JointType {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetType(jointId);
 	}
 
 	/** Returns the id of body A of a joint.
@@ -4472,7 +4541,7 @@ class Box2D {
 		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Body A's id. */
 	public static function b2Joint_GetBodyA(jointId:B2JointId, ?out:B2BodyId):B2BodyId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetBodyA(jointId, out);
 	}
 
 	/** Returns the id of body B of a joint.
@@ -4481,7 +4550,7 @@ class Box2D {
 		@param out  Optional. The `B2BodyId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  Body B's id. */
 	public static function b2Joint_GetBodyB(jointId:B2JointId, ?out:B2BodyId):B2BodyId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetBodyB(jointId, out);
 	}
 
 	/** Returns the id of the world that owns a joint.
@@ -4490,7 +4559,7 @@ class Box2D {
 		@param out  Optional. The `B2WorldId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The world's id. */
 	public static function b2Joint_GetWorld(jointId:B2JointId, ?out:B2WorldId):B2WorldId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetWorld(jointId, out);
 	}
 
 	/** Sets the frame of a joint on body A.
@@ -4500,7 +4569,7 @@ class Box2D {
 		@param jointId  The joint.
 		@param localFrame  The frame, in body A's local space. */
 	public static function b2Joint_SetLocalFrameA(jointId:B2JointId, localFrame:B2Transform):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_SetLocalFrameA(jointId, localFrame);
 	}
 
 	/** Returns the frame of a joint on body A.
@@ -4509,7 +4578,7 @@ class Box2D {
 		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The frame, in body A's local space. */
 	public static function b2Joint_GetLocalFrameA(jointId:B2JointId, ?out:B2Transform):B2Transform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetLocalFrameA(jointId, out);
 	}
 
 	/** Sets the frame of a joint on body B.
@@ -4519,7 +4588,7 @@ class Box2D {
 		@param jointId  The joint.
 		@param localFrame  The frame, in body B's local space. */
 	public static function b2Joint_SetLocalFrameB(jointId:B2JointId, localFrame:B2Transform):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_SetLocalFrameB(jointId, localFrame);
 	}
 
 	/** Returns the frame of a joint on body B.
@@ -4528,7 +4597,7 @@ class Box2D {
 		@param out  Optional. The `B2Transform` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The frame, in body B's local space. */
 	public static function b2Joint_GetLocalFrameB(jointId:B2JointId, ?out:B2Transform):B2Transform {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetLocalFrameB(jointId, out);
 	}
 
 	/** Sets whether the bodies of a joint collide with each other.
@@ -4538,7 +4607,7 @@ class Box2D {
 		@param jointId  The joint.
 		@param shouldCollide  True to let the connected bodies collide. */
 	public static function b2Joint_SetCollideConnected(jointId:B2JointId, shouldCollide:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_SetCollideConnected(jointId, shouldCollide);
 	}
 
 	/** Returns whether the bodies of a joint collide with each other.
@@ -4546,7 +4615,7 @@ class Box2D {
 		@param jointId  The joint.
 		@return  True when the connected bodies collide. */
 	public static function b2Joint_GetCollideConnected(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetCollideConnected(jointId);
 	}
 
 	/** Sets the user data of a joint.
@@ -4554,7 +4623,7 @@ class Box2D {
 		@param jointId  The joint.
 		@param userData  Any Haxe value, returned as set by `b2Joint_GetUserData`. */
 	public static function b2Joint_SetUserData(jointId:B2JointId, userData:Dynamic):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_SetUserData(jointId, userData);
 	}
 
 	/** Returns the user data of a joint.
@@ -4562,14 +4631,14 @@ class Box2D {
 		@param jointId  The joint.
 		@return  The value set by `b2Joint_SetUserData`, or null when none was set. */
 	public static function b2Joint_GetUserData(jointId:B2JointId):Dynamic {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetUserData(jointId);
 	}
 
 	/** Wakes the bodies of a joint.
 
 		@param jointId  The joint. */
 	public static function b2Joint_WakeBodies(jointId:B2JointId):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_WakeBodies(jointId);
 	}
 
 	/** Returns the constraint force of a joint, in newtons.
@@ -4580,7 +4649,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The force. */
 	public static function b2Joint_GetConstraintForce(jointId:B2JointId, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetConstraintForce(jointId, out);
 	}
 
 	/** Returns the constraint torque of a joint, in newton-meters.
@@ -4590,7 +4659,7 @@ class Box2D {
 		@param jointId  The joint.
 		@return  The torque. */
 	public static function b2Joint_GetConstraintTorque(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetConstraintTorque(jointId);
 	}
 
 	/** Returns the current linear separation error of a joint, in meters.
@@ -4600,7 +4669,7 @@ class Box2D {
 		@param jointId  The joint.
 		@return  The linear error. */
 	public static function b2Joint_GetLinearSeparation(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetLinearSeparation(jointId);
 	}
 
 	/** Returns the current angular separation error of a joint, in radians.
@@ -4610,7 +4679,7 @@ class Box2D {
 		@param jointId  The joint.
 		@return  The angular error. */
 	public static function b2Joint_GetAngularSeparation(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetAngularSeparation(jointId);
 	}
 
 	/** Sets the stiffness and damping of a joint's constraint.
@@ -4621,7 +4690,7 @@ class Box2D {
 		@param hertz  The stiffness, in hertz (cycles per second).
 		@param dampingRatio  The damping ratio, without a unit, where one is critical damping. */
 	public static function b2Joint_SetConstraintTuning(jointId:B2JointId, hertz:Float, dampingRatio:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_SetConstraintTuning(jointId, hertz, dampingRatio);
 	}
 
 	/** Reads the stiffness and damping of a joint's constraint.
@@ -4632,7 +4701,7 @@ class Box2D {
 		@param hertz  A one-element array that receives the stiffness at index 0, in hertz.
 		@param dampingRatio  A one-element array that receives the damping ratio at index 0. */
 	public static function b2Joint_GetConstraintTuning(jointId:B2JointId, hertz:Array<Float>, dampingRatio:Array<Float>):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_GetConstraintTuning(jointId, hertz, dampingRatio);
 	}
 
 	/** Sets the force above which a joint reports a joint event, in newtons.
@@ -4642,7 +4711,7 @@ class Box2D {
 		@param jointId  The joint.
 		@param threshold  The force threshold. */
 	public static function b2Joint_SetForceThreshold(jointId:B2JointId, threshold:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_SetForceThreshold(jointId, threshold);
 	}
 
 	/** Returns the force above which a joint reports a joint event, in newtons.
@@ -4650,7 +4719,7 @@ class Box2D {
 		@param jointId  The joint.
 		@return  The force threshold. */
 	public static function b2Joint_GetForceThreshold(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetForceThreshold(jointId);
 	}
 
 	/** Sets the torque above which a joint reports a joint event, in newton-meters.
@@ -4660,7 +4729,7 @@ class Box2D {
 		@param jointId  The joint.
 		@param threshold  The torque threshold. */
 	public static function b2Joint_SetTorqueThreshold(jointId:B2JointId, threshold:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2Joint_SetTorqueThreshold(jointId, threshold);
 	}
 
 	/** Returns the torque above which a joint reports a joint event, in newton-meters.
@@ -4668,7 +4737,7 @@ class Box2D {
 		@param jointId  The joint.
 		@return  The torque threshold. */
 	public static function b2Joint_GetTorqueThreshold(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Joint_GetTorqueThreshold(jointId);
 	}
 
 	/** Creates a distance joint between two bodies and returns its id.
@@ -4682,7 +4751,7 @@ class Box2D {
 		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateDistanceJoint(worldId:B2WorldId, def:B2DistanceJointDef, ?out:B2JointId):B2JointId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateDistanceJoint(worldId, def, out);
 	}
 
 	/** Sets the distance joint's rest length, in meters.
@@ -4692,7 +4761,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param length  The new rest length, in meters. */
 	public static function b2DistanceJoint_SetRestLength(jointId:B2JointId, length:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_SetRestLength(jointId, length);
 	}
 
 	/** Returns the distance joint's rest length, in meters.
@@ -4700,7 +4769,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The rest length. */
 	public static function b2DistanceJoint_GetRestLength(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetRestLength(jointId);
 	}
 
 	/** Sets whether the distance joint works as a spring.
@@ -4710,7 +4779,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param enableSpring  True to enable the spring, false to make the joint rigid. */
 	public static function b2DistanceJoint_EnableSpring(jointId:B2JointId, enableSpring:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_EnableSpring(jointId, enableSpring);
 	}
 
 	/** Returns whether the distance joint works as a spring.
@@ -4718,7 +4787,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  True when the spring is enabled. */
 	public static function b2DistanceJoint_IsSpringEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_IsSpringEnabled(jointId);
 	}
 
 	/** Sets the range of force the distance joint's spring can exert, in newtons.
@@ -4729,7 +4798,7 @@ class Box2D {
 		@param lowerForce  The lowest spring force, in newtons.
 		@param upperForce  The highest spring force, in newtons. */
 	public static function b2DistanceJoint_SetSpringForceRange(jointId:B2JointId, lowerForce:Float, upperForce:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_SetSpringForceRange(jointId, lowerForce, upperForce);
 	}
 
 	/** Reads the range of force the distance joint's spring can exert, in newtons.
@@ -4738,7 +4807,7 @@ class Box2D {
 		@param lowerForce  A one-element array that receives the lowest spring force at index 0.
 		@param upperForce  A one-element array that receives the highest spring force at index 0. */
 	public static function b2DistanceJoint_GetSpringForceRange(jointId:B2JointId, lowerForce:Array<Float>, upperForce:Array<Float>):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_GetSpringForceRange(jointId, lowerForce, upperForce);
 	}
 
 	/** Sets the distance joint's spring stiffness, in hertz (cycles per second).
@@ -4746,7 +4815,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param hertz  The spring stiffness, in hertz. */
 	public static function b2DistanceJoint_SetSpringHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_SetSpringHertz(jointId, hertz);
 	}
 
 	/** Sets the distance joint's spring damping ratio, which has no unit.
@@ -4756,7 +4825,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param dampingRatio  The spring damping ratio. */
 	public static function b2DistanceJoint_SetSpringDampingRatio(jointId:B2JointId, dampingRatio:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_SetSpringDampingRatio(jointId, dampingRatio);
 	}
 
 	/** Returns the distance joint's spring stiffness, in hertz (cycles per second).
@@ -4764,7 +4833,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The spring stiffness, in hertz. */
 	public static function b2DistanceJoint_GetSpringHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetSpringHertz(jointId);
 	}
 
 	/** Returns the distance joint's spring damping ratio, which has no unit.
@@ -4772,7 +4841,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The spring damping ratio. */
 	public static function b2DistanceJoint_GetSpringDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetSpringDampingRatio(jointId);
 	}
 
 	/** Returns the force the distance joint's spring applied in the last step, in newtons.
@@ -4782,7 +4851,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The spring force. */
 	public static function b2DistanceJoint_GetSpringForce(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetSpringForce(jointId);
 	}
 
 	/** Sets whether the distance joint enforces its minimum and maximum lengths.
@@ -4792,7 +4861,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param enableLimit  True to enforce the limits. */
 	public static function b2DistanceJoint_EnableLimit(jointId:B2JointId, enableLimit:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_EnableLimit(jointId, enableLimit);
 	}
 
 	/** Returns whether the distance joint enforces its minimum and maximum lengths.
@@ -4800,7 +4869,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  True when the limits are enabled. */
 	public static function b2DistanceJoint_IsLimitEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_IsLimitEnabled(jointId);
 	}
 
 	/** Sets the distance joint's minimum and maximum lengths, in meters.
@@ -4811,7 +4880,7 @@ class Box2D {
 		@param minLength  The minimum length, in meters.
 		@param maxLength  The maximum length, in meters. */
 	public static function b2DistanceJoint_SetLimits(jointId:B2JointId, minLength:Float, maxLength:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_SetLimits(jointId, minLength, maxLength);
 	}
 
 	/** Returns the distance joint's minimum length, in meters.
@@ -4819,7 +4888,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The minimum length. */
 	public static function b2DistanceJoint_GetLowerLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetLowerLimit(jointId);
 	}
 
 	/** Returns the distance joint's maximum length, in meters.
@@ -4827,7 +4896,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The maximum length. */
 	public static function b2DistanceJoint_GetUpperLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetUpperLimit(jointId);
 	}
 
 	/** Returns the current distance between the distance joint's two anchor points, in meters.
@@ -4837,7 +4906,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The current length. */
 	public static function b2DistanceJoint_GetCurrentLength(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetCurrentLength(jointId);
 	}
 
 	/** Sets whether the distance joint's motor is enabled.
@@ -4847,7 +4916,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param enableMotor  True to enable the motor. */
 	public static function b2DistanceJoint_EnableMotor(jointId:B2JointId, enableMotor:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_EnableMotor(jointId, enableMotor);
 	}
 
 	/** Returns whether the distance joint's motor is enabled.
@@ -4855,7 +4924,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  True when the motor is enabled. */
 	public static function b2DistanceJoint_IsMotorEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_IsMotorEnabled(jointId);
 	}
 
 	/** Sets the speed the distance joint's motor drives the length at, usually in meters per second.
@@ -4863,7 +4932,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param motorSpeed  The target speed, usually in meters per second. */
 	public static function b2DistanceJoint_SetTargetMotorSpeed(jointId:B2JointId, motorSpeed:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_SetTargetMotorSpeed(jointId, motorSpeed);
 	}
 
 	/** Returns the speed the distance joint's motor drives the length at, usually in meters per second.
@@ -4871,7 +4940,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The target speed. */
 	public static function b2DistanceJoint_GetTargetMotorSpeed(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetTargetMotorSpeed(jointId);
 	}
 
 	/** Sets the largest force the distance joint's motor can apply, usually in newtons.
@@ -4879,7 +4948,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@param force  The largest motor force, usually in newtons. */
 	public static function b2DistanceJoint_SetMaxMotorForce(jointId:B2JointId, force:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2DistanceJoint_SetMaxMotorForce(jointId, force);
 	}
 
 	/** Returns the largest force the distance joint's motor can apply, usually in newtons.
@@ -4887,7 +4956,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The largest motor force. */
 	public static function b2DistanceJoint_GetMaxMotorForce(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetMaxMotorForce(jointId);
 	}
 
 	/** Returns the force the distance joint's motor applied in the last step, usually in newtons.
@@ -4895,7 +4964,7 @@ class Box2D {
 		@param jointId  The distance joint.
 		@return  The motor force. */
 	public static function b2DistanceJoint_GetCurrentMotorForce(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2DistanceJoint_GetCurrentMotorForce(jointId);
 	}
 
 	/** Creates a filter joint between two bodies and returns its id.
@@ -4909,7 +4978,7 @@ class Box2D {
 		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateFilterJoint(worldId:B2WorldId, def:B2FilterJointDef, ?out:B2JointId):B2JointId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateFilterJoint(worldId, def, out);
 	}
 
 	/** Creates a motor joint between two bodies and returns its id.
@@ -4923,7 +4992,7 @@ class Box2D {
 		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateMotorJoint(worldId:B2WorldId, def:B2MotorJointDef, ?out:B2JointId):B2JointId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateMotorJoint(worldId, def, out);
 	}
 
 	/** Sets the relative linear velocity the motor joint drives toward, in meters per second.
@@ -4931,7 +5000,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param velocity  The desired relative linear velocity, in meters per second. */
 	public static function b2MotorJoint_SetLinearVelocity(jointId:B2JointId, velocity:B2Vec2):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetLinearVelocity(jointId, velocity);
 	}
 
 	/** Returns the relative linear velocity the motor joint drives toward, in meters per second.
@@ -4940,7 +5009,7 @@ class Box2D {
 		@param out  Optional. The `B2Vec2` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The desired relative linear velocity. */
 	public static function b2MotorJoint_GetLinearVelocity(jointId:B2JointId, ?out:B2Vec2):B2Vec2 {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetLinearVelocity(jointId, out);
 	}
 
 	/** Sets the relative angular velocity the motor joint drives toward, in radians per second.
@@ -4948,7 +5017,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param velocity  The desired relative angular velocity, in radians per second. */
 	public static function b2MotorJoint_SetAngularVelocity(jointId:B2JointId, velocity:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetAngularVelocity(jointId, velocity);
 	}
 
 	/** Returns the relative angular velocity the motor joint drives toward, in radians per second.
@@ -4956,7 +5025,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The desired relative angular velocity. */
 	public static function b2MotorJoint_GetAngularVelocity(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetAngularVelocity(jointId);
 	}
 
 	/** Sets the largest force the motor joint applies to reach its linear velocity, in newtons.
@@ -4964,7 +5033,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param maxForce  The largest force, in newtons. */
 	public static function b2MotorJoint_SetMaxVelocityForce(jointId:B2JointId, maxForce:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetMaxVelocityForce(jointId, maxForce);
 	}
 
 	/** Returns the largest force the motor joint applies to reach its linear velocity, in newtons.
@@ -4972,7 +5041,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The largest force. */
 	public static function b2MotorJoint_GetMaxVelocityForce(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetMaxVelocityForce(jointId);
 	}
 
 	/** Sets the largest torque the motor joint applies to reach its angular velocity, in newton-meters.
@@ -4980,7 +5049,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param maxTorque  The largest torque, in newton-meters. */
 	public static function b2MotorJoint_SetMaxVelocityTorque(jointId:B2JointId, maxTorque:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetMaxVelocityTorque(jointId, maxTorque);
 	}
 
 	/** Returns the largest torque the motor joint applies to reach its angular velocity, in newton-meters.
@@ -4988,7 +5057,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The largest torque. */
 	public static function b2MotorJoint_GetMaxVelocityTorque(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetMaxVelocityTorque(jointId);
 	}
 
 	/** Sets the stiffness of the motor joint's linear spring, in hertz.
@@ -4998,7 +5067,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param hertz  The linear spring stiffness, in hertz. */
 	public static function b2MotorJoint_SetLinearHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetLinearHertz(jointId, hertz);
 	}
 
 	/** Returns the stiffness of the motor joint's linear spring, in hertz.
@@ -5006,7 +5075,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The linear spring stiffness, in hertz. */
 	public static function b2MotorJoint_GetLinearHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetLinearHertz(jointId);
 	}
 
 	/** Sets the damping ratio of the motor joint's linear spring, which has no unit.
@@ -5016,7 +5085,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param damping  The linear spring damping ratio. */
 	public static function b2MotorJoint_SetLinearDampingRatio(jointId:B2JointId, damping:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetLinearDampingRatio(jointId, damping);
 	}
 
 	/** Returns the damping ratio of the motor joint's linear spring, which has no unit.
@@ -5024,7 +5093,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The linear spring damping ratio. */
 	public static function b2MotorJoint_GetLinearDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetLinearDampingRatio(jointId);
 	}
 
 	/** Sets the stiffness of the motor joint's angular spring, in hertz.
@@ -5034,7 +5103,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param hertz  The angular spring stiffness, in hertz. */
 	public static function b2MotorJoint_SetAngularHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetAngularHertz(jointId, hertz);
 	}
 
 	/** Returns the stiffness of the motor joint's angular spring, in hertz.
@@ -5042,7 +5111,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The angular spring stiffness, in hertz. */
 	public static function b2MotorJoint_GetAngularHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetAngularHertz(jointId);
 	}
 
 	/** Sets the damping ratio of the motor joint's angular spring, which has no unit.
@@ -5052,7 +5121,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param damping  The angular spring damping ratio. */
 	public static function b2MotorJoint_SetAngularDampingRatio(jointId:B2JointId, damping:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetAngularDampingRatio(jointId, damping);
 	}
 
 	/** Returns the damping ratio of the motor joint's angular spring, which has no unit.
@@ -5060,7 +5129,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The angular spring damping ratio. */
 	public static function b2MotorJoint_GetAngularDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetAngularDampingRatio(jointId);
 	}
 
 	/** Sets the largest force the motor joint's linear spring applies, in newtons.
@@ -5070,7 +5139,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param maxForce  The largest spring force, in newtons. */
 	public static function b2MotorJoint_SetMaxSpringForce(jointId:B2JointId, maxForce:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetMaxSpringForce(jointId, maxForce);
 	}
 
 	/** Returns the largest force the motor joint's linear spring applies, in newtons.
@@ -5078,7 +5147,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The largest spring force. */
 	public static function b2MotorJoint_GetMaxSpringForce(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetMaxSpringForce(jointId);
 	}
 
 	/** Sets the largest torque the motor joint's angular spring applies, in newton-meters.
@@ -5088,7 +5157,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@param maxTorque  The largest spring torque, in newton-meters. */
 	public static function b2MotorJoint_SetMaxSpringTorque(jointId:B2JointId, maxTorque:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2MotorJoint_SetMaxSpringTorque(jointId, maxTorque);
 	}
 
 	/** Returns the largest torque the motor joint's angular spring applies, in newton-meters.
@@ -5096,7 +5165,7 @@ class Box2D {
 		@param jointId  The motor joint.
 		@return  The largest spring torque. */
 	public static function b2MotorJoint_GetMaxSpringTorque(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2MotorJoint_GetMaxSpringTorque(jointId);
 	}
 
 	/** Creates a prismatic (slider) joint between two bodies and returns its id.
@@ -5110,7 +5179,7 @@ class Box2D {
 		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreatePrismaticJoint(worldId:B2WorldId, def:B2PrismaticJointDef, ?out:B2JointId):B2JointId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreatePrismaticJoint(worldId, def, out);
 	}
 
 	/** Sets whether the prismatic joint's spring is enabled.
@@ -5120,7 +5189,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param enableSpring  True to enable the spring. */
 	public static function b2PrismaticJoint_EnableSpring(jointId:B2JointId, enableSpring:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_EnableSpring(jointId, enableSpring);
 	}
 
 	/** Returns whether the prismatic joint's spring is enabled.
@@ -5128,7 +5197,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  True when the spring is enabled. */
 	public static function b2PrismaticJoint_IsSpringEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_IsSpringEnabled(jointId);
 	}
 
 	/** Sets the prismatic joint's spring stiffness, in hertz (cycles per second).
@@ -5138,7 +5207,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param hertz  The spring stiffness, in hertz. */
 	public static function b2PrismaticJoint_SetSpringHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_SetSpringHertz(jointId, hertz);
 	}
 
 	/** Returns the prismatic joint's spring stiffness, in hertz (cycles per second).
@@ -5146,7 +5215,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The spring stiffness, in hertz. */
 	public static function b2PrismaticJoint_GetSpringHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetSpringHertz(jointId);
 	}
 
 	/** Sets the prismatic joint's spring damping ratio, which has no unit.
@@ -5156,7 +5225,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param dampingRatio  The spring damping ratio. */
 	public static function b2PrismaticJoint_SetSpringDampingRatio(jointId:B2JointId, dampingRatio:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_SetSpringDampingRatio(jointId, dampingRatio);
 	}
 
 	/** Returns the prismatic joint's spring damping ratio, which has no unit.
@@ -5164,7 +5233,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The spring damping ratio. */
 	public static function b2PrismaticJoint_GetSpringDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetSpringDampingRatio(jointId);
 	}
 
 	/** Sets the translation the prismatic joint's spring drives toward, usually in meters.
@@ -5172,7 +5241,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param translation  The target translation, usually in meters. */
 	public static function b2PrismaticJoint_SetTargetTranslation(jointId:B2JointId, translation:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_SetTargetTranslation(jointId, translation);
 	}
 
 	/** Returns the translation the prismatic joint's spring drives toward, usually in meters.
@@ -5180,7 +5249,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The target translation. */
 	public static function b2PrismaticJoint_GetTargetTranslation(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetTargetTranslation(jointId);
 	}
 
 	/** Sets whether the prismatic joint enforces its translation limits.
@@ -5190,7 +5259,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param enableLimit  True to enforce the limits. */
 	public static function b2PrismaticJoint_EnableLimit(jointId:B2JointId, enableLimit:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_EnableLimit(jointId, enableLimit);
 	}
 
 	/** Returns whether the prismatic joint enforces its translation limits.
@@ -5198,7 +5267,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  True when the limits are enabled. */
 	public static function b2PrismaticJoint_IsLimitEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_IsLimitEnabled(jointId);
 	}
 
 	/** Returns the prismatic joint's lower translation limit, in meters.
@@ -5206,7 +5275,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The lower limit. */
 	public static function b2PrismaticJoint_GetLowerLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetLowerLimit(jointId);
 	}
 
 	/** Returns the prismatic joint's upper translation limit, in meters.
@@ -5214,7 +5283,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The upper limit. */
 	public static function b2PrismaticJoint_GetUpperLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetUpperLimit(jointId);
 	}
 
 	/** Sets the prismatic joint's lower and upper translation limits, in meters.
@@ -5225,7 +5294,7 @@ class Box2D {
 		@param lower  The lower limit, in meters.
 		@param upper  The upper limit, in meters. */
 	public static function b2PrismaticJoint_SetLimits(jointId:B2JointId, lower:Float, upper:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_SetLimits(jointId, lower, upper);
 	}
 
 	/** Sets whether the prismatic joint's motor is enabled.
@@ -5235,7 +5304,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param enableMotor  True to enable the motor. */
 	public static function b2PrismaticJoint_EnableMotor(jointId:B2JointId, enableMotor:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_EnableMotor(jointId, enableMotor);
 	}
 
 	/** Returns whether the prismatic joint's motor is enabled.
@@ -5243,7 +5312,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  True when the motor is enabled. */
 	public static function b2PrismaticJoint_IsMotorEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_IsMotorEnabled(jointId);
 	}
 
 	/** Sets the speed the prismatic joint's motor drives the joint along its axis at, usually in meters per second.
@@ -5251,7 +5320,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param motorSpeed  The target speed, usually in meters per second. */
 	public static function b2PrismaticJoint_SetTargetMotorSpeed(jointId:B2JointId, motorSpeed:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_SetTargetMotorSpeed(jointId, motorSpeed);
 	}
 
 	/** Returns the speed the prismatic joint's motor drives the joint along its axis at, usually in meters per second.
@@ -5259,7 +5328,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The target speed. */
 	public static function b2PrismaticJoint_GetTargetMotorSpeed(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetTargetMotorSpeed(jointId);
 	}
 
 	/** Sets the largest force the prismatic joint's motor can apply, usually in newtons.
@@ -5267,7 +5336,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@param force  The largest motor force, usually in newtons. */
 	public static function b2PrismaticJoint_SetMaxMotorForce(jointId:B2JointId, force:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2PrismaticJoint_SetMaxMotorForce(jointId, force);
 	}
 
 	/** Returns the largest force the prismatic joint's motor can apply, usually in newtons.
@@ -5275,7 +5344,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The largest motor force. */
 	public static function b2PrismaticJoint_GetMaxMotorForce(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetMaxMotorForce(jointId);
 	}
 
 	/** Returns the prismatic joint's current translation along its axis, usually in meters.
@@ -5285,7 +5354,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The current translation. */
 	public static function b2PrismaticJoint_GetCurrentTranslation(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetCurrentTranslation(jointId);
 	}
 
 	/** Returns the prismatic joint's current translation speed along its axis, usually in meters per second.
@@ -5293,7 +5362,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The current speed. */
 	public static function b2PrismaticJoint_GetCurrentSpeed(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetCurrentSpeed(jointId);
 	}
 
 	/** Returns the force the prismatic joint's motor applied in the last step, usually in newtons.
@@ -5301,7 +5370,7 @@ class Box2D {
 		@param jointId  The prismatic joint.
 		@return  The motor force. */
 	public static function b2PrismaticJoint_GetCurrentMotorForce(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2PrismaticJoint_GetCurrentMotorForce(jointId);
 	}
 
 	/** Creates a revolute joint between two bodies and returns its id.
@@ -5315,7 +5384,7 @@ class Box2D {
 		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateRevoluteJoint(worldId:B2WorldId, def:B2RevoluteJointDef, ?out:B2JointId):B2JointId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateRevoluteJoint(worldId, def, out);
 	}
 
 	/** Sets whether the revolute joint's spring is enabled.
@@ -5325,7 +5394,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param enableSpring  True to enable the spring. */
 	public static function b2RevoluteJoint_EnableSpring(jointId:B2JointId, enableSpring:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_EnableSpring(jointId, enableSpring);
 	}
 
 	/** Returns whether the revolute joint's spring is enabled.
@@ -5333,7 +5402,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  True when the spring is enabled. */
 	public static function b2RevoluteJoint_IsSpringEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_IsSpringEnabled(jointId);
 	}
 
 	/** Sets the revolute joint's spring stiffness, in hertz (cycles per second).
@@ -5341,7 +5410,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param hertz  The spring stiffness, in hertz. */
 	public static function b2RevoluteJoint_SetSpringHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_SetSpringHertz(jointId, hertz);
 	}
 
 	/** Returns the revolute joint's spring stiffness, in hertz (cycles per second).
@@ -5349,7 +5418,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The spring stiffness, in hertz. */
 	public static function b2RevoluteJoint_GetSpringHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetSpringHertz(jointId);
 	}
 
 	/** Sets the revolute joint's spring damping ratio, which has no unit.
@@ -5359,7 +5428,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param dampingRatio  The spring damping ratio. */
 	public static function b2RevoluteJoint_SetSpringDampingRatio(jointId:B2JointId, dampingRatio:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_SetSpringDampingRatio(jointId, dampingRatio);
 	}
 
 	/** Returns the revolute joint's spring damping ratio, which has no unit.
@@ -5367,7 +5436,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The spring damping ratio. */
 	public static function b2RevoluteJoint_GetSpringDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetSpringDampingRatio(jointId);
 	}
 
 	/** Sets the angle the revolute joint's spring drives toward, in radians.
@@ -5375,7 +5444,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param angle  The target angle, in radians. */
 	public static function b2RevoluteJoint_SetTargetAngle(jointId:B2JointId, angle:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_SetTargetAngle(jointId, angle);
 	}
 
 	/** Returns the angle the revolute joint's spring drives toward, in radians.
@@ -5383,7 +5452,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The target angle, in radians. */
 	public static function b2RevoluteJoint_GetTargetAngle(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetTargetAngle(jointId);
 	}
 
 	/** Sets whether the revolute joint enforces its angle limits.
@@ -5393,7 +5462,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param enableLimit  True to enforce the limits. */
 	public static function b2RevoluteJoint_EnableLimit(jointId:B2JointId, enableLimit:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_EnableLimit(jointId, enableLimit);
 	}
 
 	/** Returns whether the revolute joint enforces its angle limits.
@@ -5401,7 +5470,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  True when the limits are enabled. */
 	public static function b2RevoluteJoint_IsLimitEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_IsLimitEnabled(jointId);
 	}
 
 	/** Returns the revolute joint's lower angle limit, in radians.
@@ -5409,7 +5478,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The lower limit. */
 	public static function b2RevoluteJoint_GetLowerLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetLowerLimit(jointId);
 	}
 
 	/** Returns the revolute joint's upper angle limit, in radians.
@@ -5417,7 +5486,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The upper limit. */
 	public static function b2RevoluteJoint_GetUpperLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetUpperLimit(jointId);
 	}
 
 	/** Sets the revolute joint's lower and upper angle limits, in radians.
@@ -5428,7 +5497,7 @@ class Box2D {
 		@param lower  The lower limit, in radians.
 		@param upper  The upper limit, in radians. */
 	public static function b2RevoluteJoint_SetLimits(jointId:B2JointId, lower:Float, upper:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_SetLimits(jointId, lower, upper);
 	}
 
 	/** Sets whether the revolute joint's motor is enabled.
@@ -5438,7 +5507,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param enableMotor  True to enable the motor. */
 	public static function b2RevoluteJoint_EnableMotor(jointId:B2JointId, enableMotor:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_EnableMotor(jointId, enableMotor);
 	}
 
 	/** Returns whether the revolute joint's motor is enabled.
@@ -5446,7 +5515,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  True when the motor is enabled. */
 	public static function b2RevoluteJoint_IsMotorEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_IsMotorEnabled(jointId);
 	}
 
 	/** Sets the speed the revolute joint's motor drives the joint angle at, in radians per second.
@@ -5454,7 +5523,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param motorSpeed  The target speed, in radians per second. Positive turns body B counterclockwise relative to body A. */
 	public static function b2RevoluteJoint_SetTargetMotorSpeed(jointId:B2JointId, motorSpeed:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_SetTargetMotorSpeed(jointId, motorSpeed);
 	}
 
 	/** Returns the speed the revolute joint's motor drives the joint angle at, in radians per second.
@@ -5462,7 +5531,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The target speed. */
 	public static function b2RevoluteJoint_GetTargetMotorSpeed(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetTargetMotorSpeed(jointId);
 	}
 
 	/** Sets the largest torque the revolute joint's motor can apply, usually in newton-meters.
@@ -5470,7 +5539,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@param torque  The largest motor torque, usually in newton-meters. */
 	public static function b2RevoluteJoint_SetMaxMotorTorque(jointId:B2JointId, torque:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2RevoluteJoint_SetMaxMotorTorque(jointId, torque);
 	}
 
 	/** Returns the largest torque the revolute joint's motor can apply, usually in newton-meters.
@@ -5478,7 +5547,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The largest motor torque. */
 	public static function b2RevoluteJoint_GetMaxMotorTorque(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetMaxMotorTorque(jointId);
 	}
 
 	/** Returns the revolute joint's current angle, in radians.
@@ -5488,7 +5557,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The current angle, in radians. */
 	public static function b2RevoluteJoint_GetCurrentAngle(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetCurrentAngle(jointId);
 	}
 
 	/** Returns the revolute joint's current angular speed, in radians per second.
@@ -5496,7 +5565,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The current speed, in radians per second. */
 	public static function b2RevoluteJoint_GetCurrentSpeed(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetCurrentSpeed(jointId);
 	}
 
 	/** Returns the torque the revolute joint's motor applied in the last step, usually in newton-meters.
@@ -5504,7 +5573,7 @@ class Box2D {
 		@param jointId  The revolute joint.
 		@return  The motor torque. */
 	public static function b2RevoluteJoint_GetCurrentMotorTorque(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2RevoluteJoint_GetCurrentMotorTorque(jointId);
 	}
 
 	/** Creates a weld joint between two bodies and returns its id.
@@ -5518,7 +5587,7 @@ class Box2D {
 		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateWeldJoint(worldId:B2WorldId, def:B2WeldJointDef, ?out:B2JointId):B2JointId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateWeldJoint(worldId, def, out);
 	}
 
 	/** Sets the weld joint's linear stiffness, in hertz.
@@ -5528,7 +5597,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@param hertz  The linear stiffness, in hertz. */
 	public static function b2WeldJoint_SetLinearHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WeldJoint_SetLinearHertz(jointId, hertz);
 	}
 
 	/** Returns the weld joint's linear stiffness, in hertz.
@@ -5536,7 +5605,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@return  The linear stiffness, in hertz. */
 	public static function b2WeldJoint_GetLinearHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WeldJoint_GetLinearHertz(jointId);
 	}
 
 	/** Sets the weld joint's linear damping ratio, which has no unit.
@@ -5544,7 +5613,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@param dampingRatio  The linear damping ratio. */
 	public static function b2WeldJoint_SetLinearDampingRatio(jointId:B2JointId, dampingRatio:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WeldJoint_SetLinearDampingRatio(jointId, dampingRatio);
 	}
 
 	/** Returns the weld joint's linear damping ratio, which has no unit.
@@ -5552,7 +5621,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@return  The linear damping ratio. */
 	public static function b2WeldJoint_GetLinearDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WeldJoint_GetLinearDampingRatio(jointId);
 	}
 
 	/** Sets the weld joint's angular stiffness, in hertz.
@@ -5562,7 +5631,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@param hertz  The angular stiffness, in hertz. */
 	public static function b2WeldJoint_SetAngularHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WeldJoint_SetAngularHertz(jointId, hertz);
 	}
 
 	/** Returns the weld joint's angular stiffness, in hertz.
@@ -5570,7 +5639,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@return  The angular stiffness, in hertz. */
 	public static function b2WeldJoint_GetAngularHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WeldJoint_GetAngularHertz(jointId);
 	}
 
 	/** Sets the weld joint's angular damping ratio, which has no unit.
@@ -5578,7 +5647,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@param dampingRatio  The angular damping ratio. */
 	public static function b2WeldJoint_SetAngularDampingRatio(jointId:B2JointId, dampingRatio:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WeldJoint_SetAngularDampingRatio(jointId, dampingRatio);
 	}
 
 	/** Returns the weld joint's angular damping ratio, which has no unit.
@@ -5586,7 +5655,7 @@ class Box2D {
 		@param jointId  The weld joint.
 		@return  The angular damping ratio. */
 	public static function b2WeldJoint_GetAngularDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WeldJoint_GetAngularDampingRatio(jointId);
 	}
 
 	/** Creates a wheel joint between two bodies and returns its id.
@@ -5600,7 +5669,7 @@ class Box2D {
 		@param out  Optional. The `B2JointId` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The new joint's id. */
 	public static function b2CreateWheelJoint(worldId:B2WorldId, def:B2WheelJointDef, ?out:B2JointId):B2JointId {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2CreateWheelJoint(worldId, def, out);
 	}
 
 	/** Sets whether the wheel joint's spring is enabled.
@@ -5610,7 +5679,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@param enableSpring  True to enable the spring. */
 	public static function b2WheelJoint_EnableSpring(jointId:B2JointId, enableSpring:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_EnableSpring(jointId, enableSpring);
 	}
 
 	/** Returns whether the wheel joint's spring is enabled.
@@ -5618,7 +5687,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  True when the spring is enabled. */
 	public static function b2WheelJoint_IsSpringEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_IsSpringEnabled(jointId);
 	}
 
 	/** Sets the wheel joint's spring stiffness, in hertz (cycles per second).
@@ -5626,7 +5695,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@param hertz  The spring stiffness, in hertz. */
 	public static function b2WheelJoint_SetSpringHertz(jointId:B2JointId, hertz:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_SetSpringHertz(jointId, hertz);
 	}
 
 	/** Returns the wheel joint's spring stiffness, in hertz (cycles per second).
@@ -5634,7 +5703,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  The spring stiffness, in hertz. */
 	public static function b2WheelJoint_GetSpringHertz(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_GetSpringHertz(jointId);
 	}
 
 	/** Sets the wheel joint's spring damping ratio, which has no unit.
@@ -5644,7 +5713,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@param dampingRatio  The spring damping ratio. */
 	public static function b2WheelJoint_SetSpringDampingRatio(jointId:B2JointId, dampingRatio:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_SetSpringDampingRatio(jointId, dampingRatio);
 	}
 
 	/** Returns the wheel joint's spring damping ratio, which has no unit.
@@ -5652,7 +5721,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  The spring damping ratio. */
 	public static function b2WheelJoint_GetSpringDampingRatio(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_GetSpringDampingRatio(jointId);
 	}
 
 	/** Sets whether the wheel joint enforces its translation limits.
@@ -5662,7 +5731,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@param enableLimit  True to enforce the limits. */
 	public static function b2WheelJoint_EnableLimit(jointId:B2JointId, enableLimit:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_EnableLimit(jointId, enableLimit);
 	}
 
 	/** Returns whether the wheel joint enforces its translation limits.
@@ -5670,7 +5739,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  True when the limits are enabled. */
 	public static function b2WheelJoint_IsLimitEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_IsLimitEnabled(jointId);
 	}
 
 	/** Returns the wheel joint's lower translation limit, in meters.
@@ -5678,7 +5747,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  The lower limit. */
 	public static function b2WheelJoint_GetLowerLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_GetLowerLimit(jointId);
 	}
 
 	/** Returns the wheel joint's upper translation limit, in meters.
@@ -5686,7 +5755,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  The upper limit. */
 	public static function b2WheelJoint_GetUpperLimit(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_GetUpperLimit(jointId);
 	}
 
 	/** Sets the wheel joint's lower and upper translation limits, in meters.
@@ -5697,7 +5766,7 @@ class Box2D {
 		@param lower  The lower limit, in meters.
 		@param upper  The upper limit, in meters. */
 	public static function b2WheelJoint_SetLimits(jointId:B2JointId, lower:Float, upper:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_SetLimits(jointId, lower, upper);
 	}
 
 	/** Sets whether the wheel joint's motor is enabled.
@@ -5707,7 +5776,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@param enableMotor  True to enable the motor. */
 	public static function b2WheelJoint_EnableMotor(jointId:B2JointId, enableMotor:Bool):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_EnableMotor(jointId, enableMotor);
 	}
 
 	/** Returns whether the wheel joint's motor is enabled.
@@ -5715,7 +5784,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  True when the motor is enabled. */
 	public static function b2WheelJoint_IsMotorEnabled(jointId:B2JointId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_IsMotorEnabled(jointId);
 	}
 
 	/** Sets the speed the wheel joint's motor drives the wheel's rotation at, in radians per second.
@@ -5723,7 +5792,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@param motorSpeed  The target speed, in radians per second. Positive turns body B counterclockwise relative to body A, so a wheel rolling toward +x on level ground needs a negative speed. */
 	public static function b2WheelJoint_SetTargetMotorSpeed(jointId:B2JointId, motorSpeed:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_SetTargetMotorSpeed(jointId, motorSpeed);
 	}
 
 	/** Returns the speed the wheel joint's motor drives the wheel's rotation at, in radians per second.
@@ -5731,7 +5800,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  The target speed. */
 	public static function b2WheelJoint_GetTargetMotorSpeed(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_GetTargetMotorSpeed(jointId);
 	}
 
 	/** Sets the largest torque the wheel joint's motor can apply, usually in newton-meters.
@@ -5739,7 +5808,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@param torque  The largest motor torque, usually in newton-meters. */
 	public static function b2WheelJoint_SetMaxMotorTorque(jointId:B2JointId, torque:Float):Void {
-		throw "not built yet";
+		helix.box2d.internal.Calls.b2WheelJoint_SetMaxMotorTorque(jointId, torque);
 	}
 
 	/** Returns the largest torque the wheel joint's motor can apply, usually in newton-meters.
@@ -5747,7 +5816,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  The largest motor torque. */
 	public static function b2WheelJoint_GetMaxMotorTorque(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_GetMaxMotorTorque(jointId);
 	}
 
 	/** Returns the torque the wheel joint's motor applied in the last step, usually in newton-meters.
@@ -5755,7 +5824,7 @@ class Box2D {
 		@param jointId  The wheel joint.
 		@return  The motor torque. */
 	public static function b2WheelJoint_GetCurrentMotorTorque(jointId:B2JointId):Float {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2WheelJoint_GetCurrentMotorTorque(jointId);
 	}
 
 	/** Returns whether a contact id refers to a contact that still exists.
@@ -5765,7 +5834,7 @@ class Box2D {
 		@param id  The contact id.
 		@return  True when the contact exists. */
 	public static function b2Contact_IsValid(id:B2ContactId):Bool {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Contact_IsValid(id);
 	}
 
 	/** Returns the data of a contact: its id, its two shapes and its manifold.
@@ -5776,7 +5845,7 @@ class Box2D {
 		@param out  Optional. The `B2ContactData` to fill in place, its objects and arrays reused; a new one when omitted.
 		@return  The contact's data. */
 	public static function b2Contact_GetData(contactId:B2ContactId, ?out:B2ContactData):B2ContactData {
-		throw "not built yet";
+		return helix.box2d.internal.Calls.b2Contact_GetData(contactId, out);
 	}
 	#end
 
@@ -5784,6 +5853,14 @@ class Box2D {
 
 		@param directory  The directory, relative to the build's working directory. */
 	public static macro function copyWasm(directory:String):haxe.macro.Expr {
-		throw "not built yet";
+		#if macro
+		var here = haxe.io.Path.directory(haxe.io.Path.normalize(sys.FileSystem.absolutePath(haxe.macro.Context.resolvePath("helix/box2d/Box2D.hx"))));
+		var source = haxe.io.Path.join([here, "..", "..", "..", "wasm", "box2d.wasm"]);
+		if (haxe.macro.Context.defined("js")) {
+			sys.FileSystem.createDirectory(directory);
+			sys.io.File.copy(sys.FileSystem.absolutePath(source), haxe.io.Path.join([directory, "box2d.wasm"]));
+		}
+		#end
+		return macro null;
 	}
 }

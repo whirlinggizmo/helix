@@ -13,6 +13,10 @@ class B2Mat22 {
 		@param cx  Optional. The first column. A zero vector when omitted.
 		@param cy  Optional. The second column. A zero vector when omitted. */
 	public function new(?cx:B2Vec2, ?cy:B2Vec2) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2Mat22(this);
+		if (cx != null)
+			this.cx = cx;
+		if (cy != null)
+			this.cy = cy;
 	}
 }

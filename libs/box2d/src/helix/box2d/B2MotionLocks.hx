@@ -17,6 +17,9 @@ class B2MotionLocks {
 		@param linearY  Optional. Prevent translation along the y-axis.
 		@param angularZ  Optional. Prevent rotation around the z-axis. */
 	public function new(linearX = false, linearY = false, angularZ = false) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2MotionLocks(this);
+		this.linearX = linearX;
+		this.linearY = linearY;
+		this.angularZ = angularZ;
 	}
 }

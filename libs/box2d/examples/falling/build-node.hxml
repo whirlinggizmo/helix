@@ -1,0 +1,10 @@
+# The falling box in Node, as a page runs it, over box2d.wasm: haxe build-node.hxml -> main.js, and box2d.wasm copied beside it;
+# node main.js from this directory.
+-lib helix-box2d
+-D helix-company=helix
+-D helix-product=box2d-falling
+-cp .
+-main Main
+-dce full
+-js main.js
+--macro helix.box2d.Box2D.copyWasm(".")

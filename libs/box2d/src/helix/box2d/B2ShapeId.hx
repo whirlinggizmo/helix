@@ -13,6 +13,6 @@ class B2ShapeId {
 
 	/** Creates one, its fields zero. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2ShapeId(this);
 	}
 }

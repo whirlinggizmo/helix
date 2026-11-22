@@ -7,6 +7,7 @@ class B2FilterJointDef {
 
 	/** Creates one holding Box2D's defaults, as `b2DefaultFilterJointDef()` returns. The structs it holds are made with it. */
 	public function new() {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2FilterJointDef(this);
+		helix.box2d.internal.Calls.b2DefaultFilterJointDef(this);
 	}
 }

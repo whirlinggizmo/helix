@@ -17,6 +17,10 @@ class B2MassData {
 		@param center  Optional. The position of the shape's centroid relative to the shape's origin.
 		@param rotationalInertia  Optional. The rotational inertia of the shape about the shape center. */
 	public function new(mass = 0., ?center:B2Vec2, rotationalInertia = 0.) {
-		throw "not built yet";
+		helix.box2d.internal.Init.initB2MassData(this);
+		this.mass = mass;
+		if (center != null)
+			this.center = center;
+		this.rotationalInertia = rotationalInertia;
 	}
 }
