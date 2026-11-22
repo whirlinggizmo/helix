@@ -1320,7 +1320,7 @@ Why things are the way they are, numbered, in order.
     change, for the reasons above. A pack of the shipped files in a page, deferred (ROADMAP).
 
 87. **helix-jolt is Jolt Physics with JoltPhysics.js's API, through a C ABI of numbers.** The first C library a program brings through
-    the C ABI (GOALS 5) is Jolt 5.6, not Box2D as the roadmap ordered: a 3D game wants it first, and it is the harder of the two to
+    the C ABI (GOALS 5) is Jolt 5.7, not Box2D as the roadmap ordered: a 3D game wants it first, and it is the harder of the two to
     carry. Its API is JoltPhysics.js's, Jolt's own JavaScript binding, in Jolt's C++ names (`JoltInterface`, `BodyInterface`,
     `BodyCreationSettings`, `mFriction`, the constants on `Jolt`), as helix-raylib's is raylib's (24), so `check_names` leaves it
     unjudged. It changes what Haxe changes: values are Haxe objects needing no `Jolt.destroy`, every value-returning call accepts an
@@ -1339,7 +1339,7 @@ Why things are the way they are, numbered, in order.
     per body on either side. The bulk reads keep a frame's crossing to one copy, as the physics study measured (10 to 30 ns a body).
 
     What it costs: a program on helix-jolt builds without hxcpp's `-std=c++11` (`extraParams.hxml`'s `-D HXCPP_NO_CPP11`), as Jolt is
-    C++17 and hxcpp's own flag follows a library's. The module is 890 KB, 258 KB gzipped. It needs a 1 MB stack, as Jolt's step
+    C++17 and hxcpp's own flag follows a library's. The module is 897 KB, 267 KB gzipped. It needs a 1 MB stack, as Jolt's step
     overflows Emscripten's default of 64 KB.
 
     Rejected: Jolt's C++ API with its allocator and job system passed in, which is more setup in every program. A helix-shaped API,

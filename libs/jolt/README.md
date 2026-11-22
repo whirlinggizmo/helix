@@ -1,6 +1,6 @@
 # helix-jolt
 
-[Jolt Physics](https://github.com/jrouwe/JoltPhysics) 5.6 for Haxe, with the API of [JoltPhysics.js](https://github.com/jrouwe/JoltPhysics.js),
+[Jolt Physics](https://github.com/jrouwe/JoltPhysics) 5.7 for Haxe, with the API of [JoltPhysics.js](https://github.com/jrouwe/JoltPhysics.js),
 Jolt's own JavaScript binding: the same classes, members and constants, in Jolt's C++ names. Natively Jolt is compiled into the
 program by hxcpp; in a page it runs as a WebAssembly module (`jolt.wasm`) the library ships, so neither needs a C++ toolchain beyond
 hxcpp's.
@@ -32,5 +32,5 @@ needs nothing but hxcpp. Its tests run the same scene in Node and natively, and 
 
 ## Third-party code
 
-- [Jolt Physics](https://github.com/jrouwe/JoltPhysics) 5.6.0, by Jorrit Rouwe: `vendor/jolt/Jolt`, unchanged, and in `wasm/jolt.wasm`.
+- [Jolt Physics](https://github.com/jrouwe/JoltPhysics) 5.7.0, by Jorrit Rouwe: `vendor/jolt/Jolt`, unchanged, and in `wasm/jolt.wasm`.
   MIT, `vendor/jolt/LICENSE`.
