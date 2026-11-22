@@ -20,6 +20,17 @@ class PlatformTests {
 	}
 
 	#if sys
+	// Waits a millisecond between polls. The interpreter's Sys.sleep sleeps for less by the processor time its yield used. On Windows
+	// that time moves in steps of 15.6 ms, so beside busy worker threads the sleep can come out negative, and OCaml's Windows sleep
+	// never returns from a negative one (Haxe 4.3.7). The interpreter's own delay sleeps for the time asked.
+	static inline function pause():Void {
+		#if eval
+		eval.vm.NativeThread.delay(.001);
+		#else
+		Sys.sleep(.001);
+		#end
+	}
+
 	// Waits for a file system's answer, polling it: the native adapter answers at a later poll, from its worker thread.
 	static function await(files:helix.platform.IFileSystem, ask:(Dynamic->Void)->Void):Dynamic {
 		var answer:Dynamic = null, answered = false;
@@ -30,7 +41,7 @@ class PlatformTests {
 		var until = Sys.time() + 10;
 		while (!answered && Sys.time() < until) {
 			files.poll();
-			Sys.sleep(.001);
+			pause();
 		}
 		check(answered, "the file system answered within 10 seconds");
 		return answer;
@@ -88,7 +99,7 @@ class PlatformTests {
 			var until = Sys.time() + 10;
 			while (left > 0 && Sys.time() < until) {
 				files.poll();
-				Sys.sleep(.001);
+				pause();
 			}
 			if (left > 0)
 				problems.push('round $round: $left writes unanswered');
