@@ -1340,7 +1340,8 @@ Why things are the way they are, numbered, in order.
 
     What it costs: a program on helix-jolt builds without hxcpp's `-std=c++11` (`extraParams.hxml`'s `-D HXCPP_NO_CPP11`), as Jolt is
     C++17 and hxcpp's own flag follows a library's. On macOS hxcpp's toolchain then links libstdc++, which macOS no longer has, so
-    `internal.Toolchain` defines `HXCPP_GCC` there, whose one effect on a macOS build is keeping libc++. The module is 897 KB, 267 KB gzipped. It needs a 1 MB stack, as Jolt's step
+    `internal.Toolchain` defines `HXCPP_GCC` there, whose one effect on a macOS build is keeping libc++. The same toolchain then targets macOS 10.6, which has no thread-local storage for hxcpp's threads, so `Toolchain` sets
+    `MACOSX_DEPLOYMENT_TARGET` to 10.15, Jolt's oldest, unless the environment sets it. The module is 897 KB, 267 KB gzipped. It needs a 1 MB stack, as Jolt's step
     overflows Emscripten's default of 64 KB.
 
     Rejected: Jolt's C++ API with its allocator and job system passed in, which is more setup in every program. A helix-shaped API,
