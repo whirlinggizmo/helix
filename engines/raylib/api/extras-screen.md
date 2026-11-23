@@ -48,7 +48,7 @@ static inline var SCREEN_FIT_STRETCH:Int
 - `SCREEN_FIT_KEEP_WIDTH`: Keeps the design's width: a window taller than the design shows more above and below, a wider one has bars beside it. Godot's `keep_width`.
 - `SCREEN_FIT_KEEP_HEIGHT`: Keeps the design's height: a window wider than the design shows more beside it, a taller one has bars above and below. Godot's `keep_height`.
 - `SCREEN_FIT_EXPAND`: Shows the design whole with no bars, and more around it on the window's longer side. Godot's `expand`.
-- `SCREEN_FIT_COVER`: Keeps the design's shape, as small as covers the window, with no bars: the design's edges on the window's longer side are cut off. the envelop of Phaser and the cover of CSS.
+- `SCREEN_FIT_COVER`: Keeps the design's shape, as small as covers the window, with no bars: the design's edges on the window's longer side are cut off. Phaser's envelop and CSS's cover.
 - `SCREEN_FIT_STRETCH`: Fills the window, the design stretched to its shape. Godot's `ignore`.
 
 ### screen: a design size fitted to the window

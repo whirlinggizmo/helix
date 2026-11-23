@@ -70,7 +70,7 @@ class Screen {
 	public static inline final SCREEN_FIT_EXPAND:Int = 4;
 
 	/** Keeps the design's shape, as small as covers the window, with no bars: the design's edges on the window's longer side are cut off.
-		the envelop of Phaser and the cover of CSS. */
+		Phaser's envelop and CSS's cover. */
 	public static inline final SCREEN_FIT_COVER:Int = 5;
 
 	/** Fills the window, the design stretched to its shape. Godot's `ignore`. */
