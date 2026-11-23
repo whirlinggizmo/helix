@@ -2335,6 +2335,32 @@ class Box2D {
 		return helix.box2d.internal.Calls.b2CollideChainSegmentAndPolygon(segmentA, polygonB, xf, cache, out);
 	}
 
+	/** Solves where a mover goes when the collision planes hold it back.
+
+		It moves the mover by as much of `targetDelta` as the planes allow, setting each plane's `push`.
+
+		@param targetDelta  The translation wanted, from the position the collision planes were found at.
+		@param planes  The collision planes. Each one's `push` is set in place.
+		@param count  The number of planes to use, from the first.
+		@param out  Optional. The `B2PlaneSolverResult` to fill in place; a new one when omitted.
+		@return  The translation reached and the iterations it needed. */
+	public static function b2SolvePlanes(targetDelta:B2Vec2, planes:Array<B2CollisionPlane>, count:Int, ?out:B2PlaneSolverResult):B2PlaneSolverResult {
+		return helix.box2d.internal.Calls.b2SolvePlanes(targetDelta, planes, count, out);
+	}
+
+	/** Clips a vector, such as a mover's velocity, against collision planes.
+
+		A plane with a zero `push`, or with `clipVelocity` false, is skipped.
+
+		@param vector  The vector to clip.
+		@param planes  The collision planes, after `b2SolvePlanes`.
+		@param count  The number of planes to use, from the first.
+		@param out  Optional. The `B2Vec2` to fill in place; a new one when omitted.
+		@return  The clipped vector. */
+	public static function b2ClipVector(vector:B2Vec2, planes:Array<B2CollisionPlane>, count:Int, ?out:B2Vec2):B2Vec2 {
+		return helix.box2d.internal.Calls.b2ClipVector(vector, planes, count, out);
+	}
+
 	// types.h
 
 	/** Returns a world definition set to Box2D's defaults.
@@ -2702,6 +2728,35 @@ class Box2D {
 	public static function b2World_CastShape(worldId:B2WorldId, origin:B2Pos, proxy:B2ShapeProxy, translation:B2Vec2, filter:B2QueryFilter,
 			fcn:B2CastResultCallbackFcn, context:Dynamic, ?out:B2TreeStats):B2TreeStats {
 		return helix.box2d.internal.Calls.b2World_CastShape(worldId, origin, proxy, translation, filter, fcn, context, out);
+	}
+
+	/** Casts a capsule mover through the world and returns how far it gets.
+
+		This is a shape cast made for character movement: it slides along shapes and keeps the mover from sinking into them. The mover capsule is relative to the origin. Near the origin, pass a zero origin and a capsule in world coordinates.
+
+		@param worldId  The world to cast the mover in.
+		@param origin  The point the mover capsule is relative to.
+		@param mover  The mover capsule.
+		@param translation  How far the mover is meant to move.
+		@param filter  The filter that chooses which shapes the mover can hit.
+		@return  The fraction of the translation reached before the first hit, 1 when nothing is hit. */
+	public static function b2World_CastMover(worldId:B2WorldId, origin:B2Pos, mover:B2Capsule, translation:B2Vec2, filter:B2QueryFilter):Float {
+		return helix.box2d.internal.Calls.b2World_CastMover(worldId, origin, mover, translation, filter);
+	}
+
+	/** Collides a capsule mover with the world and calls a callback for each collision plane found.
+
+		The planes, made into `B2CollisionPlane`s, go to `b2SolvePlanes`, for kinematic character movement. The mover capsule and the planes are relative to the origin.
+
+		@param worldId  The world to collide the mover with.
+		@param origin  The point the mover capsule and the planes are relative to.
+		@param mover  The mover capsule.
+		@param filter  The filter that chooses which shapes the mover collides with.
+		@param fcn  The callback, called for each collision plane. Returning false stops the query.
+		@param context  A value passed to the callback. */
+	public static function b2World_CollideMover(worldId:B2WorldId, origin:B2Pos, mover:B2Capsule, filter:B2QueryFilter, fcn:B2PlaneResultCallbackFcn,
+			context:Dynamic):Void {
+		helix.box2d.internal.Calls.b2World_CollideMover(worldId, origin, mover, filter, fcn, context);
 	}
 
 	/** Sets whether bodies in the world can fall asleep.

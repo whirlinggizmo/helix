@@ -26,6 +26,7 @@ class Dispatch {
 	static var scratch0b2DebugDraw_DrawStringFcn = new B2Vec2();
 	static var scratch0b2DebugDraw_DrawTransformFcn = Init.makeB2Transform();
 	static var scratch0b2OverlapResultCallbackFcn = Init.makeB2ShapeId();
+	static var scratch0b2PlaneResultCallbackFcn = Init.makeB2ShapeId();
 	static var scratch0b2PreContinuousCallbackFcn = Init.makeB2ShapeId();
 	static var scratch0b2PreSolveCallbackFcn = Init.makeB2ShapeId();
 	static var scratch1b2CastResultCallbackFcn = new B2Vec2();
@@ -39,6 +40,7 @@ class Dispatch {
 	static var scratch2b2PreContinuousCallbackFcn = new B2Vec2();
 	static var scratch3b2PreContinuousCallbackFcn = new B2Vec2();
 	static var scratchB2Manifold = new B2Manifold();
+	static var scratchB2PlaneResult = new B2PlaneResult();
 	static var scratchB2Vec2s:Array<B2Vec2> = [];
 
 	/** The callbacks, natively each handed to hb.c, in a page as the module's imports. */
@@ -49,6 +51,7 @@ class Dispatch {
 		untyped __cpp__("hb_set_hb_cb_b2FrictionCallbackFcn((void *){0})", cpp.Callable.fromStaticFunction(b2FrictionCallbackFcn));
 		untyped __cpp__("hb_set_hb_cb_b2LogCallbackFcn((void *){0})", cpp.Callable.fromStaticFunction(b2LogCallbackFcn));
 		untyped __cpp__("hb_set_hb_cb_b2OverlapResultCallbackFcn((void *){0})", cpp.Callable.fromStaticFunction(b2OverlapResultCallbackFcn));
+		untyped __cpp__("hb_set_hb_cb_b2PlaneResultCallbackFcn((void *){0})", cpp.Callable.fromStaticFunction(b2PlaneResultCallbackFcn));
 		untyped __cpp__("hb_set_hb_cb_b2PreContinuousCallbackFcn((void *){0})", cpp.Callable.fromStaticFunction(b2PreContinuousCallbackFcn));
 		untyped __cpp__("hb_set_hb_cb_b2PreSolveCallbackFcn((void *){0})", cpp.Callable.fromStaticFunction(b2PreSolveCallbackFcn));
 		untyped __cpp__("hb_set_hb_cb_b2RestitutionCallbackFcn((void *){0})", cpp.Callable.fromStaticFunction(b2RestitutionCallbackFcn));
@@ -70,6 +73,7 @@ class Dispatch {
 			hb_cb_b2FrictionCallbackFcn: b2FrictionCallbackFcn,
 			hb_cb_b2LogCallbackFcn: b2LogCallbackFcn,
 			hb_cb_b2OverlapResultCallbackFcn: b2OverlapResultCallbackFcn,
+			hb_cb_b2PlaneResultCallbackFcn: b2PlaneResultCallbackFcn,
 			hb_cb_b2PreContinuousCallbackFcn: b2PreContinuousCallbackFcn,
 			hb_cb_b2PreSolveCallbackFcn: b2PreSolveCallbackFcn,
 			hb_cb_b2RestitutionCallbackFcn: b2RestitutionCallbackFcn,
@@ -154,6 +158,21 @@ class Dispatch {
 		shapeId.generation = shapeId_generation;
 		var f:B2OverlapResultCallbackFcn = Callbacks.get(slot, 0);
 		var result = f(shapeId, Callbacks.context(slot));
+		return result ? 1 : 0;
+	}
+
+	static function b2PlaneResultCallbackFcn(slot:Int, shapeId_index1:Int, shapeId_world0:Int, shapeId_generation:Int):Int {
+		#if cpp
+		untyped __cpp__("hx::NativeAttach attach");
+		#end
+		Io.beginBack();
+		var shapeId = scratch0b2PlaneResultCallbackFcn;
+		shapeId.index1 = shapeId_index1;
+		shapeId.world0 = shapeId_world0;
+		shapeId.generation = shapeId_generation;
+		var plane = rdB2PlaneResult(scratchB2PlaneResult);
+		var f:B2PlaneResultCallbackFcn = Callbacks.get(slot, 0);
+		var result = f(shapeId, plane, Callbacks.context(slot));
 		return result ? 1 : 0;
 	}
 

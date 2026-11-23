@@ -176,6 +176,19 @@ class Init {
 		return v;
 	}
 
+	public static function initB2CollisionPlane(v:B2CollisionPlane):Void {
+		v.plane = Init.makeB2Plane();
+		v.pushLimit = 0.;
+		v.push = 0.;
+		v.clipVelocity = false;
+	}
+
+	public static function makeB2CollisionPlane():B2CollisionPlane {
+		var v = Type.createEmptyInstance(B2CollisionPlane);
+		initB2CollisionPlane(v);
+		return v;
+	}
+
 	public static function initB2ContactBeginTouchEvent(v:B2ContactBeginTouchEvent):Void {
 		v.shapeIdA = Init.makeB2ShapeId();
 		v.shapeIdB = Init.makeB2ShapeId();
@@ -597,6 +610,29 @@ class Init {
 	public static function makeB2Plane():B2Plane {
 		var v = Type.createEmptyInstance(B2Plane);
 		initB2Plane(v);
+		return v;
+	}
+
+	public static function initB2PlaneResult(v:B2PlaneResult):Void {
+		v.plane = Init.makeB2Plane();
+		v.point = new B2Vec2();
+		v.hit = false;
+	}
+
+	public static function makeB2PlaneResult():B2PlaneResult {
+		var v = Type.createEmptyInstance(B2PlaneResult);
+		initB2PlaneResult(v);
+		return v;
+	}
+
+	public static function initB2PlaneSolverResult(v:B2PlaneSolverResult):Void {
+		v.delta = new B2Vec2();
+		v.iterationCount = 0;
+	}
+
+	public static function makeB2PlaneSolverResult():B2PlaneSolverResult {
+		var v = Type.createEmptyInstance(B2PlaneSolverResult);
+		initB2PlaneSolverResult(v);
 		return v;
 	}
 

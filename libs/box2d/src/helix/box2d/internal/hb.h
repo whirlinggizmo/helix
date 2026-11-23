@@ -19,6 +19,7 @@ void hb_set_hb_cb_b2CustomFilterCallbackFcn(void *f);
 void hb_set_hb_cb_b2FrictionCallbackFcn(void *f);
 void hb_set_hb_cb_b2LogCallbackFcn(void *f);
 void hb_set_hb_cb_b2OverlapResultCallbackFcn(void *f);
+void hb_set_hb_cb_b2PlaneResultCallbackFcn(void *f);
 void hb_set_hb_cb_b2PreContinuousCallbackFcn(void *f);
 void hb_set_hb_cb_b2PreSolveCallbackFcn(void *f);
 void hb_set_hb_cb_b2RestitutionCallbackFcn(void *f);
@@ -182,6 +183,8 @@ void hb_b2CollideSegmentAndPolygon(float xf_p_x, float xf_p_y, float xf_q_c, flo
 void hb_b2CollideChainSegmentAndCircle(float xf_p_x, float xf_p_y, float xf_q_c, float xf_q_s);
 void hb_b2CollideChainSegmentAndCapsule(float xf_p_x, float xf_p_y, float xf_q_c, float xf_q_s);
 void hb_b2CollideChainSegmentAndPolygon(float xf_p_x, float xf_p_y, float xf_q_c, float xf_q_s);
+void hb_b2SolvePlanes(float targetDelta_x, float targetDelta_y, int32_t count);
+void hb_b2ClipVector(float vector_x, float vector_y, int32_t count);
 void hb_b2DefaultWorldDef(void);
 void hb_b2DefaultBodyDef(void);
 void hb_b2DefaultFilter(void);
@@ -214,6 +217,8 @@ void hb_b2World_OverlapShape(int32_t worldId_index1, int32_t worldId_generation,
 void hb_b2World_CastRay(int32_t worldId_index1, int32_t worldId_generation, float origin_x, float origin_y, float translation_x, float translation_y, int32_t fcn, int32_t context);
 void hb_b2World_CastRayClosest(int32_t worldId_index1, int32_t worldId_generation, float origin_x, float origin_y, float translation_x, float translation_y);
 void hb_b2World_CastShape(int32_t worldId_index1, int32_t worldId_generation, float origin_x, float origin_y, float translation_x, float translation_y, int32_t fcn, int32_t context);
+float hb_b2World_CastMover(int32_t worldId_index1, int32_t worldId_generation, float origin_x, float origin_y, float translation_x, float translation_y);
+void hb_b2World_CollideMover(int32_t worldId_index1, int32_t worldId_generation, float origin_x, float origin_y, int32_t fcn, int32_t context);
 void hb_b2World_EnableSleeping(int32_t worldId_index1, int32_t worldId_generation, int32_t flag);
 int32_t hb_b2World_IsSleepingEnabled(int32_t worldId_index1, int32_t worldId_generation);
 void hb_b2World_EnableContinuous(int32_t worldId_index1, int32_t worldId_generation, int32_t flag);

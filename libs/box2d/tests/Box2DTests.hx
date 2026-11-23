@@ -41,6 +41,7 @@ class Box2DTests {
 		var bytes = haxe.io.Bytes.ofString("box2d");
 		check(b2Hash(B2_HASH_INIT, bytes, bytes.length) == b2Hash(B2_HASH_INIT, haxe.io.Bytes.ofString("box2d"), 5), "the hash is the same twice");
 		geometry();
+		mover();
 
 		var digests = [];
 		var single = scene(1, digests);
@@ -91,6 +92,35 @@ class Box2DTests {
 		check(output.hit && near(output.point.x, -1, 1e-3), "a ray hits a circle on its near side");
 		check(b2PointInPolygon(square, new B2Vec2(0.5, 0.5))
 			&& !b2PointInPolygon(square, new B2Vec2(3, 0)), "a point is in a polygon or not");
+	}
+
+	/** The character mover: a capsule cast at the ground, its collision planes found, solved and clipped against. */
+	static function mover():Void {
+		var worldId = b2CreateWorld(b2DefaultWorldDef());
+		var groundId = b2CreateBody(worldId, b2DefaultBodyDef());
+		b2CreatePolygonShape(groundId, b2DefaultShapeDef(), b2MakeBox(10, 0.5));
+		var filter = b2DefaultQueryFilter();
+		var high = new B2Capsule(new B2Vec2(0, 3.5), new B2Vec2(0, 4.5), 0.5);
+		var fraction = b2World_CastMover(worldId, new B2Vec2(), high, new B2Vec2(0, -5), filter);
+		check(fraction > 0.45 && fraction < 0.55, 'a mover 2.5 m above the ground and cast 5 m down stops about halfway (got $fraction)');
+		check(near(b2World_CastMover(worldId, new B2Vec2(), high, new B2Vec2(5, 0), filter), 1), "a mover cast along the ground hits nothing");
+		var sunk = new B2Capsule(new B2Vec2(0, 0.9), new B2Vec2(0, 1.9), 0.5);
+		var planes = [];
+		b2World_CollideMover(worldId, new B2Vec2(), sunk, filter, (shapeId, result, context) -> {
+			check(context == "mover", "the mover's callback is passed its context");
+			if (result.hit)
+				planes.push(new B2CollisionPlane(new B2Plane(new B2Vec2(result.plane.normal.x, result.plane.normal.y), result.plane.offset),
+					3.4028234663852886e38, 0, true));
+			return true;
+		}, "mover");
+		check(planes.length == 1 && near(planes[0].plane.normal.y, 1, 1e-3), "a mover sunk into the ground finds the ground's plane, facing up");
+		var solved = b2SolvePlanes(new B2Vec2(1, -1), planes, planes.length);
+		check(near(solved.delta.x, 1, 1e-3) && solved.delta.y > 0.05,
+			'the solver moves the mover along the ground and out of it (got ${solved.delta.x}, ${solved.delta.y})');
+		check(planes[0].push > 0, "the solver sets the plane's push");
+		var clipped = b2ClipVector(new B2Vec2(2, -3), planes, planes.length);
+		check(near(clipped.x, 2, 1e-3) && near(clipped.y, 0, 1e-3), "a velocity into the ground is clipped to run along it");
+		b2DestroyWorld(worldId);
 	}
 
 	/** The scene, on `workers` of Box2D's threads. Returns true, its digests pushed onto `digests`. */

@@ -305,6 +305,30 @@ var radius:Float
 - `center`: The local center.
 - `radius`: The radius.
 
+## B2CollisionPlane
+
+*class* in [`libs/box2d/src/helix/box2d/B2CollisionPlane.hx`](../src/helix/box2d/B2CollisionPlane.hx), `import helix.box2d.B2CollisionPlane;`
+
+A collision plane for `b2SolvePlanes` and `b2ClipVector`. A program usually makes one from each hit `B2PlaneResult` of `b2World_CollideMover`.
+
+```haxe
+function new(?plane:B2Plane, ?pushLimit:Float = 0., ?push:Float = 0., ?clipVelocity:Bool = false)
+var plane:B2Plane
+var pushLimit:Float
+var push:Float
+var clipVelocity:Bool
+```
+
+- `new`: Creates one, as C's initializer lists its fields.
+  - `plane`: Optional. The plane. A plane with a zero normal and offset when omitted.
+  - `pushLimit`: Optional. The most the plane can push. Zero when omitted.
+  - `push`: Optional. The push. Zero when omitted.
+  - `clipVelocity`: Optional. Whether `b2ClipVector` clips against the plane. False when omitted.
+- `plane`: The collision plane between the mover and a shape, relative to the mover's position.
+- `pushLimit`: How far the plane can push the mover, usually in meters. A huge value, such as C's `FLT_MAX` (3.4028234663852886e38), makes the plane as rigid as possible. Lower values make the collision soft.
+- `push`: How far the plane pushed the mover, usually in meters. `b2SolvePlanes` sets it.
+- `clipVelocity`: Whether `b2ClipVector` clips against this plane. False for a soft collision.
+
 ## B2ContactBeginTouchEvent
 
 *class* in [`libs/box2d/src/helix/box2d/B2ContactBeginTouchEvent.hx`](../src/helix/box2d/B2ContactBeginTouchEvent.hx), `import helix.box2d.B2ContactBeginTouchEvent;`
@@ -1207,6 +1231,53 @@ var offset:Float
   - `offset`: Optional. The offset. Zero when omitted.
 - `normal`: The unit normal of the plane.
 - `offset`: The plane's offset from the origin along the normal, in length units.
+
+## B2PlaneResult
+
+*class* in [`libs/box2d/src/helix/box2d/B2PlaneResult.hx`](../src/helix/box2d/B2PlaneResult.hx), `import helix.box2d.B2PlaneResult;`
+
+A collision plane `b2World_CollideMover` finds between the mover and a shape. Box2D fills it. The plane and the point are relative to the query's origin, as the mover capsule is.
+
+```haxe
+function new()
+var plane:B2Plane
+var point:B2Vec2
+var hit:Bool
+```
+
+- `new`: Creates one, its fields zero.
+- `plane`: The collision plane between the mover and a convex shape.
+- `point`: The collision point on the shape.
+- `hit`: Whether the collision registered a hit. When false, the plane is to be ignored.
+
+## B2PlaneResultCallbackFcn
+
+*typedef* in [`libs/box2d/src/helix/box2d/B2PlaneResultCallbackFcn.hx`](../src/helix/box2d/B2PlaneResultCallbackFcn.hx), `import helix.box2d.B2PlaneResultCallbackFcn;`
+
+A callback for `b2World_CollideMover`. Box2D calls it for each collision plane it finds between the mover and a shape.
+
+- `shapeId`: The shape the mover collides with.
+- `plane`: The collision plane and point, relative to the query's origin. Box2D reuses it after the callback returns, so a program copies what it keeps.
+- `context`: The value the program provided to `b2World_CollideMover`, returned as it was.
+- returns: True to go on gathering planes, false to stop.
+
+An alias of `(shapeId:B2ShapeId, plane:B2PlaneResult, context:Dynamic) -> Bool`.
+
+## B2PlaneSolverResult
+
+*class* in [`libs/box2d/src/helix/box2d/B2PlaneSolverResult.hx`](../src/helix/box2d/B2PlaneSolverResult.hx), `import helix.box2d.B2PlaneSolverResult;`
+
+What `b2SolvePlanes` returns.
+
+```haxe
+function new()
+var delta:B2Vec2
+var iterationCount:Int
+```
+
+- `new`: Creates one, its fields zero.
+- `delta`: The final translation, relative to the position the collision planes were found at.
+- `iterationCount`: The number of iterations the plane solver used. Diagnostic.
 
 ## B2Polygon
 
@@ -2467,6 +2538,8 @@ static function b2CollideSegmentAndPolygon(segmentA:B2Segment, polygonB:B2Polygo
 static function b2CollideChainSegmentAndCircle(segmentA:B2ChainSegment, circleB:B2Circle, xf:B2Transform, ?out:B2LocalManifold):B2LocalManifold
 static function b2CollideChainSegmentAndCapsule(segmentA:B2ChainSegment, capsuleB:B2Capsule, xf:B2Transform, cache:B2SimplexCache, ?out:B2LocalManifold):B2LocalManifold
 static function b2CollideChainSegmentAndPolygon(segmentA:B2ChainSegment, polygonB:B2Polygon, xf:B2Transform, cache:B2SimplexCache, ?out:B2LocalManifold):B2LocalManifold
+static function b2SolvePlanes(targetDelta:B2Vec2, planes:Array<B2CollisionPlane>, count:Int, ?out:B2PlaneSolverResult):B2PlaneSolverResult
+static function b2ClipVector(vector:B2Vec2, planes:Array<B2CollisionPlane>, count:Int, ?out:B2Vec2):B2Vec2
 static function b2DefaultWorldDef(?out:B2WorldDef):B2WorldDef
 static function b2DefaultBodyDef(?out:B2BodyDef):B2BodyDef
 static function b2DefaultFilter(?out:B2Filter):B2Filter
@@ -2499,6 +2572,8 @@ static function b2World_OverlapShape(worldId:B2WorldId, origin:B2Pos, proxy:B2Sh
 static function b2World_CastRay(worldId:B2WorldId, origin:B2Pos, translation:B2Vec2, filter:B2QueryFilter, fcn:B2CastResultCallbackFcn, context:Dynamic, ?out:B2TreeStats):B2TreeStats
 static function b2World_CastRayClosest(worldId:B2WorldId, origin:B2Pos, translation:B2Vec2, filter:B2QueryFilter, ?out:B2RayResult):B2RayResult
 static function b2World_CastShape(worldId:B2WorldId, origin:B2Pos, proxy:B2ShapeProxy, translation:B2Vec2, filter:B2QueryFilter, fcn:B2CastResultCallbackFcn, context:Dynamic, ?out:B2TreeStats):B2TreeStats
+static function b2World_CastMover(worldId:B2WorldId, origin:B2Pos, mover:B2Capsule, translation:B2Vec2, filter:B2QueryFilter):Float
+static function b2World_CollideMover(worldId:B2WorldId, origin:B2Pos, mover:B2Capsule, filter:B2QueryFilter, fcn:B2PlaneResultCallbackFcn, context:Dynamic):Void
 static function b2World_EnableSleeping(worldId:B2WorldId, flag:Bool):Void
 static function b2World_IsSleepingEnabled(worldId:B2WorldId):Bool
 static function b2World_EnableContinuous(worldId:B2WorldId, flag:Bool):Void
@@ -3798,6 +3873,22 @@ static macro function copyWasm(directory:String):Void
   - `cache`: The simplex cache, updated by the call. Set its `count` to 0 on the first call.
   - `out`: Optional. The `B2LocalManifold` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The contact manifold in shape A's frame, with a `pointCount` of 0 when the shapes are too far apart to touch.
+- `b2SolvePlanes`: Solves where a mover goes when the collision planes hold it back.
+  - `targetDelta`: The translation wanted, from the position the collision planes were found at.
+  - `planes`: The collision planes. Each one's `push` is set in place.
+  - `count`: The number of planes to use, from the first.
+  - `out`: Optional. The `B2PlaneSolverResult` to fill in place; a new one when omitted.
+  - returns: The translation reached and the iterations it needed.
+
+  It moves the mover by as much of `targetDelta` as the planes allow, setting each plane's `push`.
+- `b2ClipVector`: Clips a vector, such as a mover's velocity, against collision planes.
+  - `vector`: The vector to clip.
+  - `planes`: The collision planes, after `b2SolvePlanes`.
+  - `count`: The number of planes to use, from the first.
+  - `out`: Optional. The `B2Vec2` to fill in place; a new one when omitted.
+  - returns: The clipped vector.
+
+  A plane with a zero `push`, or with `clipVelocity` false, is skipped.
 - `b2DefaultWorldDef`: Returns a world definition set to Box2D's defaults.
   - `out`: Optional. The `B2WorldDef` to fill in place, its objects and arrays reused; a new one when omitted.
   - returns: The world definition.
@@ -3999,6 +4090,24 @@ static macro function copyWasm(directory:String):Void
   - returns: Counters of the tree traversal.
 
   Works as `b2World_CastRay` does, with a shape in place of a point. The proxy points are relative to the origin. The points the callback receives are world positions.
+- `b2World_CastMover`: Casts a capsule mover through the world and returns how far it gets.
+  - `worldId`: The world to cast the mover in.
+  - `origin`: The point the mover capsule is relative to.
+  - `mover`: The mover capsule.
+  - `translation`: How far the mover is meant to move.
+  - `filter`: The filter that chooses which shapes the mover can hit.
+  - returns: The fraction of the translation reached before the first hit, 1 when nothing is hit.
+
+  This is a shape cast made for character movement: it slides along shapes and keeps the mover from sinking into them. The mover capsule is relative to the origin. Near the origin, pass a zero origin and a capsule in world coordinates.
+- `b2World_CollideMover`: Collides a capsule mover with the world and calls a callback for each collision plane found.
+  - `worldId`: The world to collide the mover with.
+  - `origin`: The point the mover capsule and the planes are relative to.
+  - `mover`: The mover capsule.
+  - `filter`: The filter that chooses which shapes the mover collides with.
+  - `fcn`: The callback, called for each collision plane. Returning false stops the query.
+  - `context`: A value passed to the callback.
+
+  The planes, made into `B2CollisionPlane`s, go to `b2SolvePlanes`, for kinematic character movement. The mover capsule and the planes are relative to the origin.
 - `b2World_EnableSleeping`: Sets whether bodies in the world can fall asleep.
   - `worldId`: The world.
   - `flag`: True to let bodies sleep.

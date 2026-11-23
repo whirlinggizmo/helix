@@ -1186,6 +1186,30 @@ class Calls {
 		return value;
 	}
 
+	public static inline function b2SolvePlanes(targetDelta:B2Vec2, planes:Array<B2CollisionPlane>, count:Int, ?out:B2PlaneSolverResult):B2PlaneSolverResult {
+		var value = out == null ? new B2PlaneSolverResult() : out;
+		Io.begin();
+		for (k in 0...count)
+			wrB2CollisionPlane(planes[k]);
+		Hb.b2SolvePlanes(targetDelta.x, targetDelta.y, count);
+		Io.begin();
+		rdB2PlaneSolverResult(value);
+		for (k in 0...count)
+			rdB2CollisionPlane(planes[k]);
+		return value;
+	}
+
+	public static inline function b2ClipVector(vector:B2Vec2, planes:Array<B2CollisionPlane>, count:Int, ?out:B2Vec2):B2Vec2 {
+		var value = out == null ? new B2Vec2() : out;
+		Io.begin();
+		for (k in 0...count)
+			wrB2CollisionPlane(planes[k]);
+		Hb.b2ClipVector(vector.x, vector.y, count);
+		Io.begin();
+		Io.rv(value);
+		return value;
+	}
+
 	public static inline function b2DefaultWorldDef(?out:B2WorldDef):B2WorldDef {
 		var value = out == null ? new B2WorldDef() : out;
 		Hb.b2DefaultWorldDef();
@@ -1453,6 +1477,23 @@ class Calls {
 		rdB2TreeStats(value);
 		Callbacks.close(slot);
 		return value;
+	}
+
+	public static inline function b2World_CastMover(worldId:B2WorldId, origin:B2Vec2, mover:B2Capsule, translation:B2Vec2, filter:B2QueryFilter):Float {
+		Io.begin();
+		wrB2Capsule(mover);
+		wrB2QueryFilter(filter);
+		var result = Hb.b2World_CastMover(worldId.index1, worldId.generation, origin.x, origin.y, translation.x, translation.y);
+		return result;
+	}
+
+	public static inline function b2World_CollideMover(worldId:B2WorldId, origin:B2Vec2, mover:B2Capsule, filter:B2QueryFilter, fcn:B2PlaneResultCallbackFcn, context:Dynamic):Void {
+		var slot = Callbacks.open([fcn], context);
+		Io.begin();
+		wrB2Capsule(mover);
+		wrB2QueryFilter(filter);
+		Hb.b2World_CollideMover(worldId.index1, worldId.generation, origin.x, origin.y, fcn != null ? 1 : 0, slot);
+		Callbacks.close(slot);
 	}
 
 	public static inline function b2World_EnableSleeping(worldId:B2WorldId, flag:Bool):Void {
@@ -3548,6 +3589,21 @@ class Calls {
 		Io.wf(v.radius);
 	}
 
+	public static function rdB2CollisionPlane(v:B2CollisionPlane):B2CollisionPlane {
+		rdB2Plane(v.plane);
+		v.pushLimit = Io.rf();
+		v.push = Io.rf();
+		v.clipVelocity = Io.rb();
+		return v;
+	}
+
+	public static function wrB2CollisionPlane(v:B2CollisionPlane):Void {
+		wrB2Plane(v.plane);
+		Io.wf(v.pushLimit);
+		Io.wf(v.push);
+		Io.wb(v.clipVelocity);
+	}
+
 	public static function rdB2ContactBeginTouchEvent(v:B2ContactBeginTouchEvent):B2ContactBeginTouchEvent {
 		rdB2ShapeId(v.shapeIdA);
 		rdB2ShapeId(v.shapeIdB);
@@ -4134,6 +4190,30 @@ class Calls {
 	public static function wrB2Plane(v:B2Plane):Void {
 		Io.wv(v.normal);
 		Io.wf(v.offset);
+	}
+
+	public static function rdB2PlaneResult(v:B2PlaneResult):B2PlaneResult {
+		rdB2Plane(v.plane);
+		Io.rv(v.point);
+		v.hit = Io.rb();
+		return v;
+	}
+
+	public static function wrB2PlaneResult(v:B2PlaneResult):Void {
+		wrB2Plane(v.plane);
+		Io.wv(v.point);
+		Io.wb(v.hit);
+	}
+
+	public static function rdB2PlaneSolverResult(v:B2PlaneSolverResult):B2PlaneSolverResult {
+		Io.rv(v.delta);
+		v.iterationCount = Io.ri();
+		return v;
+	}
+
+	public static function wrB2PlaneSolverResult(v:B2PlaneSolverResult):Void {
+		Io.wv(v.delta);
+		Io.wi(v.iterationCount);
 	}
 
 	public static function rdB2Polygon(v:B2Polygon):B2Polygon {

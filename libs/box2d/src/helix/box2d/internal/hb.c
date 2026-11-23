@@ -34,6 +34,8 @@ static void hb_rd_b2ChainSegment(hb_buffer *b, b2ChainSegment *v);
 static void hb_wr_b2ChainSegment(hb_buffer *b, const b2ChainSegment *v);
 static void hb_rd_b2Circle(hb_buffer *b, b2Circle *v);
 static void hb_wr_b2Circle(hb_buffer *b, const b2Circle *v);
+static void hb_rd_b2CollisionPlane(hb_buffer *b, b2CollisionPlane *v);
+static void hb_wr_b2CollisionPlane(hb_buffer *b, const b2CollisionPlane *v);
 static void hb_rd_b2ContactBeginTouchEvent(hb_buffer *b, b2ContactBeginTouchEvent *v);
 static void hb_wr_b2ContactBeginTouchEvent(hb_buffer *b, const b2ContactBeginTouchEvent *v);
 static void hb_rd_b2ContactData(hb_buffer *b, b2ContactData *v);
@@ -92,6 +94,10 @@ static void hb_rd_b2MotorJointDef(hb_buffer *b, b2MotorJointDef *v);
 static void hb_wr_b2MotorJointDef(hb_buffer *b, const b2MotorJointDef *v);
 static void hb_rd_b2Plane(hb_buffer *b, b2Plane *v);
 static void hb_wr_b2Plane(hb_buffer *b, const b2Plane *v);
+static void hb_rd_b2PlaneResult(hb_buffer *b, b2PlaneResult *v);
+static void hb_wr_b2PlaneResult(hb_buffer *b, const b2PlaneResult *v);
+static void hb_rd_b2PlaneSolverResult(hb_buffer *b, b2PlaneSolverResult *v);
+static void hb_wr_b2PlaneSolverResult(hb_buffer *b, const b2PlaneSolverResult *v);
 static void hb_rd_b2Polygon(hb_buffer *b, b2Polygon *v);
 static void hb_wr_b2Polygon(hb_buffer *b, const b2Polygon *v);
 static void hb_rd_b2PrismaticJointDef(hb_buffer *b, b2PrismaticJointDef *v);
@@ -210,6 +216,19 @@ HB_API void hb_set_hb_cb_b2OverlapResultCallbackFcn(void *f) { hb_cb_b2OverlapRe
 #endif
 static bool hb_tr_b2OverlapResultCallbackFcn(b2ShapeId shapeId, void * context) {
 	int32_t result = hb_cb_b2OverlapResultCallbackFcn((int32_t)(intptr_t)context, shapeId.index1, shapeId.world0, shapeId.generation);
+	return result != 0;
+}
+
+#ifdef __EMSCRIPTEN__
+int32_t hb_cb_b2PlaneResultCallbackFcn(int32_t, int32_t, int32_t, int32_t) HB_IMPORT(hb_cb_b2PlaneResultCallbackFcn);
+#else
+static int32_t (*hb_cb_b2PlaneResultCallbackFcn)(int32_t, int32_t, int32_t, int32_t);
+HB_API void hb_set_hb_cb_b2PlaneResultCallbackFcn(void *f) { hb_cb_b2PlaneResultCallbackFcn = (int32_t (*)(int32_t, int32_t, int32_t, int32_t))f; }
+#endif
+static bool hb_tr_b2PlaneResultCallbackFcn(b2ShapeId shapeId, const b2PlaneResult * plane, void * context) {
+	hb_begin(&hb_back);
+	hb_wr_b2PlaneResult(&hb_back, plane);
+	int32_t result = hb_cb_b2PlaneResultCallbackFcn((int32_t)(intptr_t)context, shapeId.index1, shapeId.world0, shapeId.generation);
 	return result != 0;
 }
 
@@ -620,6 +639,20 @@ static void hb_wr_b2Circle(hb_buffer *b, const b2Circle *v) {
 	hb_wf(b, v->center.x);
 	hb_wf(b, v->center.y);
 	hb_wf(b, v->radius);
+}
+
+static void hb_rd_b2CollisionPlane(hb_buffer *b, b2CollisionPlane *v) {
+	hb_rd_b2Plane(b, &v->plane);
+	v->pushLimit = hb_rf(b);
+	v->push = hb_rf(b);
+	v->clipVelocity = hb_ri(b) != 0;
+}
+
+static void hb_wr_b2CollisionPlane(hb_buffer *b, const b2CollisionPlane *v) {
+	hb_wr_b2Plane(b, &v->plane);
+	hb_wf(b, v->pushLimit);
+	hb_wf(b, v->push);
+	hb_wi(b, v->clipVelocity ? 1 : 0);
 }
 
 static void hb_rd_b2ContactBeginTouchEvent(hb_buffer *b, b2ContactBeginTouchEvent *v) {
@@ -1229,6 +1262,32 @@ static void hb_wr_b2Plane(hb_buffer *b, const b2Plane *v) {
 	hb_wf(b, v->normal.x);
 	hb_wf(b, v->normal.y);
 	hb_wf(b, v->offset);
+}
+
+static void hb_rd_b2PlaneResult(hb_buffer *b, b2PlaneResult *v) {
+	hb_rd_b2Plane(b, &v->plane);
+	v->point.x = hb_rf(b);
+	v->point.y = hb_rf(b);
+	v->hit = hb_ri(b) != 0;
+}
+
+static void hb_wr_b2PlaneResult(hb_buffer *b, const b2PlaneResult *v) {
+	hb_wr_b2Plane(b, &v->plane);
+	hb_wf(b, v->point.x);
+	hb_wf(b, v->point.y);
+	hb_wi(b, v->hit ? 1 : 0);
+}
+
+static void hb_rd_b2PlaneSolverResult(hb_buffer *b, b2PlaneSolverResult *v) {
+	v->delta.x = hb_rf(b);
+	v->delta.y = hb_rf(b);
+	v->iterationCount = (int)hb_ri(b);
+}
+
+static void hb_wr_b2PlaneSolverResult(hb_buffer *b, const b2PlaneSolverResult *v) {
+	hb_wf(b, v->delta.x);
+	hb_wf(b, v->delta.y);
+	hb_wi(b, (int32_t)v->iterationCount);
 }
 
 static void hb_rd_b2Polygon(hb_buffer *b, b2Polygon *v) {
@@ -3507,6 +3566,38 @@ HB_API void hb_b2CollideChainSegmentAndPolygon(float xf_p_x, float xf_p_y, float
 	hb_wr_b2SimplexCache(&hb_call, &cache_v);
 }
 
+HB_API void hb_b2SolvePlanes(float targetDelta_x, float targetDelta_y, int32_t count) {
+	hb_begin(&hb_call);
+	b2Vec2 targetDelta_v;
+	targetDelta_v.x = targetDelta_x;
+	targetDelta_v.y = targetDelta_y;
+	b2CollisionPlane *planes_v = (b2CollisionPlane *)hb_scratch(1, (size_t)(count > 0 ? count : 1) * sizeof(b2CollisionPlane));
+	for (int32_t k = 0; k < count; k++) {
+		hb_rd_b2CollisionPlane(&hb_call, &planes_v[k]);
+	}
+	b2PlaneSolverResult result = b2SolvePlanes(targetDelta_v, planes_v, (int)count);
+	hb_begin(&hb_call);
+	hb_wr_b2PlaneSolverResult(&hb_call, &result);
+	for (int32_t k = 0; k < count; k++) {
+		hb_wr_b2CollisionPlane(&hb_call, &planes_v[k]);
+	}
+}
+
+HB_API void hb_b2ClipVector(float vector_x, float vector_y, int32_t count) {
+	hb_begin(&hb_call);
+	b2Vec2 vector_v;
+	vector_v.x = vector_x;
+	vector_v.y = vector_y;
+	b2CollisionPlane *planes_v = (b2CollisionPlane *)hb_scratch(1, (size_t)(count > 0 ? count : 1) * sizeof(b2CollisionPlane));
+	for (int32_t k = 0; k < count; k++) {
+		hb_rd_b2CollisionPlane(&hb_call, &planes_v[k]);
+	}
+	b2Vec2 result = b2ClipVector(vector_v, planes_v, (int)count);
+	hb_begin(&hb_call);
+	hb_wf(&hb_call, result.x);
+	hb_wf(&hb_call, result.y);
+}
+
 HB_API void hb_b2DefaultWorldDef(void) {
 	b2WorldDef result = b2DefaultWorldDef();
 	hb_begin(&hb_call);
@@ -3788,6 +3879,40 @@ HB_API void hb_b2World_CastShape(int32_t worldId_index1, int32_t worldId_generat
 	b2TreeStats result = b2World_CastShape(worldId_v, origin_v, &proxy_v, translation_v, filter_v, fcn ? hb_tr_b2CastResultCallbackFcn : NULL, (void *)(intptr_t)context);
 	hb_begin(&hb_call);
 	hb_wr_b2TreeStats(&hb_call, &result);
+}
+
+HB_API float hb_b2World_CastMover(int32_t worldId_index1, int32_t worldId_generation, float origin_x, float origin_y, float translation_x, float translation_y) {
+	hb_begin(&hb_call);
+	b2WorldId worldId_v;
+	worldId_v.index1 = worldId_index1;
+	worldId_v.generation = worldId_generation;
+	b2Vec2 origin_v;
+	origin_v.x = origin_x;
+	origin_v.y = origin_y;
+	b2Capsule mover_v;
+	hb_rd_b2Capsule(&hb_call, &mover_v);
+	b2Vec2 translation_v;
+	translation_v.x = translation_x;
+	translation_v.y = translation_y;
+	b2QueryFilter filter_v;
+	hb_rd_b2QueryFilter(&hb_call, &filter_v);
+	float result = b2World_CastMover(worldId_v, origin_v, &mover_v, translation_v, filter_v);
+	return result;
+}
+
+HB_API void hb_b2World_CollideMover(int32_t worldId_index1, int32_t worldId_generation, float origin_x, float origin_y, int32_t fcn, int32_t context) {
+	hb_begin(&hb_call);
+	b2WorldId worldId_v;
+	worldId_v.index1 = worldId_index1;
+	worldId_v.generation = worldId_generation;
+	b2Vec2 origin_v;
+	origin_v.x = origin_x;
+	origin_v.y = origin_y;
+	b2Capsule mover_v;
+	hb_rd_b2Capsule(&hb_call, &mover_v);
+	b2QueryFilter filter_v;
+	hb_rd_b2QueryFilter(&hb_call, &filter_v);
+	b2World_CollideMover(worldId_v, origin_v, &mover_v, filter_v, fcn ? hb_tr_b2PlaneResultCallbackFcn : NULL, (void *)(intptr_t)context);
 }
 
 HB_API void hb_b2World_EnableSleeping(int32_t worldId_index1, int32_t worldId_generation, int32_t flag) {

@@ -1354,8 +1354,9 @@ Why things are the way they are, numbered, in order.
     (`B2BodyDef`), as Haxe refuses a type named in lower case. A struct passed by value is a Haxe object, and a function returning one
     accepts an optional out. A C pointer and its count are an `Array` and an `Int`, a `float *` out value is a one-element array, user
     data is `Dynamic`, and a callback is a Haxe function. It holds all of Box2D but what 3.2 calls experimental (the mover and pogo
-    joints, the character mover's planes, recording and replay) and the parts a program doesn't call (the dynamic tree, the
-    allocator, assert and task hooks), and it keeps snapshots and the state hash.
+    joints, recording and replay) and the parts a program doesn't call (the dynamic tree, the
+    allocator, assert and task hooks), and it keeps snapshots, the state hash and the kinematic character mover (`b2World_CastMover`, `b2World_CollideMover`,
+    `b2SolvePlanes`, `b2ClipVector`), which 3.2 doesn't call experimental.
 
     Underneath, it is built as helix-jolt is (87): Box2D vendored unchanged (`tools/gen_box2d.py`), and a C function of numbers alone
     for each of Box2D's, compiled into a native program by hxcpp and into `box2d.wasm`, one Haxe extern over both. Unlike Jolt's, the
@@ -1369,7 +1370,7 @@ Why things are the way they are, numbered, in order.
     written in it. Box2D is cross-platform deterministic since 3.1, and the same at any thread count. Generating the calls keeps 509
     functions in step with Box2D's description, and the next release's.
 
-    What it costs: the module is 316 KB, 121 KB gzipped, and runs one worker, as it has no threads. A struct crosses as words both
+    What it costs: the module is 321 KB, 122 KB gzipped, and runs one worker, as it has no threads. A struct crosses as words both
     ways, so a call returning one copies it. A program on helix-box2d builds without hxcpp's `-std=gnu99`
     (`extraParams.hxml`'s `-D HXCPP_NO_GNU99`), as Box2D is C17. Natively a callback may run on one of Box2D's threads, which joins
     hxcpp's collector for the call.

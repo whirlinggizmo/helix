@@ -19,8 +19,8 @@ import helix.box2d.Box2D.*; // Box2D's functions and constants
 Box2D's types take a capital first letter in Haxe (`b2BodyDef` is `B2BodyDef`), as Haxe requires. A struct Box2D passes by value is a
 Haxe object, and a function returning one accepts an optional `out`. `Box2D`'s doc says how the module loads.
 
-It holds worlds, bodies, every shape and chain, every joint but the experimental ones, queries, contact, sensor, body and joint events,
-snapshots and the state hash. It leaves out what Box2D 3.2 calls experimental (the mover and pogo joints, the character mover,
+It holds worlds, bodies, every shape and chain, every joint but the experimental ones, queries, the character mover, contact, sensor,
+body and joint events, snapshots and the state hash. It leaves out what Box2D 3.2 calls experimental (the mover and pogo joints,
 recording and replay) and the dynamic tree.
 
 The module is single precision and cross-platform deterministic: the same steps from the same state produce the same bits natively and

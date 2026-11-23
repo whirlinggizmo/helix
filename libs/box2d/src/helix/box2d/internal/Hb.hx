@@ -163,6 +163,8 @@ extern class Hb {
 	@:native("hb_b2CollideChainSegmentAndCircle") static function b2CollideChainSegmentAndCircle(xf_p_x:Float, xf_p_y:Float, xf_q_c:Float, xf_q_s:Float):Void;
 	@:native("hb_b2CollideChainSegmentAndCapsule") static function b2CollideChainSegmentAndCapsule(xf_p_x:Float, xf_p_y:Float, xf_q_c:Float, xf_q_s:Float):Void;
 	@:native("hb_b2CollideChainSegmentAndPolygon") static function b2CollideChainSegmentAndPolygon(xf_p_x:Float, xf_p_y:Float, xf_q_c:Float, xf_q_s:Float):Void;
+	@:native("hb_b2SolvePlanes") static function b2SolvePlanes(targetDelta_x:Float, targetDelta_y:Float, count:Int):Void;
+	@:native("hb_b2ClipVector") static function b2ClipVector(vector_x:Float, vector_y:Float, count:Int):Void;
 	@:native("hb_b2DefaultWorldDef") static function b2DefaultWorldDef():Void;
 	@:native("hb_b2DefaultBodyDef") static function b2DefaultBodyDef():Void;
 	@:native("hb_b2DefaultFilter") static function b2DefaultFilter():Void;
@@ -195,6 +197,8 @@ extern class Hb {
 	@:native("hb_b2World_CastRay") static function b2World_CastRay(worldId_index1:Int, worldId_generation:Int, origin_x:Float, origin_y:Float, translation_x:Float, translation_y:Float, fcn:Int, context:Int):Void;
 	@:native("hb_b2World_CastRayClosest") static function b2World_CastRayClosest(worldId_index1:Int, worldId_generation:Int, origin_x:Float, origin_y:Float, translation_x:Float, translation_y:Float):Void;
 	@:native("hb_b2World_CastShape") static function b2World_CastShape(worldId_index1:Int, worldId_generation:Int, origin_x:Float, origin_y:Float, translation_x:Float, translation_y:Float, fcn:Int, context:Int):Void;
+	@:native("hb_b2World_CastMover") static function b2World_CastMover(worldId_index1:Int, worldId_generation:Int, origin_x:Float, origin_y:Float, translation_x:Float, translation_y:Float):Float;
+	@:native("hb_b2World_CollideMover") static function b2World_CollideMover(worldId_index1:Int, worldId_generation:Int, origin_x:Float, origin_y:Float, fcn:Int, context:Int):Void;
 	@:native("hb_b2World_EnableSleeping") static function b2World_EnableSleeping(worldId_index1:Int, worldId_generation:Int, flag:Int):Void;
 	@:native("hb_b2World_IsSleepingEnabled") static function b2World_IsSleepingEnabled(worldId_index1:Int, worldId_generation:Int):Int;
 	@:native("hb_b2World_EnableContinuous") static function b2World_EnableContinuous(worldId_index1:Int, worldId_generation:Int, flag:Int):Void;

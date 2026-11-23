@@ -49,19 +49,18 @@ AVX2 = 'contact_solver_w8.c'
 EXCLUDED = re.compile(
     r'^b2(Replay|Recording|DynamicTree|MoverJoint|PogoJoint)_|^b2(CreateRecording|CreateRecordingFromFile|CreateReplay|DestroyRecording|'
     r'DestroyReplay|ValidateRecording|CreateDynamicTree|CreateTreeProxy|DestroyDynamicTree|DestroyTreeProxy|CreateMoverJoint|CreatePogoJoint|'
-    r'DefaultMoverJointDef|DefaultPogoJointDef|SolvePlanes|ClipVector|SetAllocator|SetAssertCallback|Yield|World_CastMover|World_CollideMover|'
+    r'DefaultMoverJointDef|DefaultPogoJointDef|SetAllocator|SetAssertCallback|Yield|'
     r'World_StartRecording|World_StopRecording|World_DumpMemoryStats|Load\w+Id|Store\w+Id)$')
 EXCLUDED_FIELDS = {'internalValue', 'enqueueTask', 'finishTask', 'userTaskContext'}
 EXCLUDED_CALLBACKS = {'b2AllocCallbackFcn', 'b2AssertCallbackFcn', 'b2EnqueueTaskCallbackFcn', 'b2FinishTaskCallbackFcn', 'b2FreeCallbackFcn',
-                      'b2TaskCallbackFcn', 'b2TreeBoxCastCallbackFcn', 'b2TreeQueryCallbackFcn', 'b2TreeRayCastCallbackFcn',
-                      'b2PlaneResultCallbackFcn'}
+                      'b2TaskCallbackFcn', 'b2TreeBoxCastCallbackFcn', 'b2TreeQueryCallbackFcn', 'b2TreeRayCastCallbackFcn'}
 ALIASES = {'b2Pos': 'b2Vec2', 'b2WorldTransform': 'b2Transform', 'b2WorldCastOutput': 'b2CastOutput'}
 INTS = {'int', 'int32_t', 'uint32_t', 'uint16_t', 'int16_t', 'uint8_t', 'size_t'}
 # User data is kept on the Haxe side, by id (Data.hx): Box2D's own pointer is never set.
 USER_DATA = re.compile(r'^b2(World|Body|Shape|Joint)_(Set|Get)UserData$')
 IDS = {'b2WorldId': 'world', 'b2BodyId': 'body', 'b2ShapeId': 'shape', 'b2JointId': 'joint', 'b2ChainId': 'chain', 'b2ContactId': 'contact'}
 # Queries whose callback runs only during the call.
-QUERIES = {'b2World_CastRay', 'b2World_CastShape', 'b2World_OverlapAABB', 'b2World_OverlapShape'}
+QUERIES = {'b2World_CastRay', 'b2World_CastShape', 'b2World_CollideMover', 'b2World_OverlapAABB', 'b2World_OverlapShape'}
 
 
 def pin():
@@ -236,7 +235,8 @@ def param_kind(params, i):
         return 'draw'
     if c.endswith(' *'):
         if count_param(params, i):
-            return 'inarray' if 'const' in params[i]['type'] else 'outarray'
+            # An array Box2D reads and writes back (b2SolvePlanes' planes) is counted, where one it fills has a capacity.
+            return 'inarray' if 'const' in params[i]['type'] else 'inoutarray' if params[i + 1]['name'] == 'count' else 'outarray'
         return 'in' if 'const' in params[i]['type'] else 'inout'
     k = kind(c)
     if k in 'fib':
@@ -265,7 +265,7 @@ def hx_param_type(params, i):
         return 'Array<haxe.Int64>'
     if k == 'fcn':
         return hx_type(element(c))
-    if k in ('inarray', 'outarray'):
+    if k in ('inarray', 'inoutarray', 'outarray'):
         return f'Array<{hx_type(element(c))}>'
     if k in ('in', 'inout', 'draw'):
         return hx_type(element(c))
@@ -577,6 +577,16 @@ def call(f):
                         f'\tfor (int32_t k = 0; k < {count}; k++) {{\n{indent(c_value_rd(f"{n}_v[k]", e, '&hb_call'), 2)}\n\t}}')
             cargs.append(f'{n}_v')
             hpre.append(f'\t\tfor (k in 0...{count})\n{indent(hx_value_wr(f"{n}[k]", e), 3)}')
+        elif k == 'inoutarray':
+            e = element(c)
+            words_in = True
+            count = params[i + 1]['name']
+            cpre.append(f'\t{e} *{n}_v = ({e} *)hb_scratch({i}, (size_t)({count} > 0 ? {count} : 1) * sizeof({e}));\n'
+                        f'\tfor (int32_t k = 0; k < {count}; k++) {{\n{indent(c_value_rd(f"{n}_v[k]", e, '&hb_call'), 2)}\n\t}}')
+            cargs.append(f'{n}_v')
+            cpost.append(f'\tfor (int32_t k = 0; k < {count}; k++) {{\n{indent(c_value_wr(f"{n}_v[k]", e, '&hb_call'), 2)}\n\t}}')
+            hpre.append(f'\t\tfor (k in 0...{count})\n{indent(hx_value_wr(f"{n}[k]", e), 3)}')
+            hpost.append(f'\t\tfor (k in 0...{count})\n{indent(hx_value_rd(f"{n}[k]", e), 3)}')
         elif k == 'outarray':
             e = element(c)
             count = params[i + 1]['name']
@@ -991,7 +1001,7 @@ def needed_structs():
     """Every struct a call or a callback carries as words, with the structs it holds."""
     global HAXE_TYPES
     HAXE_TYPES = {s for s in M.structs if s not in ('b2ReplayInfo', 'b2ReplayQueryHit', 'b2ReplayQueryInfo', 'b2MoverJointDef', 'b2PogoJointDef',
-                                                    'b2PlaneResult', 'b2CollisionPlane', 'b2PlaneSolverResult', 'b2BoxCastInput')}
+                                                    'b2BoxCastInput')}
     found = set()
 
     def add(c):
