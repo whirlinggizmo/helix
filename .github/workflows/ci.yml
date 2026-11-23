@@ -5,6 +5,8 @@
 #   type-checks every entry point on both targets and checks formatting and doc comments.
 # - Daily and on demand, on Linux: the platform's examples and graphics tests on the GPU (tools/test_platform.py), natively in a
 #   private X display (SDL_GPU's Vulkan through Mesa's software driver, lavapipe) and in a headless Chromium.
+# - On demand, any branch, one system or all: `gh workflow run ci.yml --ref <branch> -f systems=<all|linux|windows|macos|browser>`,
+#   browser being the GPU job. A run on demand cancels only an earlier one of the same branch and systems.
 # - Windows' and macOS' runners have no GPU for GL 4.1, so no window opens there; a window on Windows is tools/test_windows.py's, on a
 #   machine with one.
 # - SDL 3.4.18 is tools/sdl3.py's, built from its source on Linux (CMake, the runner's) and the official release on Windows and macOS,
@@ -23,23 +25,31 @@ on:
   schedule:
     - cron: "41 9 * * *"
   workflow_dispatch:
+    inputs:
+      systems:
+        description: "What to run: all, linux, windows, macos, or browser (the platform on the GPU)"
+        type: choice
+        options: [all, linux, windows, macos, browser]
+        default: all
 
 # What SDL's source build needs on Linux to have its X11, Wayland and audio parts: SDL loads their libraries at run time.
 env:
   SDL3_BUILD: libxext-dev libxfixes-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols libdecor-0-dev libpulse-dev libpipewire-0.3-dev libdbus-1-dev libudev-dev libdrm-dev libgbm-dev libegl-dev
 
 concurrency:
-  group: ci-${{ github.ref }}-${{ github.event_name }}
+  group: ci-${{ github.ref }}-${{ github.event_name }}-${{ inputs.systems || 'all' }}
   cancel-in-progress: true
 
 jobs:
   test:
     name: test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    if: inputs.systems != 'browser'
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025, macos-15]
+        # Every system but on a run on demand naming one.
+        os: ${{ fromJSON(inputs.systems == 'linux' && '["ubuntu-24.04"]' || inputs.systems == 'windows' && '["windows-2025"]' || inputs.systems == 'macos' && '["macos-15"]' || '["ubuntu-24.04", "windows-2025", "macos-15"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -87,7 +97,7 @@ jobs:
 
   gpu:
     name: the platform on the GPU (Linux, daily)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' && (inputs.systems == 'all' || inputs.systems == 'browser')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
