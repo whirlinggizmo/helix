@@ -694,6 +694,7 @@ class Runtime {
 		// SetConfigFlags' hints, as raylib reads them: 4 samples for FLAG_MSAA_4X_HINT, and vsync only for FLAG_VSYNC_HINT natively.
 		var flags = helix.raylib.modules.RCore.configFlags;
 		var samples = flags & helix.raylib.Raylib.FLAG_MSAA_4X_HINT != 0 ? 4 : 1;
+		var transparent = flags & helix.raylib.Raylib.FLAG_WINDOW_TRANSPARENT != 0;
 		#if js
 		// The page draws at the canvas's logical size, as raylib's web build does, unless FLAG_WINDOW_HIGHDPI asks for the device's ratio.
 		window = new helix.platform.adapters.window.dom.DomWindowAdapter({
@@ -702,14 +703,28 @@ class Runtime {
 		});
 		eventsAdapter = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
 		events = early = new EarlyEvents(eventsAdapter);
-		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({canvasId: "canvas", msaaSampleCount: samples});
+		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({
+			canvasId: "canvas",
+			msaaSampleCount: samples,
+			transparent: transparent
+		});
 		#else
 		var vsync = flags & helix.raylib.Raylib.FLAG_VSYNC_HINT != 0;
 		#if sdl_gpu
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gpu, msaaSampleCount: samples, vsync: vsync});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({
+			graphics: Gpu,
+			msaaSampleCount: samples,
+			vsync: vsync,
+			transparent: transparent
+		});
 		graphics = new helix.platform.adapters.graphics.sdl3gpu.Sdl3GpuGraphicsAdapter();
 		#else
-		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({graphics: Gl, msaaSampleCount: samples, vsync: vsync});
+		window = new helix.platform.adapters.window.sdl3.Sdl3WindowAdapter({
+			graphics: Gl,
+			msaaSampleCount: samples,
+			vsync: vsync,
+			transparent: transparent
+		});
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
 		eventsAdapter = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();

@@ -2,8 +2,8 @@ import helix.services.saves.Saves;
 import helix.services.screen.Screen;
 
 /** Checks Screen over a fake window: no design (the window's own size, at its pixel ratio), the framebuffer followed as it changes
-	before the poll; a design letterboxed, its safe area in design pixels, fitted pixel-perfect, stretched and expanded, and positions both ways; a resize seen for one
-	frame; leaving fullscreen going back to the windowed size and place; and the window kept between runs. */
+	before the poll; a design kept whole, its safe area in design pixels, scaled by a whole number, stretched, grown each way and
+	covering the window, centred, and positions both ways; a resize seen for one frame; leaving fullscreen going back to the windowed size and place; and the window kept between runs. */
 class ScreenTests {
 	static var checks = 0;
 
@@ -29,24 +29,26 @@ class ScreenTests {
 			screen.poll();
 		}
 		frame();
-		check(screen.width == 800 && screen.height == 600 && screen.scaleX == 2 && screen.viewportWidth == 1600, "no design: the window's own size");
+		check(screen.visibleWidth == 800 && screen.visibleHeight == 600 && screen.scaleX == 2 && screen.viewportWidth == 1600,
+			"no design: the window's own size");
 		window.ratio = 1;
 		check(screen.viewportWidth == 800 && screen.scaleX == 1 && screen.toDesignX(100) == 100, "the window's framebuffer followed before the poll");
 		window.ratio = 2;
 
-		screen.setDesignSize(320, 180, Letterbox);
-		check(screen.scaleX == 1600 / 320 && screen.viewportWidth == 1600 && screen.viewportHeight == 900 && screen.viewportY == 150,
-			"letterbox: as large as fits whole, bars above and below");
+		screen.setDesignSize(320, 180, Keep);
+		check(screen.scaleX == 1600 / 320 && screen.viewportWidth == 1600 && screen.viewportHeight == 900 && screen.viewportY == 150
+			&& screen.visibleX == 0 && screen.visibleY == 0 && screen.visibleWidth == 320,
+			"keep: as large as fits whole, bars above and below");
 		check(near(screen.toDesignX(800), 160) && near(screen.toDesignY(150), 0) && near(screen.toScreenY(180), 1050), "positions both ways");
 		check(screen.safeAreaX == 0 && screen.safeAreaY == 0 && screen.safeAreaWidth == 320 && screen.safeAreaHeight == 180,
-			"no insets: the safe area is the area drawn in");
+			"no insets: the safe area is the visible area");
 		window.insetLeft = window.insetRight = 44;
 		window.insetTop = 100;
 		check(near(screen.safeAreaX, 17.6) && near(screen.safeAreaY, 10) && near(screen.safeAreaWidth, 284.8) && near(screen.safeAreaHeight, 170),
-			"the safe area in design pixels, held to the area drawn in");
+			"the safe area in design pixels, held to the visible area");
 		window.insetLeft = window.insetRight = window.insetTop = 0;
-		screen.setDesignSize(320, 180, PixelPerfect);
-		check(screen.scaleX == 5 && screen.viewportWidth == 1600, "pixel-perfect: a whole number");
+		screen.setDesignSize(320, 180, Keep, true);
+		check(screen.scaleX == 5 && screen.viewportWidth == 1600 && screen.integerScale, "integer scale: a whole number");
 		window.logicalWidth = 700;
 		frame([Resized(700, 600)]);
 		check(screen.resized && screen.scaleX == 4 && screen.viewportWidth == 1280 && screen.viewportX == 60, "a resize: seen, the fit redone");
@@ -55,9 +57,30 @@ class ScreenTests {
 		screen.setDesignSize(320, 180, Stretch);
 		check(screen.scaleX == 1400 / 320 && screen.scaleY == 1200 / 180 && screen.viewportX == 0, "stretch: fills, unevenly");
 		screen.setDesignSize(320, 180, Expand);
-		check(screen.width == 320
-			&& near(screen.height, 1200 / (1400 / 320))
-			&& screen.viewportHeight == 1200, "expand: grown on its short side");
+		var grown = 1200 / (1400 / 320);
+		check(screen.visibleWidth == 320
+			&& near(screen.visibleHeight, grown)
+			&& near(screen.visibleY, (180 - grown) / 2)
+			&& screen.viewportHeight == 1200,
+			"expand: grown on its short side, the design centred");
+		check(near(screen.toDesignY(0), screen.visibleY) && near(screen.toScreenY(90), 600), "expand: positions both ways");
+		screen.setDesignSize(320, 180, KeepWidth);
+		check(near(screen.visibleHeight, grown) && screen.visibleWidth == 320, "keep width: grown down and up on a taller window");
+		screen.setDesignSize(320, 180, KeepHeight);
+		check(screen.visibleHeight == 180 && screen.visibleWidth == 320 && screen.viewportHeight == 788 && screen.viewportY == 206,
+			"keep height: bars above and below on a taller window");
+		screen.setDesignSize(320, 180, Cover);
+		check(near(screen.scaleX, 1200 / 180) && near(screen.visibleWidth, 210) && near(screen.visibleX, 55) && screen.visibleHeight == 180
+			&& screen.viewportWidth == 1400 && screen.viewportX == 0,
+			"cover: as small as covers, its sides cut off");
+		screen.setDesignSize(320, 180, Expand, true);
+		check(screen.scaleX == 4 && screen.visibleWidth == 350 && screen.visibleHeight == 300 && screen.visibleX == -15 && screen.visibleY == -60
+			&& screen.viewportWidth == 1400,
+			"expand at a whole scale: grown by whole design pixels");
+		screen.setDesignSize(320, 180, Cover, true);
+		check(screen.scaleX == 7 && near(screen.visibleWidth, 200) && screen.visibleX == 60, "cover at a whole scale: the smallest that covers");
+		screen.setDesignSize(1600, 900, Keep, true);
+		check(screen.scaleX == 1400 / 1600 && screen.visibleWidth == 1600, "a whole scale on a window smaller than the design: shown smaller");
 
 		window.left = 40;
 		window.top = 30;

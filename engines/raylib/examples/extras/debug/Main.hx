@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.extras.Debug.*;
 import helix.raylib.extras.FrameStats;
 
@@ -10,6 +11,8 @@ import helix.raylib.extras.FrameStats;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: frame stats");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		var camera = new Camera3D(new Vector3(10, 10, 10), new Vector3(0, 0, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var frame = 0;
@@ -24,6 +27,7 @@ class Main {
 			}
 			BeginDrawing();
 			ClearBackground(RAYWHITE);
+			camera.fovy = GetScreenFitFovy(45);
 			BeginMode3D(camera);
 			for (x in -5...6)
 				for (z in -5...6)

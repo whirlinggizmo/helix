@@ -148,8 +148,8 @@ class Shadows {
 		var camera3D = helix.raylib.modules.RCore.camera3D(camera);
 		// The screen's shape, as BeginMode3D's projection reads it on the screen.
 		var screen = Runtime.screen;
-		var width = screen == null ? frame.width : screen.width,
-			height = screen == null ? frame.height : screen.height;
+		var width = screen == null ? frame.width : screen.visibleWidth,
+			height = screen == null ? frame.height : screen.visibleHeight;
 		camera3D.computeViewMatrix(cameraView);
 		camera3D.computeProjectionMatrix(height > 0 ? width / height : 1, cameraProjection);
 		var p = camera.position, t = camera.target;

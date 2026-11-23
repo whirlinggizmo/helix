@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.extras.Lighting.*;
 
@@ -16,6 +17,8 @@ class Main {
 
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: shadows");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		var camera = new Camera3D(new Vector3(0, 6, 9), new Vector3(0, 0, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var shader = LoadPbrShader();
@@ -39,6 +42,7 @@ class Main {
 			EndShadowMode();
 			BeginDrawing();
 			ClearBackground(new Color(30, 32, 40, 255));
+			camera.fovy = GetScreenFitFovy(45);
 			BeginMode3D(camera);
 			drawScene();
 			DrawSphere(lamp.position, 0.1, lamp.color);

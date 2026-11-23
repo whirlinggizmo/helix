@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.extras.Particles.*;
 
 /** Draws a fountain of water drops (`helix.raylib.extras.Particles`): one 3D emitter throwing pale blue drops up in a narrow cone, falling
@@ -9,6 +10,8 @@ import helix.raylib.extras.Particles.*;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: particles3d");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		var camera = new Camera3D(new Vector3(0, 3, 9), new Vector3(0, 2, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var fountain = LoadEmitter3D(512);
@@ -30,6 +33,7 @@ class Main {
 			UpdateEmitter3D(fountain, GetFrameTime());
 			BeginDrawing();
 			ClearBackground(new Color(24, 26, 34, 255));
+			camera.fovy = GetScreenFitFovy(45);
 			BeginMode3D(camera);
 			DrawPlane(new Vector3(0, 0, 0), new Vector2(8, 8), new Color(50, 54, 66, 255));
 			DrawEmitter3D(fountain);

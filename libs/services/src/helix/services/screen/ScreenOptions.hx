@@ -9,6 +9,10 @@ class ScreenOptions {
 	/** Gets the design's height, in design pixels; 0, the default, for none. */
 	public final designHeight:Int = 0;
 
-	/** Gets how the design fits the window. Defaults to `Letterbox`. */
-	public final fit:ScreenFit = Letterbox;
+	/** Gets how the design fits the window. Defaults to `Keep`. */
+	public final fit:ScreenFit = Keep;
+
+	/** Gets whether the design is scaled by a whole number, every design pixel a square block of framebuffer pixels, all alike, for pixel
+		art. Defaults to false. */
+	public final integerScale:Bool = false;
 }

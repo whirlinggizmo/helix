@@ -201,13 +201,14 @@ class WebGl2GraphicsAdapter implements IGraphics {
 
 	/** Creates the adapter on a canvas's WebGL2 context.
 
-		The context has a depth buffer and no alpha or stencil. When antialiased, the browser chooses the number of samples, nearly always 4.
-		@param options  The canvas's id, its samples and whether its drawing buffer is kept.
+		The context has a depth buffer and no stencil, and alpha only when transparent, its colors not premultiplied. When antialiased, the browser chooses the number of samples, nearly always 4.
+		@param options  The canvas's id, its samples, whether its drawing buffer is kept and whether it is transparent.
 		@throws String  No canvas has that id.
 		@throws GraphicsUnavailableException  The browser has no WebGL2. */
 	public function new(options:WebGl2GraphicsAdapterOptions) {
 		gl = cast DomPage.canvas(options.canvasId).getContext("webgl2", {
-			alpha: false,
+			alpha: options.transparent,
+			premultipliedAlpha: false,
 			antialias: options.msaaSampleCount > 1,
 			depth: true,
 			stencil: false,

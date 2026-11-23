@@ -10,14 +10,16 @@ import helix.services.saves.Saves;
 	place to go back to, whether the window was resized, and the window kept as it was between runs.
 
 	The program constructs one over its `IWindow` and `IEvents`, and calls `poll` once a frame. With no design size, the design is the
-	window's own logical size. With one, a game draws in design pixels into the viewport (`viewportX` to `viewportHeight`, framebuffer
-	pixels, for `IGraphics.applyViewport`), and turns the mouse's or a finger's framebuffer position into design pixels with `toDesignX`
-	and `toDesignY`. A HUD lays out inside the safe area (`safeAreaX` to `safeAreaHeight`, design pixels), clear of a phone's notch and
-	bars. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized
+	window's own logical size. With one, the design is centred in the window, and a game draws the visible area (`visibleX` to
+	`visibleHeight`, design pixels) into the viewport (`viewportX` to `viewportHeight`, framebuffer pixels, for
+	`IGraphics.applyViewport`). The visible area is the design itself, or more around it where the fit grows it (`visibleX` and
+	`visibleY` negative), or less where `Cover` cuts its edges off. The game turns the mouse's or a finger's framebuffer position into
+	design pixels with `toDesignX` and `toDesignY`. A HUD lays out inside the safe area (`safeAreaX` to `safeAreaHeight`, design pixels),
+	clear of a phone's notch and bars. The sizes, scales and viewport follow the window's framebuffer as it is when read, so a page's canvas resized
 	between frames is seen before the next poll.
 
 	```haxe
-	var screen = new Screen(window, events, {designWidth: 320, designHeight: 180, fit: PixelPerfect});
+	var screen = new Screen(window, events, {designWidth: 320, designHeight: 180, fit: Keep, integerScale: true});
 	// each frame:
 	screen.poll();
 	var x = screen.toDesignX(mouse.x), y = screen.toDesignY(mouse.y);
@@ -56,6 +58,7 @@ class Screen implements IPollable {
 		designWidth = o.designWidth;
 		designHeight = o.designHeight;
 		fit = o.fit;
+		integerScale = o.integerScale;
 		windowedWidth = window.width;
 		windowedHeight = window.height;
 		windowedX = window.x;
@@ -73,34 +76,60 @@ class Screen implements IPollable {
 	/** Gets how the design fits the window. */
 	public var fit(default, null):ScreenFit;
 
+	/** Gets whether the design is scaled by a whole number (`ScreenOptions.integerScale`). */
+	public var integerScale(default, null):Bool;
+
 	/** Sets the design size and how it fits the window; 0 by 0 for none.
 
 		@param width  The design's width, in design pixels.
 		@param height  The design's height.
-		@param fit  How it fits. */
-	public function setDesignSize(width:Int, height:Int, fit:ScreenFit):Void {
+		@param fit  How it fits.
+		@param integerScale  Optional. Whether the design is scaled by a whole number, every design pixel a square block, all alike: the
+			largest that fits, or under `Cover` the smallest that covers. A window smaller than the design shows it smaller, not at a whole
+			multiple. A fit growing the design grows it by whole design pixels, alike on both sides, and what is left is bars. `Stretch`
+			ignores it. Defaults to false. */
+	public function setDesignSize(width:Int, height:Int, fit:ScreenFit, integerScale = false):Void {
 		designWidth = width > 0 ? width : 0;
 		designHeight = height > 0 ? height : 0;
 		this.fit = fit;
+		this.integerScale = integerScale;
 		layout();
 	}
 
-	/** Gets the width drawn in, in design pixels: the design's, wider under `Expand` on a wider window, or the window's logical width
-		with no design. */
-	@:isVar public var width(get, null):Float = 0;
+	/** Gets the left edge of the visible area, in design pixels: 0 with no design and under `Keep` and `Stretch`, negative where the fit
+		grows the design across, positive where `Cover` cuts its left edge off. */
+	@:isVar public var visibleX(get, null):Float = 0;
 
-	function get_width():Float {
+	function get_visibleX():Float {
 		follow();
-		return width;
+		return visibleX;
 	}
 
-	/** Gets the height drawn in, in design pixels: the design's, taller under `Expand` on a taller window, or the window's logical
-		height with no design. */
-	@:isVar public var height(get, null):Float = 0;
+	/** Gets the top edge of the visible area, in design pixels: negative where the fit grows the design down and up, positive where
+		`Cover` cuts its top edge off. */
+	@:isVar public var visibleY(get, null):Float = 0;
 
-	function get_height():Float {
+	function get_visibleY():Float {
 		follow();
-		return height;
+		return visibleY;
+	}
+
+	/** Gets the visible area's width, in design pixels: the design's, wider where the fit grows it across, narrower where `Cover` cuts
+		it, or the window's logical width with no design. */
+	@:isVar public var visibleWidth(get, null):Float = 0;
+
+	function get_visibleWidth():Float {
+		follow();
+		return visibleWidth;
+	}
+
+	/** Gets the visible area's height, in design pixels: the design's, taller where the fit grows it, shorter where `Cover` cuts it, or
+		the window's logical height with no design. */
+	@:isVar public var visibleHeight(get, null):Float = 0;
+
+	function get_visibleHeight():Float {
+		follow();
+		return visibleHeight;
 	}
 
 	/** Gets the framebuffer pixels a design pixel spans across. */
@@ -119,7 +148,7 @@ class Screen implements IPollable {
 		return scaleY;
 	}
 
-	/** Gets the left edge of the area drawn in, in framebuffer pixels. */
+	/** Gets the left edge of the viewport, where the visible area is shown, in framebuffer pixels. */
 	@:isVar public var viewportX(get, null):Int = 0;
 
 	function get_viewportX():Int {
@@ -127,7 +156,7 @@ class Screen implements IPollable {
 		return viewportX;
 	}
 
-	/** Gets the top edge of the area drawn in, in framebuffer pixels from the top. */
+	/** Gets the top edge of the viewport, in framebuffer pixels from the top. */
 	@:isVar public var viewportY(get, null):Int = 0;
 
 	function get_viewportY():Int {
@@ -135,7 +164,7 @@ class Screen implements IPollable {
 		return viewportY;
 	}
 
-	/** Gets the width of the area drawn in, in framebuffer pixels. */
+	/** Gets the viewport's width, in framebuffer pixels. */
 	@:isVar public var viewportWidth(get, null):Int = 0;
 
 	function get_viewportWidth():Int {
@@ -143,7 +172,7 @@ class Screen implements IPollable {
 		return viewportWidth;
 	}
 
-	/** Gets the height of the area drawn in, in framebuffer pixels. */
+	/** Gets the viewport's height, in framebuffer pixels. */
 	@:isVar public var viewportHeight(get, null):Int = 0;
 
 	function get_viewportHeight():Int {
@@ -154,7 +183,7 @@ class Screen implements IPollable {
 	/** Gets the left edge of the safe area, in design pixels: where a HUD's left edge goes.
 
 		The safe area is the part of the window that no notch, rounded corner or system bar covers (`IWindow.safeAreaX`), here the part of
-		it inside the area drawn in, 0 to `width` across and 0 to `height` down. On a desktop it is the whole area drawn in. */
+		it inside the visible area. On a desktop it is the whole visible area. */
 	public var safeAreaX(get, never):Float;
 
 	function get_safeAreaX():Float
@@ -178,40 +207,40 @@ class Screen implements IPollable {
 	function get_safeAreaHeight():Float
 		return clampY(toDesignY((window.safeAreaY + window.safeAreaHeight) * window.pixelRatio)) - safeAreaY;
 
-	// A design position held to the area drawn in.
+	// A design position held to the visible area.
 	function clampX(x:Float):Float
-		return x < 0 ? 0 : x > width ? width : x;
+		return x < visibleX ? visibleX : x > visibleX + visibleWidth ? visibleX + visibleWidth : x;
 
 	function clampY(y:Float):Float
-		return y < 0 ? 0 : y > height ? height : y;
+		return y < visibleY ? visibleY : y > visibleY + visibleHeight ? visibleY + visibleHeight : y;
 
 	/** Returns where a framebuffer position across is in design pixels, as the mouse's or a finger's.
 
 		@param x  The position, in framebuffer pixels from the left.
-		@return  The position in design pixels; outside 0 to `width` on a bar. */
+		@return  The position in design pixels; outside the visible area on a bar. */
 	public function toDesignX(x:Float):Float
-		return (x - viewportX) / scaleX;
+		return visibleX + (x - viewportX) / scaleX;
 
 	/** Returns where a framebuffer position down is in design pixels.
 
 		@param y  The position, in framebuffer pixels from the top.
-		@return  The position in design pixels; outside 0 to `height` on a bar. */
+		@return  The position in design pixels; outside the visible area on a bar. */
 	public function toDesignY(y:Float):Float
-		return (y - viewportY) / scaleY;
+		return visibleY + (y - viewportY) / scaleY;
 
 	/** Returns where a design position across is on the framebuffer.
 
 		@param x  The position, in design pixels.
 		@return  The position, in framebuffer pixels from the left. */
 	public function toScreenX(x:Float):Float
-		return viewportX + x * scaleX;
+		return viewportX + (x - visibleX) * scaleX;
 
 	/** Returns where a design position down is on the framebuffer.
 
 		@param y  The position, in design pixels.
 		@return  The position, in framebuffer pixels from the top. */
 	public function toScreenY(y:Float):Float
-		return viewportY + y * scaleY;
+		return viewportY + (y - visibleY) * scaleY;
 
 	/** Gets whether the window was resized this frame, by the player, the OS or a request. */
 	public var resized(default, null):Bool = false;
@@ -314,7 +343,8 @@ class Screen implements IPollable {
 			layout();
 	}
 
-	// Where the design goes in the framebuffer, as the fit says.
+	// Where the design goes in the framebuffer, as the fit says: its scale, the visible area around it, centred, and the viewport showing
+	// that area.
 	function layout():Void {
 		var fw = window.framebufferWidth, fh = window.framebufferHeight;
 		laidWidth = fw;
@@ -322,36 +352,46 @@ class Screen implements IPollable {
 		laidRatio = window.pixelRatio;
 		if (designWidth == 0 || designHeight == 0) {
 			scaleX = scaleY = window.pixelRatio;
-			width = fw / scaleX;
-			height = fh / scaleY;
+			visibleX = visibleY = 0;
+			visibleWidth = fw / scaleX;
+			visibleHeight = fh / scaleY;
 			viewportX = viewportY = 0;
 			viewportWidth = fw;
 			viewportHeight = fh;
 			return;
 		}
-		var fitted = Math.min(fw / designWidth, fh / designHeight);
-		switch fit {
-			case Stretch:
-				scaleX = fw / designWidth;
-				scaleY = fh / designHeight;
-			case PixelPerfect:
-				scaleX = scaleY = Math.max(1, Math.floor(fitted));
-			case _:
-				scaleX = scaleY = fitted;
-		}
-		if (fit == Expand) {
-			width = fw / scaleX;
-			height = fh / scaleY;
+		if (fit == Stretch) {
+			scaleX = fw / designWidth;
+			scaleY = fh / designHeight;
+			visibleX = visibleY = 0;
+			visibleWidth = designWidth;
+			visibleHeight = designHeight;
 			viewportX = viewportY = 0;
 			viewportWidth = fw;
 			viewportHeight = fh;
 			return;
 		}
-		width = designWidth;
-		height = designHeight;
-		viewportWidth = Math.round(designWidth * scaleX);
-		viewportHeight = Math.round(designHeight * scaleY);
+		var across = fw / designWidth, down = fh / designHeight;
+		var scale = fit == Cover ? Math.max(across, down) : Math.min(across, down);
+		// A whole scale from 1 up; a window smaller than the design shows it smaller.
+		if (integerScale && scale >= 1)
+			scale = fit == Cover ? Math.fceil(scale) : Math.ffloor(scale);
+		scaleX = scaleY = scale;
+		visibleWidth = span(designWidth, fw / scale, fit == KeepHeight || fit == Expand);
+		visibleHeight = span(designHeight, fh / scale, fit == KeepWidth || fit == Expand);
+		visibleX = (designWidth - visibleWidth) / 2;
+		visibleY = (designHeight - visibleHeight) / 2;
+		viewportWidth = Std.int(Math.min(fw, Math.round(visibleWidth * scale)));
+		viewportHeight = Std.int(Math.min(fh, Math.round(visibleHeight * scale)));
 		viewportX = Std.int((fw - viewportWidth) / 2);
 		viewportY = Std.int((fh - viewportHeight) / 2);
+	}
+
+	// The visible area's extent on one axis, in design pixels, from the window's (room): the design's, grown to the window's where the fit grows it (by whole
+	// design pixels, alike on both sides, at a whole scale), and cut to the window's where the window shows less.
+	function span(design:Int, room:Float, grows:Bool):Float {
+		if (grows && room > design)
+			return integerScale ? design + 2 * Math.ffloor((room - design) / 2) : room;
+		return Math.min(design, room);
 	}
 }

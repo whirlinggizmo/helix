@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.extras.tweens.*;
 
 /** Plays tweens (`helix.raylib.extras.tweens`): a panel slides in and its title fades in after it, the two placed in a sequence; a
@@ -9,6 +10,8 @@ import helix.raylib.extras.tweens.*;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: tweens");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		var tweens = new Tweens();
 		var panel = new Vector2(-400, 60);

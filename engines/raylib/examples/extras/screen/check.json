@@ -1,0 +1,6 @@
+{
+  "what": "the red square at the design's centre, which the fit centres in the window.",
+  "points": [
+    {"x": 400, "y": 300, "color": [230, 41, 55], "tolerance": 3}
+  ]
+}

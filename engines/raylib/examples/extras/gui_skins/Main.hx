@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.Raygui.*;
 import helix.raylib.extras.GuiSkins.*;
 
@@ -13,6 +14,8 @@ import helix.raylib.extras.GuiSkins.*;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: GUI skins");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		// The skins are set once every texture has loaded, DEFAULT's first: a skin set on DEFAULT is set on every control too.
 		var names = [

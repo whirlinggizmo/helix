@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.extras.VirtualGamepad.*;
 
 /** Moves a ball with an on-screen stick (`helix.raylib.extras.VirtualGamepad`): a floating stick where a finger lands, full at 80
@@ -9,6 +10,8 @@ import helix.raylib.extras.VirtualGamepad.*;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: a virtual gamepad");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		EnableVirtualGamepad(0, {
 			left: {

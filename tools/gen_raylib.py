@@ -9,7 +9,7 @@ the raylib module it serves, so a program's import of raylib's header brings the
 file calls (RFilesAsync) and the compiled shaders (RCompiledShaders) after RCore, RTexturesAsync after RTextures, RTextAsync after
 RText, RModelsAsync after RModels, RAudioAsync after RAudio; in Raygui.hx RGuiAsync after RGui.
 What a program opts into that raylib has no call for is in the package helix.raylib.extras, a module and a section of its own each
-(extras.Lighting from RLighting, extras.Materials from RMaterials, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.Assets from RAssets, extras.GuiSkins from
+(extras.Lighting from RLighting, extras.Materials from RMaterials, extras.VirtualGamepad from RVirtualGamepad, extras.Device from RDevice, extras.Screen from RScreen, extras.Assets from RAssets, extras.GuiSkins from
 RGuiSkins, extras.Debug from RDebug, extras.Sprites from RSprites, extras.Shadowmaps from RShadowmaps, extras.Particles from RParticles, a model's posed bounds, merge and masked blend in extras.Models from
 RModelsPosed, RModelsMerged and RModelsMasked, and the fills, tiled and patched draws, atlases and fitted render texture in
 extras.Textures from RTextureFills, RTextureDraws, RTextureAtlases and RRenderTextureFit).
@@ -97,6 +97,7 @@ TARGETS = {
     'extras/Materials.hx': ([('RMaterials', "materials: what a material emits, where it is cut out, and whether light and shadows fall on it")], None, 'Materials'),
     'extras/VirtualGamepad.hx': ([('RVirtualGamepad', "virtual gamepad: on-screen sticks read as a gamepad's")], None, 'VirtualGamepad'),
     'extras/Device.hx': ([('RDevice', "device: the safe area, the device, the window's abilities, orientation and tilt")], None, 'Device'),
+    'extras/Screen.hx': ([('RScreen', "screen: a design size fitted to the window")], None, 'Screen'),
     'extras/Assets.hx': ([('RAssets', "assets: the asset host, and files ensured ahead of raylib's loads")], None, 'Assets'),
     'extras/GuiSkins.hx': ([('RGuiSkins', "gui skins: raygui's controls drawn from textures")], None, 'GuiSkins'),
     'extras/Debug.hx': ([('RDebug', "debug: a model's skeleton and bounds as posed, and the frame's cost")], None, 'Debug'),

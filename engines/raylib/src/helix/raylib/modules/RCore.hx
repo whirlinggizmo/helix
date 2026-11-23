@@ -456,18 +456,22 @@ class RCore {
 		return Runtime.window.getMonitorName(monitor);
 	}
 
-	/** Returns the screen's width, in the pixels drawing is in. See `GetRenderWidth` for reading the framebuffer's width.
+	/** Returns the screen's width, in the pixels drawing is in: the design's under a fit (`helix.raylib.extras.Screen`). See
+		`GetRenderWidth` for reading the framebuffer's width.
 
 		@return  The width. */
 	static function GetScreenWidth():Int {
-		return Std.int(Runtime.screen.width);
+		var screen = Runtime.screen;
+		return screen.designWidth > 0 ? screen.designWidth : Std.int(screen.visibleWidth);
 	}
 
-	/** Returns the screen's height, in the pixels drawing is in. See `GetRenderHeight` for reading the framebuffer's height.
+	/** Returns the screen's height, in the pixels drawing is in: the design's under a fit. See `GetRenderHeight` for reading the
+		framebuffer's height.
 
 		@return  The height. */
 	static function GetScreenHeight():Int {
-		return Std.int(Runtime.screen.height);
+		var screen = Runtime.screen;
+		return screen.designHeight > 0 ? screen.designHeight : Std.int(screen.visibleHeight);
 	}
 
 	/** Returns the framebuffer's width, in the display's pixels. See `GetScreenWidth` for reading the width drawing is in.
@@ -489,6 +493,10 @@ class RCore {
 		`FLAG_MSAA_4X_HINT` asks for 4 samples a pixel.
 
 		`FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames show as soon as they are drawn.
+
+		`FLAG_WINDOW_TRANSPARENT` makes the window see-through where drawing leaves alpha below 1: the page under the canvas, or the
+		desktop where the window system allows it. raylib's blending lowers the alpha under a translucent draw, so the program clears and
+		draws opaquely where it wants no see-through.
 
 		The window is resizable whatever the flags.
 
@@ -581,7 +589,11 @@ class RCore {
 	/** Begins a frame's drawing. */
 	static function BeginDrawing():Void {
 		Runtime.beginDrawing();
-		Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
+		var screen = Runtime.screen;
+		if (screen.designWidth > 0)
+			Runtime.frame.begin(screen.visibleWidth, screen.visibleHeight, screen.visibleX, screen.visibleY);
+		else
+			Runtime.frame.begin(GetScreenWidth(), GetScreenHeight());
 	}
 
 	/** Ends a frame's drawing and shows it, then waits out the rest of the frame (`SetTargetFPS`) and reads the next frame's input.
@@ -2930,7 +2942,10 @@ class RCore {
 		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
 	static function GetScreenToWorldRay(position:Vector2, camera:Camera3D, ?out:Ray):Ray {
-		return GetScreenToWorldRayEx(position, camera, GetScreenWidth(), GetScreenHeight(), out);
+		var screen = Runtime.screen;
+		if (screen.designWidth > 0)
+			return rayThrough(position.x - screen.visibleX, position.y - screen.visibleY, screen.visibleWidth, screen.visibleHeight, camera, out);
+		return rayThrough(position.x, position.y, GetScreenWidth(), GetScreenHeight(), camera, out);
 	}
 
 	/** Returns the ray from a camera through a position in a view of a size, such as a render texture's.
@@ -2942,8 +2957,13 @@ class RCore {
 		@param out  Optional. The ray to fill; a new one when omitted.
 		@return  The ray. */
 	static function GetScreenToWorldRayEx(position:Vector2, camera:Camera3D, width:Int, height:Int, ?out:Ray):Ray {
-		var x = 2 * position.x / width - 1,
-			y = 1 - 2 * position.y / height,
+		return rayThrough(position.x, position.y, width, height, camera, out);
+	}
+
+	// The ray from a camera through a position in a view of a size, into out or a new ray.
+	static function rayThrough(px:Float, py:Float, width:Float, height:Float, camera:Camera3D, ?out:Ray):Ray {
+		var x = 2 * px / width - 1,
+			y = 1 - 2 * py / height,
 			aspect = width / height;
 		var picked = camera3D(camera).computeRay(x, y, aspect, ray3D);
 		var origin = picked.origin, direction = picked.direction;
@@ -2971,7 +2991,10 @@ class RCore {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The screen position. */
 	static function GetWorldToScreen(position:Vector3, camera:Camera3D, ?out:Vector2):Vector2 {
-		return GetWorldToScreenEx(position, camera, GetScreenWidth(), GetScreenHeight(), out);
+		var screen = Runtime.screen;
+		if (screen.designWidth > 0)
+			return project(position, camera, screen.visibleX, screen.visibleY, screen.visibleWidth, screen.visibleHeight, out);
+		return project(position, camera, 0, 0, GetScreenWidth(), GetScreenHeight(), out);
 	}
 
 	/** Returns where a point in the world is in a view of a size.
@@ -2983,8 +3006,13 @@ class RCore {
 		@param out  Optional. The vector to fill; a new one when omitted.
 		@return  The position in the view, or infinite or NaN for a point level with a perspective camera's position. */
 	static function GetWorldToScreenEx(position:Vector3, camera:Camera3D, width:Int, height:Int, ?out:Vector2):Vector2 {
+		return project(position, camera, 0, 0, width, height, out);
+	}
+
+	// Where a point in the world is in a view of a size whose top left is at left and top, into out or a new vector.
+	static function project(position:Vector3, camera:Camera3D, left:Float, top:Float, width:Float, height:Float, ?out:Vector2):Vector2 {
 		var p = camera3D(camera).project(position.x, position.y, position.z, width / height, point3D);
-		var x = (p.x + 1) / 2 * width, y = (1 - p.y) / 2 * height;
+		var x = left + (p.x + 1) / 2 * width, y = top + (1 - p.y) / 2 * height;
 		return out == null ? new Vector2(x, y) : out.set(x, y);
 	}
 

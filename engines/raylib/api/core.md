@@ -323,9 +323,9 @@ static macro function EndDrawing():Void
 - `GetMonitorName`: Returns a monitor's name.
   - `monitor`: The monitor.
   - returns: The name.
-- `GetScreenWidth`: Returns the screen's width, in the pixels drawing is in. See `GetRenderWidth` for reading the framebuffer's width.
+- `GetScreenWidth`: Returns the screen's width, in the pixels drawing is in: the design's under a fit (`helix.raylib.extras.Screen`). See `GetRenderWidth` for reading the framebuffer's width.
   - returns: The width.
-- `GetScreenHeight`: Returns the screen's height, in the pixels drawing is in. See `GetRenderHeight` for reading the framebuffer's height.
+- `GetScreenHeight`: Returns the screen's height, in the pixels drawing is in: the design's under a fit. See `GetRenderHeight` for reading the framebuffer's height.
   - returns: The height.
 - `GetRenderWidth`: Returns the framebuffer's width, in the display's pixels. See `GetScreenWidth` for reading the width drawing is in.
   - returns: The width.
@@ -337,6 +337,8 @@ static macro function EndDrawing():Void
   `FLAG_MSAA_4X_HINT` asks for 4 samples a pixel.
 
   `FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames show as soon as they are drawn.
+
+  `FLAG_WINDOW_TRANSPARENT` makes the window see-through where drawing leaves alpha below 1: the page under the canvas, or the desktop where the window system allows it. raylib's blending lowers the alpha under a translucent draw, so the program clears and draws opaquely where it wants no see-through.
 
   The window is resizable whatever the flags.
 - `SetWindowState`: Sets flags on the open window (`FLAG_*`).

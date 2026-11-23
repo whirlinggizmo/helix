@@ -1,10 +1,10 @@
 {
   "what": "the dark background, through the leaf's cut-out corner too; the leaf's green; the dark cube glowing orange through the default shader; the unlit sphere's color, untouched by the light.",
   "points": [
-    {"x": 400, "y": 80, "color": [30, 32, 40], "tolerance": 3},
-    {"x": 110, "y": 216, "color": [30, 32, 40], "tolerance": 3},
-    {"x": 168, "y": 273, "color": [0, 117, 44], "tolerance": 3},
-    {"x": 305, "y": 300, "color": [193, 137, 40], "tolerance": 4},
-    {"x": 560, "y": 300, "color": [133, 160, 207], "tolerance": 4}
+    {"x": 400, "y": 155, "color": [30, 32, 40], "tolerance": 3},
+    {"x": 182, "y": 237, "color": [30, 32, 40], "tolerance": 3},
+    {"x": 226, "y": 280, "color": [0, 117, 44], "tolerance": 3},
+    {"x": 329, "y": 300, "color": [193, 137, 40], "tolerance": 4},
+    {"x": 520, "y": 300, "color": [133, 160, 207], "tolerance": 4}
   ]
 }

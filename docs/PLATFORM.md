@@ -309,6 +309,10 @@ page `present` does nothing, since the browser presents when the frame's callbac
 presents at once and waits for nothing, and the frame may tear: GL swaps with interval 0, SDL_GPU presents IMMEDIATE, or MAILBOX where the
 window has no IMMEDIATE, or VSYNC where it has neither. A page always waits.
 
+A window opened transparent (`Sdl3WindowAdapterOptions.transparent`, `WebGl2GraphicsAdapterOptions.transparent`) shows what is behind
+it where the frame's alpha is below 1: the page under the canvas, its colors not premultiplied, or the desktop where the window system
+allows it. Otherwise the frame is opaque, whatever its alpha.
+
 Render targets are stored top row first on every adapter, or bottom row first, as GL stores its framebuffers, when made so
 (`createRenderTarget`'s `bottomRowFirst`, which helix-raylib's render textures are, as raylib's are on GL). An adapter whose graphics API
 stores the other way draws into a target flipped, through the uniform a pipeline names (`PipelineDesc.flip`, `flipBlockSlot` and

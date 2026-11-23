@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.Rlgl.*;
 import helix.raylib.extras.Shadowmaps.*;
@@ -23,6 +24,8 @@ class Main {
 		var screenWidth = 800, screenHeight = 450;
 		SetConfigFlags(FLAG_MSAA_4X_HINT);
 		InitWindow(screenWidth, screenHeight, "helix-raylib: shadowmaps");
+		// The design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(screenWidth, screenHeight, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		var cam = new Camera3D(new Vector3(10, 10, 10), Vector3Zero(), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var shadowShader:Null<Shader> = null,
 			robot:Null<Model> = null,
@@ -88,6 +91,7 @@ class Main {
 				EndTextureMode();
 				SetShaderValueMatrix(shadowShader, lightVPLoc, MatrixMultiply(lightView, lightProj));
 				SetShaderValueTexture(shadowShader, shadowMapLoc, shadowMap.depth);
+				cam.fovy = GetScreenFitFovy(45);
 				BeginMode3D(cam);
 				drawScene(cube, robot);
 				EndMode3D();

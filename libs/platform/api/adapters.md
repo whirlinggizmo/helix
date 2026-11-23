@@ -559,11 +559,11 @@ function dispose():Void
 ```
 
 - `new`: Creates the adapter on a canvas's WebGL2 context.
-  - `options`: The canvas's id, its samples and whether its drawing buffer is kept.
+  - `options`: The canvas's id, its samples, whether its drawing buffer is kept and whether it is transparent.
   - throws `String`: No canvas has that id.
   - throws `GraphicsUnavailableException`: The browser has no WebGL2.
 
-  The context has a depth buffer and no alpha or stencil. When antialiased, the browser chooses the number of samples, nearly always 4.
+  The context has a depth buffer and no stencil, and alpha only when transparent, its colors not premultiplied. When antialiased, the browser chooses the number of samples, nearly always 4.
 
 ## WebGl2GraphicsAdapterOptions
 
@@ -574,18 +574,20 @@ Represents how `WebGl2GraphicsAdapter` makes its context.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{canvasId:String, ?msaaSampleCount:Int, ?preserveDrawingBuffer:Bool}
+{canvasId:String, ?msaaSampleCount:Int, ?preserveDrawingBuffer:Bool, ?transparent:Bool}
 ```
 
 ```haxe
 final canvasId:String
 final msaaSampleCount:Int = 1
 final preserveDrawingBuffer:Bool = false
+final transparent:Bool = false
 ```
 
 - `canvasId`: Gets the id of the canvas whose WebGL2 context is drawn with.
 - `msaaSampleCount`: Gets the number of multisampling samples a pixel asks for; 1 for none, the default. Over 1 makes the context antialiased, and the browser chooses the number, nearly always 4.
 - `preserveDrawingBuffer`: Gets a value indicating whether the drawing buffer is kept after a frame is shown, so it can be read back later; false by default.
+- `transparent`: Gets whether the canvas is see-through where drawing leaves alpha below 1, the page under it showing; false by default, the canvas opaque. Its colors aren't premultiplied by their alpha.
 
 ## FetchApiHttpAdapter
 
@@ -1157,18 +1159,20 @@ Represents how `Sdl3WindowAdapter` opens its window.
 Written as an object where one is expected; a field marked `?` may be left out, for its default:
 
 ```haxe
-{graphics:Sdl3WindowGraphics, ?msaaSampleCount:Int, ?vsync:Bool}
+{graphics:Sdl3WindowGraphics, ?msaaSampleCount:Int, ?vsync:Bool, ?transparent:Bool}
 ```
 
 ```haxe
 final graphics:Sdl3WindowGraphics
 final msaaSampleCount:Int = 1
 final vsync:Bool = true
+final transparent:Bool = false
 ```
 
 - `graphics`: Gets the graphics adapter that draws in the window.
 - `msaaSampleCount`: Gets the number of multisampling samples a pixel asks for; 1 for none, the default. The GPU may use fewer.
 - `vsync`: Gets whether presenting waits for the display's refresh, which paces the owner's loop: true, the default. False shows each frame as soon as it is drawn, which may tear.
+- `transparent`: Gets whether the window is see-through where drawing leaves alpha below 1, the desktop under it showing where the window system allows it; false by default, the window opaque.
 
 ## Sdl3WindowGraphics
 

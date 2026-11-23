@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.extras.Particles.*;
 
 /** Draws a sparkler (`helix.raylib.extras.Particles`): one 2D emitter throwing sparks every way, each a streak along its motion that falls
@@ -8,6 +9,8 @@ import helix.raylib.extras.Particles.*;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: particles2d");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		var sparks = LoadEmitter2D(1024);
 		sparks.position = new Vector2(400, 200);

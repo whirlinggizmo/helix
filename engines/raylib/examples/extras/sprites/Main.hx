@@ -1,5 +1,6 @@
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.Raymath.*;
 import helix.raylib.extras.Sprites.*;
 
@@ -9,6 +10,8 @@ import helix.raylib.extras.Sprites.*;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: sprites");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		var image = GenImageChecked(16, 16, 8, 8, MAROON, GOLD);
 		var texture = LoadTextureFromImage(image);

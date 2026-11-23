@@ -195,6 +195,12 @@ class Frame {
 	/** Whether the next draws blend as `blend` says, rlgl's `rlEnableColorBlend`; when not, they draw over what is there. */
 	public var colorBlend = true;
 
+	/** The screen's top left, in the pixels drawing is in: the visible area's (`helix.services.screen.Screen.visibleX`), negative where a
+		fit grows the design, 0 without one. Render textures start at 0. */
+	public var originX = 0.;
+
+	public var originY = 0.;
+
 	/** How many passes have begun, counting each `begin`, `toTarget` and `toScreen`. */
 	public var passCount(default, null) = 0;
 
@@ -250,6 +256,11 @@ class Frame {
 		screenshots do once a program asks for one (`Runtime.screenshots`). A program asking for none links none. */
 	public final ended:Array<() -> Void> = [];
 
+	/** Leads the screen's pass into the fit's render target and adds the pass copying it to the screen (`FrameFit`): set by the first
+		`SetScreenFit`, null before, so a program setting no fit links none of it. Runs as the frame's passes are drawn, and part way
+		through a frame when the screen is read. */
+	public var fitScreen:Null<() -> Void> = null;
+
 	/** What runs each frame before its passes are drawn, in the order added: what the passes read and only a program asking for it
 		writes, as the bone palette once a program poses a model (`Skinning`). */
 	public final drawing:Array<() -> Void> = [];
@@ -288,12 +299,16 @@ class Frame {
 	/** Starts the frame's drawing on the screen, at its size now. Render textures drawn into before it, as raylib allows, are kept.
 
 		@param width  The screen's width, in the pixels drawing is in.
-		@param height  The screen's height. */
-	public function begin(width:Float, height:Float):Void {
+		@param height  The screen's height.
+		@param originX  Optional. The screen's left edge, in the same pixels. Defaults to 0.
+		@param originY  Optional. Its top edge. Defaults to 0. */
+	public function begin(width:Float, height:Float, originX = 0., originY = 0.):Void {
 		flush();
 		var screen = passes[passes.length - 1];
 		screen.width = width;
 		screen.height = height;
+		this.originX = originX;
+		this.originY = originY;
 		pass = screen;
 		viewport = null;
 		passCount++;
@@ -333,6 +348,69 @@ class Frame {
 		screen2D();
 	}
 
+	/** Returns a draw of a render target's whole texture into a rectangle of a pass, its texels as they are: an immediate quad through
+		the default program, without blending, depth or culling, written after the batch's vertices.
+
+		@param texture  The render target's texture.
+		@param x  The rectangle's left edge, in the pass's pixels.
+		@param y  Its top edge.
+		@param width  Its width.
+		@param height  Its height.
+		@param passWidth  The pass's width.
+		@param passHeight  The pass's height.
+		@return  The draw, for the pass's draws. */
+	public function copyDraw(texture:Int, x:Float, y:Float, width:Float, height:Float, passWidth:Float, passHeight:Float):Draw {
+		vertices = (vertices + 3) & ~3;
+		var first = vertices;
+		for (c in 0...4) {
+			var right = c >= 2, bottom = c == 1 || c == 2;
+			var at = room();
+			put(at, right ? x + width : x);
+			put(at + 4, bottom ? y + height : y);
+			put(at + 8, 0);
+			put(at + 12, right ? 1 : 0);
+			put(at + 16, bottom ? 1 : 0);
+			put(at + 20, 0);
+			put(at + 24, 0);
+			put(at + 28, 1);
+			data.fill(at + 32, 4, 255);
+			vertices++;
+		}
+		var program = this.program,
+			view = this.view,
+			projection = this.projection,
+			meshView = this.meshView,
+			meshProjection = this.meshProjection;
+		var colorBlend = this.colorBlend,
+			colorMask = this.colorMask,
+			depthTest = this.depthTest,
+			cull = this.cull,
+			scissor = this.scissor,
+			viewport = this.viewport;
+		this.program = defaultProgram;
+		this.view = new Matrix4();
+		this.projection = Matrix4.fromOrthographic(0, passWidth, passHeight, 0, 0, 1);
+		this.meshView = this.meshProjection = null;
+		this.colorBlend = this.depthTest = this.cull = false;
+		this.colorMask = All;
+		this.scissor = null;
+		this.viewport = null;
+		var copy = immediate(texture, Triangles, Std.int(first / 4) * 6, true);
+		copy.count = 6;
+		this.program = program;
+		this.view = view;
+		this.projection = projection;
+		this.meshView = meshView;
+		this.meshProjection = meshProjection;
+		this.colorBlend = colorBlend;
+		this.colorMask = colorMask;
+		this.depthTest = depthTest;
+		this.cull = cull;
+		this.scissor = scissor;
+		this.viewport = viewport;
+		return copy;
+	}
+
 	/** Gets the current pass's size. */
 	public var width(get, never):Float;
 
@@ -350,11 +428,14 @@ class Frame {
 	function get_inTarget():Bool
 		return pass.target != 0;
 
-	/** Sets the matrices to 2D over the current pass: pixels from its top left, the batch flushed first. */
+	/** Sets the matrices to 2D over the current pass: pixels from its top left (the screen's from `originX` and `originY`), the batch
+		flushed first. */
 	public function screen2D():Void {
 		flush();
 		view = new Matrix4();
-		projection = Matrix4.fromOrthographic(0, pass.width, pass.height, 0, 0, 1);
+		var x = pass.target == 0 ? originX : 0,
+			y = pass.target == 0 ? originY : 0;
+		projection = Matrix4.fromOrthographic(x, x + pass.width, y + pass.height, y, 0, 1);
 	}
 
 	/** Starts drawing into a render target, as its own pass, until `toScreen`: over what it holds, as raylib's render textures keep it,
@@ -1770,9 +1851,12 @@ class FrameReads {
 		frame.cut();
 		var passes = frame.passes;
 		var screen = passes[passes.length - 1];
-		// The screen's pass is drawn only while the screen is held, so the frame's passes are those drawn while they are.
+		// The screen's pass is drawn only while the screen is held, so the frame's passes are those drawn while they are; under a fit,
+		// into the fit's target, copied into the held one.
 		if (!holding)
 			passes.pop();
+		else if (frame.fitScreen != null)
+			frame.fitScreen();
 		if (passes.length == 0) {
 			passes.push(screen);
 			return;
@@ -1934,7 +2018,9 @@ class FrameReads {
 			clear: 0xff000000,
 			width: screen.width,
 			height: screen.height,
-			draws: [copyDraw(frame, screen.width, screen.height)],
+			draws: [
+				frame.copyDraw(held, 0, 0, screen.width, screen.height, screen.width, screen.height)
+			],
 			updates: []
 		});
 		if (after == null)
@@ -1966,60 +2052,6 @@ class FrameReads {
 		}
 	}
 
-	// A draw of the held target over the whole screen, its texels as they are: an immediate quad through the default program, without
-	// blending, depth or culling, written after the batch's vertices.
-	static function copyDraw(frame:Frame, width:Float, height:Float):Draw {
-		frame.vertices = (frame.vertices + 3) & ~3;
-		var first = frame.vertices;
-		for (c in 0...4) {
-			var right = c >= 2, bottom = c == 1 || c == 2;
-			var at = frame.room();
-			frame.put(at, right ? width : 0);
-			frame.put(at + 4, bottom ? height : 0);
-			frame.put(at + 8, 0);
-			frame.put(at + 12, right ? 1 : 0);
-			frame.put(at + 16, bottom ? 1 : 0);
-			frame.put(at + 20, 0);
-			frame.put(at + 24, 0);
-			frame.put(at + 28, 1);
-			frame.data.fill(at + 32, 4, 255);
-			frame.vertices++;
-		}
-		var program = frame.program,
-			view = frame.view,
-			projection = frame.projection,
-			meshView = frame.meshView,
-			meshProjection = frame.meshProjection;
-		var colorBlend = frame.colorBlend,
-			colorMask = frame.colorMask,
-			depthTest = frame.depthTest,
-			cull = frame.cull,
-			scissor = frame.scissor,
-			viewport = frame.viewport;
-		frame.program = frame.defaultProgram;
-		frame.view = new Matrix4();
-		frame.projection = Matrix4.fromOrthographic(0, width, height, 0, 0, 1);
-		frame.meshView = frame.meshProjection = null;
-		frame.colorBlend = frame.depthTest = frame.cull = false;
-		frame.colorMask = All;
-		frame.scissor = null;
-		frame.viewport = null;
-		var copy = frame.immediate(held, Triangles, Std.int(first / 4) * 6, true);
-		copy.count = 6;
-		frame.program = program;
-		frame.view = view;
-		frame.projection = projection;
-		frame.meshView = meshView;
-		frame.meshProjection = meshProjection;
-		frame.colorBlend = colorBlend;
-		frame.colorMask = colorMask;
-		frame.depthTest = depthTest;
-		frame.cull = cull;
-		frame.scissor = scissor;
-		frame.viewport = viewport;
-		return copy;
-	}
-
 	// Counts the frame's passes, those drawn part way, for the debug stats (RDebug.tally, which counts the frame's passes as it is drawn),
 	// and adds them to the frame's after its tally, a hook added after RDebug's the first time.
 	static function count(frame:Frame):Void {
@@ -2041,6 +2073,124 @@ class FrameReads {
 			RDebug.triangles += partTriangles;
 			RDebug.changes += partChanges;
 			partDraws = partTriangles = partChanges = 0;
+		});
+	}
+}
+
+/** Fits the screen to the window under a design size (`helix.raylib.extras.Screen`): each frame, the screen's pass is drawn into a
+	render target and copied into the screen's viewport (`helix.services.screen.Screen.viewportX`), the bars around it in `barColor`. Only
+	`SetScreenFit` reaches it, so a program setting no fit links none of it. */
+@:noCompletion
+@:allow(helix.raylib)
+@:access(helix.raylib.internal.Frame)
+class FrameFit {
+	/** Whether the screen is drawn at the visible area's size in design pixels and shown scaled (`SCREEN_STRETCH_VIEWPORT`), rather
+		than at the viewport's size. */
+	public static var atDesignSize = false;
+
+	/** The bars' color, 0xAARRGGBB: black until set. Its alpha shows through a transparent window alone. */
+	public static var barColor = 0xff000000;
+
+	// The frame fitted, the render target the screen's pass draws into and its size, 0 before the first fitted frame; and fit as a hook
+	// of the frame's drawing, one object.
+	static var owner:Null<Frame>;
+	static var target = 0;
+	static var targetWidth = 0;
+	static var targetHeight = 0;
+	static var hook:Null<Void->Void>;
+
+	/** Fits a frame's screen from its next drawing on, while the screen has a design size.
+
+		@param frame  The frame. */
+	public static function use(frame:Frame):Void {
+		if (owner == frame)
+			return;
+		owner = frame;
+		target = targetWidth = targetHeight = 0;
+		if (hook == null)
+			hook = fit;
+		// Before the kept target's hook (FrameReads.drawHeld), which then keeps the fitted frame, bars and all.
+		frame.drawing.insert(0, hook);
+		frame.fitScreen = hook;
+		Runtime.closing.push(() -> {
+			if (owner != frame)
+				return;
+			release();
+			owner = null;
+		});
+	}
+
+	/** Frees the render target, as the fit is cleared. */
+	public static function release():Void {
+		if (owner != null && target != 0)
+			owner.graphics.disposeTexture(target);
+		target = targetWidth = targetHeight = 0;
+	}
+
+	// Leads the frame's screen pass into the render target, its scissors and viewports in the target's pixels, and adds a pass after it
+	// copying the target into the viewport, over black.
+	static function fit():Void {
+		var frame = owner, screen = Runtime.screen;
+		if (frame == null || screen == null || screen.designWidth == 0)
+			return;
+		var passes = frame.passes;
+		var pass = passes[passes.length - 1];
+		var width = atDesignSize ? Math.round(pass.width) : screen.viewportWidth,
+			height = atDesignSize ? Math.round(pass.height) : screen.viewportHeight;
+		width = width < 1 ? 1 : width;
+		height = height < 1 ? 1 : height;
+		if (target == 0 || width != targetWidth || height != targetHeight) {
+			release();
+			target = frame.graphics.createRenderTarget(width, height);
+			targetWidth = width;
+			targetHeight = height;
+			// A target made again holds nothing, so a pass keeping what the screen holds is cleared black.
+			if (pass.clear == null)
+				pass.clear = 0xff000000;
+		}
+		var scaleX = width / pass.width, scaleY = height / pass.height;
+		var from:Null<Array<Float>> = null, to:Null<Array<Float>> = null;
+		var fromPort:Null<Array<Int>> = null, toPort:Null<Array<Int>> = null;
+		for (d in pass.draws) {
+			if (d.scissor != null) {
+				if (d.scissor != from) {
+					from = d.scissor;
+					to = [from[0] * scaleX, from[1] * scaleY, from[2] * scaleX, from[3] * scaleY];
+				}
+				d.scissor = to;
+			}
+			if (d.viewport != null) {
+				if (d.viewport != fromPort) {
+					fromPort = d.viewport;
+					toPort = [
+						Math.round(fromPort[0] * scaleX),
+						Math.round(fromPort[1] * scaleY),
+						Math.round(fromPort[2] * scaleX),
+						Math.round(fromPort[3] * scaleY)
+					];
+				}
+				d.viewport = toPort;
+			}
+		}
+		passes[passes.length - 1] = {
+			target: target,
+			clear: pass.clear,
+			width: width,
+			height: height,
+			draws: pass.draws,
+			updates: pass.updates
+		};
+		var framebufferWidth = Runtime.window.framebufferWidth,
+			framebufferHeight = Runtime.window.framebufferHeight;
+		passes.push({
+			target: 0,
+			clear: barColor,
+			width: framebufferWidth,
+			height: framebufferHeight,
+			draws: [
+				frame.copyDraw(target, screen.viewportX, screen.viewportY, screen.viewportWidth, screen.viewportHeight, framebufferWidth, framebufferHeight)
+			],
+			updates: []
 		});
 	}
 }

@@ -9,7 +9,7 @@
 | `helix.raylib.Rlgl` | rlgl |
 | `helix.raylib.Raygui` | raygui 4.5-dev |
 | `helix.raylib.Raylib6` | the calls raylib 6.0 adds, ahead of the move to raylib 6: `UpdateModelAnimationEx`, two animations blended |
-| `helix.raylib.extras` | features beyond raylib's API that a program opts into: lighting and shadows, PBR materials, particles, sprite batches, tweens, a virtual gamepad, the device's safe area and sensors, GUI skins, debug drawing and frame stats |
+| `helix.raylib.extras` | features beyond raylib's API that a program opts into: lighting and shadows, PBR materials, particles, sprite batches, tweens, a virtual gamepad, the device's safe area and sensors, a design size fitted to the window, GUI skins, debug drawing and frame stats |
 | `helix.raylib.extras.tweens` | helix-tweens' tweens, with `ColorTween` accepting raylib's `Color` |
 | `helix.raylib.Vector2`, `Color`, `Model` and the rest | raylib's structs |
 
@@ -96,6 +96,9 @@ Defines, set in the build's hxml:
 
 ## Examples
 
+Each fits its design to the window, a phone's included, with `SetScreenFit` and `SCREEN_FIT_EXPAND` (`helix.raylib.extras.Screen`),
+but `extras/textures`, which fits its render texture itself.
+
 - `basic`: raylib's basic window, with a circle at the mouse.
 - `model`: a glTF model on a grid, the camera turning about it.
 - `frame_stats`: the frame stats read (`helix.raylib.extras.Debug`), the last half second's and a recording's.
@@ -103,6 +106,8 @@ Defines, set in the build's hxml:
 - `images`: an image made on the CPU, a circle and text drawn into it, drawn as a texture.
 - `extras/particles3d`: a fountain, one 3D emitter of the Particles extra, its particles worked out on the GPU (`helix.raylib.extras.Particles`).
 - `extras/particles2d`: a sparkler, one 2D emitter of the Particles extra, its sparks drawn in the sprite batch.
+- `extras/screen`: an 800 x 450 design fitted to the window, each fit, stretch, integer scale and bar color (clear in a transparent window) a key away
+  (`helix.raylib.extras.Screen`).
 - `extras/tweens`: a panel sliding in and its title fading in after it, a sequence, and a ball going back and forth for ever
   (`helix.raylib.extras.tweens`).
 

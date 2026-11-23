@@ -12,4 +12,8 @@ class WebGl2GraphicsAdapterOptions {
 
 	/** Gets a value indicating whether the drawing buffer is kept after a frame is shown, so it can be read back later; false by default. */
 	public final preserveDrawingBuffer:Bool = false;
+
+	/** Gets whether the canvas is see-through where drawing leaves alpha below 1, the page under it showing; false by default, the canvas
+		opaque. Its colors aren't premultiplied by their alpha. */
+	public final transparent:Bool = false;
 }

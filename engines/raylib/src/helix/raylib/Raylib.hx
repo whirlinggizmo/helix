@@ -1360,13 +1360,15 @@ class Raylib {
 	public static inline function GetMonitorName(monitor:Int):String
 		return RCore.GetMonitorName(monitor);
 
-	/** Returns the screen's width, in the pixels drawing is in. See `GetRenderWidth` for reading the framebuffer's width.
+	/** Returns the screen's width, in the pixels drawing is in: the design's under a fit (`helix.raylib.extras.Screen`). See
+		`GetRenderWidth` for reading the framebuffer's width.
 
 		@return  The width. */
 	public static inline function GetScreenWidth():Int
 		return RCore.GetScreenWidth();
 
-	/** Returns the screen's height, in the pixels drawing is in. See `GetRenderHeight` for reading the framebuffer's height.
+	/** Returns the screen's height, in the pixels drawing is in: the design's under a fit. See `GetRenderHeight` for reading the
+		framebuffer's height.
 
 		@return  The height. */
 	public static inline function GetScreenHeight():Int
@@ -1389,6 +1391,10 @@ class Raylib {
 		`FLAG_MSAA_4X_HINT` asks for 4 samples a pixel.
 
 		`FLAG_VSYNC_HINT` shows frames at the display's refresh. Without it, frames show as soon as they are drawn.
+
+		`FLAG_WINDOW_TRANSPARENT` makes the window see-through where drawing leaves alpha below 1: the page under the canvas, or the
+		desktop where the window system allows it. raylib's blending lowers the alpha under a translucent draw, so the program clears and
+		draws opaquely where it wants no see-through.
 
 		The window is resizable whatever the flags.
 

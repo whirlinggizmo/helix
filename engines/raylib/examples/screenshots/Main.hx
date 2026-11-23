@@ -1,4 +1,5 @@
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 
 /** Screenshots saved to files in the data directory, which every load reads first, so `LoadImage` reads them back: the first frame,
 	captured before it is drawn; a frame part way through, its clear but not the gold drawn after; and the frame last shown, captured
@@ -8,6 +9,8 @@ import helix.raylib.Raylib.*;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: screenshots");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		// Nothing is drawn yet, so this saves the first frame as it ends.
 		TakeScreenshot("first.png");

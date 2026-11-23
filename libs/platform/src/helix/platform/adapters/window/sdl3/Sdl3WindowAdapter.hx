@@ -21,7 +21,7 @@ class Sdl3WindowAdapter implements IWindow {
 		@throws String  SDL or the window can't be had. */
 	public function new(options:Sdl3WindowAdapterOptions) {
 		Sdl3Bridge.nameApp(ProgramName.product());
-		if (Sdl3Bridge.open(options.msaaSampleCount, options.graphics == Gl ? 1 : 0, options.vsync ? 1 : 0) != 1)
+		if (Sdl3Bridge.open(options.msaaSampleCount, options.graphics == Gl ? 1 : 0, options.vsync ? 1 : 0, options.transparent ? 1 : 0) != 1)
 			throw "SDL3 can't open a window here (see the log)";
 		WindowBridge.watch(1);
 		title = "helix-legacy";

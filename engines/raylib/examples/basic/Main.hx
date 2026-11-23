@@ -1,10 +1,13 @@
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 
 /** raylib's basic window: text in the middle and a circle at the mouse, in raylib's own shape. The `quit_after_frame` option
 	(`--quit_after_frame=60` natively, `?quit_after_frame=60` in a page) quits it after that frame. */
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: basic window");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		SetTargetFPS(60);
 		while (!WindowShouldClose()) {
 			BeginDrawing();

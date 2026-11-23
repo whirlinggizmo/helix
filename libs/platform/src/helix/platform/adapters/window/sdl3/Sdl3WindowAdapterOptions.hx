@@ -12,4 +12,8 @@ class Sdl3WindowAdapterOptions {
 	/** Gets whether presenting waits for the display's refresh, which paces the owner's loop: true, the default. False shows each frame
 		as soon as it is drawn, which may tear. */
 	public final vsync:Bool = true;
+
+	/** Gets whether the window is see-through where drawing leaves alpha below 1, the desktop under it showing where the window system
+		allows it; false by default, the window opaque. */
+	public final transparent:Bool = false;
 }

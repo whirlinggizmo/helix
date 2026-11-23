@@ -73,6 +73,7 @@ Generated from the doc comments by `tools/gen_apidoc.py`.
     - [Emitter](extras-particles.md#emitter)
     - [EmitterColorKey](extras-particles.md#emittercolorkey)
     - [EmitterSizeKey](extras-particles.md#emittersizekey)
+  - [Screen](extras-screen.md): Provides a design size for the screen, fitted to the window: a program draws in the design's pixels whatever the window's size, with Godot's stretch modes and aspects.
   - [Shadowmaps](extras-shadowmaps.md): Provides raylib's shadowmap example's render texture: a depth buffer a shader can sample, which `BeginTextureMode` draws into.
   - [Sprites](extras-sprites.md): Provides helix-raylib's instanced texture draw, `DrawTextureInstanced`: many copies of one part of a texture, each placed by a matrix, in one call, as three.js's InstancedMesh, Godot's MultiMesh and Unity's instancing draw many of one thing (docs/DECISIONS.md 47).
   - [Textures](extras-textures.md): Provides texture draws beyond raylib's, helix-raylib's own: fills (a bar, a beaker, a mana ball or a cooldown shown up to an amount), tiled draws, nine-patches whose edges repeat, textured polygons, atlases read from a packer's file, and a render texture fitted to the window.

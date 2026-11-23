@@ -1,4 +1,5 @@
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.Camera3D;
 import helix.raylib.Model;
 import helix.raylib.Vector3;
@@ -9,6 +10,8 @@ import helix.raylib.Vector3;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: a model");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		var camera = new Camera3D(new Vector3(3, 2.5, 3), new Vector3(0, 0, 0), new Vector3(0, 1, 0), 45, CAMERA_PERSPECTIVE);
 		var model:Null<Model> = null;
 		LoadModelAsync("assets/trophy.glb", loaded -> model = loaded);
@@ -17,6 +20,7 @@ class Main {
 			UpdateCamera(camera, CAMERA_ORBITAL);
 			BeginDrawing();
 			ClearBackground(RAYWHITE);
+			camera.fovy = GetScreenFitFovy(45);
 			BeginMode3D(camera);
 			if (model != null)
 				DrawModel(model, new Vector3(0, 0, 0), 1, WHITE);

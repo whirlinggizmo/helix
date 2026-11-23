@@ -1,8 +1,8 @@
 {
   "what": "the skinned Reset button's blue, the panel's grey beside the Settings label, and the page's blue outside the panel.",
   "points": [
-    {"x": 250, "y": 380, "color": [28, 160, 216], "tolerance": 12},
-    {"x": 470, "y": 75, "color": [218, 220, 229], "tolerance": 12},
-    {"x": 100, "y": 300, "color": [52, 152, 219], "tolerance": 3}
+    {"x": 250, "y": 455, "color": [28, 160, 216], "tolerance": 12},
+    {"x": 470, "y": 150, "color": [218, 220, 229], "tolerance": 12},
+    {"x": 100, "y": 375, "color": [52, 152, 219], "tolerance": 3}
   ]
 }

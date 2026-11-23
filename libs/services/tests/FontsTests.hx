@@ -203,8 +203,8 @@ class FontsTests {
 		check(!abortedLoad, "an aborted load calls nothing");
 
 		var distance:helix.services.fonts.FontKind = Distance,
-			fit:helix.services.screen.ScreenFit = PixelPerfect;
-		check('$distance $fit' == "Distance PixelPerfect", "the enums print as their names: $distance $fit");
+			fit:helix.services.screen.ScreenFit = KeepWidth;
+		check('$distance $fit' == "Distance KeepWidth", "the enums print as their names: $distance $fit");
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);

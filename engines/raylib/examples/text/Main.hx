@@ -1,4 +1,5 @@
 import helix.raylib.Raylib.*;
+import helix.raylib.extras.Screen.*;
 import helix.raylib.Font;
 import helix.raylib.Vector2;
 
@@ -9,6 +10,8 @@ import helix.raylib.Vector2;
 class Main {
 	static function main():Void {
 		InitWindow(800, 450, "helix-raylib: text");
+		// The 800 x 450 design fitted to any window, a phone's too (helix.raylib.extras.Screen).
+		SetScreenFit(800, 450, SCREEN_STRETCH_CANVAS, SCREEN_FIT_EXPAND, false);
 		var font:Null<Font> = null;
 		LoadFontAsync("assets/JetBrainsMono-Regular.ttf", loaded -> font = loaded);
 		SetTargetFPS(60);
