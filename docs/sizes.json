@@ -1,5 +1,5 @@
 {
- "commit": "dbfc7e6a 2026-11-21",
+ "commit": "93a86108 2026-11-22",
  "haxe": "4.3.7",
  "ladders": {
   "platform": {
@@ -1247,6 +1247,275 @@
      "raylib/RLights": 317,
      "raylib/SyncLoads": 249,
      "raylib/AudioStreams": 219
+    }
+   }
+  },
+  "jolt": {
+   "1-world": {
+    "adds": "a world stepped: its layers, its settings and the step",
+    "raw": 18429,
+    "gzip": 3985,
+    "brotli": 3536,
+    "packages": {
+     "jolt": 11980,
+     "haxe metadata": 2693,
+     "std/js": 2447,
+     "program": 896,
+     "std/haxe": 414
+    },
+    "wasm": {
+     "raw": 897121,
+     "gzip": 267774,
+     "brotli": 199899
+    }
+   },
+   "2-bodies": {
+    "adds": "a box falling onto a floor and its position read",
+    "raw": 47018,
+    "gzip": 5853,
+    "brotli": 5119,
+    "packages": {
+     "jolt": 29315,
+     "jolt/internal": 9115,
+     "haxe metadata": 3682,
+     "std/js": 2447,
+     "program": 1405,
+     "math": 641,
+     "std/haxe": 414
+    },
+    "wasm": {
+     "raw": 897121,
+     "gzip": 267774,
+     "brotli": 199899
+    }
+   },
+   "3-shapes": {
+    "adds": "a sphere, a capsule, a convex hull and a mesh",
+    "raw": 58695,
+    "gzip": 8064,
+    "brotli": 7039,
+    "packages": {
+     "jolt": 34613,
+     "jolt/internal": 9827,
+     "haxe metadata": 6069,
+     "std/js": 4461,
+     "program": 2671,
+     "math": 641,
+     "std/haxe": 414
+    },
+    "wasm": {
+     "raw": 897121,
+     "gzip": 267774,
+     "brotli": 199899
+    }
+   },
+   "4-queries": {
+    "adds": "a ray cast and a shape collided with the world",
+    "raw": 75505,
+    "gzip": 10106,
+    "brotli": 8748,
+    "packages": {
+     "jolt": 47917,
+     "jolt/internal": 9827,
+     "haxe metadata": 7637,
+     "std/js": 4461,
+     "program": 3468,
+     "math": 1279,
+     "std/haxe": 917
+    },
+    "wasm": {
+     "raw": 897121,
+     "gzip": 267774,
+     "brotli": 199899
+    }
+   },
+   "5-contacts": {
+    "adds": "a sensor and the contact events of each step",
+    "raw": 79263,
+    "gzip": 10754,
+    "brotli": 9260,
+    "packages": {
+     "jolt": 50762,
+     "jolt/internal": 9827,
+     "haxe metadata": 7885,
+     "std/js": 4461,
+     "program": 4133,
+     "math": 1279,
+     "std/haxe": 917
+    },
+    "wasm": {
+     "raw": 897121,
+     "gzip": 267774,
+     "brotli": 199899
+    }
+   },
+   "6-constraints": {
+    "adds": "a door hinged to the world, turned by its motor",
+    "raw": 100261,
+    "gzip": 11962,
+    "brotli": 10126,
+    "packages": {
+     "jolt": 70221,
+     "jolt/internal": 9827,
+     "haxe metadata": 8882,
+     "program": 4675,
+     "std/js": 4461,
+     "math": 1279,
+     "std/haxe": 917
+    },
+    "wasm": {
+     "raw": 897121,
+     "gzip": 267774,
+     "brotli": 199899
+    }
+   }
+  },
+  "box2d": {
+   "1-world": {
+    "adds": "a world stepped",
+    "raw": 60489,
+    "gzip": 8260,
+    "brotli": 7386,
+    "packages": {
+     "box2d/internal": 44913,
+     "box2d": 5707,
+     "std/js": 4881,
+     "haxe metadata": 3536,
+     "std/haxe": 505,
+     "std/core": 496,
+     "program": 322,
+     "math": 130
+    },
+    "wasm": {
+     "raw": 321194,
+     "gzip": 122419,
+     "brotli": 100854
+    }
+   },
+   "2-bodies": {
+    "adds": "a box falling onto the ground and its position read",
+    "raw": 102895,
+    "gzip": 11005,
+    "brotli": 9350,
+    "packages": {
+     "box2d/internal": 80753,
+     "box2d": 10462,
+     "std/js": 5785,
+     "haxe metadata": 3739,
+     "program": 1026,
+     "std/haxe": 505,
+     "std/core": 496,
+     "math": 130
+    },
+    "wasm": {
+     "raw": 321194,
+     "gzip": 122419,
+     "brotli": 100854
+    }
+   },
+   "3-shapes": {
+    "adds": "a circle, a capsule and a chain",
+    "raw": 115804,
+    "gzip": 11801,
+    "brotli": 10005,
+    "packages": {
+     "box2d/internal": 89371,
+     "box2d": 13738,
+     "std/js": 5785,
+     "haxe metadata": 3895,
+     "program": 1885,
+     "std/haxe": 505,
+     "std/core": 496,
+     "math": 130
+    },
+    "wasm": {
+     "raw": 321194,
+     "gzip": 122419,
+     "brotli": 100854
+    }
+   },
+   "4-joints": {
+    "adds": "a door on a revolute joint turned by its motor, and a wheel on a wheel joint",
+    "raw": 134539,
+    "gzip": 12982,
+    "brotli": 10908,
+    "packages": {
+     "box2d/internal": 103464,
+     "box2d": 16888,
+     "std/js": 5785,
+     "haxe metadata": 3984,
+     "program": 3288,
+     "std/haxe": 505,
+     "std/core": 496,
+     "math": 130
+    },
+    "wasm": {
+     "raw": 321194,
+     "gzip": 122419,
+     "brotli": 100854
+    }
+   },
+   "5-queries": {
+    "adds": "the closest hit of a ray and the shapes overlapping a box",
+    "raw": 142014,
+    "gzip": 13717,
+    "brotli": 11561,
+    "packages": {
+     "box2d/internal": 107296,
+     "box2d": 19176,
+     "std/js": 5785,
+     "haxe metadata": 4166,
+     "program": 3958,
+     "std/haxe": 1008,
+     "std/core": 496,
+     "math": 130
+    },
+    "wasm": {
+     "raw": 321194,
+     "gzip": 122419,
+     "brotli": 100854
+    }
+   },
+   "6-events": {
+    "adds": "the contact and sensor events of each step",
+    "raw": 153104,
+    "gzip": 14705,
+    "brotli": 12278,
+    "packages": {
+     "box2d/internal": 115061,
+     "box2d": 21382,
+     "std/js": 5785,
+     "program": 4690,
+     "haxe metadata": 4553,
+     "std/haxe": 1008,
+     "std/core": 496,
+     "math": 130
+    },
+    "wasm": {
+     "raw": 321194,
+     "gzip": 122419,
+     "brotli": 100854
+    }
+   },
+   "7-mover": {
+    "adds": "a character mover cast, collided, solved and clipped",
+    "raw": 160089,
+    "gzip": 15396,
+    "brotli": 12837,
+    "packages": {
+     "box2d/internal": 117905,
+     "box2d": 24326,
+     "program": 5792,
+     "std/js": 5785,
+     "haxe metadata": 4648,
+     "std/haxe": 1008,
+     "std/core": 496,
+     "math": 130
+    },
+    "wasm": {
+     "raw": 321194,
+     "gzip": 122419,
+     "brotli": 100854
     }
    }
   }

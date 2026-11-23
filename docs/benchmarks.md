@@ -152,7 +152,7 @@ before, so a rung's increment is what the feature costs. Every rung is a release
 JavaScript unminified, as Haxe alone writes it; sizes in KB.
 
 <!-- gen_sizes -->
-Measured from dbfc7e6a 2026-11-21 with Haxe 4.3.7.
+Measured from 93a86108 2026-11-22 with Haxe 4.3.7.
 
 ### helix-platform
 
@@ -428,4 +428,60 @@ Each rung's JavaScript by package, raw KB, from its source map, a line's start (
 | raylib/RLights | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.3 | 0.3 | 0.3 | 0.3 |
 | raylib/SyncLoads | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.2 |
 | raylib/AudioStreams | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.2 | 0.2 |
+
+### helix-jolt
+
+Programs on helix-jolt alone (`libs/jolt/tests/sizes/`), each adding one feature of JoltPhysics.js's API to the one before, from a world stepped: what a feature costs is its row's increment, gzip; brotli in brackets. A page fetches `jolt.wasm` beside the JavaScript, the whole of Jolt and the same module for every rung, so a feature costs JavaScript alone; the last column is a page's whole download. Its first rung brings what every step and `Jolt.destroy` reach: the constraints' motors, written before each step, and the shapes and constraints forgotten with the world. helix-jolt's bytes are counted as its API and its internals.
+
+`jolt.wasm`, KB: 876.1 raw, 261.5 gzip (195.2 brotli).
+
+| rung | adds | raw | gzip (brotli) | increment | with jolt.wasm, gzip (brotli) |
+|---|---|---:|---:|---:|---:|
+| 1-world | a world stepped: its layers, its settings and the step | 18.0 | 3.9 (3.5) |  | 265.4 (198.7) |
+| 2-bodies | a box falling onto a floor and its position read | 45.9 | 5.7 (5.0) | +1.8 | 267.2 (200.2) |
+| 3-shapes | a sphere, a capsule, a convex hull and a mesh | 57.3 | 7.9 (6.9) | +2.2 | 269.4 (202.1) |
+| 4-queries | a ray cast and a shape collided with the world | 73.7 | 9.9 (8.5) | +2.0 | 271.4 (203.8) |
+| 5-contacts | a sensor and the contact events of each step | 77.4 | 10.5 (9.0) | +0.6 | 272.0 (204.3) |
+| 6-constraints | a door hinged to the world, turned by its motor | 97.9 | 11.7 (9.9) | +1.2 | 273.2 (205.1) |
+
+Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
+
+| package | 1-world | 2-bodies | 3-shapes | 4-queries | 5-contacts | 6-constraints |
+|---|---:|---:|---:|---:|---:|---:|
+| jolt | 11.7 | 28.6 | 33.8 | 46.8 | 49.6 | 68.6 |
+| jolt/internal | 0.0 | 8.9 | 9.6 | 9.6 | 9.6 | 9.6 |
+| haxe metadata | 2.6 | 3.6 | 5.9 | 7.5 | 7.7 | 8.7 |
+| program | 0.9 | 1.4 | 2.6 | 3.4 | 4.0 | 4.6 |
+| std/js | 2.4 | 2.4 | 4.4 | 4.4 | 4.4 | 4.4 |
+| math | 0.0 | 0.6 | 0.6 | 1.2 | 1.2 | 1.2 |
+| std/haxe | 0.4 | 0.4 | 0.4 | 0.9 | 0.9 | 0.9 |
+
+### helix-box2d
+
+Programs on helix-box2d alone (`libs/box2d/tests/sizes/`), each adding one feature of Box2D's API to the one before, from a world stepped: what a feature costs is its row's increment, gzip; brotli in brackets. A page fetches `box2d.wasm` beside the JavaScript, the whole of Box2D and the same module for every rung, so a feature costs JavaScript alone; the last column is a page's whole download. Its first rung brings every callback's dispatch, as the module imports them all. helix-box2d's bytes are counted as its API and its internals.
+
+`box2d.wasm`, KB: 313.7 raw, 119.5 gzip (98.5 brotli).
+
+| rung | adds | raw | gzip (brotli) | increment | with box2d.wasm, gzip (brotli) |
+|---|---|---:|---:|---:|---:|
+| 1-world | a world stepped | 59.1 | 8.1 (7.2) |  | 127.6 (105.7) |
+| 2-bodies | a box falling onto the ground and its position read | 100.5 | 10.7 (9.1) | +2.7 | 130.3 (107.6) |
+| 3-shapes | a circle, a capsule and a chain | 113.1 | 11.5 (9.8) | +0.8 | 131.1 (108.3) |
+| 4-joints | a door on a revolute joint turned by its motor, and a wheel on a wheel joint | 131.4 | 12.7 (10.7) | +1.2 | 132.2 (109.1) |
+| 5-queries | the closest hit of a ray and the shapes overlapping a box | 138.7 | 13.4 (11.3) | +0.7 | 132.9 (109.8) |
+| 6-events | the contact and sensor events of each step | 149.5 | 14.4 (12.0) | +1.0 | 133.9 (110.5) |
+| 7-mover | a character mover cast, collided, solved and clipped | 156.3 | 15.0 (12.5) | +0.7 | 134.6 (111.0) |
+
+Each rung's JavaScript by package, raw KB, from its source map, a line's start (its indentation, a declaration's name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe's per-class and per-enum metadata (names, links, constructor tables), which grows with the classes a build links.
+
+| package | 1-world | 2-bodies | 3-shapes | 4-joints | 5-queries | 6-events | 7-mover |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| box2d/internal | 43.9 | 78.9 | 87.3 | 101.0 | 104.8 | 112.4 | 115.1 |
+| box2d | 5.6 | 10.2 | 13.4 | 16.5 | 18.7 | 20.9 | 23.8 |
+| program | 0.3 | 1.0 | 1.8 | 3.2 | 3.9 | 4.6 | 5.7 |
+| std/js | 4.8 | 5.6 | 5.6 | 5.6 | 5.6 | 5.6 | 5.6 |
+| haxe metadata | 3.5 | 3.7 | 3.8 | 3.9 | 4.1 | 4.4 | 4.5 |
+| std/haxe | 0.5 | 0.5 | 0.5 | 0.5 | 1.0 | 1.0 | 1.0 |
+| std/core | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 |
+| math | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 |
 <!-- /gen_sizes -->

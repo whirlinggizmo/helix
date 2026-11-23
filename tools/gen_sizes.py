@@ -6,7 +6,8 @@ against the committed baseline, docs/sizes.json. A library adds its ladder to LA
 
     python3 tools/gen_sizes.py [--write] [--check]
 
-For each rung: its JavaScript raw, gzip -9 and brotli -q 11 (when the brotli tool is there); what the rung adds over the one before; and
+For each rung: its JavaScript raw, gzip -9 and brotli -q 11 (when the brotli tool is there), and the same of the WebAssembly module its
+library fetches beside it (WASM: helix-jolt's and helix-box2d's, one module for every rung); what the rung adds over the one before; and
 where its bytes come from, by package from the build's source map, with Haxe's own per-class metadata (class names, links, enum tables:
 the lines the source map gives no source) counted apart. The JavaScript is as the build writes it, unminified: what a game ships with Haxe
 alone (Terser, when a build runs it, takes some 15% of the gzipped size more).
@@ -39,6 +40,13 @@ LADDERS = {
     'services': (ROOT / 'libs/services/tests/sizes', ['-lib', 'helix-services']),
     'render': (ROOT / 'libs/render/tests/sizes', ['-lib', 'helix-render']),
     'raylib': (ROOT / 'engines/raylib/tests/sizes', ['-lib', 'helix-raylib']),
+    'jolt': (ROOT / 'libs/jolt/tests/sizes', ['-lib', 'helix-jolt']),
+    'box2d': (ROOT / 'libs/box2d/tests/sizes', ['-lib', 'helix-box2d']),
+}
+# The WebAssembly module a ladder's library fetches beside its JavaScript: one module, the same for every rung.
+WASM = {
+    'jolt': ROOT / 'libs/jolt/wasm/jolt.wasm',
+    'box2d': ROOT / 'libs/box2d/wasm/box2d.wasm',
 }
 sys.path.insert(0, str(ROOT / 'tools'))
 from pins import LIBRARIES  # noqa: E402  the libraries' directories, by haxelib name
@@ -107,6 +115,9 @@ def package(source):
     internals; its facade and structs as raylib), another library's by
     its name, Haxe's standard library, the program's."""
     path = source.replace('\\', '/')
+    for library in ('jolt', 'box2d'):
+        if f'/src/helix/{library}/' in path:
+            return f'{library}/internal' if f'/src/helix/{library}/internal/' in path else library
     if '/src/helix/raylib/' in path:
         parts = path.split('/src/helix/raylib/', 1)[1].split('/')
         return 'raylib/' + parts[-1].removesuffix('.hx') if parts[0] in ('modules', 'internal') else 'raylib'
@@ -238,6 +249,9 @@ def measure():
                     'brotli': brotli(js),
                     'packages': breakdown(js, source_map),
                 }
+                if ladder in WASM:
+                    wasm = WASM[ladder].read_bytes()
+                    results[ladder][rung.name]['wasm'] = {'raw': len(wasm), 'gzip': len(gzip.compress(wasm, 9, mtime=0)), 'brotli': brotli(wasm)}
         return results
     finally:
         shutil.rmtree(haxelib, ignore_errors=True)
@@ -283,6 +297,19 @@ INTRODUCTIONS = {
             'texture). The kitchen sink calls every function of `Raylib`, `Raymath`, `Rlgl`, `Raygui`, `Raylib6` and `helix.raylib.extras` that compiles, written as the program '
             'builds (its `Everything.hx`), and every reader by a constant name of each extension, so nothing of helix-raylib is left out: '
             'it is the comparison point for whole-library sizes, such as an Emscripten build of raylib exporting everything.'),
+    'jolt': ('helix-jolt',
+             'Programs on helix-jolt alone (`libs/jolt/tests/sizes/`), each adding one feature of JoltPhysics.js\'s API to the one before, '
+             'from a world stepped: what a feature costs is its row\'s increment, gzip; brotli in brackets. A page fetches `jolt.wasm` '
+             'beside the JavaScript, the whole of Jolt and the same module for every rung, so a feature costs JavaScript alone; the last '
+             'column is a page\'s whole download. Its first rung brings what every step and `Jolt.destroy` reach: the constraints\' '
+             'motors, written before each step, and the shapes and constraints forgotten with the world. helix-jolt\'s bytes are counted '
+             'as its API and its internals.'),
+    'box2d': ('helix-box2d',
+              'Programs on helix-box2d alone (`libs/box2d/tests/sizes/`), each adding one feature of Box2D\'s API to the one before, from '
+              'a world stepped: what a feature costs is its row\'s increment, gzip; brotli in brackets. A page fetches `box2d.wasm` beside '
+              'the JavaScript, the whole of Box2D and the same module for every rung, so a feature costs JavaScript alone; the last column '
+              'is a page\'s whole download. Its first rung brings every callback\'s dispatch, as the module imports them all. helix-box2d\'s '
+              'bytes are counted as its API and its internals.'),
 }
 
 
@@ -291,12 +318,20 @@ def render(baseline):
     out = [f'Measured from {baseline["commit"]} with Haxe {baseline["haxe"]}.']
     for ladder, rows in baseline['ladders'].items():
         title, introduction = INTRODUCTIONS[ladder]
-        out += ['', f'### {title}', '', introduction, '',
-                '| rung | adds | raw | gzip (brotli) | increment |', '|---|---|---:|---:|---:|']
+        wasm = next(iter(rows.values())).get('wasm')
+        out += ['', f'### {title}', '', introduction, '']
+        if wasm:
+            out += [f'`{WASM[ladder].name}`, KB: {kb(wasm["raw"])} raw, {kb(wasm["gzip"])} gzip ({kb(wasm["brotli"])} brotli).', '']
+        out += ['| rung | adds | raw | gzip (brotli) | increment |' + (f' with {WASM[ladder].name}, gzip (brotli) |' if wasm else ''),
+                '|---|---|---:|---:|---:|' + ('---:|' if wasm else '')]
         before = None
         for name, row in rows.items():
             increment = '' if before is None else f'+{kb(row["gzip"] - before["gzip"])}'
-            out.append(f'| {name} | {row["adds"]} | {kb(row["raw"])} | {kb(row["gzip"])} ({kb(row["brotli"])}) | {increment} |')
+            line = f'| {name} | {row["adds"]} | {kb(row["raw"])} | {kb(row["gzip"])} ({kb(row["brotli"])}) | {increment} |'
+            if wasm:
+                both = None if row['brotli'] is None or row['wasm']['brotli'] is None else row['brotli'] + row['wasm']['brotli']
+                line += f' {kb(row["gzip"] + row["wasm"]["gzip"])} ({kb(both)}) |'
+            out.append(line)
             before = row
         out += ['', 'Each rung\'s JavaScript by package, raw KB, from its source map, a line\'s start (its indentation, a declaration\'s '
                 'name) counted with the code it leads; "haxe metadata" is what the map gives no source: Haxe\'s per-class and per-enum '
@@ -338,7 +373,8 @@ def main():
     results = measure()
     for ladder, rows in results.items():
         for name, row in rows.items():
-            print(f'{ladder:9} {name:13} raw {kb(row["raw"]):>7} KB  gzip {kb(row["gzip"]):>6} KB  brotli {kb(row["brotli"]):>6} KB')
+            print(f'{ladder:9} {name:13} raw {kb(row["raw"]):>7} KB  gzip {kb(row["gzip"]):>6} KB  brotli {kb(row["brotli"]):>6} KB'
+                  + (f'  with the wasm, gzip {kb(row["gzip"] + row["wasm"]["gzip"]):>6} KB' if 'wasm' in row else ''))
     if a.write:
         baseline = {'commit': commit(), 'haxe': haxe_version(), 'ladders': results}
         BASELINE.write_text(json.dumps(baseline, indent=1) + '\n', encoding='utf-8')
@@ -354,8 +390,9 @@ def main():
                 print(f'gen_sizes: {name} has no baseline: --write one')
                 failed = True
                 continue
-            growth = row['gzip'] - was['gzip']
-            if growth > max(TOLERANCE[0] * was['gzip'], TOLERANCE[1]):
+            # A rung's growth counts its library's wasm too, which a page fetches with it.
+            growth = row['gzip'] + row.get('wasm', {}).get('gzip', 0) - was['gzip'] - was.get('wasm', {}).get('gzip', 0)
+            if growth > max(TOLERANCE[0] * (was['gzip'] + was.get('wasm', {}).get('gzip', 0)), TOLERANCE[1]):
                 print(f'gen_sizes: {name} grew {kb(growth)} KB gzipped ({kb(was["gzip"])} -> {kb(row["gzip"])}); '
                       'docs/benchmarks.md says where its bytes are')
                 failed = True
