@@ -1,5 +1,7 @@
 """Build the repository's GitHub Pages site into build/site: the API reference from the doc comments (tools/gen_apidoc.py's HTML) at
-api/, its tree and first page grouped into libraries and engines, with tools/site/explorer.js opening it to the page shown and filtering it by library, and an index at the root that opens it. The pages workflow (.github/workflows/pages.yml) deploys build/site.
+api/, its tree and first page grouped into libraries and engines, with tools/site/explorer.js opening it to the page shown and filtering it by library, and an index at the root that opens it; and the libraries' and engines' examples at
+examples/, each built from its build-web.hxml and served from its web/ directory, with a page listing them by library and linking
+each to its source (EXAMPLES; CONSOLE's pages show what they print; UNLISTED's are left out). The pages workflow (.github/workflows/pages.yml) deploys build/site.
 
     python3 tools/build_pages.py
 
@@ -7,6 +9,7 @@ Open build/site/index.html to see the site as it's served. Standard library only
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +26,96 @@ INDEX = '''<!doctype html>
 <body><a href="api/index.html">HeliX API</a></body>
 </html>
 '''
+
+
+# The examples published: every libs/<library>/examples/ and engines/<engine>/examples/ program with a build-web.hxml (its page in
+# web/), each under its library, as the README orders them, and each linked to its source.
+EXAMPLES = SITE / 'examples'
+SOURCE = 'https://github.com/whirlinggizmo/helix/blob/main/'
+# The libraries whose examples say what they did in the console rather than on the screen (helix-services': the screen turns green
+# once the service worked): their published pages show the console's lines in a panel over the canvas.
+CONSOLE = {'helix-services'}
+# The options an example's link starts it with, by its path: config's shows an option read, so its link sets one.
+OPTIONS = {'helix-services/config': 'quit_after_frame=36000'}
+# The libraries whose examples aren't published: helix-render's, set aside while helix-raylib draws through Frame (DECISIONS 53).
+UNLISTED = {'helix-render'}
+CONSOLE_PANEL = (
+    '<style>#console{position:fixed;left:12px;right:12px;bottom:12px;max-height:40vh;overflow:auto;margin:0;padding:8px 10px;'
+    'border-radius:6px;background:rgba(10,12,18,.78);color:#e8edf5;font:13px/1.45 ui-monospace,monospace;white-space:pre-wrap;'
+    'display:none}</style><pre id="console"></pre><script>(function(){var panel=document.getElementById("console");'
+    '["log","info","warn","error"].forEach(function(kind){var original=console[kind];console[kind]=function(){'
+    'var line=Array.prototype.map.call(arguments,String).join(" ").replace(/^\\S+\\.hx:\\d+: /,"");'
+    'panel.style.display="block";panel.textContent+=(panel.textContent?"\\n":"")+line;panel.scrollTop=panel.scrollHeight;'
+    'return original.apply(console,arguments);};});})();</script>')
+GALLERY_STYLE = (
+    ':root{color-scheme:light dark;--bg:#fff;--fg:#1d2330;--muted:#5b6474;--card:#f4f6f9;--line:#dde2ea;--link:#2456b8}'
+    '@media (prefers-color-scheme:dark){:root{--bg:#14171f;--fg:#e4e8ef;--muted:#9aa3b2;--card:#1d2230;--line:#2c3344;--link:#8db2ff}}'
+    'body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}'
+    'main{max-width:1100px;margin:0 auto;padding:24px 16px 48px}h1{margin:0 0 4px}h2{margin:32px 0 12px;font-size:1.25rem}'
+    'p{color:var(--muted);margin:0 0 8px}a{color:var(--link)}'
+    'ul{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}'
+    'li{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}'
+    'li a{font-weight:600;text-decoration:none}li a.source{font-weight:400;font-size:.85rem;margin-left:8px}'
+    'li p{font-size:.9rem;margin:4px 0 0}code{font-size:.9em}')
+
+
+def examples():
+    """The examples, each library's in the README's order: (library, name, directory), the name its path under examples/."""
+    import check_layers
+    found = []
+    for library, source, _, _ in check_layers.LAYERS:
+        if library in UNLISTED:
+            continue
+        base = ROOT / source / '..' / 'examples'
+        for hxml in sorted(base.resolve().rglob('build-web.hxml')) if base.exists() else []:
+            found.append((library, hxml.parent.relative_to(base.resolve()).as_posix(), hxml.parent))
+    return found
+
+
+def summary(directory):
+    """An example's first sentence, from its Main's doc comment, as HTML: code in backticks as code."""
+    import html
+    text = (directory / 'Main.hx').read_text(encoding='utf-8')
+    comment = re.search(r'/\*\*(.*?)\*/\s*(?:@:[^\n]*\n\s*)*class Main\b', text, re.S)
+    if not comment:
+        sys.exit(f'pages: {directory.relative_to(ROOT)}/Main.hx has no doc comment on Main')
+    words = ' '.join(comment.group(1).split())
+    first = re.match(r'(.*?[.!?])(\s|$)', words)
+    return re.sub(r'`([^`]*)`', r'<code>\1</code>', html.escape(first.group(1) if first else words, quote=False))
+
+
+def build_examples():
+    """Each example built from its build-web.hxml into its web/, which is copied to examples/<library>/<name>/; and examples/index.html
+    listing them by library, each linked and described by its first sentence."""
+    import html
+    body = ['<h1>HeliX examples</h1>', '<p>The libraries\' and engines\' examples, each built for the browser from its <code>build-web.hxml</code>. '
+            'Some wait for a click or a key before they start sound or take input. helix-services\' examples turn the screen green once '
+            'their service worked, and show what they did in a panel. The <a href="../api/index.html">API reference</a> '
+            'describes what they call.</p>']
+    library = None
+    for name, example, directory in examples():
+        done = subprocess.run(['haxe', 'build-web.hxml'], cwd=directory, capture_output=True, text=True, encoding='utf-8')
+        if done.returncode:
+            sys.exit(f'pages: {directory.relative_to(ROOT)} failed to build:\n{done.stdout}{done.stderr}')
+        target = EXAMPLES / name / example
+        shutil.copytree(directory / 'web', target, ignore=shutil.ignore_patterns('*.map'))
+        if name in CONSOLE:
+            page = target / 'index.html'
+            text = page.read_text(encoding='utf-8')
+            if '<script src="app.js">' not in text:
+                sys.exit(f'pages: {directory.relative_to(ROOT)}/web/index.html loads no app.js')
+            page.write_text(text.replace('<script src="app.js">', CONSOLE_PANEL + '<script src="app.js">', 1), encoding='utf-8')
+        if name != library:
+            body += (['</ul>'] if library else []) + [f'<h2>{html.escape(name)}</h2>', '<ul>']
+            library = name
+        source = SOURCE + (directory / 'Main.hx').relative_to(ROOT).as_posix()
+        query = '?' + OPTIONS[f'{name}/{example}'] if f'{name}/{example}' in OPTIONS else ''
+        body.append(f'<li><a href="{name}/{example}/index.html{query}">{html.escape(example)}</a> <a class="source" href="{source}">source</a>'
+                    f'<p>{summary(directory)}</p></li>')
+    body.append('</ul>')
+    (EXAMPLES / 'index.html').write_text(
+        '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        f'<title>HeliX examples</title><style>{GALLERY_STYLE}</style></head><body><main>{"".join(body)}</main></body></html>\n', encoding='utf-8')
 
 
 def top_items(html):
@@ -177,7 +270,7 @@ def overview(page):
     import check_layers
     import html
     described = descriptions()
-    body = ['<h1>HeliX</h1>'] + introduction()
+    body = ['<h1>HeliX</h1>'] + introduction() + ['<p>The <a href="../examples/index.html">examples</a>, running in the browser.</p>']
     for title, directory in (('Libraries', 'libs/'), ('Engines', 'engines/')):
         body += [f'<h2>{title}</h2>', '<table class="table table-condensed"><tbody>']
         for name, source, roots, _ in check_layers.LAYERS:
@@ -229,6 +322,8 @@ def main():
         if script:
             page.write_text(text.replace(script.group(0), script.group(0) + f'<script src="{script.group(1)}explorer.js"></script>', 1), encoding='utf-8')
     (SITE / 'index.html').write_text(INDEX, encoding='utf-8')
+    pins.use_haxelib()
+    build_examples()
     print('pages:', SITE / 'index.html')
 
 
