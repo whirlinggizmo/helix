@@ -1,0 +1,12 @@
+# The stack in a page: haxe build-web.hxml -> web/app.js, and jolt.wasm copied beside it and web/index.html; serve web/ and open it
+# (?quit_after_frame=60 quits after frame 60).
+-lib helix-raylib
+-lib helix-jolt
+-D helix-company=helix
+-D helix-product=raylib-jolt
+-cp .
+-main Main
+-D helix-raylib-portable-sys
+-dce full
+-js web/app.js
+--macro helix.jolt.Jolt.copyWasm("web")

@@ -6,6 +6,7 @@ libs/platform/examples/*/native-gpu/
 libs/services/examples/*/web/app.js
 libs/services/examples/*/native/
 engines/raylib/examples/**/web/app.js
+engines/raylib/examples/**/web/*.wasm
 engines/raylib/examples/**/native/
 engines/raylib/examples/**/native-gpu/
 engines/raylib/examples/screenshots/web/*.png

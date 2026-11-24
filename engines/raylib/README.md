@@ -104,6 +104,8 @@ but `extras/textures`, which fits its render texture itself.
 - `frame_stats`: the frame stats read (`helix.raylib.extras.Debug`), the last half second's and a recording's.
 - `text`: a TrueType font loaded and drawn beside the default font.
 - `images`: an image made on the CPU, a circle and text drawn into it, drawn as a texture.
+- `box2d`: a pyramid of boxes stepped by helix-box2d, a box dragged or a ball thrown down where the pointer presses.
+- `jolt`: a stack of cubes stepped by helix-jolt and lit by the Lighting extra, spheres dropped onto it and fired from the camera.
 - `extras/particles3d`: a fountain, one 3D emitter of the Particles extra, its particles worked out on the GPU (`helix.raylib.extras.Particles`).
 - `extras/particles2d`: a sparkler, one 2D emitter of the Particles extra, its sparks drawn in the sprite batch.
 - `extras/screen`: an 800 x 450 design fitted to the window, each fit, stretch, integer scale and bar color (clear in a transparent window) a key away
