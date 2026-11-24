@@ -12,7 +12,9 @@ out vec4 fragTangent;
 
 void helixPbrVertex(vec4 position, vec3 normal, vec3 tangent) {
     helixVertex(position, normal);
-    fragTangent = vec4(normalize(mat3(matModel)*tangent), vertexTangent.w);
+    // A mesh without tangents sends zero, which pbr.fs reads as no tangent frame, rather than the NaN normalize(0) makes.
+    vec3 moved = mat3(matModel)*tangent;
+    fragTangent = vec4(dot(moved, moved) > 0.0 ? normalize(moved) : vec3(0.0), vertexTangent.w);
 }
 
 #endif

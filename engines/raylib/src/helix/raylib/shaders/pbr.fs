@@ -1,7 +1,7 @@
 #version 330
 // helix-raylib's PBR shader's fragment stage (LoadPbrShader), over <helix/raylib/shaders/pbr.glsl>: a material's maps and values as
 // LoadModel reads a glTF's (albedo, metalness, roughness, normal, occlusion, emission), pbr.glsl's values written by each draw, and unlitValue,
-// 1 for a material marked unlit. A map the material lacks reads white, the normal map a flat normal. The emission map's texels times
+// 1 for a material marked unlit. A map the material lacks reads white, the normal map a flat normal, and a mesh without tangents is lit by its vertex normals alone. The emission map's texels times
 // emissiveColor are the material's emission.
 #include <helix/raylib/shaders/pbr.glsl>
 in vec3 fragPosition;
@@ -34,9 +34,13 @@ void main() {
     float roughness = roughnessValue*texture(roughnessMap, fragTexCoord).r;
     float occlusion = texture(occlusionMap, fragTexCoord).r;
     vec3 n = normalize(fragNormal);
-    vec3 t = normalize(fragTangent.xyz - dot(fragTangent.xyz, n)*n);
-    vec3 b = cross(n, t)*fragTangent.w;
-    vec3 m = texture(normalMap, fragTexCoord).rgb*2.0 - 1.0;
-    n = normalize(t*m.x + b*m.y + n*m.z);
+    // The normal map bends the normal through the tangent frame, when the mesh has tangents; without them, the vertex normal alone.
+    vec3 t = fragTangent.xyz - dot(fragTangent.xyz, n)*n;
+    if (dot(t, t) > 1e-8) {
+        t = normalize(t);
+        vec3 b = cross(n, t)*fragTangent.w;
+        vec3 m = texture(normalMap, fragTexCoord).rgb*2.0 - 1.0;
+        n = normalize(t*m.x + b*m.y + n*m.z);
+    }
     finalColor = helixPbr(base, metallic, roughness, occlusion, emissive, fragPosition, n);
 }

@@ -63,8 +63,6 @@ class Main {
 		var cube = LoadModelFromMesh(GenMeshCube(0.94, 0.94, 0.94));
 		var ball = LoadModelFromMesh(GenMeshSphere(0.5, 16, 16));
 		for (model in [cube, ball]) {
-			// The lighting shader reads each mesh's tangents, which the generated meshes don't have until made.
-			GenMeshTangents(model.meshes[0]);
 			model.materials[0].shader = shader;
 			model.materials[0].maps[MATERIAL_MAP_ROUGHNESS].value = 1;
 		}
