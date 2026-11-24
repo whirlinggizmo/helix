@@ -5,7 +5,8 @@ reaches an engine.
   1. A Haxe file in a library refers to no package of a library it isn't built on (its USES), by import or by a qualified name in its code
      (comments and strings aside): not one above it, nor one beside it (math and log know nothing of each other, nor log and platform, nor formats and log).
   2. A library's files declare only packages under the roots it owns; no other library declares a package under them.
-  A library's tests and examples (TESTS) are held to rule 1 too, as they build with that library alone.
+  A library's tests and examples (TESTS) are held to rule 1 too, as they build with that library alone. An engine's examples are programs
+  on it, and may name a library below the engines that their own build files add with -lib, as a game on the engine adds physics.
   3. In helix-platform, interfaces don't know each other (docs/PLATFORM.md): an interface's files are its interface, the types in
      helix.platform it reaches, and its adapters (adapters/<interface>/); none names another interface's. Anything else (adapters/shared/, a
      type no interface reaches) is common, and may name at most one interface, whose it then is. A shared interface (SHARED) passes
@@ -43,7 +44,7 @@ LAYERS = [
     ('helix-render', 'libs/render/src', ['helix.render'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-geometry', 'helix-math', 'helix-log']),
     ('helix-raylib', 'engines/raylib/src', ['helix.raylib'], ['helix-services', 'helix-platform', 'helix-formats', 'helix-tweens', 'helix-geometry', 'helix-math', 'helix-log']),
 ]
-# Each library's tests and examples, held to its layer too: they build with that library alone.
+# Each library's tests and examples, held to its layer too: they build with that library alone (an engine's examples, with what they add).
 TESTS = {'helix-math': ['libs/math/tests'], 'helix-geometry': ['libs/geometry/tests'], 'helix-tweens': ['libs/tweens/tests'], 'helix-log': ['libs/log/tests'], 'helix-formats': ['libs/formats/tests'], 'helix-platform': ['libs/platform/tests', 'libs/platform/examples'],
          'helix-services': ['libs/services/tests'], 'helix-render': ['libs/render/tests', 'libs/render/examples'], 'helix-raylib': ['engines/raylib/examples']}
 # The interfaces in helix.platform shared between interfaces (rule 3): IPollable, the poll a program calls each frame, and IDecodedImage,
@@ -143,6 +144,22 @@ def engine(index):
     return LAYERS[index][1].startswith('engines/')
 
 
+def added(path):
+    """The libraries below the engines that the engine's example holding path adds with -lib in its build files (build*.hxml), as
+    indices in LAYERS: none for a file in no example."""
+    relative = path.relative_to(ROOT)
+    if relative.parts[0] != 'engines' or 'examples' not in relative.parts:
+        return set()
+    for home in path.parents:
+        builds = sorted(home.glob('build*.hxml'))
+        if builds:
+            names = {n for b in builds for n in re.findall(r'^-lib\s+([\w-]+)', b.read_text(encoding='utf-8'), re.M)}
+            return {i for i, layer in enumerate(LAYERS) if layer[0] in names and not engine(i)}
+        if home.name == 'examples':
+            return set()
+    return set()
+
+
 # A library's files that a build reads (rule 4), and the comments in each kind, left out.
 BUILD_FILES = {'.hx': r'/\*.*?\*/|//[^\n]*', '.hxml': r'#[^\n]*', '.json': None, '.xml': r'<!--.*?-->', '.txt': r'#[^\n]*',
                '.c': r'/\*.*?\*/|//[^\n]*', '.h': r'/\*.*?\*/|//[^\n]*', '.html': r'<!--.*?-->'}
@@ -197,6 +214,7 @@ def main():
         tests = sorted(p for d in TESTS.get(library, []) for p in (ROOT / d).rglob('*.hx'))
         for path in sorted((ROOT / directory).rglob('*.hx')) + tests:
             text = path.read_text(encoding='utf-8')
+            here = allowed | added(path) if engine(index) and path in tests else allowed
             declared = PACKAGE.search(text)
             if declared and path not in tests and owner(declared.group(1)) != index:
                 whose = LAYERS[owner(declared.group(1))][0] + '\'s' if owner(declared.group(1)) != -1 else 'no library\'s'
@@ -206,9 +224,9 @@ def main():
                     other = owner(name)
                     if other == -1:
                         violations.append(f'{path.relative_to(ROOT)}:{number}: {library} names {name}, which no library owns')
-                    elif other is not None and other not in allowed and engine(other) and not engine(index):
+                    elif other is not None and other not in here and engine(other) and not engine(index):
                         violations.append(f'{path.relative_to(ROOT)}:{number}: {library} names {name}, in the engine {LAYERS[other][0]}: a library reaches no engine')
-                    elif other is not None and other not in allowed:
+                    elif other is not None and other not in here:
                         where = 'above it' if other > index else 'which it isn\'t built on'
                         violations.append(f'{path.relative_to(ROOT)}:{number}: {library} names {name}, in {LAYERS[other][0]}, {where}')
     violations += interfaces()
