@@ -103,13 +103,19 @@ def files_xml():
 
 
 def emsdk_env():
-    """The environment Emscripten's emsdk_env.sh sets."""
+    """The environment Emscripten's emsdk_env.sh sets, refused unless its emcc is the release dependencies.json pins, as another
+    release builds another module."""
     home = os.environ.get('HELIX_EMSDK') or os.environ.get('EMSDK') or str(Path.home() / 'toolchains/emsdk')
     script = Path(home) / 'emsdk_env.sh'
     if not script.exists():
         sys.exit(f'gen_jolt: no Emscripten at {home} (HELIX_EMSDK, EMSDK or ~/toolchains/emsdk)')
     out = subprocess.run(['bash', '-c', f'source "{script}" >/dev/null 2>&1 && env -0'], capture_output=True, check=True).stdout
-    return dict(line.split('=', 1) for line in out.decode().split('\0') if '=' in line)
+    env = dict(line.split('=', 1) for line in out.decode().split('\0') if '=' in line)
+    pinned = json.loads((ROOT / 'dependencies.json').read_text(encoding='utf-8'))['emscripten']['version']
+    found = subprocess.run(['emcc', '--version'], env=env, capture_output=True, text=True, check=True).stdout.splitlines()[0].split(') ')[-1].split()[0]
+    if found != pinned:
+        sys.exit(f'gen_jolt: Emscripten at {home} is {found}, not {pinned} (dependencies.json), so it would build another module')
+    return env
 
 
 def build_wasm():
@@ -130,7 +136,7 @@ def build_wasm():
     with ThreadPoolExecutor(max(1, os.cpu_count() or 1)) as pool:
         objects = list(pool.map(compile_unit, units))
     WASM.parent.mkdir(parents=True, exist_ok=True)
-    link = ['emcc', *flags, *map(str, objects), '-o', str(WASM), '--no-entry', '-sSTANDALONE_WASM', '-sFILESYSTEM=0',
+    link = ['em++', *flags, *map(str, objects), '-o', str(WASM), '--no-entry', '-sSTANDALONE_WASM', '-sFILESYSTEM=0',
             '-sALLOW_MEMORY_GROWTH=1', '-sINITIAL_MEMORY=16777216', '-sSTACK_SIZE=1048576', '-sERROR_ON_UNDEFINED_SYMBOLS=1', '-sSUPPORT_LONGJMP=0']
     subprocess.run(link, env=env, check=True)
     print(f'gen_jolt: {WASM.relative_to(ROOT)}, {WASM.stat().st_size:,} bytes')

@@ -1057,13 +1057,19 @@ def dispatch_hx(scratch_fields, dispatchers, sigs):
 
 
 def emsdk_env():
-    """The environment Emscripten's emsdk_env.sh sets."""
+    """The environment Emscripten's emsdk_env.sh sets, refused unless its emcc is the release dependencies.json pins, as another
+    release builds another module."""
     home = os.environ.get('HELIX_EMSDK') or os.environ.get('EMSDK') or str(Path.home() / 'toolchains/emsdk')
     script = Path(home) / 'emsdk_env.sh'
     if not script.exists():
         sys.exit(f'gen_box2d: no Emscripten at {home} (HELIX_EMSDK, EMSDK or ~/toolchains/emsdk)')
     out = subprocess.run(['bash', '-c', f'source "{script}" >/dev/null 2>&1 && env -0'], capture_output=True, check=True).stdout
-    return dict(line.split('=', 1) for line in out.decode().split('\0') if '=' in line)
+    env = dict(line.split('=', 1) for line in out.decode().split('\0') if '=' in line)
+    pinned = json.loads((ROOT / 'dependencies.json').read_text(encoding='utf-8'))['emscripten']['version']
+    found = subprocess.run(['emcc', '--version'], env=env, capture_output=True, text=True, check=True).stdout.splitlines()[0].split(') ')[-1].split()[0]
+    if found != pinned:
+        sys.exit(f'gen_box2d: Emscripten at {home} is {found}, not {pinned} (dependencies.json), so it would build another module')
+    return env
 
 
 def build_wasm():

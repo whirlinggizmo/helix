@@ -60,8 +60,8 @@ python3 tools/test_raylib_parity.py                 # helix-raylib against rayli
 python3 tools/format_source.py --check             # layout
 python3 tools/check_docs.py                 # doc comments
 python3 tools/gen_apidoc.py                 # remake each library's api/ after a doc comment changes (--check in the tests)
-python3 tools/gen_jolt.py                   # remake helix-jolt's files.xml and jolt.wasm after its C++ changes (Emscripten; --check in the tests)
-python3 tools/gen_box2d.py                  # remake helix-box2d's calls, files.xml and box2d.wasm (Emscripten; --check in the tests)
+python3 tools/gen_jolt.py                   # remake helix-jolt's files.xml and jolt.wasm after its C++ changes (dependencies.json's Emscripten; --check in the tests)
+python3 tools/gen_box2d.py                  # remake helix-box2d's calls, files.xml and box2d.wasm (dependencies.json's Emscripten; --check in the tests)
 python3 tools/gen_raylib.py                 # remake helix-raylib's Raylib.hx, Raymath.hx, Rlgl.hx and extras/*.hx after a section changes (--check in the tests)
 ```
 

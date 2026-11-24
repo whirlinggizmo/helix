@@ -3,6 +3,11 @@
   "hxcpp": "4.3.2",
   "formatter": "1.18.0",
   "dox": "1.6.0",
+  "emscripten": {
+    "version": "7.0.1",
+    "revision": "9146b21a8350e85c9934cf570f7a6ceb7470623b (emsdk's releases tag)",
+    "purpose": "builds libs/jolt/wasm/jolt.wasm and libs/box2d/wasm/box2d.wasm (tools/gen_jolt.py, tools/gen_box2d.py, which refuse another release) and raylib's C programs for the page in tools/gen_speed.py; found at HELIX_EMSDK or EMSDK or ~/toolchains/emsdk, never fetched, and not needed to build or test a program, as the modules are committed"
+  },
   "sokol": {
     "revision": "59b5c0b215ff4f2ee36b089d73e4159200852f91",
     "fork": "https://github.com/whirlinggizmo/sokol (the Whirling Gizmo fork)",
