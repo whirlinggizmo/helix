@@ -702,7 +702,7 @@ class Runtime {
 			highDpi: flags & helix.raylib.Raylib.FLAG_WINDOW_HIGHDPI != 0
 		});
 		eventsAdapter = new helix.platform.adapters.events.dom.DomEventsAdapter({canvasId: "canvas"});
-		events = early = new EarlyEvents(eventsAdapter);
+		events = early = new EarlyEvents(eventsAdapter, graphicsLost, graphicsRestored);
 		graphics = new helix.platform.adapters.graphics.webgl2.WebGl2GraphicsAdapter({
 			canvasId: "canvas",
 			msaaSampleCount: samples,
@@ -728,7 +728,7 @@ class Runtime {
 		graphics = new helix.platform.adapters.graphics.sokol.SokolGraphicsAdapter();
 		#end
 		eventsAdapter = new helix.platform.adapters.events.sdl3.Sdl3EventsAdapter();
-		events = early = new EarlyEvents(eventsAdapter);
+		events = early = new EarlyEvents(eventsAdapter, graphicsLost, graphicsRestored);
 		window.requestSize(width, height);
 		// The exit key closes a native window, as raylib's does; a page has none.
 		keyboard();
@@ -1229,7 +1229,7 @@ class Runtime {
 		the frame draws (`EarlyEvents`), the rest waiting for `poll`. */
 	public static function beginDrawing():Void {
 		if (early != null)
-			early.peek(graphicsLost, graphicsRestored);
+			early.peek();
 	}
 
 	/** The GPU's context is gone (`Event.GraphicsLost`): said once. The platform accepts every call and draws nothing until it is back,
