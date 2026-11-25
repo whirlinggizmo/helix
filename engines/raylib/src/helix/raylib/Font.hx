@@ -28,6 +28,14 @@ class Font {
 	@:allow(helix.raylib)
 	var atlasTexture = 0;
 
+	// The font opened from its TrueType or OpenType bytes, its glyphs made at the size a screen fit draws them (ScreenText); -1 for a
+	// font made otherwise. Whether the font opened it, so unloading the font closes it, where a file ensured keeps its own open.
+	@:allow(helix.raylib)
+	var opened = -1;
+
+	@:allow(helix.raylib)
+	var ownsOpened = false;
+
 	/** Creates a font, its fields zero or empty. See `LoadFontExAsync` and the other loads for loading a font, and
 		`Raylib.GetFontDefault` for getting raylib's default font. */
 	public function new() {}

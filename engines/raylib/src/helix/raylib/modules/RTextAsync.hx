@@ -135,9 +135,12 @@ class RTextAsync {
 		var count = codepointCount > 0 ? codepointCount : 95;
 		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
 		var data = dataSize < fileData.length ? fileData.sub(0, dataSize) : fileData;
-		Runtime.fonts()
-			.rasterize(data, fontSize, wanted, (glyphs, ascent, _, _) -> loaded(RText.fontOf(RText.foundGlyphs(glyphs, ascent, fontSize), fontSize)),
-				message -> refuse("LoadFontFromMemoryAsync", message, failed));
+		Runtime.fonts().rasterize(data, fontSize, wanted, (glyphs, ascent, _, _) -> {
+			var font = RText.fontOf(RText.foundGlyphs(glyphs, ascent, fontSize), fontSize);
+			if (RText.screenFontBytes != null && font != RText.fontDefault)
+				RText.screenFontBytes(font, data);
+			loaded(font);
+		}, message -> refuse("LoadFontFromMemoryAsync", message, failed));
 	}
 
 	/** Asynchronously rasterizes a TrueType or OpenType font's glyphs, each with its own image. See

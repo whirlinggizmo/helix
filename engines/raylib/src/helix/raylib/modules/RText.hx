@@ -127,6 +127,9 @@ class RText {
 			refuseNull("DrawTextCodepoint");
 			return;
 		}
+		// Made at the size it lands on the screen, under a fit drawn at the window's resolution (ScreenText).
+		if (screenGlyph != null && screenGlyph(font, codepoint, position, fontSize, tint))
+			return;
 		var index = GetGlyphIndex(font, codepoint);
 		var scale = fontSize / font.baseSize,
 			padding = font.glyphPadding,
@@ -342,6 +345,10 @@ class RText {
 	static function UnloadFont(font:Font):Void {
 		if (font == fontDefault || font.texture == GetFontDefault().texture)
 			return;
+		if (font.ownsOpened)
+			Runtime.fonts().closeFont(font.opened);
+		font.opened = -1;
+		font.ownsOpened = false;
 		UnloadFontData(font.glyphs, font.glyphCount);
 		UnloadTexture(font.texture);
 	}
@@ -695,7 +702,10 @@ class RText {
 		var count = codepointCount > 0 ? codepointCount : 95;
 		var wanted = codepoints == null ? [for (i in 0...count) 32 + i] : codepoints.slice(0, count);
 		var raster = Runtime.fonts().rasterizeOpened(opened, fontSize, wanted);
-		return fontOf(foundGlyphs(raster.glyphs, raster.ascent, fontSize), fontSize);
+		var font = fontOf(foundGlyphs(raster.glyphs, raster.ascent, fontSize), fontSize);
+		if (font != fontDefault)
+			font.opened = opened;
+		return font;
 	}
 
 	/** Unsupported. See `LoadFontFromMemoryAsync` for loading a font from a file's bytes.
@@ -876,6 +886,11 @@ class RText {
 
 	static var textLineSpacing = 2;
 	static var fontDefault:Null<Font> = null;
+
+	// Set by ScreenText, linked by SetScreenFit: draws a glyph made at the size it lands on the screen, false when it doesn't; and opens
+	// a TrueType or OpenType font's bytes for it. No initializer, as hxcpp would run one after ScreenText's start sets them.
+	static var screenGlyph:Null<(font:Font, codepoint:Int, position:Vector2, fontSize:Float, tint:Color) -> Bool>;
+	static var screenFontBytes:Null<(font:Font, bytes:haxe.io.Bytes) -> Void>;
 
 	// raylib's MAX_TEXT_BUFFER_LENGTH, the bytes of the buffer its text functions write into, its terminating 0 among them, and
 	// MAX_TEXTSPLIT_COUNT, the most pieces TextSplit returns.

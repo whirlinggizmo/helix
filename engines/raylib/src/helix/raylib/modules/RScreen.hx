@@ -6,6 +6,7 @@ import helix.raylib.Raylib.*;
 import helix.raylib.extras.Screen.*;
 import helix.raylib.internal.Frame.FrameFit;
 import helix.raylib.internal.Runtime;
+import helix.raylib.internal.ScreenText;
 import helix.services.screen.ScreenFit;
 #end
 
@@ -45,6 +46,7 @@ class RScreen {
 		screenStretch = stretch;
 		FrameFit.atDesignSize = stretch == SCREEN_STRETCH_VIEWPORT;
 		FrameFit.use(Runtime.frame);
+		ScreenText.link();
 	}
 
 	// The stretch SetScreenFit last set, SCREEN_STRETCH_CANVAS without a fit.

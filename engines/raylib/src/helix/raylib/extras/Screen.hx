@@ -39,6 +39,9 @@ import helix.raylib.modules.RScreen;
 	- **3D:** `BeginMode3D` projects at the visible area's shape, and `GetScreenToWorldRay` and `GetWorldToScreen` read in the design's
 	  pixels. A visible area taller or shorter than the design shows a camera's framing changed unless the program sets
 	  `camera.fovy = GetScreenFitFovy(fovy)`.
+	- **Text:** under `SCREEN_STRETCH_CANVAS`, the default font's and a TrueType or OpenType font's glyphs are made at the size they are
+	  shown, so text is sharp at any scale. They are kept on one texture, 512 x 512 at first and at most 2048 x 2048. A font made from
+	  an image or glyphs a program made is drawn from its own texture, scaled.
 	- **High DPI:** the design is fitted to the framebuffer, in its pixels (`GetRenderWidth`), which a high-DPI window has more of than
 	  its logical size (`GetWindowScaleDPI`). The pointer is mapped through that scale, so the design pixel under it is the one read.
 	- **Render textures:** between `BeginTextureMode` and `EndTextureMode`, drawing is in the render texture's own pixels, as in raylib,
