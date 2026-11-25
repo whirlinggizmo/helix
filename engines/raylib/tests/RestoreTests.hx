@@ -1,6 +1,7 @@
 import haxe.io.Bytes;
 import helix.raylib.*;
 import helix.raylib.Raylib.*;
+import helix.raylib.internal.EarlyEvents;
 import helix.raylib.internal.Frame;
 import helix.raylib.internal.Models;
 import helix.raylib.internal.Runtime;
@@ -14,7 +15,8 @@ import helix.raylib.internal.Textures;
 	`UpdateTexture` wrote since (natively, where none are kept, drawn as nothing with one warning each), a model's textures held in its file (its base color, and
 	the roughness and metalness split from one image) are decoded again from the model's bytes and sent, as is one a load makes after
 	the program unloaded the last load's, and a texture set on a shader (`SetShaderValueTexture`) is bound by the handle it was sent
-	again with. */
+	again with. A restore read from the platform's events is acted on where it's read, at a frame's end as at its start, and delivered
+	once. */
 @:access(helix.raylib.internal.Runtime)
 @:access(helix.raylib.internal.Textures)
 @:access(helix.raylib.Mesh)
@@ -212,6 +214,23 @@ class RestoreTests {
 		UnloadModel(model);
 		check(graphics.doubles == 0, "unloaded: nothing disposed twice");
 
+		// The events: a restore read between frames, at a frame's end (as a page's browser restores it), acted on there, before the next
+		// frame draws; one read at a frame's start acted on there alone; each delivered once.
+		var queued = new QueuedEvents();
+		var early = new EarlyEvents(queued, Runtime.graphicsLost, Runtime.graphicsRestored);
+		var made = Runtime.frame.white;
+		queued.next.push(helix.platform.Event.GraphicsLost);
+		queued.next.push(helix.platform.Event.GraphicsRestored);
+		early.poll();
+		check(Runtime.frame.white != made && early.events.length == 2, "a restore read at a frame's end: acted on there, delivered");
+		made = Runtime.frame.white;
+		queued.next.push(helix.platform.Event.GraphicsRestored);
+		early.peek();
+		check(Runtime.frame.white != made, "a restore read at a frame's start: acted on there");
+		made = Runtime.frame.white;
+		early.poll();
+		check(Runtime.frame.white == made && early.events.length == 1, "a restore read at a frame's start: delivered at its end, once");
+
 		var report = haxe.Json.stringify({passed: true, checks: checks});
 		#if js
 		js.Syntax.code("console.log({0})", report);
@@ -235,6 +254,34 @@ class RestoreTests {
 			"bufferViews":[{"buffer":0,"byteOffset":0,"byteLength":36}],
 			"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3","min":[0,0,0],"max":[1,1,0]}]}';
 	}
+}
+
+// The platform's events, the test's to deliver at the next poll.
+private class QueuedEvents implements helix.platform.IEvents {
+	public final next:Array<helix.platform.Event> = [];
+
+	var delivered:Array<helix.platform.Event> = [];
+
+	public function new() {}
+
+	public function poll():Void {
+		delivered = next.copy();
+		next.resize(0);
+	}
+
+	public var events(get, never):Array<helix.platform.Event>;
+
+	function get_events():Array<helix.platform.Event>
+		return delivered;
+
+	public function wait(timeout:Float):Void {}
+
+	public var unlocked(get, never):Bool;
+
+	function get_unlocked():Bool
+		return false;
+
+	public function dispose():Void {}
 }
 
 // Files held in memory, each answer at the next poll.

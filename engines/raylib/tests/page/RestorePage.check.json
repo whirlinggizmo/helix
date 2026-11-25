@@ -1,0 +1,11 @@
+{
+  "what": "The page at 800 x 600, its 320 x 240 design fitted at 2.5, drawn again after the context was lost and restored: the file's checker (red at its top left), the green texture made from pixels, the render texture purple and orange, the dark blue rectangle and the maroon cube.",
+  "points": [
+    {"x": 62, "y": 62, "color": [230, 41, 55], "tolerance": 3},
+    {"x": 300, "y": 100, "color": [0, 228, 48], "tolerance": 3},
+    {"x": 460, "y": 100, "color": [200, 122, 255], "tolerance": 3},
+    {"x": 540, "y": 100, "color": [255, 161, 0], "tolerance": 3},
+    {"x": 700, "y": 100, "color": [0, 82, 172], "tolerance": 3},
+    {"x": 400, "y": 300, "color": [190, 33, 55], "tolerance": 3}
+  ]
+}
